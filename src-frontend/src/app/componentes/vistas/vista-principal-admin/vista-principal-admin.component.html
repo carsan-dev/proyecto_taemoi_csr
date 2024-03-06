@@ -1,0 +1,9 @@
+<div class="container-fluid d-flex justify-content-center align-items-center vh-100 vw-100">
+  <div *ngIf="token" class="container mt-3">
+    <h1 class="text-center h3">Token de acceso:</h1>
+    <p class="text-center"><strong>{{ token }}</strong></p>
+  </div>
+  <div *ngIf="!token" class="container mt-3">
+    <h1 class="text-center h3">No hay token almacenado.</h1>
+  </div>
+</div>
