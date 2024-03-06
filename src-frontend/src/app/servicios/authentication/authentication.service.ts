@@ -1,16 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { LoginInterface } from '../../interfaces/login-interface';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthenticationService {
-  private baseUrl = 'http://localhost:8080/api/auth';
+  private urlBase = 'http://localhost:8080/api/auth';
+  private usuarioLogueado: boolean = false;
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, contrasena: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/signin`, { email, contrasena }, { withCredentials: true });
+  comprobarLogueado(): boolean {
+    return this.usuarioLogueado;
+  }
+
+  login(credenciales: LoginInterface): Observable<any> {
+    return this.http.post<any>(`${this.urlBase}/signin`, credenciales, {
+      withCredentials: true,
+    });
   }
 }
