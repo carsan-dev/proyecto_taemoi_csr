@@ -2,6 +2,7 @@
   <div *ngIf="token" class="container mt-3">
     <h1 class="text-center h3">Token de acceso:</h1>
     <p class="text-center"><strong>{{ token }}</strong></p>
+    <button (click)="irAListado()" class="btn btn-primary">Ir a listado</button>
   </div>
   <div *ngIf="!token" class="container mt-3">
     <h1 class="text-center h3">No hay token almacenado.</h1>

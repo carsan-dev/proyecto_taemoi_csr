@@ -20,7 +20,18 @@ export class VistaLoginComponent implements OnInit {
   constructor(private authService: AuthenticationService, private router: Router) {}
 
   ngOnInit(): void {
-    this.usuarioLogueado = this.authService.comprobarLogueado();
+    const token = localStorage.getItem('token');
+    if (token) {
+      const nombreUsuario = this.extraerNombreUsuario(this.credenciales.email);
+      Swal.fire({
+        title: 'Atención',
+        text: `Ya estás logueado, ${nombreUsuario}`,
+        icon: 'warning',
+      });
+      this.router.navigate(['/vistaprincipal']);
+    } else {
+      this.usuarioLogueado = this.authService.comprobarLogueado();
+    }
   }
 
   login() {
