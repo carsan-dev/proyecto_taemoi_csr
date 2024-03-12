@@ -10,7 +10,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav">
+        <ul class="navbar-nav" *ngIf="!usuarioLogueado">
           <li class="nav-item">
             <a class="nav-link" href="#">Página Principal</a>
           </li>
@@ -28,6 +28,29 @@
           </li>
           <li class="nav-item">
             <a class="nav-link me-2" (click)="irALogin()">Iniciar sesión</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav" *ngIf="usuarioLogueado">
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaPrincipal()">Página Principal</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaAdmin()">Gestionar Alumnos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaPrincipal()">Información Pública</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaPrincipal()">Eventos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaPrincipal()">Horarios</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" (click)="irAVistaPrincipal()">Contacto</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link me-2" (click)="cerrarSesion()">Cerrar Sesión</a>
           </li>
         </ul>
       </div>
