@@ -28,7 +28,7 @@ export class VistaLoginComponent implements OnInit {
         text: `Ya estás logueado, ${nombreUsuario}`,
         icon: 'warning',
       });
-      this.router.navigate(['/vistaprincipal']);
+      this.router.navigate(['/vista-principal']);
     } else {
       this.usuarioLogueado = this.authService.comprobarLogueado();
     }
@@ -38,7 +38,7 @@ export class VistaLoginComponent implements OnInit {
     this.authService.login(this.credenciales).subscribe({
       next: (response) => {
         localStorage.setItem('token', response.token);
-        this.usuarioLogueado = true;
+        this.authService.actualizarEstadoLogueado(true);
 
         const nombreUsuario = this.extraerNombreUsuario(this.credenciales.email);
         Swal.fire({
@@ -47,7 +47,7 @@ export class VistaLoginComponent implements OnInit {
           icon: 'success',
         });
 
-        this.router.navigate(['/vistaprincipal']);
+        this.router.navigate(['/vista-principal']);
       },
       error: (error) => {
         Swal.fire({
