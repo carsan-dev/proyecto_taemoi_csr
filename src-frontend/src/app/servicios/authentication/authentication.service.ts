@@ -1,6 +1,6 @@
-import { EventEmitter, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { LoginInterface } from '../../interfaces/login-interface';
 
 @Injectable({
@@ -8,13 +8,22 @@ import { LoginInterface } from '../../interfaces/login-interface';
 })
 export class AuthenticationService {
   private urlBase = 'http://localhost:8080/api/auth';
-  private usuarioLogueado: boolean = false;
-  usuarioLogueadoCambio: EventEmitter<boolean> = new EventEmitter<boolean>();
+  private usuarioLogueadoSubject: BehaviorSubject<boolean> =
+    new BehaviorSubject<boolean>(false);
+  usuarioLogueadoCambio: Observable<boolean> =
+    this.usuarioLogueadoSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        this.actualizarEstadoLogueado(true);
+      }
+    }
+  }
 
   comprobarLogueado(): boolean {
-    return this.usuarioLogueado;
+    return this.usuarioLogueadoSubject.value;
   }
 
   login(credenciales: LoginInterface): Observable<any> {
@@ -24,7 +33,6 @@ export class AuthenticationService {
   }
 
   actualizarEstadoLogueado(estado: boolean) {
-    this.usuarioLogueado = estado;
-    this.usuarioLogueadoCambio.emit(estado);
+    this.usuarioLogueadoSubject.next(estado);
   }
 }
