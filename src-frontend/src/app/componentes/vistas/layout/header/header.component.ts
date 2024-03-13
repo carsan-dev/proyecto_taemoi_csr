@@ -20,14 +20,13 @@ export class HeaderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
     });
   }
 
   irAVistaAdmin() {
-    this.router.navigate(['/vista-principal']);
+    this.router.navigate(['/adminpage']);
   }
 
   irAVistaPrincipal() {
@@ -48,12 +47,11 @@ export class HeaderComponent implements OnInit {
         text: 'Hasta la proxima!',
         icon: 'success',
       });
-    }
-    else {
+    } else {
       Swal.fire({
         title: 'Atención',
         text: 'No has iniciado sesión. No se puede cerrar la sesión.',
-        icon: 'warning'
+        icon: 'warning',
       });
       this.usuarioLogueado = false;
     }
