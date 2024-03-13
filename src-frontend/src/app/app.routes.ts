@@ -8,8 +8,8 @@ import { ListadoAlumnosCompletoDTOComponent } from './componentes/endpoints/list
 export const routes: Routes = [
   { path: '', component: EscaparatePrincipalComponent },
   { path: 'login', component: VistaLoginComponent },
-  { path: 'vista-principal', component: VistaPrincipalAdminComponent },
-  { path: 'listar-alumnos', component: ListadoAlumnosCompletoDTOComponent}
+  { path: 'adminpage', component: VistaPrincipalAdminComponent },
+  { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent}
 ];
 
 @NgModule({
