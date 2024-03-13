@@ -15,10 +15,12 @@ export class VistaPrincipalAdminComponent implements OnInit {
   constructor(private router: Router) {}
 
   ngOnInit(): void {
-    this.token = localStorage.getItem('token');
+    if (typeof localStorage !== 'undefined') {
+      this.token = localStorage.getItem('token');
+    }
   }
 
   irAListado() {
-    this.router.navigate(['/listar-alumnos']);
+    this.router.navigate(['/alumnos']);
   }
 }
