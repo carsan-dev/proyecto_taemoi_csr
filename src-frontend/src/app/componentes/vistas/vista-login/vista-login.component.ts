@@ -1,4 +1,4 @@
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -15,22 +15,26 @@ import { CommonModule } from '@angular/common';
 })
 export class VistaLoginComponent implements OnInit {
   credenciales: LoginInterface = { email: '', contrasena: '' };
-  usuarioLogueado: boolean = false;
 
-  constructor(private authService: AuthenticationService, private router: Router) {}
+  constructor(
+    private authService: AuthenticationService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const nombreUsuario = this.extraerNombreUsuario(this.credenciales.email);
-      Swal.fire({
-        title: 'Atención',
-        text: `Ya estás logueado, ${nombreUsuario}`,
-        icon: 'warning',
-      });
-      this.router.navigate(['/vista-principal']);
-    } else {
-      this.usuarioLogueado = this.authService.comprobarLogueado();
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const nombreUsuario = this.extraerNombreUsuario(
+          this.credenciales.email
+        );
+        Swal.fire({
+          title: 'Atención',
+          text: `Ya estás logueado, ${nombreUsuario}`,
+          icon: 'warning',
+        });
+        this.router.navigate(['/adminpage']);
+      }
     }
   }
 
@@ -39,15 +43,16 @@ export class VistaLoginComponent implements OnInit {
       next: (response) => {
         localStorage.setItem('token', response.token);
         this.authService.actualizarEstadoLogueado(true);
-
-        const nombreUsuario = this.extraerNombreUsuario(this.credenciales.email);
+        const nombreUsuario = this.extraerNombreUsuario(
+          this.credenciales.email
+        );
         Swal.fire({
           title: 'Inicio de sesión exitoso',
           text: `¡Bienvenido, ${nombreUsuario}!`,
           icon: 'success',
         });
 
-        this.router.navigate(['/vista-principal']);
+        this.router.navigate(['/adminpage']);
       },
       error: (error) => {
         Swal.fire({
