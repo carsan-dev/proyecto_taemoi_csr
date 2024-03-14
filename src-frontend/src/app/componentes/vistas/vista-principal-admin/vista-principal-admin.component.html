@@ -1,10 +1,18 @@
-<div class="container-fluid d-flex justify-content-center align-items-center vh-100 vw-100">
-  <div *ngIf="token" class="container mt-3">
-    <h1 class="text-center h3">Token de acceso:</h1>
-    <p class="text-center"><strong>{{ token }}</strong></p>
-    <button (click)="irAListado()" class="btn btn-primary">Ir a listado</button>
-  </div>
-  <div *ngIf="!token" class="container mt-3">
-    <h1 class="text-center h3">No hay token almacenado.</h1>
+<div class="container-fluid py-2">
+  <div class="row">
+    <div *ngIf="token" class="col-2 mt-3 d-flex flex-row">
+      <app-sidebar class="w-100"></app-sidebar>
+      <div>
+        <i class="bi bi-chevron-bar-left fs-5" (click)="alternarVisibilidadSidebar()"></i>
+      </div>
+    </div>
+    <div class="col-10 mt-3">
+      <div *ngIf="token">
+        <p>hola</p>
+      </div>
+      <div *ngIf="!token">
+        <h1 class="text-center h3">No hay token almacenado.</h1>
+      </div>
+    </div>
   </div>
 </div>
