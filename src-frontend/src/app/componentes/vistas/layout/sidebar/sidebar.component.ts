@@ -27,4 +27,8 @@ export class SidebarComponent implements OnInit {
   irAListado() {
     this.router.navigate(['/alumnos']);
   }
+
+  irACrear() {
+    this.router.navigate(['/alumnos/crear']);
+  }
 }
