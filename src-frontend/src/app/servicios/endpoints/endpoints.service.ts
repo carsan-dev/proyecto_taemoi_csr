@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -10,11 +10,15 @@ export class EndpointsService {
 
   constructor(private http: HttpClient) {}
 
-  enviarToken(token: string): Observable<any> {
+  enviarToken(token: string, page: number, size: number): Observable<any> {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
-    return this.http.get<any>(`${this.urlBase}/alumnos`, { headers: headers });
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http.get<any>(`${this.urlBase}/alumnos`, { headers: headers, params: params });
   }
 }
