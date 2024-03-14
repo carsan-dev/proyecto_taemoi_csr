@@ -1,6 +1,6 @@
 <div class="container-fluid py-2">
   <div class="row">
-    <div *ngIf="token" class="col-2 mt-3 d-flex flex-row">
+    <div *ngIf="tokenExiste" class="col-2 mt-3 d-flex flex-row">
       <app-sidebar class="w-100"></app-sidebar>
       <div>
         <i class="bi bi-chevron-bar-left fs-5" (click)="alternarVisibilidadSidebar()"></i>
@@ -10,7 +10,7 @@
       <div *ngIf="token">
         <p>hola</p>
       </div>
-      <div *ngIf="!token">
+      <div *ngIf="!tokenExiste">
         <h1 class="text-center h3">No hay token almacenado.</h1>
       </div>
     </div>

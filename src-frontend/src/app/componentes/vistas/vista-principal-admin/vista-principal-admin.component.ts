@@ -13,12 +13,14 @@ import { SidebarService } from '../../../servicios/generales/sidebar.service';
 })
 export class VistaPrincipalAdminComponent implements OnInit {
   token: string | null = null;
+  tokenExiste: boolean = false;
 
   constructor(private router: Router, private sidebarService: SidebarService) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
       this.token = localStorage.getItem('token');
+      this.tokenExiste = !!this.token;
     }
   }
 
