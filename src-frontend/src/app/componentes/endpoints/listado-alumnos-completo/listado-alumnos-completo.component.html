@@ -1,22 +1,30 @@
-<div class="container-fluid">
+<div class="container-fluid py-2">
   <div class="row">
-    <div class="col-md-4" *ngFor="let alumno of alumnos">
-      <div class="card mb-3">
-        <div class="card-body">
-          <h5 class="card-title">{{ alumno.nombre }}</h5>
-          <h6 class="card-subtitle mb-2 text-muted">{{ alumno.apellidos }}</h6>
-          <p class="card-text">Fecha de nacimiento: {{ alumno.fechaNacimiento }}</p>
-          <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
-          <p class="card-text">NIF: {{ alumno.nif }}</p>
-          <p class="card-text">Dirección: {{ alumno.direccion }}</p>
-          <p class="card-text">Email: {{ alumno.email }}</p>
-          <p class="card-text">Teléfono: {{ alumno.telefono }}</p>
-          <p class="card-text">Cuantía de la tarifa: {{ alumno.cuantiaTarifa }}</p>
-          <p class="card-text">Tipo de tarifa: {{ alumno.tipoTarifa }}</p>
-          <p class="card-text">Fecha de alta: {{ alumno.fechaAlta }}</p>
-          <p class="card-text">Fecha de baja: {{ alumno.fechaBaja }}</p>
-          <p class="card-text">Categoría: {{ alumno.categoria }}</p>
-          <p class="card-text">Grado: {{ alumno.grado }}</p>
+    <div class="col-2 mt-3 d-flex flex-row">
+      <app-sidebar class="w-100"></app-sidebar>
+      <div>
+        <i class="bi bi-chevron-bar-left fs-5" (click)="alternarVisibilidadSidebar()"></i>
+      </div>
+    </div>
+    <div class="col-10 mt-3 d-flex flex-row flex-wrap">
+      <div class="col-md-4" *ngFor="let alumno of alumnos">
+        <div class="card mb-3 mx-2">
+          <div class="card-body">
+            <h5 class="card-title">{{ alumno.nombre }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ alumno.apellidos }}</h6>
+            <p class="card-text">Fecha de nacimiento: {{ alumno.fechaNacimiento }}</p>
+            <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
+            <p class="card-text">NIF: {{ alumno.nif }}</p>
+            <p class="card-text">Dirección: {{ alumno.direccion }}</p>
+            <p class="card-text">Email: {{ alumno.email }}</p>
+            <p class="card-text">Teléfono: {{ alumno.telefono }}</p>
+            <p class="card-text">Cuantía de la tarifa: {{ alumno.cuantiaTarifa }}</p>
+            <p class="card-text">Tipo de tarifa: {{ alumno.tipoTarifa }}</p>
+            <p class="card-text">Fecha de alta: {{ alumno.fechaAlta }}</p>
+            <p class="card-text">Fecha de baja: {{ alumno.fechaBaja }}</p>
+            <p class="card-text">Categoría: {{ alumno.categoria }}</p>
+            <p class="card-text">Grado: {{ alumno.grado }}</p>
+          </div>
         </div>
       </div>
     </div>
