@@ -13,6 +13,10 @@ import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component'
 })
 export class ListadoAlumnosCompletoDTOComponent {
   alumnos: any[] = [];
+  currentPage: number = 1;
+  pageSize: number = 1;
+  totalPages: number = 0;
+  totalPagesArray: number[] = [];
 
   constructor(private endpointsService: EndpointsService, private sidebarService: SidebarService) {}
 
@@ -26,15 +30,26 @@ export class ListadoAlumnosCompletoDTOComponent {
     const token = localStorage.getItem('token');
 
     if (token) {
-      this.endpointsService.enviarToken(token).subscribe({
+      this.endpointsService.enviarToken(token, this.currentPage, this.pageSize).subscribe({
         next: (response) => {
-          this.alumnos = response;
+          this.alumnos = response.content;
+          this.totalPages = response.totalPages;
+          this.calcularTotalPagesArray();
         },
         error: (error) => {
           console.log(error);
         },
       });
     }
+  }
+
+  cambiarPagina(pageNumber: number): void {
+    this.currentPage = pageNumber;
+    this.obtenerAlumnos();
+  }
+
+  calcularTotalPagesArray() {
+    this.totalPagesArray = Array(this.totalPages).fill(0).map((x, i) => i + 1);
   }
 
   alternarVisibilidadSidebar(): void {
