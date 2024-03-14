@@ -4,48 +4,68 @@
       <app-sidebar class="w-100"></app-sidebar>
     </div>
     <div class="col-10 mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-          <caption>Lista de alumnos</caption>
-          <thead class="table-dark">
-            <tr>
-              <th>Nombre</th>
-              <th>Apellidos</th>
-              <th>Fecha de nacimiento</th>
-              <th>Número de expediente</th>
-              <th>NIF</th>
-              <th>Dirección</th>
-              <th>Email</th>
-              <th>Teléfono</th>
-              <th>Cuantía de la tarifa</th>
-              <th>Tipo de tarifa</th>
-              <th>Fecha de alta</th>
-              <th>Fecha de baja</th>
-              <th>Categoría</th>
-              <th>Grado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let alumno of alumnos">
-              <td>{{ alumno.nombre }}</td>
-              <td>{{ alumno.apellidos }}</td>
-              <td>{{ alumno.fechaNacimiento }}</td>
-              <td>{{ alumno.numeroExpediente }}</td>
-              <td>{{ alumno.nif }}</td>
-              <td>{{ alumno.direccion }}</td>
-              <td>{{ alumno.email }}</td>
-              <td>{{ alumno.telefono }}</td>
-              <td>{{ alumno.cuantiaTarifa }}</td>
-              <td>{{ alumno.tipoTarifa }}</td>
-              <td>{{ alumno.fechaAlta }}</td>
-              <td>{{ alumno.fechaBaja }}</td>
-              <td>{{ alumno.categoria }}</td>
-              <td>{{ alumno.grado }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="row">
+        <div class="col-lg-4 offset-lg-8 col-md-6 offset-md-6 col-sm-12 text-end mb-4">
+          <img src="../../../../assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
+        </div>
       </div>
-      <nav aria-label="Page navigation example">
+      <div class="row">
+        <div class="col-lg-6 col-md-12 mb-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Información Personal</h5>
+              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
+                <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
+                <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
+                <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
+                <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
+                <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6 col-md-12 mb-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Contacto</h5>
+              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                <li class="list-group-item">Email: {{ alumno.email }}</li>
+                <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-lg-6 col-md-12 mb-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Pagos</h5>
+              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
+                <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6 col-md-12">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Información adicional</h5>
+              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
+                <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
+                <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
+                <li class="list-group-item">Grado: {{ alumno.grado }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <nav aria-label="Page navigation example" class="mt-4">
         <ul class="pagination">
           <li class="page-item" [class.disabled]="paginaActual === 1">
             <a class="page-link" (click)="cambiarPagina(1)" aria-label="First">
