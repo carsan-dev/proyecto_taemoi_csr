@@ -1,5 +1,7 @@
-<app-header></app-header>
-<main>
-  <ng-content></ng-content>
-</main>
-<app-footer></app-footer>
+<div class="container-fluid vh-100 p-0 d-flex flex-column">
+  <app-header class="row"></app-header>
+  <main class="row flex-grow-1">
+    <ng-content></ng-content>
+  </main>
+  <app-footer class="row"></app-footer>
+</div>
