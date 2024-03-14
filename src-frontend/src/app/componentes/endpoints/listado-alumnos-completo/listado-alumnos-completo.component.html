@@ -7,7 +7,7 @@
       </div>
     </div>
     <div class="col-10 mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
-      <div class="col-md-4" *ngFor="let alumno of alumnos">
+      <div *ngFor="let alumno of alumnos">
         <div class="card mb-3 mx-2">
           <div class="card-body">
             <h5 class="card-title">{{ alumno.nombre }}</h5>
@@ -29,19 +29,19 @@
       </div>
       <nav aria-label="Page navigation example">
         <ul class="pagination">
-          <li class="page-item" [class.disabled]="currentPage === 1">
-            <a class="page-link" (click)="cambiarPagina(currentPage - 1)" aria-label="Previous">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
-              <span class="sr-only">Previous</span>
+              <span class="sr-only">Anterior</span>
             </a>
           </li>
-          <li class="page-item" *ngFor="let page of totalPagesArray" [class.active]="currentPage === page">
+          <li class="page-item" *ngFor="let page of displayPages" [class.active]="paginaActual === page">
             <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
           </li>
-          <li class="page-item" [class.disabled]="currentPage === totalPages">
-            <a class="page-link" (click)="cambiarPagina(currentPage + 1)" aria-label="Next">
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+            <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>
-              <span class="sr-only">Next</span>
+              <span class="sr-only">Siguiente</span>
             </a>
           </li>
         </ul>
