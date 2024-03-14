@@ -21,4 +21,12 @@ export class EndpointsService {
 
     return this.http.get<any>(`${this.urlBase}/alumnos`, { headers: headers, params: params });
   }
+
+  crearAlumno(nuevoAlumno: any, token: string) {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.post<any>(`${this.urlBase}/alumnos`, nuevoAlumno, { headers: headers });
+  }
 }
