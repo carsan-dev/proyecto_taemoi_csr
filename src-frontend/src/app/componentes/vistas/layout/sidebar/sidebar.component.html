@@ -1,13 +1,13 @@
 <div class="sidebar-container">
   <div class="d-flex justify-content-center">
     <i [ngClass]="{'bi-box-arrow-in-left': botonPulsado, 'bi-box-arrow-in-right': !botonPulsado}"
-      class="fs-2 text-primary" (click)="alternarVisibilidadSidebar()"></i>
+      class="fs-2 text-primary text-center" (click)="alternarVisibilidadSidebar()"></i>
   </div>
   <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
     <div class="btn-group-vertical w-100">
-      <button (click)="irAListado()" class="btn btn-primary">Ir a listado</button>
-      <button (click)="irACrear()" class="btn btn-primary">Crear alumno</button>
-      <button class="btn btn-primary">Botón 3</button>
+      <button (click)="irAListado()" class="btn btn-primary btn-fixed-size">Ir a listado</button>
+      <button (click)="irACrear()" class="btn btn-primary btn-fixed-size">Crear alumno</button>
+      <button class="btn btn-primary btn-fixed-size">Botón 3</button>
     </div>
   </aside>
 </div>
