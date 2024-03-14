@@ -1,1 +1,7 @@
-<p>sidebar works!</p>
+<aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
+  <div class="btn-group-vertical w-100">
+    <button (click)="irAListado()" class="btn btn-primary">Ir a listado</button>
+    <button class="btn btn-primary">Botón 2</button>
+    <button class="btn btn-primary">Botón 3</button>
+  </div>
+</aside>
