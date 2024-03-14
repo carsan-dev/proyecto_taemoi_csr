@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
-import { SidebarService } from '../../../servicios/generales/sidebar.service';
 import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
 import Swal from 'sweetalert2';
 
@@ -17,12 +16,9 @@ export class ListadoAlumnosCompletoDTOComponent {
   paginaActual: number = 1;
   tamanoPagina: number = 1;
   totalPaginas: number = 0;
-  displayPages: number[] = [];
+  mostrarPaginas: number[] = [];
 
-  constructor(
-    private endpointsService: EndpointsService,
-    private sidebarService: SidebarService
-  ) {}
+  constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
@@ -40,7 +36,7 @@ export class ListadoAlumnosCompletoDTOComponent {
           next: (response) => {
             this.alumnos = response.content;
             this.totalPaginas = response.totalPages;
-            this.actualizarDisplayPages();
+            this.actualizarPaginasMostradas();
           },
           error: (error) => {
             Swal.fire({
@@ -58,7 +54,7 @@ export class ListadoAlumnosCompletoDTOComponent {
     this.obtenerAlumnos();
   }
 
-  actualizarDisplayPages() {
+  actualizarPaginasMostradas() {
     const paginasAMostrar = 5;
     const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
     let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
@@ -72,13 +68,16 @@ export class ListadoAlumnosCompletoDTOComponent {
       paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
     }
 
-    this.displayPages = Array.from(
+    if (this.totalPaginas - 2 <= this.totalPaginas) {
+      if (paginaFin === this.totalPaginas) {
+        paginaFin--;
+        paginaInicio--;
+      }
+    }
+
+    this.mostrarPaginas = Array.from(
       { length: paginaFin - paginaInicio + 1 },
       (_, i) => paginaInicio + i
     );
-  }
-
-  alternarVisibilidadSidebar(): void {
-    this.sidebarService.alternarSidebar();
   }
 }

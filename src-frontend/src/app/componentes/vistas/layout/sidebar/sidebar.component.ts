@@ -12,6 +12,7 @@ import { SidebarService } from '../../../../servicios/generales/sidebar.service'
 })
 export class SidebarComponent implements OnInit {
   estaColapsado: boolean = false;
+  botonPulsado: boolean = true;
 
   constructor(private router: Router, private sidebarService: SidebarService) {}
 
@@ -30,5 +31,14 @@ export class SidebarComponent implements OnInit {
 
   irACrear() {
     this.router.navigate(['/alumnos/crear']);
+  }
+
+  alternarVisibilidadSidebar(): void {
+    this.sidebarService.alternarSidebar();
+    this.alternarEstadoBotonPulsado()
+  }
+
+  alternarEstadoBotonPulsado(): void {
+    this.botonPulsado = !this.botonPulsado;
   }
 }
