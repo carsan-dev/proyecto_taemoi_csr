@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SidebarComponent } from '../layout/sidebar/sidebar.component';
-import { SidebarService } from '../../../servicios/generales/sidebar.service';
 
 @Component({
   selector: 'app-vista-principal-admin',
@@ -15,7 +14,7 @@ export class VistaPrincipalAdminComponent implements OnInit {
   token: string | null = null;
   tokenExiste: boolean = false;
 
-  constructor(private router: Router, private sidebarService: SidebarService) {}
+  constructor(private router: Router) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
@@ -26,9 +25,5 @@ export class VistaPrincipalAdminComponent implements OnInit {
 
   irAListado() {
     this.router.navigate(['/alumnos']);
-  }
-
-  alternarVisibilidadSidebar(): void {
-    this.sidebarService.alternarSidebar();
   }
 }

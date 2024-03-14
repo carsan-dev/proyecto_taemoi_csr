@@ -6,7 +6,6 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
-import { SidebarService } from '../../../servicios/generales/sidebar.service';
 
 @Component({
   selector: 'app-crear-alumno',
@@ -15,7 +14,7 @@ import { SidebarService } from '../../../servicios/generales/sidebar.service';
   templateUrl: './crear-alumno.component.html',
   styleUrl: './crear-alumno.component.scss',
 })
-export class CrearAlumnoComponent{
+export class CrearAlumnoComponent {
   nuevoAlumno: any = {
     tipoTarifa: null,
   };
@@ -23,10 +22,7 @@ export class CrearAlumnoComponent{
 
   tiposTarifa = Object.values(TipoTarifa);
 
-  constructor(
-    private endpointsService: EndpointsService,
-    private sidebarService: SidebarService
-  ) {}
+  constructor(private endpointsService: EndpointsService) {}
 
   crearAlumno() {
     const token = localStorage.getItem('token');
@@ -57,9 +53,5 @@ export class CrearAlumnoComponent{
       },
       complete: () => {},
     });
-  }
-
-  alternarVisibilidadSidebar(): void {
-    this.sidebarService.alternarSidebar();
   }
 }
