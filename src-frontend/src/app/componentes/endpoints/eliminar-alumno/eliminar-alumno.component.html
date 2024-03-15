@@ -1,0 +1,38 @@
+<div class="container-fluid py-2">
+  <div class="row">
+    <div class="col-2 mt-3 d-flex flex-row">
+      <app-sidebar class="w-100"></app-sidebar>
+    </div>
+    <div class="col-10 mt-3">
+      <h3>Eliminar Alumnos</h3>
+      <button class="btn btn-danger my-3" (click)="eliminarAlumnosSeleccionados()">Eliminar seleccionados</button>
+      <table class="table">
+        <caption>Eliminar alumnos</caption>
+        <thead>
+          <tr>
+            <th>Seleccionar</th>
+            <th>Nombre</th>
+            <th>Apellidos</th>
+            <th>Número de Expediente</th>
+            <th>DNI</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let alumno of alumnos">
+            <td>
+              <input type="checkbox" [(ngModel)]="alumno.selected">
+            </td>
+            <td>{{ alumno.nombre }}</td>
+            <td>{{ alumno.apellidos }}</td>
+            <td>{{ alumno.numeroExpediente }}</td>
+            <td>{{ alumno.nif }}</td>
+            <td>
+              <button class="btn btn-danger" (click)="eliminarAlumno(alumno.id)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
