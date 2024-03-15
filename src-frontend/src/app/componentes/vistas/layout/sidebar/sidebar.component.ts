@@ -33,6 +33,10 @@ export class SidebarComponent implements OnInit {
     this.router.navigate(['/alumnos/crear']);
   }
 
+  irAEliminar() {
+    this.router.navigate(['/alumnos/eliminar']);
+  }
+
   alternarVisibilidadSidebar(): void {
     this.sidebarService.alternarSidebar();
     this.alternarEstadoBotonPulsado()

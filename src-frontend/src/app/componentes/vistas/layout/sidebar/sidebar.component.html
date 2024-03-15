@@ -5,9 +5,9 @@
   </div>
   <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
     <div class="list-group">
-      <a (click)="irAListado()" class="list-group-item list-group-item-action">Ir a listado</a>
-      <a (click)="irACrear()" class="list-group-item list-group-item-action">Crear alumno</a>
-      <a class="list-group-item list-group-item-action">Enlace 3</a>
+      <button (click)="irAListado()" class="list-group-item list-group-item-action">Ir a listado</button>
+      <button (click)="irACrear()" class="list-group-item list-group-item-action">Crear alumno</button>
+      <button (click)="irAEliminar()" class="list-group-item list-group-item-action">Eliminar alumno</button>
     </div>
   </aside>
 </div>
