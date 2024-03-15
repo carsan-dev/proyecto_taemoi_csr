@@ -38,7 +38,10 @@ export class SidebarComponent implements OnInit {
     this.alternarEstadoBotonPulsado()
   }
 
-  alternarEstadoBotonPulsado(): void {
+  alternarEstadoBotonPulsado() {
     this.botonPulsado = !this.botonPulsado;
-  }
+    const icono = document.querySelector('.icono-sidebar');
+    if (icono) {
+    icono.classList.toggle('rotado');
+  }}
 }

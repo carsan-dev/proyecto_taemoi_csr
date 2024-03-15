@@ -5,3 +5,11 @@
 .sidebar.collapsed {
   transform: translateX(-150%);
 }
+
+.icono-sidebar {
+  transition: transform 0.3s ease; /* Establece la transición para la propiedad transform */
+}
+
+.icono-sidebar.rotado {
+  transform: rotate(180deg); /* Rota el ícono 180 grados */
+}
