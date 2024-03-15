@@ -22,12 +22,16 @@ export class EndpointsService {
     return this.http.get<any>(`${this.urlBase}/alumnos`, { headers: headers, params: params });
   }
 
-  obtenerAlumnos(token: string): Observable<any> {
+  obtenerAlumnos(token: string, page: number, size: number): Observable<any> {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
-    return this.http.get<any>(`${this.urlBase}/admin`, { headers: headers });
+    const params = new HttpParams()
+    .set('page', page.toString())
+    .set('size', size.toString());
+
+    return this.http.get<any>(`${this.urlBase}/admin`, { headers: headers, params: params });
   }
 
   crearAlumno(nuevoAlumno: any, token: string) {
