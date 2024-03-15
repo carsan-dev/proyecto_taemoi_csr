@@ -47,7 +47,7 @@ export class EliminarAlumnoComponent implements OnInit {
     const token = localStorage.getItem('token');
 
     if (token) {
-      this.endpointsService.eliminarAlumno(id, token).subscribe({
+      this.endpointsService.eliminarAlumnos(id, token).subscribe({
         next: () => {
           Swal.fire({
             title: 'Alumno eliminado',
@@ -73,7 +73,7 @@ export class EliminarAlumnoComponent implements OnInit {
 
     if (token && alumnosSeleccionados.length > 0) {
       alumnosSeleccionados.forEach(alumno => {
-        this.endpointsService.eliminarAlumno(alumno.id, token).subscribe({
+        this.endpointsService.eliminarAlumnos(alumno.id, token).subscribe({
           next: () => {
             this.obtenerAlumnos();
           },

@@ -38,7 +38,7 @@ export class EndpointsService {
     return this.http.post<any>(`${this.urlBase}/alumnos`, nuevoAlumno, { headers: headers });
   }
 
-  eliminarAlumno(id: number, token: string): Observable<any> {
+  eliminarAlumnos(id: number, token: string): Observable<any> {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
