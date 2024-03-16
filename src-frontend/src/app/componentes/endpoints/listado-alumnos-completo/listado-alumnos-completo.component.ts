@@ -3,11 +3,14 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
 import Swal from 'sweetalert2';
+import { FormsModule } from '@angular/forms';
+import { TipoTarifa } from '../../../enums/tipo-tarifa';
+import { TipoGrado } from '../../../enums/tipo-grado';
 
 @Component({
   selector: 'app-listado-alumnos-completo',
   standalone: true,
-  imports: [CommonModule, SidebarComponent],
+  imports: [CommonModule, SidebarComponent, FormsModule],
   templateUrl: './listado-alumnos-completo.component.html',
   styleUrl: './listado-alumnos-completo.component.scss',
 })
@@ -17,6 +20,14 @@ export class ListadoAlumnosCompletoDTOComponent {
   tamanoPagina: number = 1;
   totalPaginas: number = 0;
   mostrarPaginas: number[] = [];
+  mostrarFormulario: boolean = false;
+  alumnoEditado: any = {
+    tipoTarifa: null,
+    tipoGrado: null,
+  };
+
+  tiposTarifa = Object.values(TipoTarifa);
+  tiposGrado = Object.values(TipoGrado);
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -31,7 +42,7 @@ export class ListadoAlumnosCompletoDTOComponent {
 
     if (token) {
       this.endpointsService
-        .obtenerAlumnosDTO(token, this.paginaActual, this.tamanoPagina)
+        .obtenerAlumnos(token, this.paginaActual, this.tamanoPagina)
         .subscribe({
           next: (response) => {
             this.alumnos = response.content;
@@ -42,6 +53,31 @@ export class ListadoAlumnosCompletoDTOComponent {
             Swal.fire({
               title: 'Error en la petición',
               text: 'No hemos podido conectar con el servidor',
+              icon: 'error',
+            });
+          },
+        });
+    }
+  }
+
+  actualizarAlumno(id: number) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService
+        .actualizarAlumno(id, this.alumnoEditado, token)
+        .subscribe({
+          next: (response) => {
+            Swal.fire({
+              title: 'Bien!',
+              text: 'Alumno actualizado correctamente!',
+              icon: 'success',
+            });
+            this.obtenerAlumnos();
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error al actualizar',
+              text: 'Error al actualizar al alumno',
               icon: 'error',
             });
           },
@@ -70,9 +106,20 @@ export class ListadoAlumnosCompletoDTOComponent {
     }
 
     if (paginaFin === this.totalPaginas) {
-      paginaInicio = Math.max(1, paginaInicio - (paginasAMostrar - (paginaFin - paginaInicio)));
+      paginaInicio = Math.max(
+        1,
+        paginaInicio - (paginasAMostrar - (paginaFin - paginaInicio))
+      );
     }
 
-    this.mostrarPaginas = Array.from({ length: paginaFin - paginaInicio + 1 }, (_, i) => paginaInicio + i);
+    this.mostrarPaginas = Array.from(
+      { length: paginaFin - paginaInicio + 1 },
+      (_, i) => paginaInicio + i
+    );
+  }
+
+  alternarFormulario(alumno: any): void {
+    this.mostrarFormulario = !this.mostrarFormulario;
+    this.alumnoEditado = { ...alumno };
   }
 }
