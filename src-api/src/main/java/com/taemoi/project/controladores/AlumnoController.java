@@ -93,7 +93,7 @@ public class AlumnoController {
 		if (page != null && size != null) {
 			logger.info("## AlumnoController :: mostrarAlumnos paginados");
 
-			Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
+			Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
 			Page<Alumno> alumnos;
 
 			if (nombre != null && !nombre.isEmpty() || gradoId != null || categoriaId != null) {
