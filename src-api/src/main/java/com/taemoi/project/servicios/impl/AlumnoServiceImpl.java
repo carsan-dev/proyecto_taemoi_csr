@@ -388,7 +388,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				? alumno.getGrado().getTipoGrado().name()
 				: null;
 
-		return new AlumnoDTO(alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
+		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
 				alumno.getFechaBaja(), categoriaNombre, gradoTipo);

@@ -6,6 +6,7 @@ import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.TipoTarifa;
 
 public class AlumnoDTO {
+	private final Long id;
 	private String nombre;
 	private String apellidos;
 	private Date fechaNacimiento;
@@ -22,12 +23,14 @@ public class AlumnoDTO {
 	private String grado;
 
 	public AlumnoDTO() {
+		this.id = null;
 
 	}
 
-	public AlumnoDTO(String nombre, String apellidos, Date fechaNacimiento, String numeroExpediente, String nif,
+	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, String numeroExpediente, String nif,
 			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, String categoria, String grado) {
+		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
 		this.fechaNacimiento = fechaNacimiento;
@@ -42,6 +45,10 @@ public class AlumnoDTO {
 		this.fechaBaja = fechaBaja;
 		this.categoria = categoria;
 		this.grado = grado;
+	}
+	
+	public Long getId() {
+		return id;
 	}
 
 	public String getNombre() {
@@ -177,7 +184,7 @@ public class AlumnoDTO {
 	        telefono = Integer.valueOf(alumno.getTelefono());
 	    }
 
-		return new AlumnoDTO(alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
+		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				telefono, alumno.getCuantiaTarifa(), alumno.getTipoTarifa(),
 				alumno.getFechaAlta(), alumno.getFechaBaja(), categoriaNombre, gradoTipo);
