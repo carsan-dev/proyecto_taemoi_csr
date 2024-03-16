@@ -57,6 +57,7 @@ export class ListadoAlumnosCompletoDTOComponent {
   actualizarPaginasMostradas() {
     const paginasAMostrar = 5;
     const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
+
     let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
     let paginaFin = this.paginaActual + mitadDePaginasAMostrar;
 
@@ -68,16 +69,10 @@ export class ListadoAlumnosCompletoDTOComponent {
       paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
     }
 
-    if (this.totalPaginas - 2 <= this.totalPaginas) {
-      if (paginaFin === this.totalPaginas) {
-        paginaFin--;
-        paginaInicio--;
-      }
+    if (paginaFin === this.totalPaginas) {
+      paginaInicio = Math.max(1, paginaInicio - (paginasAMostrar - (paginaFin - paginaInicio)));
     }
 
-    this.mostrarPaginas = Array.from(
-      { length: paginaFin - paginaInicio + 1 },
-      (_, i) => paginaInicio + i
-    );
+    this.mostrarPaginas = Array.from({ length: paginaFin - paginaInicio + 1 }, (_, i) => paginaInicio + i);
   }
 }
