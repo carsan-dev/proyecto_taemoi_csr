@@ -10,18 +10,6 @@ export class EndpointsService {
 
   constructor(private http: HttpClient) {}
 
-  enviarToken(token: string, page: number, size: number): Observable<any> {
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('size', size.toString());
-
-    return this.http.get<any>(`${this.urlBase}/alumnos`, { headers: headers, params: params });
-  }
-
   obtenerAlumnos(token: string, page: number, size: number): Observable<any> {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
