@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
-import { LoginInterface } from '../../../interfaces/login-interface';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-crear-alumno',
@@ -21,7 +21,7 @@ export class CrearAlumnoComponent {
 
   tiposTarifa = Object.values(TipoTarifa);
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(private endpointsService: EndpointsService, private router: Router) {}
 
   crearAlumno() {
     const token = localStorage.getItem('token');
@@ -42,6 +42,7 @@ export class CrearAlumnoComponent {
           text: 'Has creado un nuevo alumno',
           icon: 'success',
         });
+        this.router.navigate(['/alumnos']);
       },
       error: (error) => {
         Swal.fire({
