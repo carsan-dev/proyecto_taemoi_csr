@@ -18,7 +18,6 @@ export class CrearAlumnoComponent {
   nuevoAlumno: any = {
     tipoTarifa: null,
   };
-  credenciales: LoginInterface = { email: '', contrasena: '' };
 
   tiposTarifa = Object.values(TipoTarifa);
 
