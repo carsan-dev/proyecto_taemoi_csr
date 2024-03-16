@@ -63,7 +63,7 @@ public class AdminController {
                                             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
             logger.info("## AdminController :: mostrarAlumnos paginados");
-            Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
+            Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
             Page<Alumno> alumnos = alumnoService.obtenerTodosLosAlumnos(pageable);
             if (alumnos.isEmpty()) {
                 throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
