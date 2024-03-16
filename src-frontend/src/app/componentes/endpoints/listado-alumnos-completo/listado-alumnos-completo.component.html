@@ -9,99 +9,218 @@
           <img src="../../../../assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
         </div>
       </div>
-      <div class="row">
-        <div class="col-lg-6 col-md-12 mb-4">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Información Personal</h5>
-              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
-                <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
-                <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
-                <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
-                <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
-                <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
-              </ul>
+      <div *ngIf="!mostrarFormulario">
+        <div *ngFor="let alumno of alumnos">
+          <button class="btn btn-primary mb-3" (click)="alternarFormulario(alumno)">
+            Mostrar menú de edición
+          </button>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información Personal</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
+                  <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
+                  <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
+                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
+                  <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
+                  <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Contacto</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Email: {{ alumno.email }}</li>
+                  <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Pagos</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
+                  <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-        <div class="col-lg-6 col-md-12 mb-4">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Contacto</h5>
-              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                <li class="list-group-item">Email: {{ alumno.email }}</li>
-                <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
-              </ul>
+          <div class="col-lg-6 col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información adicional</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
+                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
+                  <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
+                  <li class="list-group-item">Grado: {{ alumno.grado }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center">
+          <nav aria-label="Page navigation example" class="mt-4">
+            <ul class="pagination">
+              <li class="page-item" [class.disabled]="paginaActual === 1">
+                <a class="page-link" (click)="cambiarPagina(1)" aria-label="First">
+                  <span aria-hidden="true"><i class="bi bi-arrow-left-square-fill fs-6"></i></span>
+                </a>
+              </li>
+              <li class="page-item" [class.disabled]="paginaActual === 1">
+                <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" aria-label="Previous">
+                  <span class="sr-only">Anterior</span>
+                </a>
+              </li>
+              <ng-container *ngIf="totalPaginas <= 5">
+                <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
+                  <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
+                </li>
+              </ng-container>
+              <ng-container *ngIf="totalPaginas > 5">
+                <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
+                  <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
+                </li>
+                <li class="page-item" *ngIf="mostrarPaginas[mostrarPaginas.length - 1] < totalPaginas">
+                  <a class="page-link">...</a>
+                </li>
+              </ng-container>
+              <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" aria-label="Next">
+                  <span class="sr-only">Siguiente</span>
+                </a>
+              </li>
+              <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                <a class="page-link" (click)="cambiarPagina(totalPaginas)" aria-label="Last">
+                  <span aria-hidden="true"><i class="bi bi-arrow-right-square-fill fs-6"></i></span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div *ngIf="mostrarFormulario">
+        <div *ngFor="let alumno of alumnos">
+          <button class="btn btn-primary mb-3" (click)="actualizarAlumno(alumno.id); alternarFormulario(alumno)">
+            Confirmar cambios
+          </button>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información Personal</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="nombre" class="form-label">Nombre: </label>
+                    <input type="text" id="nombre" class="form-control" [(ngModel)]="alumnoEditado.nombre"
+                      name="nombre">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="apellidos" class="form-label">Apellidos: </label>
+                    <input type="text" id="apellidos" class="form-control" [(ngModel)]="alumnoEditado.apellidos"
+                      name="apellidos">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="direccion" class="form-label">Dirección: </label>
+                    <input type="text" id="direccion" class="form-control" [(ngModel)]="alumnoEditado.direccion"
+                      name="direccion">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento: </label>
+                    <input type="date" id="fechaNacimiento" class="form-control"
+                      [(ngModel)]="alumnoEditado.fechaNacimiento" name="fechaNacimiento">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="numeroExpediente" class="form-label">Número de expediente: </label>
+                    <input type="number" id="numeroExpediente" class="form-control"
+                      [(ngModel)]="alumnoEditado.numeroExpediente" name="numeroExpediente">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="nif" class="form-label">DNI del alumno: </label>
+                    <input type="text" id="nif" class="form-control" [(ngModel)]="alumnoEditado.nif" name="nif">
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Contacto</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="email" class="form-label">Email: </label>
+                    <input type="email" id="email" class="form-control" [(ngModel)]="alumnoEditado.email" name="email">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="telefono" class="form-label">Teléfono: </label>
+                    <input type="number" id="telefono" class="form-control" [(ngModel)]="alumnoEditado.telefono"
+                      name="telefono">
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Pagos</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="tipoTarifa" class="form-label">Tipo de tarifa: </label>
+                    <select class="form-control" id="tipoTarifa" name="tipoTarifa"
+                      [(ngModel)]="alumnoEditado.tipoTarifa" required>
+                      <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
+                    </select>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información adicional</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaAlta" class="form-label">Fecha de alta: </label>
+                    <input type="date" id="fechaAlta" class="form-control" [(ngModel)]="alumnoEditado.fechaAlta"
+                      name="fechaAlta">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaBaja" class="form-label">Fecha de baja: </label>
+                    <input type="date" id="fechaBaja" class="form-control" [(ngModel)]="alumnoEditado.fechaBaja"
+                      name="fechaBaja">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="grado" class="form-label">Grado: </label>
+                    <select class="form-control" id="grado" name="grado" [(ngModel)]="alumnoEditado.grado" required>
+                      <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
+                    </select>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="row">
-        <div class="col-lg-6 col-md-12 mb-4">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Pagos</h5>
-              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
-                <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-6 col-md-12">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Información adicional</h5>
-              <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
-                <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
-                <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
-                <li class="list-group-item">Grado: {{ alumno.grado }}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      <nav aria-label="Page navigation example" class="mt-4">
-        <ul class="pagination">
-          <li class="page-item" [class.disabled]="paginaActual === 1">
-            <a class="page-link" (click)="cambiarPagina(1)" aria-label="First">
-              <span aria-hidden="true"><i class="bi bi-arrow-left-square-fill fs-6"></i></span>
-            </a>
-          </li>
-          <li class="page-item" [class.disabled]="paginaActual === 1">
-            <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" aria-label="Previous">
-              <span class="sr-only">Anterior</span>
-            </a>
-          </li>
-          <ng-container *ngIf="totalPaginas <= 5">
-            <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
-              <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
-            </li>
-          </ng-container>
-          <ng-container *ngIf="totalPaginas > 5">
-            <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
-              <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
-            </li>
-            <li class="page-item" *ngIf="mostrarPaginas[mostrarPaginas.length - 1] < totalPaginas">
-              <a class="page-link">...</a>
-            </li>
-          </ng-container>
-          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-            <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" aria-label="Next">
-              <span class="sr-only">Siguiente</span>
-            </a>
-          </li>
-          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-            <a class="page-link" (click)="cambiarPagina(totalPaginas)" aria-label="Last">
-              <span aria-hidden="true"><i class="bi bi-arrow-right-square-fill fs-6"></i></span>
-            </a>
-          </li>
-        </ul>
-      </nav>
     </div>
   </div>
 </div>
