@@ -31,7 +31,7 @@ export class ListadoAlumnosCompletoDTOComponent {
 
     if (token) {
       this.endpointsService
-        .enviarToken(token, this.paginaActual, this.tamanoPagina)
+        .obtenerAlumnos(token, this.paginaActual, this.tamanoPagina)
         .subscribe({
           next: (response) => {
             this.alumnos = response.content;
