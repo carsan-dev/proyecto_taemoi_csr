@@ -56,9 +56,9 @@ export class EliminarAlumnoComponent implements OnInit {
   }
 
   actualizarPaginasMostradas() {
-    //TODO: Mostrar los últimos alumnos sin fallos al pulsar la última página de la paginación
     const paginasAMostrar = 5;
     const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
+
     let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
     let paginaFin = this.paginaActual + mitadDePaginasAMostrar;
 
@@ -70,12 +70,13 @@ export class EliminarAlumnoComponent implements OnInit {
       paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
     }
 
-    this.mostrarPaginas = Array.from(
-      { length: paginaFin - paginaInicio + 1 },
-      (_, i) => paginaInicio + i
-    );
-  }
+    if (paginaFin - paginaInicio < paginasAMostrar - 1) {
+      const diff = paginasAMostrar - (paginaFin - paginaInicio + 1);
+      paginaInicio = Math.max(1, paginaInicio - diff);
+    }
 
+    this.mostrarPaginas = Array.from({ length: paginaFin - paginaInicio + 1 }, (_, i) => paginaInicio + i);
+  }
   eliminarAlumno(id: number) {
     const token = localStorage.getItem('token');
 
