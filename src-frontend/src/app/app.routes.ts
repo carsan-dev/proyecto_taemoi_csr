@@ -6,6 +6,7 @@ import { VistaPrincipalAdminComponent } from './componentes/vistas/vista-princip
 import { ListadoAlumnosCompletoDTOComponent } from './componentes/endpoints/listado-alumnos-completo/listado-alumnos-completo.component';
 import { CrearAlumnoComponent } from './componentes/endpoints/crear-alumno/crear-alumno.component';
 import { EliminarAlumnoComponent } from './componentes/endpoints/eliminar-alumno/eliminar-alumno.component';
+import { EventosComponent } from './componentes/vistas/eventos/eventos.component';
 
 export const routes: Routes = [
   { path: '', component: EscaparatePrincipalComponent },
@@ -13,7 +14,8 @@ export const routes: Routes = [
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
   { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent},
   { path: 'alumnos/crear', component: CrearAlumnoComponent},
-  { path: 'alumnos/eliminar', component: EliminarAlumnoComponent}
+  { path: 'alumnos/eliminar', component: EliminarAlumnoComponent},
+  { path: 'eventos', component: EventosComponent}
 ];
 
 @NgModule({

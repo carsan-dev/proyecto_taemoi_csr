@@ -33,6 +33,10 @@ export class HeaderComponent implements OnInit {
     this.router.navigate(['']);
   }
 
+  irAVistaEventos() {
+    this.router.navigate(['/eventos']);
+  }
+
   irALogin() {
     this.router.navigate(['/login']);
   }
