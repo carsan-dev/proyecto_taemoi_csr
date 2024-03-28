@@ -1,0 +1,22 @@
+.main-content {
+  overflow-x: hidden;
+
+  .carousel {
+    .carousel-inner {
+      max-width: 100%;
+      position: relative;
+      left: 0;
+
+      .carousel-item {
+        img {
+          height: 900px;
+          min-width: 1920px;
+          width: auto;
+          position: relative;
+          left: calc((100% - 1920px) / 2);
+        }
+      }
+    }
+  }
+}
+
