@@ -1,7 +1,7 @@
 .main-content {
   overflow-x: hidden;
 
-  .carousel {
+  .carousel-presentacion {
     .carousel-inner {
       max-width: 100%;
       position: relative;
@@ -17,6 +17,29 @@
         }
       }
     }
+  }
+
+  .logo-presentacion {
+    div {
+      div {
+        img {
+          height: auto;
+          max-width: 250px;
+          width: 100%;
+          margin: 0 auto;
+        }
+
+        .card-body {
+          p {
+            text-wrap: pretty;
+          }
+        }
+      }
+    }
+  }
+
+  .separador {
+    margin: 0 auto;
   }
 }
 
