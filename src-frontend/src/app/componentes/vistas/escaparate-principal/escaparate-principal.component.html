@@ -1,5 +1,5 @@
 <div class="main-content row">
-  <div id="carouselExampleFade" class="carousel slide carousel-fade carousel-presentacion p-0 mb-5" data-bs-ride="carousel">
+  <div id="carouselExampleFade" class="carousel slide carousel-fade carousel-presentacion p-0" data-bs-ride="carousel">
     <div class="carousel-indicators">
       <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"
         aria-current="true" aria-label="Slide 1"></button>
@@ -11,7 +11,7 @@
         aria-label="Slide 4"></button>
     </div>
     <div class="carousel-inner">
-      <div class="carousel-item" *ngFor="let crsitem of imagenes; let i = index" [class.active]="i === 0">
+      <div class="carousel-item" *ngFor="let crsitem of imagenesCarousel; let i = index" [class.active]="i === 0">
         <img [src]="crsitem.imgSrc" class="d-block w-100" [alt]="crsitem.imgAlt">
         <div class="carousel-caption d-block">
           <h5>{{ crsitem.captionTitulo }}</h5>
@@ -28,10 +28,10 @@
       <span class="visually-hidden">Next</span>
     </button>
   </div>
-  <div class="w-50 separador">
+  <div class="w-50 my-5 separador">
     <hr class="hr">
   </div>
-  <div class="d-flex justify-content-center align-items-center my-5 logo-presentacion">
+  <div class="d-flex justify-content-center align-items-center logo-presentacion">
     <div class="col-2">
       <div class="card text-center">
         <img src="assets/media/Logo_escuela.png" alt="" class="card-img-top">
@@ -46,7 +46,15 @@
       </div>
     </div>
   </div>
-  <div class="w-50 separador">
+  <div class="w-50 my-5 separador">
+    <hr class="hr">
+  </div>
+  <div class="container-slider">
+    <div class="container slider">
+      <app-slider-tocable [imagenesSlider]="imagenesSlider"></app-slider-tocable>
+    </div>
+  </div>
+  <div class="w-50 my-5 separador">
     <hr class="hr">
   </div>
 </div>

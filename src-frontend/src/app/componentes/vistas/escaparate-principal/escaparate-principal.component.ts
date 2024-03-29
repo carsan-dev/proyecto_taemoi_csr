@@ -2,17 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import { ImagenInterface } from '../../../interfaces/imagen-interface';
+import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
+import { HammerModule } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-escaparate-principal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SliderTocableComponent, HammerModule],
   templateUrl: './escaparate-principal.component.html',
   styleUrl: './escaparate-principal.component.scss',
 })
 export class EscaparatePrincipalComponent implements OnInit {
   usuarioLogueado: boolean = false;
-  imagenes: ImagenInterface[] = [
+  imagenesCarousel: ImagenInterface[] = [
     {
       imgSrc: 'assets/media/fachada_escuela.webp',
       imgAlt: 'Primera imagen del carrousel de la fachada de la escuela de taekwondo con un cartel que representa el nombre de la escuela y otro en el que se muestran los valores que se instruyen.',
@@ -36,6 +38,29 @@ export class EscaparatePrincipalComponent implements OnInit {
       imgAlt: 'Cuarta imagen del carrousel con la zona de la escuela de taekwondo donde están las distintas máquinas para hacer ejercicios.',
       captionTitulo: 'Y por si fuera poco...',
       captionTexto: 'Experimenta el poder del equipo de calidad diseñado para desafiar tus límites y fortalecer tu cuerpo y mente.',
+    },
+  ];
+
+  imagenesSlider = [
+    {
+      imgSrc: 'assets/media/rojo.jpg',
+      imgAlt: 'Foto roja.',
+    },
+    {
+      imgSrc: 'assets/media/verde.avif',
+      imgAlt: 'Foto verde.',
+    },
+    {
+      imgSrc: 'assets/media/azul.jpg',
+      imgAlt: 'Foto azul.',
+    },
+    {
+      imgSrc: 'assets/media/morado.jpg',
+      imgAlt: 'Foto morada.',
+    },
+    {
+      imgSrc: 'assets/media/naranja.jpg',
+      imgAlt: 'Foto naranja.',
     },
   ];
 

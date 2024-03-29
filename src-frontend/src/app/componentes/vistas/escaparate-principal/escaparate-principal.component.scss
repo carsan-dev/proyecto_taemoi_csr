@@ -1,5 +1,5 @@
 .main-content {
-  overflow-x: hidden;
+  overflow: hidden;
 
   .carousel-presentacion {
     .carousel-inner {
@@ -40,6 +40,20 @@
 
   .separador {
     margin: 0 auto;
+  }
+
+  .container-slider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+
+
+
+    .slider {
+      width: 600px;
+      height: 400px;
+    }
   }
 }
 
