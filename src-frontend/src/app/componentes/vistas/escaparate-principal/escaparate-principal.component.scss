@@ -48,12 +48,53 @@
     justify-content: center;
     height: 400px;
 
-
-
     .slider {
       width: 800px;
       height: 400px;
     }
   }
-}
 
+  .banner-informativo-uno {
+    position: relative;
+    width: 100%;
+    height: 90vh;
+    background-image: url('../../../../assets/media/pablo_competicion.webp');
+    background-size: cover;
+    background-attachment: fixed;
+    z-index: 99;
+
+    .banner-content {
+      position: absolute;
+      top: 25%;
+      left: 10%;
+      text-align: center;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.4);
+      width: 30%;
+      height: 50%;
+      border-radius: 13px;
+    }
+  }
+
+  .banner-informativo-dos {
+    position: relative;
+    width: 100%;
+    height: 90vh;
+    background-image: url('../../../../assets/media/rafa_competicion.webp');
+    background-size: cover;
+    background-attachment: fixed;
+    z-index: 99;
+
+    .banner-content {
+      position: absolute;
+      top: 25%;
+      right: 10%;
+      text-align: center;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.4);
+      width: 30%;
+      height: 50%;
+      border-radius: 13px;
+    }
+  }
+}
