@@ -37,6 +37,10 @@ export class HeaderComponent implements OnInit {
     this.router.navigate(['/eventos']);
   }
 
+  irAVistaContacto() {
+    this.router.navigate(['/contacto']);
+  }
+
   irALogin() {
     this.router.navigate(['/login']);
   }
