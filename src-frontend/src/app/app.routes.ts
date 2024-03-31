@@ -7,6 +7,7 @@ import { ListadoAlumnosCompletoDTOComponent } from './componentes/endpoints/list
 import { CrearAlumnoComponent } from './componentes/endpoints/crear-alumno/crear-alumno.component';
 import { EliminarAlumnoComponent } from './componentes/endpoints/eliminar-alumno/eliminar-alumno.component';
 import { EventosComponent } from './componentes/vistas/eventos/eventos.component';
+import { ContactoComponent } from './componentes/vistas/contacto/contacto.component';
 
 export const routes: Routes = [
   { path: '', component: EscaparatePrincipalComponent },
@@ -15,7 +16,8 @@ export const routes: Routes = [
   { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent},
   { path: 'alumnos/crear', component: CrearAlumnoComponent},
   { path: 'alumnos/eliminar', component: EliminarAlumnoComponent},
-  { path: 'eventos', component: EventosComponent}
+  { path: 'eventos', component: EventosComponent},
+  { path: 'contacto', component: ContactoComponent},
 ];
 
 @NgModule({
