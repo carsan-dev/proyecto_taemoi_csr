@@ -5,6 +5,7 @@ import { ImagenInterface } from '../../../interfaces/imagen-interface';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -70,12 +71,16 @@ export class EscaparatePrincipalComponent implements OnInit {
     },
   ];
 
-  constructor(private authService: AuthenticationService) {}
+  constructor(private authService: AuthenticationService, private router: Router) {}
 
   ngOnInit(): void {
     this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
     });
+  }
+
+  irAVistaContacto() {
+    this.router.navigate(['/contacto']);
   }
 }
