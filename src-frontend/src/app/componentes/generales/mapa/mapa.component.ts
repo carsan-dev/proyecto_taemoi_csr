@@ -28,7 +28,7 @@ export class MapaComponent implements AfterViewInit {
           const marker = L.marker(this.localizacionConcreta).addTo(this.map);
           marker.bindPopup('<b>Ubicación:</b><br>C. Parada de la Cigüeña, 34a, 41806 Umbrete, Sevilla').openPopup();
 
-        }, 2000);
+        }, 1000);
       });
     }
   }
