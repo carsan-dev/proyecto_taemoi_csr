@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { ImagenInterface } from '../../../interfaces/imagen-interface';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { HammerModule } from '@angular/platform-browser';
+import { MapaComponent } from '../../generales/mapa/mapa.component';
 
 @Component({
   selector: 'app-escaparate-principal',
   standalone: true,
-  imports: [CommonModule, SliderTocableComponent, HammerModule],
+  imports: [CommonModule, SliderTocableComponent, HammerModule, MapaComponent],
   templateUrl: './escaparate-principal.component.html',
   styleUrl: './escaparate-principal.component.scss',
 })
