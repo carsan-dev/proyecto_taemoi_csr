@@ -2,12 +2,11 @@
   position: absolute;
   top: 25%;
   left: 10%;
-  text-align: center;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.4);
   width: 30%;
   height: 50%;
   border-radius: 13px;
+  backdrop-filter: blur(4px);
 
   #map {
     height: 80%;
