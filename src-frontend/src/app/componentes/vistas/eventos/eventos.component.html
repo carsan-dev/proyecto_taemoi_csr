@@ -1,8 +1,24 @@
-<div>
-  <h2>Lista de Eventos</h2>
-  <ul>
-    <li *ngFor="let evento of eventos">
-      {{ evento.nombre }} - {{ evento.fecha }}
-    </li>
-  </ul>
+<div class="d-flex justify-content-center align-items-center eventos-presentacion my-5">
+  <div class="col-8">
+    <div class="card text-center" *ngFor="let evento of eventos">
+      <div class="card-body">
+        <h2 class="card-title h3 text-decoration-underline mb-4">Eventos próximos</h2>
+        <div class="row">
+          <div class="col-md-6 eventoImagenContainer">
+            <img *ngIf="evento.imagenUrl" [src]="evento.imagenUrl" [alt]="evento.descripcion"
+              class="">
+          </div>
+          <div class="col-md-6 eventoContenidoContainer d-flex flex-column align-items-center justify-content-center">
+            <div class="evento-item">
+              <div class="evento-info">
+                <h3>{{ evento.titulo }}</h3>
+                <p>Fecha: {{ evento.fecha }}</p>
+                <p *ngIf="evento.descripcion">{{ evento.descripcion }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

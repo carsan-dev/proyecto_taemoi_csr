@@ -1,5 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { EventosInteface } from '../../../interfaces/eventos-inteface';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
+import { EventosService } from '../../../servicios/generales/eventos.service';
 
 @Component({
   selector: 'app-eventos',
@@ -8,11 +11,18 @@ import { Component } from '@angular/core';
   templateUrl: './eventos.component.html',
   styleUrl: './eventos.component.scss'
 })
-export class EventosComponent {
-  eventos = [
-    { nombre: 'Conferencia Angular', fecha: '2024-04-10' },
-    { nombre: 'Taller de Desarrollo Web', fecha: '2024-04-15' },
-    { nombre: 'Reunión de Networking', fecha: '2024-04-20' }
-    // Puedes añadir más eventos aquí según sea necesario
-  ];
+export class EventosComponent implements OnInit {
+  eventos: EventosInteface[] = [];
+  usuarioLogueado: boolean = false;
+
+  constructor(private authService: AuthenticationService, private eventosService: EventosService) { }
+
+  ngOnInit(): void {
+    this.usuarioLogueado = this.authService.comprobarLogueado();
+    this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
+      this.usuarioLogueado = estado;
+    });
+    this.eventos = this.eventosService.obtenerEventos();
+  }
+
 }
