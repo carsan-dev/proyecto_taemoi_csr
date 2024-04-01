@@ -28,20 +28,26 @@
       <span class="visually-hidden">Next</span>
     </button>
   </div>
-  <div class="w-50 my-5 separador">
-    <hr class="hr">
-  </div>
-  <div class="d-flex justify-content-center align-items-center logo-presentacion">
-    <div class="col-2">
+  <div class="d-flex justify-content-center align-items-center eventos-presentacion">
+    <div class="col-8">
       <div class="card text-center">
-        <img src="assets/media/Logo_escuela.png" alt="" class="card-img-top">
         <div class="card-body">
-          <h5 class="card-title">TaeMoi</h5>
-          <p class="card-text">
-            TaeMoi es una aplicación web desarrollada por Carlos Sanchez Roman para facilitar el acceso a los cursos
-            de
-            TaeMoi.
-          </p>
+          <h2 class="card-title h3 text-decoration-underline mb-4">Eventos próximos</h2>
+          <div class="row">
+            <div class="col-md-6 eventoImagenContainer">
+              <img *ngIf="eventoActual?.imagenUrl" [src]="eventoActual?.imagenUrl" [alt]="eventoActual?.descripcion"
+                class="">
+            </div>
+            <div class="col-md-6 eventoContenidoContainer d-flex flex-column align-items-center justify-content-center">
+              <div class="evento-item">
+                <div class="evento-info">
+                  <h3>{{ eventoActual?.titulo }}</h3>
+                  <p>Fecha: {{ eventoActual?.fecha }}</p>
+                  <button type="button" class="btn btn-dark" (click)="irAVistaEventos()" *ngIf="eventoActual?.descripcion">{{ eventoActual?.descripcion }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -73,7 +79,7 @@
       <p class="mb-3 h5 text-light">
         ¡Ven y prueba una clase
         gratuita! <a (click)="irAVistaContacto()" class="link-light links">Contáctanos
-        para más información.</a>
+          para más información.</a>
       </p>
     </div>
   </div>
