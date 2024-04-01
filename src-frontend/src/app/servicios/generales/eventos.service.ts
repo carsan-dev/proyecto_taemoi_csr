@@ -6,9 +6,7 @@ import { EventosInteface } from '../../interfaces/eventos-inteface';
 })
 export class EventosService {
   eventos: EventosInteface[] = [
-    { titulo: 'Conferencia Angular', fecha: '2024-04-10', imagenUrl: '', descripcion: ''},
-    { titulo: 'Taller de Desarrollo Web', fecha: '2024-04-15', imagenUrl: '', descripcion: ''},
-    { titulo: 'Reunión de Networking', fecha: '2024-04-20', imagenUrl: '', descripcion: ''}
+    { titulo: 'Campeonato de Andalucía Cadete', fecha: '27 de Abril de 2024', imagenUrl: 'assets/media/campeonato_andalucia_cadete.webp', descripcion: 'Pulsar aquí para más información'},
   ];
 
   constructor() { }
