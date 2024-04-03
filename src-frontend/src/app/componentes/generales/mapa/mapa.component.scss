@@ -14,3 +14,12 @@
     border-bottom-right-radius: 13px;
   }
 }
+
+@media (max-width: 576px) {
+  .mapaContainer {
+    top: 5%;
+    right: 50%;
+    width: 80%;
+    height: 35%;
+  }
+}

@@ -112,3 +112,31 @@
     }
   }
 }
+
+@media (max-width: 576px) {
+  .banner-informativo-uno {
+    .banner-content {
+      height: 60% !important;
+
+      h1 {
+        margin-top: 50px !important;
+      }
+
+      p {
+        margin-top: 40px !important;
+      }
+
+      div {
+        margin-top: 50px !important;
+      }
+    }
+  }
+
+  .banner-informativo-dos {
+    .banner-content {
+      width: 80% !important;
+      top: 45% !important;
+      right: 50%;
+    }
+  }
+}
