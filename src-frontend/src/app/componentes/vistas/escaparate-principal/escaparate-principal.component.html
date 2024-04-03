@@ -35,13 +35,12 @@
           <h2 class="card-title h3 text-decoration-underline mb-4">Eventos próximos</h2>
           <div class="row">
             <div class="col-md-6 eventoImagenContainer">
-              <img *ngIf="eventoActual?.imagenUrl" [src]="eventoActual?.imagenUrl" [alt]="eventoActual?.descripcion"
-                class="">
+              <img *ngIf="eventoActual?.imagenUrl" [src]="eventoActual?.imagenUrl" [alt]="eventoActual?.descripcion">
             </div>
             <div class="col-md-6 eventoContenidoContainer d-flex flex-column align-items-center justify-content-center">
               <div class="evento-item">
-                <div class="evento-info">
-                  <h3>{{ eventoActual?.titulo }}</h3>
+                <div class="evento-info mb-3">
+                  <h3 class="h3">{{ eventoActual?.titulo }}</h3>
                   <p>Fecha: {{ eventoActual?.fecha }}</p>
                   <button type="button" class="btn btn-dark" (click)="irAVistaEventos()">Pulsar aquí para más información</button>
                 </div>
