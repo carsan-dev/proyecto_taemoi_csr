@@ -9,7 +9,7 @@ export class WhatsAppService {
 
   enviarMensaje(mensaje: string, numeroDestino: string) {
     const textoMensaje = encodeURIComponent(mensaje);
-    const url = `https://api.whatsapp.com/send?phone=${numeroDestino}&text=${textoMensaje}`;
+    const url = `whatsapp://send?text=${textoMensaje}&phone=${numeroDestino}`;
     window.open(url, '_blank');
   }
 }
