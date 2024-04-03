@@ -20,7 +20,7 @@ export class ContactoComponent {
   enviarWhatsApp() {
     const numeroWhatsApp = '625752354';
     const nombreCompleto = `${this.nombre} ${this.apellidos}`;
-    const mensajeCompleto = `Nombre y apellidos: ${nombreCompleto}\nAsunto: ${this.asunto}\nCuerpo del mensaje: ${this.mensaje}`;
+    const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nAsunto: ${this.asunto}\nCuerpo del mensaje: ${this.mensaje}`;
     this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp);
   }
 }
