@@ -1,1 +1,29 @@
-<h1 class="h1">VISTA CONTACTO</h1>
+<div class="container">
+  <form>
+    <div class="row mb-3">
+      <div class="col">
+        <label for="nombre" class="form-label">Nombre:</label>
+        <input type="text" [(ngModel)]="nombre" name="nombre" id="nombre" class="form-control">
+      </div>
+      <div class="col">
+        <label for="apellidos" class="form-label">Apellidos:</label>
+        <input type="text" [(ngModel)]="apellidos" name="apellidos" id="apellidos" class="form-control">
+      </div>
+    </div>
+    <div class="mb-3">
+      <label for="asunto" class="form-label">Asunto:</label>
+      <select [(ngModel)]="asunto" name="asunto" id="asunto" class="form-select">
+        <option value="" disabled selected>Selecciona un asunto</option>
+        <option value="Inscripción">Inscripción</option>
+        <option value="Consulta de horarios">Consulta de horarios</option>
+        <option value="Información sobre clases">Información sobre clases</option>
+        <option value="Otros">Otros motivos</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
+      <textarea [(ngModel)]="mensaje" name="mensaje" id="mensaje" class="form-control"></textarea>
+    </div>
+    <button type="button" (click)="enviarWhatsApp()" class="btn btn-primary">Enviar por WhatsApp</button>
+  </form>
+</div>
