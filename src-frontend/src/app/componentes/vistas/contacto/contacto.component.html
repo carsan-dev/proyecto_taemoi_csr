@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container my-5">
   <form>
     <div class="row mb-3">
       <div class="col">
@@ -24,6 +24,6 @@
       <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
       <textarea [(ngModel)]="mensaje" name="mensaje" id="mensaje" class="form-control"></textarea>
     </div>
-    <button type="button" (click)="enviarWhatsApp()" class="btn btn-primary">Enviar por WhatsApp</button>
+    <button type="button" (click)="enviarWhatsApp()" class="btn btn-primary">Enviar <i class="bi bi-whatsapp"></i></button>
   </form>
 </div>
