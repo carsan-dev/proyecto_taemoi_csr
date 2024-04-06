@@ -65,6 +65,8 @@ public class Alumno {
 
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
+	
+	private byte[] fotoAlumno;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "categoria_id")
@@ -81,9 +83,6 @@ public class Alumno {
 
 	@OneToMany(mappedBy = "alumno")
 	private List<Pago> pagos;
-
-	@OneToMany(mappedBy = "alumno")
-	private List<FotoAlumno> fotos;
 
 	public Long getId() {
 		return id;
@@ -123,14 +122,6 @@ public class Alumno {
 
 	public void setPagos(List<Pago> pagos) {
 		this.pagos = pagos;
-	}
-
-	public List<FotoAlumno> getFotos() {
-		return fotos;
-	}
-
-	public void setFotos(List<FotoAlumno> fotos) {
-		this.fotos = fotos;
 	}
 
 	public TipoTarifa getTipoTarifa() {
@@ -228,4 +219,14 @@ public class Alumno {
 	public void setFechaBaja(Date fechaBaja) {
 		this.fechaBaja = fechaBaja;
 	}
+
+	public byte[] getFotoAlumno() {
+		return fotoAlumno;
+	}
+
+	public void setFotoAlumno(byte[] fotoAlumno) {
+		this.fotoAlumno = fotoAlumno;
+	}
+	
+	
 }
