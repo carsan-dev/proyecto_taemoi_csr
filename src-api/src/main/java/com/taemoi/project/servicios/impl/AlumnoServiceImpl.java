@@ -391,6 +391,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
-				alumno.getFechaBaja(), categoriaNombre, gradoTipo);
+				alumno.getFechaBaja(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
 	}
 }
