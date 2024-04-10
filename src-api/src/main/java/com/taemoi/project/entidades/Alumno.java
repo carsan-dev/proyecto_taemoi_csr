@@ -66,7 +66,7 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
 	
-	private byte[] fotoAlumno;
+	private String fotoAlumno;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "categoria_id")
@@ -220,13 +220,11 @@ public class Alumno {
 		this.fechaBaja = fechaBaja;
 	}
 
-	public byte[] getFotoAlumno() {
+	public String getFotoAlumno() {
 		return fotoAlumno;
 	}
 
-	public void setFotoAlumno(byte[] fotoAlumno) {
+	public void setFotoAlumno(String fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
 	}
-	
-	
 }
