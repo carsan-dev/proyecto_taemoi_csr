@@ -82,7 +82,7 @@ class AlumnoControllerTest {
 		when(alumnoRepository.findByNif(null)).thenReturn(Optional.empty());
 		when(alumnoService.crearAlumno(any())).thenReturn(new Alumno());
 
-		ResponseEntity<AlumnoDTO> result = alumnoController.crearAlumno(nuevoAlumnoDTO);
+		ResponseEntity<AlumnoDTO> result = alumnoController.crearAlumno(nuevoAlumnoDTO, null);
 
 		assertEquals(HttpStatus.CREATED, result.getStatusCode());
 	}
