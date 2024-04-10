@@ -21,6 +21,7 @@ public class AlumnoDTO {
 	private Date fechaBaja;
 	private String categoria;
 	private String grado;
+	private String fotoAlumno;
 
 	public AlumnoDTO() {
 		this.id = null;
@@ -29,7 +30,7 @@ public class AlumnoDTO {
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, String numeroExpediente, String nif,
 			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
-			Date fechaAlta, Date fechaBaja, String categoria, String grado) {
+			Date fechaAlta, Date fechaBaja, String categoria, String grado, String fotoAlumno) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -45,6 +46,7 @@ public class AlumnoDTO {
 		this.fechaBaja = fechaBaja;
 		this.categoria = categoria;
 		this.grado = grado;
+		this.fotoAlumno = fotoAlumno;
 	}
 	
 	public Long getId() {
@@ -139,6 +141,14 @@ public class AlumnoDTO {
 		this.grado = grado;
 	}
 
+	public String getFotoAlumno() {
+		return fotoAlumno;
+	}
+
+	public void setFotoAlumno(String fotoAlumno) {
+		this.fotoAlumno = fotoAlumno;
+	}
+
 	public String getNumeroExpediente() {
 		return numeroExpediente;
 	}
@@ -187,6 +197,6 @@ public class AlumnoDTO {
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				telefono, alumno.getCuantiaTarifa(), alumno.getTipoTarifa(),
-				alumno.getFechaAlta(), alumno.getFechaBaja(), categoriaNombre, gradoTipo);
+				alumno.getFechaAlta(), alumno.getFechaBaja(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
 	}
 }
