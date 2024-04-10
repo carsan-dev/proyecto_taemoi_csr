@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,7 +24,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
@@ -37,13 +41,15 @@ import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
+import com.taemoi.project.servicios.FicheroService;
 
 import jakarta.validation.Valid;
 
 /**
- * Controlador REST que gestiona las operaciones relacionadas con los alumnos en el sistema.
- * Proporciona endpoints para recuperar, crear, actualizar y eliminar información de los alumnos.
- * Se requiere que el usuario tenga el rol ROLE_USER o ROLE_ADMIN para acceder a estos endpoints.
+ * Controlador REST que gestiona las operaciones relacionadas con los alumnos en
+ * el sistema. Proporciona endpoints para recuperar, crear, actualizar y
+ * eliminar información de los alumnos. Se requiere que el usuario tenga el rol
+ * ROLE_USER o ROLE_ADMIN para acceder a estos endpoints.
  */
 @RestController
 @RequestMapping("/api/alumnos")
@@ -51,34 +57,38 @@ public class AlumnoController {
 	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
 	/**
-     * Inyección del servicio de alumno.
-     */
+	 * Inyección del servicio de alumno.
+	 */
 	@Autowired
 	AlumnoService alumnoService;
 
 	/**
-     * Inyección del repositorio de alumno.
-     */
+	 * Inyección del repositorio de alumno.
+	 */
 	@Autowired
 	AlumnoRepository alumnoRepository;
 
 	/**
-     * Inyección del repositorio de grado.
-     */
+	 * Inyección del repositorio de grado.
+	 */
 	@Autowired
 	private GradoRepository gradoRepository;
+	
+	@Autowired
+	private FicheroService ficheroService;
 
-    /**
-     * Obtiene una lista de alumnos paginada o filtrada según los parámetros proporcionados.
-     *
-     * @param page        Número de página para paginación (opcional).
-     * @param size        Tamaño de la página para paginación (opcional).
-     * @param nombre      Nombre del alumno para filtrar (opcional).
-     * @param gradoId     ID del grado del alumno para filtrar (opcional).
-     * @param categoriaId ID de la categoría del alumno para filtrar (opcional).
-     * @return ResponseEntity que contiene una lista paginada o filtrada de alumnos.
-     * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
-     */
+	/**
+	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
+	 * proporcionados.
+	 *
+	 * @param page        Número de página para paginación (opcional).
+	 * @param size        Tamaño de la página para paginación (opcional).
+	 * @param nombre      Nombre del alumno para filtrar (opcional).
+	 * @param gradoId     ID del grado del alumno para filtrar (opcional).
+	 * @param categoriaId ID de la categoría del alumno para filtrar (opcional).
+	 * @return ResponseEntity que contiene una lista paginada o filtrada de alumnos.
+	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
+	 */
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
@@ -137,13 +147,14 @@ public class AlumnoController {
 		}
 	}
 
-    /**
-     * Obtiene un alumno por su ID.
-     *
-     * @param id ID del alumno.
-     * @return ResponseEntity que contiene el alumno encontrado.
-     * @throws AlumnoNoEncontradoException si no se encuentra ningún alumno con el ID especificado.
-     */
+	/**
+	 * Obtiene un alumno por su ID.
+	 *
+	 * @param id ID del alumno.
+	 * @return ResponseEntity que contiene el alumno encontrado.
+	 * @throws AlumnoNoEncontradoException si no se encuentra ningún alumno con el
+	 *                                     ID especificado.
+	 */
 	@GetMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable Long id) {
@@ -153,18 +164,85 @@ public class AlumnoController {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 
-    /**
-     * Crea un nuevo alumno.
-     *
-     * @param nuevoAlumnoDTO Datos del nuevo alumno a crear.
-     * @return ResponseEntity que contiene el alumno creado.
-     * @throws FechaNacimientoInvalidaException si la fecha de nacimiento proporcionada es inválida.
-     * @throws DatosAlumnoInvalidosException    si los datos del alumno son inválidos.
-     * @throws AlumnoDuplicadoException         si ya existe un alumno con el mismo NIF.
-     */
-	@PostMapping
+	/**
+	 * Crea un nuevo alumno.
+	 *
+	 * @param nuevoAlumnoDTO Datos del nuevo alumno a crear.
+	 * @return ResponseEntity que contiene el alumno creado.
+	 * @throws FechaNacimientoInvalidaException si la fecha de nacimiento
+	 *                                          proporcionada es inválida.
+	 * @throws DatosAlumnoInvalidosException    si los datos del alumno son
+	 *                                          inválidos.
+	 * @throws AlumnoDuplicadoException         si ya existe un alumno con el mismo
+	 *                                          NIF.
+	 * 
+	 * @PostMapping @PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	 *              public ResponseEntity<AlumnoDTO> crearAlumno(@Valid @RequestBody
+	 *              AlumnoDTO nuevoAlumnoDTO) { logger.info("## AlumnoController ::
+	 *              añadirAlumno");
+	 * 
+	 *              if
+	 *              (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento()))
+	 *              { throw new FechaNacimientoInvalidaException("La fecha de
+	 *              nacimiento es inválida."); }
+	 * 
+	 *              if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) { throw
+	 *              new DatosAlumnoInvalidosException("Los datos del alumno a crear
+	 *              son inválidos."); }
+	 * 
+	 *              int edad =
+	 *              alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
+	 * 
+	 *              Categoria categoria =
+	 *              alumnoService.asignarCategoriaSegunEdad(edad); Grado grado =
+	 *              alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
+	 * 
+	 *              Grado gradoGuardado =
+	 *              gradoRepository.findByTipoGrado(grado.getTipoGrado()); if
+	 *              (gradoGuardado == null) { gradoGuardado =
+	 *              gradoRepository.save(grado); }
+	 * 
+	 *              Optional<Alumno> alumnoExistente =
+	 *              alumnoRepository.findByNif(nuevoAlumnoDTO.getNif()); if
+	 *              (alumnoExistente.isPresent()) { throw new
+	 *              AlumnoDuplicadoException("El alumno con NIF " +
+	 *              nuevoAlumnoDTO.getNif() + " ya existe."); }
+	 * 
+	 *              Alumno nuevoAlumno = new Alumno();
+	 *              nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
+	 *              nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
+	 *              nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
+	 *              nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
+	 *              nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
+	 *              nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
+	 *              nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
+	 *              nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
+	 *              nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+	 *              nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	 *              nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
+	 *              nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
+	 *              nuevoAlumno.setCategoria(categoria);
+	 *              nuevoAlumno.setGrado(grado);
+	 * 
+	 *              Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
+	 * 
+	 *              AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado); return new
+	 *              ResponseEntity<>(creadoDTO, HttpStatus.CREATED); }
+	 */
+	@PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<AlumnoDTO> crearAlumno(@Valid @RequestBody AlumnoDTO nuevoAlumnoDTO) {
+	public ResponseEntity<AlumnoDTO> crearAlumno(@Valid @RequestPart("nuevo") AlumnoDTO nuevoAlumnoDTO,
+			@RequestPart("file") MultipartFile file) {
+		
+		String urlFotoAlumno = null;
+		
+		if (!file.isEmpty()) {
+			String foto = ficheroService.store(file);
+			urlFotoAlumno = MvcUriComponentsBuilder
+								.fromMethodName(FicherosController.class, "serveFile", foto, null)
+								.build().toUriString();
+		}
+		
 		logger.info("## AlumnoController :: añadirAlumno");
 
 		if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
@@ -205,6 +283,7 @@ public class AlumnoController {
 		nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
 		nuevoAlumno.setCategoria(categoria);
 		nuevoAlumno.setGrado(grado);
+		nuevoAlumno.setFotoAlumno(urlFotoAlumno);
 
 		Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
 
@@ -212,15 +291,17 @@ public class AlumnoController {
 		return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
 	}
 
-    /**
-     * Actualiza la información de un alumno existente.
-     *
-     * @param id               ID del alumno a actualizar.
-     * @param alumnoActualizado Datos actualizados del alumno.
-     * @return ResponseEntity que contiene el alumno actualizado.
-     * @throws FechaNacimientoInvalidaException si la fecha de nacimiento proporcionada es inválida.
-     * @throws DatosAlumnoInvalidosException    si los datos del alumno actualizado son inválidos.
-     */
+	/**
+	 * Actualiza la información de un alumno existente.
+	 *
+	 * @param id                ID del alumno a actualizar.
+	 * @param alumnoActualizado Datos actualizados del alumno.
+	 * @return ResponseEntity que contiene el alumno actualizado.
+	 * @throws FechaNacimientoInvalidaException si la fecha de nacimiento
+	 *                                          proporcionada es inválida.
+	 * @throws DatosAlumnoInvalidosException    si los datos del alumno actualizado
+	 *                                          son inválidos.
+	 */
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<AlumnoDTO> actualizarAlumno(@PathVariable Long id,
@@ -241,12 +322,12 @@ public class AlumnoController {
 		return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 	}
 
-    /**
-     * Elimina un alumno existente.
-     *
-     * @param id ID del alumno a eliminar.
-     * @return ResponseEntity con el estado de la operación.
-     */
+	/**
+	 * Elimina un alumno existente.
+	 *
+	 * @param id ID del alumno a eliminar.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<Void> eliminarAlumno(@Valid @PathVariable Long id) {
