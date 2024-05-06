@@ -10,14 +10,15 @@ import { EventosComponent } from './componentes/vistas/eventos/eventos.component
 import { ContactoComponent } from './componentes/vistas/contacto/contacto.component';
 
 export const routes: Routes = [
-  { path: '', component: EscaparatePrincipalComponent },
+  { path: 'inicio', component: EscaparatePrincipalComponent },
   { path: 'login', component: VistaLoginComponent },
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
   { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent},
   { path: 'alumnos/crear', component: CrearAlumnoComponent},
   { path: 'alumnos/eliminar', component: EliminarAlumnoComponent},
-  { path: 'eventos', component: EventosComponent},
+  { path: 'logros', component: EventosComponent},
   { path: 'contacto', component: ContactoComponent},
+  { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
 @NgModule({
