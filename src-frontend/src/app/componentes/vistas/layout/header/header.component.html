@@ -9,24 +9,29 @@
         <div class="navbar-izq">
           <ul class="navbar-nav d-flex flex-row align-items-center justify-content-start">
             <li class="nav-item me-3">
-              <a class="navbar-brand mb-0" (click)="irAVistaPrincipal()">
+              <a class="navbar-brand mb-0" (click)="irARuta('/inicio')">
                 <img src="assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
               </a>
             </li>
-            <li class="nav-item me-3" routerLinkActive="active">
-              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/inicio">Inicio</a>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
+                (click)="irARuta('/inicio')">Inicio</a>
             </li>
-            <li class="nav-item me-3" routerLinkActive="active">
-              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/el-taekwondo">El taekwondo</a>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/el-taekwondo']" routerLinkActive="active"
+                (click)="irARuta('/inicio')">El taekwondo</a>
             </li>
-            <li class="nav-item me-3" routerLinkActive="active">
-              <a class="nav-link text-black fw-bold" (click)="irAVistaEventos()" routerLink="/logros">Logros</a>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/logros']" routerLinkActive="active"
+                (click)="irARuta('/logros')">Logros</a>
             </li>
-            <li class="nav-item me-3" routerLinkActive="active">
-              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/horarios">Horarios</a>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
+                (click)="irARuta('/inicio')">Horarios</a>
             </li>
-            <li class="nav-item me-3" routerLinkActive="active">
-              <a class="nav-link text-black fw-bold" (click)="irAVistaContacto()" routerLink="/contacto">Contacto</a>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
+                (click)="irARuta('/contacto')">Contacto</a>
             </li>
           </ul>
         </div>
@@ -39,13 +44,15 @@
               </label>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i class="bi bi-facebook fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i
+                  class="bi bi-facebook fs-4"></i></a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i class="bi bi-instagram fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i
+                  class="bi bi-instagram fs-4"></i></a>
             </li>
             <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="irALogin()"><i class="bi bi-person-fill fs-3"></i></a>
+              <a class="nav-link p-0 text-black" (click)="irARuta('/login')"><i class="bi bi-person-fill fs-3"></i></a>
             </li>
           </ul>
           <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end" *ngIf="usuarioLogueado">
@@ -56,10 +63,12 @@
               </label>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i class="bi bi-facebook fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i
+                  class="bi bi-facebook fs-4"></i></a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i class="bi bi-instagram fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i
+                  class="bi bi-instagram fs-4"></i></a>
             </li>
             <li class="nav-item">
               <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>

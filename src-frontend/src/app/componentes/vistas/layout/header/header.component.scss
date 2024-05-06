@@ -10,6 +10,11 @@ header {
 
     .nav-item {
       cursor: pointer;
+
+      .nav-link.active {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
     }
   }
 
@@ -49,15 +54,15 @@ header {
       }
     }
 
-    input:checked + .slider {
+    input:checked+.slider {
       background-color: #2196F3;
     }
 
-    input:focus + .slider {
+    input:focus+.slider {
       box-shadow: 0 0 1px #2196F3;
     }
 
-    input:checked + .slider:before {
+    input:checked+.slider:before {
       transform: translateX(26px);
     }
   }

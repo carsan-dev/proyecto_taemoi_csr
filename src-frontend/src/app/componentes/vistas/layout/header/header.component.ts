@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
@@ -25,20 +25,8 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  irAVistaPrincipal() {
-    this.router.navigate(['/inicio']);
-  }
-
-  irAVistaEventos() {
-    this.router.navigate(['/logros']);
-  }
-
-  irAVistaContacto() {
-    this.router.navigate(['/contacto']);
-  }
-
-  irALogin() {
-    this.router.navigate(['/login']);
+  irARuta(ruta: string) {
+    this.router.navigate([ruta]);
   }
 
   cerrarSesion() {
