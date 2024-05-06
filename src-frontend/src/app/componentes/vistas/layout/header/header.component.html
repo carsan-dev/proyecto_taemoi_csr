@@ -1,59 +1,71 @@
 <header>
-  <div class="d-flex justify-content-center align-items-center">
-    <a class="navbar-brand mb-0" (click)="irAVistaPrincipal()">
-      <img src="assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
-    </a>
-  </div>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light p-0">
-    <div class="container-fluid p-3 d-flex justify-content-center">
+  <nav class="navbar navbar-expand-lg navbar-light p-0">
+    <div class="container-fluid p-3">
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-        <ul class="navbar-nav" *ngIf="!usuarioLogueado">
-          <li class="nav-item me-3">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Página Principal</a>
-          </li>
-          <li class="nav-item me-3">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Información Pública</a>
-          </li>
-          <li class="nav-item me-3">
-            <a class="nav-link" (click)="irAVistaEventos()">Eventos</a>
-          </li>
-          <li class="nav-item me-3">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Horarios</a>
-          </li>
-          <li class="nav-item me-3">
-            <a class="nav-link" (click)="irAVistaContacto()">Contacto</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-2 p-0" (click)="irALogin()"><i class="bi bi-door-open-fill fs-4"></i></a>
-          </li>
-        </ul>
-        <ul class="navbar-nav" *ngIf="usuarioLogueado">
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Página Principal</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaAdmin()">Gestionar Alumnos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Información Pública</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaEventos()">Eventos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Horarios</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" (click)="irAVistaPrincipal()">Contacto</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-2 p-0" (click)="cerrarSesion()"><i class="bi bi-door-closed-fill fs-4"></i></a>
-          </li>
-        </ul>
+      <div class="navbar-collapse justify-content-around" id="navbarNav">
+        <div class="navbar-izq">
+          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-start">
+            <li class="nav-item me-3">
+              <a class="navbar-brand mb-0" (click)="irAVistaPrincipal()">
+                <img src="assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
+              </a>
+            </li>
+            <li class="nav-item me-3" routerLinkActive="active">
+              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/inicio">Inicio</a>
+            </li>
+            <li class="nav-item me-3" routerLinkActive="active">
+              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/el-taekwondo">El taekwondo</a>
+            </li>
+            <li class="nav-item me-3" routerLinkActive="active">
+              <a class="nav-link text-black fw-bold" (click)="irAVistaEventos()" routerLink="/logros">Logros</a>
+            </li>
+            <li class="nav-item me-3" routerLinkActive="active">
+              <a class="nav-link text-black fw-bold" (click)="irAVistaPrincipal()" routerLink="/horarios">Horarios</a>
+            </li>
+            <li class="nav-item me-3" routerLinkActive="active">
+              <a class="nav-link text-black fw-bold" (click)="irAVistaContacto()" routerLink="/contacto">Contacto</a>
+            </li>
+          </ul>
+        </div>
+        <div class="navbar-der">
+          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end" *ngIf="!usuarioLogueado">
+            <li class="nav-item me-3">
+              <label class="switch">
+                <input type="checkbox">
+                <span class="slider round"></span>
+              </label>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i class="bi bi-facebook fs-4"></i></a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i class="bi bi-instagram fs-4"></i></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link p-0 text-black" (click)="irALogin()"><i class="bi bi-person-fill fs-3"></i></a>
+            </li>
+          </ul>
+          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end" *ngIf="usuarioLogueado">
+            <li class="nav-item me-3">
+              <label class="switch">
+                <input type="checkbox">
+                <span class="slider round"></span>
+              </label>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i class="bi bi-facebook fs-4"></i></a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i class="bi bi-instagram fs-4"></i></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </nav>
