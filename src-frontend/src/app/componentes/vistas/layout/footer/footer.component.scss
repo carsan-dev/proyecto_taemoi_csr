@@ -1,3 +1,10 @@
 footer {
-  background-color: transparent !important;
+  .row {
+    margin: 0 auto;
+
+    .nav-link {
+      cursor: pointer;
+    }
+  }
+
 }
