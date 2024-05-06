@@ -13,11 +13,11 @@ export const routes: Routes = [
   { path: 'inicio', component: EscaparatePrincipalComponent },
   { path: 'login', component: VistaLoginComponent },
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
-  { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent},
-  { path: 'alumnos/crear', component: CrearAlumnoComponent},
-  { path: 'alumnos/eliminar', component: EliminarAlumnoComponent},
-  { path: 'logros', component: EventosComponent},
-  { path: 'contacto', component: ContactoComponent},
+  { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent },
+  { path: 'alumnos/crear', component: CrearAlumnoComponent },
+  { path: 'alumnos/eliminar', component: EliminarAlumnoComponent },
+  { path: 'logros', component: EventosComponent },
+  { path: 'contacto', component: ContactoComponent },
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
