@@ -7,11 +7,9 @@ import { AuthenticationService } from './servicios/authentication/authentication
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, SkeletonComponent],
-  providers: [
-    AuthenticationService,
-  ],
+  providers: [AuthenticationService],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
 })
 export class AppComponent {
   title = 'Taemoi_Angular_Front';
