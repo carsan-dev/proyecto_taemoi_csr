@@ -25,16 +25,12 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  irAVistaAdmin() {
-    this.router.navigate(['/adminpage']);
-  }
-
   irAVistaPrincipal() {
-    this.router.navigate(['']);
+    this.router.navigate(['/inicio']);
   }
 
   irAVistaEventos() {
-    this.router.navigate(['/eventos']);
+    this.router.navigate(['/logros']);
   }
 
   irAVistaContacto() {
