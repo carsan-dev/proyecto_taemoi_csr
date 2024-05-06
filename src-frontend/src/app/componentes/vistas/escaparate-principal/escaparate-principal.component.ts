@@ -127,11 +127,7 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
     }
   }
 
-  irAVistaContacto() {
-    this.router.navigate(['/contacto']);
-  }
-
-  irAVistaEventos() {
-    this.router.navigate(['/eventos']);
+  irARuta(ruta: string) {
+    this.router.navigate([ruta]);
   }
 }
