@@ -2,6 +2,8 @@ header {
   padding: 0;
   width: 80%;
   margin: 0 auto;
+  position: absolute;
+  z-index: 99;
 
   nav {
     background-color: rgba(255, 255, 255, 0.5);
