@@ -81,4 +81,18 @@
       }
     }
   }
+
+  .slider-section {
+    .container-slider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 400px;
+
+      .slider {
+        width: 800px;
+        height: 400px;
+      }
+    }
+  }
 }
