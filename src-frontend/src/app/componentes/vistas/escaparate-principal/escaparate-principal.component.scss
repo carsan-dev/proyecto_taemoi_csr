@@ -1,142 +1,31 @@
 .main-content {
-  overflow: hidden;
+  .video-container {
+    padding: 0;
 
-  .carousel-presentacion {
-    .carousel-inner {
-      max-width: 100%;
-      position: relative;
+    video {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
       left: 0;
-
-      .carousel-item {
-        img {
-          height: 900px;
-          min-width: 1920px;
-          width: auto;
-          position: relative;
-          left: calc((100% - 1920px) / 2);
-        }
-      }
+      object-fit: cover;
+      filter: brightness(80%);
     }
-  }
 
-  .eventos-presentacion {
-    div {
-      .card {
-        border-top: 0 !important;
-        border-radius: 0 0 75px 75px;
-
-        .card-body {
-          .row {
-            .eventoImagenContainer {
-              img {
-                max-width: 100%;
-                height: 100%;
-                border-radius: 0 0 0 75px;
-              }
-            }
-
-            .eventoContenidoContainer {
-              .evento-item {
-                .evento-info {
-                  p {
-                    text-wrap: pretty;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  .separador {
-    margin: 0 auto;
-  }
-
-  .container-slider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 400px;
-
-    .slider {
-      width: 800px;
-      height: 400px;
-    }
-  }
-
-  .banner-informativo-uno {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    background-image: url('../../../../assets/media/pablo_competicion.webp');
-    background-size: cover;
-    background-attachment: fixed;
-    z-index: 99;
-
-    .banner-content {
+    .video-text {
       position: absolute;
-      top: 20%;
-      left: 10%;
-      background-color: rgba(0, 0, 0, 0.4);
-      width: 80%;
-      height: auto;
-      backdrop-filter: blur(4px);
-      border-radius: 13px;
-
-      .links {
-        cursor: pointer;
-      }
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
-  }
 
-  .banner-informativo-dos {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    background-image: url('../../../../assets/media/rafa_competicion.webp');
-    background-size: cover;
-    background-attachment: fixed;
-    z-index: 99;
-
-    .banner-content {
+    .video-image {
       position: absolute;
-      top: 25%;
-      right: 10%;
-      background-color: rgba(0, 0, 0, 0.4);
-      width: 30%;
-      height: auto;
-      border-radius: 13px;
-      backdrop-filter: blur(4px);
-    }
-  }
-}
-
-@media (max-width: 576px) {
-  .banner-informativo-uno {
-    .banner-content {
-      height: 60% !important;
-
-      h1 {
-        margin-top: 50px !important;
-      }
-
-      p {
-        margin-top: 40px !important;
-      }
-
-      div {
-        margin-top: 50px !important;
-      }
-    }
-  }
-
-  .banner-informativo-dos {
-    .banner-content {
-      width: 80% !important;
-      top: 45% !important;
-      right: 50%;
+      bottom: -40px;
+      left: 50%;
+      transform: translate(-50%);
+      width: 100%;
+      max-width: 275px;
     }
   }
 }
