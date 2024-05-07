@@ -13,9 +13,15 @@ header {
     .nav-item {
       cursor: pointer;
 
-      .nav-link.active {
-        text-decoration: underline;
-        text-underline-offset: 4px;
+      img {
+        width: 180px;
+      }
+
+      .nav-link {
+        &.active {
+          text-decoration: underline;
+          text-underline-offset: 4px;
+        }
       }
     }
   }
