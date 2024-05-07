@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
 .main-content {
   .video-container {
     padding: 0;
@@ -14,18 +19,66 @@
 
     .video-text {
       position: absolute;
-      top: 40%;
+      top: 375px;
       left: 50%;
       transform: translate(-50%, -50%);
+
+      p {
+        font-family: 'Osaka-Sans Serif', sans-serif;
+
+        &:first-child {
+          font-size: 64px;
+        }
+
+        &:last-child {
+          font-size: 96px;
+        }
+      }
     }
 
     .video-image {
       position: absolute;
-      bottom: -40px;
+      bottom: -25px;
       left: 50%;
       transform: translate(-50%);
       width: 100%;
       max-width: 275px;
+
+      img {
+        mask-image: linear-gradient(to bottom, black 75%, transparent 95%);
+      }
+    }
+  }
+
+  .info-section {
+    padding: 0;
+    .text-content {
+      flex: 1;
+
+      h1 {
+        font-style: italic;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 auto;
+        width: 60%;
+      }
+
+      button {
+        margin: 0 auto;
+        width: 180px;
+      }
+    }
+
+    .img-content {
+      flex: 1;
+
+      img {
+        max-width: 100%;
+        height: auto;
+        filter: grayscale(100%);
+      }
     }
   }
 }
