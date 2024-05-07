@@ -1,6 +1,6 @@
 <div class="main-content row">
   <div class="video-container vw-100 vh-100">
-    <video autoplay loop muted>
+    <video autoplay loop muted aria-label="Video de presentación" #videoPresentacion>
       <source src="assets/media/video_portada.mp4" type="video/mp4">
       Tu navegador no soporta la etiqueta de video.
     </video>
@@ -12,7 +12,7 @@
       <img class="img-fluid w-100" src="assets/media/taekwondista.svg" alt="Taekwondista cinturón negro dibujado">
     </div>
   </div>
-  <section class="info-section mt-4 d-flex flex-row align-items-center">
+  <section class="info-section mt-5 d-flex flex-row align-items-center">
     <div class="text-content d-flex flex-column justify-content-center">
       <h1 class="h2 text-center">QUIENES SOMOS</h1>
       <p class="mt-5">Somos una pequeña escuela de Taekwondo ubicada en el corazón del Aljarafe Sevillano que lleva en activo más de
@@ -25,7 +25,7 @@
       <img src="assets/media/rafa_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
     </div>
   </section>
-  <section class="info-section d-flex flex-row align-items-center">
+  <section class="info-section mb-5 d-flex flex-row align-items-center">
     <div class="img-content d-flex justify-content-end">
       <img src="assets/media/pablo_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
     </div>
@@ -35,6 +35,16 @@
       <p class="mt-4">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
       <p class="mt-4">Contáctanos para más información pulsando abajo</p>
       <button type="button" class="btn btn-danger mt-5">Contáctanos</button>
+    </div>
+  </section>
+  <section class="slider-section">
+    <div>
+
+    </div>
+    <div class="container-slider">
+      <div class="container slider">
+        <app-slider-tocable [imagenesSlider]="imagenesSlider"></app-slider-tocable>
+      </div>
     </div>
   </section>
   <!--  <div id="carouselExampleFade" class="carousel slide carousel-fade carousel-presentacion p-0" data-bs-ride="carousel">

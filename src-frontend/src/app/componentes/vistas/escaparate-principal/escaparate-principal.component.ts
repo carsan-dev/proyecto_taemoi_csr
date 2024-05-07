@@ -1,7 +1,6 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
-import { ImagenInterface } from '../../../interfaces/imagen-interface';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
@@ -17,45 +16,12 @@ import { EventosInteface } from '../../../interfaces/eventos-inteface';
   styleUrl: './escaparate-principal.component.scss',
 })
 export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
+  @ViewChild('videoPresentacion') videoPresentacion!: ElementRef<HTMLVideoElement>;
   usuarioLogueado: boolean = false;
   eventos: EventosInteface[] = [];
   eventoActual: EventosInteface | undefined;
   eventoActualIndex: number = 0;
   idIntervalo: any;
-  imagenesCarousel: ImagenInterface[] = [
-    {
-      imgSrc: 'assets/media/fachada_escuela.webp',
-      imgAlt:
-        'Primera imagen del carrousel de la fachada de la escuela de taekwondo con un cartel que representa el nombre de la escuela y otro en el que se muestran los valores que se instruyen.',
-      captionTitulo: "¡Bienvenid@ a MOI'S KIM DO!",
-      captionTexto:
-        'Descubre un lugar donde los valores de respeto, disciplina y superación se convierten en tu mejor aliado.',
-    },
-    {
-      imgSrc: 'assets/media/recepcion_escuela.webp',
-      imgAlt:
-        'Segunda imagen del carrousel de la recepcion de la escuela de taekwondo en la que se muestra la mesa de la entrada donde se solicitan todo tipo de gestiones.',
-      captionTitulo: '¡Tu paso hacia la grandeza!',
-      captionTexto:
-        'Inicia tu camino hacia la maestría adentrándote en nuestro espacio de bienvenida y asesoramiento.',
-    },
-    {
-      imgSrc: 'assets/media/interior_escuela.webp',
-      imgAlt:
-        'Tercera imagen del carrousel con el tatami de la escuela de taekwondo en la que se muestra cómo es la zona de entrenamiento de la misma.',
-      captionTitulo: 'Domina tu destino',
-      captionTexto:
-        'Adéntrate en un entorno de entrenamiento espacioso y agradable diseñado para elevar tu habilidad y alcanzar tus metas.',
-    },
-    {
-      imgSrc: 'assets/media/maquinas_escuela.webp',
-      imgAlt:
-        'Cuarta imagen del carrousel con la zona de la escuela de taekwondo donde están las distintas máquinas para hacer ejercicios.',
-      captionTitulo: 'Y por si fuera poco...',
-      captionTexto:
-        'Experimenta el poder del equipo de calidad diseñado para desafiar tus límites y fortalecer tu cuerpo y mente.',
-    },
-  ];
 
   imagenesSlider = [
     {
@@ -111,20 +77,12 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.ciclarEventos();
-  }
+    const video: HTMLVideoElement = this.videoPresentacion.nativeElement;
 
-  ciclarEventos(): void {
-    if (typeof requestAnimationFrame !== 'undefined') {
-      this.idIntervalo = requestAnimationFrame(() => {
-        setTimeout(() => {
-          this.eventoActualIndex =
-            (this.eventoActualIndex + 1) % this.eventos.length;
-          this.eventoActual = this.eventos[this.eventoActualIndex];
-          this.ciclarEventos();
-        }, 5000);
-      });
-    }
+    video.addEventListener('canplaythrough', () => {
+      video.muted = true;
+      video.play()
+    });
   }
 
   irARuta(ruta: string) {
