@@ -1,0 +1,70 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
+.main-content {
+  margin-top: 125px;
+
+  .first-banner-section {
+    .first-banner {
+      background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/familia.webp");
+      background-position: center;
+      background-size: cover;
+      height: 500px;
+
+      & p {
+        font-family: 'Osaka-Sans Serif', sans-serif;
+      }
+    }
+  }
+
+  .info-divs-section {
+    .text-content {
+      width: 60%;
+
+      & hr {
+        opacity: 1;
+        border: 1.5px solid #890000;
+      }
+    }
+
+    .img-content {
+      width: 40%;
+
+      & img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 7px;
+      }
+    }
+  }
+
+  .second-banner-section {
+    .second-banner {
+      position: relative;
+      height: 450px;
+      border: 3px solid #890000;
+      border-radius: 7px;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, rgb(0 0 0 / .30), rgb(0 0 0 / .30)), url("../../../../assets/media/disciplina.webp");
+        background-position: center;
+        background-size: cover;
+        filter: grayscale(100%);
+        z-index: -1;
+      }
+
+      & button {
+        background-color: #890000;
+        border-color: #890000;
+      }
+    }
+  }
+}
