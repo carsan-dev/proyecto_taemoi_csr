@@ -8,16 +8,20 @@ import { CrearAlumnoComponent } from './componentes/endpoints/crear-alumno/crear
 import { EliminarAlumnoComponent } from './componentes/endpoints/eliminar-alumno/eliminar-alumno.component';
 import { EventosComponent } from './componentes/vistas/eventos/eventos.component';
 import { ContactoComponent } from './componentes/vistas/contacto/contacto.component';
+import { EltaekwondoComponent } from './componentes/vistas/eltaekwondo/eltaekwondo.component';
+import { HorariosComponent } from './componentes/vistas/horarios/horarios.component';
 
 export const routes: Routes = [
   { path: 'inicio', component: EscaparatePrincipalComponent },
+  { path: 'eltaekwondo', component: EltaekwondoComponent },
+  { path: 'horarios', component: HorariosComponent },
+  { path: 'logros', component: EventosComponent },
+  { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
   { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent },
   { path: 'alumnos/crear', component: CrearAlumnoComponent },
   { path: 'alumnos/eliminar', component: EliminarAlumnoComponent },
-  { path: 'logros', component: EventosComponent },
-  { path: 'contacto', component: ContactoComponent },
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
