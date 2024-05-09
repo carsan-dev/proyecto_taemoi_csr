@@ -87,7 +87,7 @@
     margin-bottom: 950px;
 
     .background-container {
-      background-image: url("../../../../assets/media/interior_escuela-fondo.webp");
+      background: linear-gradient(to right, rgb(0 0 0 / .40 ), rgb(0 0 0 / .40 )), url("../../../../assets/media/interior_escuela-fondo.webp");
       background-position: center;
       background-size: cover;
       width: 100%;
@@ -96,7 +96,6 @@
       top: 0;
       left: 0;
       z-index: 1;
-      filter: brightness(70%);
     }
 
     .container-slider {
