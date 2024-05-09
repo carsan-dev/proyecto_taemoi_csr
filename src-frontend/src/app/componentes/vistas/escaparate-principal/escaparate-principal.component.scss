@@ -50,34 +50,36 @@
     }
   }
 
-  .info-section {
-    padding: 0;
+  .info-divs-section {
+    .info-div {
+      padding: 0;
 
-    .text-content {
-      flex: 1;
+      .text-content {
+        flex: 1;
 
-      h1 {
-        font-weight: 700;
+        h1 {
+          font-weight: 700;
+        }
+
+        p {
+          margin: 0 auto;
+          width: 60%;
+        }
+
+        button {
+          margin: 0 auto;
+          width: 180px;
+        }
       }
 
-      p {
-        margin: 0 auto;
-        width: 60%;
-      }
+      .img-content {
+        flex: 1;
 
-      button {
-        margin: 0 auto;
-        width: 180px;
-      }
-    }
-
-    .img-content {
-      flex: 1;
-
-      img {
-        max-width: 100%;
-        height: auto;
-        filter: grayscale(100%);
+        img {
+          max-width: 100%;
+          height: auto;
+          filter: grayscale(100%);
+        }
       }
     }
   }
@@ -87,7 +89,7 @@
     margin-bottom: 950px;
 
     .background-container {
-      background: linear-gradient(to right, rgb(0 0 0 / .40 ), rgb(0 0 0 / .40 )), url("../../../../assets/media/interior_escuela-fondo.webp");
+      background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/interior_escuela-fondo.webp");
       background-position: center;
       background-size: cover;
       width: 100%;
