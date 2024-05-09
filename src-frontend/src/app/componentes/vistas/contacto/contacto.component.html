@@ -1,29 +1,45 @@
-<div class="container my-5">
-  <form>
-    <div class="row mb-3">
-      <div class="col">
-        <label for="nombre" class="form-label">Nombre:</label>
-        <input type="text" [(ngModel)]="nombre" name="nombre" id="nombre" class="form-control">
+<div class="row contact-form d-flex flex-row justify-content-between align-items-center p-0 mx-5">
+  <div class="left-container d-flex flex-column justify-content-center align-items-center w-50">
+    <div class="text-container text-center">
+      <p class="mt-5 display-5 text-white">MOIS KIM DO</p>
+      <p class="display-2 text-white">TAEKWONDO</p>
+    </div>
+    <div class="img-container">
+      <img src="assets/media/Logo_escuela.png" alt="Logo de la escuela de taekwondo">
+    </div>
+  </div>
+  <div class="right-container w-50">
+    <form class="mx-5">
+      <div class="mb-3 d-flex justify-content-between">
+        <div class="col me-3">
+          <label for="nombre" class="form-label">Nombre:</label>
+          <input type="text" [(ngModel)]="nombre" name="nombre" id="nombre" class="form-control">
+        </div>
+        <div class="col ms-3">
+          <label for="apellidos" class="form-label">Apellidos:</label>
+          <input type="text" [(ngModel)]="apellidos" name="apellidos" id="apellidos" class="form-control">
+        </div>
       </div>
-      <div class="col">
-        <label for="apellidos" class="form-label">Apellidos:</label>
-        <input type="text" [(ngModel)]="apellidos" name="apellidos" id="apellidos" class="form-control">
+      <div class="mb-3">
+        <label for="asunto" class="form-label">Asunto:</label>
+        <select [(ngModel)]="asunto" name="asunto" id="asunto" class="form-select">
+          <option value="" disabled selected>Selecciona un asunto</option>
+          <option value="Inscripción">Inscripción</option>
+          <option value="Consulta de horarios">Consulta de horarios</option>
+          <option value="Información sobre clases">Información sobre clases</option>
+          <option value="Otros">Otros motivos</option>
+        </select>
       </div>
-    </div>
-    <div class="mb-3">
-      <label for="asunto" class="form-label">Asunto:</label>
-      <select [(ngModel)]="asunto" name="asunto" id="asunto" class="form-select">
-        <option value="" disabled selected>Selecciona un asunto</option>
-        <option value="Inscripción">Inscripción</option>
-        <option value="Consulta de horarios">Consulta de horarios</option>
-        <option value="Información sobre clases">Información sobre clases</option>
-        <option value="Otros">Otros motivos</option>
-      </select>
-    </div>
-    <div class="mb-3">
-      <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
-      <textarea [(ngModel)]="mensaje" name="mensaje" id="mensaje" class="form-control"></textarea>
-    </div>
-    <button type="button" (click)="enviarWhatsApp()" class="btn btn-primary">Enviar <i class="bi bi-whatsapp"></i></button>
-  </form>
+      <div class="mb-3">
+        <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
+        <textarea [(ngModel)]="mensaje" name="mensaje" id="mensaje" class="form-control"></textarea>
+      </div>
+      <div class="d-flex justify-content-around mt-3">
+        <button type="button" (click)="enviarWhatsApp()" class="btn btn-success">Enviar <i
+            class="bi bi-whatsapp"></i></button>
+        <button type="button" (click)="enviarWhatsApp()" class="btn btn-secondary">Enviar <i
+            class="bi bi-envelope"></i></button>
+      </div>
+    </form>
+  </div>
 </div>

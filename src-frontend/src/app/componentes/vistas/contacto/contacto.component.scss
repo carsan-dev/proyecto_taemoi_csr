@@ -1,0 +1,24 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
+.contact-form {
+  margin-top: 125px;
+  background: url("../../../../assets/media/fondo_formulario.webp");
+  background-position: center;
+  background-size: cover;
+  max-width: 100%;
+
+  .left-container {
+    background-color: rgba(0, 0, 0, 0.7);
+
+    & img {
+      width: 400px;
+    }
+
+    & p {
+      font-family: 'Osaka-Sans Serif', sans-serif;
+    }
+  }
+}
