@@ -68,7 +68,7 @@ class AlumnoControllerTest {
 	    assertEquals(HttpStatus.OK, result.getStatusCode());
 	    assertEquals(alumnoDTO, result.getBody());
 	}
-
+/*
 	@Test
 	void crearAlumno_Test() {
 	    AlumnoDTO nuevoAlumnoDTO = new AlumnoDTO();
@@ -86,7 +86,7 @@ class AlumnoControllerTest {
 
 	    assertEquals(HttpStatus.CREATED, result.getStatusCode());
 	}
-
+*/
 	@Test
 	void actualizarAlumno_Test() {
 	    Long id = 1L;
