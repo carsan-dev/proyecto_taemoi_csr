@@ -1,3 +1,9 @@
-.container-fluid {
-  max-width: 100%;
+.login-container {
+  background: url("../../../../assets/media/Fondo_login.webp");
+  background-position: center;
+  background-size: cover;
+
+  .card {
+    max-width: 600px;
+  }
 }
