@@ -23,15 +23,15 @@ import com.taemoi.project.servicios.FicheroService;
 
 @Service
 public class FicheroServiceImpl implements FicheroService {
+
 	// Directorio raiz de nuestro almacén de ficheros
-	
 	private final Path rootLocation;
 
 	
 	public FicheroServiceImpl(@Value("${upload.root-location}") String path) {
 		this.rootLocation = Paths.get(path);
 	}
-    
+	
     /**
      * Método que almacena un fichero en el almacenamiento secundario
      * desde un objeto de tipo {@link org.springframework.web.multipart#MultipartFile} MultipartFile
@@ -94,7 +94,6 @@ public class FicheroServiceImpl implements FicheroService {
     public Path load(String filename) {
         return rootLocation.resolve(filename);
     }
-
     
     /**
      * Método que es capaz de cargar un fichero a partir de su nombre
@@ -118,7 +117,6 @@ public class FicheroServiceImpl implements FicheroService {
             throw new StorageFileNotFoundException("Could not read file: " + filename, e);
         }
     }
-
     
     /**
      * Método que elimina todos los ficheros del almacenamiento
@@ -128,11 +126,10 @@ public class FicheroServiceImpl implements FicheroService {
     public void deleteAll() {
         FileSystemUtils.deleteRecursively(rootLocation.toFile());
     }
-
     
     /**
      * Método que inicializa el almacenamiento secundario del proyecto
-     */
+    */ 
     @Override
     public void init() {
         try {
@@ -142,7 +139,6 @@ public class FicheroServiceImpl implements FicheroService {
             throw new StorageException("Could not initialize storage", e);
         }
     }
-
 
 	@Override
 	public void delete(String filename) {
@@ -155,5 +151,4 @@ public class FicheroServiceImpl implements FicheroService {
 		}
 		
 	}
-
 }
