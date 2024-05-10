@@ -25,12 +25,16 @@ export class EndpointsService {
     });
   }
 
-  crearAlumno(nuevoAlumno: any, token: string) {
+  crearAlumno(alumnoData: any, imagen: File | null, token: string): Observable<any> {
+    const formData = new FormData();
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
-
-    return this.http.post<any>(`${this.urlBase}/alumnos`, nuevoAlumno, {
+    formData.append('nuevo', JSON.stringify(alumnoData));
+    if (imagen) {
+      formData.append('file', imagen, imagen.name);
+    }
+    return this.http.post<any>(`${this.urlBase}/alumnos/crear`, formData, {
       headers: headers,
     });
   }
