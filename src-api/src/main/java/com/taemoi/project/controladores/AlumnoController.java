@@ -1,5 +1,6 @@
 package com.taemoi.project.controladores;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +25,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
@@ -38,7 +39,6 @@ import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
-import com.taemoi.project.errores.fichero.StorageException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -230,20 +230,24 @@ public class AlumnoController {
 	 *              AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado); return new
 	 *              ResponseEntity<>(creadoDTO, HttpStatus.CREATED); }
 	 */
-	 */
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> crearAlumno(@Valid @RequestPart("nuevo") AlumnoDTO nuevoAlumnoDTO,
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
+			@RequestParam("file") MultipartFile file) {
+	    try {
+	        // Procesar el JSON del alumno
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-		String urlFotoAlumno = null;
-
-		if (file != null && !file.isEmpty()) {
-			String imagen = ficheroService.store(file);
-			urlFotoAlumno = MvcUriComponentsBuilder
-							.fromMethodName(FicherosController.class, "serveFile", imagen, null)  
-							.build().toUriString();
-		}
+	        // Procesar la imagen si está presente
+	        String urlFotoAlumno = null;
+	        if (file != null && !file.isEmpty()) {
+	            // Procesar la imagen como lo haces normalmente
+	            String imagen = ficheroService.store(file);
+	            urlFotoAlumno = MvcUriComponentsBuilder
+	                            .fromMethodName(FicherosController.class, "serveFile", imagen, null)  
+	                            .build().toUriString();
+	        }
 
 		logger.info("## AlumnoController :: añadirAlumno");
 
@@ -292,7 +296,14 @@ public class AlumnoController {
 		AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
 		return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
 	}
-
+	 catch (IOException e) {
+        e.printStackTrace();
+        // Manejo de errores si la lectura del fichero falla
+        // Por ejemplo:
+        // return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+    }
+		return null;
+}
 	/**
 	 * Actualiza la información de un alumno existente.
 	 *
