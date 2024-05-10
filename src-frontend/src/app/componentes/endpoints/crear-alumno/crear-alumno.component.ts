@@ -39,7 +39,6 @@ export class CrearAlumnoComponent implements OnInit {
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
       fechaBaja: [''],
-      fotoAlumno: ['']
     });
   }
 
