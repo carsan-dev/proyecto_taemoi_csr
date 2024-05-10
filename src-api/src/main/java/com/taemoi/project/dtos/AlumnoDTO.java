@@ -23,11 +23,6 @@ public class AlumnoDTO {
 	private String grado;
 	private String fotoAlumno;
 
-	public AlumnoDTO() {
-		this.id = null;
-
-	}
-
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, String numeroExpediente, String nif,
 			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, String categoria, String grado, String fotoAlumno) {
@@ -49,6 +44,10 @@ public class AlumnoDTO {
 		this.fotoAlumno = fotoAlumno;
 	}
 	
+	public AlumnoDTO() {
+		this.id = null;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -139,14 +138,6 @@ public class AlumnoDTO {
 
 	public void setGrado(String grado) {
 		this.grado = grado;
-	}
-
-	public String getFotoAlumno() {
-		return fotoAlumno;
-	}
-
-	public void setFotoAlumno(String fotoAlumno) {
-		this.fotoAlumno = fotoAlumno;
 	}
 
 	public String getNumeroExpediente() {
