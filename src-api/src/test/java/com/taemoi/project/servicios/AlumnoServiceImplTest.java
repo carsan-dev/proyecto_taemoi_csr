@@ -166,7 +166,7 @@ public class AlumnoServiceImplTest {
         alumnoDTO.setNombre("Juan");
         alumnoDTO.setApellidos("Perez");
         alumnoDTO.setFechaNacimiento(new Date());
-        alumnoDTO.setNumeroExpediente("12345");
+        alumnoDTO.setNumeroExpediente(12345);
         alumnoDTO.setNif("12345678A");
         alumnoDTO.setDireccion("Calle Principal");
         alumnoDTO.setEmail("juan@example.com");

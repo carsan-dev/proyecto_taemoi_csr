@@ -10,7 +10,7 @@ public class AlumnoDTO {
 	private String nombre;
 	private String apellidos;
 	private Date fechaNacimiento;
-	private String numeroExpediente;
+	private Integer numeroExpediente;
 	private String nif;
 	private String direccion;
 	private String email;
@@ -23,7 +23,7 @@ public class AlumnoDTO {
 	private String grado;
 	private String fotoAlumno;
 
-	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, String numeroExpediente, String nif,
+	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente, String nif,
 			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, String categoria, String grado, String fotoAlumno) {
 		this.id = id;
@@ -140,11 +140,11 @@ public class AlumnoDTO {
 		this.grado = grado;
 	}
 
-	public String getNumeroExpediente() {
+	public Integer getNumeroExpediente() {
 		return numeroExpediente;
 	}
 
-	public void setNumeroExpediente(String numeroExpediente) {
+	public void setNumeroExpediente(Integer numeroExpediente) {
 		this.numeroExpediente = numeroExpediente;
 	}
 

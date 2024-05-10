@@ -145,7 +145,7 @@ public class InicializadorDatos implements CommandLineRunner {
 		Alumno alumno = new Alumno();
 		alumno.setNombre(faker.name().firstName());
 		alumno.setApellidos(faker.name().lastName());
-		alumno.setNumeroExpediente(faker.number().digits(8));
+		alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
 		alumno.setFechaNacimiento(faker.date().birthday());
 		alumno.setNif(faker.idNumber().valid());
 		alumno.setDireccion(faker.address().fullAddress());
