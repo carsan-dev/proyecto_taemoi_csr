@@ -1,59 +1,63 @@
-<div class="container-fluid py-2">
+<div class="container-fluid py-5">
   <div class="row">
     <div class="col-2 mt-3 d-flex flex-row">
       <app-sidebar class="w-100"></app-sidebar>
     </div>
     <div class="col-10 mt-3">
-      <form (ngSubmit)="crearAlumno()" #formularioAlumno="ngForm" class="my-5">
+      <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" class="my-5">
         <div class="row">
           <div class="form-group col-md-6 mb-3">
             <label for="nombre">Nombre:</label>
-            <input type="text" class="form-control" id="nombre" name="nombre" [(ngModel)]="nuevoAlumno.nombre" required>
+            <input type="text" class="form-control" id="nombre" name="nombre" formControlName="nombre" required>
           </div>
           <div class="form-group col-md-6 mb-3">
             <label for="apellidos">Apellidos:</label>
-            <input type="text" class="form-control" id="apellidos" name="apellidos" [(ngModel)]="nuevoAlumno.apellidos"
+            <input type="text" class="form-control" id="apellidos" name="apellidos" formControlName="apellidos"
               required>
           </div>
         </div>
         <div class="form-group mb-3">
           <label for="numeroExpediente">Número de expediente:</label>
-          <input type="number" class="form-control" id="numeroExpediente" name="numeroExpediente"
-            [(ngModel)]="nuevoAlumno.numeroExpediente" required>
+          <input type="text" class="form-control" id="numeroExpediente" name="numeroExpediente"
+          formControlName="numeroExpediente" required>
         </div>
         <div class="form-group mb-3">
           <label for="fechaNacimiento">Fecha de nacimiento:</label>
           <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
-            [(ngModel)]="nuevoAlumno.fechaNacimiento" required>
+          formControlName="fechaNacimiento" required>
         </div>
         <div class="form-group mb-3">
           <label for="nif">DNI:</label>
-          <input type="text" class="form-control" id="nif" name="nif" [(ngModel)]="nuevoAlumno.nif" required>
+          <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required>
         </div>
         <div class="form-group mb-3">
           <label for="direccion">Dirección:</label>
-          <input type="text" class="form-control" id="direccion" name="direccion" [(ngModel)]="nuevoAlumno.direccion"
+          <input type="text" class="form-control" id="direccion" name="direccion" formControlName="direccion"
             required>
         </div>
         <div class="form-group mb-3">
           <label for="telefono">Teléfono:</label>
-          <input type="tel" class="form-control" id="telefono" name="telefono" [(ngModel)]="nuevoAlumno.telefono"
+          <input type="tel" class="form-control" id="telefono" name="telefono" formControlName="telefono"
             required>
         </div>
         <div class="form-group mb-3">
           <label for="email">Email:</label>
-          <input type="email" class="form-control" id="email" name="email" [(ngModel)]="nuevoAlumno.email" required>
+          <input type="email" class="form-control" id="email" name="email" formControlName="email" required>
         </div>
         <div class="form-group dropdown mb-3">
           <label for="tipoTarifa">Selecciona el tipo de tarifa:</label>
-          <select class="form-control" id="tipoTarifa" name="tipoTarifa" [(ngModel)]="nuevoAlumno.tipoTarifa" required>
+          <select class="form-control" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa" required>
             <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
           </select>
         </div>
         <div class="form-group mb-3">
           <label for="fechaAlta">Fecha de alta:</label>
-          <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" [(ngModel)]="nuevoAlumno.fechaAlta"
+          <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" formControlName="fechaAlta"
             required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="fotoAlumno">Imagen del alumno:</label>
+          <input type="file" class="form-control" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*">
         </div>
         <button type="submit" class="btn btn-primary mt-3">Crear Alumno</button>
       </form>
