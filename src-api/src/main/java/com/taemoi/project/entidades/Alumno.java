@@ -34,8 +34,8 @@ public class Alumno {
 	private String apellidos;
 
 	@Column(unique = true)
-	@NotBlank(message = "El número de expediente no puede estar en blanco")
-	private String numeroExpediente;
+	@NotNull(message = "El número de expediente no puede ser nulo")
+	private Integer numeroExpediente;
 
 	@NotNull(message = "La fecha de nacimiento no puede ser nula")
 	@Temporal(TemporalType.DATE)
@@ -140,11 +140,11 @@ public class Alumno {
 		this.cuantiaTarifa = cuantiaTarifa;
 	}
 
-	public String getNumeroExpediente() {
+	public Integer getNumeroExpediente() {
 		return numeroExpediente;
 	}
 
-	public void setNumeroExpediente(String numeroExpediente) {
+	public void setNumeroExpediente(Integer numeroExpediente) {
 		this.numeroExpediente = numeroExpediente;
 	}
 

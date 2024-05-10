@@ -31,7 +31,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -50,7 +50,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -71,7 +71,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -92,7 +92,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("");
+        alumno.setNumeroExpediente(null);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -113,7 +113,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(null);
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -134,7 +134,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("");
         alumno.setDireccion("Calle Principal, 123");
@@ -155,7 +155,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("");
@@ -176,7 +176,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -197,7 +197,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -218,7 +218,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");
@@ -239,7 +239,7 @@ public class AlumnoTest {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
         alumno.setApellidos("Doe");
-        alumno.setNumeroExpediente("12345");
+        alumno.setNumeroExpediente(12345);
         alumno.setFechaNacimiento(new Date());
         alumno.setNif("12345678A");
         alumno.setDireccion("Calle Principal, 123");

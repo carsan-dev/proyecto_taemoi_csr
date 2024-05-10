@@ -352,7 +352,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (alumnoDTO.getFechaNacimiento() == null || alumnoDTO.getFechaNacimiento().after(new Date())) {
 			return false;
 		}
-		if (alumnoDTO.getNumeroExpediente() == null || alumnoDTO.getNumeroExpediente().isEmpty()
+		if (alumnoDTO.getNumeroExpediente() == null || alumnoDTO.getNumeroExpediente() <= 0
 				|| alumnoDTO.getNif() == null || alumnoDTO.getNif().isEmpty()) {
 			return false;
 		}
