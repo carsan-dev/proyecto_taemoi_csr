@@ -38,6 +38,7 @@ import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
+import com.taemoi.project.errores.fichero.StorageException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -73,7 +74,7 @@ public class AlumnoController {
 	 */
 	@Autowired
 	private GradoRepository gradoRepository;
-	
+
 	@Autowired
 	private FicheroService ficheroService;
 
@@ -175,7 +176,7 @@ public class AlumnoController {
 	 *                                          inválidos.
 	 * @throws AlumnoDuplicadoException         si ya existe un alumno con el mismo
 	 *                                          NIF.
-	 * 
+	 *                                          
 	 * @PostMapping @PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	 *              public ResponseEntity<AlumnoDTO> crearAlumno(@Valid @RequestBody
 	 *              AlumnoDTO nuevoAlumnoDTO) { logger.info("## AlumnoController ::
@@ -229,20 +230,21 @@ public class AlumnoController {
 	 *              AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado); return new
 	 *              ResponseEntity<>(creadoDTO, HttpStatus.CREATED); }
 	 */
-	@PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	 */
+	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<AlumnoDTO> crearAlumno(@Valid @RequestPart("nuevo") AlumnoDTO nuevoAlumnoDTO,
-			@RequestPart("file") MultipartFile file) {
-		
+	public ResponseEntity<?> crearAlumno(@Valid @RequestPart("nuevo") AlumnoDTO nuevoAlumnoDTO,
+			@RequestPart(value = "file", required = false) MultipartFile file) {
+
 		String urlFotoAlumno = null;
-		
-		if (!file.isEmpty()) {
-			String foto = ficheroService.store(file);
+
+		if (file != null && !file.isEmpty()) {
+			String imagen = ficheroService.store(file);
 			urlFotoAlumno = MvcUriComponentsBuilder
-								.fromMethodName(FicherosController.class, "serveFile", foto, null)
-								.build().toUriString();
+							.fromMethodName(FicherosController.class, "serveFile", imagen, null)  
+							.build().toUriString();
 		}
-		
+
 		logger.info("## AlumnoController :: añadirAlumno");
 
 		if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
