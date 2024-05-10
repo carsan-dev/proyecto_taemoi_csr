@@ -17,7 +17,6 @@ public class TaeMoiApplication {
 	@Bean
 	public CommandLineRunner init(FicheroService ficheroService) {
 		return args -> {
-			ficheroService.deleteAll();
 			ficheroService.init();
 		};
 	}
