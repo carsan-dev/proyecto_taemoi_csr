@@ -76,7 +76,7 @@ public class AlumnoController {
 	 */
 	@Autowired
 	private GradoRepository gradoRepository;
-	
+
 	@Autowired
 	private ImagenRepository imagenRepository;
 
@@ -189,12 +189,12 @@ public class AlumnoController {
 			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
 			Imagen imagen = null;
-			
-		    if (file != null) {
-		                Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-		                imagen = imagenRepository.save(img);
-		                nuevoAlumnoDTO.setFotoAlumno(imagen);
-		            }
+
+			if (file != null) {
+				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
+				imagen = imagenRepository.save(img);
+				nuevoAlumnoDTO.setFotoAlumno(imagen);
+			}
 			logger.info("## AlumnoController :: añadirAlumno");
 
 			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
@@ -256,40 +256,53 @@ public class AlumnoController {
 	 * @throws DatosAlumnoInvalidosException    si los datos del alumno actualizado
 	 *                                          son inválidos.
 	 */
-	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE )
+	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable Long id,
-	        @Valid @RequestParam(value = "file", required = false) MultipartFile file,
-	        @Valid @RequestParam("nuevo") String alumnoJson) {
-	    logger.info("## AlumnoController :: modificarAlumno");
+			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
+			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
+		logger.info("## AlumnoController :: modificarAlumno");
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
 			Imagen imagen = null;
-			
-		    if (file != null) {
-		                Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-		                imagen = imagenRepository.save(img);
-		                nuevoAlumnoDTO.setFotoAlumno(imagen);
-		            }
-	    if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-	        throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-	    }
 
-	    if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-			throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
+			if (file != null) {
+				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
+				imagen = imagenRepository.save(img);
+				nuevoAlumnoDTO.setFotoAlumno(imagen);
+			}
+			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
+				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
+			}
+
+			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+				throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
+			}
+
+			Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
+			Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, imagen);
+			AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+			return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
+
+		} catch (IOException e) {
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
 		}
-
-		Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
-		Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, imagen);
-		AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
-		return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
-
-	} catch (IOException e) {
-		return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
 	}
-}
+
+	@DeleteMapping("/{id}/imagen")
+	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarImagenAlumno(@PathVariable Long id) {
+		try {
+			alumnoService.eliminarImagenAlumno(id);
+			return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al eliminar la imagen del alumno.");
+		}
+	}
+
 	/**
 	 * Elimina un alumno existente.
 	 *

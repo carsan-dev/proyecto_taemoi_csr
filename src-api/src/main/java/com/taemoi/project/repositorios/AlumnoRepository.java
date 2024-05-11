@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Imagen;
 
 /**
  * Repositorio para la entidad Alumno. Proporciona métodos para realizar operaciones de persistencia

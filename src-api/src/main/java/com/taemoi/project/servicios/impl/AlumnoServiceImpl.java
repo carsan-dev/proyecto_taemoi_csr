@@ -26,6 +26,7 @@ import com.taemoi.project.entidades.TipoTarifa;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
+import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.servicios.AlumnoService;
 
 import jakarta.validation.Valid;
@@ -53,6 +54,9 @@ public class AlumnoServiceImpl implements AlumnoService {
      */
 	@Autowired
 	private GradoRepository gradoRepository;
+	
+	@Autowired
+	private ImagenRepository imagenRepository;
 
     /**
      * Obtiene una página de todos los alumnos paginados.
@@ -200,16 +204,32 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
 	        alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 
-	        // Actualiza la referencia de la imagen solo si se proporciona una nueva
-	        if (imagen != null) {
+	        if ((imagen != null && alumnoExistente.getFotoAlumno() == null) || (imagen != null && alumnoExistente.getFotoAlumno() != null)) {
 	            alumnoExistente.setFotoAlumno(imagen);
 	        }
-
 	        return alumnoRepository.save(alumnoExistente);
 	    } else {
 	        throw new RuntimeException("No se encontró el alumno con ID: " + id);
 	    }
 	}
+	
+	@Override
+    public void eliminarImagenAlumno(Long id) {
+        Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+        if (optionalAlumno.isPresent()) {
+            Alumno alumno = optionalAlumno.get();
+            Imagen imagen = alumno.getFotoAlumno();
+            if (imagen != null) {
+                alumno.setFotoAlumno(null);
+                alumnoRepository.save(alumno);
+                imagenRepository.delete(imagen);
+            } else {
+                throw new RuntimeException("El alumno no tiene una imagen asociada.");
+            }
+        } else {
+            throw new RuntimeException("No se encontró el alumno con ID: " + id);
+        }
+    }
 
 
     /**
@@ -220,10 +240,13 @@ public class AlumnoServiceImpl implements AlumnoService {
      */
 	@Override
 	public boolean eliminarAlumno(Long id) {
-		return alumnoRepository.findById(id).map(alumno -> {
-			alumnoRepository.delete(alumno);
-			return true;
-		}).orElse(false);
+	    return alumnoRepository.findById(id).map(alumno -> {
+	        if (alumno.getFotoAlumno() != null) {
+	            imagenRepository.delete(alumno.getFotoAlumno());
+	        }
+	        alumnoRepository.delete(alumno);
+	        return true;
+	    }).orElse(false);
 	}
 
     /**
