@@ -3,6 +3,7 @@ package com.taemoi.project.dtos;
 import java.util.Date;
 
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoTarifa;
 
 public class AlumnoDTO {
@@ -21,11 +22,11 @@ public class AlumnoDTO {
 	private Date fechaBaja;
 	private String categoria;
 	private String grado;
-	private String fotoAlumno;
+	private Imagen fotoAlumno;
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente, String nif,
 			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
-			Date fechaAlta, Date fechaBaja, String categoria, String grado, String fotoAlumno) {
+			Date fechaAlta, Date fechaBaja, String categoria, String grado, Imagen fotoAlumno) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -162,6 +163,15 @@ public class AlumnoDTO {
 
 	public void setCuantiaTarifa(Double cuantiaTarifa) {
 		this.cuantiaTarifa = cuantiaTarifa;
+	}
+	
+
+	public Imagen getFotoAlumno() {
+		return fotoAlumno;
+	}
+
+	public void setFotoAlumno(Imagen fotoAlumno) {
+		this.fotoAlumno = fotoAlumno;
 	}
 
 	/**

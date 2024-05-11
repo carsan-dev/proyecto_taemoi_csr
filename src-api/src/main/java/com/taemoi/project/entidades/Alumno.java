@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.Email;
@@ -66,7 +68,8 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
 	
-	private String fotoAlumno;
+	@OneToOne
+	private Imagen fotoAlumno;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "categoria_id")
@@ -220,11 +223,11 @@ public class Alumno {
 		this.fechaBaja = fechaBaja;
 	}
 
-	public String getFotoAlumno() {
+	public Imagen getFotoAlumno() {
 		return fotoAlumno;
 	}
 
-	public void setFotoAlumno(String fotoAlumno) {
+	public void setFotoAlumno(Imagen fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
 	}
 }
