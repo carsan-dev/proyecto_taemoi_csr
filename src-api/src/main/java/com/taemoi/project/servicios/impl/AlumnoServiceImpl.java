@@ -19,6 +19,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
@@ -26,6 +27,8 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
+
+import jakarta.validation.Valid;
 
 /**
  * Implementación del servicio para operaciones relacionadas con los alumnos.
@@ -176,32 +179,38 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return El alumno actualizado.
      */
 	@Override
-	public Alumno actualizarAlumno(Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento) {
-		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
-		if (optionalAlumno.isPresent()) {
-			Alumno alumnoExistente = optionalAlumno.get();
-			alumnoExistente.setNombre(alumnoActualizado.getNombre());
-			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
-			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
+	public Alumno actualizarAlumno(Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen) {
+	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+	    if (optionalAlumno.isPresent()) {
+	        Alumno alumnoExistente = optionalAlumno.get();
+	        alumnoExistente.setNombre(alumnoActualizado.getNombre());
+	        alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
+	        alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-			int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+	        int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+	        Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+	        alumnoExistente.setCategoria(nuevaCategoria);
 
-			Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-			alumnoExistente.setCategoria(nuevaCategoria);
+	        alumnoExistente.setNumeroExpediente(alumnoActualizado.getNumeroExpediente());
+	        alumnoExistente.setNif(alumnoActualizado.getNif());
+	        alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
+	        alumnoExistente.setEmail(alumnoActualizado.getEmail());
+	        alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
+	        alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
+	        alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+	        alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 
-			alumnoExistente.setNumeroExpediente(alumnoActualizado.getNumeroExpediente());
-			alumnoExistente.setNif(alumnoActualizado.getNif());
-			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
-			alumnoExistente.setEmail(alumnoActualizado.getEmail());
-			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
-			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
-			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
-			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
-			return alumnoRepository.save(alumnoExistente);
-		} else {
-			throw new RuntimeException("No se encontró el alumno con ID: " + id);
-		}
+	        // Actualiza la referencia de la imagen solo si se proporciona una nueva
+	        if (imagen != null) {
+	            alumnoExistente.setFotoAlumno(imagen);
+	        }
+
+	        return alumnoRepository.save(alumnoExistente);
+	    } else {
+	        throw new RuntimeException("No se encontró el alumno con ID: " + id);
+	    }
 	}
+
 
     /**
      * Elimina un alumno por su ID.

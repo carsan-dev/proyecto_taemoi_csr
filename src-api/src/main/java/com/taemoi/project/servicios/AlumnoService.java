@@ -11,6 +11,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoTarifa;
 
 import jakarta.validation.Valid;
@@ -30,7 +31,7 @@ public interface AlumnoService {
 	
 	Alumno crearAlumno(@Valid Alumno alumno);
 
-	Alumno actualizarAlumno(@Valid Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento);
+	Alumno actualizarAlumno(@Valid Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen);
 
 	boolean eliminarAlumno(@Valid Long id);
 
