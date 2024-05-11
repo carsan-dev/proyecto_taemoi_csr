@@ -6,14 +6,17 @@
     <div class="col-10 mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
       <div class="row">
         <div class="col-lg-4 offset-lg-8 col-md-6 offset-md-6 col-sm-12 text-end mb-4">
-          <img src="../../../../assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
+          <img src="assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
         </div>
       </div>
-      <div *ngIf="!mostrarFormulario">
-        <div *ngFor="let alumno of alumnos">
-          <button class="btn btn-primary mb-3" (click)="alternarFormulario(alumno)">
-            Mostrar menú de edición
-          </button>
+      <div *ngIf="!mostrarFormulario" class="py-5">
+        <div class="d-flex flex-row justify-content-between align-items-center">
+          <div *ngFor="let alumno of alumnos" class="d-flex justify-content-between flex-row align-items-center">
+            <button class="btn btn-primary mb-3" (click)="alternarFormulario(alumno)">
+              Mostrar menú de edición
+            </button>
+            <img [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'" alt="">
+          </div>
         </div>
         <div class="row">
           <div class="col-lg-6 col-md-12 mb-4">
@@ -111,8 +114,8 @@
           </nav>
         </div>
       </div>
-      <div *ngIf="mostrarFormulario">
-        <div *ngFor="let alumno of alumnos">
+      <div *ngIf="mostrarFormulario" class="py-5">
+        <div *ngFor="let alumno of alumnos" class="mt-5">
           <button class="btn btn-primary mb-3" (click)="actualizarAlumno(alumno.id); alternarFormulario(alumno)">
             Confirmar cambios
           </button>
