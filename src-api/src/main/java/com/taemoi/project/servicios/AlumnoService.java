@@ -33,6 +33,8 @@ public interface AlumnoService {
 
 	Alumno actualizarAlumno(@Valid Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen);
 
+	void eliminarImagenAlumno(Long id);
+	
 	boolean eliminarAlumno(@Valid Long id);
 
 	double asignarCuantiaTarifa(TipoTarifa tipoTarifa);
