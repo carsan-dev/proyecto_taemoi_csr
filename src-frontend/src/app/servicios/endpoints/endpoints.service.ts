@@ -39,15 +39,25 @@ export class EndpointsService {
     });
   }
 
-  actualizarAlumno(id: number, alumnoActualizado: any, token: string): Observable<any> {
+actualizarAlumno(id: number, formData: FormData, token: String): Observable<any> {
+  const headers = new HttpHeaders({
+    Authorization: `Bearer ${token}`,
+  });
+
+    return this.http.put<any>(`${this.urlBase}/alumnos/${id}`, formData, {
+      headers: headers,
+    });
+  }
+
+  eliminarImagenAlumno(id: number, token: String): Observable<any> {
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.put<any>(`${this.urlBase}/alumnos/${id}`, alumnoActualizado, {
+    return this.http.delete(`${this.urlBase}/alumnos/${id}/imagen`, {
       headers: headers,
     });
-  }
+}
 
   eliminarAlumnos(id: number, token: string): Observable<any> {
     const headers = new HttpHeaders({
