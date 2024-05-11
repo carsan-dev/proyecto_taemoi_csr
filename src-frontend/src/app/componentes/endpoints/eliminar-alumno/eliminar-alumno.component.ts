@@ -75,7 +75,10 @@ export class EliminarAlumnoComponent implements OnInit {
       paginaInicio = Math.max(1, paginaInicio - diff);
     }
 
-    this.mostrarPaginas = Array.from({ length: paginaFin - paginaInicio + 1 }, (_, i) => paginaInicio + i);
+    this.mostrarPaginas = Array.from(
+      { length: paginaFin - paginaInicio + 1 },
+      (_, i) => paginaInicio + i
+    );
   }
   eliminarAlumno(id: number) {
     const token = localStorage.getItem('token');
@@ -119,6 +122,9 @@ export class EliminarAlumnoComponent implements OnInit {
               text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.`,
               icon: 'error',
             });
+          },
+          complete: () => {
+            this.obtenerAlumnos();
           },
         });
       });
