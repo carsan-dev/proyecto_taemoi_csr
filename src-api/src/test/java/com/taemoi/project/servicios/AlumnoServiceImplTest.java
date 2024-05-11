@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Calendar;
@@ -26,6 +27,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
 import com.taemoi.project.repositorios.AlumnoRepository;
@@ -93,16 +95,24 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-    public void testActualizarAlumno() {
-        when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
-        when(alumnoRepository.save(any(Alumno.class))).thenReturn(new Alumno());
+	public void testActualizarAlumno() {
+	    Alumno alumnoExistente = new Alumno();
+	    when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoExistente));
+	    when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        AlumnoDTO alumnoDTO = new AlumnoDTO();
-        Date fechaNacimiento = new Date();
-        Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO, fechaNacimiento);
+	    AlumnoDTO alumnoDTO = new AlumnoDTO();
+	    Date fechaNacimiento = new Date();
+	    Imagen imagen = new Imagen("nombre", "tipo", new byte[0]);
 
-        assertNotNull(result);
-    }
+	    Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO, fechaNacimiento, imagen);
+
+	    verify(alumnoRepository).findById(1L);
+	    verify(alumnoRepository).save(any(Alumno.class));
+
+	    assertNotNull(result);
+	}
+
+
 
 	@Test
     public void testEliminarAlumno() {
