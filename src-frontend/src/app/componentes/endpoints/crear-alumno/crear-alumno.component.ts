@@ -38,7 +38,7 @@ export class CrearAlumnoComponent implements OnInit {
       telefono: ['', Validators.required],
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
-      fechaBaja: [''],
+      fechaBaja: ['']
     });
   }
 
@@ -75,44 +75,3 @@ onFileChange(event: any) {
   }
 }
 }
-/*export class CrearAlumnoComponent {
-  nuevoAlumno: any = {
-    tipoTarifa: null,
-  };
-
-  tiposTarifa = Object.values(TipoTarifa);
-
-  constructor(private endpointsService: EndpointsService, private router: Router) {}
-
-  crearAlumno() {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      Swal.fire({
-        title: 'Error',
-        text: 'No estás autorizado para realizar esta operación.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    this.endpointsService.crearAlumno(this.nuevoAlumno, token).subscribe({
-      next: (response) => {
-        Swal.fire({
-          title: 'Perfecto!',
-          text: 'Has creado un nuevo alumno',
-          icon: 'success',
-        });
-        this.router.navigate(['/alumnos']);
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
-          icon: 'error',
-        });
-      },
-      complete: () => {},
-    });
-  }
-}*/
