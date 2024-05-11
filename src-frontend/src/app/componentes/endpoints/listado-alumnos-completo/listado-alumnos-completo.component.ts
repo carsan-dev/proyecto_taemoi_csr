@@ -28,6 +28,7 @@ export class ListadoAlumnosCompletoDTOComponent {
 
   tiposTarifa = Object.values(TipoTarifa);
   tiposGrado = Object.values(TipoGrado);
+  inputFile: any;
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -62,28 +63,63 @@ export class ListadoAlumnosCompletoDTOComponent {
 
   actualizarAlumno(id: number) {
     const token = localStorage.getItem('token');
+
+    const formData = new FormData();
+    formData.append('alumnoEditado', JSON.stringify(this.alumnoEditado));
+
+    if (this.alumnoEditado.fotoAlumno === null) {
+      formData.append('file', 'null');
+    } else if (this.alumnoEditado.fotoAlumno) {
+      formData.append('file', this.alumnoEditado.fotoAlumno);
+    }
+
     if (token) {
-      this.endpointsService
-        .actualizarAlumno(id, this.alumnoEditado, token)
-        .subscribe({
-          next: (response) => {
-            Swal.fire({
-              title: 'Bien!',
-              text: 'Alumno actualizado correctamente!',
-              icon: 'success',
-            });
-            this.obtenerAlumnos();
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error al actualizar',
-              text: 'Error al actualizar al alumno',
-              icon: 'error',
-            });
-          },
-        });
+    this.endpointsService
+      .actualizarAlumno(id, formData, token)
+      .subscribe({
+        next: (response) => {
+          Swal.fire({
+            title: '¡Bien!',
+            text: '¡Alumno actualizado correctamente!',
+            icon: 'success',
+          });
+          this.obtenerAlumnos();
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error al actualizar',
+            text: 'Error al actualizar al alumno',
+            icon: 'error',
+          });
+        },
+      });
     }
   }
+
+  eliminarFoto(id: number) {
+    const token = localStorage.getItem('token');
+    if (token) {
+    this.endpointsService.eliminarImagenAlumno(id, token).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: '¡Eliminada!',
+          text: '¡Imagen eliminada correctamente!',
+          icon: 'success',
+        });
+        this.inputFile.nativeElement.value = '';
+        this.obtenerAlumnos();
+      },
+
+      error: (error) => {
+        Swal.fire({
+          title: 'Error al actualizar',
+          text: 'Error al actualizar al alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+}
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
@@ -121,5 +157,10 @@ export class ListadoAlumnosCompletoDTOComponent {
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
     this.alumnoEditado = { ...alumno };
+  }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    this.alumnoEditado.fotoAlumno = file;
   }
 }
