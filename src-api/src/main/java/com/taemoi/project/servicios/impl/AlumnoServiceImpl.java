@@ -29,8 +29,6 @@ import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.servicios.AlumnoService;
 
-import jakarta.validation.Valid;
-
 /**
  * Implementación del servicio para operaciones relacionadas con los alumnos.
  */
