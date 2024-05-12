@@ -15,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -81,6 +82,10 @@ public class Alumno {
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
 	private Grado grado;
+	
+    @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
+	@JsonManagedReference
+	private List<Grupo> grupos;
 
 	@OneToMany(mappedBy = "alumno")
 	private List<Examen> examenes;
@@ -230,5 +235,13 @@ public class Alumno {
 
 	public void setFotoAlumno(Imagen fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
+	}
+
+	public List<Grupo> getGrupos() {
+		return grupos;
+	}
+
+	public void setGrupos(List<Grupo> grupos) {
+		this.grupos = grupos;
 	}
 }
