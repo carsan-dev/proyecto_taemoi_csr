@@ -10,6 +10,7 @@ import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
+import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.usuario.ListaUsuariosVaciaException;
 
 @ControllerAdvice
@@ -42,6 +43,11 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ListaAlumnosVaciaException.class)
 	public ResponseEntity<String> handleListaAlumnosVaciaException(ListaAlumnosVaciaException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
+	
+	@ExceptionHandler(GrupoNoEncontradoException.class)
+	public ResponseEntity<String> handleGrupoNoEncontradoException(GrupoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
 }
