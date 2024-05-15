@@ -1,6 +1,7 @@
 package com.taemoi.project.servicios.impl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -8,10 +9,13 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.taemoi.project.dtos.AlumnoGrupoDTO;
-import com.taemoi.project.dtos.GrupoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.AlumnoParaGrupoDTO;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
+import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
@@ -27,7 +31,7 @@ public class GrupoServiceImpl implements GrupoService {
     private AlumnoRepository alumnoRepository;
 
     @Override
-    public List<GrupoDTO> obtenerTodosLosGrupos() {
+    public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
         List<Grupo> grupos = grupoRepository.findAll();
         return grupos.stream()
                 .map(this::convertirEntidadADTO)
@@ -35,20 +39,20 @@ public class GrupoServiceImpl implements GrupoService {
     }
     
     @Override
-    public Optional<GrupoDTO> obtenerGrupoPorId(Long id) {
+    public Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(Long id) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
         return grupoOptional.map(this::convertirEntidadADTO);
     }
 
     @Override
-    public GrupoDTO crearGrupo(GrupoDTO grupoDTO) {
+    public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
         Grupo grupo = convertirDTOAEntidad(grupoDTO);
         grupo = grupoRepository.save(grupo);
         return convertirEntidadADTO(grupo);
     }
 
     @Override
-    public GrupoDTO actualizarGrupo(Long id, GrupoDTO grupoDTO) {
+    public GrupoConAlumnosDTO actualizarGrupo(Long id, GrupoConAlumnosDTO grupoDTO) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
         if (grupoOptional.isPresent()) {
             Grupo grupo = grupoOptional.get();
@@ -97,15 +101,41 @@ public class GrupoServiceImpl implements GrupoService {
 	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
 	    }
 	}
+	
+	@Override
+	public List<TurnoDTO> obtenerTurnosDelGrupo(Long grupoId) {
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    if (grupoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        List<Turno> turnos = grupo.getTurnos();
+	        List<TurnoDTO> turnoDTOs = new ArrayList<>();
+	        for (Turno turno : turnos) {
+	            turnoDTOs.add(TurnoDTO.deTurno(turno));
+	        }
+	        return turnoDTOs;
+	    }
+	    return Collections.emptyList();
+	}
 
 	@Override
-	public GrupoDTO convertirEntidadADTO(Grupo grupo) {
-	    GrupoDTO grupoDTO = new GrupoDTO();
+	public List<GrupoResponseDTO> obtenerGruposDelAlumno(Long alumnoId) {
+	    Alumno alumno = alumnoRepository.findById(alumnoId).orElse(null);
+	    if (alumno != null) {
+	        return alumno.getGrupos().stream()
+	                .map(this::convertirGrupoADTO)
+	                .collect(Collectors.toList());
+	    }
+	    return Collections.emptyList();
+	}
+    
+	@Override
+	public GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo) {
+	    GrupoConAlumnosDTO grupoDTO = new GrupoConAlumnosDTO();
 	    grupoDTO.setId(grupo.getId());
 	    grupoDTO.setNombre(grupo.getNombre());
 
-	    List<AlumnoGrupoDTO> alumnosDTO = grupo.getAlumnos().stream()
-	        .map(AlumnoGrupoDTO::deAlumno)
+	    List<AlumnoParaGrupoDTO> alumnosDTO = grupo.getAlumnos().stream()
+	        .map(AlumnoParaGrupoDTO::deAlumno)
 	        .collect(Collectors.toList());
 	    grupoDTO.setAlumnos(alumnosDTO);
 
@@ -113,7 +143,7 @@ public class GrupoServiceImpl implements GrupoService {
 	}
 
 	@Override
-	public Grupo convertirDTOAEntidad(GrupoDTO grupoDTO) {
+	public Grupo convertirDTOAEntidad(GrupoConAlumnosDTO grupoDTO) {
 	    Grupo grupo = new Grupo();
 	    grupo.setId(grupoDTO.getId());
 	    grupo.setNombre(grupoDTO.getNombre());
@@ -133,6 +163,10 @@ public class GrupoServiceImpl implements GrupoService {
 
 	    return grupo;
 	}
-
-
+	
+	private GrupoResponseDTO convertirGrupoADTO(Grupo grupo) {
+	    GrupoResponseDTO grupoDTO = new GrupoResponseDTO();
+	    grupoDTO.setNombre(grupo.getNombre());
+	    return grupoDTO;
+	}
 }
