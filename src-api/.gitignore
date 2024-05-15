@@ -3,6 +3,7 @@
 /tmp
 /out-tsc
 /bazel-out
+/target
 
 # Node
 /node_modules
@@ -24,7 +25,6 @@ yarn-error.log
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
 
 # Miscellaneous
 /.angular/cache
@@ -57,7 +57,6 @@ local.properties
 .cproject
 .autotools
 .factorypath
-.buildpath
 .target
 .tern-project
 .texlipse
