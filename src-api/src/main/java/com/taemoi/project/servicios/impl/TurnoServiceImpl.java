@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Turno;
+import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
@@ -27,6 +28,12 @@ public class TurnoServiceImpl implements TurnoService {
     @Override
     public List<Turno> listarTurnos() {
         return turnoRepository.findAll();
+    }
+    
+    @Override
+    public Turno obtenerTurnoPorId(Long turnoId) {
+        return turnoRepository.findById(turnoId)
+                .orElseThrow(() -> new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe."));
     }
     
     @Override
@@ -111,7 +118,7 @@ public class TurnoServiceImpl implements TurnoService {
             throw new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe.");
         }
     }
-
+    
     private Grupo obtenerGrupoPorIndice(List<Grupo> grupos, int indice) {
         if (grupos.size() > indice) {
             return grupos.get(indice);
@@ -119,4 +126,5 @@ public class TurnoServiceImpl implements TurnoService {
             throw new IllegalArgumentException("No hay suficientes grupos para asignar el turno");
         }
     }
+
 }

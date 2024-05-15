@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Turno;
+import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
+import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.servicios.TurnoService;
 
 @RestController
@@ -32,6 +34,17 @@ public class TurnoController {
     public ResponseEntity<List<Turno>> obtenerTurnos() {
         List<Turno> turnos = turnoService.listarTurnos();
         return new ResponseEntity<>(turnos, HttpStatus.OK);
+    }
+    
+    @GetMapping("/{turnoId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<TurnoDTO> obtenerTurnoPorId(@PathVariable Long turnoId) {
+        try {
+            Turno turno = turnoService.obtenerTurnoPorId(turnoId);
+            return ResponseEntity.ok(TurnoDTO.deTurno(turno));
+        } catch (TurnoNoEncontradoException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 	
     @GetMapping("/dto")
