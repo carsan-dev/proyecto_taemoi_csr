@@ -27,6 +27,10 @@ public interface GrupoService {
 	
 	void eliminarAlumnoDeGrupo(Long grupoId, Long alumnoId);
 	
+	void agregarTurnoAGrupo(Long grupoId, Long turnoId);
+	
+	void eliminarTurnoDeGrupo(Long grupoId, Long turnoId);
+	
 	List<TurnoDTO> obtenerTurnosDelGrupo(Long grupoId);
 	
 	GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo);

@@ -17,8 +17,10 @@ import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
+import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
+import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.servicios.GrupoService;
 
 @Service
@@ -29,6 +31,9 @@ public class GrupoServiceImpl implements GrupoService {
     
     @Autowired
     private AlumnoRepository alumnoRepository;
+    
+    @Autowired
+    private TurnoRepository turnoRepository;
 
     @Override
     public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
@@ -99,6 +104,45 @@ public class GrupoServiceImpl implements GrupoService {
 	        grupoRepository.save(grupo);
 	    } else {
 	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
+	    }
+	}
+	
+	@Override
+	public void agregarTurnoAGrupo(Long grupoId, Long turnoId) {
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
+	    
+	    if (grupoOptional.isPresent() && turnoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        Turno turno = turnoOptional.get();
+	        grupo.getTurnos().add(turno);
+	        turno.setGrupo(grupo);
+	        grupoRepository.save(grupo);
+	    } else {
+	        throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " o el turno con ID " + turnoId + " no existe.");
+	    }
+	}
+	
+	@Override
+	public void eliminarTurnoDeGrupo(Long grupoId, Long turnoId) {
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    
+	    if (grupoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        Optional<Turno> turnoOptional = grupo.getTurnos().stream()
+	                                            .filter(turno -> turno.getId().equals(turnoId))
+	                                            .findFirst();
+	        
+	        if (turnoOptional.isPresent()) {
+	            Turno turno = turnoOptional.get();
+	            grupo.getTurnos().remove(turno);
+	            turno.setGrupo(null);
+	            grupoRepository.save(grupo);
+	        } else {
+	            throw new TurnoNoEncontradoException("El turno con ID " + turnoId + " no está asignado al grupo con ID " + grupoId);
+	        }
+	    } else {
+	        throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " no existe.");
 	    }
 	}
 	

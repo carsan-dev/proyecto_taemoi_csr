@@ -20,6 +20,8 @@ import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoParaGrupoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
+import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.servicios.GrupoService;
@@ -107,6 +109,28 @@ public class GrupoController {
             grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
             return ResponseEntity.ok().build();
         } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @PostMapping("/{grupoId}/turnos/{turnoId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> agregarTurnoAGrupo(@PathVariable Long grupoId, @PathVariable Long turnoId) {
+        try {
+            grupoService.agregarTurnoAGrupo(grupoId, turnoId);
+            return ResponseEntity.ok().build();
+        } catch (GrupoNoEncontradoException | TurnoNoEncontradoException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @DeleteMapping("/{grupoId}/turnos/{turnoId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> eliminarTurnoDeGrupo(@PathVariable Long grupoId, @PathVariable Long turnoId) {
+        try {
+        	grupoService.eliminarTurnoDeGrupo(grupoId, turnoId);
+            return ResponseEntity.ok().build();
+        } catch (GrupoNoEncontradoException | TurnoNoEncontradoException e) {
             return ResponseEntity.notFound().build();
         }
     }
