@@ -3,6 +3,7 @@ package com.taemoi.project.configuracion;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +18,7 @@ import com.github.javafaker.Faker;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -25,7 +27,9 @@ import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
+import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
+import com.taemoi.project.servicios.GrupoService;
 
 /**
  * Componente encargado de inicializar datos en la base de datos al arrancar la aplicación.
@@ -56,6 +60,12 @@ public class InicializadorDatos implements CommandLineRunner {
      */
 	@Autowired
 	private GradoRepository gradoRepository;
+	
+	@Autowired
+	private GrupoRepository grupoRepository;
+	
+	@Autowired
+	private GrupoService grupoService;
 
 	/**
      * Inyección del codificador de contraseñas.
@@ -115,10 +125,18 @@ public class InicializadorDatos implements CommandLineRunner {
 		}
 
 		// Asignar grados y guardar alumnos
+	    List<Alumno> alumnos = new ArrayList<>();
 		for (int i = 0; i < 20; i++) {
 			Alumno alumno = generarAlumno(faker);
+	        alumnos.add(alumno);
 			alumnoRepository.save(alumno);
 		}
+		
+	    // Generar los grupos si no existen
+	    generarGrupos();
+
+	    // Asignar todos los alumnos a un grupo aleatorio
+	    asignarAlumnosAGrupoAleatorio(alumnos);
 	}
 
     /**
@@ -167,8 +185,9 @@ public class InicializadorDatos implements CommandLineRunner {
 		alumno.setCategoria(asignarCategoriaSegunEdad(edad));
 
 		alumno.setGrado(asignarGradoSegunEdad(edad));
-
+		
 		return alumno;
+
 	}
 
     /**
@@ -246,5 +265,38 @@ public class InicializadorDatos implements CommandLineRunner {
 		TipoGrado tipoGradoSeleccionado = tiposGradoDisponibles.get(random.nextInt(tiposGradoDisponibles.size()));
 
 		return gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
+	}
+
+	/**
+	 * Genera los grupos si no existen en la base de datos.
+	 */
+	private void generarGrupos() {
+	    if (grupoRepository.count() == 0) {
+	        // Crear y almacenar los dos grupos
+	        Grupo grupo1 = new Grupo();
+	        grupo1.setNombre("Grupo Lunes y Miércoles");
+	        grupoRepository.save(grupo1);
+
+	        Grupo grupo2 = new Grupo();
+	        grupo2.setNombre("Grupo Martes y Jueves");
+	        grupoRepository.save(grupo2);
+	    }
+	}
+	
+	/**
+	 * Asigna todos los alumnos a un grupo aleatorio.
+	 *
+	 * @param alumnos Lista de alumnos.
+	 */
+	private void asignarAlumnosAGrupoAleatorio(List<Alumno> alumnos) {
+	    // Obtener los grupos disponibles
+	    List<Grupo> grupos = grupoRepository.findAll();
+
+	    // Asignar cada alumno a un grupo aleatorio
+	    Random random = new Random();
+	    for (Alumno alumno : alumnos) {
+	        Grupo grupoAleatorio = grupos.get(random.nextInt(grupos.size()));
+	        grupoService.agregarAlumnoAGrupo(grupoAleatorio.getId(), alumno.getId());
+	    }
 	}
 }
