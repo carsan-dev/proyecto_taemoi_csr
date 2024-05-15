@@ -3,20 +3,23 @@ package com.taemoi.project.servicios;
 import java.util.List;
 import java.util.Optional;
 
-import com.taemoi.project.dtos.GrupoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.dtos.response.GrupoConTurnosDTO;
+import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
 
 import jakarta.validation.Valid;
 
 public interface GrupoService {
-	List<GrupoDTO> obtenerTodosLosGrupos();
+	List<GrupoConAlumnosDTO> obtenerTodosLosGrupos();
 	
-	Optional<GrupoDTO> obtenerGrupoPorId(Long id);
+	Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(Long id);
 	
-	GrupoDTO crearGrupo(@Valid GrupoDTO grupoDTO);
+	GrupoConAlumnosDTO crearGrupo(@Valid GrupoConAlumnosDTO grupoDTO);
 	
-	GrupoDTO actualizarGrupo(@Valid Long id, GrupoDTO grupoDTO);
+	GrupoConAlumnosDTO actualizarGrupo(@Valid Long id, GrupoConAlumnosDTO grupoDTO);
 	
 	void eliminarGrupo(Long id);
 	
@@ -24,7 +27,11 @@ public interface GrupoService {
 	
 	void eliminarAlumnoDeGrupo(Long grupoId, Long alumnoId);
 	
-	GrupoDTO convertirEntidadADTO(Grupo grupo);
+	List<TurnoDTO> obtenerTurnosDelGrupo(Long grupoId);
 	
-	Grupo convertirDTOAEntidad(GrupoDTO grupoDTO);
+	GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo);
+	
+	Grupo convertirDTOAEntidad(GrupoConAlumnosDTO grupoDTO);
+
+	List<GrupoResponseDTO> obtenerGruposDelAlumno(Long alumnoId);
 }
