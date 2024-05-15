@@ -16,8 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.taemoi.project.dtos.AlumnoGrupoDTO;
-import com.taemoi.project.dtos.GrupoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.AlumnoParaGrupoDTO;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
@@ -37,30 +38,41 @@ public class GrupoController {
     private GrupoRepository grupoRepository;
     
     @GetMapping
-    public List<GrupoDTO> obtenerTodosLosGrupos() {
+    public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
         return grupoService.obtenerTodosLosGrupos();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<GrupoDTO> obtenerGrupoPorId(@PathVariable Long id) {
-        Optional<GrupoDTO> grupoDTO = grupoService.obtenerGrupoPorId(id);
+    public ResponseEntity<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@PathVariable Long id) {
+        Optional<GrupoConAlumnosDTO> grupoDTO = grupoService.obtenerGrupoConAlumnosPorId(id);
         return grupoDTO.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
+    
+	@GetMapping("/{grupoId}/turnos")
+	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> obtenerTurnosDelGrupo(@PathVariable Long grupoId) {
+	    List<TurnoDTO> turnosDTO = grupoService.obtenerTurnosDelGrupo(grupoId);
+	    if (!turnosDTO.isEmpty()) {
+	        return ResponseEntity.ok(turnosDTO);
+	    } else {
+	        return ResponseEntity.notFound().build();
+	    }
+	}
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<GrupoDTO> crearGrupo(@RequestBody GrupoDTO grupoDTO) {
+    public ResponseEntity<GrupoConAlumnosDTO> crearGrupo(@RequestBody GrupoConAlumnosDTO grupoDTO) {
         grupoDTO.setAlumnos(null);
-        GrupoDTO nuevoGrupoDTO = grupoService.crearGrupo(grupoDTO);
+        GrupoConAlumnosDTO nuevoGrupoDTO = grupoService.crearGrupo(grupoDTO);
         return new ResponseEntity<>(nuevoGrupoDTO, HttpStatus.CREATED);
     }
     
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<GrupoDTO> actualizarGrupo(@PathVariable Long id, @RequestBody GrupoDTO grupoDTO) {
-        GrupoDTO grupoActualizadoDTO = grupoService.actualizarGrupo(id, grupoDTO);
+    public ResponseEntity<GrupoConAlumnosDTO> actualizarGrupo(@PathVariable Long id, @RequestBody GrupoConAlumnosDTO grupoDTO) {
+        GrupoConAlumnosDTO grupoActualizadoDTO = grupoService.actualizarGrupo(id, grupoDTO);
         if (grupoActualizadoDTO != null) {
             return new ResponseEntity<>(grupoActualizadoDTO, HttpStatus.OK);
         } else {
@@ -78,7 +90,7 @@ public class GrupoController {
     @PostMapping("/{grupoId}/alumnos/{alumnoId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> agregarAlumnoAGrupo(@PathVariable Long grupoId, @PathVariable Long alumnoId) {
-        Optional<GrupoDTO> grupoOptional = grupoService.obtenerGrupoPorId(grupoId);
+        Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
         if (grupoOptional.isPresent()) {
             grupoService.agregarAlumnoAGrupo(grupoId, alumnoId);
             return ResponseEntity.ok().build();
@@ -90,7 +102,7 @@ public class GrupoController {
     @DeleteMapping("/{grupoId}/alumnos/{alumnoId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> eliminarAlumnoDeGrupo(@PathVariable Long grupoId, @PathVariable Long alumnoId) {
-        Optional<GrupoDTO> grupoOptional = grupoService.obtenerGrupoPorId(grupoId);
+        Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
         if (grupoOptional.isPresent()) {
             grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
             return ResponseEntity.ok().build();
