@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
@@ -41,6 +43,7 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.servicios.AlumnoService;
+import com.taemoi.project.servicios.GrupoService;
 
 import jakarta.validation.Valid;
 
@@ -66,7 +69,7 @@ public class AlumnoController {
 	 */
 	@Autowired
 	AlumnoRepository alumnoRepository;
-
+	
 	/**
 	 * Inyección del repositorio de grado.
 	 */
@@ -75,6 +78,9 @@ public class AlumnoController {
 
 	@Autowired
 	private ImagenRepository imagenRepository;
+	
+	@Autowired
+	private GrupoService grupoService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -163,6 +169,17 @@ public class AlumnoController {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 
+	@GetMapping("/{alumnoId}/grupos")
+	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable Long alumnoId) {
+	    List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
+	    if (!gruposDTO.isEmpty()) {
+	        return ResponseEntity.ok(gruposDTO);
+	    } else {
+	        return ResponseEntity.notFound().build();
+	    }
+	}
+	
 	/**
 	 * Crea un nuevo alumno.
 	 *

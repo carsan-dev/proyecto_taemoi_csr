@@ -8,9 +8,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoTarifa;
 
