@@ -1,10 +1,10 @@
 package com.taemoi.project.entidades;
 
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
@@ -33,6 +34,10 @@ public class Grupo {
     )
     @JsonBackReference
     private List<Alumno> alumnos;
+    
+    @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL)
+    @JsonBackReference
+    private List<Turno> turnos;
 
 	public Long getId() {
 		return id;
@@ -58,6 +63,14 @@ public class Grupo {
 		this.alumnos = alumnos;
 	}
 	
+	public List<Turno> getTurnos() {
+		return turnos;
+	}
+
+	public void setTurnos(List<Turno> turnos) {
+		this.turnos = turnos;
+	}
+
 	public void addAlumno(Alumno alumno) {
         if (alumno != null) {
             alumnos.add(alumno);
