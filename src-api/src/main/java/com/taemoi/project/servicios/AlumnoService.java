@@ -4,8 +4,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
@@ -50,4 +52,6 @@ public interface AlumnoService {
 	boolean fechaNacimientoValida(Date fechaNacimiento);
 
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
+	
+	String generarContrasena(String nombre, String apellidos);
 }
