@@ -2,8 +2,10 @@ package com.taemoi.project.controladores;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +37,8 @@ import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Imagen;
+import com.taemoi.project.entidades.Roles;
+import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
@@ -42,6 +47,7 @@ import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
+import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 
@@ -81,6 +87,9 @@ public class AlumnoController {
 	
 	@Autowired
 	private GrupoService grupoService;
+	
+	@Autowired
+	private UsuarioRepository usuarioRepository;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -196,67 +205,88 @@ public class AlumnoController {
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
-			@RequestParam(value = "file", required = false) MultipartFile file) {
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+	        @RequestParam(value = "file", required = false) MultipartFile file) {
+	    try {
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-			Imagen imagen = null;
+	        Imagen imagen = null;
 
-			if (file != null) {
-				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = imagenRepository.save(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagen);
-			}
-			logger.info("## AlumnoController :: añadirAlumno");
+	        if (file != null) {
+	            Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
+	            imagen = imagenRepository.save(img);
+	            nuevoAlumnoDTO.setFotoAlumno(imagen);
+	        }
+	        logger.info("## AlumnoController :: añadirAlumno");
 
-			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-			}
+	        if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
+	            throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
+	        }
 
-			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-				throw new DatosAlumnoInvalidosException("Los datos del alumno a crear son inválidos.");
-			}
+	        if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+	            throw new DatosAlumnoInvalidosException("Los datos del alumno a crear son inválidos.");
+	        }
 
-			int edad = alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
+	        int edad = alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
 
-			Categoria categoria = alumnoService.asignarCategoriaSegunEdad(edad);
-			Grado grado = alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
+	        Categoria categoria = alumnoService.asignarCategoriaSegunEdad(edad);
+	        Grado grado = alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
 
-			Grado gradoGuardado = gradoRepository.findByTipoGrado(grado.getTipoGrado());
-			if (gradoGuardado == null) {
-				gradoGuardado = gradoRepository.save(grado);
-			}
+	        Grado gradoGuardado = gradoRepository.findByTipoGrado(grado.getTipoGrado());
+	        if (gradoGuardado == null) {
+	            gradoGuardado = gradoRepository.save(grado);
+	        }
 
-			Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
-			if (alumnoExistente.isPresent()) {
-				throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
-			}
+	        Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
+	        if (alumnoExistente.isPresent()) {
+	            throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
+	        }
 
-			Alumno nuevoAlumno = new Alumno();
-			nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
-			nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
-			nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-			nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
-			nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
-			nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
-			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
-			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-			nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
-			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
-			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
-			nuevoAlumno.setCategoria(categoria);
-			nuevoAlumno.setGrado(grado);
-			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
+	        Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
+	        if (usuarioExistente == null) {
+	            usuarioExistente = new Usuario();
+	            usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
+	            usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
+	            usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
+	            String contrasena = alumnoService.generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());
+	            usuarioExistente.setContrasena(contrasena);
+	            Set<Roles> roles = new HashSet<>();
+	            roles.add(Roles.ROLE_USER);
+	            usuarioExistente.setRoles(roles);
+	            usuarioExistente = usuarioRepository.save(usuarioExistente);
+	        }
 
-			Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
-			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
-			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
-		} catch (IOException e) {
-			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-		}
+	        Alumno nuevoAlumno = new Alumno();
+	        nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
+	        nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
+	        nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
+	        nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
+	        nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
+	        nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
+	        nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
+	        nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
+	        nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+	        nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	        nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
+	        nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
+	        nuevoAlumno.setCategoria(categoria);
+	        nuevoAlumno.setGrado(grado);
+	        nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
+
+	        nuevoAlumno.setUsuario(usuarioExistente);
+
+	        Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
+	        AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
+	        return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
+	    } catch (IOException e) {
+	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+	    }
 	}
+
+	private String generarContrasena() {
+		return null;
+	}
+
 
 	/**
 	 * Actualiza la información de un alumno existente.
