@@ -5,9 +5,11 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +31,7 @@ import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
+import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 
 /**
@@ -66,6 +69,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	
 	@Autowired
 	private GrupoService grupoService;
+	
+	@Autowired
+	private AlumnoService alumnoService;
 
 	/**
      * Inyección del codificador de contraseñas.
@@ -160,35 +166,48 @@ public class InicializadorDatos implements CommandLineRunner {
      * @return El alumno generado.
      */
 	private Alumno generarAlumno(Faker faker) {
-		Alumno alumno = new Alumno();
-		alumno.setNombre(faker.name().firstName());
-		alumno.setApellidos(faker.name().lastName());
-		alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
-		alumno.setFechaNacimiento(faker.date().birthday());
-		alumno.setNif(faker.idNumber().valid());
-		alumno.setDireccion(faker.address().fullAddress());
-		alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
-		alumno.setEmail(faker.internet().emailAddress());
-		alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
-		alumno.setFechaAlta(faker.date().birthday());
-		alumno.setFechaBaja(faker.date().birthday());
-		TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
-		alumno.setTipoTarifa(tipoTarifa);
+	    Alumno alumno = new Alumno();
+	    alumno.setNombre(faker.name().firstName());
+	    alumno.setApellidos(faker.name().lastName());
+	    alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
+	    alumno.setFechaNacimiento(faker.date().birthday());
+	    alumno.setNif(faker.idNumber().valid());
+	    alumno.setDireccion(faker.address().fullAddress());
+	    alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
+	    alumno.setEmail(faker.internet().emailAddress());
+	    alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
+	    alumno.setFechaAlta(faker.date().birthday());
+	    alumno.setFechaBaja(faker.date().birthday());
+	    TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
+	    alumno.setTipoTarifa(tipoTarifa);
 
-		double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
-		alumno.setCuantiaTarifa(cuantiaTarifa);
+	    double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
+	    alumno.setCuantiaTarifa(cuantiaTarifa);
 
-		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate();
-		int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
+	    LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
+	            .toLocalDate();
+	    int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
 
-		alumno.setCategoria(asignarCategoriaSegunEdad(edad));
+	    alumno.setCategoria(asignarCategoriaSegunEdad(edad));
 
-		alumno.setGrado(asignarGradoSegunEdad(edad));
-		
-		return alumno;
+	    alumno.setGrado(asignarGradoSegunEdad(edad));
 
+	    Usuario usuario = new Usuario();
+	    usuario.setNombre(alumno.getNombre());
+	    usuario.setApellidos(alumno.getApellidos());
+	    usuario.setEmail(alumno.getEmail());
+	    String contrasena = alumnoService.generarContrasena(alumno.getNombre(), alumno.getApellidos());
+	    usuario.setContrasena(passwordEncoder.encode(contrasena));
+	    Set<Roles> roles = new HashSet<>();
+	    roles.add(Roles.ROLE_USER);
+	    usuario.setRoles(roles);
+	    usuarioRepository.save(usuario);
+	    
+	    alumno.setUsuario(usuario);
+
+	    return alumno;
 	}
+
 
     /**
      * Asigna la cuantía de la tarifa según el tipo de tarifa.
