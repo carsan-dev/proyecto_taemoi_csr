@@ -86,6 +86,9 @@ public class Alumno {
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	@JsonManagedReference
 	private List<Grupo> grupos;
+    
+    @OneToOne(mappedBy = "alumno")
+    private Usuario usuario;
 
 	@OneToMany(mappedBy = "alumno")
 	private List<Examen> examenes;
@@ -244,4 +247,13 @@ public class Alumno {
 	public void setGrupos(List<Grupo> grupos) {
 		this.grupos = grupos;
 	}
+
+	public Usuario getUsuario() {
+		return usuario;
+	}
+
+	public void setUsuario(Usuario usuario) {
+		this.usuario = usuario;
+	}
+	
 }

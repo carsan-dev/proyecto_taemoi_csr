@@ -19,6 +19,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -49,6 +51,10 @@ public class Usuario implements UserDetails {
 	@CollectionTable(name = "usuario_rol")
 	@Column(name = "Roles")
 	private Set<Roles> roles = new HashSet<>();
+	
+	@OneToOne
+	@JoinColumn(name = "alumno_id")
+	private Alumno alumno;
 
 	@Transactional
 	@Override
