@@ -1,15 +1,64 @@
-.sidebar {
-  transition: transform 0.7s ease;
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../../assets/fonts/osaka-re.ttf') format('truetype');
 }
 
-.sidebar.collapsed {
-  transform: translateX(-150%);
-}
+.sidebar-container {
+  .sidebar-top-container {
+    background-color: #192D2B;
+  }
 
-.icono-sidebar {
-  transition: transform 0.3s ease; /* Establece la transición para la propiedad transform */
-}
+  .sidebar {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.4s ease;
 
-.icono-sidebar.rotado {
-  transform: rotate(180deg); /* Rota el ícono 180 grados */
+    .centered-image {
+      position: absolute;
+      top: 17%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 50%;
+      max-height: 50%;
+      border: 10px solid black;
+      border-radius: 50%;
+    }
+
+    .user-container {
+      background-color: #192D2B;
+      height: 170px;
+
+      & h2 {
+        font-family: 'Osaka-Sans Serif', sans-serif;
+      }
+
+      & p {
+        opacity: 75%;
+      }
+    }
+
+    &.collapsed {
+      transform: translateX(-100%);
+      width: 0;
+    }
+
+    .sidebar-list-top {
+      margin-top: 120px;
+    }
+
+    ul {
+      li {
+        a {
+          cursor: pointer;
+
+          .nav-link {
+            &.active {
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+    }
+  }
 }
