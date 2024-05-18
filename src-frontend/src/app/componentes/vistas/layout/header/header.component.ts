@@ -33,6 +33,7 @@ export class HeaderComponent implements OnInit {
     const token = localStorage.getItem('token');
     if (token) {
       localStorage.removeItem('token');
+      this.authService.actualizarEstadoLogueado(false);
       this.usuarioLogueado = false;
       Swal.fire({
         title: 'Sesión cerrada con éxito',
