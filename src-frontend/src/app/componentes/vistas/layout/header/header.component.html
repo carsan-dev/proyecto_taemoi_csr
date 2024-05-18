@@ -36,7 +36,7 @@
           </ul>
         </div>
         <div class="navbar-der">
-          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end" *ngIf="!usuarioLogueado">
+          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
             <li class="nav-item me-4">
               <label class="switch">
                 <input type="checkbox">
@@ -53,25 +53,6 @@
             </li>
             <li class="nav-item">
               <a class="nav-link p-0 text-black" (click)="irARuta('/login')"><i class="bi bi-person-fill fs-3"></i></a>
-            </li>
-          </ul>
-          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end" *ngIf="usuarioLogueado">
-            <li class="nav-item me-3">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.facebook.com/moiskimdo.escueladetaekwondo/"><i
-                  class="bi bi-facebook fs-4"></i></a>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link p-0 text-black" href="www.instagram.com/moiskimdo_/"><i
-                  class="bi bi-instagram fs-4"></i></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
             </li>
           </ul>
         </div>

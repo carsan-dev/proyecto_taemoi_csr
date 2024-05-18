@@ -77,11 +77,9 @@ header.header-nologuedo {
 
 header.header-loguedo {
   padding: 0;
+  z-index: 99;
 
   nav {
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-
     .nav-item {
       cursor: pointer;
 
