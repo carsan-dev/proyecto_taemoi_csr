@@ -1,13 +1,113 @@
 <div class="sidebar-container">
-  <div class="d-flex justify-content-center">
+  <div class="d-flex justify-content-end p-2 sidebar-top-container">
     <i
-      class="fs-2 text-primary text-center icono-sidebar bi-box-arrow-in-right" (click)="alternarVisibilidadSidebar()"></i>
+      class="fs-2 text-white bi-list"
+      (click)="alternarVisibilidadSidebar()"
+    ></i>
   </div>
   <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
-    <div class="list-group">
-      <button (click)="irAListado()" class="list-group-item list-group-item-action">Ir a listado</button>
-      <button (click)="irACrear()" class="list-group-item list-group-item-action">Crear alumno</button>
-      <button (click)="irAEliminar()" class="list-group-item list-group-item-action">Eliminar alumno</button>
+    <div class="user-container">
+      <h2 class="h2 text-white text-center">MOISKIMDO</h2>
+      <p class="text-white text-center">moiskimdotaekwondo&#64;gmail.com</p>
     </div>
+    <img src="assets/media/Logo_escuela.svg" class="centered-image" alt="superpuesta">
+    <ul class="list-unstyled sidebar-list-top">
+      <li class="ms-4">
+        <h2 class="h5 text-white fw-bold">ACCIONES</h2>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('/adminpage')" class="text-white text-decoration-none d-flex align-items-center">
+          <i class="bi bi-house-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/adminpage']" routerLinkActive="active">Página principal</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled mt-5">
+      <li class="ms-4">
+        <h2 class="h6 text-white fw-bold">ALUMNOS</h2>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-people-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Listado de alumnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('/alumnosCrear')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-add fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosCrear']" routerLinkActive="active">Añadir alumnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('/alumnosEditar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-gear fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active">Modificar alumnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('/alumnosEliminar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-x fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active">Eliminar alumnos</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled mt-5">
+      <li class="ms-4">
+        <h2 class="h6 text-white fw-bold">GRUPOS</h2>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-lines-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Consultar grupos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-plus-circle-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Añadir grupos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-pencil-square fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Modificar grupos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-trash3-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Eliminar grupos</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled my-5">
+      <li class="ms-4">
+        <h2 class="h6 text-white fw-bold">HORARIOS</h2>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-calendar2-week-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Consultar turnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-calendar-plus-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Añadir turnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-gear-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Modificar turnos</span>
+        </a>
+      </li>
+      <li class="ms-4">
+        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-calendar-x-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Eliminar turnos</span>
+        </a>
+      </li>
+    </ul>
   </aside>
 </div>
