@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Turno;
-import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.servicios.TurnoService;
 
@@ -59,7 +59,7 @@ public class TurnoController {
      */
     @GetMapping("/{turnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<TurnoDTO> obtenerTurnoPorId(@PathVariable Long turnoId) {
+    public ResponseEntity<TurnoDTO> obtenerTurnoPorId(@PathVariable @NonNull Long turnoId) {
         try {
             Turno turno = turnoService.obtenerTurnoPorId(turnoId);
             return ResponseEntity.ok(TurnoDTO.deTurno(turno));
@@ -115,7 +115,7 @@ public class TurnoController {
      */
     @PutMapping("/{turnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<TurnoDTO> actualizarTurno(@PathVariable Long turnoId, @RequestBody TurnoDTO turnoDTO) {
+    public ResponseEntity<TurnoDTO> actualizarTurno(@PathVariable @NonNull Long turnoId, @RequestBody TurnoDTO turnoDTO) {
         TurnoDTO turnoActualizadoDTO = turnoService.actualizarTurno(turnoId, turnoDTO);
         if (turnoActualizadoDTO != null) {
             return ResponseEntity.ok(turnoActualizadoDTO);
@@ -133,7 +133,7 @@ public class TurnoController {
      */
     @DeleteMapping("/{turnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarTurno(@PathVariable Long turnoId) {
+    public ResponseEntity<?> eliminarTurno(@PathVariable @NonNull Long turnoId) {
         try {
             turnoService.eliminarTurno(turnoId);
             return ResponseEntity.ok("Turno eliminado correctamente");

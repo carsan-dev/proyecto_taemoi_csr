@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -88,7 +89,7 @@ public class AdminController {
      */
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
-	public ResponseEntity<Alumno> obtenerAlumnoPorId(@PathVariable Long id) {
+	public ResponseEntity<Alumno> obtenerAlumnoPorId(@PathVariable @NonNull Long id) {
 		logger.info("## AdminController :: mostrarAlumnosPorId");
 		Optional<Alumno> alumno = alumnoService.obtenerAlumnoPorId(id);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))

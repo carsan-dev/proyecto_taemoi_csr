@@ -1,17 +1,16 @@
 package com.taemoi.project.servicios;
 
 import java.util.List;
-import java.util.Optional;
+import org.springframework.lang.NonNull;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.GrupoConTurnosDTO;
 import com.taemoi.project.entidades.Turno;
 
 public interface TurnoService {
 	
 	List<Turno> listarTurnos();
 	
-	Turno obtenerTurnoPorId(Long turnoId);
+	Turno obtenerTurnoPorId(@NonNull Long turnoId);
 	
 	List<TurnoDTO> listarTurnosDTO();
 	
@@ -19,7 +18,7 @@ public interface TurnoService {
 	
 	void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO);
 	
-	TurnoDTO actualizarTurno(Long turnoId, TurnoDTO turnoDTO);
+	TurnoDTO actualizarTurno(@NonNull Long turnoId, TurnoDTO turnoDTO);
 	
-	void eliminarTurno(Long turnoId);
+	void eliminarTurno(@NonNull Long turnoId);
 }

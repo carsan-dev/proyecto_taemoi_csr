@@ -9,16 +9,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
@@ -75,7 +73,7 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return Una página de objetos Alumno.
      */
 	@Override
-	public Page<Alumno> obtenerTodosLosAlumnos(Pageable pageable) {
+	public Page<Alumno> obtenerTodosLosAlumnos(@NonNull Pageable pageable) {
 		return alumnoRepository.findAll(pageable);
 	}
 	
@@ -96,7 +94,7 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return Un objeto Optional que contiene el alumno si se encuentra, de lo contrario, un Optional vacío.
      */
 	@Override
-	public Optional<Alumno> obtenerAlumnoPorId(Long id) {
+	public Optional<Alumno> obtenerAlumnoPorId(@NonNull Long id) {
 		return alumnoRepository.findById(id);
 	}
 	
@@ -107,7 +105,7 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return Un objeto Optional que contiene el alumno DTO si se encuentra, de lo contrario, un Optional vacío.
      */
 	@Override
-	public Optional<AlumnoDTO> obtenerAlumnoDTOPorId(Long id) {
+	public Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = obtenerAlumnoPorId(id);
 		return optionalAlumno.map(this::mapeoParaAlumnoDTO);
 	}
@@ -180,7 +178,7 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return El alumno creado.
      */
 	@Override
-	public Alumno crearAlumno(Alumno alumno) {
+	public Alumno crearAlumno(@NonNull Alumno alumno) {
 		return alumnoRepository.save(alumno);
 	}
 
@@ -195,7 +193,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado.
 	 */
 	@Override
-	public Alumno actualizarAlumno(Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen) {
+	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen) {
 	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 	    if (optionalAlumno.isPresent()) {
 	        Alumno alumnoExistente = optionalAlumno.get();
@@ -232,7 +230,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado o si el alumno no tiene una imagen asociada.
 	 */
 	@Override
-    public void eliminarImagenAlumno(Long id) {
+    public void eliminarImagenAlumno(@NonNull Long id) {
         Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
         if (optionalAlumno.isPresent()) {
             Alumno alumno = optionalAlumno.get();
@@ -256,8 +254,9 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @param id El ID del alumno a eliminar.
      * @return true si se elimina con éxito, false si el alumno no existe.
      */
+	@SuppressWarnings("null")
 	@Override
-	public boolean eliminarAlumno(Long id) {
+	public boolean eliminarAlumno(@NonNull Long id) {
 	    return alumnoRepository.findById(id).map(alumno -> {
 	        if (alumno.getFotoAlumno() != null) {
 	            imagenRepository.delete(alumno.getFotoAlumno());

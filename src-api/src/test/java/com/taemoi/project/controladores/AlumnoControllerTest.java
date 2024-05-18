@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +48,7 @@ class AlumnoControllerTest {
 	@InjectMocks
 	private AlumnoController alumnoController;
 
+	@SuppressWarnings("null")
 	@Test
 	void obtenerAlumnosDTO_Test() {
 	    List<Alumno> alumnosList = new ArrayList<>();
@@ -74,6 +74,7 @@ class AlumnoControllerTest {
 	    assertEquals(alumnoDTO, result.getBody());
 	}
 
+	@SuppressWarnings("null")
 	@Test
 	void crearAlumno_Test() {
 	    AlumnoDTO nuevoAlumnoDTO = new AlumnoDTO();
