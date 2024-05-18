@@ -15,6 +15,7 @@ import { CommonModule } from '@angular/common';
 })
 export class SkeletonComponent {
   usuarioLogueado: boolean = false;
+  sidebarColapsado: boolean = false;
 
   constructor(private authService: AuthenticationService) {}
 
@@ -22,5 +23,9 @@ export class SkeletonComponent {
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
     });
+  }
+
+  onColapsoCambiado(colapsado: boolean) {
+    this.sidebarColapsado = colapsado;
   }
 }
