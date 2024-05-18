@@ -123,6 +123,16 @@ public class InicializadorDatos implements CommandLineRunner {
 				admin.getRoles().add(Roles.ROLE_ADMIN);
 				usuarioRepository.save(admin);
 			}
+			
+			if (usuarioRepository.findByEmail("usuarioPrueba@gmail.com").isEmpty()) {
+				Usuario prueba = new Usuario();
+				prueba.setNombre("Prueba");
+				prueba.setApellidos("Standard User");
+				prueba.setEmail("usuarioPrueba@gmail.com");
+				prueba.setContrasena(passwordEncoder.encode("12345678"));
+				prueba.getRoles().add(Roles.ROLE_USER);
+				usuarioRepository.save(prueba);
+			}
 		} catch (Exception e) {
 
 		}
