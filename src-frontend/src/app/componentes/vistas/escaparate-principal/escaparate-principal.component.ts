@@ -5,7 +5,6 @@ import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { Router } from '@angular/router';
-import { EventosService } from '../../../servicios/generales/eventos.service';
 import { EventosInteface } from '../../../interfaces/eventos-inteface';
 
 @Component({
@@ -63,8 +62,7 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
 
   constructor(
     private authService: AuthenticationService,
-    private router: Router,
-    private eventosService: EventosService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -72,8 +70,6 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
     });
-    this.eventos = this.eventosService.obtenerEventos();
-    this.eventoActual = this.eventos[this.eventoActualIndex];
   }
 
   ngAfterViewInit(): void {
