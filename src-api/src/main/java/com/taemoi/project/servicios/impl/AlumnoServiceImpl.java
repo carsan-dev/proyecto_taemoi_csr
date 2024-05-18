@@ -56,9 +56,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private GradoRepository gradoRepository;
 	
+	/**
+     * Inyección del repositorio de imagen.
+     */
 	@Autowired
 	private ImagenRepository imagenRepository;
 	
+	/**
+     * Inyección del PasswordEncoder para codificar la contraseña del usuario creado.
+     */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
@@ -178,14 +184,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return alumnoRepository.save(alumno);
 	}
 
-    /**
-     * Actualiza un alumno existente.
-     *
-     * @param id                  El ID del alumno a actualizar.
-     * @param alumnoActualizado   El objeto AlumnoDTO con los datos actualizados.
-     * @param nuevaFechaNacimiento La nueva fecha de nacimiento del alumno.
-     * @return El alumno actualizado.
-     */
+	/**
+	 * Actualiza un alumno existente.
+	 *
+	 * @param id El ID del alumno a actualizar.
+	 * @param alumnoActualizado El objeto AlumnoDTO con los datos actualizados.
+	 * @param nuevaFechaNacimiento La nueva fecha de nacimiento del alumno.
+	 * @param imagen La nueva imagen del alumno, si se proporciona.
+	 * @return El alumno actualizado.
+	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado.
+	 */
 	@Override
 	public Alumno actualizarAlumno(Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen) {
 	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
@@ -217,6 +225,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    }
 	}
 	
+	/**
+	 * Elimina la imagen asociada a un alumno especificado por su ID.
+	 * 
+	 * @param id El ID del alumno cuya imagen se eliminará.
+	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado o si el alumno no tiene una imagen asociada.
+	 */
 	@Override
     public void eliminarImagenAlumno(Long id) {
         Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
@@ -237,7 +251,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 
     /**
-     * Elimina un alumno por su ID.
+     * Elimina un alumno por su ID y elimina su imagen.
      *
      * @param id El ID del alumno a eliminar.
      * @return true si se elimina con éxito, false si el alumno no existe.
@@ -408,6 +422,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return true;
 	}
 	
+	/**
+	 * Genera una contraseña codificada a partir del nombre y apellidos de un usuario.
+	 *
+	 * @param nombre El nombre del usuario.
+	 * @param apellidos Los apellidos del usuario.
+	 * @return La contraseña codificada generada a partir del nombre y apellidos.
+	 */
 	@Override
 	public String generarContrasena(String nombre, String apellidos) {
 	    String cadena = (nombre + apellidos).toLowerCase();

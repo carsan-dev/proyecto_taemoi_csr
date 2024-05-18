@@ -23,18 +23,35 @@ import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.servicios.GrupoService;
 
+/**
+ * Implementación del servicio para operaciones relacionadas con los grupos de alumnos.
+ */
 @Service
 public class GrupoServiceImpl implements GrupoService {
 	
+	/**
+     * Inyección del repositorio de grupo.
+     */
     @Autowired
     private GrupoRepository grupoRepository;
     
+	/**
+     * Inyección del repositorio de alumno.
+     */
     @Autowired
     private AlumnoRepository alumnoRepository;
     
+	/**
+     * Inyección del repositorio de turno.
+     */
     @Autowired
     private TurnoRepository turnoRepository;
 
+    /**
+     * Obtiene todos los grupos.
+     *
+     * @return Una lista de objetos GrupoConAlumnosDTO que representan todos los grupos.
+     */
     @Override
     public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
         List<Grupo> grupos = grupoRepository.findAll();
@@ -43,12 +60,24 @@ public class GrupoServiceImpl implements GrupoService {
                 .collect(Collectors.toList());
     }
     
+    /**
+     * Obtiene un grupo con sus alumnos por su ID.
+     *
+     * @param id El ID del grupo a obtener.
+     * @return Un Optional que contiene el objeto GrupoConAlumnosDTO si se encuentra el grupo; de lo contrario, un Optional vacío.
+     */
     @Override
     public Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(Long id) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
         return grupoOptional.map(this::convertirEntidadADTO);
     }
 
+    /**
+     * Crea un nuevo grupo.
+     *
+     * @param grupoDTO El objeto GrupoConAlumnosDTO con los datos del nuevo grupo.
+     * @return El objeto GrupoConAlumnosDTO que representa el grupo creado.
+     */
     @Override
     public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
         Grupo grupo = convertirDTOAEntidad(grupoDTO);
@@ -56,6 +85,13 @@ public class GrupoServiceImpl implements GrupoService {
         return convertirEntidadADTO(grupo);
     }
 
+    /**
+     * Actualiza un grupo existente.
+     *
+     * @param id El ID del grupo a actualizar.
+     * @param grupoDTO El objeto GrupoConAlumnosDTO con los datos actualizados del grupo.
+     * @return El objeto GrupoConAlumnosDTO que representa el grupo actualizado, o null si no se encuentra el grupo.
+     */
     @Override
     public GrupoConAlumnosDTO actualizarGrupo(Long id, GrupoConAlumnosDTO grupoDTO) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
@@ -70,12 +106,23 @@ public class GrupoServiceImpl implements GrupoService {
         }
     }
 
-
+    /**
+     * Elimina un grupo por su ID.
+     *
+     * @param id El ID del grupo a eliminar.
+     */
 	@Override
 	public void eliminarGrupo(Long id) {
         grupoRepository.deleteById(id);
 	}
 	
+	/**
+	 * Agrega un alumno a un grupo.
+	 *
+	 * @param grupoId El ID del grupo.
+	 * @param alumnoId El ID del alumno.
+	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
+	 */
 	@Override
 	public void agregarAlumnoAGrupo(Long grupoId, Long alumnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
@@ -91,6 +138,13 @@ public class GrupoServiceImpl implements GrupoService {
 	    }
 	}
 	
+	/**
+	 * Elimina un alumno de un grupo.
+	 *
+	 * @param grupoId El ID del grupo.
+	 * @param alumnoId El ID del alumno.
+	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
+	 */
 	@Override
 	public void eliminarAlumnoDeGrupo(Long grupoId, Long alumnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
@@ -107,6 +161,13 @@ public class GrupoServiceImpl implements GrupoService {
 	    }
 	}
 	
+	/**
+	 * Agrega un turno a un grupo.
+	 *
+	 * @param grupoId El ID del grupo.
+	 * @param turnoId El ID del turno.
+	 * @throws GrupoNoEncontradoException Si el grupo o el turno no existen.
+	 */
 	@Override
 	public void agregarTurnoAGrupo(Long grupoId, Long turnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
@@ -123,6 +184,14 @@ public class GrupoServiceImpl implements GrupoService {
 	    }
 	}
 	
+	/**
+	 * Elimina un turno de un grupo.
+	 *
+	 * @param grupoId El ID del grupo.
+	 * @param turnoId El ID del turno.
+	 * @throws GrupoNoEncontradoException Si el grupo no existe.
+	 * @throws TurnoNoEncontradoException Si el turno no está asignado al grupo.
+	 */
 	@Override
 	public void eliminarTurnoDeGrupo(Long grupoId, Long turnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
@@ -146,6 +215,12 @@ public class GrupoServiceImpl implements GrupoService {
 	    }
 	}
 	
+	/**
+	 * Obtiene los turnos asignados a un grupo.
+	 *
+	 * @param grupoId El ID del grupo.
+	 * @return Una lista de objetos TurnoDTO que representan los turnos del grupo.
+	 */
 	@Override
 	public List<TurnoDTO> obtenerTurnosDelGrupo(Long grupoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
@@ -161,6 +236,12 @@ public class GrupoServiceImpl implements GrupoService {
 	    return Collections.emptyList();
 	}
 
+	/**
+	 * Obtiene los grupos a los que pertenece un alumno.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @return Una lista de objetos GrupoResponseDTO que representan los grupos del alumno.
+	 */
 	@Override
 	public List<GrupoResponseDTO> obtenerGruposDelAlumno(Long alumnoId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId).orElse(null);
@@ -172,6 +253,12 @@ public class GrupoServiceImpl implements GrupoService {
 	    return Collections.emptyList();
 	}
     
+	/**
+	 * Convierte una entidad Grupo a un DTO GrupoConAlumnosDTO.
+	 *
+	 * @param grupo La entidad Grupo a convertir.
+	 * @return El objeto GrupoConAlumnosDTO que representa la entidad Grupo.
+	 */
 	@Override
 	public GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo) {
 	    GrupoConAlumnosDTO grupoDTO = new GrupoConAlumnosDTO();
@@ -186,6 +273,12 @@ public class GrupoServiceImpl implements GrupoService {
 	    return grupoDTO;
 	}
 
+	/**
+	 * Convierte un DTO GrupoConAlumnosDTO a una entidad Grupo.
+	 *
+	 * @param grupoDTO El objeto GrupoConAlumnosDTO a convertir.
+	 * @return La entidad Grupo que representa el objeto GrupoConAlumnosDTO.
+	 */
 	@Override
 	public Grupo convertirDTOAEntidad(GrupoConAlumnosDTO grupoDTO) {
 	    Grupo grupo = new Grupo();
@@ -208,6 +301,12 @@ public class GrupoServiceImpl implements GrupoService {
 	    return grupo;
 	}
 	
+	/**
+	 * Convierte una entidad Grupo a un DTO GrupoResponseDTO.
+	 *
+	 * @param grupo La entidad Grupo a convertir.
+	 * @return El objeto GrupoResponseDTO que representa la entidad Grupo.
+	 */
 	private GrupoResponseDTO convertirGrupoADTO(Grupo grupo) {
 	    GrupoResponseDTO grupoDTO = new GrupoResponseDTO();
 	    grupoDTO.setNombre(grupo.getNombre());
