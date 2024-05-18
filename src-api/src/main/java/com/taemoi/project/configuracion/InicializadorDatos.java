@@ -94,6 +94,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * @param args Argumentos de la línea de comandos.
 	 * @throws Exception Si ocurre un error durante la inicialización de datos.
 	 */
+	@SuppressWarnings("null")
 	@Override
 	public void run(String... args) throws Exception {
 		boolean borrarAlumnos = true;
@@ -321,6 +322,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	 *
 	 * @param alumnos Lista de alumnos.
 	 */
+	@SuppressWarnings("null")
 	private void asignarAlumnosAGrupoAleatorio(List<Alumno> alumnos) {
 	    List<Grupo> grupos = grupoRepository.findAll();
 

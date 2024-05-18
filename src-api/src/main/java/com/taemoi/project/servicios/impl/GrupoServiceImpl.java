@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
@@ -67,7 +68,7 @@ public class GrupoServiceImpl implements GrupoService {
      * @return Un Optional que contiene el objeto GrupoConAlumnosDTO si se encuentra el grupo; de lo contrario, un Optional vacío.
      */
     @Override
-    public Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(Long id) {
+    public Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@NonNull Long id) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
         return grupoOptional.map(this::convertirEntidadADTO);
     }
@@ -78,7 +79,8 @@ public class GrupoServiceImpl implements GrupoService {
      * @param grupoDTO El objeto GrupoConAlumnosDTO con los datos del nuevo grupo.
      * @return El objeto GrupoConAlumnosDTO que representa el grupo creado.
      */
-    @Override
+    @SuppressWarnings("null")
+	@Override
     public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
         Grupo grupo = convertirDTOAEntidad(grupoDTO);
         grupo = grupoRepository.save(grupo);
@@ -93,7 +95,7 @@ public class GrupoServiceImpl implements GrupoService {
      * @return El objeto GrupoConAlumnosDTO que representa el grupo actualizado, o null si no se encuentra el grupo.
      */
     @Override
-    public GrupoConAlumnosDTO actualizarGrupo(Long id, GrupoConAlumnosDTO grupoDTO) {
+    public GrupoConAlumnosDTO actualizarGrupo(@NonNull Long id, GrupoConAlumnosDTO grupoDTO) {
         Optional<Grupo> grupoOptional = grupoRepository.findById(id);
         if (grupoOptional.isPresent()) {
             Grupo grupo = grupoOptional.get();
@@ -112,7 +114,7 @@ public class GrupoServiceImpl implements GrupoService {
      * @param id El ID del grupo a eliminar.
      */
 	@Override
-	public void eliminarGrupo(Long id) {
+	public void eliminarGrupo(@NonNull Long id) {
         grupoRepository.deleteById(id);
 	}
 	
@@ -124,7 +126,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
 	 */
 	@Override
-	public void agregarAlumnoAGrupo(Long grupoId, Long alumnoId) {
+	public void agregarAlumnoAGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 	    
@@ -146,7 +148,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
 	 */
 	@Override
-	public void eliminarAlumnoDeGrupo(Long grupoId, Long alumnoId) {
+	public void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 	    
@@ -169,7 +171,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws GrupoNoEncontradoException Si el grupo o el turno no existen.
 	 */
 	@Override
-	public void agregarTurnoAGrupo(Long grupoId, Long turnoId) {
+	public void agregarTurnoAGrupo(@NonNull Long grupoId, @NonNull Long turnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 	    Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
 	    
@@ -193,7 +195,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws TurnoNoEncontradoException Si el turno no está asignado al grupo.
 	 */
 	@Override
-	public void eliminarTurnoDeGrupo(Long grupoId, Long turnoId) {
+	public void eliminarTurnoDeGrupo(@NonNull Long grupoId, @NonNull Long turnoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 	    
 	    if (grupoOptional.isPresent()) {
@@ -222,7 +224,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @return Una lista de objetos TurnoDTO que representan los turnos del grupo.
 	 */
 	@Override
-	public List<TurnoDTO> obtenerTurnosDelGrupo(Long grupoId) {
+	public List<TurnoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId) {
 	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 	    if (grupoOptional.isPresent()) {
 	        Grupo grupo = grupoOptional.get();
@@ -243,7 +245,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @return Una lista de objetos GrupoResponseDTO que representan los grupos del alumno.
 	 */
 	@Override
-	public List<GrupoResponseDTO> obtenerGruposDelAlumno(Long alumnoId) {
+	public List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId).orElse(null);
 	    if (alumno != null) {
 	        return alumno.getGrupos().stream()

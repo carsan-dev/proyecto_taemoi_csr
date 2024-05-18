@@ -94,6 +94,7 @@ public class AlumnoServiceImplTest {
 		assertNotNull(result);
 	}
 
+	@SuppressWarnings("null")
 	@Test
 	public void testActualizarAlumno() {
 	    Alumno alumnoExistente = new Alumno();
@@ -114,6 +115,7 @@ public class AlumnoServiceImplTest {
 
 
 
+	@SuppressWarnings("null")
 	@Test
     public void testEliminarAlumno() {
         when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
@@ -170,7 +172,8 @@ public class AlumnoServiceImplTest {
 	    assertTrue(result);
 	}
 
-    @Test
+    @SuppressWarnings("null")
+	@Test
     public void testDatosAlumnoValidos() {
         AlumnoDTO alumnoDTO = new AlumnoDTO();
         alumnoDTO.setNombre("Juan");

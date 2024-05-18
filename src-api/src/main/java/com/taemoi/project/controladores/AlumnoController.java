@@ -18,8 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -180,7 +180,7 @@ public class AlumnoController {
 	 */
 	@GetMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable Long id) {
+	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
 		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoDTOPorId(id);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
@@ -196,7 +196,7 @@ public class AlumnoController {
 	 */
 	@GetMapping("/{alumnoId}/grupos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
-	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable Long alumnoId) {
+	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
 		if (!gruposDTO.isEmpty()) {
 			return ResponseEntity.ok(gruposDTO);
@@ -315,7 +315,7 @@ public class AlumnoController {
 	 */
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> actualizarAlumno(@PathVariable Long id,
+	public ResponseEntity<?> actualizarAlumno(@PathVariable @NonNull Long id,
 			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
 			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
 		logger.info("## AlumnoController :: modificarAlumno");
@@ -357,7 +357,7 @@ public class AlumnoController {
 	 */
 	@DeleteMapping("/{id}/imagen")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> eliminarImagenAlumno(@PathVariable Long id) {
+	public ResponseEntity<?> eliminarImagenAlumno(@PathVariable @NonNull Long id) {
 		try {
 			alumnoService.eliminarImagenAlumno(id);
 			return ResponseEntity.ok().build();
@@ -375,7 +375,7 @@ public class AlumnoController {
 	 */
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Void> eliminarAlumno(@Valid @PathVariable Long id) {
+	public ResponseEntity<Void> eliminarAlumno(@Valid @PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: eliminarAlumno");
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);

@@ -5,12 +5,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Turno;
-import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
@@ -53,7 +53,7 @@ public class TurnoServiceImpl implements TurnoService {
      * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
      */
     @Override
-    public Turno obtenerTurnoPorId(Long turnoId) {
+    public Turno obtenerTurnoPorId(@NonNull Long turnoId) {
         return turnoRepository.findById(turnoId)
                 .orElseThrow(() -> new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe."));
     }
@@ -123,7 +123,7 @@ public class TurnoServiceImpl implements TurnoService {
      * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
      */
     @Override
-    public TurnoDTO actualizarTurno(Long turnoId, TurnoDTO turnoDTO) {
+    public TurnoDTO actualizarTurno(@NonNull Long turnoId, TurnoDTO turnoDTO) {
         Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
         if (turnoOptional.isPresent()) {
             Turno turno = turnoOptional.get();
@@ -162,7 +162,7 @@ public class TurnoServiceImpl implements TurnoService {
      * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
      */
     @Override
-    public void eliminarTurno(Long turnoId) {
+    public void eliminarTurno(@NonNull Long turnoId) {
         if (turnoRepository.existsById(turnoId)) {
             turnoRepository.deleteById(turnoId);
         } else {
