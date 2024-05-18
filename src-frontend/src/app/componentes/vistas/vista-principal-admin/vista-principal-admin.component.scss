@@ -1,1 +1,15 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
 
+.admin-container {
+  background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/recepcion_escuela.webp");
+  background-position: center;
+  background-size: cover;
+  height: 1100px;
+
+  p {
+    font-family: 'Osaka-Sans Serif', sans-serif;
+  }
+}
