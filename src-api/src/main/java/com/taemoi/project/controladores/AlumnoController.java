@@ -75,19 +75,28 @@ public class AlumnoController {
 	 */
 	@Autowired
 	AlumnoRepository alumnoRepository;
-	
+
 	/**
 	 * Inyección del repositorio de grado.
 	 */
 	@Autowired
 	private GradoRepository gradoRepository;
 
+	/**
+	 * Inyección del repositorio de imagen.
+	 */
 	@Autowired
 	private ImagenRepository imagenRepository;
-	
+
+	/**
+	 * Inyección del servicio de grupo.
+	 */
 	@Autowired
 	private GrupoService grupoService;
-	
+
+	/**
+	 * Inyección del repositorio de usuario.
+	 */
 	@Autowired
 	private UsuarioRepository usuarioRepository;
 
@@ -104,7 +113,7 @@ public class AlumnoController {
 	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
 	 */
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
 			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId) {
@@ -170,7 +179,7 @@ public class AlumnoController {
 	 *                                     ID especificado.
 	 */
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
 		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoDTOPorId(id);
@@ -178,22 +187,30 @@ public class AlumnoController {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 
-	@GetMapping("/{alumnoId}/grupos")
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable Long alumnoId) {
-	    List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
-	    if (!gruposDTO.isEmpty()) {
-	        return ResponseEntity.ok(gruposDTO);
-	    } else {
-	        return ResponseEntity.notFound().build();
-	    }
-	}
-	
 	/**
-	 * Crea un nuevo alumno.
+	 * Obtiene los grupos a los que pertenece un alumno especificado por su ID.
 	 *
-	 * @param nuevoAlumnoDTO Datos del nuevo alumno a crear.
-	 * @return ResponseEntity que contiene el alumno creado.
+	 * @param alumnoId El ID del alumno cuyos grupos se desean obtener.
+	 * @return ResponseEntity que contiene una lista de GrupoResponseDTO si se encuentran grupos; 
+	 *         ResponseEntity.notFound() si no se encuentran grupos para el alumno especificado.
+	 */
+	@GetMapping("/{alumnoId}/grupos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable Long alumnoId) {
+		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
+		if (!gruposDTO.isEmpty()) {
+			return ResponseEntity.ok(gruposDTO);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	/**
+	 * Crea un nuevo alumno y le crea un usuario automáticamente.
+	 *
+	 * @param nuevoAlumnoDTO Datos del nuevo alumno a crear en formato JSON.
+	 * @param file           Archivo de imagen opcional del alumno.
+	 * @return ResponseEntity que contiene el alumno creado en formato JSON.
 	 * @throws FechaNacimientoInvalidaException si la fecha de nacimiento
 	 *                                          proporcionada es inválida.
 	 * @throws DatosAlumnoInvalidosException    si los datos del alumno son
@@ -203,104 +220,101 @@ public class AlumnoController {
 	 */
 
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
-	        @RequestParam(value = "file", required = false) MultipartFile file) {
-	    try {
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+			@RequestParam(value = "file", required = false) MultipartFile file) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-	        Imagen imagen = null;
+			Imagen imagen = null;
 
-	        if (file != null) {
-	            Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-	            imagen = imagenRepository.save(img);
-	            nuevoAlumnoDTO.setFotoAlumno(imagen);
-	        }
-	        logger.info("## AlumnoController :: añadirAlumno");
+			if (file != null) {
+				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
+				imagen = imagenRepository.save(img);
+				nuevoAlumnoDTO.setFotoAlumno(imagen);
+			}
+			logger.info("## AlumnoController :: añadirAlumno");
 
-	        if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-	            throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-	        }
+			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
+				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
+			}
 
-	        if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-	            throw new DatosAlumnoInvalidosException("Los datos del alumno a crear son inválidos.");
-	        }
+			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+				throw new DatosAlumnoInvalidosException("Los datos del alumno a crear son inválidos.");
+			}
 
-	        int edad = alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
+			int edad = alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
 
-	        Categoria categoria = alumnoService.asignarCategoriaSegunEdad(edad);
-	        Grado grado = alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
+			Categoria categoria = alumnoService.asignarCategoriaSegunEdad(edad);
+			Grado grado = alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
 
-	        Grado gradoGuardado = gradoRepository.findByTipoGrado(grado.getTipoGrado());
-	        if (gradoGuardado == null) {
-	            gradoGuardado = gradoRepository.save(grado);
-	        }
+			Grado gradoGuardado = gradoRepository.findByTipoGrado(grado.getTipoGrado());
+			if (gradoGuardado == null) {
+				gradoGuardado = gradoRepository.save(grado);
+			}
 
-	        Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
-	        if (alumnoExistente.isPresent()) {
-	            throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
-	        }
+			Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
+			if (alumnoExistente.isPresent()) {
+				throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
+			}
 
-	        Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
-	        if (usuarioExistente == null) {
-	            usuarioExistente = new Usuario();
-	            usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
-	            usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
-	            usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
-	            String contrasena = alumnoService.generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());
-	            usuarioExistente.setContrasena(contrasena);
-	            Set<Roles> roles = new HashSet<>();
-	            roles.add(Roles.ROLE_USER);
-	            usuarioExistente.setRoles(roles);
-	            usuarioExistente = usuarioRepository.save(usuarioExistente);
-	        }
+			Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
+			if (usuarioExistente == null) {
+				usuarioExistente = new Usuario();
+				usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
+				usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
+				usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
+				String contrasena = alumnoService.generarContrasena(nuevoAlumnoDTO.getNombre(),
+						nuevoAlumnoDTO.getApellidos());
+				usuarioExistente.setContrasena(contrasena);
+				Set<Roles> roles = new HashSet<>();
+				roles.add(Roles.ROLE_USER);
+				usuarioExistente.setRoles(roles);
+				usuarioExistente = usuarioRepository.save(usuarioExistente);
+			}
 
-	        Alumno nuevoAlumno = new Alumno();
-	        nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
-	        nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
-	        nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-	        nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
-	        nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
-	        nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
-	        nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
-	        nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-	        nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-	        nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
-	        nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
-	        nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
-	        nuevoAlumno.setCategoria(categoria);
-	        nuevoAlumno.setGrado(grado);
-	        nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
+			Alumno nuevoAlumno = new Alumno();
+			nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
+			nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
+			nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
+			nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
+			nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
+			nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
+			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
+			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
+			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+			nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
+			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
+			nuevoAlumno.setCategoria(categoria);
+			nuevoAlumno.setGrado(grado);
+			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
 
-	        nuevoAlumno.setUsuario(usuarioExistente);
+			nuevoAlumno.setUsuario(usuarioExistente);
 
-	        Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
-	        AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
-	        return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
-	    } catch (IOException e) {
-	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-	    }
+			Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
+			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
+			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
+		} catch (IOException e) {
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		}
 	}
-
-	private String generarContrasena() {
-		return null;
-	}
-
 
 	/**
 	 * Actualiza la información de un alumno existente.
 	 *
-	 * @param id                ID del alumno a actualizar.
-	 * @param alumnoActualizado Datos actualizados del alumno.
-	 * @return ResponseEntity que contiene el alumno actualizado.
+	 * @param id         ID del alumno a actualizar.
+	 * @param file       Archivo de imagen opcional del alumno.
+	 * @param alumnoJson Datos actualizados del alumno en formato JSON.
+	 * @return ResponseEntity que contiene el alumno actualizado en formato JSON.
 	 * @throws FechaNacimientoInvalidaException si la fecha de nacimiento
 	 *                                          proporcionada es inválida.
 	 * @throws DatosAlumnoInvalidosException    si los datos del alumno actualizado
 	 *                                          son inválidos.
 	 */
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable Long id,
 			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
 			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
@@ -334,8 +348,15 @@ public class AlumnoController {
 		}
 	}
 
+	/**
+	 * Elimina la imagen de un alumno especificado por su ID.
+	 *
+	 * @param id El ID del alumno cuya imagen se eliminará.
+	 * @return ResponseEntity que indica el resultado de la eliminación. Retorna ResponseEntity.ok() si la eliminación es exitosa.
+	 * @throws Exception Si ocurre un error durante la eliminación de la imagen del alumno.
+	 */
 	@DeleteMapping("/{id}/imagen")
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> eliminarImagenAlumno(@PathVariable Long id) {
 		try {
 			alumnoService.eliminarImagenAlumno(id);
@@ -347,13 +368,13 @@ public class AlumnoController {
 	}
 
 	/**
-	 * Elimina un alumno existente.
+	 * Elimina un alumno existente y su imagen asociada.
 	 *
 	 * @param id ID del alumno a eliminar.
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<Void> eliminarAlumno(@Valid @PathVariable Long id) {
 		logger.info("## AlumnoController :: eliminarAlumno");
 		boolean eliminado = alumnoService.eliminarAlumno(id);

@@ -16,26 +16,53 @@ import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.servicios.TurnoService;
 
+/**
+ * Implementación del servicio de turno que proporciona operaciones relacionadas con turnos
+ * para los grupos.
+ */
 @Service
 public class TurnoServiceImpl implements TurnoService {
 	
+	/**
+     * Inyección del repositorio de turno.
+     */
     @Autowired
     private TurnoRepository turnoRepository;
 
+	/**
+     * Inyección del repositorio de grupo.
+     */
     @Autowired
     private GrupoRepository grupoRepository;
     
+    /**
+     * Obtiene una lista de todos los turnos disponibles.
+     *
+     * @return Una lista de objetos Turno.
+     */
     @Override
     public List<Turno> listarTurnos() {
         return turnoRepository.findAll();
     }
     
+    /**
+     * Obtiene un turno por su ID.
+     *
+     * @param turnoId El ID del turno a obtener.
+     * @return El objeto Turno correspondiente al ID especificado.
+     * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
+     */
     @Override
     public Turno obtenerTurnoPorId(Long turnoId) {
         return turnoRepository.findById(turnoId)
                 .orElseThrow(() -> new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe."));
     }
     
+    /**
+     * Obtiene una lista de todos los turnos disponibles en forma de objetos DTO.
+     *
+     * @return Una lista de objetos TurnoDTO.
+     */
     @Override
     public List<TurnoDTO> listarTurnosDTO() {
         List<Turno> turnos = turnoRepository.findAll();
@@ -44,6 +71,11 @@ public class TurnoServiceImpl implements TurnoService {
                 .collect(Collectors.toList());
     }
     
+    /**
+     * Crea un nuevo turno sin asignarlo a ningún grupo.
+     *
+     * @param turnoDTO Los datos del turno a crear.
+     */
     @Override
     public void crearTurnoSinGrupo(TurnoDTO turnoDTO) {
         Turno turno = new Turno();
@@ -54,6 +86,11 @@ public class TurnoServiceImpl implements TurnoService {
         turnoRepository.save(turno);
     }
     
+    /**
+     * Crea un nuevo turno y lo asigna a un grupo según el día de la semana.
+     *
+     * @param turnoDTO Los datos del turno a crear.
+     */
     @Override
     public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
         Turno turno = new Turno();
@@ -77,6 +114,14 @@ public class TurnoServiceImpl implements TurnoService {
         turnoRepository.save(turno);
     }
     
+    /**
+     * Actualiza los detalles de un turno existente.
+     *
+     * @param turnoId  El ID del turno a actualizar.
+     * @param turnoDTO Los nuevos datos del turno.
+     * @return El objeto TurnoDTO actualizado.
+     * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
+     */
     @Override
     public TurnoDTO actualizarTurno(Long turnoId, TurnoDTO turnoDTO) {
         Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
@@ -110,6 +155,12 @@ public class TurnoServiceImpl implements TurnoService {
         }
     }
 
+    /**
+     * Elimina un turno por su ID.
+     *
+     * @param turnoId El ID del turno a eliminar.
+     * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
+     */
     @Override
     public void eliminarTurno(Long turnoId) {
         if (turnoRepository.existsById(turnoId)) {
@@ -119,6 +170,14 @@ public class TurnoServiceImpl implements TurnoService {
         }
     }
     
+    /**
+     * Obtiene un grupo de la lista según su índice.
+     *
+     * @param grupos La lista de grupos disponibles.
+     * @param indice El índice del grupo a obtener.
+     * @return El grupo correspondiente al índice especificado.
+     * @throws IllegalArgumentException Si no hay suficientes grupos para asignar el turno.
+     */
     private Grupo obtenerGrupoPorIndice(List<Grupo> grupos, int indice) {
         if (grupos.size() > indice) {
             return grupos.get(indice);

@@ -64,12 +64,21 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private GradoRepository gradoRepository;
 	
+	/**
+     * Inyección del repositorio de grupo.
+     */
 	@Autowired
 	private GrupoRepository grupoRepository;
 	
+	/**
+     * Inyección del servicio de grupo.
+     */
 	@Autowired
 	private GrupoService grupoService;
 	
+	/**
+     * Inyección del servicio de alumno.
+     */
 	@Autowired
 	private AlumnoService alumnoService;
 
@@ -79,12 +88,12 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
-    /**
-     * Método que se ejecuta al arrancar la aplicación para inicializar datos en la base de datos.
-     *
-     * @param args Argumentos de la línea de comandos.
-     * @throws Exception Si ocurre un error durante la inicialización de datos.
-     */
+	/**
+	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la base de datos.
+	 *
+	 * @param args Argumentos de la línea de comandos.
+	 * @throws Exception Si ocurre un error durante la inicialización de datos.
+	 */
 	@Override
 	public void run(String... args) throws Exception {
 		boolean borrarAlumnos = true;
@@ -101,7 +110,7 @@ public class InicializadorDatos implements CommandLineRunner {
 				moiskimdo.setApellidos("Taekwondo");
 				moiskimdo.setEmail("moiskimdotaekwondo@gmail.com");
 				moiskimdo.setContrasena(passwordEncoder.encode("09012013"));
-				moiskimdo.getRoles().add(Roles.ROLE_USER);
+				moiskimdo.getRoles().add(Roles.ROLE_MANAGER);
 				usuarioRepository.save(moiskimdo);
 			}
 
@@ -120,7 +129,6 @@ public class InicializadorDatos implements CommandLineRunner {
 
 		Faker faker = new Faker(new Locale("es"));
 
-		// Crear y almacenar las categorías en la base de datos
 		for (TipoCategoria tipoCategoria : TipoCategoria.values()) {
 			Categoria categoriaExistente = categoriaRepository.findByNombre(tipoCategoria.getNombre());
 			if (categoriaExistente == null) {
@@ -130,7 +138,6 @@ public class InicializadorDatos implements CommandLineRunner {
 			}
 		}
 
-		// Asignar grados y guardar alumnos
 	    List<Alumno> alumnos = new ArrayList<>();
 		for (int i = 0; i < 20; i++) {
 			Alumno alumno = generarAlumno(faker);
@@ -138,10 +145,8 @@ public class InicializadorDatos implements CommandLineRunner {
 			alumnoRepository.save(alumno);
 		}
 		
-	    // Generar los grupos si no existen
 	    generarGrupos();
 
-	    // Asignar todos los alumnos a un grupo aleatorio
 	    asignarAlumnosAGrupoAleatorio(alumnos);
 	}
 
@@ -160,7 +165,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
     /**
-     * Genera un alumno aleatorio utilizando la biblioteca Faker.
+     * Genera un alumno aleatorio utilizando la biblioteca Faker y le crea y asigna un usuario.
      *
      * @param faker Objeto Faker para generar datos aleatorios.
      * @return El alumno generado.
@@ -291,7 +296,6 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	private void generarGrupos() {
 	    if (grupoRepository.count() == 0) {
-	        // Crear y almacenar los dos grupos
 	        Grupo grupo1 = new Grupo();
 	        grupo1.setNombre("Grupo Lunes y Miércoles");
 	        grupoRepository.save(grupo1);
@@ -308,10 +312,8 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * @param alumnos Lista de alumnos.
 	 */
 	private void asignarAlumnosAGrupoAleatorio(List<Alumno> alumnos) {
-	    // Obtener los grupos disponibles
 	    List<Grupo> grupos = grupoRepository.findAll();
 
-	    // Asignar cada alumno a un grupo aleatorio
 	    Random random = new Random();
 	    for (Alumno alumno : alumnos) {
 	        Grupo grupoAleatorio = grupos.get(random.nextInt(grupos.size()));
