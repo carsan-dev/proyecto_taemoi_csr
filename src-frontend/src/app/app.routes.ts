@@ -19,9 +19,9 @@ export const routes: Routes = [
   { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
-  { path: 'alumnos', component: ListadoAlumnosCompletoDTOComponent },
-  { path: 'alumnos/crear', component: CrearAlumnoComponent },
-  { path: 'alumnos/eliminar', component: EliminarAlumnoComponent },
+  { path: 'alumnosEditar', component: ListadoAlumnosCompletoDTOComponent },
+  { path: 'alumnosCrear', component: CrearAlumnoComponent },
+  { path: 'alumnosEliminar', component: EliminarAlumnoComponent },
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
