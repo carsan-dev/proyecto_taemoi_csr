@@ -2,20 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
 import { FormsModule } from '@angular/forms';
+import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 
 @Component({
   selector: 'app-eliminar-alumno',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, FormsModule],
+  imports: [CommonModule, FormsModule, PaginacionComponent],
   templateUrl: './eliminar-alumno.component.html',
   styleUrl: './eliminar-alumno.component.scss',
 })
 export class EliminarAlumnoComponent implements OnInit {
   alumnos: any[] = [];
   paginaActual: number = 1;
-  tamanoPagina: number = 5;
+  tamanoPagina: number = 10;
   totalPaginas: number = 0;
   mostrarPaginas: number[] = [];
 
@@ -37,7 +37,6 @@ export class EliminarAlumnoComponent implements OnInit {
           next: (response) => {
             this.alumnos = response.content;
             this.totalPaginas = response.totalPages;
-            this.actualizarPaginasMostradas();
           },
           error: (error) => {
             Swal.fire({
@@ -55,31 +54,6 @@ export class EliminarAlumnoComponent implements OnInit {
     this.obtenerAlumnos();
   }
 
-  actualizarPaginasMostradas() {
-    const paginasAMostrar = 5;
-    const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
-
-    let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
-    let paginaFin = this.paginaActual + mitadDePaginasAMostrar;
-
-    if (paginaInicio < 1) {
-      paginaInicio = 1;
-      paginaFin = Math.min(this.totalPaginas, paginasAMostrar);
-    } else if (paginaFin > this.totalPaginas) {
-      paginaFin = this.totalPaginas;
-      paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
-    }
-
-    if (paginaFin - paginaInicio < paginasAMostrar - 1) {
-      const diff = paginasAMostrar - (paginaFin - paginaInicio + 1);
-      paginaInicio = Math.max(1, paginaInicio - diff);
-    }
-
-    this.mostrarPaginas = Array.from(
-      { length: paginaFin - paginaInicio + 1 },
-      (_, i) => paginaInicio + i
-    );
-  }
   eliminarAlumno(id: number) {
     const token = localStorage.getItem('token');
 
