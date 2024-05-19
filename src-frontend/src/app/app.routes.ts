@@ -13,6 +13,7 @@ import { HorariosComponent } from './componentes/vistas/horarios/horarios.compon
 import { ListadoAlumnosComponent } from './componentes/endpoints/listado-alumnos/listado-alumnos.component';
 import { ListadoGruposComponent } from './componentes/endpoints/listado-grupos/listado-grupos.component';
 import { TurnosGrupoComponent } from './componentes/endpoints/listado-grupos/turnos-grupo/turnos-grupo.component';
+import { VistaPrincipalUserComponent } from './componentes/vistas/vista-principal-user/vista-principal-user.component';
 
 export const routes: Routes = [
   { path: 'inicio', component: EscaparatePrincipalComponent },
@@ -22,6 +23,7 @@ export const routes: Routes = [
   { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
   { path: 'adminpage', component: VistaPrincipalAdminComponent },
+  { path: 'userpage', component: VistaPrincipalUserComponent },
   { path: 'alumnosListar', component: ListadoAlumnosComponent },
   { path: 'alumnosEditar', component: EditarAlumnoComponent },
   { path: 'alumnosCrear', component: CrearAlumnoComponent },
