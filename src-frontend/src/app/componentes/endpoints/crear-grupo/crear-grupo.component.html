@@ -1,0 +1,17 @@
+<div class="crear-grupo">
+  <form [formGroup]="grupoForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="nombre">Nombre del grupo:</label>
+      <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre del grupo">
+    </div>
+    <button type="submit" class="btn btn-primary">Crear Grupo</button>
+  </form>
+
+  <div *ngIf="mensajeError" class="alert alert-danger mt-3">
+    {{ mensajeError }}
+  </div>
+
+  <div *ngIf="grupoCreadoExitosamente" class="alert alert-success mt-3">
+    ¡El grupo se creó exitosamente!
+  </div>
+</div>
