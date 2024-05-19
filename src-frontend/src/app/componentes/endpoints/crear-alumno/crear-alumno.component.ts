@@ -4,13 +4,12 @@ import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
-import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-crear-alumno',
   standalone: true,
-  imports: [FormsModule, CommonModule, SidebarComponent, ReactiveFormsModule],
+  imports: [FormsModule, CommonModule, ReactiveFormsModule],
   templateUrl: './crear-alumno.component.html',
   styleUrl: './crear-alumno.component.scss',
 })
