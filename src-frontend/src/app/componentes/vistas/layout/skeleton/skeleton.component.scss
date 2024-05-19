@@ -12,4 +12,9 @@
       transition: width 0.3s ease;
     }
   }
+  .col-12 {
+    &.sidebar-colapsado {
+      width: 97.4% !important;
+    }
+  }
 }
