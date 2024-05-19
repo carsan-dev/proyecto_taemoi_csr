@@ -25,15 +25,18 @@ export class VistaLoginComponent implements OnInit {
     if (typeof localStorage !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token) {
-        const nombreUsuario = this.extraerNombreUsuario(
-          this.credenciales.email
-        );
-        Swal.fire({
-          title: 'Atención',
-          text: `Ya estás logueado, ${nombreUsuario}`,
-          icon: 'warning',
+        this.authService.obtenerRoles(token);
+        this.authService.rolesCambio.subscribe((roles) => {
+          if (roles.length > 0) {
+            const nombreUsuario = this.authService.obtenerNombreUsuario();
+            Swal.fire({
+              title: 'Atención',
+              text: `Ya estás logueado, ${nombreUsuario}`,
+              icon: 'warning',
+            });
+            this.redirigirSegunRol(roles);
+          }
         });
-        this.router.navigate(['/adminpage']);
       }
     }
   }
@@ -41,18 +44,24 @@ export class VistaLoginComponent implements OnInit {
   login() {
     this.authService.login(this.credenciales).subscribe({
       next: (response) => {
-        localStorage.setItem('token', response.token);
+        const token = response.token;
+        const nombreUsuario = this.authService.obtenerNombreUsuario();
+        localStorage.setItem('token', token);
+        localStorage.setItem('username', nombreUsuario ?? '')
         this.authService.actualizarEstadoLogueado(true);
-        const nombreUsuario = this.extraerNombreUsuario(
-          this.credenciales.email
-        );
+        this.authService.obtenerRoles(token);
+
         Swal.fire({
           title: 'Inicio de sesión exitoso',
           text: `¡Bienvenido, ${nombreUsuario}!`,
           icon: 'success',
         });
 
-        this.router.navigate(['/adminpage']);
+        this.authService.rolesCambio.subscribe((roles) => {
+          if (roles.length > 0) {
+            this.redirigirSegunRol(roles);
+          }
+        });
       },
       error: (error) => {
         Swal.fire({
@@ -65,7 +74,11 @@ export class VistaLoginComponent implements OnInit {
     });
   }
 
-  private extraerNombreUsuario(email: string): string {
-    return email.substring(0, email.indexOf('@'));
+  private redirigirSegunRol(roles: string[]) {
+    if (this.authService.tieneRolAdmin() || this.authService.tieneRolManager()) {
+      this.router.navigate(['/adminpage']);
+    } else {
+      this.router.navigate(['/userpage']);
+    }
   }
 }
