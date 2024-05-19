@@ -3,6 +3,7 @@ import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/cor
 import { Router, RouterModule } from '@angular/router';
 import { SidebarService } from '../../../../servicios/generales/sidebar.service';
 import { Subscription } from 'rxjs';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,13 +16,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
   @Output() colapsoCambiado = new EventEmitter<boolean>();
   estaColapsado: boolean = false;
   private subscription: Subscription = new Subscription;
+  nombreUsuario: string | null = null;
+  emailUsuario: string | null = null;
 
-  constructor(private router: Router, private sidebarService: SidebarService) {}
+  constructor(private router: Router, private sidebarService: SidebarService, private authService: AuthenticationService) {}
 
   ngOnInit(): void {
-    this.subscription = this.sidebarService.obtenerSubjectAlternable().subscribe(() => {
-      this.alternarColapso();
-    });
+    this.subscription.add(
+      this.sidebarService.obtenerSubjectAlternable().subscribe(() => {
+        this.alternarColapso();
+      })
+    );
+    this.subscription.add(
+      this.authService.usernameCambio.subscribe(username => {
+        this.nombreUsuario = username;
+      })
+    );
+    this.subscription.add(
+      this.authService.emailCambio.subscribe(email => {
+        this.emailUsuario = email;
+      })
+    );
   }
 
   ngOnDestroy(): void {

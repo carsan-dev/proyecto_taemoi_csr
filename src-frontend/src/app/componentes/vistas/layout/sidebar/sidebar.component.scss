@@ -16,7 +16,7 @@
 
     .centered-image {
       position: absolute;
-      top: 17%;
+      top: 18%;
       left: 50%;
       transform: translate(-50%, -50%);
       max-width: 50%;
@@ -27,14 +27,18 @@
 
     .user-container {
       background-color: #192D2B;
-      height: 170px;
+      height: 190px;
 
       & h2 {
         font-family: 'Osaka-Sans Serif', sans-serif;
+        overflow: hidden;
+        word-wrap: break-word;
       }
 
       & p {
         opacity: 75%;
+        overflow: hidden;
+        word-wrap: break-word;
       }
     }
 
