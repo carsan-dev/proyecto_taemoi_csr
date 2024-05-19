@@ -14,16 +14,23 @@ import { CommonModule } from '@angular/common';
   styleUrl: './skeleton.component.scss'
 })
 export class SkeletonComponent {
-  usuarioLogueado: boolean = false;
+  tieneRolAdminOManager: boolean = false;
   sidebarColapsado: boolean = false;
 
   constructor(private authService: AuthenticationService) {}
 
   ngOnInit(): void {
+    this.authService.rolesCambio.subscribe((roles: string[]) => {
+      this.tieneRolAdminOManager = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    });
+
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
-      this.usuarioLogueado = estado;
+      if (!estado) {
+        this.tieneRolAdminOManager = false;
+      }
     });
   }
+
 
   onColapsoCambiado(colapsado: boolean) {
     this.sidebarColapsado = colapsado;
