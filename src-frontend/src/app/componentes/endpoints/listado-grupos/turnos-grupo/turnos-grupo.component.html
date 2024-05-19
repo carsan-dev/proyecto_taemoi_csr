@@ -1,0 +1,18 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Detalles del Grupo</h2>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <h3>Turnos Asociados</h3>
+      <ul class="list-group">
+        <li class="list-group-item" *ngFor="let turno of turnos">
+          {{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}
+          <button class="btn btn-danger btn-sm ms-3" (click)="eliminarTurnoDelGrupo(turno.id)">Eliminar</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
