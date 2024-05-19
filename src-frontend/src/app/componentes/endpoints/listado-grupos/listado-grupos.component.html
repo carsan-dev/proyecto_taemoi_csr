@@ -1,0 +1,8 @@
+<div class="container">
+  <h2>Listado de Grupos</h2>
+  <ul>
+    <li *ngFor="let grupo of grupos">
+      <a [routerLink]="['/turnosGrupo', grupo.id]">{{ grupo.nombre }}</a>
+    </li>
+  </ul>
+</div>
