@@ -1,20 +1,20 @@
 import { Component } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../../vistas/layout/sidebar/sidebar.component';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
+import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 
 @Component({
-  selector: 'app-listado-alumnos-completo',
+  selector: 'app-editar-alumno',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, FormsModule],
-  templateUrl: './listado-alumnos-completo.component.html',
-  styleUrl: './listado-alumnos-completo.component.scss',
+  imports: [CommonModule, FormsModule, PaginacionComponent],
+  templateUrl: './editar-alumno.component.html',
+  styleUrl: './editar-alumno.component.scss'
 })
-export class ListadoAlumnosCompletoDTOComponent {
+export class EditarAlumnoComponent {
   alumnos: any[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 1;
@@ -48,7 +48,6 @@ export class ListadoAlumnosCompletoDTOComponent {
           next: (response) => {
             this.alumnos = response.content;
             this.totalPaginas = response.totalPages;
-            this.actualizarPaginasMostradas();
           },
           error: (error) => {
             Swal.fire({
@@ -121,38 +120,10 @@ export class ListadoAlumnosCompletoDTOComponent {
   }
 }
 
-  cambiarPagina(pageNumber: number): void {
-    this.paginaActual = pageNumber;
-    this.obtenerAlumnos();
-  }
-
-  actualizarPaginasMostradas() {
-    const paginasAMostrar = 5;
-    const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
-
-    let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
-    let paginaFin = this.paginaActual + mitadDePaginasAMostrar;
-
-    if (paginaInicio < 1) {
-      paginaInicio = 1;
-      paginaFin = Math.min(this.totalPaginas, paginasAMostrar);
-    } else if (paginaFin > this.totalPaginas) {
-      paginaFin = this.totalPaginas;
-      paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
-    }
-
-    if (paginaFin === this.totalPaginas) {
-      paginaInicio = Math.max(
-        1,
-        paginaInicio - (paginasAMostrar - (paginaFin - paginaInicio))
-      );
-    }
-
-    this.mostrarPaginas = Array.from(
-      { length: paginaFin - paginaInicio + 1 },
-      (_, i) => paginaInicio + i
-    );
-  }
+cambiarPagina(pageNumber: number): void {
+  this.paginaActual = pageNumber;
+  this.obtenerAlumnos();
+}
 
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
@@ -164,3 +135,4 @@ export class ListadoAlumnosCompletoDTOComponent {
     this.alumnoEditado.fotoAlumno = file;
   }
 }
+
