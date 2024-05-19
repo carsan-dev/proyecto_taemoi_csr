@@ -4,13 +4,22 @@ import com.taemoi.project.entidades.Turno;
 
 public class TurnoDTO {
     
+	private Long id;
     private String diaSemana;
     private String horaInicio;
     private String horaFin;
 
     public TurnoDTO() {}
+    
+    public Long getId() {
+		return id;
+	}
 
-    public String getDiaSemana() {
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getDiaSemana() {
         return diaSemana;
     }
 
@@ -40,6 +49,7 @@ public class TurnoDTO {
         }
 
         TurnoDTO turnoDTO = new TurnoDTO();
+        turnoDTO.setId(turno.getId());
         turnoDTO.setDiaSemana(turno.getDiaSemana());
         turnoDTO.setHoraInicio(turno.getHoraInicio());
         turnoDTO.setHoraFin(turno.getHoraFin());
