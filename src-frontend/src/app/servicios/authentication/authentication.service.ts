@@ -13,11 +13,21 @@ export class AuthenticationService {
   private rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
   rolesCambio: Observable<string[]> = this.rolesSubject.asObservable();
 
+  private usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
+  usernameCambio: Observable<string | null> = this.usernameSubject.asObservable();
+
+  private emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
+  emailCambio: Observable<string | null> = this.emailSubject.asObservable();
+
   constructor(private http: HttpClient) {
     if (typeof localStorage !== 'undefined') {
       const token = localStorage.getItem('token');
-      if (token) {
+      const email = localStorage.getItem('email');
+      const username = localStorage.getItem('username');
+      if (token && email && username) {
         this.actualizarEstadoLogueado(true);
+        this.usernameSubject.next(username);
+        this.emailSubject.next(email);
         this.obtenerRoles(token);
       }
     }
@@ -31,10 +41,14 @@ export class AuthenticationService {
     return this.http.post<any>(`${this.urlBase}/signin`, credenciales, { withCredentials: true })
       .pipe(
         tap((response) => {
-          const nombreUsuario = this.extraerNombreUsuario(credenciales.email);
+          const email = credenciales.email;
+          const username  = this.extraerNombreUsuario(email);
           localStorage.setItem('token', response.token);
-          localStorage.setItem('username', nombreUsuario);
+          localStorage.setItem('email', email);
+          localStorage.setItem('username', username);
           this.actualizarEstadoLogueado(true);
+          this.usernameSubject.next(username);
+          this.emailSubject.next(email);
           this.obtenerRoles(response.token);
         })
       );
@@ -42,9 +56,12 @@ export class AuthenticationService {
 
   logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('email');
     localStorage.removeItem('username');
     this.actualizarEstadoLogueado(false);
     this.rolesSubject.next([]);
+    this.usernameSubject.next(null);
+    this.emailSubject.next(null);
   }
 
   obtenerRoles(token: string): void {
