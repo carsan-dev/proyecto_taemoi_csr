@@ -137,4 +137,10 @@
       text-wrap: pretty;
     }
   }
+
+  @media (max-width: 992px) {
+    .video-text {
+      display: none !important;
+    }
+  }
 }
