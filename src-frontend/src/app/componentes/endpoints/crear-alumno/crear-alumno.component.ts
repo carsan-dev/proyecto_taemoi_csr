@@ -53,7 +53,7 @@ export class CrearAlumnoComponent implements OnInit {
           text: 'Has creado un nuevo alumno',
           icon: 'success',
         });
-        this.router.navigate(['/alumnos']);
+        this.router.navigate(['/alumnosListar']);
       },
       error: (error) => {
         Swal.fire({
