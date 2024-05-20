@@ -1,6 +1,8 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { GrupoDTO } from '../../interfaces/grupo-dto';
+import { AlumnoDTO } from '../../interfaces/alumno-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -22,16 +24,6 @@ export class EndpointsService {
     return this.http.get<any>(`${this.urlBase}/alumnos`, {
       headers: headers,
       params: params,
-    });
-  }
-
-  obtenerGruposDeAlumno(alumnoId: number, token: string): Observable<any> {
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-
-    return this.http.get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, {
-      headers: headers,
     });
   }
 
@@ -74,30 +66,25 @@ actualizarAlumno(id: number, formData: FormData, token: string): Observable<any>
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.delete<any>(`${this.urlBase}/alumnos/${id}`, {
-      headers: headers,
-    });
+    return this.http.delete<any>(`${this.urlBase}/alumnos/${id}`, { headers });
   }
 
-  obtenerTodosLosGrupos(token: string): Observable<any> {
+  obtenerTodosLosGrupos(token: string): Observable<GrupoDTO[]> {
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.get<any>(`${this.urlBase}/grupos`, {
-      headers: headers,
-    });
+    return this.http.get<GrupoDTO[]>(`${this.urlBase}/grupos`, { headers });
   }
 
-  obtenerGrupoPorId(id: number, token: string): Observable<any> {
+  obtenerGrupoPorId(id: number, token: string): Observable<GrupoDTO> {
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.get<any>(`${this.urlBase}/grupos/${id}`, {
-      headers: headers,
-    });
+    return this.http.get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { headers });
   }
+
 
   crearGrupo(grupoData: any, token: string): Observable<any> {
     const headers = new HttpHeaders({
@@ -109,12 +96,12 @@ actualizarAlumno(id: number, formData: FormData, token: string): Observable<any>
     });
   }
 
-  actualizarGrupo(id: number, grupoData: any, token: string): Observable<any> {
+  actualizarGrupo(id: number, grupoData: GrupoDTO, token: string): Observable<GrupoDTO> {
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.put<any>(`${this.urlBase}/grupos/${id}`, grupoData, {
+    return this.http.put<GrupoDTO>(`${this.urlBase}/grupos/${id}`, grupoData, {
       headers: headers,
     });
   }
@@ -134,9 +121,7 @@ actualizarAlumno(id: number, formData: FormData, token: string): Observable<any>
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, null, {
-      headers: headers,
-    });
+    return this.http.post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, {}, { headers });
   }
 
   eliminarAlumnoDeGrupo(grupoId: number, alumnoId: number, token: string): Observable<any> {
@@ -144,9 +129,7 @@ actualizarAlumno(id: number, formData: FormData, token: string): Observable<any>
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.delete<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, {
-      headers: headers,
-    });
+    return this.http.delete<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, { headers });
   }
 
   obtenerTurnosDelGrupo(grupoId: number, token: string): Observable<any> {
