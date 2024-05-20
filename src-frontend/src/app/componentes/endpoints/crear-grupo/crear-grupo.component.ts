@@ -14,8 +14,6 @@ import { Router } from '@angular/router';
 })
 export class CrearGrupoComponent implements OnInit {
   grupoForm!: FormGroup;
-  mensajeError: string = '';
-  grupoCreadoExitosamente: boolean = false;
 
   constructor(private fb: FormBuilder, private endpointsService: EndpointsService, private router: Router) { }
 
@@ -29,7 +27,7 @@ export class CrearGrupoComponent implements OnInit {
     });
   }
 
-  onSubmit(): void {
+  crearGrupo(): void {
     const token = localStorage.getItem('token');
     const grupoForm = this.grupoForm.value;
 
