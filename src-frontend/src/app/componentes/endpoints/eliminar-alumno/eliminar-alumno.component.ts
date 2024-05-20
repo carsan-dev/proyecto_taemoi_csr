@@ -17,7 +17,6 @@ export class EliminarAlumnoComponent implements OnInit {
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
-  mostrarPaginas: number[] = [];
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -38,7 +37,7 @@ export class EliminarAlumnoComponent implements OnInit {
             this.alumnos = response.content;
             this.totalPaginas = response.totalPages;
           },
-          error: (error) => {
+          error: () => {
             Swal.fire({
               title: 'Error en la petición',
               text: 'No hemos podido conectar con el servidor',
@@ -67,7 +66,7 @@ export class EliminarAlumnoComponent implements OnInit {
           });
           this.obtenerAlumnos();
         },
-        error: (error) => {
+        error: () => {
           Swal.fire({
             title: 'Error al eliminar alumno',
             text: 'Ha ocurrido un error al intentar eliminar el alumno.',
@@ -80,34 +79,10 @@ export class EliminarAlumnoComponent implements OnInit {
 
   eliminarAlumnosSeleccionados() {
     const token = localStorage.getItem('token');
-    const alumnosSeleccionados = this.alumnos.filter(
-      (alumno) => alumno.selected
-    );
+    const alumnosSeleccionados = this.alumnos.filter(alumno => alumno.selected);
 
     if (token && alumnosSeleccionados.length > 0) {
-      alumnosSeleccionados.forEach((alumno) => {
-        this.endpointsService.eliminarAlumnos(alumno.id, token).subscribe({
-          next: () => {
-            this.obtenerAlumnos();
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error al eliminar alumno',
-              text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.`,
-              icon: 'error',
-            });
-          },
-          complete: () => {
-            this.obtenerAlumnos();
-          },
-        });
-      });
-
-      Swal.fire({
-        title: 'Alumnos eliminados',
-        text: 'Los alumnos seleccionados han sido eliminados correctamente.',
-        icon: 'success',
-      });
+      this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
     } else {
       Swal.fire({
         title: 'No hay alumnos seleccionados',
@@ -115,5 +90,33 @@ export class EliminarAlumnoComponent implements OnInit {
         icon: 'info',
       });
     }
+  }
+
+  eliminarAlumnoSecuencial(alumnosSeleccionados: any[], token: string) {
+    if (alumnosSeleccionados.length === 0) {
+      Swal.fire({
+        title: 'Alumnos eliminados',
+        text: 'Los alumnos seleccionados han sido eliminados correctamente.',
+        icon: 'success',
+      });
+      this.obtenerAlumnos();
+      return;
+    }
+
+    const alumno = alumnosSeleccionados.pop();
+
+    this.endpointsService.eliminarAlumnos(alumno.id, token).subscribe({
+      next: () => {
+        this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error al eliminar alumno',
+          text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.`,
+          icon: 'error',
+        });
+        this.eliminarAlumnoSecuencial(alumnosSeleccionados, token); // Continuar con los siguientes alumnos
+      },
+    });
   }
 }
