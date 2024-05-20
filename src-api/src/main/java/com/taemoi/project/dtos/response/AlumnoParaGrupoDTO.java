@@ -4,15 +4,25 @@ import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Imagen;
 
 public class AlumnoParaGrupoDTO {
+	private Long id;
     private String nombre;
     private String apellidos;
 	private Imagen fotoAlumno;
 	
-	public AlumnoParaGrupoDTO(String nombre, String apellidos, Imagen fotoAlumno) {
+	public AlumnoParaGrupoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno) {
 		super();
+		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
 		this.fotoAlumno = fotoAlumno;
+	}
+	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public String getNombre() {
@@ -44,6 +54,6 @@ public class AlumnoParaGrupoDTO {
 	        return null;
 	    }
 
-	    return new AlumnoParaGrupoDTO(alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
+	    return new AlumnoParaGrupoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
 	}
 }
