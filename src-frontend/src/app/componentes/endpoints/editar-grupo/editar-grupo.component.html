@@ -1,0 +1,10 @@
+<div class="container mt-5">
+  <h2>Editar Grupo</h2>
+  <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()">
+    <div class="form-group">
+      <label for="nombre">Nombre</label>
+      <input type="text" id="nombre" formControlName="nombre" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="grupoForm.invalid">Actualizar Grupo</button>
+  </form>
+</div>
