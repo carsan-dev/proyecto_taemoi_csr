@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -27,6 +29,7 @@ import com.taemoi.project.entidades.TipoTarifa;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
+import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.servicios.AlumnoService;
 
@@ -59,6 +62,9 @@ public class AlumnoServiceImpl implements AlumnoService {
      */
 	@Autowired
 	private ImagenRepository imagenRepository;
+	
+	@Autowired
+	private GrupoRepository grupoRepository;
 	
 	/**
      * Inyección del PasswordEncoder para codificar la contraseña del usuario creado.
@@ -258,9 +264,17 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public boolean eliminarAlumno(@NonNull Long id) {
 	    return alumnoRepository.findById(id).map(alumno -> {
+	        for (Grupo grupo : grupoRepository.findAll()) {
+	            if (grupo.getAlumnos().contains(alumno)) {
+	                grupo.getAlumnos().remove(alumno);
+	                grupoRepository.save(grupo);
+	            }
+	        }
+
 	        if (alumno.getFotoAlumno() != null) {
 	            imagenRepository.delete(alumno.getFotoAlumno());
 	        }
+
 	        alumnoRepository.delete(alumno);
 	        return true;
 	    }).orElse(false);
