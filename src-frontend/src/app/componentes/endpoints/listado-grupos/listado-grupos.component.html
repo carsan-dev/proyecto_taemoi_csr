@@ -1,8 +1,13 @@
-<div class="container">
+<div class="container mt-5">
   <h2>Listado de Grupos</h2>
-  <ul>
-    <li *ngFor="let grupo of grupos">
-      <a [routerLink]="['/turnosGrupo', grupo.id]">{{ grupo.nombre }}</a>
+  <ul class="list-group">
+    <li *ngFor="let grupo of grupos" class="list-group-item d-flex justify-content-between align-items-center">
+      <span class="">{{ grupo.nombre }}</span>
+      <div>
+      <button class="btn btn-primary" [routerLink]="['/turnosGrupo', grupo.id]">Gestionar turnos</button>
+      <button class="btn btn-primary ms-3" [routerLink]="['/gestionarAlumnos', grupo.id]">Gestionar Alumnos</button>
+      <button class="btn btn-primary ms-3" [routerLink]="['/gruposEditar', grupo.id]">Editar</button>
+    </div>
     </li>
   </ul>
 </div>

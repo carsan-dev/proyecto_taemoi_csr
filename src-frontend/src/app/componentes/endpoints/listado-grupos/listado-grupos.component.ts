@@ -11,35 +11,32 @@ import { RouterModule } from '@angular/router';
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss'
 })
-export class ListadoGruposComponent implements OnInit{
+export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
 
   constructor(private endpointsService: EndpointsService) { }
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
-    this.obtenerGrupos();
+      this.obtenerGrupos();
     }
   }
 
-  obtenerGrupos() {
+  obtenerGrupos(): void {
     const token = localStorage.getItem('token');
-
     if (token) {
-      this.endpointsService
-        .obtenerTodosLosGrupos(token)
-        .subscribe({
-          next: (response) => {
-            this.grupos = response;
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No hemos podido conectar con el servidor',
-              icon: 'error',
-            });
-          },
-        });
+      this.endpointsService.obtenerTodosLosGrupos(token).subscribe({
+        next: (response) => {
+          this.grupos = response;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
     }
   }
 }
