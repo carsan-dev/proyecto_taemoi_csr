@@ -83,7 +83,7 @@ public class Alumno {
 	@JsonManagedReference
 	private Grado grado;
 	
-    @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	@JsonManagedReference
 	private List<Grupo> grupos;
     
