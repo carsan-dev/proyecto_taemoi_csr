@@ -18,6 +18,8 @@ import { CrearGrupoComponent } from './componentes/endpoints/crear-grupo/crear-g
 import { EditarGrupoComponent } from './componentes/endpoints/editar-grupo/editar-grupo.component';
 import { GestionarAlumnosComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component';
 import { SeleccionarAlumnosComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component';
+import { ListadoTurnosComponent } from './componentes/endpoints/listado-turnos/listado-turnos.component';
+import { CrearTurnoComponent } from './componentes/endpoints/crear-turno/crear-turno.component';
 
 export const routes: Routes = [
   { path: 'inicio', component: EscaparatePrincipalComponent },
@@ -38,6 +40,8 @@ export const routes: Routes = [
   { path: 'gestionarAlumnos/:id', component: GestionarAlumnosComponent },
   { path: 'seleccionarAlumnos/:id', component: SeleccionarAlumnosComponent },
   { path: 'turnosGrupo/:id', component: TurnosGrupoComponent },
+  { path: 'listado-turnos', component: ListadoTurnosComponent },
+  { path: 'crear-turno', component: CrearTurnoComponent },
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
