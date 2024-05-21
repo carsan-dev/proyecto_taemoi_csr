@@ -1,0 +1,22 @@
+<div class="container mt-5">
+  <h2>Listado de Turnos</h2>
+  <table class="table custom-table mt-4">
+    <thead>
+      <tr>
+        <th>Día de la Semana</th>
+        <th>Turno</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let turno of turnos">
+        <td>{{ turno.diaSemana }}</td>
+        <td>{{ turno.turno }}</td>
+        <td>
+          <button class="btn btn-primary me-2" [routerLink]="['/turnosEditar', turno.id]">Editar</button>
+          <button class="btn btn-danger" (click)="eliminarTurno(turno.id)">Eliminar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
