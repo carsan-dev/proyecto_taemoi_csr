@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './turnos-grupo.component.html',
-  styleUrl: './turnos-grupo.component.scss'
+  styleUrl: './turnos-grupo.component.scss',
 })
 export class TurnosGrupoComponent implements OnInit {
   grupoId!: number;
@@ -18,12 +18,12 @@ export class TurnosGrupoComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private endpointsService: EndpointsService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
-    this.obtenerGrupoId();
-    this.obtenerTurnos();
+      this.obtenerGrupoId();
+      this.obtenerTurnos();
     }
   }
 
@@ -48,9 +48,15 @@ export class TurnosGrupoComponent implements OnInit {
             this.turnos = response;
           },
           error: (error) => {
+            let errorMessage = '';
+            if (error.status === 404) {
+              errorMessage += 'Este grupo no tiene turnos asociados.';
+            } else {
+              errorMessage += 'Ha ocurrido un error.';
+            }
             Swal.fire({
-              title: 'No encontrado',
-              text: 'No se han encontrado turnos para ese grupo',
+              title: 'Error',
+              text: errorMessage,
               icon: 'error',
             });
           },
@@ -59,20 +65,19 @@ export class TurnosGrupoComponent implements OnInit {
   }
 
   eliminarTurnoDelGrupo(turnoId: number) {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: "¡No podrás revertir esto!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminarlo',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const token = localStorage.getItem('token');
-
-        if (token) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: '¡No podrás revertir esto!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminarlo',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
           this.endpointsService
             .eliminarTurnoDeGrupo(this.grupoId, turnoId, token)
             .subscribe({
@@ -81,20 +86,56 @@ export class TurnosGrupoComponent implements OnInit {
                   title: 'Bien',
                   text: '¡Turno eliminado correctamente del grupo!',
                   icon: 'success',
+                }).then(() => {
+                  this.actualizarTurnos();
                 });
-                this.obtenerTurnos();
               },
               error: (error) => {
                 Swal.fire({
                   title: 'Error',
-                  text: 'No hemos podido eliminar el turno, ' + error,
+                  text: 'No hemos podido eliminar el turno.',
                   icon: 'error',
                 });
               },
             });
         }
-      }
-    });
+      });
+    }
   }
 
+  actualizarTurnos() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService
+        .obtenerTurnosDelGrupo(this.grupoId, token)
+        .subscribe({
+          next: (response) => {
+            this.turnos = response;
+            if (this.turnos.length === 0) {
+              Swal.fire({
+                title: 'Advertencia',
+                text: 'No quedan más turnos en el grupo.',
+                icon: 'warning',
+              });
+            }
+          },
+          error: (error) => {
+            if (error.status === 404) {
+              this.turnos = []; // Asegura que la lista de turnos esté vacía
+              Swal.fire({
+                title: 'Advertencia',
+                text: 'No quedan más turnos en el grupo.',
+                icon: 'warning',
+              });
+            } else {
+              Swal.fire({
+                title: 'Error',
+                text: 'Ha ocurrido un error al obtener los turnos.',
+                icon: 'error',
+              });
+            }
+          },
+        });
+    }
+  }
 }
