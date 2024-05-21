@@ -21,16 +21,7 @@ export class AuthenticationService {
 
   constructor(private http: HttpClient) {
     if (typeof localStorage !== 'undefined') {
-      this.eliminarToken();
-      const token = localStorage.getItem('token');
-      const email = localStorage.getItem('email');
-      const username = localStorage.getItem('username');
-      if (token && email && username) {
-        this.actualizarEstadoLogueado(true);
-        this.usernameSubject.next(username);
-        this.emailSubject.next(email);
-        this.obtenerRoles(token);
-      }
+      this.verificarValidezToken();
     }
   }
 
@@ -43,10 +34,12 @@ export class AuthenticationService {
       .pipe(
         tap((response) => {
           const email = credenciales.email;
-          const username  = this.extraerNombreUsuario(email);
+          const username = this.extraerNombreUsuario(email);
+          const tokenExpiry = new Date().getTime() + 24 * 60 * 60 * 1000; // 1 day in milliseconds
           localStorage.setItem('token', response.token);
           localStorage.setItem('email', email);
           localStorage.setItem('username', username);
+          localStorage.setItem('tokenExpiry', tokenExpiry.toString());
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username);
           this.emailSubject.next(email);
@@ -56,9 +49,7 @@ export class AuthenticationService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
-    localStorage.removeItem('username');
+    this.eliminarToken();
     this.actualizarEstadoLogueado(false);
     this.rolesSubject.next([]);
     this.usernameSubject.next(null);
@@ -100,5 +91,26 @@ export class AuthenticationService {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
     localStorage.removeItem('username');
+    localStorage.removeItem('tokenExpiry');
+  }
+
+  private verificarValidezToken(): void {
+    const token = localStorage.getItem('token');
+    const tokenExpiry = localStorage.getItem('tokenExpiry');
+    if (token && tokenExpiry) {
+      const expiryDate = new Date(parseInt(tokenExpiry));
+      if (new Date() > expiryDate) {
+        this.eliminarToken();
+      } else {
+        const email = localStorage.getItem('email');
+        const username = localStorage.getItem('username');
+        if (email && username) {
+          this.actualizarEstadoLogueado(true);
+          this.usernameSubject.next(username);
+          this.emailSubject.next(email);
+          this.obtenerRoles(token);
+        }
+      }
+    }
   }
 }
