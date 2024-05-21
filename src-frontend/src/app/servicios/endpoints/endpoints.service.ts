@@ -2,7 +2,6 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
-import { AlumnoDTO } from '../../interfaces/alumno-dto';
 
 @Injectable({
   providedIn: 'root',
