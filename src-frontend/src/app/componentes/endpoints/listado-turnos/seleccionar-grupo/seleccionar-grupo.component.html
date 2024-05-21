@@ -1,0 +1,9 @@
+<div class="container mt-5">
+  <h2>Seleccionar Grupo</h2>
+  <div class="list-group mt-4">
+    <button *ngFor="let grupo of grupos" class="list-group-item list-group-item-action"
+            (click)="asignarGrupo(grupo.id)">
+      {{ grupo.nombre }}
+    </button>
+  </div>
+</div>
