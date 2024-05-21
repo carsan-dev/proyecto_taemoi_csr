@@ -3,7 +3,8 @@ import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { GrupoDTO } from '../../../interfaces/grupo-dto';
 
 @Component({
   selector: 'app-listado-turnos',
@@ -23,12 +24,14 @@ export class ListadoTurnosComponent implements OnInit {
     'Sábado',
     'Domingo',
   ];
+  grupos: GrupoDTO[] = [];
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(private endpointsService: EndpointsService, private router: Router) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
       this.obtenerTurnos();
+      this.obtenerGrupos();
     }
   }
 
@@ -38,6 +41,24 @@ export class ListadoTurnosComponent implements OnInit {
       this.endpointsService.obtenerTurnos(token).subscribe({
         next: (response) => {
           this.turnos = response;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
+    }
+  }
+
+  obtenerGrupos(): void {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService.obtenerTodosLosGrupos(token).subscribe({
+        next: (response) => {
+          this.grupos = response;
         },
         error: (error) => {
           Swal.fire({
@@ -88,5 +109,9 @@ export class ListadoTurnosComponent implements OnInit {
         }
       });
     }
+  }
+
+  irASeleccionarGrupo(turnoId: number): void {
+    this.router.navigate(['/seleccionarGrupo', turnoId]);
   }
 }
