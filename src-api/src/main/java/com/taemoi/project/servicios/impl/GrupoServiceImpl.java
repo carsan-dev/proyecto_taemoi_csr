@@ -17,6 +17,7 @@ import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Turno;
+import com.taemoi.project.errores.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
@@ -156,8 +157,12 @@ public class GrupoServiceImpl implements GrupoService {
 	        Grupo grupo = grupoOptional.get();
 	        Alumno alumno = alumnoOptional.get();
 	        
-	        grupo.removeAlumno(alumno);
-	        grupoRepository.save(grupo);
+	        if (grupo.getAlumnos().contains(alumno)) {
+	            grupo.removeAlumno(alumno);
+	            grupoRepository.save(grupo);
+	        } else {
+	            throw new AlumnoNoEncontradoEnGrupoException("El alumno no pertenece al grupo.");
+	        }
 	    } else {
 	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
 	    }

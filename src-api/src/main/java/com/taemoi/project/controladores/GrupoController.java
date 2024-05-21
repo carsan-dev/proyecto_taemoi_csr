@@ -155,14 +155,24 @@ public class GrupoController {
      */
     @DeleteMapping("/{grupoId}/alumnos/{alumnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarAlumnoDeGrupo(@PathVariable @NonNull Long grupoId, @PathVariable @NonNull Long alumnoId) {
+    public ResponseEntity<Void> eliminarAlumnoDeGrupo(@PathVariable @NonNull Long grupoId, @PathVariable @NonNull Long alumnoId) {
         Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
-        if (grupoOptional.isPresent()) {
-            grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
+        
+        if (!grupoOptional.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+
+        GrupoConAlumnosDTO grupo = grupoOptional.get();
+
+        boolean alumnoEncontrado = grupo.getAlumnos().stream()
+                                        .anyMatch(alumno -> alumno.getId().equals(alumnoId));
+
+        if (!alumnoEncontrado) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
     /**
