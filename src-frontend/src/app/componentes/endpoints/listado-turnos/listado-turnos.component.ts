@@ -110,8 +110,4 @@ export class ListadoTurnosComponent implements OnInit {
       });
     }
   }
-
-  irASeleccionarGrupo(turnoId: number): void {
-    this.router.navigate(['/seleccionarGrupo', turnoId]);
-  }
 }

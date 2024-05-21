@@ -19,7 +19,7 @@
             <td class="d-flex flex-column align-items-center">
               <button class="btn btn-primary mb-1" [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
               <button class="btn btn-danger mb-1" (click)="eliminarTurno(turno.id)">Eliminar</button>
-              <button class="btn btn-secondary" (click)="irASeleccionarGrupo(turno.id)">Seleccionar Grupo</button>
+              <button class="btn btn-secondary"[routerLink]="['/seleccionarGrupo', turno.id]">Seleccionar Grupo</button>
             </td>
           </tr>
         </ng-container>
