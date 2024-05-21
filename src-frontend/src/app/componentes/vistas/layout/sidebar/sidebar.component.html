@@ -69,45 +69,21 @@
           <span class="nav-link" [routerLink]="['/gruposCrear']" routerLinkActive="active">Añadir grupos</span>
         </a>
       </li>
-      <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
-          <i class="bi bi-pencil-square fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Modificar grupos</span>
-        </a>
-      </li>
-      <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
-          <i class="bi bi-trash3-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Eliminar grupos</span>
-        </a>
-      </li>
     </ul>
     <ul class="list-unstyled my-5">
       <li class="mx-4">
         <h2 class="h6 text-white fw-bold">HORARIOS</h2>
       </li>
       <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+        <a (click)="irARuta('/listado-turnos')" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-calendar2-week-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Consultar turnos</span>
+          <span class="nav-link" [routerLink]="['/listado-turnos']" routerLinkActive="active">Consultar turnos</span>
         </a>
       </li>
       <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
+        <a (click)="irARuta('/crear-turno')" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-calendar-plus-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Añadir turnos</span>
-        </a>
-      </li>
-      <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
-          <i class="bi bi-gear-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Modificar turnos</span>
-        </a>
-      </li>
-      <li class="mx-4">
-        <a (click)="irARuta('')" class="text-white d-flex align-items-center text-decoration-none">
-          <i class="bi bi-calendar-x-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/noImplementado']" routerLinkActive="active">Eliminar turnos</span>
+          <span class="nav-link" [routerLink]="['/crear-turno']" routerLinkActive="active">Añadir turnos</span>
         </a>
       </li>
     </ul>
