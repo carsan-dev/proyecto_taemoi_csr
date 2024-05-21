@@ -1,0 +1,19 @@
+.mapaContainer {
+  width: 100%;
+  height: 400px;
+  backdrop-filter: blur(4px);
+  margin: 0 auto;
+
+  #map {
+    height: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .mapaContainer {
+    top: 5%;
+    right: 50%;
+    width: 80%;
+    height: 35%;
+  }
+}

@@ -1,0 +1,1445 @@
+{
+	"info": {
+		"_postman_id": "526a68f2-1331-453f-b42b-a4bbc45f734e",
+		"name": "API TAEMOI",
+		"description": "La aplicación TaeMoi es una plataforma diseñada para administrar y gestionar información relacionada con alumnos en la escuela de taekwondo \"MOISKIMDO TAEKWONDO\" en Umbrete. Desde el seguimiento de datos personales hasta el registro de información relevante, mi aplicación ofrece una solución completa y eficiente para simplificar la gestión de alumnos.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32188944"
+	},
+	"item": [
+		{
+			"name": "Alumnos",
+			"item": [
+				{
+					"name": "Listar Alumnos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/admin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite listar todos los alumnos registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los alumnos.\n- **404 Not Found** - Si no se encuentra ningún alumno.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Alumno Por Id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/admin/19",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"19"
+							]
+						},
+						"description": "StartFragment\n\n#### Descripción\n\nEste endpoint permite obtener la información de un alumno específico mediante su ID.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/{id}`\n\n- `{id}`: El ID del alumno que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea obtener.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentra el alumno, se devuelve la información del alumno.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Alumnos Paginado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/admin?{{numPagina}}&{{tamPagina}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin"
+							],
+							"query": [
+								{
+									"key": "{{numPagina}}",
+									"value": null
+								},
+								{
+									"key": "{{tamPagina}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite listar los alumnos registrados en el sistema de forma paginada.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\n- `page` : El número de página que se desea obtener.\n- `size` : El tamaño de la página, es decir, el número de elementos por página.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista paginada de alumnos.\n- **400 Bad Request** - Si los parámetros de paginación son inválidos.\n- **404 Not Found** - Si no se encuentra ningún alumno.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Usuarios, login y registro",
+			"item": [
+				{
+					"name": "Listar usuarios",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/admin/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Login admin",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"crolyx16@gmail.com\",\r\n    \"contrasena\": \"17022003\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite a un administrador iniciar sesión en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signin`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener las credenciales de inicio de sesión en formato JSON.\n\n- `username` (requerido): Nombre de usuario del administrador.\n    \n- `password` (requerido): Contraseña del administrador.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el inicio de sesión es exitoso. Se devuelve el token de autenticación.\n    \n- **401 Unauthorized** - Si las credenciales de inicio de sesión son inválidas."
+					},
+					"response": []
+				},
+				{
+					"name": "Login user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"moiskimdotaekwondo@gmail.com\",\r\n    \"contrasena\": \"09012013\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite a un usuario iniciar sesión en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signin`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener las credenciales de inicio de sesión en formato JSON.\n\n- `username` (requerido): Nombre de usuario del usuario.\n    \n- `password` (requerido): Contraseña del usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el inicio de sesión es exitoso. Se devuelve el token de autenticación.\n    \n- **401 Unauthorized** - Si las credenciales de inicio de sesión son inválidas."
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"Carlos\",\r\n    \"apellidos\": \"Sanchez\",\r\n    \"email\": \"emaIl@email.es\",\r\n    \"contrasena\": \"12345\",\r\n    \"roles\": [\"ROLE_USER\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite a un usuario registrarse en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signup`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener los datos de registro del usuario en formato JSON.\n\n- `username` (requerido): Nombre de usuario del nuevo usuario.\n    \n- `email` (requerido): Correo electrónico del nuevo usuario.\n    \n- `password` (requerido): Contraseña del nuevo usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el registro es exitoso. Se devuelve el token de autenticación.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un usuario con el mismo nombre de usuario o correo electrónico."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AlumnosDTO",
+			"item": [
+				{
+					"name": "Listar Alumnos DTO Paginado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{numPagina}}&{{tamPagina}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{numPagina}}",
+									"value": null
+								},
+								{
+									"key": "{{tamPagina}}",
+									"value": null
+								}
+							]
+						},
+						"description": "### Descripción\n\nEste endpoint permite obtener una lista paginada de alumnos en formato DTO (Data Transfer Object).\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos`\n\n#### Parámetros de consulta\n\n- `page` : El número de página que se desea obtener.\n    \n- `size` : El tamaño de la página, es decir, el número de elementos por página.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentran alumnos que coinciden con los criterios de búsqueda, se devuelve una lista paginada de alumnos DTO.\n    \n- **404 Not Found** - Si no se encuentran alumnos que coincidan con los criterios de búsqueda.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Alumnos DTO",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los alumnos en formato DTO.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los alumnos en formato DTO.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Alumno Por Id DTO",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/19",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"19"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener la información de un alumno específico mediante su ID en formato DTO.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea obtener.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentra el alumno, se devuelve la información del alumno en formato DTO.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener grupos de alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/18/grupos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"18",
+								"grupos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Filtrados",
+			"item": [
+				{
+					"name": "Filtrar alumnos por nombre",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{nombre}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{nombre}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por nombre.\n\n#### URL\n\n`GET` [<code>http://localhost:8080/api/alumnos?nombre=Florencia</code>](http://localhost:8080/api/alumnos?nombre=Florencia)\n\n(El nombre lo cambias por el que necesites).\n\n#### Parámetros de consulta\n\n- `nombre` : El nombre por el cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el nombre especificado.\n- **404 Not Found** - Si no se encuentra ningún alumno con el nombre especificado.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por categoría",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{categoriaId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{categoriaId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por categoría.\n\n#### URL\n\n`GET` [<code>http://localhost:8080/api/alumnos?categoriaId=7</code>](http://localhost:8080/api/alumnos?categoriaId=7)\n\n(El id lo cambias por el que necesites).\n\n#### Parámetros de consulta\n\n- `categoriaId` : El id de la categoría por la cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con la categoría especificada.\n- **404 Not Found** - Si no se encuentra ningún alumno con la categoría especificada.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por grado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{gradoId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{gradoId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por grado.\n\n#### URL\n\n`GET` [<code>http://localhost:8080/api/alumnos?gradoId=3</code>](http://localhost:8080/api/alumnos?categoriaId=7)\n\n(El id lo cambias por el que necesites).\n\n#### Parámetros de consulta\n\n- `gradoId` : El id del grado por el cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el grado especificado.\n- **404 Not Found** - Si no se encuentra ningún alumno con el grado especificado.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por nombre y grado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{nombre}}&{{gradoId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{nombre}}",
+									"value": null
+								},
+								{
+									"key": "{{gradoId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por nombre y grado.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos?nombre=Florencia&gradoId=3`\n\n(El nombre y el id lo cambias por el que necesites).\n\n#### Parámetros de consulta\n\n- `nombre` : El nombre por el cual se desea filtrar los alumnos.\n- `gradoId` : El ID del grado por el cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el nombre y grado especificados.\n- **404 Not Found** - Si no se encuentra ningún alumno con el nombre y grado especificados.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por nombre y categoría",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{nombre}}&{{categoriaId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{nombre}}",
+									"value": null
+								},
+								{
+									"key": "{{categoriaId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por nombre y categoría.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos?nombre=Florencia&categoriaId=7`\n\n(El nombre y el id lo cambias por el que necesites).\n\n#### Parámetros de consulta\n\n- `nombre` : El nombre por el cual se desea filtrar los alumnos.\n- `categoriaId` : El ID de la categoría por la cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el nombre y categoría especificados.\n- **404 Not Found** - Si no se encuentra ningún alumno con el nombre y categoría especificados.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por grado y categoría",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{gradoId}}&{{categoriaId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{gradoId}}",
+									"value": null
+								},
+								{
+									"key": "{{categoriaId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por grado y categoría.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos?gradoId=3&categoriaId=7`\n\n(Los id los cambias por los que necesites).\n\n#### Parámetros de consulta\n\n- `gradoId` : El ID del grado por el cual se desea filtrar los alumnos.\n- `categoriaId` : El ID de la categoría por la cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el grado y categoría especificados.\n- **404 Not Found** - Si no se encuentra ningún alumno con el grado y categoría especificados.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar alumnos por nombre, grado y categoría",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos?{{nombre}}&{{gradoId}}&{{categoriaId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos"
+							],
+							"query": [
+								{
+									"key": "{{nombre}}",
+									"value": null
+								},
+								{
+									"key": "{{gradoId}}",
+									"value": null
+								},
+								{
+									"key": "{{categoriaId}}",
+									"value": null
+								}
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite filtrar los alumnos por nombre, grado y categoría.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos?nombre=Florencia&gradoId=3&categoriaId=7`\n\n(El nombre y los id los cambias por los que necesites).\n\n#### Parámetros de consulta\n\n- `nombre` : El nombre por el cual se desea filtrar los alumnos.\n    \n- `gradoId` : El ID del grado por el cual se desea filtrar los alumnos.\n    \n- `categoriaId` : El ID de la categoría por la cual se desea filtrar los alumnos.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de alumnos que coinciden con el nombre, grado y categoría especificados.\n- **404 Not Found** - Si no se encuentra ningún alumno con el nombre, grado y categoría especificados.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CRUD Alumnos",
+			"item": [
+				{
+					"name": "Añadir alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "nuevo",
+									"value": "{\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"nombre\": \"Carlos\",\n  \"apellidos\": \"Sanchez\",\n  \"numeroExpediente\": 123456789,\n  \"fechaNacimiento\": \"2003-02-17\",\n  \"nif\": \"29501424Z\",\n  \"direccion\": \"Caserio Pedro,asd5asd3, Madrid, Com 19407\",\n  \"telefono\": \"695568455\",\n  \"email\": \"csanrom1702@g.educaand.es\",\n  \"fechaAlta\": \"2003-10-19\"\n}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1ef0edd3-b51e-49c0-b5e2-6e5b35396a63"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/crear",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"crear"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite añadir un nuevo alumno al sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/alumnos`\n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del nuevo alumno en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del alumno.\n    \n- `apellidos` (requerido): Apellidos del alumno.\n    \n- `fechaNacimiento` (requerido): Fecha de nacimiento del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (opcional): Número de expediente del alumno.\n    \n- `nif` (requerido): Número de identificación fiscal (NIF) del alumno.\n    \n- `direccion` (opcional): Dirección del alumno.\n    \n- `email` (opcional): Correo electrónico del alumno.\n    \n- `telefono` (opcional): Número de teléfono del alumno.\n    \n- `tipoTarifa` (opcional): Tipo de tarifa del alumno.\n    \n- `fechaAlta` (opcional): Fecha de alta del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **201 Created** - Se ha creado el alumno exitosamente. Se devuelve el objeto del alumno creado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un alumno con el mismo NIF.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Editar Alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"nombre\": \"Juan\",\r\n  \"apellidos\": \"Perez\",\r\n  \"numeroExpediente\": \"12345675\",\r\n  \"fechaNacimiento\": \"1990-01-01\",\r\n  \"nif\": \"12345678A\",\r\n  \"direccion\": \"Calle Principal, 123\",\r\n  \"telefono\": 123456787,\r\n  \"email\": \"juan@examples.com\",\r\n  \"tipoTarifa\": \"FAMILIAR\",\r\n  \"fechaAlta\": \"2023-01-01\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/21",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"21"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite editar la información de un alumno existente en el sistema.\n\n#### URL\n\n`PUT http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea editar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea editar.\n    \n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos actualizados del alumno en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (opcional): Nombre actualizado del alumno.\n    \n- `apellidos` (opcional): Apellidos actualizados del alumno.\n    \n- `fechaNacimiento` (opcional): Fecha de nacimiento actualizada del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (opcional): Número de expediente actualizado del alumno.\n    \n- `nif` (opcional): Número de identificación fiscal (NIF) actualizado del alumno.\n    \n- `direccion` (opcional): Dirección actualizada del alumno.\n    \n- `email` (opcional): Correo electrónico actualizado del alumno.\n    \n- `telefono` (opcional): Número de teléfono actualizado del alumno.\n    \n- `tipoTarifa` (opcional): Tipo de tarifa actualizado del alumno.\n    \n- `fechaAlta` (opcional): Fecha de alta actualizada del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja actualizada del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Se ha actualizado el alumno exitosamente. Se devuelve el objeto del alumno actualizado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Borrar Alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/21",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"21"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un alumno del sistema.\n\n#### URL\n\n`DELETE http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea eliminar.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se elimina el alumno exitosamente.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Grupos",
+			"item": [
+				{
+					"name": "Añadir grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"Grupo de Matemáticas Avanzadas\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/grupos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Editar grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"Grupo de Matemáticas Medias\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Añadir alumno a grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/2/alumnos/19",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"2",
+								"alumnos",
+								"19"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Quitar alumno de grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU1MTMyODUsImV4cCI6MTcxNTU0OTI4NX0.VEAUsyv34wgSSGpy0l7GOBiRcjNsoZylW8iBwao0auI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/1/alumnos/21",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"1",
+								"alumnos",
+								"21"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener grupo por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener turnos del grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/2/turnos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"2",
+								"turnos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Turnos",
+			"item": [
+				{
+					"name": "Añadir turno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"diaSemana\": \"Jueves\",\r\n    \"horaInicio\": \"17:00\",\r\n    \"horaFin\": \"18:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/crear",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"crear"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Añadir turno asignándolo a un grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"diaSemana\": \"Jueves\",\r\n    \"horaInicio\": \"19:00\",\r\n    \"horaFin\": \"20:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/crear-asignando-grupo",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"crear-asignando-grupo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Editar turno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"diaSemana\": \"Lunes\",\r\n    \"horaInicio\": \"19:00\",\r\n    \"horaFin\": \"20:30\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Editar turno con grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"diaSemana\": \"Miércoles\",\r\n    \"horaInicio\": \"17:00\",\r\n    \"horaFin\": \"18:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar turno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar turno con grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Añadir turno a grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/3/turnos/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"3",
+								"turnos",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Quitar turno de grupo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/grupos/3/turnos/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"grupos",
+								"3",
+								"turnos",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener turno por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTgwODIsImV4cCI6MTcxNTgzNDA4Mn0.Hu29rpy7XZ5TWk2oiQ2jo8BuJPC0TNxiP_uvyrm6Zng",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener todos los turnos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "numPagina",
+			"value": "page=1",
+			"type": "string"
+		},
+		{
+			"key": "tamPagina",
+			"value": "size=10",
+			"type": "string"
+		},
+		{
+			"key": "gradoId",
+			"value": "gradoId=3",
+			"type": "string"
+		},
+		{
+			"key": "categoriaId",
+			"value": "categoriaId=7",
+			"type": "string"
+		},
+		{
+			"key": "nombre",
+			"value": "nombre=Irene",
+			"type": "string"
+		}
+	]
+}

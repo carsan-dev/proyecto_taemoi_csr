@@ -1,0 +1,11 @@
+<div class="slider-container">
+  <div class="slider-item" *ngFor="let slideritem of imagenesSlider; let i = index" [ngClass]="{'seleccionado': i === indexSeleccionado,
+  'anterior': i === indexSeleccionado - 1,
+  'siguiente': i === indexSeleccionado + 1,
+  'escondidoIzquierdo': i < indexSeleccionado - 1,
+  'escondidoDerecho': i > indexSeleccionado + 1}">
+    <img [src]="slideritem.imgSrc" [alt]="slideritem.imgAlt" class="slider-img" (panright)="mostrarAnterior(i)"
+      (panleft)="mostrarSiguiente(i)">
+    <p *ngIf="i === indexSeleccionado" class="mt-5 text-center fw-bold fs-5">{{ slideritem.captionTexto }}</p>
+  </div>
+</div>

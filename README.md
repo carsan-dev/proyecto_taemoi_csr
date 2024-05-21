@@ -1,54 +1,58 @@
-En este repositorio centralizaremos toda la información relativa a los **Proyectos de Desarrollo de Aplicaciones Web del I.E.S Alixar**.
-Al continuación encontraremos los **apellidos y nombre** del alumno/a junto al **título de su proyecto**. El enlace nos dará acceso al repositorio del proyecto (no a la página GitHub del usuario).
+# TaeMoi: Plataforma Integral para Escuelas de Taekwondo
 
-En este repositorio se debe incluir la documentación especificada en [Requerimientos y criterios a seguir en el desarrollo de los proyectos](https://github.com/iesalixar/plantilla_proyecto_iesalixar/wiki/a.---Criterios-comunes-para-todos-los-proyectos), así como las indicaciones que el tutor haya podido ir a realizando a lo largo del desarrollo del mismo.
+¡Bienvenido a TaeMoi!
 
-El desarrollo de toda Aplicación Web requiere seguir un [proceso estructurado](https://github.com/iesalixar/plantilla_proyecto_iesalixar/wiki/w1.--PROCESO-ESTRUCTURADO-PARA-DESARROLLO-DE-APLICACIONES-WEB), este  de contenido de la wiki te puede ayudar.
-
+TaeMoi es una solución innovadora diseñada específicamente para la escuela de taekwondo **Moi's Kim Do Taekwondo** en Umbrete (Sevilla), con el objetivo de mejorar la gestión interna y la presencia en línea del negocio. Mi plataforma ofrece una combinación única de un escaparate web personalizado y una completa plataforma de gestión de alumnos y procesos internos.
 
 ---
 
-**Los párrafos anteriores son informativos y no deben aparecer en el reposotirio de los alumnos.**
+## Título del Proyecto
+
+### Curso Escolar 2023-2024
+
+#### Autor: Carlos Sánchez Román: [(Enlace a mi cuenta de gitHub)](https://github.com/csanrom1702)
+
+#### Tutor: Antonio Gabriel González Casado [(Enlace a su cuenta de gitHub)](https://github.com/prof-antonio-gabriel)
+
+#### Fecha de Inicio: 06-03-2024
+
+#### Fecha de Finalización: Por determinar
 
 ---
 
-# Título del Proyecto
+## Qué es TaeMoi?
 
-#### Curso Escolar 20XX-20XX
-#### Autor: [Nombre del alumno autor](Enlace a su cuenta de gitHub)
-#### Tutor: [Nombre del profesor tutor](Enlace a su cuenta de gitHub)
-#### Fecha de Inicio: DD-MM-YYYY
-#### Fecha de Finalización: DD-MM-YYYY
+La aplicación TaeMoi es una plataforma diseñada para administrar y gestionar información relacionada con alumnos en la escuela de taekwondo **"MOI'S KIM DO TAEKWONDO"** en Umbrete. Desde el seguimiento de datos personales hasta el registro de información relevante, ofrece una solución completa y eficiente para simplificar la gestión de alumnos.
 
-## Breve descripción del proyecto
+Además de su funcionalidad principal de gestión interna, TaeMoi también cuenta con un escaparate web accesible al público estándar. Este escaparate ofrece información relevante, como eventos, horarios de clases, y otras noticias relacionadas con la escuela de taekwondo. Así, cualquier persona interesada en la escuela puede acceder a esta información de forma fácil y rápida.
 
-Si ya tienes una idea para tu aplicación, explícala brevemente. Si no es así, lo que realmente necesitas es **buscar un problema o necesidad a la que darle solución**, y estos **están por todas partes**. Así que trata de buscar problemas o necesidades en tu vida diaria y realiza una lista. Una vez que tengas una lista exhaustiva, ya puedes empezar a pensar en **cómo puedes resolverlos**.
+Por otro lado, la plataforma incluye una parte de inicio de sesión reservada para los usuarios gestores del negocio. Desde esta área segura, los administradores pueden acceder a todas las funcionalidades avanzadas de la aplicación, como la gestión de alumnos, entre otros aspectos fundamentales para la administración eficiente del negocio.
 
-En este apartado el alumno debe hacer una breve descripción del proyecto que vaya a realizar. Esta descripción no será ua descripción detallada, será una presentación general con no más de 10 líneas.
+---
 
 ## Definir el objetivo de la aplicación
-**Tener una gran idea** o encontrar un punto del mercado al que no se esté dando un producto o servicio es el punto de partida en cada nuevo proyecto. Antes de comenzar debes **definir claramente el propósito y la misión de la aplicación web**:
 
-- **¿Qué va a hacer la aplicación?**
-- **¿Cuál es su atractivo principal?** 
-- **¿Qué problema concreto va a resolver?** 
-- **¿Qué necesidad va a cubrir?**
+En TaeMoi, nuestro objetivo es proporcionar una solución integral y especializada para la gestión eficiente de la escuela de taekwondo, así como para promover la visibilidad y accesibilidad de la misma en línea. Algunos aspectos clave que definirán el propósito y la misión de mi aplicación web son los siguientes:
+
+- **Funcionalidades Centrales:** TaeMoi ofrecerá una serie de características fundamentales, como el acceso a información pública sobre la escuela, la visualización de eventos y horarios, y la disponibilidad de datos de contacto para potenciales interesados. Esto garantizará que tanto los usuarios anónimos como los clientes potenciales puedan acceder fácilmente a la información relevante sobre esta escuela de taekwondo.
+- **Gestión Eficiente:** La aplicación se centrará en proporcionar herramientas robustas para la gestión interna de la escuela, permitiendo a los gestores y administradores realizar operaciones CRUD sobre los alumnos, así como filtrar, ordenar y paginar la información según sea necesario. Esto facilitará la administración de la escuela y mejorará la experiencia para el personal del negocio.
+- **Satisfacción del Cliente:** TaeMoi se esforzará por resolver el problema concreto de la falta de soluciones especializadas para la gestión de escuelas de taekwondo en el mercado actual. Al ofrecer una plataforma que aborde específicamente las necesidades de este sector, nuestra aplicación tiene como objetivo cubrir una importante brecha en el mercado y satisfacer las necesidades de Moi's Kim Do Taekwondo.
+- **Optimización de Procesos:** Al simplificar y automatizar tareas administrativas, TaeMoi permitirá a la escuela de taekwondo optimizar sus procesos internos, ahorrar tiempo y recursos, y mejorar la eficiencia general de la gestión del negocio. Esto se traducirá en una experiencia más fluida y satisfactoria tanto para el personal como para los clientes.
+
+---
 
 ## Estructura del Proyecto
 
-En este apartado el alumno explicará el contenido del repositorio y de todas las carpetas relevantes del mismo. Para facilitar la gestión de la entrega, todo el código y documentación debe estar en este repositorio.
+El repositorio del proyecto contiene un API Restful desarrollado en SpringBoot para la lógica de la aplicación y proveer los datos para utilizar de la base de datos, el frontend desarrollado en Angular17 para las vistas de la aplicación y consumir los servicios del API rest y una carpeta docs con toda la documentación relacionada al proyecto. Así se vería la estructura:
 
-Por lo anterior, un proyecto que contenga un Frontend en una tecnología o framework (por ejemplo Angular) y una API REST en otra tecnología o framework (Springboot, Express) deberá tener la siguiente estructura de directorios en el repositorio de entrega:
-
-- src-api
-- src-frontend
-- docs
-- README.md
-
-En el caso anterior, si se quiere desplegar de forma automatizada a partir del control de versiones, lo habitual es que estén los dos proyectos en repositorios separados. Por lo que se deberá configurar el despliegue automático para indicarle la raíz del código fuente de cada proyecto (si es posible) o hacer dos folks del repositorio principal uno para la API y otro para el frontend y adaptar los directorios para poder realizar el despliegue automático.
-
-En un proyecto monolítico (tecnología servidor: Springboot, Django, Express, PHP,... con un sistema de templates propio para el frontend: Thymeleaf, jinja, ejs,...) deberá tener la siguiente estructura en el repositorio de entrega:
-
-- src
-- docs
-- README.md
+- [docs](./docs)
+  - BBDD
+    - [Esquema-relacional-BBDD-TaeMoi.pdf](./docs/BBDD/Esquema-relacional-BBDD-TaeMoi.pdf)
+  - Despliegue
+    - [README.md](./docs/Despliegue/README.md)
+  - Diseño
+    - [README.md](./docs/Diseño/README.md)
+  - [2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf](./docs/2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf)
+- [src-api](./src-api/)
+- [src-frontend](/src-frontend/)
+- [README.md](./README.md)

@@ -1,0 +1,25 @@
+<div class="d-flex justify-content-center align-items-center eventos-presentacion my-5">
+  <div class="col-10">
+    <h2 class="h3 text-decoration-underline mb-4 text-center">Eventos próximos</h2>
+    <div class="eventos-container">
+      <div class="card text-center p-2 m-2" *ngFor="let evento of eventos">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 eventoImagenContainer">
+              <img *ngIf="evento.imagenUrl" [src]="evento.imagenUrl" [alt]="evento.descripcion" class="">
+            </div>
+            <div class="col-md-6 eventoContenidoContainer d-flex flex-column align-items-center justify-content-center">
+              <div class="evento-item">
+                <div class="evento-info">
+                  <h3>{{ evento.titulo }}</h3>
+                  <p>Fecha: {{ evento.fecha }}</p>
+                  <p *ngIf="evento.descripcion">{{ evento.descripcion }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

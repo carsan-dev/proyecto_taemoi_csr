@@ -1,0 +1,211 @@
+<div class="container-fluid pb-2">
+  <div class="row">
+    <div class="mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
+      <div class="row">
+        <div class="col-lg-4 offset-lg-8 col-md-6 offset-md-6 col-sm-12 text-end mb-4">
+          <img src="assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
+        </div>
+      </div>
+      <div *ngIf="!mostrarFormulario" class="py-5">
+        <div>
+          <div *ngFor="let alumno of alumnos" class="d-flex justify-content-between flex-row align-items-center">
+            <button class="btn btn-primary mb-3" (click)="alternarFormulario(alumno)">
+              Mostrar menú de edición
+            </button>
+            <div class="imagen-perfil-container mb-3">
+              <img class="imagen-perfil"
+                [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                alt="Perfil del alumno">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información Personal</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
+                  <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
+                  <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
+                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
+                  <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
+                  <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Contacto</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Email: {{ alumno.email }}</li>
+                  <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Pagos</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
+                  <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información adicional</h5>
+                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
+                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
+                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
+                  <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
+                  <li class="list-group-item">Grado: {{ alumno.grado }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <app-paginacion
+        [paginaActual]="paginaActual"
+        [totalPaginas]="totalPaginas"
+        [tamanoPagina]="tamanoPagina"
+        (pageChange)="cambiarPagina($event)">
+        </app-paginacion>
+      </div>
+      <div *ngIf="mostrarFormulario" class="py-5">
+        <div *ngFor="let alumno of alumnos" class="d-flex justify-content-between flex-row align-items-end mt-5">
+          <button class="btn btn-primary mb-3" (click)="actualizarAlumno(alumno.id); alternarFormulario(alumno)">
+            Confirmar cambios
+          </button>
+          <div class="image-container d-flex align-items-center text-center flex-column">
+            <img class="imagen-perfil"
+              [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+              alt="Perfil del alumno">
+            <div class="d-flex flex-row align-items-center">
+              <label for="inputFile" class="add-icon pe-2">
+                <i class="bi bi-plus-circle-fill text-black fs-2"></i>
+                <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
+              </label>
+              <label class="remove-icon ps-2" *ngIf="alumno.fotoAlumno" (click)="eliminarFoto(alumno.id)">
+                <i class="bi bi-dash-circle-fill text-black fs-2"></i>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información Personal</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="nombre" class="form-label">Nombre: </label>
+                    <input type="text" id="nombre" class="form-control" [(ngModel)]="alumnoEditado.nombre"
+                      name="nombre">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="apellidos" class="form-label">Apellidos: </label>
+                    <input type="text" id="apellidos" class="form-control" [(ngModel)]="alumnoEditado.apellidos"
+                      name="apellidos">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="direccion" class="form-label">Dirección: </label>
+                    <input type="text" id="direccion" class="form-control" [(ngModel)]="alumnoEditado.direccion"
+                      name="direccion">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento: </label>
+                    <input type="date" id="fechaNacimiento" class="form-control"
+                      [(ngModel)]="alumnoEditado.fechaNacimiento" name="fechaNacimiento">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="numeroExpediente" class="form-label">Número de expediente: </label>
+                    <input type="number" id="numeroExpediente" class="form-control"
+                      [(ngModel)]="alumnoEditado.numeroExpediente" name="numeroExpediente">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="nif" class="form-label">DNI del alumno: </label>
+                    <input type="text" id="nif" class="form-control" [(ngModel)]="alumnoEditado.nif" name="nif">
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Contacto</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="email" class="form-label">Email: </label>
+                    <input type="email" id="email" class="form-control" [(ngModel)]="alumnoEditado.email" name="email">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="telefono" class="form-label">Teléfono: </label>
+                    <input type="number" id="telefono" class="form-control" [(ngModel)]="alumnoEditado.telefono"
+                      name="telefono">
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Pagos</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="tipoTarifa" class="form-label">Tipo de tarifa: </label>
+                    <select class="form-control" id="tipoTarifa" name="tipoTarifa"
+                      [(ngModel)]="alumnoEditado.tipoTarifa" required>
+                      <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
+                    </select>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Información adicional</h5>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaAlta" class="form-label">Fecha de alta: </label>
+                    <input type="date" id="fechaAlta" class="form-control" [(ngModel)]="alumnoEditado.fechaAlta"
+                      name="fechaAlta">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="fechaBaja" class="form-label">Fecha de baja: </label>
+                    <input type="date" id="fechaBaja" class="form-control" [(ngModel)]="alumnoEditado.fechaBaja"
+                      name="fechaBaja">
+                  </li>
+                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
+                    <label for="grado" class="form-label">Grado: </label>
+                    <select class="form-control" id="grado" name="grado" [(ngModel)]="alumnoEditado.grado" required>
+                      <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
+                    </select>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

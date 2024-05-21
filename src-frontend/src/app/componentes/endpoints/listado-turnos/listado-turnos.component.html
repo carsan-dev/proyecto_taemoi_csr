@@ -1,0 +1,33 @@
+<div class="container mt-5">
+  <h2>Horario de Turnos</h2>
+  <table class="table custom-table mt-4">
+    <thead>
+      <tr>
+        <th class="text-center">Día de la Semana</th>
+        <th class="text-center">Turno</th>
+        <th class="text-center">Grupo</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let diaSemana of diasSemana">
+        <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
+          <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
+            <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length" class="text-center">{{ diaSemana }}</td>
+            <td class="text-center">{{ turno.turno }}</td>
+            <td class="text-center">{{ turno.grupo ? turno.grupo.nombre : 'Sin grupo' }}</td>
+            <td class="d-flex flex-column align-items-center">
+              <button class="btn btn-primary mb-1" [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
+              <button class="btn btn-danger mb-1" (click)="eliminarTurno(turno.id)">Eliminar</button>
+              <button class="btn btn-secondary"[routerLink]="['/seleccionarGrupo', turno.id]">Seleccionar Grupo</button>
+            </td>
+          </tr>
+        </ng-container>
+        <tr *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
+          <td>{{ diaSemana }}</td>
+          <td colspan="3" class="text-center">No hay turnos</td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+</div>
