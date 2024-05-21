@@ -12,7 +12,7 @@ import { GrupoDTO } from '../../../../interfaces/grupo-dto';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './gestionar-alumnos.component.html',
-  styleUrl: './gestionar-alumnos.component.scss'
+  styleUrl: './gestionar-alumnos.component.scss',
 })
 export class GestionarAlumnosComponent implements OnInit {
   grupo!: GrupoDTO;
@@ -26,10 +26,12 @@ export class GestionarAlumnosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.grupoId = +params['id'];
-      this.cargarGrupo();
-    });
+    if (typeof localStorage !== 'undefined') {
+      this.route.params.subscribe((params) => {
+        this.grupoId = +params['id'];
+        this.cargarGrupo();
+      });
+    }
   }
 
   cargarGrupo(): void {
@@ -58,17 +60,38 @@ export class GestionarAlumnosComponent implements OnInit {
   eliminarAlumno(alumnoId: number): void {
     const token = localStorage.getItem('token');
     if (token) {
-      this.endpointsService.eliminarAlumnoDeGrupo(this.grupoId, alumnoId, token).subscribe({
-        next: () => {
-          this.alumnos = this.alumnos.filter(alumno => alumno.id !== alumnoId);
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error al eliminar alumno',
-            text: 'No hemos podido eliminar el alumno',
-            icon: 'error',
-          });
-        },
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'No podrás revertir esta acción',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminarlo',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService
+            .eliminarAlumnoDeGrupo(this.grupoId, alumnoId, token)
+            .subscribe({
+              next: () => {
+                Swal.fire(
+                  'Eliminado',
+                  'Alumno correctamente eliminado del grupo!',
+                  'success'
+                );
+                this.alumnos = this.alumnos.filter(
+                  (alumno) => alumno.id !== alumnoId
+                );
+              },
+              error: () => {
+                Swal.fire({
+                  title: 'Error al eliminar alumno',
+                  text: 'No hemos podido eliminar el alumno',
+                  icon: 'error',
+                });
+              },
+            });
+        }
       });
     }
   }
