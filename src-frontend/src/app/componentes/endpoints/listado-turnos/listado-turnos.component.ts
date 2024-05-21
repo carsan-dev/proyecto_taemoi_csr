@@ -14,6 +14,15 @@ import { RouterModule } from '@angular/router';
 })
 export class ListadoTurnosComponent implements OnInit {
   turnos: any[] = [];
+  diasSemana: string[] = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -41,6 +50,10 @@ export class ListadoTurnosComponent implements OnInit {
     }
   }
 
+  obtenerTurnosPorDia(diaSemana: string): any[] {
+    return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
+  }
+
   eliminarTurno(turnoId: number): void {
     const token = localStorage.getItem('token');
     if (token) {
@@ -51,25 +64,26 @@ export class ListadoTurnosComponent implements OnInit {
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlo'
+        confirmButtonText: 'Sí, eliminarlo',
+        cancelButtonText: 'Cancelar',
       }).then((result) => {
         if (result.isConfirmed) {
           this.endpointsService.eliminarTurno(turnoId, token).subscribe({
             next: () => {
-              Swal.fire(
-                'Eliminado',
-                'El turno ha sido eliminado',
-                'success'
-              );
+              Swal.fire({
+                title: 'Eliminado',
+                text: 'El turno ha sido eliminado',
+                icon: 'success',
+              });
               this.obtenerTurnos();
             },
             error: (error) => {
               Swal.fire({
                 title: 'Error en la eliminación',
-                text: 'No hemos podido eliminar el turno',
+                text: 'No hemos podido eliminar el turno' + error,
                 icon: 'error',
               });
-            }
+            },
           });
         }
       });

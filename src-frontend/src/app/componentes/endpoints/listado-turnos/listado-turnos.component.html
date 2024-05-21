@@ -1,5 +1,5 @@
 <div class="container mt-5">
-  <h2>Listado de Turnos</h2>
+  <h2>Horario de Turnos</h2>
   <table class="table custom-table mt-4">
     <thead>
       <tr>
@@ -9,14 +9,22 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let turno of turnos">
-        <td>{{ turno.diaSemana }}</td>
-        <td>{{ turno.turno }}</td>
-        <td>
-          <button class="btn btn-primary me-2" [routerLink]="['/turnosEditar', turno.id]">Editar</button>
-          <button class="btn btn-danger" (click)="eliminarTurno(turno.id)">Eliminar</button>
-        </td>
-      </tr>
+      <ng-container *ngFor="let diaSemana of diasSemana">
+        <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
+          <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
+            <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length">{{ diaSemana }}</td>
+            <td>{{ turno.turno }}</td>
+            <td>
+              <button class="btn btn-primary me-2" [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
+              <button class="btn btn-danger" (click)="eliminarTurno(turno.id)">Eliminar</button>
+            </td>
+          </tr>
+        </ng-container>
+        <tr *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
+          <td>{{ diaSemana }}</td>
+          <td colspan="2">No hay turnos</td>
+        </tr>
+      </ng-container>
     </tbody>
   </table>
 </div>
