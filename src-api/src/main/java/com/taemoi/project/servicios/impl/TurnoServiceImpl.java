@@ -159,8 +159,14 @@ public class TurnoServiceImpl implements TurnoService {
      * @throws TurnoNoEncontradoException Si no se encuentra el turno con el ID especificado.
      */
     @Override
-    public void eliminarTurno(@NonNull Long turnoId) {
-        grupoRepository.deleteById(turnoId);
+    public boolean eliminarTurno(@NonNull Long turnoId) {
+        Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
+        if (turnoOptional.isPresent()) {
+            turnoRepository.deleteById(turnoId);
+            return true;
+        } else {
+            return false;
+        }
     }
     
     /**

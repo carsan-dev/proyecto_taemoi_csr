@@ -20,5 +20,5 @@ public interface TurnoService {
 	
 	TurnoDTO actualizarTurno(@NonNull Long turnoId, TurnoDTO turnoDTO);
 	
-	void eliminarTurno(@NonNull Long turnoId);
+	boolean eliminarTurno(@NonNull Long turnoId);
 }
