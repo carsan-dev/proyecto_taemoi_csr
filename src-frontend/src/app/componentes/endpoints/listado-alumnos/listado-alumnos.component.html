@@ -1,0 +1,51 @@
+<div class="container-fluid py-5">
+  <div class="row">
+    <div class="col-md-12 mt-3">
+      <h2>Listado de Alumnos</h2>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table custom-table mt-4">
+        <thead>
+          <tr>
+            <th>Foto</th>
+            <th>Nombre Completo</th>
+            <th>Edad</th>
+            <th>Teléfono</th>
+            <th>Tarifa</th>
+            <th>Fecha de Alta</th>
+            <th>Categoría</th>
+            <th>Grado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let alumno of alumnos">
+            <td>
+              <div class="imagen-perfil-container">
+                <img class="imagen-perfil"
+                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                  alt="Perfil del alumno">
+              </div>
+            </td>
+            <td>{{ alumno.nombre }} {{ alumno.apellidos }}</td>
+            <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
+            <td>{{ alumno.telefono }}</td>
+            <td>{{ alumno.tipoTarifa }}</td>
+            <td>{{ alumno.fechaAlta }}</td>
+            <td>{{ alumno.categoria }}</td>
+            <td>{{ alumno.grado }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <app-paginacion
+    [paginaActual]="paginaActual"
+    [totalPaginas]="totalPaginas"
+    [tamanoPagina]="tamanoPagina"
+    (pageChange)="cambiarPagina($event)">
+  </app-paginacion>
+</div>

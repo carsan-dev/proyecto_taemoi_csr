@@ -1,0 +1,13 @@
+com.taemoi.project
+com.taemoi.project.configuracion
+com.taemoi.project.controladores
+com.taemoi.project.dtos
+com.taemoi.project.dtos.request
+com.taemoi.project.dtos.response
+com.taemoi.project.entidades
+com.taemoi.project.errores
+com.taemoi.project.errores.alumno
+com.taemoi.project.errores.usuario
+com.taemoi.project.repositorios
+com.taemoi.project.servicios
+com.taemoi.project.servicios.impl

@@ -1,0 +1,91 @@
+<div class="sidebar-container">
+  <div class="d-flex justify-content-start p-2 sidebar-top-container">
+    <i
+      class="fs-2 text-white bi-list"
+      (click)="alternarVisibilidadSidebar()"
+    ></i>
+  </div>
+  <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
+    <div class="user-container pb-3">
+      <h2 class="h2 text-white text-center mx-3">{{nombreUsuario}}</h2>
+      <p class="text-white text-center mx-3">{{emailUsuario}}</p>
+    </div>
+    <div class="img-div text-center">
+      <img src="assets/media/Logo_escuela.svg" class="centered-image" alt="Logo escuela">
+    </div>
+    <ul class="list-unstyled mt-5">
+      <li class="mx-4">
+        <h2 class="h5 text-white fw-bold">ACCIONES</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/adminpage')" class="text-white text-decoration-none d-flex align-items-center">
+          <i class="bi bi-house-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/adminpage']" routerLinkActive="active">Página principal</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled mt-5">
+      <li class="mx-4">
+        <h2 class="h6 text-white fw-bold">ALUMNOS</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/alumnosListar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-people-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosListar']" routerLinkActive="active">Listado de alumnos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/alumnosCrear')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-add fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosCrear']" routerLinkActive="active">Añadir alumnos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/alumnosEditar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-gear fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active">Modificar alumnos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/alumnosEliminar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-fill-x fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active">Eliminar alumnos</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled mt-5">
+      <li class="mx-4">
+        <h2 class="h6 text-white fw-bold">GRUPOS</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/gruposListar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-person-lines-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/gruposListar']" routerLinkActive="active">Consultar grupos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/gruposCrear')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-plus-circle-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/gruposCrear']" routerLinkActive="active">Añadir grupos</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled my-5">
+      <li class="mx-4">
+        <h2 class="h6 text-white fw-bold">HORARIOS</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/listado-turnos')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-calendar2-week-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/listado-turnos']" routerLinkActive="active">Consultar turnos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/crear-turno')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-calendar-plus-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/crear-turno']" routerLinkActive="active">Añadir turnos</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+</div>

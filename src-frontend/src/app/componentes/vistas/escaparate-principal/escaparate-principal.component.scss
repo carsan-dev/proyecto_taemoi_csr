@@ -1,0 +1,146 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
+.main-content {
+  .video-container {
+    position: relative;
+    padding: 0;
+
+    video {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      object-fit: cover;
+      filter: brightness(80%);
+    }
+
+    .video-text {
+      position: absolute;
+      top: 350px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      p {
+        font-family: 'Osaka-Sans Serif', sans-serif;
+
+        &:first-child {
+          font-size: 64px;
+        }
+
+        &:last-child {
+          font-size: 96px;
+        }
+      }
+    }
+
+    .video-image {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translate(-50%);
+      width: 100%;
+      max-width: 250px;
+
+      img {
+        mask-image: linear-gradient(to bottom, black 75%, transparent 95%);
+      }
+    }
+  }
+
+  .info-divs-section {
+    .info-div {
+      padding: 0;
+
+      .text-content {
+        flex: 1;
+
+        h1 {
+          font-weight: 700;
+        }
+
+        p {
+          margin: 0 auto;
+          width: 60%;
+        }
+
+        button {
+          margin: 0 auto;
+          width: 180px;
+        }
+      }
+
+      .img-content {
+        flex: 1;
+
+        img {
+          max-width: 100%;
+          height: auto;
+          filter: grayscale(100%);
+        }
+      }
+    }
+  }
+
+  .slider-section {
+    position: relative;
+    margin-bottom: 950px;
+
+    .background-container {
+      background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/interior_escuela-fondo.webp");
+      background-position: center;
+      background-size: cover;
+      width: 100%;
+      height: 500px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .container-slider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 500px;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      transform: translateY(50%);
+      z-index: 2;
+
+      .slider {
+        width: 1000px;
+        height: 500px;
+      }
+    }
+  }
+
+  .map-section {
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .location-container {
+      position: relative;
+      text-wrap: pretty;
+    }
+  }
+
+  @media (max-width: 992px) {
+    .video-text {
+      display: none !important;
+    }
+  }
+}

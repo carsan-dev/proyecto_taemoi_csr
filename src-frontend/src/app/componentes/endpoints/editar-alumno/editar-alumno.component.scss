@@ -1,0 +1,45 @@
+.row {
+  .imagen-perfil-container {
+    .imagen-perfil {
+      border-radius: 50%;
+      width: 275px;
+      height: 275px;
+    }
+  }
+
+  .card {
+    width: 35vw;
+    min-height: 35vh;
+    margin: 0 auto;
+
+    input,
+    select {
+      width: 75%;
+    }
+  }
+}
+
+.image-container {
+  position: relative;
+
+  div {
+    label {
+      cursor: pointer;
+    }
+  }
+}
+
+.imagen-perfil {
+  width: 300px;
+  height: auto;
+  border-radius: 50%;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.remove-icon {
+  z-index: 1;
+  font-size: 20px;
+}
