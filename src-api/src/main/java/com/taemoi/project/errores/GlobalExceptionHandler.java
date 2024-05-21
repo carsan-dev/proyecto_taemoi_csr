@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
+import com.taemoi.project.errores.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
@@ -54,6 +55,11 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler(TurnoNoEncontradoException.class)
 	public ResponseEntity<String> handleTurnoNoEncontradoException(TurnoNoEncontradoException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
+	
+	@ExceptionHandler(AlumnoNoEncontradoEnGrupoException.class)
+	public ResponseEntity<String> handleAlumnoNoEncontradoEnGrupoException(AlumnoNoEncontradoEnGrupoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
 }
