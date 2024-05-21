@@ -91,28 +91,25 @@ public class TurnoServiceImpl implements TurnoService {
      *
      * @param turnoDTO Los datos del turno a crear.
      */
-    @Override
+    @SuppressWarnings("null")
+	@Override
     public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
         Turno turno = new Turno();
         turno.setDiaSemana(turnoDTO.getDiaSemana());
         turno.setHoraInicio(turnoDTO.getHoraInicio());
         turno.setHoraFin(turnoDTO.getHoraFin());
 
-        List<Grupo> grupos = grupoRepository.findAll();
-
-        Grupo grupoAsignado;
-        if (turno.getDiaSemana().equalsIgnoreCase("lunes") || turno.getDiaSemana().equalsIgnoreCase("miércoles")) {
-            grupoAsignado = obtenerGrupoPorIndice(grupos, 0);
-        } else if (turno.getDiaSemana().equalsIgnoreCase("martes") || turno.getDiaSemana().equalsIgnoreCase("jueves")) {
-            grupoAsignado = obtenerGrupoPorIndice(grupos, 1);
+        if (turnoDTO.getGrupoId() != null) {
+            Grupo grupoAsignado = grupoRepository.findById(turnoDTO.getGrupoId())
+                .orElseThrow(() -> new IllegalArgumentException("Grupo no encontrado con ID: " + turnoDTO.getGrupoId()));
+            turno.setGrupo(grupoAsignado);
         } else {
-            throw new IllegalArgumentException("Día de la semana no válido: " + turno.getDiaSemana());
+            throw new IllegalArgumentException("ID de grupo no puede ser nulo");
         }
-
-        turno.setGrupo(grupoAsignado);
 
         turnoRepository.save(turno);
     }
+
     
     /**
      * Actualiza los detalles de un turno existente.
@@ -163,11 +160,7 @@ public class TurnoServiceImpl implements TurnoService {
      */
     @Override
     public void eliminarTurno(@NonNull Long turnoId) {
-        if (turnoRepository.existsById(turnoId)) {
-            turnoRepository.deleteById(turnoId);
-        } else {
-            throw new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe.");
-        }
+        grupoRepository.deleteById(turnoId);
     }
     
     /**

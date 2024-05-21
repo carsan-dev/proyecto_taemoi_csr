@@ -1,8 +1,6 @@
 package com.taemoi.project.controladores;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -133,14 +131,9 @@ public class TurnoController {
      */
     @DeleteMapping("/{turnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarTurno(@PathVariable @NonNull Long turnoId) {
-        try {
+    public ResponseEntity<Void> eliminarTurno(@PathVariable @NonNull Long turnoId) {
             turnoService.eliminarTurno(turnoId);
-            return ResponseEntity.ok("Turno eliminado correctamente");
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  
     }
 }

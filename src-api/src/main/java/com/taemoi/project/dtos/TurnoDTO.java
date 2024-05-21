@@ -8,6 +8,7 @@ public class TurnoDTO {
     private String diaSemana;
     private String horaInicio;
     private String horaFin;
+    private Long grupoId;
 
     public TurnoDTO() {}
     
@@ -41,6 +42,14 @@ public class TurnoDTO {
 
 	public void setHoraFin(String horaFin) {
 		this.horaFin = horaFin;
+	}
+	
+	public Long getGrupoId() {
+		return grupoId;
+	}
+
+	public void setGrupoId(Long grupoId) {
+		this.grupoId = grupoId;
 	}
 
 	public static TurnoDTO deTurno(Turno turno) {
