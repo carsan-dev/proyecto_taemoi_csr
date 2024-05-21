@@ -132,8 +132,15 @@ public class TurnoController {
     @DeleteMapping("/{turnoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> eliminarTurno(@PathVariable @NonNull Long turnoId) {
-            turnoService.eliminarTurno(turnoId);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-  
+        try {
+            boolean eliminado = turnoService.eliminarTurno(turnoId);
+            if (eliminado) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
