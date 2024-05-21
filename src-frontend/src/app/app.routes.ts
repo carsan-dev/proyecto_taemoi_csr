@@ -20,6 +20,7 @@ import { GestionarAlumnosComponent } from './componentes/endpoints/listado-grupo
 import { SeleccionarAlumnosComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component';
 import { ListadoTurnosComponent } from './componentes/endpoints/listado-turnos/listado-turnos.component';
 import { CrearTurnoComponent } from './componentes/endpoints/crear-turno/crear-turno.component';
+import { SeleccionarGrupoComponent } from './componentes/endpoints/listado-turnos/seleccionar-grupo/seleccionar-grupo.component';
 
 export const routes: Routes = [
   { path: 'inicio', component: EscaparatePrincipalComponent },
@@ -42,6 +43,7 @@ export const routes: Routes = [
   { path: 'turnosGrupo/:id', component: TurnosGrupoComponent },
   { path: 'listado-turnos', component: ListadoTurnosComponent },
   { path: 'crear-turno', component: CrearTurnoComponent },
+  { path: 'seleccionarGrupo/:turnoId', component: SeleccionarGrupoComponent },
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
 ];
 
