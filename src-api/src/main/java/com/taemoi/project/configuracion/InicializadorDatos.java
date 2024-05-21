@@ -25,11 +25,13 @@ import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
+import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
+import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
@@ -69,6 +71,9 @@ public class InicializadorDatos implements CommandLineRunner {
      */
 	@Autowired
 	private GrupoRepository grupoRepository;
+	
+	@Autowired
+	private TurnoRepository turnoRepository;
 	
 	/**
      * Inyección del servicio de grupo.
@@ -157,6 +162,7 @@ public class InicializadorDatos implements CommandLineRunner {
 		}
 		
 	    generarGrupos();
+	    generarTurnos();
 
 	    asignarAlumnosAGrupoAleatorio(alumnos);
 	}
@@ -316,6 +322,17 @@ public class InicializadorDatos implements CommandLineRunner {
 	        grupoRepository.save(grupo2);
 	    }
 	}
+	
+    private void generarTurnos() {
+        List<String> diasSemana = Arrays.asList("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo");
+        for (String dia : diasSemana) {
+            Turno turno = new Turno();
+            turno.setDiaSemana(dia);
+            turno.setHoraInicio("07:00");
+            turno.setHoraFin("08:00");
+            turnoRepository.save(turno);
+        }
+    }
 	
 	/**
 	 * Asigna todos los alumnos a un grupo aleatorio.
