@@ -21,6 +21,7 @@ export class AuthenticationService {
 
   constructor(private http: HttpClient) {
     if (typeof localStorage !== 'undefined') {
+      this.eliminarToken();
       const token = localStorage.getItem('token');
       const email = localStorage.getItem('email');
       const username = localStorage.getItem('username');
@@ -93,5 +94,11 @@ export class AuthenticationService {
 
   private extraerNombreUsuario(email: string): string {
     return email.substring(0, email.indexOf('@'));
+  }
+
+  private eliminarToken(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('email');
+    localStorage.removeItem('username');
   }
 }
