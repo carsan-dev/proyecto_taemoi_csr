@@ -2,19 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-listado-turnos',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './listado-turnos.component.html',
-  styleUrl: './listado-turnos.component.scss'
+  styleUrl: './listado-turnos.component.scss',
 })
 export class ListadoTurnosComponent implements OnInit {
   turnos: any[] = [];
 
-  constructor(private endpointsService: EndpointsService) { }
+  constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
@@ -40,12 +41,12 @@ export class ListadoTurnosComponent implements OnInit {
     }
   }
 
-  eliminarTurno(id: number): void {
+  eliminarTurno(turnoId: number): void {
     const token = localStorage.getItem('token');
     if (token) {
       Swal.fire({
         title: '¿Estás seguro?',
-        text: 'No podrás revertir esto',
+        text: 'No podrás revertir esta acción',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -53,22 +54,22 @@ export class ListadoTurnosComponent implements OnInit {
         confirmButtonText: 'Sí, eliminarlo'
       }).then((result) => {
         if (result.isConfirmed) {
-          this.endpointsService.eliminarTurno(id, token).subscribe({
+          this.endpointsService.eliminarTurno(turnoId, token).subscribe({
             next: () => {
-              Swal.fire({
-                title: 'Turno eliminado',
-                text: 'El turno ha sido eliminado correctamente.',
-                icon: 'success',
-              });
+              Swal.fire(
+                'Eliminado',
+                'El turno ha sido eliminado',
+                'success'
+              );
               this.obtenerTurnos();
             },
-            error: () => {
+            error: (error) => {
               Swal.fire({
-                title: 'Error al eliminar turno',
-                text: 'Ha ocurrido un error al intentar eliminar el turno.',
+                title: 'Error en la eliminación',
+                text: 'No hemos podido eliminar el turno',
                 icon: 'error',
               });
-            },
+            }
           });
         }
       });

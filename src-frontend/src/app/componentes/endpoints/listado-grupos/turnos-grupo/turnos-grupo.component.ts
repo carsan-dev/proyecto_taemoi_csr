@@ -59,28 +59,42 @@ export class TurnosGrupoComponent implements OnInit {
   }
 
   eliminarTurnoDelGrupo(turnoId: number) {
-    const token = localStorage.getItem('token');
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¡No podrás revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminarlo',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const token = localStorage.getItem('token');
 
-    if (token) {
-      this.endpointsService
-        .eliminarTurnoDeGrupo(this.grupoId, turnoId, token)
-        .subscribe({
-          next: (response) => {
-            Swal.fire({
-              title: 'Bien',
-              text: '¡Turno eliminado correctamente del grupo!',
-              icon: 'success',
+        if (token) {
+          this.endpointsService
+            .eliminarTurnoDeGrupo(this.grupoId, turnoId, token)
+            .subscribe({
+              next: (response) => {
+                Swal.fire({
+                  title: 'Bien',
+                  text: '¡Turno eliminado correctamente del grupo!',
+                  icon: 'success',
+                });
+                this.obtenerTurnos();
+              },
+              error: (error) => {
+                Swal.fire({
+                  title: 'Error',
+                  text: 'No hemos podido eliminar el turno, ' + error,
+                  icon: 'error',
+                });
+              },
             });
-            this.obtenerTurnos();
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No hemos podido elminar el turno, ' + error,
-              icon: 'error',
-            });
-          },
-        });
-    }
+        }
+      }
+    });
   }
+
 }

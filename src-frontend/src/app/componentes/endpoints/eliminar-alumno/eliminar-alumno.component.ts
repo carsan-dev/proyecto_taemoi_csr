@@ -57,22 +57,35 @@ export class EliminarAlumnoComponent implements OnInit {
     const token = localStorage.getItem('token');
 
     if (token) {
-      this.endpointsService.eliminarAlumnos(id, token).subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Alumno eliminado',
-            text: 'El alumno ha sido eliminado correctamente.',
-            icon: 'success',
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'No podrás revertir esto',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminarlo',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService.eliminarAlumnos(id, token).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Alumno eliminado',
+                text: 'El alumno ha sido eliminado correctamente.',
+                icon: 'success',
+              });
+              this.obtenerAlumnos();
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al eliminar alumno',
+                text: 'Ha ocurrido un error al intentar eliminar el alumno.',
+                icon: 'error',
+              });
+            },
           });
-          this.obtenerAlumnos();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error al eliminar alumno',
-            text: 'Ha ocurrido un error al intentar eliminar el alumno.',
-            icon: 'error',
-          });
-        },
+        }
       });
     }
   }
@@ -82,7 +95,19 @@ export class EliminarAlumnoComponent implements OnInit {
     const alumnosSeleccionados = this.alumnos.filter(alumno => alumno.selected);
 
     if (token && alumnosSeleccionados.length > 0) {
-      this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'No podrás revertir esto',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminarlos'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
+        }
+      });
     } else {
       Swal.fire({
         title: 'No hay alumnos seleccionados',
@@ -115,7 +140,7 @@ export class EliminarAlumnoComponent implements OnInit {
           text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.`,
           icon: 'error',
         });
-        this.eliminarAlumnoSecuencial(alumnosSeleccionados, token); // Continuar con los siguientes alumnos
+        this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
       },
     });
   }
