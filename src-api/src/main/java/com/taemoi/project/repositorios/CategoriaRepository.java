@@ -18,4 +18,6 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
      * @return La entidad Categoria con el nombre especificado, o null si no se encuentra.
      */
 	Categoria findByNombre(String nombre);
+
+	boolean existsByNombre(String nombre);
 }

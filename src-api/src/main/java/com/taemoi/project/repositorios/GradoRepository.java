@@ -29,4 +29,6 @@ public interface GradoRepository extends JpaRepository<Grado, Long> {
      * @return Una lista de grados cuyos tipos de grado están en la lista proporcionada.
      */
 	Grado findByTipoGradoIn(List<TipoGrado> tiposGrado);
+
+	boolean existsByTipoGrado(TipoGrado tipoGrado);
 }
