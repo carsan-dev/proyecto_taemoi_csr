@@ -299,6 +299,7 @@ public class GrupoServiceImpl implements GrupoService {
 	                Alumno alumno = new Alumno();
 	                alumno.setNombre(alumnoGrupoDTO.getNombre());
 	                alumno.setApellidos(alumnoGrupoDTO.getApellidos());
+					alumno.setFotoAlumno(alumnoGrupoDTO.getFotoAlumno());
 	                return alumno;
 	            })
 	            .collect(Collectors.toList());
@@ -307,6 +308,7 @@ public class GrupoServiceImpl implements GrupoService {
 
 	    return grupo;
 	}
+
 	
 	/**
 	 * Convierte una entidad Grupo a un DTO GrupoResponseDTO.
