@@ -77,8 +77,10 @@ export class VistaLoginComponent implements OnInit {
   private redirigirSegunRol(roles: string[]) {
     if (this.authService.tieneRolAdmin() || this.authService.tieneRolManager()) {
       this.router.navigate(['/adminpage']);
-    } else {
+    } else if (this.authService.tieneRolUser()){
       this.router.navigate(['/userpage']);
+    } else {
+      this.router.navigate(['/inicio']);
     }
   }
 }
