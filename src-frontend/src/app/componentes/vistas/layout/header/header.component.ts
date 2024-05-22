@@ -32,9 +32,7 @@ export class HeaderComponent implements OnInit {
   cerrarSesion() {
     const token = localStorage.getItem('token');
     if (token) {
-      localStorage.removeItem('token');
-      this.authService.actualizarEstadoLogueado(false);
-      this.usuarioLogueado = false;
+      this.authService.logout();
       Swal.fire({
         title: 'Sesión cerrada con éxito',
         text: 'Hasta la proxima!',
@@ -48,6 +46,6 @@ export class HeaderComponent implements OnInit {
       });
       this.usuarioLogueado = false;
     }
-    this.router.navigate(['/login']);
+    this.router.navigate(['/inicio']);
   }
 }
