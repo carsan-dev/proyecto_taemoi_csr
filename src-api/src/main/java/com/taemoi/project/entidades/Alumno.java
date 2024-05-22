@@ -1,5 +1,6 @@
 package com.taemoi.project.entidades;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -85,7 +86,7 @@ public class Alumno {
 	
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	@JsonManagedReference
-	private List<Grupo> grupos;
+	private List<Grupo> grupos = new ArrayList<>();;
     
     @OneToOne(mappedBy = "alumno")
     private Usuario usuario;

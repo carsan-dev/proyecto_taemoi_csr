@@ -1,5 +1,6 @@
 package com.taemoi.project.entidades;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -32,7 +33,7 @@ public class Grupo {
         inverseJoinColumns = @JoinColumn(name = "alumno_id")
     )
     @JsonBackReference
-    private List<Alumno> alumnos;
+    private List<Alumno> alumnos = new ArrayList<>();
     
     @OneToMany(mappedBy = "grupo")
     @JsonBackReference
