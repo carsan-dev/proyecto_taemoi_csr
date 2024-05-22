@@ -2,6 +2,8 @@ package com.taemoi.project.servicios.impl;
 
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.taemoi.project.controladores.AdminController;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
@@ -28,6 +31,7 @@ import lombok.Builder;
 @Builder
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
+	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
 	/**
      * Inyección del repositorio de usuario.
@@ -87,16 +91,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @throws IllegalArgumentException Si el email o la contraseña proporcionados son inválidos.
      */
 	@Override
-	public JwtAuthenticationResponse signin(LoginRequest request) {
-		Authentication authentication = authenticationManager
-				.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getContrasena()));
+    public JwtAuthenticationResponse signin(LoginRequest request) {
+        logger.info("Iniciando sesión para: {}", request.getEmail());
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getContrasena()));
 
-		SecurityContextHolder.getContext().setAuthentication(authentication);
-		
-	    Optional<Usuario> optionalUser = usuarioRepository.findByEmail(request.getEmail());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-	    Usuario user = optionalUser.orElseThrow(() -> new IllegalArgumentException("Email o contraseña inválidos."));
-		String jwt = jwtService.generateToken(user);
-		return JwtAuthenticationResponse.builder().token(jwt).build();
-	}
+        Optional<Usuario> optionalUser = usuarioRepository.findByEmail(request.getEmail());
+        Usuario user = optionalUser.orElseThrow(() -> {
+            logger.error("Usuario no encontrado: {}", request.getEmail());
+            return new IllegalArgumentException("Email o contraseña inválidos.");
+        });
+
+        logger.info("Usuario autenticado: {}", user.getEmail());
+        String jwt = jwtService.generateToken(user);
+        logger.info("Token JWT generado para: {}", user.getEmail());
+        return JwtAuthenticationResponse.builder().token(jwt).build();
+    }
 }
