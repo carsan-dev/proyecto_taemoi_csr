@@ -134,6 +134,14 @@ public class Usuario implements UserDetails {
 		this.roles = roles;
 	}
 
+	public Alumno getAlumno() {
+		return alumno;
+	}
+
+	public void setAlumno(Alumno alumno) {
+		this.alumno = alumno;
+	}
+
 	public Long getId() {
 		return id;
 	}
