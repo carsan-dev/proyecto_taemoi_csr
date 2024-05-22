@@ -34,11 +34,11 @@ export class AuthenticationService {
       tap((response) => {
         const email = credenciales.email;
         const username = this.extraerNombreUsuario(email);
-        const tokenExpiry = new Date().getTime() + 24 * 60 * 60 * 1000;
+        const tokenCreationTime = Date.now().toString();
         localStorage.setItem('token', response.token);
         localStorage.setItem('email', email);
         localStorage.setItem('username', username);
-        localStorage.setItem('tokenExpiry', tokenExpiry.toString());
+        localStorage.setItem('tokenCreationTime', tokenCreationTime.toString());
         this.actualizarEstadoLogueado(true);
         this.usernameSubject.next(username);
         this.emailSubject.next(email);
@@ -98,28 +98,31 @@ export class AuthenticationService {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
     localStorage.removeItem('username');
-    localStorage.removeItem('tokenExpiry');
+    localStorage.removeItem('tokenCreationTime');
   }
 
   private verificarValidezToken(): void {
     const token = localStorage.getItem('token');
-    const tokenExpiry = localStorage.getItem('tokenExpiry');
-    if (token && tokenExpiry) {
-      const expiryDate = new Date(parseInt(tokenExpiry));
-      if (new Date() > expiryDate) {
-        this.eliminarToken();
-      } else {
-        const email = localStorage.getItem('email');
-        const username = localStorage.getItem('username');
-        if (email && username) {
-          this.actualizarEstadoLogueado(true);
-          this.usernameSubject.next(username);
-          this.emailSubject.next(email);
-          this.obtenerRoles(token);
+    const tokenCreationTime = localStorage.getItem('tokenCreationTime');
+
+    if (token && tokenCreationTime) {
+        const creationDate = new Date(parseInt(tokenCreationTime));
+        const expiryDate = new Date(creationDate.getTime() + 10 * 60 * 60 * 1000);
+
+        if (new Date() > expiryDate) {
+            this.eliminarToken();
+        } else {
+            const email = localStorage.getItem('email');
+            const username = localStorage.getItem('username');
+            if (email && username) {
+                this.actualizarEstadoLogueado(true);
+                this.usernameSubject.next(username);
+                this.emailSubject.next(email);
+                this.obtenerRoles(token);
+            }
         }
-      }
     }
-  }
+}
 
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
