@@ -4,12 +4,9 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -119,8 +116,13 @@ public class InicializadorDatos implements CommandLineRunner {
         crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "17022003", Roles.ROLE_ADMIN);
         crearUsuarioSiNoExiste("usuarioPrueba@gmail.com", "Prueba", "Standard User", "12345678", Roles.ROLE_USER);
     }
-	
+    
     private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {
+        crearUsuarioSiNoExiste(email, nombre, apellidos, contrasena, rol, null);
+    }
+
+	
+    private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol, Alumno alumno) {
         if (usuarioRepository.findByEmail(email).isEmpty()) {
             Usuario usuario = new Usuario();
             usuario.setNombre(nombre);
@@ -128,9 +130,15 @@ public class InicializadorDatos implements CommandLineRunner {
             usuario.setEmail(email);
             usuario.setContrasena(passwordEncoder.encode(contrasena));
             usuario.getRoles().add(rol);
+            usuario.setAlumno(alumno);
             usuarioRepository.save(usuario);
+            if (alumno != null) {
+                alumno.setUsuario(usuario);
+                alumnoRepository.save(alumno);
+            }
         }
     }
+
 
     /**
      * Genera los grados si no existen en la base de datos.
@@ -161,9 +169,22 @@ public class InicializadorDatos implements CommandLineRunner {
             Alumno alumno = generarAlumno(faker);
             if (!alumnoRepository.existsByEmail(alumno.getEmail())) {
                 alumnoRepository.save(alumno);
+                Usuario usuario = new Usuario();
+                usuario.setNombre(alumno.getNombre());
+                usuario.setApellidos(alumno.getApellidos());
+                usuario.setEmail(alumno.getEmail());
+                String contrasena = alumnoService.generarContrasena(alumno.getNombre(), alumno.getApellidos());
+                usuario.setContrasena(passwordEncoder.encode(contrasena));
+                usuario.getRoles().add(Roles.ROLE_USER);
+                usuario.setAlumno(alumno);
+                usuarioRepository.save(usuario);
+                alumno.setUsuario(usuario);
+                alumnoRepository.save(alumno);
             }
         }
     }
+
+
 
     /**
      * Genera un alumno aleatorio utilizando la biblioteca Faker y le crea y asigna un usuario.
@@ -197,21 +218,9 @@ public class InicializadorDatos implements CommandLineRunner {
         alumno.setCategoria(asignarCategoriaSegunEdad(edad));
         alumno.setGrado(asignarGradoSegunEdad(edad));
 
-        Usuario usuario = new Usuario();
-        usuario.setNombre(alumno.getNombre());
-        usuario.setApellidos(alumno.getApellidos());
-        usuario.setEmail(alumno.getEmail());
-        String contrasena = alumnoService.generarContrasena(alumno.getNombre(), alumno.getApellidos());
-        usuario.setContrasena(passwordEncoder.encode(contrasena));
-        Set<Roles> roles = new HashSet<>();
-        roles.add(Roles.ROLE_USER);
-        usuario.setRoles(roles);
-        usuarioRepository.save(usuario);
-
-        alumno.setUsuario(usuario);
-
         return alumno;
     }
+
 
     /**
      * Asigna la cuantía de la tarifa según el tipo de tarifa.
