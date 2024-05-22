@@ -344,28 +344,28 @@ public class AlumnoServiceImpl implements AlumnoService {
      */
 	@Override
 	public Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO) {
-		LocalDate fechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate();
-		boolean esMenorDeQuince = fechaNacimiento.isBefore(LocalDate.now().minusYears(15));
+	    LocalDate fechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+	    int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
+	    boolean esMenorDeCatorce = edad < 14;
 
-		List<TipoGrado> gradosDisponibles = esMenorDeQuince
-				? Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
-						TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
-						TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO, TipoGrado.ROJO_NEGRO)
-				: Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-						TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO);
+	    List<TipoGrado> gradosDisponibles = esMenorDeCatorce
+	            ? Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO, 
+	                            TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, 
+	                            TipoGrado.VERDE, TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, 
+	                            TipoGrado.ROJO, TipoGrado.ROJO_NEGRO)
+	            : Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, 
+	                            TipoGrado.VERDE, TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO);
 
-		TipoGrado tipoGradoAsignado = gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
+	    TipoGrado tipoGradoAsignado = gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
+	    
+	    Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGradoAsignado);
+	    if (gradoExistente != null) {
+	        return gradoExistente;
+	    }
 
-		Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGradoAsignado);
-
-		if (gradoExistente != null) {
-			return gradoExistente;
-		}
-
-		Grado grado = new Grado();
-		grado.setTipoGrado(tipoGradoAsignado);
-		return gradoRepository.save(grado);
+	    Grado nuevoGrado = new Grado();
+	    nuevoGrado.setTipoGrado(tipoGradoAsignado);
+	    return gradoRepository.save(nuevoGrado);
 	}
 
     /**
