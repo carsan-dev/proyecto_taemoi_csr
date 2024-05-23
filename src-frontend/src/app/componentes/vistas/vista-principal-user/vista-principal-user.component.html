@@ -1,1 +1,25 @@
-<p>vista-principal-user works!</p>
+<div class="container mt-5">
+  <div class="card">
+    <div class="card-header text-center">
+      <h1 class="card-title">Tus grupos asociados</h1>
+    </div>
+    <div class="card-body">
+      <div *ngIf="grupos.length > 0; else noGruposTemplate">
+        <ul class="list-group">
+          <li *ngFor="let grupo of grupos" class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ grupo.nombre }}</span>
+            <button type="button" class="btn btn-primary" [routerLink]="['/userpage/' + grupo.id + '/turnos' ]">
+              <i class="bi bi-calendar-check"></i> Consultar turnos
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noGruposTemplate>
+    <div class="alert alert-warning text-center" role="alert">
+      No se encontraron grupos para este alumno.
+    </div>
+  </ng-template>
+</div>
