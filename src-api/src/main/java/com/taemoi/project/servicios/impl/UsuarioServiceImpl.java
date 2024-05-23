@@ -1,6 +1,7 @@
 package com.taemoi.project.servicios.impl;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,4 +71,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 				.collect(Collectors.toList());
 		return usuarios;
 	}
+	
+	@Override
+    public Optional<Usuario> encontrarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email);
+    }
 }
