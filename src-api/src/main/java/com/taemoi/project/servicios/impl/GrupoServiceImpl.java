@@ -11,7 +11,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.AlumnoParaGrupoDTO;
+import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
@@ -272,8 +272,8 @@ public class GrupoServiceImpl implements GrupoService {
 	    grupoDTO.setId(grupo.getId());
 	    grupoDTO.setNombre(grupo.getNombre());
 
-	    List<AlumnoParaGrupoDTO> alumnosDTO = grupo.getAlumnos().stream()
-	        .map(AlumnoParaGrupoDTO::deAlumno)
+	    List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
+	        .map(AlumnoCortoDTO::deAlumno)
 	        .collect(Collectors.toList());
 	    grupoDTO.setAlumnos(alumnosDTO);
 
@@ -318,6 +318,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	private GrupoResponseDTO convertirGrupoADTO(Grupo grupo) {
 	    GrupoResponseDTO grupoDTO = new GrupoResponseDTO();
+	    grupoDTO.setId(grupo.getId());
 	    grupoDTO.setNombre(grupo.getNombre());
 	    return grupoDTO;
 	}
