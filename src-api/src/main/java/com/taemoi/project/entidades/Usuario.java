@@ -9,6 +9,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -54,6 +56,7 @@ public class Usuario implements UserDetails {
 	
 	@OneToOne
 	@JoinColumn(name = "alumno_id")
+    @JsonBackReference
 	private Alumno alumno;
 
 	@Transactional
