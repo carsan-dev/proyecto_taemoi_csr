@@ -85,10 +85,10 @@ public class Alumno {
 	private Grado grado;
 	
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
-	@JsonManagedReference
 	private List<Grupo> grupos = new ArrayList<>();;
     
     @OneToOne(mappedBy = "alumno")
+    @JsonManagedReference
     private Usuario usuario;
 
 	@OneToMany(mappedBy = "alumno")
