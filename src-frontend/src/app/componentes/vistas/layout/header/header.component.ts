@@ -35,7 +35,7 @@ export class HeaderComponent implements OnInit {
       this.authService.logout();
       Swal.fire({
         title: 'Sesión cerrada con éxito',
-        text: 'Hasta la proxima!',
+        text: '¡Hasta la proxima!',
         icon: 'success',
       });
     } else {

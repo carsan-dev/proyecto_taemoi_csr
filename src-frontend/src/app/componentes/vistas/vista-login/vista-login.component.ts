@@ -53,7 +53,7 @@ export class VistaLoginComponent implements OnInit {
 
         Swal.fire({
           title: 'Inicio de sesión exitoso',
-          text: `¡Bienvenido, ${nombreUsuario}!`,
+          text: `¡Bienvenid@, ${nombreUsuario}!`,
           icon: 'success',
         });
 
