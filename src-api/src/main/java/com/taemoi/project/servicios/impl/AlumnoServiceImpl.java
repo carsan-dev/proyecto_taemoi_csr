@@ -31,6 +31,7 @@ import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
+import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 
 /**
@@ -65,6 +66,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	
 	@Autowired
 	private GrupoRepository grupoRepository;
+	
+	@Autowired
+	private UsuarioRepository usuarioRepository;
 	
 	/**
      * Inyección del PasswordEncoder para codificar la contraseña del usuario creado.
@@ -269,6 +273,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	                grupo.getAlumnos().remove(alumno);
 	                grupoRepository.save(grupo);
 	            }
+	        }
+	        
+	        if (alumno.getUsuario() != null) {
+	            usuarioRepository.delete(alumno.getUsuario());
 	        }
 
 	        if (alumno.getFotoAlumno() != null) {

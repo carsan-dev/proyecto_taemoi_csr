@@ -116,7 +116,14 @@ public class GrupoServiceImpl implements GrupoService {
      */
 	@Override
 	public void eliminarGrupo(@NonNull Long id) {
-        grupoRepository.deleteById(id);
+	    grupoRepository.findById(id).ifPresent(grupo -> {
+	        for (Turno turno : grupo.getTurnos()) {
+	            turno.setGrupo(null);
+	            turnoRepository.delete(turno);
+	        }
+	        
+	        grupoRepository.delete(grupo);
+	    });
 	}
 	
 	/**
