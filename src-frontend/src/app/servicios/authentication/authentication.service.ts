@@ -25,6 +25,12 @@ export class AuthenticationService {
     }
   }
 
+  private crearHeaders(token: string): HttpHeaders {
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+  }
+
   comprobarLogueado(): boolean {
     return this.usuarioLogueadoSubject.value;
   }
@@ -57,14 +63,19 @@ export class AuthenticationService {
   }
 
   obtenerRoles(token: string): void {
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
+    const headers = this.crearHeaders(token);
     this.http.get<string[]>(`${this.urlBase}/roles`, { headers }).pipe(
       catchError(this.manejarError)
     ).subscribe(roles => {
       this.rolesSubject.next(roles);
     });
+  }
+
+  obtenerUsuarioAutenticado(token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http.get<any>(`${this.urlBase}/user`, { headers }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   tieneRolAdmin(): boolean {
