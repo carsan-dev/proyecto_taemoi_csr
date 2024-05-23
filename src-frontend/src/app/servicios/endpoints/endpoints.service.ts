@@ -36,6 +36,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerGruposDelAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
   crearAlumno(
     alumnoData: any,
     imagen: File | null,
