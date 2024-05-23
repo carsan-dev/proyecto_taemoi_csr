@@ -5,7 +5,7 @@ import java.util.List;
 public class GrupoConAlumnosDTO {
     private Long id;
     private String nombre;
-    private List<AlumnoParaGrupoDTO> alumnos;
+    private List<AlumnoCortoDTO> alumnos;
     
 	public Long getId() {
 		return id;
@@ -19,10 +19,10 @@ public class GrupoConAlumnosDTO {
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
 	}
-	public List<AlumnoParaGrupoDTO> getAlumnos() {
+	public List<AlumnoCortoDTO> getAlumnos() {
 		return alumnos;
 	}
-	public void setAlumnos(List<AlumnoParaGrupoDTO> alumnos) {
+	public void setAlumnos(List<AlumnoCortoDTO> alumnos) {
 		this.alumnos = alumnos;
 	}
 
