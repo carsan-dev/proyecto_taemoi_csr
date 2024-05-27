@@ -5,7 +5,6 @@ import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { Router } from '@angular/router';
-import { EventosInteface } from '../../../interfaces/eventos-inteface';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -17,8 +16,6 @@ import { EventosInteface } from '../../../interfaces/eventos-inteface';
 export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
   @ViewChild('videoPresentacion') videoPresentacion!: ElementRef<HTMLVideoElement>;
   usuarioLogueado: boolean = false;
-  eventos: EventosInteface[] = [];
-  eventoActual: EventosInteface | undefined;
   eventoActualIndex: number = 0;
   idIntervalo: any;
 
