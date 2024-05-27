@@ -9,6 +9,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
@@ -64,10 +65,10 @@ public class TurnoServiceImpl implements TurnoService {
      * @return Una lista de objetos TurnoDTO.
      */
     @Override
-    public List<TurnoDTO> listarTurnosDTO() {
+    public List<TurnoCortoDTO> listarTurnosDTO() {
         List<Turno> turnos = turnoRepository.findAll();
         return turnos.stream()
-                .map(TurnoDTO::deTurno)
+                .map(TurnoCortoDTO::deTurno)
                 .collect(Collectors.toList());
     }
     
