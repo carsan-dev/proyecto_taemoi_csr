@@ -1,0 +1,68 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
+.planner-container {
+  margin-top: 125px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+  .title {
+    font-family: 'Osaka-Sans Serif', sans-serif;
+  }
+
+  .planner-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+
+    .planner-day {
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+
+      .day-title {
+        &::after {
+          content: '';
+          display: block;
+          width: 60px;
+          height: 4px;
+          background-color: #ffcdd2;
+          position: absolute;
+          bottom: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+      }
+    }
+  }
+}
+
+
+
+.turnos-list {
+  margin-top: 10px;
+}
+
+.turno-item {
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 5px;
+  padding: 5px;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.no-turnos {
+  color: #8d8d8d;
+  font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+  .planner-grid {
+    grid-template-columns: 1fr;
+  }
+}
