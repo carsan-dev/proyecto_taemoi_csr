@@ -261,4 +261,50 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
+
+  obtenerEventos(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/eventos`)
+      .pipe(catchError(this.manejarError));
+  }
+
+  crearEvento(
+    eventoData: any,
+    imagen: File | null,
+    token: string
+  ): Observable<any> {
+    const formData = new FormData();
+    const headers = this.crearHeaders(token);
+    formData.append('nuevo', JSON.stringify(eventoData));
+    if (imagen) {
+      formData.append('file', imagen, imagen.name);
+    }
+    return this.http
+      .post<any>(`${this.urlBase}/eventos/crear`, formData, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarEvento(
+    id: number,
+    eventoData: any,
+    imagen: File | null,
+    token: string
+  ): Observable<any> {
+    const formData = new FormData();
+    const headers = this.crearHeaders(token);
+    formData.append('eventoEditado', JSON.stringify(eventoData));
+    if (imagen) {
+      formData.append('file', imagen, imagen.name);
+    }
+    return this.http
+      .put<any>(`${this.urlBase}/eventos/${id}`, formData, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  eliminarEvento(id: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .delete<any>(`${this.urlBase}/eventos/${id}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
 }
