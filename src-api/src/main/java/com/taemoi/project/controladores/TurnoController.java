@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.servicios.TurnoService;
@@ -47,7 +48,7 @@ public class TurnoController {
         List<Turno> turnos = turnoService.listarTurnos();
         return new ResponseEntity<>(turnos, HttpStatus.OK);
     }
-    
+
     /**
      * Obtiene un turno por su ID.
      *
@@ -72,8 +73,8 @@ public class TurnoController {
      * @return ResponseEntity con la lista de objetos TurnoDTO y estado HTTP OK si tiene éxito.
      */
     @GetMapping("/dto")
-    public ResponseEntity<List<TurnoDTO>> obtenerTurnosDTO() {
-        List<TurnoDTO> turnosDTO = turnoService.listarTurnosDTO();
+    public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDTO() {
+        List<TurnoCortoDTO> turnosDTO = turnoService.listarTurnosDTO();
         return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
     }
     
