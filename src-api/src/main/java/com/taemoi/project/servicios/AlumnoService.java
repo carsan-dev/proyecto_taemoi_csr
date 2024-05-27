@@ -51,4 +51,6 @@ public interface AlumnoService {
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
 	
 	String generarContrasena(String nombre, String apellidos);
+
+	Imagen guardarImagen(@NonNull Imagen imagen);
 }

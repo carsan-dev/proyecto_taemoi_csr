@@ -191,6 +191,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public Alumno crearAlumno(@NonNull Alumno alumno) {
 		return alumnoRepository.save(alumno);
 	}
+	
+    @Override
+    public Imagen guardarImagen(@NonNull Imagen imagen) {
+        return imagenRepository.save(imagen);
+    }
 
 	/**
 	 * Actualiza un alumno existente.
