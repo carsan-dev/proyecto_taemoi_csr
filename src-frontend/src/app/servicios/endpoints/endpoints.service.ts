@@ -207,6 +207,12 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerTurnosDTO(): Observable<any> {
+    return this.http
+      .get<any>(`${this.urlBase}/turnos/dto`)
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerTurnoPorId(turnoId: number, token: string): Observable<any> {
     const headers = this.crearHeaders(token);
     return this.http
