@@ -1105,6 +1105,183 @@
 			]
 		},
 		{
+			"name": "Eventos",
+			"item": [
+				{
+					"name": "Añadir evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "nuevo",
+									"value": "{\n  \"titulo\": \"Título del Evento\",\n  \"descripcion\": \"Descripción del Evento\"\n}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1ef1c662-b7bc-4bb0-b189-f01f8be53870"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/crear",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"crear"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Editar evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "eventoEditado",
+									"value": "{\n  \"titulo\": \"Título del Evento23\",\n  \"descripcion\": \"Descripción del Evento\"\n}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener evento por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener todos los eventos",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Turnos",
 			"item": [
 				{
@@ -1428,6 +1605,36 @@
 				},
 				{
 					"name": "Obtener todos los turnos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMDY0NTEsImV4cCI6MTcxNjM0MjQ1MX0.ol3zC0O-M7xXdsqWvfR2bxGA37vrhQ0WouhAzElrWSk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener todos los turnos DTO",
 					"request": {
 						"auth": {
 							"type": "bearer",
