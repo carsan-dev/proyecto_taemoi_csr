@@ -4,9 +4,12 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -302,18 +305,48 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
 	private void generarTurnos() {
-		List<String> diasSemana = Arrays.asList("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado",
-				"Domingo");
-		for (String dia : diasSemana) {
-			if (!turnoRepository.existsByDiaSemana(dia)) {
-				Turno turno = new Turno();
-				turno.setDiaSemana(dia);
-				turno.setHoraInicio("07:00");
-				turno.setHoraFin("08:00");
-				turnoRepository.save(turno);
-			}
-		}
+	    Map<String, List<String[]>> turnosPorDia = new HashMap<>();
+	    
+	    turnosPorDia.put("Lunes", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:30"}
+	    ));
+	    turnosPorDia.put("Martes", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:00"}
+	    ));
+	    turnosPorDia.put("Miércoles", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:30"}
+	    ));
+	    turnosPorDia.put("Jueves", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:00"}
+	    ));
+	    
+	    for (Map.Entry<String, List<String[]>> entry : turnosPorDia.entrySet()) {
+	        String dia = entry.getKey();
+	        List<String[]> turnos = entry.getValue();
+	        
+	        for (String[] horas : turnos) {
+	            String horaInicio = horas[0];
+	            String horaFin = horas[1];
+
+	            if (!turnoRepository.existsByDiaSemanaAndHoraInicioAndHoraFin(dia, horaInicio, horaFin)) {
+	                Turno turno = new Turno();
+	                turno.setDiaSemana(dia);
+	                turno.setHoraInicio(horaInicio);
+	                turno.setHoraFin(horaFin);
+	                turnoRepository.save(turno);
+	            }
+	        }
+	    }
 	}
+
 
 	/**
 	 * Asigna todos los alumnos a un grupo aleatorio.
