@@ -46,7 +46,6 @@ import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
@@ -81,12 +80,6 @@ public class AlumnoController {
 	 */
 	@Autowired
 	private GradoRepository gradoRepository;
-
-	/**
-	 * Inyección del repositorio de imagen.
-	 */
-	@Autowired
-	private ImagenRepository imagenRepository;
 
 	/**
 	 * Inyección del servicio de grupo.
@@ -227,12 +220,10 @@ public class AlumnoController {
 			ObjectMapper objectMapper = new ObjectMapper();
 			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-			Imagen imagen = null;
-
 			if (file != null) {
 				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = imagenRepository.save(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagen);
+				Imagen imagenGuardada = alumnoService.guardarImagen(img);
+				nuevoAlumnoDTO.setFotoAlumno(imagenGuardada);
 			}
 			logger.info("## AlumnoController :: añadirAlumno");
 
@@ -327,8 +318,7 @@ public class AlumnoController {
 
 			if (file != null) {
 				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = imagenRepository.save(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagen);
+				imagen = alumnoService.guardarImagen(img);
 			}
 			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
 				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
