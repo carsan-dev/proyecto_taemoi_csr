@@ -9,13 +9,16 @@ import Swal from 'sweetalert2';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './eventos.component.html',
-  styleUrl: './eventos.component.scss'
+  styleUrl: './eventos.component.scss',
 })
 export class EventosComponent implements OnInit {
   eventos: any[] = [];
   usuarioLogueado: boolean = false;
 
-  constructor(private authService: AuthenticationService, private endpointsService: EndpointsService) { }
+  constructor(
+    private authService: AuthenticationService,
+    private endpointsService: EndpointsService
+  ) {}
 
   ngOnInit(): void {
     this.usuarioLogueado = this.authService.comprobarLogueado();

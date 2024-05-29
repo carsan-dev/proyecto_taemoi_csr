@@ -1,4 +1,4 @@
-<div class="container mt-5">
+<div class="container my-5">
   <div class="card shadow-lg">
     <div class="card-header text-center bg-primary text-white">
       <h1 class="card-title">Turnos</h1>
@@ -16,7 +16,8 @@
           <ng-container *ngFor="let diaSemana of diasSemana">
             <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
               <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
-                <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length" class="text-center align-middle font-weight-bold">{{ diaSemana }}</td>
+                <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length"
+                  class="text-center align-middle font-weight-bold">{{ diaSemana }}</td>
                 <td class="text-center align-middle">{{ turno.horaInicio }}</td>
                 <td class="text-center align-middle">{{ turno.horaFin }}</td>
               </tr>

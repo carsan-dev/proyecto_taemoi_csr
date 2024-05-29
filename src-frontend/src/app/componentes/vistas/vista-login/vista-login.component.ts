@@ -47,13 +47,13 @@ export class VistaLoginComponent implements OnInit {
         const token = response.token;
         const nombreUsuario = this.authService.obtenerNombreUsuario();
         localStorage.setItem('token', token);
-        localStorage.setItem('username', nombreUsuario ?? '')
+        localStorage.setItem('username', nombreUsuario ?? '');
         this.authService.actualizarEstadoLogueado(true);
         this.authService.obtenerRoles(token);
 
         Swal.fire({
           title: 'Inicio de sesión exitoso',
-          text: `¡Bienvenid@, ${nombreUsuario}!`,
+          text: `¡Bienvenido/a, ${nombreUsuario}!`,
           icon: 'success',
         });
 
@@ -75,9 +75,12 @@ export class VistaLoginComponent implements OnInit {
   }
 
   private redirigirSegunRol(roles: string[]) {
-    if (this.authService.tieneRolAdmin() || this.authService.tieneRolManager()) {
+    if (
+      this.authService.tieneRolAdmin() ||
+      this.authService.tieneRolManager()
+    ) {
       this.router.navigate(['/adminpage']);
-    } else if (this.authService.tieneRolUser()){
+    } else if (this.authService.tieneRolUser()) {
       this.router.navigate(['/userpage']);
     } else {
       this.router.navigate(['/inicio']);
