@@ -328,9 +328,19 @@ public class InicializadorDatos implements CommandLineRunner {
 	        new String[]{"19:00", "20:00"}
 	    ));
 	    
+	    Grupo grupoLunesMiercoles = grupoRepository.findByNombre("Grupo Lunes y Miércoles");
+	    Grupo grupoMartesJueves = grupoRepository.findByNombre("Grupo Martes y Jueves");
+	    
 	    for (Map.Entry<String, List<String[]>> entry : turnosPorDia.entrySet()) {
 	        String dia = entry.getKey();
 	        List<String[]> turnos = entry.getValue();
+	        
+	        Grupo grupo = null;
+	        if (dia.equals("Lunes") || dia.equals("Miércoles")) {
+	            grupo = grupoLunesMiercoles;
+	        } else if (dia.equals("Martes") || dia.equals("Jueves")) {
+	            grupo = grupoMartesJueves;
+	        }
 	        
 	        for (String[] horas : turnos) {
 	            String horaInicio = horas[0];
@@ -341,6 +351,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	                turno.setDiaSemana(dia);
 	                turno.setHoraInicio(horaInicio);
 	                turno.setHoraFin(horaFin);
+	                turno.setGrupo(grupo);
 	                turnoRepository.save(turno);
 	            }
 	        }
