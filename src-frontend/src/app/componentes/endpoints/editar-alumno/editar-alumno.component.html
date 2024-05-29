@@ -75,11 +75,8 @@
             </div>
           </div>
         </div>
-        <app-paginacion
-        [paginaActual]="paginaActual"
-        [totalPaginas]="totalPaginas"
-        [tamanoPagina]="tamanoPagina"
-        (pageChange)="cambiarPagina($event)">
+        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+          (pageChange)="cambiarPagina($event)">
         </app-paginacion>
       </div>
       <div *ngIf="mostrarFormulario" class="py-5">
@@ -89,7 +86,7 @@
           </button>
           <div class="image-container d-flex align-items-center text-center flex-column">
             <img class="imagen-perfil"
-              [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+              [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp')"
               alt="Perfil del alumno">
             <div class="d-flex flex-row align-items-center">
               <label for="inputFile" class="add-icon pe-2">
