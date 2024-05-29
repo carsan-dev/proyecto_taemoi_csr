@@ -23,32 +23,117 @@ import { CrearTurnoComponent } from './componentes/endpoints/crear-turno/crear-t
 import { SeleccionarGrupoComponent } from './componentes/endpoints/listado-turnos/seleccionar-grupo/seleccionar-grupo.component';
 import { ActualizarTurnoComponent } from './componentes/endpoints/editar-turno/editar-turno.component';
 import { TurnosUsuarioComponent } from './componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component';
+import { roleGuard } from './guards/role.guard';
+import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos/listado-eventos.component';
+import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear-evento.component';
+import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
+import { EliminarEventoComponent } from './componentes/endpoints/eliminar-evento/eliminar-evento.component';
 
 export const routes: Routes = [
+  { path: '', redirectTo: '/inicio', pathMatch: 'full' },
   { path: 'inicio', component: EscaparatePrincipalComponent },
   { path: 'eltaekwondo', component: EltaekwondoComponent },
   { path: 'horarios', component: HorariosComponent },
   { path: 'logros', component: EventosComponent },
   { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
-  { path: 'adminpage', component: VistaPrincipalAdminComponent },
+  {
+    path: 'adminpage',
+    component: VistaPrincipalAdminComponent,
+    canActivate: [roleGuard],
+  },
   { path: 'userpage', component: VistaPrincipalUserComponent },
   { path: 'userpage/:id/turnos', component: TurnosUsuarioComponent },
-  { path: 'alumnosListar', component: ListadoAlumnosComponent },
-  { path: 'alumnosEditar', component: EditarAlumnoComponent },
-  { path: 'alumnosCrear', component: CrearAlumnoComponent },
-  { path: 'alumnosEliminar', component: EliminarAlumnoComponent },
-  { path: 'gruposListar', component: ListadoGruposComponent },
-  { path: 'gruposCrear', component: CrearGrupoComponent },
-  { path: 'gruposEditar/:id', component: EditarGrupoComponent },
-  { path: 'gestionarAlumnos/:id', component: GestionarAlumnosComponent },
-  { path: 'seleccionarAlumnos/:id', component: SeleccionarAlumnosComponent },
-  { path: 'turnosGrupo/:id', component: TurnosGrupoComponent },
-  { path: 'listado-turnos', component: ListadoTurnosComponent },
-  { path: 'crear-turno', component: CrearTurnoComponent },
-  { path: 'seleccionarGrupo/:turnoId', component: SeleccionarGrupoComponent },
-  { path: 'turnosEditar/:id', component: ActualizarTurnoComponent },
-  { path: '', redirectTo: '/inicio', pathMatch: 'full' },
+  {
+    path: 'alumnosListar',
+    component: ListadoAlumnosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'alumnosEditar',
+    component: EditarAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'alumnosCrear',
+    component: CrearAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'alumnosEliminar',
+    component: EliminarAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'gruposListar',
+    component: ListadoGruposComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'gruposCrear',
+    component: CrearGrupoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'gruposEditar/:id',
+    component: EditarGrupoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'gestionarAlumnos/:id',
+    component: GestionarAlumnosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'seleccionarAlumnos/:id',
+    component: SeleccionarAlumnosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'turnosGrupo/:id',
+    component: TurnosGrupoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'turnosListar',
+    component: ListadoTurnosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'turnosCrear',
+    component: CrearTurnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'seleccionarGrupo/:turnoId',
+    component: SeleccionarGrupoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'turnosEditar/:id',
+    component: ActualizarTurnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'eventosListar',
+    component: ListadoEventosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'eventosCrear',
+    component: CrearEventoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'eventosEditar/:id',
+    component: EditarEventoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'eventosEliminar/:id',
+    component: EliminarEventoComponent,
+    canActivate: [roleGuard],
+  },
 ];
 
 @NgModule({
