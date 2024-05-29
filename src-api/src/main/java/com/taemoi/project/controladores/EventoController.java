@@ -39,7 +39,7 @@ public class EventoController {
     
     @GetMapping("/{eventoId}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Evento> obtenerTurnoPorId(@PathVariable @NonNull Long eventoId) {
+    public ResponseEntity<Evento> obtenerEventoPorId(@PathVariable @NonNull Long eventoId) {
         try {
             Evento evento = eventoService.obtenerEventoPorId(eventoId);
             return ResponseEntity.ok(evento);
@@ -93,6 +93,19 @@ public class EventoController {
             return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
         }
     }
+    
+	@DeleteMapping("/{id}/imagen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarImagenEvento(@PathVariable @NonNull Long id) {
+		try {
+			eventoService.eliminarImagenEvento(id);
+			return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al eliminar la imagen del evento.");
+		}
+	}
+
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")

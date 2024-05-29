@@ -20,4 +20,6 @@ public interface EventoService {
 	Evento actualizarEvento(@NonNull Long id, Evento eventoActualizado, Imagen imagen);
 
 	Evento obtenerEventoPorId(@NonNull Long eventoId);
+
+	void eliminarImagenEvento(@NonNull Long id);
 }

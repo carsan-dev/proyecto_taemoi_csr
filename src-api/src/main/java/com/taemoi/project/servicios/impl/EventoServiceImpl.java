@@ -60,6 +60,24 @@ public class EventoServiceImpl implements EventoService{
         }
     }
     
+	@Override
+    public void eliminarImagenEvento(@NonNull Long id) {
+        Optional<Evento> optionalEvento = eventoRepository.findById(id);
+        if (optionalEvento.isPresent()) {
+            Evento evento = optionalEvento.get();
+            Imagen imagen = evento.getFotoEvento();
+            if (imagen != null) {
+            	evento.setFotoEvento(null);
+                eventoRepository.save(evento);
+                imagenRepository.delete(imagen);
+            } else {
+                throw new RuntimeException("El evento no tiene una imagen asociada.");
+            }
+        } else {
+            throw new RuntimeException("No se encontró el evento con ID: " + id);
+        }
+    }
+    
     @Override
     public void eliminarEvento(@NonNull Long id) {
         Optional<Evento> optionalEvento = eventoRepository.findById(id);
