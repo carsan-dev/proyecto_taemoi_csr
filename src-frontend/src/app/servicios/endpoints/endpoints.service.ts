@@ -268,6 +268,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerEventoPorId(eventoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/eventos/${eventoId}`, {
+        headers: headers,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   crearEvento(
     eventoData: any,
     imagen: File | null,
@@ -286,18 +295,23 @@ export class EndpointsService {
 
   actualizarEvento(
     id: number,
-    eventoData: any,
-    imagen: File | null,
+    formData: FormData,
     token: string
   ): Observable<any> {
-    const formData = new FormData();
     const headers = this.crearHeaders(token);
-    formData.append('eventoEditado', JSON.stringify(eventoData));
-    if (imagen) {
-      formData.append('file', imagen, imagen.name);
-    }
     return this.http
-      .put<any>(`${this.urlBase}/eventos/${id}`, formData, { headers })
+      .put<any>(`${this.urlBase}/eventos/${id}`, formData, {
+        headers: headers,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  eliminarImagenEvento(id: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .delete(`${this.urlBase}/eventos/${id}/imagen`, {
+        headers: headers,
+      })
       .pipe(catchError(this.manejarError));
   }
 
