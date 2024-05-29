@@ -283,6 +283,8 @@ public class AlumnoController {
 			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
 
 			nuevoAlumno.setUsuario(usuarioExistente);
+			
+			usuarioExistente.setAlumno(nuevoAlumno);
 
 			Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
 			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
