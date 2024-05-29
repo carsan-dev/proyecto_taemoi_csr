@@ -2,7 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
@@ -10,7 +16,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './crear-turno.component.html',
-  styleUrl: './crear-turno.component.scss'
+  styleUrl: './crear-turno.component.scss',
 })
 export class CrearTurnoComponent implements OnInit {
   turnoForm!: FormGroup;
@@ -20,7 +26,7 @@ export class CrearTurnoComponent implements OnInit {
     private fb: FormBuilder,
     private endpointsService: EndpointsService,
     private router: Router
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -33,7 +39,7 @@ export class CrearTurnoComponent implements OnInit {
       horaInicio: ['', Validators.required],
       horaFin: ['', Validators.required],
       asignarGrupo: [false],
-      grupoId: ['']
+      grupoId: [''],
     });
   }
 
@@ -71,7 +77,7 @@ export class CrearTurnoComponent implements OnInit {
             text: 'Has creado un nuevo turno!',
             icon: 'success',
           });
-          this.router.navigate(['/listado-turnos']);
+          this.router.navigate(['/turnosListar']);
         },
         error: (error) => {
           Swal.fire({
@@ -80,7 +86,7 @@ export class CrearTurnoComponent implements OnInit {
             icon: 'error',
           });
         },
-        complete: () => { },
+        complete: () => {},
       });
     }
   }
