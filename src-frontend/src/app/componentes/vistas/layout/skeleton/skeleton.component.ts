@@ -10,9 +10,15 @@ import { Subject, takeUntil } from 'rxjs';
 @Component({
   selector: 'app-skeleton',
   standalone: true,
-  imports: [HeaderComponent, FooterComponent, BotonscrollComponent, SidebarComponent, CommonModule],
+  imports: [
+    HeaderComponent,
+    FooterComponent,
+    BotonscrollComponent,
+    SidebarComponent,
+    CommonModule,
+  ],
   templateUrl: './skeleton.component.html',
-  styleUrl: './skeleton.component.scss'
+  styleUrl: './skeleton.component.scss',
 })
 export class SkeletonComponent implements OnInit, OnDestroy {
   tieneRolAdminOManager: boolean = false;
@@ -25,7 +31,8 @@ export class SkeletonComponent implements OnInit, OnDestroy {
     this.authService.rolesCambio
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe((roles: string[]) => {
-        this.tieneRolAdminOManager = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+        this.tieneRolAdminOManager =
+          roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
       });
 
     this.authService.usuarioLogueadoCambio
