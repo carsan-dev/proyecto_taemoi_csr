@@ -8,15 +8,24 @@ import { LoginInterface } from '../../interfaces/login-interface';
 })
 export class AuthenticationService {
   private urlBase = 'http://localhost:8080/api/auth';
-  private usuarioLogueadoSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  usuarioLogueadoCambio: Observable<boolean> = this.usuarioLogueadoSubject.asObservable();
-  private rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
+  private usuarioLogueadoSubject: BehaviorSubject<boolean> =
+    new BehaviorSubject<boolean>(false);
+  usuarioLogueadoCambio: Observable<boolean> =
+    this.usuarioLogueadoSubject.asObservable();
+  private rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<
+    string[]
+  >([]);
   rolesCambio: Observable<string[]> = this.rolesSubject.asObservable();
 
-  private usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
-  usernameCambio: Observable<string | null> = this.usernameSubject.asObservable();
+  private usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<
+    string | null
+  >(null);
+  usernameCambio: Observable<string | null> =
+    this.usernameSubject.asObservable();
 
-  private emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
+  private emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<
+    string | null
+  >(null);
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
 
   constructor(private http: HttpClient) {
@@ -36,22 +45,29 @@ export class AuthenticationService {
   }
 
   login(credenciales: LoginInterface): Observable<any> {
-    return this.http.post<any>(`${this.urlBase}/signin`, credenciales, { withCredentials: true }).pipe(
-      tap((response) => {
-        const email = credenciales.email;
-        const username = this.extraerNombreUsuario(email);
-        const tokenCreationTime = Date.now().toString();
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('email', email);
-        localStorage.setItem('username', username);
-        localStorage.setItem('tokenCreationTime', tokenCreationTime.toString());
-        this.actualizarEstadoLogueado(true);
-        this.usernameSubject.next(username);
-        this.emailSubject.next(email);
-        this.obtenerRoles(response.token);
-      }),
-      catchError(this.manejarError)
-    );
+    return this.http
+      .post<any>(`${this.urlBase}/signin`, credenciales, {
+        withCredentials: true,
+      })
+      .pipe(
+        tap((response) => {
+          const email = credenciales.email;
+          const username = this.extraerNombreUsuario(email);
+          const tokenCreationTime = Date.now().toString();
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('email', email);
+          localStorage.setItem('username', username);
+          localStorage.setItem(
+            'tokenCreationTime',
+            tokenCreationTime.toString()
+          );
+          this.actualizarEstadoLogueado(true);
+          this.usernameSubject.next(username);
+          this.emailSubject.next(email);
+          this.obtenerRoles(response.token);
+        }),
+        catchError(this.manejarError)
+      );
   }
 
   logout(): void {
@@ -64,18 +80,19 @@ export class AuthenticationService {
 
   obtenerRoles(token: string): void {
     const headers = this.crearHeaders(token);
-    this.http.get<string[]>(`${this.urlBase}/roles`, { headers }).pipe(
-      catchError(this.manejarError)
-    ).subscribe(roles => {
-      this.rolesSubject.next(roles);
-    });
+    this.http
+      .get<string[]>(`${this.urlBase}/roles`, { headers })
+      .pipe(catchError(this.manejarError))
+      .subscribe((roles) => {
+        this.rolesSubject.next(roles);
+      });
   }
 
   obtenerUsuarioAutenticado(token: string): Observable<any> {
     const headers = this.crearHeaders(token);
-    return this.http.get<any>(`${this.urlBase}/user`, { headers }).pipe(
-      catchError(this.manejarError)
-    );
+    return this.http
+      .get<any>(`${this.urlBase}/user`, { headers })
+      .pipe(catchError(this.manejarError));
   }
 
   tieneRolAdmin(): boolean {
@@ -117,23 +134,23 @@ export class AuthenticationService {
     const tokenCreationTime = localStorage.getItem('tokenCreationTime');
 
     if (token && tokenCreationTime) {
-        const creationDate = new Date(parseInt(tokenCreationTime));
-        const expiryDate = new Date(creationDate.getTime() + 10 * 60 * 60 * 1000);
+      const creationDate = new Date(parseInt(tokenCreationTime));
+      const expiryDate = new Date(creationDate.getTime() + 10 * 60 * 60 * 1000);
 
-        if (new Date() > expiryDate) {
-            this.eliminarToken();
-        } else {
-            const email = localStorage.getItem('email');
-            const username = localStorage.getItem('username');
-            if (email && username) {
-                this.actualizarEstadoLogueado(true);
-                this.usernameSubject.next(username);
-                this.emailSubject.next(email);
-                this.obtenerRoles(token);
-            }
+      if (new Date() > expiryDate) {
+        this.eliminarToken();
+      } else {
+        const email = localStorage.getItem('email');
+        const username = localStorage.getItem('username');
+        if (email && username) {
+          this.actualizarEstadoLogueado(true);
+          this.usernameSubject.next(username);
+          this.emailSubject.next(email);
+          this.obtenerRoles(token);
         }
+      }
     }
-}
+  }
 
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
