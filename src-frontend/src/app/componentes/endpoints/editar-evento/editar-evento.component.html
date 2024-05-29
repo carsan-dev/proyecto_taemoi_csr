@@ -1,0 +1,32 @@
+<div class="container mt-5">
+  <h2>Editar Evento</h2>
+  <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()">
+    <label for="titulo">Título</label>
+    <input id="titulo" type="text" formControlName="titulo" class="form-control mb-3" />
+    <div *ngIf="eventoForm.controls['titulo'].invalid && eventoForm.controls['titulo'].touched" class="mb-3">
+      <p>El título es requerido.</p>
+    </div>
+
+    <label for="descripcion">Descripción</label>
+    <input id="descripcion" formControlName="descripcion" type="text" class="form-control mb-3" />
+    <div *ngIf="eventoForm.controls['descripcion'].invalid && eventoForm.controls['descripcion'].touched" class="mb-3">
+      <p>La descripción es requerida.</p>
+    </div>
+
+    <div class="image-container d-flex align-items-center text-center flex-column">
+      <img class="imagen-perfil" [src]="imagenPreview" alt="Cartel del evento">
+      <div class="d-flex flex-row align-items-center">
+        <label for="inputFile" class="add-icon pe-2">
+          <i class="bi bi-plus-circle-fill text-black fs-2"></i>
+          <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
+        </label>
+        <label class="remove-icon ps-2" *ngIf="evento?.fotoEvento" (click)="eliminarFoto()">
+          <i class="bi bi-dash-circle-fill text-black fs-2"></i>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Actualizar Evento</button>
+  </form>
+
+</div>
