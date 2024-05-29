@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './seleccionar-grupo.component.html',
-  styleUrl: './seleccionar-grupo.component.scss'
+  styleUrl: './seleccionar-grupo.component.scss',
 })
 export class SeleccionarGrupoComponent implements OnInit {
   grupos: GrupoDTO[] = [];
@@ -48,24 +48,26 @@ export class SeleccionarGrupoComponent implements OnInit {
   asignarGrupo(grupoId: number): void {
     const token = localStorage.getItem('token');
     if (token) {
-      this.endpointsService.agregarTurnoAGrupo(grupoId, this.turnoId, token).subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Asignado',
-            text: 'El turno ha sido asignado al grupo',
-            icon: 'success',
-          }).then(() => {
-            this.router.navigate(['/listado-turnos']);
-          });
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la asignación',
-            text: 'No hemos podido asignar el turno al grupo',
-            icon: 'error',
-          });
-        },
-      });
+      this.endpointsService
+        .agregarTurnoAGrupo(grupoId, this.turnoId, token)
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Asignado',
+              text: 'El turno ha sido asignado al grupo',
+              icon: 'success',
+            }).then(() => {
+              this.router.navigate(['/turnosListar']);
+            });
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la asignación',
+              text: 'No hemos podido asignar el turno al grupo',
+              icon: 'error',
+            });
+          },
+        });
     }
   }
 }

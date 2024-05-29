@@ -1,6 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
@@ -10,7 +16,7 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './editar-turno.component.html',
-  styleUrl: './editar-turno.component.scss'
+  styleUrl: './editar-turno.component.scss',
 })
 export class ActualizarTurnoComponent implements OnInit {
   turnoForm: FormGroup;
@@ -74,24 +80,26 @@ export class ActualizarTurnoComponent implements OnInit {
     const turnoActualizado = { diaSemana, horaInicio, horaFin };
 
     if (token) {
-      this.endpointsService.actualizarTurno(this.turnoId, turnoActualizado, token).subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Actualizado',
-            text: 'El turno ha sido actualizado',
-            icon: 'success',
-          }).then(() => {
-            this.router.navigate(['/listado-turnos']);
-          });
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la actualización',
-            text: 'No hemos podido actualizar el turno',
-            icon: 'error',
-          });
-        },
-      });
+      this.endpointsService
+        .actualizarTurno(this.turnoId, turnoActualizado, token)
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Actualizado',
+              text: 'El turno ha sido actualizado',
+              icon: 'success',
+            }).then(() => {
+              this.router.navigate(['/turnosListar']);
+            });
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la actualización',
+              text: 'No hemos podido actualizar el turno',
+              icon: 'error',
+            });
+          },
+        });
     }
   }
 }
