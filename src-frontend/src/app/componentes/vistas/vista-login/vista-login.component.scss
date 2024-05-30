@@ -6,4 +6,43 @@
   .card {
     max-width: 600px;
   }
+
+  .card-header {
+    background-color: #1b2b2e;
+    padding: 20px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+
+  .logo {
+    width: 135px;
+  }
+
+  .password-toggle {
+    cursor: pointer;
+    transition: font-size 0.1s ease, color 0.1s ease;
+
+    &:hover {
+      color: #284747;
+      font-size: 1.2rem;
+    }
+  }
+
+  .button-container {
+    button {
+      background-color: #284747 !important;
+      border: 1px solid #284747 !important;
+
+      &:hover {
+        background-color: #3a6464 !important;
+        border: 1px solid #3a6464 !important;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .h2 {
+    padding-bottom: 30px;
+  }
 }
