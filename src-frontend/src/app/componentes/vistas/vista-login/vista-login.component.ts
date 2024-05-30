@@ -15,6 +15,8 @@ import { CommonModule } from '@angular/common';
 })
 export class VistaLoginComponent implements OnInit {
   credenciales: LoginInterface = { email: '', contrasena: '' };
+  passwordFieldType: string = 'password';
+  passwordToggleIcon: string = 'bi bi-eye-fill';
 
   constructor(
     private authService: AuthenticationService,
@@ -38,6 +40,16 @@ export class VistaLoginComponent implements OnInit {
           }
         });
       }
+    }
+  }
+
+  togglePasswordVisibility(): void {
+    if (this.passwordFieldType === 'password') {
+      this.passwordFieldType = 'text';
+      this.passwordToggleIcon = 'bi bi-eye-slash-fill';
+    } else {
+      this.passwordFieldType = 'password';
+      this.passwordToggleIcon = 'bi bi-eye-fill';
     }
   }
 
