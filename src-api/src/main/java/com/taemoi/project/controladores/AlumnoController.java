@@ -1,6 +1,7 @@
 package com.taemoi.project.controladores;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -107,60 +108,30 @@ public class AlumnoController {
 	 */
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
-			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
-			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId) {
+	public ResponseEntity<?> obtenerAlumnosDTO(
+	        @RequestParam(required = false) Integer page,
+	        @RequestParam(required = false) Integer size,
+	        @RequestParam(required = false) String nombre,
+	        @RequestParam(required = false) Long gradoId,
+	        @RequestParam(required = false) Long categoriaId) {
 
-		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
-		logger.info(
-				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
-				page, size, nombre, gradoId, categoriaId);
+	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
+	    logger.info(
+	            "## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
+	            page, size, nombre, gradoId, categoriaId);
 
-		if (page != null && size != null) {
-			logger.info("## AlumnoController :: mostrarAlumnos paginados");
+	    Pageable pageable = (page != null && size != null) ? PageRequest.of(page - 1, size, Sort.by("nombre").ascending()) : Pageable.unpaged();
+	    boolean isPaged = page != null && size != null;
 
-			Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
-			Page<Alumno> alumnos;
+	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
 
-			if (nombre != null && !nombre.isEmpty() || gradoId != null || categoriaId != null) {
-				logger.info(
-						"## AlumnoController :: obtenerAlumnosDTO :: Filtrando por nombre: {}, gradoId: {}, categoriaId: {}",
-						nombre, gradoId, categoriaId);
-				alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
-			} else {
-				logger.info("## AlumnoController :: obtenerAlumnosDTO :: Obteniendo todos los alumnos paginados");
-				alumnos = alumnoService.obtenerTodosLosAlumnos(pageable);
-			}
+	    if (alumnos.isEmpty()) {
+	        logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
+	        return ResponseEntity.ok(isPaged ? Page.empty(pageable) : Collections.emptyList());
+	    }
 
-			if (alumnos.isEmpty()) {
-				logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
-				throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
-			}
-
-			logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-			return ResponseEntity.ok(alumnos.map(AlumnoDTO::deAlumno));
-		} else {
-			logger.info("## AlumnoController :: mostrarTodosLosAlumnos");
-			List<Alumno> alumnos;
-
-			if (nombre != null && !nombre.isEmpty() || gradoId != null || categoriaId != null) {
-				logger.info(
-						"## AlumnoController :: obtenerAlumnosDTO :: Filtrando por nombre: {}, gradoId: {}, categoriaId: {}",
-						nombre, gradoId, categoriaId);
-				alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId);
-			} else {
-				logger.info("## AlumnoController :: obtenerAlumnosDTO :: Obteniendo todos los alumnos");
-				alumnos = alumnoService.obtenerTodosLosAlumnos();
-			}
-
-			if (alumnos.isEmpty()) {
-				logger.warn("No hay usuarios registrados en el sistema.");
-				return ResponseEntity.ok(Page.empty());
-			}
-
-			logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-			return ResponseEntity.ok(alumnos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
-		}
+	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
+	    return ResponseEntity.ok(isPaged ? alumnos.map(AlumnoDTO::deAlumno) : alumnos.getContent().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
 	}
 
 	/**
