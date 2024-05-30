@@ -1,20 +1,27 @@
 <div class="container mt-5">
-  <h2>Actualizar Turno</h2>
-  <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()">
-    <div class="mb-3">
-      <label for="diaSemana" class="form-label">Día de la Semana</label>
-      <select id="diaSemana" formControlName="diaSemana" class="form-select">
-        <option *ngFor="let dia of diasSemana" [value]="dia">{{ dia }}</option>
-      </select>
+  <div class="card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-center m-0">Actualizar Turno</h2>
+      <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
-    <div class="mb-3">
-      <label for="horaInicio" class="form-label">Hora de Inicio</label>
-      <input type="time" id="horaInicio" formControlName="horaInicio" class="form-control" />
-    </div>
-    <div class="mb-3">
-      <label for="horaFin" class="form-label">Hora de Fin</label>
-      <input type="time" id="horaFin" formControlName="horaFin" class="form-control" />
-    </div>
-    <button type="submit" class="btn btn-primary">Actualizar</button>
-  </form>
+    <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()">
+      <div class="mb-3">
+        <label for="diaSemana" class="form-label">Día de la Semana</label>
+        <select id="diaSemana" formControlName="diaSemana" class="form-select">
+          <option *ngFor="let dia of diasSemana" [value]="dia">{{ dia }}</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="horaInicio" class="form-label">Hora de Inicio</label>
+        <input type="time" id="horaInicio" formControlName="horaInicio" class="form-control" />
+      </div>
+      <div class="mb-3">
+        <label for="horaFin" class="form-label">Hora de Fin</label>
+        <input type="time" id="horaFin" formControlName="horaFin" class="form-control" />
+      </div>
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary" [disabled]="turnoForm.invalid">Actualizar</button>
+      </div>
+    </form>
+  </div>
 </div>

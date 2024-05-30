@@ -10,7 +10,7 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { ActivatedRoute, Router } from '@angular/router';
 import { Evento } from '../../../interfaces/evento';
 import Swal from 'sweetalert2';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 @Component({
   selector: 'app-editar-evento',
@@ -31,7 +31,8 @@ export class EditarEventoComponent implements OnInit {
     private fb: FormBuilder,
     private endpointsService: EndpointsService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private location: Location
   ) {
     this.eventoForm = this.fb.group({
       titulo: ['', Validators.required],
@@ -138,5 +139,9 @@ export class EditarEventoComponent implements OnInit {
           },
         });
     }
+  }
+
+  volver() {
+    this.location.back();
   }
 }

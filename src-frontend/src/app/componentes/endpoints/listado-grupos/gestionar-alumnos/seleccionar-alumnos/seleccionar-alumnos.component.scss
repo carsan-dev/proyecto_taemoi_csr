@@ -1,0 +1,78 @@
+.container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.card {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+}
+
+.list-group-item {
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+  padding: 15px 20px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+
+    .form-check-input {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .form-check-label {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+button.btn-secondary {
+  border-radius: 30px;
+  padding: 5px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+  }
+}
+
+button.btn-primary {
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+}
+
+input[type="text"] {
+  border-radius: 30px;
+  padding: 10px 20px;
+  border: 1px solid #ced4da;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease;
+
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+}

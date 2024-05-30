@@ -21,6 +21,7 @@ export class EditarAlumnoComponent {
   totalPaginas: number = 0;
   mostrarPaginas: number[] = [];
   mostrarFormulario: boolean = false;
+  nombreFiltro: string = '';
   alumnoEditado: any = {
     tipoTarifa: null,
     tipoGrado: null,
@@ -44,7 +45,12 @@ export class EditarAlumnoComponent {
 
     if (token) {
       this.endpointsService
-        .obtenerAlumnos(token, this.paginaActual, this.tamanoPagina)
+        .obtenerAlumnos(
+          token,
+          this.paginaActual,
+          this.tamanoPagina,
+          this.nombreFiltro
+        )
         .subscribe({
           next: (response) => {
             this.alumnos = response.content;
@@ -138,5 +144,10 @@ export class EditarAlumnoComponent {
       this.imagenPreview = e.target.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  filtrarPorNombre(): void {
+    this.paginaActual = 1;
+    this.obtenerAlumnos();
   }
 }

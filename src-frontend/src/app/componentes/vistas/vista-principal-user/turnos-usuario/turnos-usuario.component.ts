@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -17,7 +17,8 @@ export class TurnosUsuarioComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -46,5 +47,9 @@ export class TurnosUsuarioComponent implements OnInit {
 
   obtenerTurnosPorDia(diaSemana: string): any[] {
     return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
+  }
+
+  volver() {
+    this.location.back();
   }
 }

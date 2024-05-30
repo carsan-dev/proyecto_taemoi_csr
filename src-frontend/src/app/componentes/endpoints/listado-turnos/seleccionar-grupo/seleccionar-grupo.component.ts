@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 @Component({
   selector: 'app-seleccionar-grupo',
@@ -19,7 +19,8 @@ export class SeleccionarGrupoComponent implements OnInit {
   constructor(
     private endpointsService: EndpointsService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -69,5 +70,9 @@ export class SeleccionarGrupoComponent implements OnInit {
           },
         });
     }
+  }
+
+  volver() {
+    this.location.back();
   }
 }

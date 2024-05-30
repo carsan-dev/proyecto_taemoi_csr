@@ -1,9 +1,14 @@
 <div class="container mt-5">
-  <form [formGroup]="grupoForm" (ngSubmit)="crearGrupo()">
-    <div class="form-group">
-      <label for="nombre">Nombre del grupo:</label>
-      <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre del grupo">
-    </div>
-    <button type="submit" class="btn btn-primary mt-3">Crear Grupo</button>
-  </form>
+  <div class="card p-4 shadow-sm">
+    <h2 class="text-center mb-4">Crear Grupo</h2>
+    <form [formGroup]="grupoForm" (ngSubmit)="crearGrupo()">
+      <div class="form-group mb-3">
+        <label for="nombre">Nombre del grupo:</label>
+        <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre del grupo">
+      </div>
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary" [disabled]="grupoForm.invalid">Crear Grupo</button>
+      </div>
+    </form>
+  </div>
 </div>

@@ -4,7 +4,7 @@ import { AlumnoDTO } from '../../../../interfaces/alumno-dto';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
 
 @Component({
@@ -22,7 +22,8 @@ export class GestionarAlumnosComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -94,5 +95,9 @@ export class GestionarAlumnosComponent implements OnInit {
         }
       });
     }
+  }
+
+  volver() {
+    this.location.back();
   }
 }

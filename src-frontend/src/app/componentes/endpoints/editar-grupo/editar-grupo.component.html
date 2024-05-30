@@ -1,10 +1,17 @@
 <div class="container mt-5">
-  <h2>Editar Grupo</h2>
-  <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()">
-    <div class="form-group">
-      <label for="nombre">Nombre</label>
-      <input type="text" id="nombre" formControlName="nombre" class="form-control">
+  <div class="card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-center m-0">Editar Grupo</h2>
+      <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
-    <button type="submit" class="btn btn-primary mt-3" [disabled]="grupoForm.invalid">Actualizar Grupo</button>
-  </form>
+    <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()">
+      <div class="form-group mb-3">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" formControlName="nombre" class="form-control">
+      </div>
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary" [disabled]="grupoForm.invalid">Actualizar Grupo</button>
+      </div>
+    </form>
+  </div>
 </div>

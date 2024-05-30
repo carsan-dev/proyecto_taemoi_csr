@@ -17,6 +17,7 @@ export class EliminarAlumnoComponent implements OnInit {
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
+  nombreFiltro: string = '';
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -31,7 +32,12 @@ export class EliminarAlumnoComponent implements OnInit {
 
     if (token) {
       this.endpointsService
-        .obtenerAlumnos(token, this.paginaActual, this.tamanoPagina)
+        .obtenerAlumnos(
+          token,
+          this.paginaActual,
+          this.tamanoPagina,
+          this.nombreFiltro
+        )
         .subscribe({
           next: (response) => {
             this.alumnos = response.content;
@@ -65,7 +71,7 @@ export class EliminarAlumnoComponent implements OnInit {
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
         confirmButtonText: 'Sí, eliminarlo',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
       }).then((result) => {
         if (result.isConfirmed) {
           this.endpointsService.eliminarAlumnos(id, token).subscribe({
@@ -92,7 +98,9 @@ export class EliminarAlumnoComponent implements OnInit {
 
   eliminarAlumnosSeleccionados() {
     const token = localStorage.getItem('token');
-    const alumnosSeleccionados = this.alumnos.filter(alumno => alumno.selected);
+    const alumnosSeleccionados = this.alumnos.filter(
+      (alumno) => alumno.selected
+    );
 
     if (token && alumnosSeleccionados.length > 0) {
       Swal.fire({
@@ -102,7 +110,7 @@ export class EliminarAlumnoComponent implements OnInit {
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlos'
+        confirmButtonText: 'Sí, eliminarlos',
       }).then((result) => {
         if (result.isConfirmed) {
           this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
@@ -143,5 +151,10 @@ export class EliminarAlumnoComponent implements OnInit {
         this.eliminarAlumnoSecuencial(alumnosSeleccionados, token);
       },
     });
+  }
+
+  filtrarPorNombre(): void {
+    this.paginaActual = 1;
+    this.obtenerAlumnos();
   }
 }
