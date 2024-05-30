@@ -3,6 +3,7 @@ package com.taemoi.project.servicios.impl;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -33,6 +34,8 @@ import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
+
+import jakarta.persistence.criteria.Predicate;
 
 /**
  * Implementación del servicio para operaciones relacionadas con los alumnos.
@@ -131,24 +134,22 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @throws IllegalArgumentException Si no se proporciona al menos un criterio de filtrado.
      */
 	@Override
-	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, Pageable pageable) {
-	    if (nombre != null && gradoId != null && categoriaId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndGradoIdAndCategoriaId(nombre, gradoId, categoriaId, pageable);
-	    } else if (nombre != null && gradoId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndGradoId(nombre, gradoId, pageable);
-	    } else if (nombre != null && categoriaId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndCategoriaId(nombre, categoriaId, pageable);
-	    } else if (gradoId != null && categoriaId != null) {
-	        return alumnoRepository.findByGradoIdAndCategoriaId(gradoId, categoriaId, pageable);
-	    } else if (nombre != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCase(nombre, pageable);
-	    } else if (gradoId != null) {
-	        return alumnoRepository.findByGradoId(gradoId, pageable);
-	    } else if (categoriaId != null) {
-	        return alumnoRepository.findByCategoriaId(categoriaId, pageable);
-	    } else {
-	        throw new IllegalArgumentException("Debe proporcionar al menos un criterio de filtrado");
-	    }
+	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, @NonNull Pageable pageable) {
+	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+	        List<Predicate> predicates = new ArrayList<>();
+
+	        if (nombre != null && !nombre.isEmpty()) {
+	            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombre.toLowerCase() + "%"));
+	        }
+	        if (gradoId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
+	        }
+	        if (categoriaId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
+	        }
+
+	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+	    }, pageable);
 	}
 	
     /**
@@ -160,26 +161,24 @@ public class AlumnoServiceImpl implements AlumnoService {
      * @return Una lista de objetos Alumno que cumplen con los criterios de búsqueda.
      * @throws IllegalArgumentException Si no se proporciona al menos un criterio de filtrado.
      */
-	@Override
-	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId) {
-	    if (nombre != null && gradoId != null && categoriaId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndGradoIdAndCategoriaId(nombre, gradoId, categoriaId);
-	    } else if (nombre != null && gradoId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndGradoId(nombre, gradoId);
-	    } else if (nombre != null && categoriaId != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCaseAndCategoriaId(nombre, categoriaId);
-	    } else if (gradoId != null && categoriaId != null) {
-	        return alumnoRepository.findByGradoIdAndCategoriaId(gradoId, categoriaId);
-	    } else if (nombre != null) {
-	        return alumnoRepository.findByNombreContainingIgnoreCase(nombre);
-	    } else if (gradoId != null) {
-	        return alumnoRepository.findByGradoId(gradoId);
-	    } else if (categoriaId != null) {
-	        return alumnoRepository.findByCategoriaId(categoriaId);
-	    } else {
-	        throw new IllegalArgumentException("Debe proporcionar al menos un criterio de filtrado");
-	    }
-	}
+    @Override
+    public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId) {
+        return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (nombre != null && !nombre.isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombre.toLowerCase() + "%"));
+            }
+            if (gradoId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
+            }
+            if (categoriaId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        });
+    }
 
     /**
      * Crea un nuevo alumno.
