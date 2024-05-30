@@ -1,41 +1,47 @@
 <div class="container mt-5">
-  <h2>Crear Turno</h2>
-  <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4">
-    <div class="form-group">
-      <label for="diaSemana">Día de la semana:</label>
-      <select formControlName="diaSemana" id="diaSemana" class="form-control">
-        <option value="Lunes">Lunes</option>
-        <option value="Martes">Martes</option>
-        <option value="Miércoles">Miércoles</option>
-        <option value="Jueves">Jueves</option>
-        <option value="Viernes">Viernes</option>
-        <option value="Sábado">Sábado</option>
-        <option value="Domingo">Domingo</option>
-      </select>
-    </div>
+  <div class="card p-4 shadow-sm">
+    <h2 class="text-center mb-4">Crear Turno</h2>
+    <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4">
+      <div class="form-group mb-3">
+        <label for="diaSemana" class="form-label">Día de la semana:</label>
+        <select formControlName="diaSemana" id="diaSemana" class="form-select">
+          <option value="" disabled selected>Selecciona un día...</option>
+          <option value="Lunes">Lunes</option>
+          <option value="Martes">Martes</option>
+          <option value="Miércoles">Miércoles</option>
+          <option value="Jueves">Jueves</option>
+          <option value="Viernes">Viernes</option>
+          <option value="Sábado">Sábado</option>
+          <option value="Domingo">Domingo</option>
+        </select>
+      </div>
 
-    <div class="form-group mt-3">
-      <label for="horaInicio">Hora de inicio:</label>
-      <input type="time" formControlName="horaInicio" id="horaInicio" class="form-control">
-    </div>
+      <div class="form-group mb-3">
+        <label for="horaInicio" class="form-label">Hora de inicio:</label>
+        <input type="time" formControlName="horaInicio" id="horaInicio" class="form-control">
+      </div>
 
-    <div class="form-group mt-3">
-      <label for="horaFin">Hora de fin:</label>
-      <input type="time" formControlName="horaFin" id="horaFin" class="form-control">
-    </div>
+      <div class="form-group mb-3">
+        <label for="horaFin" class="form-label">Hora de fin:</label>
+        <input type="time" formControlName="horaFin" id="horaFin" class="form-control">
+      </div>
 
-    <div class="form-check mt-3">
-      <input type="checkbox" class="form-check-input" id="asignarGrupo" formControlName="asignarGrupo">
-      <label class="form-check-label" for="asignarGrupo">Asignar a un grupo</label>
-    </div>
+      <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" id="asignarGrupo" formControlName="asignarGrupo">
+        <label class="form-check-label" for="asignarGrupo">Asignar a un grupo</label>
+      </div>
 
-    <div class="form-group mt-3" *ngIf="turnoForm.get('asignarGrupo')?.value">
-      <label for="grupo">Grupo:</label>
-      <select formControlName="grupoId" id="grupo" class="form-control">
-        <option *ngFor="let grupo of grupos" [value]="grupo.id">{{ grupo.nombre }}</option>
-      </select>
-    </div>
+      <div class="form-group mb-3" *ngIf="turnoForm.get('asignarGrupo')?.value">
+        <label for="grupo" class="form-label">Grupo:</label>
+        <select formControlName="grupoId" id="grupo" class="form-select">
+          <option value="" disabled selected>Selecciona un grupo...</option>
+          <option *ngFor="let grupo of grupos" [value]="grupo.id">{{ grupo.nombre }}</option>
+        </select>
+      </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Crear Turno</button>
-  </form>
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary" [disabled]="turnoForm.invalid">Crear Turno</button>
+      </div>
+    </form>
+  </div>
 </div>

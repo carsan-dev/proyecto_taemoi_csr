@@ -1,0 +1,48 @@
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+.card {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  background-color: #fff;
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+}
+
+.list-group {
+  .list-group-item {
+    border: none;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+
+    &:hover {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+button.btn-secondary {
+  border-radius: 30px;
+  padding: 5px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+  }
+}

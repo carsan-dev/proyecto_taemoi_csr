@@ -1,9 +1,14 @@
 <div class="container mt-5">
-  <h2>Seleccionar Grupo</h2>
-  <div class="list-group mt-4">
-    <button *ngFor="let grupo of grupos" class="list-group-item list-group-item-action"
-            (click)="asignarGrupo(grupo.id)">
-      {{ grupo.nombre }}
-    </button>
+  <div class="card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-center m-0">Selecciona un grupo</h2>
+      <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
+    </div>
+    <div class="list-group mt-4">
+      <button *ngFor="let grupo of grupos" class="list-group-item list-group-item-action"
+        (click)="asignarGrupo(grupo.id)">
+        {{ grupo.nombre }}
+      </button>
+    </div>
   </div>
 </div>

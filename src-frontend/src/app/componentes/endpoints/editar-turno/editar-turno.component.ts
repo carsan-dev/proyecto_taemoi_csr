@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
   FormBuilder,
@@ -35,7 +35,8 @@ export class ActualizarTurnoComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private location: Location
   ) {
     this.turnoForm = this.fb.group({
       diaSemana: ['', Validators.required],
@@ -101,5 +102,9 @@ export class ActualizarTurnoComponent implements OnInit {
           },
         });
     }
+  }
+
+  volver() {
+    this.location.back();
   }
 }
