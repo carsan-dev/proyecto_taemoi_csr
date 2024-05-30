@@ -72,4 +72,10 @@ export class CrearEventoComponent implements OnInit {
       this.imagen = fileList[0];
     }
   }
+
+  adjustTextareaHeight(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
 }
