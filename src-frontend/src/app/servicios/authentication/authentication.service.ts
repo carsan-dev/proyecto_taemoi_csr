@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, catchError, tap, throwError } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  of,
+  tap,
+  throwError,
+} from 'rxjs';
 import { LoginInterface } from '../../interfaces/login-interface';
 
 @Injectable({
@@ -29,7 +36,7 @@ export class AuthenticationService {
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    if (typeof localStorage !== 'undefined') {
+    if (this.isLocalStorageAvailable()) {
       this.verificarValidezToken();
     }
   }
@@ -38,6 +45,17 @@ export class AuthenticationService {
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
+  }
+
+  private isLocalStorageAvailable(): boolean {
+    try {
+      const testKey = '__localStorageTest__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   comprobarLogueado(): boolean {
@@ -54,17 +72,16 @@ export class AuthenticationService {
           const email = credenciales.email;
           const username = this.extraerNombreUsuario(email);
           const tokenCreationTime = Date.now().toString();
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('email', email);
-          localStorage.setItem('username', username);
-          localStorage.setItem(
-            'tokenCreationTime',
-            tokenCreationTime.toString()
-          );
+          if (this.isLocalStorageAvailable()) {
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('email', email);
+            localStorage.setItem('username', username);
+            localStorage.setItem('tokenCreationTime', tokenCreationTime);
+          }
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username);
           this.emailSubject.next(email);
-          this.obtenerRoles(response.token);
+          this.obtenerRoles(response.token).subscribe(); // Ensure roles are fetched after login
         }),
         catchError(this.manejarError)
       );
@@ -78,14 +95,34 @@ export class AuthenticationService {
     this.emailSubject.next(null);
   }
 
-  obtenerRoles(token: string): void {
+  obtenerRoles(token: string): Observable<string[]> {
     const headers = this.crearHeaders(token);
-    this.http
-      .get<string[]>(`${this.urlBase}/roles`, { headers })
-      .pipe(catchError(this.manejarError))
-      .subscribe((roles) => {
+    return this.http.get<string[]>(`${this.urlBase}/roles`, { headers }).pipe(
+      tap((roles) => {
         this.rolesSubject.next(roles);
-      });
+        if (this.isLocalStorageAvailable()) {
+          localStorage.setItem('roles', JSON.stringify(roles)); // Store roles in localStorage
+        }
+      }),
+      catchError(this.manejarError)
+    );
+  }
+
+  getRoles(): Observable<string[]> {
+    if (this.isLocalStorageAvailable()) {
+      const token = localStorage.getItem('token');
+      const roles = localStorage.getItem('roles');
+      if (roles) {
+        this.rolesSubject.next(JSON.parse(roles));
+        return of(JSON.parse(roles));
+      } else if (token) {
+        return this.obtenerRoles(token);
+      } else {
+        return of([]);
+      }
+    } else {
+      return of([]);
+    }
   }
 
   obtenerUsuarioAutenticado(token: string): Observable<any> {
@@ -115,7 +152,10 @@ export class AuthenticationService {
   }
 
   obtenerNombreUsuario(): string | null {
-    return localStorage.getItem('username');
+    if (this.isLocalStorageAvailable()) {
+      return localStorage.getItem('username');
+    }
+    return null;
   }
 
   private extraerNombreUsuario(email: string): string {
@@ -123,30 +163,37 @@ export class AuthenticationService {
   }
 
   private eliminarToken(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
-    localStorage.removeItem('username');
-    localStorage.removeItem('tokenCreationTime');
+    if (this.isLocalStorageAvailable()) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('email');
+      localStorage.removeItem('username');
+      localStorage.removeItem('tokenCreationTime');
+      localStorage.removeItem('roles');
+    }
   }
 
   private verificarValidezToken(): void {
-    const token = localStorage.getItem('token');
-    const tokenCreationTime = localStorage.getItem('tokenCreationTime');
+    if (this.isLocalStorageAvailable()) {
+      const token = localStorage.getItem('token');
+      const tokenCreationTime = localStorage.getItem('tokenCreationTime');
 
-    if (token && tokenCreationTime) {
-      const creationDate = new Date(parseInt(tokenCreationTime));
-      const expiryDate = new Date(creationDate.getTime() + 10 * 60 * 60 * 1000);
+      if (token && tokenCreationTime) {
+        const creationDate = new Date(parseInt(tokenCreationTime));
+        const expiryDate = new Date(
+          creationDate.getTime() + 10 * 60 * 60 * 1000
+        );
 
-      if (new Date() > expiryDate) {
-        this.eliminarToken();
-      } else {
-        const email = localStorage.getItem('email');
-        const username = localStorage.getItem('username');
-        if (email && username) {
-          this.actualizarEstadoLogueado(true);
-          this.usernameSubject.next(username);
-          this.emailSubject.next(email);
-          this.obtenerRoles(token);
+        if (new Date() > expiryDate) {
+          this.eliminarToken();
+        } else {
+          const email = localStorage.getItem('email');
+          const username = localStorage.getItem('username');
+          if (email && username) {
+            this.actualizarEstadoLogueado(true);
+            this.usernameSubject.next(username);
+            this.emailSubject.next(email);
+            this.obtenerRoles(token).subscribe(); // Ensure roles are fetched on app load
+          }
         }
       }
     }
