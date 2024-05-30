@@ -22,11 +22,20 @@ export class EndpointsService {
     return throwError(() => error);
   }
 
-  obtenerAlumnos(token: string, page: number, size: number): Observable<any> {
+  obtenerAlumnos(
+    token: string,
+    page: number,
+    size: number,
+    nombre: string
+  ): Observable<any> {
     const headers = this.crearHeaders(token);
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
+
+    if (nombre) {
+      params = params.set('nombre', nombre);
+    }
 
     return this.http
       .get<any>(`${this.urlBase}/alumnos`, {
