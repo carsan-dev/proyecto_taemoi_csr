@@ -4,89 +4,62 @@
 }
 
 .container {
-  margin-top: 125px;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 20px;
-  border-radius: 8px;
+  margin-top: 125px !important;
 
   h2 {
     font-family: 'Osaka-Sans Serif', sans-serif;
   }
-
-  .gallery {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-
-    .gallery-item {
-      position: relative;
-      overflow: hidden;
-      width: calc(33.333% - 20px);
-      margin-bottom: 20px;
-      transition: transform 0.3s ease;
-      border-radius: 15px;
-
-      &:hover .gallery-img {
-        transform: scale(1.1);
-        opacity: 0.7;
-      }
-
-      .gallery-img {
-        width: 100%;
-        height: auto;
-        display: block;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-      }
-
-      &:hover .overlay {
-        opacity: 1;
-      }
-
-      .overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        padding: 20px;
-        box-sizing: border-box;
-      }
-    }
-  }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@media (max-width: 768px) {
-  .gallery-item {
-    width: calc(50% - 20px);
-  }
+.event-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-@media (max-width: 480px) {
-  .gallery-item {
-    width: calc(100% - 20px);
-  }
+.event-card:hover {
+  transform: scale(1.05);
+}
+
+.event-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.event-card:hover .event-img {
+  transform: scale(1.2);
+}
+
+.event-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 16px;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.event-card:hover .event-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.event-title {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.event-description {
+  margin: 8px 0 0;
 }
