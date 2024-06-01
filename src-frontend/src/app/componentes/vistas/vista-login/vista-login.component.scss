@@ -41,8 +41,17 @@
   }
 }
 
-@media (max-width: 768px) {
-  .h2 {
-    padding-bottom: 30px;
+@media (max-width: 767px) {
+  .col-12 {
+    display: flex;
+    justify-content: center;
+
+    .card {
+      width: 100% !important;
+      margin-top: 65px;
+      .h2 {
+        padding-bottom: 30px;
+      }
+    }
   }
 }
