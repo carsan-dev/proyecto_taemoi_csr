@@ -91,10 +91,14 @@ header.header-nologuedo {
     }
   }
 
-  @media (max-width: 992px) {
+  @media (max-width: 991px) {
     .navbar-izq {
       flex-direction: column;
       justify-content: center;
+
+      img {
+        width: 180px !important;
+      }
 
       .list-links {
         flex-direction: column !important;
@@ -108,6 +112,11 @@ header.header-nologuedo {
     .navbar-izq {
       font-size: 14px;
       text-wrap: nowrap;
+
+      img {
+        width: 140px;
+      }
+
       .mx-5 {
         margin: 0 !important;
         margin-right: 15px !important;
