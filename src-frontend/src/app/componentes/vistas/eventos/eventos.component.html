@@ -1,16 +1,14 @@
-<div class="container mt-4">
-  <div class="row">
-    <h2 class="text-center mb-5 fs-1 fw-bold">Metas superadas y próximos eventos</h2>
-    <div class="col-md-6 col-lg-4 p-3" *ngFor="let evento of eventos">
-      <div class="event-card">
-        <img
-          [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : 'assets/media/default.webp'"
-          class="event-img"
-          alt="{{ evento.titulo }}">
-        <div class="event-info">
-          <h5 class="event-title">{{ evento.titulo }}</h5>
-          <p class="event-description">{{ evento.descripcion }}</p>
-        </div>
+<div class="main-container">
+  <h2 class="text-center h1">METAS Y PRÓXIMOS EVENTOS</h2>
+  <div class="container-fluid my-5">
+    <div class="box" *ngFor="let evento of eventos">
+      <img
+      [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : 'assets/media/default.webp'"
+      class="img-fluid event-img"
+      alt="{{ evento.titulo }}">
+      <div class="event-info">
+        <p class="event-title">{{ evento.titulo }}</p>
+        <p class="event-description">{{ evento.descripcion }}</p>
       </div>
     </div>
   </div>
