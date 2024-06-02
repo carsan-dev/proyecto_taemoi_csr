@@ -9,9 +9,14 @@
   background-position: center;
   background-size: cover;
   max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
 
   .left-container {
     background-color: rgba(0, 0, 0, 0.7);
+    height: 100%;
+    flex: 1;
 
     & img {
       width: 350px;
@@ -19,6 +24,121 @@
 
     & p {
       font-family: 'Osaka-Sans Serif', sans-serif;
+    }
+  }
+
+  .right-container {
+    flex: 1;
+
+    form {
+      position: relative;
+
+      .form-group {
+        position: relative;
+        margin-bottom: 4rem;
+
+        label {
+          position: absolute;
+          top: 1rem;
+          left: 0.5rem;
+          padding: 0 0.5rem;
+          color: #aaa;
+          font-size: 1rem;
+          pointer-events: none;
+          transition: all 0.2s ease;
+        }
+
+        input,
+        select,
+        textarea {
+          width: 100%;
+          padding: 1rem 0.5rem 0.5rem 0.5rem;
+          font-size: 1rem;
+          border: 1px solid #ccc;
+          border-radius: 0.25rem;
+          color: #000;
+          background-color: white;
+
+          &:focus {
+            outline: none;
+            border-color: #007bff;
+
+            &+label {
+              top: -1.5rem;
+              left: 0;
+              color: #007bff;
+              font-size: 0.75rem;
+            }
+          }
+
+          &:not(:placeholder-shown)+label {
+            top: -1.5rem;
+            left: 0;
+            color: #007bff;
+            font-size: 0.75rem;
+          }
+        }
+
+        .text-danger {
+          font-size: 0.875rem;
+          color: #dc3545;
+          position: absolute;
+          bottom: -1.5rem;
+        }
+      }
+    }
+  }
+
+
+
+  @media (max-width: 1288px) {
+    .text-danger#asuntoError {
+      bottom: -1.8rem !important;
+    }
+  }
+
+
+}
+
+@media (max-width: 992px) {
+  .contact-form {
+    flex-direction: column !important;
+
+    .left-container,
+    .right-container {
+      width: 100%;
+    }
+
+    .left-container {
+      margin-bottom: 2rem;
+
+      img {
+        width: 125px;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 4rem !important;
+
+      label {
+        margin-bottom: 2rem;
+        font-size: 0.80rem !important;
+      }
+
+      input,
+      select,
+      textarea {
+        font-size: 0.80rem !important;
+      }
+
+      .text-danger {
+        bottom: -2.3rem !important;
+        font-size: 0.7rem !important;
+      }
+
+      .text-danger#asuntoError {
+        bottom: -2.3rem !important;
+      }
     }
   }
 }
