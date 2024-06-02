@@ -1,42 +1,56 @@
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { WhatsAppService } from '../../../servicios/contacto/whats-app.service';
 import { MailService } from '../../../servicios/contacto/mail.service';
 import Swal from 'sweetalert2';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-contacto',
   standalone: true,
-  imports: [FormsModule, NgxSpinnerModule],
+  imports: [FormsModule, NgxSpinnerModule, CommonModule, ReactiveFormsModule],
   templateUrl: './contacto.component.html',
   styleUrl: './contacto.component.scss'
 })
 export class ContactoComponent {
-  nombre: string = '';
-  apellidos: string = '';
-  email: string = '';
-  asunto: string = '';
-  mensaje: string = '';
+  contactForm: FormGroup;
 
-  constructor(private whatsappService: WhatsAppService, private mailService: MailService, private spinner: NgxSpinnerService) { }
+  constructor(
+    private fb: FormBuilder,
+    private whatsappService: WhatsAppService,
+    private mailService: MailService,
+    private spinner: NgxSpinnerService
+  ) {
+    this.contactForm = this.fb.group({
+      nombre: ['', Validators.required],
+      apellidos: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      asunto: ['', Validators.required],
+      mensaje: ['', Validators.required]
+    });
+  }
 
   enviarWhatsApp() {
+    if (this.contactForm.invalid) {
+      this.contactForm.markAllAsTouched();
+      return;
+    }
     const numeroWhatsApp = '34625752354';
-    const nombreCompleto = `${this.nombre} ${this.apellidos}`;
-    const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${this.email}\nAsunto: ${this.asunto}\nCuerpo del mensaje: ${this.mensaje}`;
+    const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
+    const nombreCompleto = `${nombre} ${apellidos}`;
+    const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
     this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp);
     this.limpiarCampos();
   }
 
   enviarCorreo() {
-    const emailData = {
-      nombre: this.nombre,
-      apellidos: this.apellidos,
-      email: this.email,
-      asunto: this.asunto,
-      mensaje: this.mensaje
-    };
+    if (this.contactForm.invalid) {
+      this.contactForm.markAllAsTouched();
+      return;
+    }
+
+    const emailData = this.contactForm.value;
 
     this.spinner.show();
 
@@ -62,10 +76,10 @@ export class ContactoComponent {
   }
 
   limpiarCampos() {
-    this.nombre = '';
-    this.apellidos = '';
-    this.email = '';
-    this.asunto = '';
-    this.mensaje = '';
+    this.contactForm.reset();
+  }
+
+  onSubmit() {
+    this.enviarCorreo();
   }
 }
