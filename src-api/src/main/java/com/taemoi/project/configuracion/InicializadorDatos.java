@@ -189,7 +189,7 @@ public class InicializadorDatos implements CommandLineRunner {
 		alumno.setApellidos(faker.name().lastName());
 		alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
 		alumno.setFechaNacimiento(faker.date().birthday());
-		alumno.setNif(faker.idNumber().valid());
+		alumno.setNif(generarNif(faker));
 		alumno.setDireccion(faker.address().fullAddress());
 		alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
 		alumno.setEmail(faker.internet().emailAddress());
@@ -211,6 +211,14 @@ public class InicializadorDatos implements CommandLineRunner {
 
 		return alumno;
 	}
+	
+    private String generarNif(Faker faker) {
+        String nif = faker.idNumber().valid();
+        if (nif.length() > 9) {
+            nif = nif.substring(0, 9);
+        }
+        return nif;
+    }
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
