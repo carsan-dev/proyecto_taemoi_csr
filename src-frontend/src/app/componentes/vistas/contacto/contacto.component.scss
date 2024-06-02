@@ -12,11 +12,13 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  min-height: 100vh;
 
   .left-container {
     background-color: rgba(0, 0, 0, 0.7);
     height: 100%;
     flex: 1;
+    min-height: 100vh;
 
     & img {
       width: 350px;
@@ -111,6 +113,7 @@
 
     .left-container {
       margin-bottom: 2rem;
+      min-height: auto !important;
 
       img {
         width: 125px;
