@@ -97,6 +97,7 @@ public class SecurityConfiguration {
 				.requestMatchers(HttpMethod.DELETE, "/api/eventos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
+				.requestMatchers(HttpMethod.POST, "/api/mail/**").permitAll()
 				.anyRequest().authenticated())
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider());
