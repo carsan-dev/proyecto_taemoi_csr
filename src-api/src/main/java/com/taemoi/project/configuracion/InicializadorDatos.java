@@ -195,7 +195,7 @@ public class InicializadorDatos implements CommandLineRunner {
 		alumno.setEmail(faker.internet().emailAddress());
 		alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
 		alumno.setFechaAlta(faker.date().birthday());
-		alumno.setFechaBaja(faker.date().birthday());
+		alumno.setFechaBaja(null);
 		TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
 		alumno.setTipoTarifa(tipoTarifa);
 
