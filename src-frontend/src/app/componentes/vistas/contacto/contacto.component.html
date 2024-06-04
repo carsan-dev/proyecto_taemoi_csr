@@ -11,21 +11,21 @@
   <div class="right-container my-5">
     <form [formGroup]="contactForm" class="mx-5" (ngSubmit)="onSubmit()">
       <div class="form-group">
-        <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder=" ">
+        <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder=" " required>
         <label for="nombre" class="form-label">Nombre:</label>
         <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched" class="text-danger">
           El campo nombre es obligatorio.
         </div>
       </div>
       <div class="form-group">
-        <input type="text" formControlName="apellidos" id="apellidos" class="form-control" placeholder=" ">
+        <input type="text" formControlName="apellidos" id="apellidos" class="form-control" placeholder=" " required>
         <label for="apellidos" class="form-label">Apellidos:</label>
         <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched" class="text-danger">
           El campo apellidos es obligatorio.
         </div>
       </div>
       <div class="form-group">
-        <input type="email" formControlName="email" id="email" class="form-control" placeholder=" ">
+        <input type="email" formControlName="email" id="email" class="form-control" placeholder=" " required>
         <label for="email" class="form-label">Correo electrónico:</label>
         <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="text-danger">
           Campo email obligatorio y debe ser válido.
@@ -45,7 +45,7 @@
         </div>
       </div>
       <div class="form-group">
-        <textarea formControlName="mensaje" id="mensaje" class="form-control" rows="7" placeholder=" "></textarea>
+        <textarea formControlName="mensaje" id="mensaje" class="form-control" rows="7" placeholder=" " required></textarea>
         <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
         <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched" class="text-danger">
           El campo mensaje es obligatorio.

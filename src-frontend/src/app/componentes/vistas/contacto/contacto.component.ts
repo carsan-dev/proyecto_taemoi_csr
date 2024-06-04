@@ -1,5 +1,11 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { WhatsAppService } from '../../../servicios/contacto/whats-app.service';
 import { MailService } from '../../../servicios/contacto/mail.service';
 import Swal from 'sweetalert2';
@@ -11,7 +17,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, NgxSpinnerModule, CommonModule, ReactiveFormsModule],
   templateUrl: './contacto.component.html',
-  styleUrl: './contacto.component.scss'
+  styleUrl: './contacto.component.scss',
 })
 export class ContactoComponent {
   contactForm: FormGroup;
@@ -27,7 +33,7 @@ export class ContactoComponent {
       apellidos: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       asunto: ['', Validators.required],
-      mensaje: ['', Validators.required]
+      mensaje: ['', Validators.required],
     });
   }
 
@@ -36,8 +42,9 @@ export class ContactoComponent {
       this.contactForm.markAllAsTouched();
       return;
     }
-    const numeroWhatsApp = '34625752354';
-    const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
+    const numeroWhatsApp = '34695568455';
+    const { nombre, apellidos, email, asunto, mensaje } =
+      this.contactForm.value;
     const nombreCompleto = `${nombre} ${apellidos}`;
     const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
     this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp);
