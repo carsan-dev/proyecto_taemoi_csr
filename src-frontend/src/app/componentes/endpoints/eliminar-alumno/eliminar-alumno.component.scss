@@ -83,6 +83,14 @@ button {
         border-bottom: 1px solid #dee2e6;
         vertical-align: middle;
 
+        .imagen-perfil {
+          border-radius: 50%;
+          width: 80px;
+          height: 80px;
+          object-fit: cover;
+          border: 2px solid #ccc;
+        }
+
         .form-check-input {
           cursor: pointer;
         }

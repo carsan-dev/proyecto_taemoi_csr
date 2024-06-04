@@ -17,6 +17,7 @@
             <thead>
               <tr class="text-center">
                 <th>Seleccionar</th>
+                <th>Foto</th>
                 <th>Nombre</th>
                 <th>Apellidos</th>
                 <th>Número de Expediente</th>
@@ -30,6 +31,11 @@
                   <div class="form-check d-flex justify-content-center">
                     <input type="checkbox" class="form-check-input" [(ngModel)]="alumno.selected">
                   </div>
+                </td>
+                <td class="align-middle">
+                  <img class="imagen-perfil"
+                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                  alt="Perfil del alumno">
                 </td>
                 <td class="align-middle">{{ alumno.nombre }}</td>
                 <td class="align-middle">{{ alumno.apellidos }}</td>
