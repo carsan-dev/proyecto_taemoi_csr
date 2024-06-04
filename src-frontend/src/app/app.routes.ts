@@ -27,7 +27,6 @@ import { roleGuard } from './guards/role.guard';
 import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos/listado-eventos.component';
 import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear-evento.component';
 import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
-import { EliminarEventoComponent } from './componentes/endpoints/eliminar-evento/eliminar-evento.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -127,11 +126,6 @@ export const routes: Routes = [
   {
     path: 'eventosEditar/:id',
     component: EditarEventoComponent,
-    canActivate: [roleGuard],
-  },
-  {
-    path: 'eventosEliminar/:id',
-    component: EliminarEventoComponent,
     canActivate: [roleGuard],
   },
 ];
