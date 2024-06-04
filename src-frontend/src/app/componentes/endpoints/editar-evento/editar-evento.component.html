@@ -30,9 +30,9 @@
             <i class="bi bi-plus-circle-fill text-black fs-2"></i>
             <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
           </label>
-          <label class="remove-icon ps-2" *ngIf="evento?.fotoEvento" (click)="eliminarFoto()">
+          <div class="remove-icon ps-2" *ngIf="evento?.fotoEvento" (click)="eliminarFoto()">
             <i class="bi bi-dash-circle-fill text-black fs-2"></i>
-          </label>
+          </div>
         </div>
       </div>
 
