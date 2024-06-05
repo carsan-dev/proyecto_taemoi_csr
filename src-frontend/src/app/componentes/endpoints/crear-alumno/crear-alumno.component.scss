@@ -19,7 +19,7 @@ h3 {
 
 .form-group label {
   position: absolute;
-  top: 15px; /* Ajusta según sea necesario */
+  top: 15px;
   left: 20px;
   font-size: 1rem;
   font-weight: 500;
@@ -76,11 +76,6 @@ input:-webkit-autofill ~ label {
   color: #007bff;
   background-color: #fff;
   height: 30px;
-}
-
-.dropdown .form-control {
-  border-radius: 30px;
-  padding: 10px 20px;
 }
 
 button[type="submit"] {
