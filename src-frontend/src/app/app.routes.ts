@@ -21,7 +21,7 @@ import { SeleccionarAlumnosComponent } from './componentes/endpoints/listado-gru
 import { ListadoTurnosComponent } from './componentes/endpoints/listado-turnos/listado-turnos.component';
 import { CrearTurnoComponent } from './componentes/endpoints/crear-turno/crear-turno.component';
 import { SeleccionarGrupoComponent } from './componentes/endpoints/listado-turnos/seleccionar-grupo/seleccionar-grupo.component';
-import { ActualizarTurnoComponent } from './componentes/endpoints/editar-turno/editar-turno.component';
+import { EditarTurnoComponent } from './componentes/endpoints/editar-turno/editar-turno.component';
 import { TurnosUsuarioComponent } from './componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component';
 import { roleGuard } from './guards/role.guard';
 import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos/listado-eventos.component';
@@ -110,7 +110,7 @@ export const routes: Routes = [
   },
   {
     path: 'turnosEditar/:id',
-    component: ActualizarTurnoComponent,
+    component: EditarTurnoComponent,
     canActivate: [roleGuard],
   },
   {
