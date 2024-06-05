@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 public class Turno {
@@ -16,13 +17,15 @@ public class Turno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "El día de la semana no puede estar en blanco")
     private String diaSemana;
 
-    @NotBlank
+    @NotBlank(message = "La hora de inicio no puede estar en blanco")
+    @Pattern(regexp = "^([01]\\d|2[0-3]):([0-5]\\d)$", message = "La hora de inicio debe estar en formato HH:mm")
     private String horaInicio;
 
-    @NotBlank
+    @NotBlank(message = "La hora de fin no puede estar en blanco")
+    @Pattern(regexp = "^([01]\\d|2[0-3]):([0-5]\\d)$", message = "La hora de fin debe estar en formato HH:mm")
     private String horaFin;
 
     @ManyToOne

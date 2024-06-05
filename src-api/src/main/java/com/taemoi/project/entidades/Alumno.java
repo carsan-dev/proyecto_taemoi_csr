@@ -1,5 +1,6 @@
 package com.taemoi.project.entidades;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -22,8 +23,12 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 @Entity
 public class Alumno {
@@ -46,12 +51,15 @@ public class Alumno {
 	private Date fechaNacimiento;
 
 	@NotBlank(message = "El NIF no puede estar en blanco")
+    @Size(min = 9, max = 9, message = "El NIF debe tener 9 caracteres")
 	private String nif;
 
 	@NotBlank(message = "La dirección no puede estar en blanco")
 	private String direccion;
 
 	@NotNull(message = "El teléfono no puede ser nulo")
+    @Min(value = 100000000, message = "El teléfono debe tener 9 dígitos")
+    @Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
 	private Integer telefono;
 
 	@Email(message = "La dirección de correo electrónico debe ser válida")
@@ -62,6 +70,7 @@ public class Alumno {
 	private TipoTarifa tipoTarifa;
 
 	@NotNull(message = "La cuantía de la tarifa no puede ser nula")
+	@PositiveOrZero(message = "La cuantía de la tarifa debe ser un valor positivo o cero")
 	private Double cuantiaTarifa;
 
 	@Temporal(TemporalType.DATE)
@@ -84,10 +93,10 @@ public class Alumno {
 	private Grado grado;
 	
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
-	@JsonManagedReference
-	private List<Grupo> grupos;
+	private List<Grupo> grupos = new ArrayList<>();;
     
     @OneToOne(mappedBy = "alumno")
+    @JsonManagedReference
     private Usuario usuario;
 
 	@OneToMany(mappedBy = "alumno")
@@ -255,5 +264,4 @@ public class Alumno {
 	public void setUsuario(Usuario usuario) {
 		this.usuario = usuario;
 	}
-	
 }

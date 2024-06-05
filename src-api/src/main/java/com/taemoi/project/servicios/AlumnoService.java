@@ -26,7 +26,7 @@ public interface AlumnoService {
 	
 	Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id);
 	
-	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, Pageable pageable);
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, @NonNull Pageable pageable);
 	
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId);
 	
@@ -51,4 +51,6 @@ public interface AlumnoService {
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
 	
 	String generarContrasena(String nombre, String apellidos);
+
+	Imagen guardarImagen(@NonNull Imagen imagen);
 }

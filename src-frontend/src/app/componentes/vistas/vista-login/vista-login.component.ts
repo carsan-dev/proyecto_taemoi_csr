@@ -15,6 +15,8 @@ import { CommonModule } from '@angular/common';
 })
 export class VistaLoginComponent implements OnInit {
   credenciales: LoginInterface = { email: '', contrasena: '' };
+  passwordFieldType: string = 'password';
+  passwordToggleIcon: string = 'bi bi-eye-fill';
 
   constructor(
     private authService: AuthenticationService,
@@ -41,19 +43,29 @@ export class VistaLoginComponent implements OnInit {
     }
   }
 
+  togglePasswordVisibility(): void {
+    if (this.passwordFieldType === 'password') {
+      this.passwordFieldType = 'text';
+      this.passwordToggleIcon = 'bi bi-eye-slash-fill';
+    } else {
+      this.passwordFieldType = 'password';
+      this.passwordToggleIcon = 'bi bi-eye-fill';
+    }
+  }
+
   login() {
     this.authService.login(this.credenciales).subscribe({
       next: (response) => {
         const token = response.token;
         const nombreUsuario = this.authService.obtenerNombreUsuario();
         localStorage.setItem('token', token);
-        localStorage.setItem('username', nombreUsuario ?? '')
+        localStorage.setItem('username', nombreUsuario ?? '');
         this.authService.actualizarEstadoLogueado(true);
         this.authService.obtenerRoles(token);
 
         Swal.fire({
           title: 'Inicio de sesión exitoso',
-          text: `¡Bienvenido, ${nombreUsuario}!`,
+          text: `¡Bienvenido/a, ${nombreUsuario}!`,
           icon: 'success',
         });
 
@@ -75,10 +87,15 @@ export class VistaLoginComponent implements OnInit {
   }
 
   private redirigirSegunRol(roles: string[]) {
-    if (this.authService.tieneRolAdmin() || this.authService.tieneRolManager()) {
+    if (
+      this.authService.tieneRolAdmin() ||
+      this.authService.tieneRolManager()
+    ) {
       this.router.navigate(['/adminpage']);
-    } else {
+    } else if (this.authService.tieneRolUser()) {
       this.router.navigate(['/userpage']);
+    } else {
+      this.router.navigate(['/inicio']);
     }
   }
 }

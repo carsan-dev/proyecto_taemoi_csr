@@ -4,13 +4,42 @@
 }
 
 .admin-container {
-  background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/recepcion_escuela.webp");
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("../../../../assets/media/recepcion_escuela.webp");
   background-position: center;
   background-size: cover;
-  height: 1100px;
+  min-height: 1080px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #fff;
 
-  p {
+  h1 {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 20px;
     font-family: 'Osaka-Sans Serif', sans-serif;
-    font-size: 82px;
+  }
+
+  p.lead {
+    font-size: 1.5rem;
+    margin-bottom: 40px;
+  }
+
+  .admin-actions {
+    .btn {
+      border-radius: 30px;
+      padding: 15px 30px;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin: 10px;
+
+      &:hover {
+        background-color: #0056b3;
+        box-shadow: 0 0 10px rgba(0, 86, 179, 0.5);
+      }
+    }
   }
 }

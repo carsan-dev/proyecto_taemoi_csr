@@ -1,0 +1,48 @@
+<div class="container mt-5">
+  <div class="card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-center m-0">Editar Evento</h2>
+      <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
+    </div>
+    <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()">
+      <div class="form-group form-floating mb-3">
+        <input id="titulo" type="text" formControlName="titulo" class="form-control" required placeholder="Título"/>
+        <label for="titulo" class="form-label">Título</label>
+        <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched">
+          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no
+            puede estar en blanco.</small>
+          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no
+            puede contener más de 100 caracteres.</small>
+        </div>
+      </div>
+
+      <div class="form-group form-floating mb-3">
+        <input id="descripcion" formControlName="descripcion" type="text" class="form-control" required placeholder="Descripción" />
+        <label for="descripcion" class="form-label">Descripción</label>
+        <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched">
+          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no
+            puede estar en blanco.</small>
+          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no
+            puede contener más de 500 caracteres.</small>
+        </div>
+      </div>
+
+      <div class="image-container d-flex align-items-center text-center flex-column mb-3">
+        <img class="imagen-perfil" [src]="imagenPreview" alt="Cartel del evento">
+        <div class="d-flex flex-row align-items-center">
+          <label for="inputFile" class="add-icon pe-2">
+            <i class="bi bi-plus-circle-fill text-black fs-2"></i>
+            <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
+          </label>
+          <div class="remove-icon ps-2" *ngIf="evento?.fotoEvento" (click)="eliminarFoto()">
+            <i class="bi bi-dash-circle-fill text-black fs-2"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary" [disabled]="eventoForm.invalid">Actualizar Evento</button>
+      </div>
+    </form>
+  </div>
+</div>

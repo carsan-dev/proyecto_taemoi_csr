@@ -1,6 +1,7 @@
 package com.taemoi.project.controladores;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +47,6 @@ import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.repositorios.ImagenRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
@@ -83,12 +83,6 @@ public class AlumnoController {
 	private GradoRepository gradoRepository;
 
 	/**
-	 * Inyección del repositorio de imagen.
-	 */
-	@Autowired
-	private ImagenRepository imagenRepository;
-
-	/**
 	 * Inyección del servicio de grupo.
 	 */
 	@Autowired
@@ -114,60 +108,30 @@ public class AlumnoController {
 	 */
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
-			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
-			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId) {
+	public ResponseEntity<?> obtenerAlumnosDTO(
+	        @RequestParam(required = false) Integer page,
+	        @RequestParam(required = false) Integer size,
+	        @RequestParam(required = false) String nombre,
+	        @RequestParam(required = false) Long gradoId,
+	        @RequestParam(required = false) Long categoriaId) {
 
-		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
-		logger.info(
-				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
-				page, size, nombre, gradoId, categoriaId);
+	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
+	    logger.info(
+	            "## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
+	            page, size, nombre, gradoId, categoriaId);
 
-		if (page != null && size != null) {
-			logger.info("## AlumnoController :: mostrarAlumnos paginados");
+	    Pageable pageable = (page != null && size != null) ? PageRequest.of(page - 1, size, Sort.by("nombre").ascending()) : Pageable.unpaged();
+	    boolean isPaged = page != null && size != null;
 
-			Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
-			Page<Alumno> alumnos;
+	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
 
-			if (nombre != null && !nombre.isEmpty() || gradoId != null || categoriaId != null) {
-				logger.info(
-						"## AlumnoController :: obtenerAlumnosDTO :: Filtrando por nombre: {}, gradoId: {}, categoriaId: {}",
-						nombre, gradoId, categoriaId);
-				alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
-			} else {
-				logger.info("## AlumnoController :: obtenerAlumnosDTO :: Obteniendo todos los alumnos paginados");
-				alumnos = alumnoService.obtenerTodosLosAlumnos(pageable);
-			}
+	    if (alumnos.isEmpty()) {
+	        logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
+	        return ResponseEntity.ok(isPaged ? Page.empty(pageable) : Collections.emptyList());
+	    }
 
-			if (alumnos.isEmpty()) {
-				logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
-				throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
-			}
-
-			logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-			return ResponseEntity.ok(alumnos.map(AlumnoDTO::deAlumno));
-		} else {
-			logger.info("## AlumnoController :: mostrarTodosLosAlumnos");
-			List<Alumno> alumnos;
-
-			if (nombre != null && !nombre.isEmpty() || gradoId != null || categoriaId != null) {
-				logger.info(
-						"## AlumnoController :: obtenerAlumnosDTO :: Filtrando por nombre: {}, gradoId: {}, categoriaId: {}",
-						nombre, gradoId, categoriaId);
-				alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId);
-			} else {
-				logger.info("## AlumnoController :: obtenerAlumnosDTO :: Obteniendo todos los alumnos");
-				alumnos = alumnoService.obtenerTodosLosAlumnos();
-			}
-
-			if (alumnos.isEmpty()) {
-				logger.warn("No hay usuarios registrados en el sistema.");
-				return ResponseEntity.ok(Page.empty());
-			}
-
-			logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-			return ResponseEntity.ok(alumnos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
-		}
+	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
+	    return ResponseEntity.ok(isPaged ? alumnos.map(AlumnoDTO::deAlumno) : alumnos.getContent().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
 	}
 
 	/**
@@ -227,12 +191,10 @@ public class AlumnoController {
 			ObjectMapper objectMapper = new ObjectMapper();
 			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-			Imagen imagen = null;
-
 			if (file != null) {
 				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = imagenRepository.save(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagen);
+				Imagen imagenGuardada = alumnoService.guardarImagen(img);
+				nuevoAlumnoDTO.setFotoAlumno(imagenGuardada);
 			}
 			logger.info("## AlumnoController :: añadirAlumno");
 
@@ -292,6 +254,8 @@ public class AlumnoController {
 			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
 
 			nuevoAlumno.setUsuario(usuarioExistente);
+			
+			usuarioExistente.setAlumno(nuevoAlumno);
 
 			Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
 			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
@@ -327,8 +291,7 @@ public class AlumnoController {
 
 			if (file != null) {
 				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = imagenRepository.save(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagen);
+				imagen = alumnoService.guardarImagen(img);
 			}
 			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
 				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");

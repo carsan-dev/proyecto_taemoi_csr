@@ -3,13 +3,14 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-listado-alumnos',
   standalone: true,
-  imports: [CommonModule, PaginacionComponent],
+  imports: [CommonModule, PaginacionComponent, FormsModule],
   templateUrl: './listado-alumnos.component.html',
-  styleUrl: './listado-alumnos.component.scss'
+  styleUrl: './listado-alumnos.component.scss',
 })
 export class ListadoAlumnosComponent implements OnInit {
   alumnos: any[] = [];
@@ -17,6 +18,7 @@ export class ListadoAlumnosComponent implements OnInit {
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   mostrarPaginas: number[] = [];
+  nombreFiltro: string = '';
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -31,7 +33,12 @@ export class ListadoAlumnosComponent implements OnInit {
 
     if (token) {
       this.endpointsService
-        .obtenerAlumnos(token, this.paginaActual, this.tamanoPagina)
+        .obtenerAlumnos(
+          token,
+          this.paginaActual,
+          this.tamanoPagina,
+          this.nombreFiltro
+        )
         .subscribe({
           next: (response) => {
             this.alumnos = response.content;
@@ -61,6 +68,11 @@ export class ListadoAlumnosComponent implements OnInit {
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
+    this.obtenerAlumnos();
+  }
+
+  filtrarPorNombre(): void {
+    this.paginaActual = 1;
     this.obtenerAlumnos();
   }
 }

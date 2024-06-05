@@ -1,11 +1,16 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { Router } from '@angular/router';
-import { EventosInteface } from '../../../interfaces/eventos-inteface';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -15,10 +20,9 @@ import { EventosInteface } from '../../../interfaces/eventos-inteface';
   styleUrl: './escaparate-principal.component.scss',
 })
 export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
-  @ViewChild('videoPresentacion') videoPresentacion!: ElementRef<HTMLVideoElement>;
+  @ViewChild('videoPresentacion')
+  videoPresentacion!: ElementRef<HTMLVideoElement>;
   usuarioLogueado: boolean = false;
-  eventos: EventosInteface[] = [];
-  eventoActual: EventosInteface | undefined;
   eventoActualIndex: number = 0;
   idIntervalo: any;
 
@@ -77,7 +81,7 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
 
     video.addEventListener('canplaythrough', () => {
       video.muted = true;
-      video.play()
+      video.play();
     });
   }
 

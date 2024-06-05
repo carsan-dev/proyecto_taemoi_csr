@@ -1,6 +1,14 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
@@ -10,9 +18,9 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './editar-turno.component.html',
-  styleUrl: './editar-turno.component.scss'
+  styleUrl: './editar-turno.component.scss',
 })
-export class ActualizarTurnoComponent implements OnInit {
+export class EditarTurnoComponent implements OnInit {
   turnoForm: FormGroup;
   diasSemana: string[] = [
     'Lunes',
@@ -29,13 +37,26 @@ export class ActualizarTurnoComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private location: Location
   ) {
     this.turnoForm = this.fb.group({
       diaSemana: ['', Validators.required],
-      horaInicio: ['', Validators.required],
-      horaFin: ['', Validators.required],
-    });
+      horaInicio: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+      horaFin: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+    }, { validators: this.horasValidas });
   }
 
   ngOnInit(): void {
@@ -74,24 +95,40 @@ export class ActualizarTurnoComponent implements OnInit {
     const turnoActualizado = { diaSemana, horaInicio, horaFin };
 
     if (token) {
-      this.endpointsService.actualizarTurno(this.turnoId, turnoActualizado, token).subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Actualizado',
-            text: 'El turno ha sido actualizado',
-            icon: 'success',
-          }).then(() => {
-            this.router.navigate(['/listado-turnos']);
-          });
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la actualización',
-            text: 'No hemos podido actualizar el turno',
-            icon: 'error',
-          });
-        },
-      });
+      this.endpointsService
+        .actualizarTurno(this.turnoId, turnoActualizado, token)
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Actualizado',
+              text: 'El turno ha sido actualizado',
+              icon: 'success',
+            }).then(() => {
+              this.router.navigate(['/turnosListar']);
+            });
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la actualización',
+              text: 'No hemos podido actualizar el turno',
+              icon: 'error',
+            });
+          },
+        });
     }
+  }
+
+  volver() {
+    this.location.back();
+  }
+
+  horasValidas(group: AbstractControl): ValidationErrors | null {
+    const horaInicio = group.get('horaInicio')?.value;
+    const horaFin = group.get('horaFin')?.value;
+
+    if (horaInicio && horaFin && horaInicio >= horaFin) {
+      return { horasInvalidas: true };
+    }
+    return null;
   }
 }

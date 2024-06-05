@@ -26,7 +26,10 @@ export class ListadoTurnosComponent implements OnInit {
   ];
   grupos: GrupoDTO[] = [];
 
-  constructor(private endpointsService: EndpointsService, private router: Router) {}
+  constructor(
+    private endpointsService: EndpointsService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {

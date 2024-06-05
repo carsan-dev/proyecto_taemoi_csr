@@ -42,6 +42,39 @@
 					"response": []
 				},
 				{
+					"name": "Listar Grupos de Alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvUHJ1ZWJhQGdtYWlsLmNvbSIsImlhdCI6MTcxNjM5Nzk2MiwiZXhwIjoxNzE2NDMzOTYyfQ.0Tm6dTQjWw0ecTrDSPsAHSGRZ-Pq8x2-ukLLWQVdhOw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/2/grupos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"2",
+								"grupos"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite listar todos los alumnos registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los alumnos.\n- **404 Not Found** - Si no se encuentra ningún alumno.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
 					"name": "Listar Alumno Por Id",
 					"request": {
 						"auth": {
@@ -127,7 +160,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
 									"type": "string"
 								}
 							]
@@ -184,6 +217,37 @@
 				},
 				{
 					"name": "Login user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"usuarioPrueba@gmail.com\",\r\n    \"contrasena\": \"12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite a un usuario iniciar sesión en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signin`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener las credenciales de inicio de sesión en formato JSON.\n\n- `username` (requerido): Nombre de usuario del usuario.\n    \n- `password` (requerido): Contraseña del usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el inicio de sesión es exitoso. Se devuelve el token de autenticación.\n    \n- **401 Unauthorized** - Si las credenciales de inicio de sesión son inválidas."
+					},
+					"response": []
+				},
+				{
+					"name": "Login manager",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -361,7 +425,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvUHJ1ZWJhQGdtYWlsLmNvbSIsImlhdCI6MTcxNjQ1Mjk5NCwiZXhwIjoxNzE2NDg4OTk0fQ.iC3M0dK8UPDnrVUcgDkfqXt2iQnSKugLB1CO1DI_2tk",
 									"type": "string"
 								}
 							]
@@ -369,7 +433,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/api/alumnos/18/grupos",
+							"raw": "http://localhost:8080/api/alumnos/1/grupos",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -378,7 +442,7 @@
 							"path": [
 								"api",
 								"alumnos",
-								"18",
+								"1",
 								"grupos"
 							]
 						}
@@ -983,7 +1047,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYyMjE3MjMsImV4cCI6MTcxNjI1NzcyM30.kjBS0MYkTzCHf9dyzzUZL5KdMDEk1UZnTdXBDPayDns",
 									"type": "string"
 								}
 							]
@@ -991,7 +1055,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/api/grupos/2",
+							"raw": "http://localhost:8080/api/grupos/6",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1000,7 +1064,7 @@
 							"path": [
 								"api",
 								"grupos",
-								"2"
+								"6"
 							]
 						}
 					},
@@ -1033,6 +1097,183 @@
 								"grupos",
 								"2",
 								"turnos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Eventos",
+			"item": [
+				{
+					"name": "Añadir evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "nuevo",
+									"value": "{\n  \"titulo\": \"Título del Evento\",\n  \"descripcion\": \"Descripción del Evento\"\n}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1ef1c662-b7bc-4bb0-b189-f01f8be53870"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/crear",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"crear"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Editar evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "eventoEditado",
+									"value": "{\n  \"titulo\": \"Título del Evento23\",\n  \"descripcion\": \"Descripción del Evento\"\n}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener evento por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener todos los eventos",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos"
 							]
 						}
 					},
@@ -1091,7 +1332,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY0NTQzMjcsImV4cCI6MTcxNjQ5MDMyN30.EPVfS4JyZ0FV-uM0uQeOMMd7wd2mQAKp6rbEpBF2J90",
 									"type": "string"
 								}
 							]
@@ -1100,7 +1341,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"diaSemana\": \"Jueves\",\r\n    \"horaInicio\": \"19:00\",\r\n    \"horaFin\": \"20:00\"\r\n}",
+							"raw": "{\r\n    \"diaSemana\": \"Miércoles\",\r\n    \"horaInicio\": \"23:00\",\r\n    \"horaFin\": \"23:00\",\r\n    \"grupoId\": 1\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1211,7 +1452,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMTUyMjUsImV4cCI6MTcxNjM1MTIyNX0.gAC1cihs-FSvKbe5mNXwj4MWUVXtxeots5_ABReR9Jk",
 									"type": "string"
 								}
 							]
@@ -1370,7 +1611,37 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMDY0NTEsImV4cCI6MTcxNjM0MjQ1MX0.ol3zC0O-M7xXdsqWvfR2bxGA37vrhQ0WouhAzElrWSk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/turnos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"turnos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener todos los turnos DTO",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMDY0NTEsImV4cCI6MTcxNjM0MjQ1MX0.ol3zC0O-M7xXdsqWvfR2bxGA37vrhQ0WouhAzElrWSk",
 									"type": "string"
 								}
 							]

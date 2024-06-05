@@ -10,5 +10,7 @@ import com.taemoi.project.entidades.Turno;
  */
 @Repository
 public interface TurnoRepository extends JpaRepository<Turno, Long> {
+    boolean existsByDiaSemana(String diaSemana);
 
+	boolean existsByDiaSemanaAndHoraInicioAndHoraFin(String dia, String horaInicio, String horaFin);
 }
