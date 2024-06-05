@@ -5,21 +5,35 @@
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
     <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()">
-      <div class="mb-3">
-        <label for="diaSemana" class="form-label">Día de la Semana</label>
-        <select id="diaSemana" formControlName="diaSemana" class="form-select">
+      <div class="form-group form-floating mb-3">
+        <select id="diaSemana" formControlName="diaSemana" class="form-select form-control">
           <option *ngFor="let dia of diasSemana" [value]="dia">{{ dia }}</option>
         </select>
+        <label for="diaSemana" class="form-label">Día de la Semana</label>
+        <div *ngIf="turnoForm.get('diaSemana')?.invalid && (turnoForm.get('diaSemana')?.dirty || turnoForm.get('diaSemana')?.touched)">
+          <small class="text-danger" *ngIf="turnoForm.get('diaSemana')?.errors?.['required']">El día de la semana no puede estar en blanco</small>
+        </div>
       </div>
-      <div class="mb-3">
-        <label for="horaInicio" class="form-label">Hora de Inicio</label>
+      <div class="form-group form-floating mb-3">
         <input type="time" id="horaInicio" formControlName="horaInicio" class="form-control" />
+        <label for="horaInicio" class="form-label">Hora de Inicio</label>
+        <div *ngIf="turnoForm.get('horaInicio')?.invalid && (turnoForm.get('horaInicio')?.dirty || turnoForm.get('horaInicio')?.touched)">
+          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['required']">La hora de inicio no puede estar en blanco</small>
+          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['pattern']">La hora de inicio debe estar en formato HH:mm</small>
+        </div>
       </div>
-      <div class="mb-3">
-        <label for="horaFin" class="form-label">Hora de Fin</label>
+      <div class="form-group form-floating">
         <input type="time" id="horaFin" formControlName="horaFin" class="form-control" />
+        <label for="horaFin" class="form-label">Hora de Fin</label>
+        <div *ngIf="turnoForm.get('horaFin')?.invalid && (turnoForm.get('horaFin')?.dirty || turnoForm.get('horaFin')?.touched)">
+          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['required']">La hora de fin no puede estar en blanco</small>
+          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['pattern']">La hora de fin debe estar en formato HH:mm</small>
+        </div>
       </div>
-      <div class="text-center">
+      <div *ngIf="turnoForm.errors?.['horasInvalidas']" class="text-danger pb-3">
+        La hora de inicio no puede ser mayor o igual a la hora de fin.
+      </div>
+      <div class="text-center mt-3">
         <button type="submit" class="btn btn-primary" [disabled]="turnoForm.invalid">Actualizar</button>
       </div>
     </form>
