@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 @Component({
   selector: 'app-turnos-grupo',
@@ -17,7 +17,8 @@ export class TurnosGrupoComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -121,7 +122,7 @@ export class TurnosGrupoComponent implements OnInit {
           },
           error: (error) => {
             if (error.status === 404) {
-              this.turnos = []; // Asegura que la lista de turnos esté vacía
+              this.turnos = [];
               Swal.fire({
                 title: 'Advertencia',
                 text: 'No quedan más turnos en el grupo.',
@@ -137,5 +138,9 @@ export class TurnosGrupoComponent implements OnInit {
           },
         });
     }
+  }
+
+  volver() {
+    this.location.back();
   }
 }

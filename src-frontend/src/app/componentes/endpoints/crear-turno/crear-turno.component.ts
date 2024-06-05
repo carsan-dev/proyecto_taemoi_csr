@@ -2,7 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
@@ -10,7 +18,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './crear-turno.component.html',
-  styleUrl: './crear-turno.component.scss'
+  styleUrl: './crear-turno.component.scss',
 })
 export class CrearTurnoComponent implements OnInit {
   turnoForm!: FormGroup;
@@ -20,7 +28,7 @@ export class CrearTurnoComponent implements OnInit {
     private fb: FormBuilder,
     private endpointsService: EndpointsService,
     private router: Router
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -30,11 +38,23 @@ export class CrearTurnoComponent implements OnInit {
   initForm(): void {
     this.turnoForm = this.fb.group({
       diaSemana: ['', Validators.required],
-      horaInicio: ['', Validators.required],
-      horaFin: ['', Validators.required],
+      horaInicio: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+      horaFin: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
       asignarGrupo: [false],
-      grupoId: ['']
-    });
+      grupoId: [''],
+    }, { validators: this.horasValidas });
   }
 
   obtenerGrupos(): void {
@@ -71,7 +91,7 @@ export class CrearTurnoComponent implements OnInit {
             text: 'Has creado un nuevo turno!',
             icon: 'success',
           });
-          this.router.navigate(['/listado-turnos']);
+          this.router.navigate(['/turnosListar']);
         },
         error: (error) => {
           Swal.fire({
@@ -80,8 +100,18 @@ export class CrearTurnoComponent implements OnInit {
             icon: 'error',
           });
         },
-        complete: () => { },
+        complete: () => {},
       });
     }
+  }
+
+  horasValidas(group: AbstractControl): ValidationErrors | null {
+    const horaInicio = group.get('horaInicio')?.value;
+    const horaFin = group.get('horaFin')?.value;
+
+    if (horaInicio && horaFin && horaInicio >= horaFin) {
+      return { horasInvalidas: true };
+    }
+    return null;
   }
 }

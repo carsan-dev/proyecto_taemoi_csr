@@ -1,1 +1,17 @@
-<p>horarios works!</p>
+<div class="planner-container p-3 mb-5 row text-center">
+  <h2 class="title fs-1 fw-bold">Horarios disponibles</h2>
+  <p class="subtitle">¡Ven con nosotros y disfruta!</p>
+  <div class="planner-grid mt-3">
+    <div *ngFor="let dia of diasSemana" class="planner-day border border-1 p-4">
+      <h3 class="day-title fs-4 mb-2 position-relative">{{ dia }}</h3>
+      <div class="turnos-list">
+        <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item">
+          <span class="hora">De {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
+        </div>
+        <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos">
+          No hay turnos
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

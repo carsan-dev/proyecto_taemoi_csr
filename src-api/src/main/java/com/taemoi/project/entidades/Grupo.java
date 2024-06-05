@@ -1,5 +1,6 @@
 package com.taemoi.project.entidades;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -14,6 +15,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 public class Grupo {
@@ -23,6 +25,7 @@ public class Grupo {
 	private Long id;
 	
 	@NotBlank(message = "El nombre no puede estar en blanco")
+    @Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
 	private String nombre;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -32,7 +35,7 @@ public class Grupo {
         inverseJoinColumns = @JoinColumn(name = "alumno_id")
     )
     @JsonBackReference
-    private List<Alumno> alumnos;
+    private List<Alumno> alumnos = new ArrayList<>();
     
     @OneToMany(mappedBy = "grupo")
     @JsonBackReference

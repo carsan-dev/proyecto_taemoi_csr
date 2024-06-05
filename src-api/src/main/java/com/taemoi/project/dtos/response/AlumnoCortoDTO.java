@@ -3,13 +3,13 @@ package com.taemoi.project.dtos.response;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Imagen;
 
-public class AlumnoParaGrupoDTO {
+public class AlumnoCortoDTO {
 	private Long id;
     private String nombre;
     private String apellidos;
 	private Imagen fotoAlumno;
 	
-	public AlumnoParaGrupoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno) {
+	public AlumnoCortoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno) {
 		super();
 		this.id = id;
 		this.nombre = nombre;
@@ -49,11 +49,11 @@ public class AlumnoParaGrupoDTO {
 		this.fotoAlumno = fotoAlumno;
 	}
 	
-	public static AlumnoParaGrupoDTO deAlumno(Alumno alumno) {
+	public static AlumnoCortoDTO deAlumno(Alumno alumno) {
 	    if (alumno == null) {
 	        return null;
 	    }
 
-	    return new AlumnoParaGrupoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
+	    return new AlumnoCortoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
 	}
 }

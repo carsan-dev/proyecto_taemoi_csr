@@ -10,5 +10,5 @@ import com.taemoi.project.entidades.Grupo;
  */
 @Repository
 public interface GrupoRepository extends JpaRepository<Grupo, Long> {
-
+    Grupo findByNombre(String nombre);
 }

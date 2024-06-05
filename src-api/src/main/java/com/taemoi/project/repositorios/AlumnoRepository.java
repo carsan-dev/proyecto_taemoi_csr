@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -16,7 +18,7 @@ import com.taemoi.project.entidades.Alumno;
  * y consulta relacionadas con los alumnos en la base de datos.
  */
 @Repository
-public interface AlumnoRepository extends JpaRepository<Alumno, Long> {
+public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno> {
 
     /**
      * Guarda un objeto AlumnoDTO en la base de datos.
@@ -164,4 +166,9 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long> {
      */
 	List<Alumno> findByNombreContainingIgnoreCaseAndGradoIdAndCategoriaId(String nombre, Long gradoId,
 			Long categoriaId);
+	
+    boolean existsByEmail(String email);
+    
+    @Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
+    List<Alumno> findAlumnosSinGrupo();
 }

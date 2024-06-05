@@ -13,6 +13,10 @@
     height: 100%;
     transition: z-index 250ms;
 
+    p {
+      font-size: 20px;
+    }
+
     .slider-img {
       position: relative;
       left: 0;
@@ -70,9 +74,15 @@
   }
 }
 
-@media (max-width: 576px) {
-  .slider-container {
-    height: 55%;
-    width: 80%;
+@media (max-width: 1288px) {
+  p {
+    font-size: 16px !important;
   }
 }
+
+@media (max-width: 992px) {
+  p {
+    font-size: 14px !important;
+  }
+}
+

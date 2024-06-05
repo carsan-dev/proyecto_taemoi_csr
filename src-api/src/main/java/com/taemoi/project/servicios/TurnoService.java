@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.lang.NonNull;
 
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Turno;
 
 public interface TurnoService {
@@ -12,7 +13,7 @@ public interface TurnoService {
 	
 	Turno obtenerTurnoPorId(@NonNull Long turnoId);
 	
-	List<TurnoDTO> listarTurnosDTO();
+	List<TurnoCortoDTO> listarTurnosDTO();
 	
 	void crearTurnoSinGrupo(TurnoDTO turnoDTO);
 	

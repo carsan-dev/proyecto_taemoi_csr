@@ -1,0 +1,39 @@
+<div class="container-fluid py-5">
+  <div class="row">
+    <div class="col-md-12 mt-3">
+      <div class="card p-4">
+        <h2 class="text-center mb-4">Listado de Eventos</h2>
+        <div class="table-responsive">
+          <table class="table custom-table mt-4">
+            <thead>
+              <tr>
+                <th class="text-center">Foto</th>
+                <th class="text-center">Título</th>
+                <th class="text-center">Descripción</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let evento of eventos">
+                <td class="text-center">
+                  <div class="imagen-evento-container">
+                    <img class="imagen-evento"
+                      [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : 'assets/media/default.webp'"
+                      alt="Eventos disponibles">
+                  </div>
+                </td>
+                <td class="text-center">{{ evento.titulo }}</td>
+                <td class="text-center">{{ evento.descripcion }}</td>
+                <td class="text-center">
+                  <button class="btn btn-primary btn-sm me-1"
+                    [routerLink]="['/eventosEditar', evento.id]">Editar</button>
+                  <button class="btn btn-danger btn-sm" (click)="eliminarEvento(evento.id)">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

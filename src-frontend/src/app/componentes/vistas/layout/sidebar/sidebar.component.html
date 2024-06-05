@@ -1,9 +1,6 @@
 <div class="sidebar-container">
   <div class="d-flex justify-content-start p-2 sidebar-top-container">
-    <i
-      class="fs-2 text-white bi-list"
-      (click)="alternarVisibilidadSidebar()"
-    ></i>
+    <i class="fs-2 text-white bi-list" (click)="alternarVisibilidadSidebar()"></i>
   </div>
   <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
     <div class="user-container pb-3">
@@ -75,15 +72,32 @@
         <h2 class="h6 text-white fw-bold">HORARIOS</h2>
       </li>
       <li class="mx-4">
-        <a (click)="irARuta('/listado-turnos')" class="text-white d-flex align-items-center text-decoration-none">
+        <a (click)="irARuta('/turnosListar')" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-calendar2-week-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/listado-turnos']" routerLinkActive="active">Consultar turnos</span>
+          <span class="nav-link" [routerLink]="['/turnosListar']" routerLinkActive="active">Consultar turnos</span>
         </a>
       </li>
       <li class="mx-4">
-        <a (click)="irARuta('/crear-turno')" class="text-white d-flex align-items-center text-decoration-none">
+        <a (click)="irARuta('/turnosCrear')" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-calendar-plus-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/crear-turno']" routerLinkActive="active">Añadir turnos</span>
+          <span class="nav-link" [routerLink]="['/turnosCrear']" routerLinkActive="active">Añadir turnos</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="list-unstyled my-5">
+      <li class="mx-4">
+        <h2 class="h6 text-white fw-bold">EVENTOS</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/eventosListar')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-bookmark-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/eventosListar']" routerLinkActive="active">Consultar eventos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="irARuta('/eventosCrear')" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-bookmark-plus-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/eventosCrear']" routerLinkActive="active">Añadir eventos</span>
         </a>
       </li>
     </ul>

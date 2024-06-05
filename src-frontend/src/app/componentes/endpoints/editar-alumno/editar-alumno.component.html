@@ -1,27 +1,34 @@
-<div class="container-fluid pb-2">
+<div class="container-fluid pb-4">
   <div class="row">
     <div class="mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
-      <div class="row">
-        <div class="col-lg-4 offset-lg-8 col-md-6 offset-md-6 col-sm-12 text-end mb-4">
-          <img src="assets/media/LogoTaemoi.svg" alt="Foto de alumno" class="img-fluid rounded-circle">
+      <div *ngIf="!mostrarFormulario" class="py-5 w-100">
+        <div class="row my-3 d-flex justify-content-center">
+          <div class="col-md-6 col-lg-4">
+            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
+              (ngModelChange)="filtrarPorNombre()" />
+          </div>
         </div>
-      </div>
-      <div *ngIf="!mostrarFormulario" class="py-5">
-        <div>
-          <div *ngFor="let alumno of alumnos" class="d-flex justify-content-between flex-row align-items-center">
-            <button class="btn btn-primary mb-3" (click)="alternarFormulario(alumno)">
-              Mostrar menú de edición
-            </button>
-            <div class="imagen-perfil-container mb-3">
-              <img class="imagen-perfil"
-                [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
-                alt="Perfil del alumno">
+        <div class="card-container">
+          <div *ngFor="let alumno of alumnos" class="card shadow-sm mb-4">
+            <div class="card-body d-flex flex-row justify-content-center align-items-center flex-wrap">
+              <div class="profile-info d-flex align-items-center mb-3">
+                <img class="imagen-perfil me-3"
+                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                  alt="Perfil del alumno">
+                <div>
+                  <h5 class="card-title">{{ alumno.nombre }} {{ alumno.apellidos }}</h5>
+                  <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
+                </div>
+              </div>
+              <button class="btn btn-primary" (click)="alternarFormulario(alumno)">
+                Mostrar menú de edición
+              </button>
             </div>
           </div>
         </div>
         <div class="row">
           <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
+            <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title">Información Personal</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
@@ -37,7 +44,7 @@
           </div>
 
           <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
+            <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title">Contacto</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
@@ -50,7 +57,7 @@
         </div>
         <div class="row">
           <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
+            <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title">Pagos</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
@@ -62,7 +69,7 @@
           </div>
 
           <div class="col-lg-6 col-md-12">
-            <div class="card">
+            <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title">Información adicional</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
@@ -75,137 +82,190 @@
             </div>
           </div>
         </div>
-        <app-paginacion
-        [paginaActual]="paginaActual"
-        [totalPaginas]="totalPaginas"
-        [tamanoPagina]="tamanoPagina"
-        (pageChange)="cambiarPagina($event)">
+        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+          (pageChange)="cambiarPagina($event)">
         </app-paginacion>
       </div>
-      <div *ngIf="mostrarFormulario" class="py-5">
-        <div *ngFor="let alumno of alumnos" class="d-flex justify-content-between flex-row align-items-end mt-5">
-          <button class="btn btn-primary mb-3" (click)="actualizarAlumno(alumno.id); alternarFormulario(alumno)">
-            Confirmar cambios
-          </button>
-          <div class="image-container d-flex align-items-center text-center flex-column">
+      <div *ngIf="mostrarFormulario" class="py-5 w-100">
+        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)">
+          <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
             <img class="imagen-perfil"
-              [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+              [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp')"
               alt="Perfil del alumno">
-            <div class="d-flex flex-row align-items-center">
+            <div class="d-flex flex-row align-items-center mt-3">
               <label for="inputFile" class="add-icon pe-2">
                 <i class="bi bi-plus-circle-fill text-black fs-2"></i>
                 <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
               </label>
-              <label class="remove-icon ps-2" *ngIf="alumno.fotoAlumno" (click)="eliminarFoto(alumno.id)">
+              <div class="remove-icon ps-2" *ngIf="alumno.fotoAlumno" (click)="eliminarFoto(alumno.id)">
                 <i class="bi bi-dash-circle-fill text-black fs-2"></i>
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Información Personal</h5>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="nombre" class="form-label">Nombre: </label>
-                    <input type="text" id="nombre" class="form-control" [(ngModel)]="alumnoEditado.nombre"
-                      name="nombre">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="apellidos" class="form-label">Apellidos: </label>
-                    <input type="text" id="apellidos" class="form-control" [(ngModel)]="alumnoEditado.apellidos"
-                      name="apellidos">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="direccion" class="form-label">Dirección: </label>
-                    <input type="text" id="direccion" class="form-control" [(ngModel)]="alumnoEditado.direccion"
-                      name="direccion">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento: </label>
-                    <input type="date" id="fechaNacimiento" class="form-control"
-                      [(ngModel)]="alumnoEditado.fechaNacimiento" name="fechaNacimiento">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="numeroExpediente" class="form-label">Número de expediente: </label>
-                    <input type="number" id="numeroExpediente" class="form-control"
-                      [(ngModel)]="alumnoEditado.numeroExpediente" name="numeroExpediente">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="nif" class="form-label">DNI del alumno: </label>
-                    <input type="text" id="nif" class="form-control" [(ngModel)]="alumnoEditado.nif" name="nif">
-                  </li>
-                </ul>
               </div>
             </div>
           </div>
-
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Contacto</h5>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="email" class="form-label">Email: </label>
-                    <input type="email" id="email" class="form-control" [(ngModel)]="alumnoEditado.email" name="email">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="telefono" class="form-label">Teléfono: </label>
-                    <input type="number" id="telefono" class="form-control" [(ngModel)]="alumnoEditado.telefono"
-                      name="telefono">
-                  </li>
-                </ul>
+          <div class="row">
+            <div class="col-lg-6 col-md-12 mb-4">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Información Personal</h5>
+                  <div class="form-group form-floating mb-3">
+                    <input type="text" id="nombre" class="form-control" formControlName="nombre" required placeholder="Nombre">
+                    <label for="nombre">Nombre</label>
+                    <div
+                      *ngIf="alumnoForm.get('nombre')?.errors && (alumnoForm.get('nombre')?.dirty || alumnoForm.get('nombre')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('nombre')?.errors?.['required']">Nombre es requerido</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos" required placeholder="Apellidos">
+                    <label for="apellidos">Apellidos</label>
+                    <div
+                      *ngIf="alumnoForm.get('apellidos')?.errors && (alumnoForm.get('apellidos')?.dirty || alumnoForm.get('apellidos')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('apellidos')?.errors?.['required']">Apellidos son requeridos</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="text" id="direccion" class="form-control" formControlName="direccion" required placeholder="Dirección">
+                    <label for="direccion">Dirección</label>
+                    <div
+                      *ngIf="alumnoForm.get('direccion')?.errors && (alumnoForm.get('direccion')?.dirty || alumnoForm.get('direccion')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('direccion')?.errors?.['required']">Dirección es requerida</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
+                    <label for="fechaNacimiento">Fecha de nacimiento</label>
+                    <div
+                      *ngIf="alumnoForm.get('fechaNacimiento')?.errors && (alumnoForm.get('fechaNacimiento')?.dirty || alumnoForm.get('fechaNacimiento')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento es
+                        requerida</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="number" id="numeroExpediente" class="form-control" formControlName="numeroExpediente" required placeholder="Número de expediente">
+                    <label for="numeroExpediente">Número de expediente</label>
+                    <div
+                      *ngIf="alumnoForm.get('numeroExpediente')?.errors && (alumnoForm.get('numeroExpediente')?.dirty || alumnoForm.get('numeroExpediente')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['required']">Número de expediente es
+                        requerido</small>
+                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['pattern']">Número de expediente debe ser
+                        un número válido</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="text" id="nif" class="form-control" formControlName="nif" required placeholder="DNI del alumno">
+                    <label for="nif">DNI del alumno</label>
+                    <div
+                      *ngIf="alumnoForm.get('nif')?.errors && (alumnoForm.get('nif')?.dirty || alumnoForm.get('nif')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</small>
+                      <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
+                        y una letra)</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6 col-md-12 mb-4">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Contacto</h5>
+                  <div class="form-group form-floating mb-3">
+                    <input type="email" id="email" class="form-control" formControlName="email" required placeholder="Email">
+                    <label for="email">Email</label>
+                    <div
+                      *ngIf="alumnoForm.get('email')?.errors && (alumnoForm.get('email')?.dirty || alumnoForm.get('email')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('email')?.errors?.['required']">Email es requerido</small>
+                      <small *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email válido</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="tel" id="telefono" class="form-control" formControlName="telefono" required placeholder="Teléfono">
+                    <label for="telefono">Teléfono</label>
+                    <div
+                      *ngIf="alumnoForm.get('telefono')?.errors && (alumnoForm.get('telefono')?.dirty || alumnoForm.get('telefono')?.touched)"
+                      class="text-danger d-flex flex-column">
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['required']">Teléfono es requerido</small>
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono válido
+                      </small>
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['maxlength']">No debe tener más de 9 caracteres
+                      </small>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Pagos</h5>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="tipoTarifa" class="form-label">Tipo de tarifa: </label>
-                    <select class="form-control" id="tipoTarifa" name="tipoTarifa"
-                      [(ngModel)]="alumnoEditado.tipoTarifa" required>
+          <div class="row">
+            <div class="col-lg-6 col-md-12 mb-4">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Pagos</h5>
+                  <div class="form-group form-floating mb-3">
+                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de tarifa">
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
                     </select>
-                  </li>
-                </ul>
+                    <label for="tipoTarifa">Tipo de tarifa:</label>
+                    <div
+                      *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</small>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Información adicional</h5>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="fechaAlta" class="form-label">Fecha de alta: </label>
-                    <input type="date" id="fechaAlta" class="form-control" [(ngModel)]="alumnoEditado.fechaAlta"
-                      name="fechaAlta">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="fechaBaja" class="form-label">Fecha de baja: </label>
-                    <input type="date" id="fechaBaja" class="form-control" [(ngModel)]="alumnoEditado.fechaBaja"
-                      name="fechaBaja">
-                  </li>
-                  <li class="list-group-item d-flex flex-row justify-content-between align-items-center">
-                    <label for="grado" class="form-label">Grado: </label>
-                    <select class="form-control" id="grado" name="grado" [(ngModel)]="alumnoEditado.grado" required>
+            <div class="col-lg-6 col-md-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Información adicional</h5>
+                  <div class="form-group form-floating mb-3">
+                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta" required placeholder="Fecha de alta">
+                    <label for="fechaAlta">Fecha de alta</label>
+                    <div
+                      *ngIf="alumnoForm.get('fechaAlta')?.errors && (alumnoForm.get('fechaAlta')?.dirty || alumnoForm.get('fechaAlta')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es requerida</small>
+                    </div>
+                    <small *ngIf="alumnoForm.errors?.['fechaAltaAnteriorAFechaNacimiento']" class="text-danger">
+                      Fecha de alta debe ser posterior a la fecha de nacimiento.
+                    </small>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja" placeholder="Fecha de baja">
+                    <label for="fechaBaja">Fecha de baja</label>
+                    <div
+                      *ngIf="alumnoForm.get('fechaBaja')?.errors && (alumnoForm.get('fechaBaja')?.dirty || alumnoForm.get('fechaBaja')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior a
+                        la fecha de alta</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating">
+                    <select class="form-control form-select" id="grado" formControlName="grado" required placeholder="Grado">
                       <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
                     </select>
-                  </li>
-                </ul>
+                    <label for="grado">Grado</label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+          <div class="d-flex justify-content-around flex-row align-items-end mt-5">
+            <button type="submit" class="btn btn-success mb-3 me-3" [disabled]="alumnoForm.invalid">
+              Confirmar cambios
+            </button>
+            <button type="button" class="btn btn-secondary mb-3 ms-3"
+              (click)="alternarFormulario(alumnoEditado)">Volver</button>
+          </div>
+        </form>
       </div>
+
     </div>
   </div>
 </div>

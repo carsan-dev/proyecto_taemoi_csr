@@ -1,7 +1,14 @@
 <div class="container-fluid p-0">
   <div class="row">
-    <div class="admin-container d-flex justify-content-center align-items-center">
-      <p class="text-white">¡BIENVENIDO, {{ nombreUsuario }}!</p>
+    <div class="admin-container d-flex flex-column justify-content-center align-items-center text-center">
+      <h1 class="text-white mb-4">¡BIENVENIDO, {{ nombreUsuario }}!</h1>
+      <p class="text-white lead mb-5">Estamos felices de tenerte de vuelta</p>
+      <div class="admin-actions d-flex justify-content-center flex-wrap">
+        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/alumnosListar']">Gestionar Alumnos</button>
+        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/gruposListar']">Gestionar Grupos</button>
+        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/turnosListar']">Gestionar Turnos</button>
+        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/eventosListar']">Gestionar Eventos</button>
+      </div>
     </div>
   </div>
 </div>

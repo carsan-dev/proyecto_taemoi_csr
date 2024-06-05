@@ -3,13 +3,12 @@ package com.taemoi.project.configuracion;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -33,147 +32,107 @@ import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
-import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 
 /**
- * Componente encargado de inicializar datos en la base de datos al arrancar la aplicación.
+ * Componente encargado de inicializar datos en la base de datos al arrancar la
+ * aplicación.
  */
 @Component
 public class InicializadorDatos implements CommandLineRunner {
 
 	/**
-     * Inyección del repositorio de alumno.
-     */
+	 * Inyección del repositorio de alumno.
+	 */
 	@Autowired
 	private AlumnoRepository alumnoRepository;
 
 	/**
-     * Inyección del repositorio de usuario.
-     */
+	 * Inyección del repositorio de usuario.
+	 */
 	@Autowired
 	private UsuarioRepository usuarioRepository;
 
 	/**
-     * Inyección del repositorio de categoría.
-     */
+	 * Inyección del repositorio de categoría.
+	 */
 	@Autowired
 	private CategoriaRepository categoriaRepository;
 
 	/**
-     * Inyección del repositorio de grado.
-     */
+	 * Inyección del repositorio de grado.
+	 */
 	@Autowired
 	private GradoRepository gradoRepository;
-	
-	/**
-     * Inyección del repositorio de grupo.
-     */
-	@Autowired
-	private GrupoRepository grupoRepository;
-	
-	@Autowired
-	private TurnoRepository turnoRepository;
-	
-	/**
-     * Inyección del servicio de grupo.
-     */
-	@Autowired
-	private GrupoService grupoService;
-	
-	/**
-     * Inyección del servicio de alumno.
-     */
-	@Autowired
-	private AlumnoService alumnoService;
 
 	/**
-     * Inyección del codificador de contraseñas.
-     */
+	 * Inyección del repositorio de grupo.
+	 */
+	@Autowired
+	private GrupoRepository grupoRepository;
+
+	@Autowired
+	private TurnoRepository turnoRepository;
+
+	/**
+	 * Inyección del servicio de grupo.
+	 */
+	@Autowired
+	private GrupoService grupoService;
+
+	/**
+	 * Inyección del codificador de contraseñas.
+	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	/**
-	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la base de datos.
+	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la
+	 * base de datos.
 	 *
 	 * @param args Argumentos de la línea de comandos.
 	 * @throws Exception Si ocurre un error durante la inicialización de datos.
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public void run(String... args) throws Exception {
-		boolean borrarAlumnos = true;
-		if (borrarAlumnos) {
-			alumnoRepository.deleteAll();
-		}
-
 		generarGrados();
+		generarUsuarios();
+		generarCategorias();
 
-		try {
-			if (usuarioRepository.findByEmail("moiskimdotaekwondo@gmail.com").isEmpty()) {
-				Usuario moiskimdo = new Usuario();
-				moiskimdo.setNombre("Moiskimdo");
-				moiskimdo.setApellidos("Taekwondo");
-				moiskimdo.setEmail("moiskimdotaekwondo@gmail.com");
-				moiskimdo.setContrasena(passwordEncoder.encode("09012013"));
-				moiskimdo.getRoles().add(Roles.ROLE_MANAGER);
-				usuarioRepository.save(moiskimdo);
-			}
-
-			if (usuarioRepository.findByEmail("crolyx16@gmail.com").isEmpty()) {
-				Usuario admin = new Usuario();
-				admin.setNombre("Carlos");
-				admin.setApellidos("Sanchez Roman");
-				admin.setEmail("crolyx16@gmail.com");
-				admin.setContrasena(passwordEncoder.encode("17022003"));
-				admin.getRoles().add(Roles.ROLE_ADMIN);
-				usuarioRepository.save(admin);
-			}
-			
-			if (usuarioRepository.findByEmail("usuarioPrueba@gmail.com").isEmpty()) {
-				Usuario prueba = new Usuario();
-				prueba.setNombre("Prueba");
-				prueba.setApellidos("Standard User");
-				prueba.setEmail("usuarioPrueba@gmail.com");
-				prueba.setContrasena(passwordEncoder.encode("12345678"));
-				prueba.getRoles().add(Roles.ROLE_USER);
-				usuarioRepository.save(prueba);
-			}
-		} catch (Exception e) {
-
+		if (alumnoRepository.count() == 0) {
+			generarAlumnos();
 		}
 
-		Faker faker = new Faker(new Locale("es"));
-
-		for (TipoCategoria tipoCategoria : TipoCategoria.values()) {
-			Categoria categoriaExistente = categoriaRepository.findByNombre(tipoCategoria.getNombre());
-			if (categoriaExistente == null) {
-				Categoria categoria = new Categoria();
-				categoria.setNombre(tipoCategoria.getNombre());
-				categoriaRepository.save(categoria);
-			}
-		}
-
-	    List<Alumno> alumnos = new ArrayList<>();
-		for (int i = 0; i < 20; i++) {
-			Alumno alumno = generarAlumno(faker);
-	        alumnos.add(alumno);
-			alumnoRepository.save(alumno);
-		}
-		
-	    generarGrupos();
-	    generarTurnos();
-
-	    asignarAlumnosAGrupoAleatorio(alumnos);
+		generarGrupos();
+		asignarAlumnosAGrupoAleatorio();
+		generarTurnos();
 	}
 
-    /**
-     * Genera los grados si no existen en la base de datos.
-     */
+	private void generarUsuarios() {
+		crearUsuarioSiNoExiste("moiskimdotaekwondo@gmail.com", "Moiskimdo", "Taekwondo", "09012013",
+				Roles.ROLE_MANAGER);
+		crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "17022003", Roles.ROLE_ADMIN);
+		crearUsuarioSiNoExiste("usuarioPrueba@gmail.com", "Prueba", "Standard User", "12345678", Roles.ROLE_USER);
+	}
+
+	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {
+		if (usuarioRepository.findByEmail(email).isEmpty()) {
+			Usuario usuario = new Usuario();
+			usuario.setNombre(nombre);
+			usuario.setApellidos(apellidos);
+			usuario.setEmail(email);
+			usuario.setContrasena(passwordEncoder.encode(contrasena));
+			usuario.getRoles().add(rol);
+			usuarioRepository.save(usuario);
+		}
+	}
+
+	/**
+	 * Genera los grados si no existen en la base de datos.
+	 */
 	private void generarGrados() {
 		for (TipoGrado tipoGrado : TipoGrado.values()) {
-			Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGrado);
-			if (gradoExistente == null) {
+			if (!gradoRepository.existsByTipoGrado(tipoGrado)) {
 				Grado nuevoGrado = new Grado();
 				nuevoGrado.setTipoGrado(tipoGrado);
 				gradoRepository.save(nuevoGrado);
@@ -181,62 +140,92 @@ public class InicializadorDatos implements CommandLineRunner {
 		}
 	}
 
-    /**
-     * Genera un alumno aleatorio utilizando la biblioteca Faker y le crea y asigna un usuario.
-     *
-     * @param faker Objeto Faker para generar datos aleatorios.
-     * @return El alumno generado.
-     */
-	private Alumno generarAlumno(Faker faker) {
-	    Alumno alumno = new Alumno();
-	    alumno.setNombre(faker.name().firstName());
-	    alumno.setApellidos(faker.name().lastName());
-	    alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
-	    alumno.setFechaNacimiento(faker.date().birthday());
-	    alumno.setNif(faker.idNumber().valid());
-	    alumno.setDireccion(faker.address().fullAddress());
-	    alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
-	    alumno.setEmail(faker.internet().emailAddress());
-	    alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
-	    alumno.setFechaAlta(faker.date().birthday());
-	    alumno.setFechaBaja(faker.date().birthday());
-	    TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
-	    alumno.setTipoTarifa(tipoTarifa);
-
-	    double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
-	    alumno.setCuantiaTarifa(cuantiaTarifa);
-
-	    LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-	            .toLocalDate();
-	    int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
-
-	    alumno.setCategoria(asignarCategoriaSegunEdad(edad));
-
-	    alumno.setGrado(asignarGradoSegunEdad(edad));
-
-	    Usuario usuario = new Usuario();
-	    usuario.setNombre(alumno.getNombre());
-	    usuario.setApellidos(alumno.getApellidos());
-	    usuario.setEmail(alumno.getEmail());
-	    String contrasena = alumnoService.generarContrasena(alumno.getNombre(), alumno.getApellidos());
-	    usuario.setContrasena(passwordEncoder.encode(contrasena));
-	    Set<Roles> roles = new HashSet<>();
-	    roles.add(Roles.ROLE_USER);
-	    usuario.setRoles(roles);
-	    usuarioRepository.save(usuario);
-	    
-	    alumno.setUsuario(usuario);
-
-	    return alumno;
+	private void generarCategorias() {
+		for (TipoCategoria tipoCategoria : TipoCategoria.values()) {
+			if (!categoriaRepository.existsByNombre(tipoCategoria.getNombre())) {
+				Categoria categoria = new Categoria();
+				categoria.setNombre(tipoCategoria.getNombre());
+				categoriaRepository.save(categoria);
+			}
+		}
 	}
 
+	private void generarAlumnos() {
+		Faker faker = new Faker(new Locale("es"));
+		for (int i = 0; i < 20; i++) {
+			Alumno alumno = generarAlumno(faker);
+			if (!alumnoRepository.existsByEmail(alumno.getEmail())) {
+				alumnoRepository.save(alumno);
+				crearUsuarioParaAlumno(alumno);
+			}
+		}
+	}
 
-    /**
-     * Asigna la cuantía de la tarifa según el tipo de tarifa.
-     *
-     * @param tipoTarifa Tipo de tarifa.
-     * @return La cuantía de la tarifa asignada.
-     */
+	public void crearUsuarioParaAlumno(Alumno alumno) {
+		Usuario usuario = new Usuario();
+		usuario.setNombre(alumno.getNombre());
+		usuario.setApellidos(alumno.getApellidos());
+		usuario.setEmail(alumno.getEmail());
+		String nombreMinusculas = alumno.getNombre().toLowerCase().replaceAll("\\s", "");
+		String apellidosMinusculas = alumno.getApellidos().toLowerCase().replaceAll("\\s", "");
+		String nombreCompleto = nombreMinusculas + apellidosMinusculas;
+		String contrasenaCodificada = passwordEncoder.encode(nombreCompleto);
+		usuario.setContrasena(contrasenaCodificada);
+		usuario.getRoles().add(Roles.ROLE_USER);
+		usuario.setAlumno(alumno);
+		usuarioRepository.save(usuario);
+	}
+
+	/**
+	 * Genera un alumno aleatorio utilizando la biblioteca Faker y le crea y asigna
+	 * un usuario.
+	 *
+	 * @param faker Objeto Faker para generar datos aleatorios.
+	 * @return El alumno generado.
+	 */
+	private Alumno generarAlumno(Faker faker) {
+		Alumno alumno = new Alumno();
+		alumno.setNombre(faker.name().firstName());
+		alumno.setApellidos(faker.name().lastName());
+		alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
+		alumno.setFechaNacimiento(faker.date().birthday());
+		alumno.setNif(generarNif(faker));
+		alumno.setDireccion(faker.address().fullAddress());
+		alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
+		alumno.setEmail(faker.internet().emailAddress());
+		alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
+		alumno.setFechaAlta(faker.date().birthday());
+		alumno.setFechaBaja(null);
+		TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
+		alumno.setTipoTarifa(tipoTarifa);
+
+		double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
+		alumno.setCuantiaTarifa(cuantiaTarifa);
+
+		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
+				.toLocalDate();
+		int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
+
+		alumno.setCategoria(asignarCategoriaSegunEdad(edad));
+		alumno.setGrado(asignarGradoSegunEdad(edad));
+
+		return alumno;
+	}
+	
+    private String generarNif(Faker faker) {
+        String nif = faker.idNumber().valid();
+        if (nif.length() > 9) {
+            nif = nif.substring(0, 9);
+        }
+        return nif;
+    }
+
+	/**
+	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
+	 *
+	 * @param tipoTarifa Tipo de tarifa.
+	 * @return La cuantía de la tarifa asignada.
+	 */
 	private double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
 		switch (tipoTarifa) {
 		case ADULTO:
@@ -258,12 +247,12 @@ public class InicializadorDatos implements CommandLineRunner {
 		}
 	}
 
-    /**
-     * Asigna la categoría según la edad del alumno.
-     *
-     * @param edad Edad del alumno.
-     * @return La categoría asignada.
-     */
+	/**
+	 * Asigna la categoría según la edad del alumno.
+	 *
+	 * @param edad Edad del alumno.
+	 * @return La categoría asignada.
+	 */
 	private Categoria asignarCategoriaSegunEdad(int edad) {
 		TipoCategoria tipoCategoria;
 		if (edad >= 3 && edad <= 7) {
@@ -285,12 +274,12 @@ public class InicializadorDatos implements CommandLineRunner {
 		return categoriaRepository.findByNombre(tipoCategoria.getNombre());
 	}
 
-    /**
-     * Asigna el grado según la edad del alumno.
-     *
-     * @param edad Edad del alumno.
-     * @return El grado asignado.
-     */
+	/**
+	 * Asigna el grado según la edad del alumno.
+	 *
+	 * @param edad Edad del alumno.
+	 * @return El grado asignado.
+	 */
 	private Grado asignarGradoSegunEdad(int edad) {
 		List<TipoGrado> tiposGradoDisponibles;
 		if (edad > 15) {
@@ -312,41 +301,91 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * Genera los grupos si no existen en la base de datos.
 	 */
 	private void generarGrupos() {
-	    if (grupoRepository.count() == 0) {
-	        Grupo grupo1 = new Grupo();
-	        grupo1.setNombre("Grupo Lunes y Miércoles");
-	        grupoRepository.save(grupo1);
+		if (grupoRepository.count() == 0) {
+			Grupo grupo1 = new Grupo();
+			grupo1.setNombre("Grupo Lunes y Miércoles");
+			grupoRepository.save(grupo1);
 
-	        Grupo grupo2 = new Grupo();
-	        grupo2.setNombre("Grupo Martes y Jueves");
-	        grupoRepository.save(grupo2);
+			Grupo grupo2 = new Grupo();
+			grupo2.setNombre("Grupo Martes y Jueves");
+			grupoRepository.save(grupo2);
+		}
+	}
+
+	private void generarTurnos() {
+	    Map<String, List<String[]>> turnosPorDia = new HashMap<>();
+	    
+	    turnosPorDia.put("Lunes", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:30"}
+	    ));
+	    turnosPorDia.put("Martes", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:00"}
+	    ));
+	    turnosPorDia.put("Miércoles", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:30"}
+	    ));
+	    turnosPorDia.put("Jueves", Arrays.asList(
+	        new String[]{"17:00", "18:00"},
+	        new String[]{"18:00", "19:00"},
+	        new String[]{"19:00", "20:00"}
+	    ));
+	    
+	    Grupo grupoLunesMiercoles = grupoRepository.findByNombre("Grupo Lunes y Miércoles");
+	    Grupo grupoMartesJueves = grupoRepository.findByNombre("Grupo Martes y Jueves");
+	    
+	    for (Map.Entry<String, List<String[]>> entry : turnosPorDia.entrySet()) {
+	        String dia = entry.getKey();
+	        List<String[]> turnos = entry.getValue();
+	        
+	        Grupo grupo = null;
+	        if (dia.equals("Lunes") || dia.equals("Miércoles")) {
+	            grupo = grupoLunesMiercoles;
+	        } else if (dia.equals("Martes") || dia.equals("Jueves")) {
+	            grupo = grupoMartesJueves;
+	        }
+	        
+	        for (String[] horas : turnos) {
+	            String horaInicio = horas[0];
+	            String horaFin = horas[1];
+
+	            if (!turnoRepository.existsByDiaSemanaAndHoraInicioAndHoraFin(dia, horaInicio, horaFin)) {
+	                Turno turno = new Turno();
+	                turno.setDiaSemana(dia);
+	                turno.setHoraInicio(horaInicio);
+	                turno.setHoraFin(horaFin);
+	                turno.setGrupo(grupo);
+	                turnoRepository.save(turno);
+	            }
+	        }
 	    }
 	}
-	
-    private void generarTurnos() {
-        List<String> diasSemana = Arrays.asList("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo");
-        for (String dia : diasSemana) {
-            Turno turno = new Turno();
-            turno.setDiaSemana(dia);
-            turno.setHoraInicio("07:00");
-            turno.setHoraFin("08:00");
-            turnoRepository.save(turno);
-        }
-    }
-	
+
+
 	/**
 	 * Asigna todos los alumnos a un grupo aleatorio.
 	 *
 	 * @param alumnos Lista de alumnos.
 	 */
 	@SuppressWarnings("null")
-	private void asignarAlumnosAGrupoAleatorio(List<Alumno> alumnos) {
-	    List<Grupo> grupos = grupoRepository.findAll();
+	private void asignarAlumnosAGrupoAleatorio() {
+		List<Alumno> alumnosSinGrupo = alumnoRepository.findAlumnosSinGrupo();
+		List<Grupo> grupos = grupoRepository.findAll();
 
-	    Random random = new Random();
-	    for (Alumno alumno : alumnos) {
-	        Grupo grupoAleatorio = grupos.get(random.nextInt(grupos.size()));
-	        grupoService.agregarAlumnoAGrupo(grupoAleatorio.getId(), alumno.getId());
-	    }
+		if (grupos.isEmpty()) {
+			throw new IllegalStateException("No hay grupos disponibles.");
+		}
+
+		Random random = new Random();
+		for (Alumno alumno : alumnosSinGrupo) {
+			Grupo grupoAleatorio = grupos.get(random.nextInt(grupos.size()));
+			grupoService.agregarAlumnoAGrupo(grupoAleatorio.getId(), alumno.getId());
+		}
 	}
+
 }

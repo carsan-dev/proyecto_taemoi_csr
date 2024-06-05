@@ -1,0 +1,112 @@
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+.card {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 2.5rem !important;
+}
+
+.form-group label {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  pointer-events: none;
+  transition: 0.2s ease all;
+  padding: 0 5px;
+  height: 30px;
+  color: #8c8f92;
+}
+
+.form-group .form-control {
+  border-radius: 30px;
+  padding: 20px 20px 10px !important;
+  border: 1px solid #ced4da;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease;
+  width: 100%;
+}
+
+.form-group .form-control:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.form-group .form-control:focus ~ label,
+.form-group .form-control:not(:placeholder-shown) ~ label {
+  top: -5px;
+  left: 5px;
+  font-size: 0.85rem !important;
+  color: #007bff;
+  background-color: #fff;
+  height: 30px;
+}
+
+.form-group .form-control-little:focus ~ label,
+.form-group .form-control-little:not(:placeholder-shown) ~ label {
+  left: 15px !important;
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+input:-webkit-autofill:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+input:-webkit-autofill ~ label {
+  top: -5px;
+  left: 15px;
+  font-size: 0.85rem !important;
+  color: #007bff;
+  background-color: #fff;
+  height: 30px;
+}
+
+button.btn-secondary {
+  border-radius: 30px;
+  padding: 5px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+  }
+}
+
+button.btn-primary {
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+}
+
+@media (max-width: 992px) {
+  .text-danger {
+    font-size: 0.80rem !important;
+  }
+}
