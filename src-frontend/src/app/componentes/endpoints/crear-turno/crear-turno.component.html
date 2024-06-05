@@ -2,9 +2,8 @@
   <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4">Crear Turno</h2>
     <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4">
-      <div class="form-group mb-3">
-        <label for="diaSemana" class="form-label">Día de la semana:</label>
-        <select formControlName="diaSemana" id="diaSemana" class="form-select">
+      <div class="form-group form-floating mb-3">
+        <select formControlName="diaSemana" id="diaSemana" class="form-select form-control">
           <option value="" disabled selected>Selecciona un día...</option>
           <option value="Lunes">Lunes</option>
           <option value="Martes">Martes</option>
@@ -14,29 +13,53 @@
           <option value="Sábado">Sábado</option>
           <option value="Domingo">Domingo</option>
         </select>
+        <label for="diaSemana" class="form-label">Día de la semana:</label>
+        <div
+          *ngIf="turnoForm.get('diaSemana')?.invalid && turnoForm.get('diaSemana')?.touched">
+          <small class="text-danger" *ngIf="turnoForm.get('diaSemana')?.errors?.['required']">El día de la semana no
+            puede estar en blanco</small>
+        </div>
       </div>
 
-      <div class="form-group mb-3">
-        <label for="horaInicio" class="form-label">Hora de inicio:</label>
+      <div class="form-group form-floating mb-3">
         <input type="time" formControlName="horaInicio" id="horaInicio" class="form-control">
+        <label for="horaInicio" class="form-label">Hora de inicio:</label>
+        <div
+          *ngIf="turnoForm.get('horaInicio')?.invalid &&  turnoForm.get('horaInicio')?.touched">
+          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['required']">La hora de inicio no
+            puede estar en blanco</small>
+          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['pattern']">La hora de inicio debe
+            estar en formato HH:mm</small>
+        </div>
       </div>
 
-      <div class="form-group mb-3">
-        <label for="horaFin" class="form-label">Hora de fin:</label>
+      <div class="form-group form-floating">
         <input type="time" formControlName="horaFin" id="horaFin" class="form-control">
+        <label for="horaFin" class="form-label">Hora de fin:</label>
+        <div
+          *ngIf="turnoForm.get('horaFin')?.invalid && turnoForm.get('horaFin')?.touched">
+          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['required']">La hora de fin no puede
+            estar en blanco</small>
+          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['pattern']">La hora de fin debe estar en
+            formato HH:mm</small>
+        </div>
       </div>
 
-      <div class="form-check mb-3">
+      <div *ngIf="turnoForm.errors?.['horasInvalidas']" class="text-danger pb-3">
+        La hora de inicio no puede ser mayor o igual a la hora de fin.
+      </div>
+
+      <div class="form-check my-3">
         <input type="checkbox" class="form-check-input" id="asignarGrupo" formControlName="asignarGrupo">
         <label class="form-check-label" for="asignarGrupo">Asignar a un grupo</label>
       </div>
 
-      <div class="form-group mb-3" *ngIf="turnoForm.get('asignarGrupo')?.value">
-        <label for="grupo" class="form-label">Grupo:</label>
-        <select formControlName="grupoId" id="grupo" class="form-select">
+      <div class="form-group form-floating mb-3" *ngIf="turnoForm.get('asignarGrupo')?.value">
+        <select formControlName="grupoId" id="grupo" class="form-select form-control">
           <option value="" disabled selected>Selecciona un grupo...</option>
           <option *ngFor="let grupo of grupos" [value]="grupo.id">{{ grupo.nombre }}</option>
         </select>
+        <label for="grupo" class="form-label">Grupo:</label>
       </div>
 
       <div class="text-center">

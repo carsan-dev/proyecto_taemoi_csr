@@ -10,12 +10,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { GrupoDTO } from '../../../interfaces/grupo-dto';
 import Swal from 'sweetalert2';
-import { Location } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 @Component({
   selector: 'app-editar-grupo',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule],
   templateUrl: './editar-grupo.component.html',
   styleUrl: './editar-grupo.component.scss',
 })
@@ -31,7 +31,7 @@ export class EditarGrupoComponent implements OnInit {
     private location: Location
   ) {
     this.grupoForm = this.fb.group({
-      nombre: ['', Validators.required],
+      nombre: ['', [Validators.required, Validators.maxLength(50)]],
     });
   }
 

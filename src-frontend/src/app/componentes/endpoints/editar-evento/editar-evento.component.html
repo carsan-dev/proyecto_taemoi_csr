@@ -5,21 +5,25 @@
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
     <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()">
-      <div class="form-group mb-3">
+      <div class="form-group form-floating mb-3">
+        <input id="titulo" type="text" formControlName="titulo" class="form-control" required placeholder="Título"/>
         <label for="titulo" class="form-label">Título</label>
-        <input id="titulo" type="text" formControlName="titulo" class="form-control" />
-        <div *ngIf="eventoForm.controls['titulo'].invalid && eventoForm.controls['titulo'].touched"
-          class="text-danger mt-2">
-          <small>El título es requerido.</small>
+        <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched">
+          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no
+            puede estar en blanco.</small>
+          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no
+            puede contener más de 100 caracteres.</small>
         </div>
       </div>
 
-      <div class="form-group mb-3">
+      <div class="form-group form-floating mb-3">
+        <input id="descripcion" formControlName="descripcion" type="text" class="form-control" required placeholder="Descripción" />
         <label for="descripcion" class="form-label">Descripción</label>
-        <input id="descripcion" formControlName="descripcion" type="text" class="form-control" />
-        <div *ngIf="eventoForm.controls['descripcion'].invalid && eventoForm.controls['descripcion'].touched"
-          class="text-danger mt-2">
-          <small>La descripción es requerida.</small>
+        <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched">
+          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no
+            puede estar en blanco.</small>
+          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no
+            puede contener más de 500 caracteres.</small>
         </div>
       </div>
 

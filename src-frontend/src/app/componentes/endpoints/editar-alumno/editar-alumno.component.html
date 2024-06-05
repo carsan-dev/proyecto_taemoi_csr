@@ -108,63 +108,63 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Información Personal</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="nombre" class="form-control" formControlName="nombre">
-                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" class="form-control" formControlName="nombre" required placeholder="Nombre">
+                    <label for="nombre">Nombre</label>
                     <div
                       *ngIf="alumnoForm.get('nombre')?.errors && (alumnoForm.get('nombre')?.dirty || alumnoForm.get('nombre')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('nombre')?.errors?.['required']">Nombre es requerido</div>
+                      <small *ngIf="alumnoForm.get('nombre')?.errors?.['required']">Nombre es requerido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos">
-                    <label for="apellidos">Apellidos:</label>
+                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos" required placeholder="Apellidos">
+                    <label for="apellidos">Apellidos</label>
                     <div
                       *ngIf="alumnoForm.get('apellidos')?.errors && (alumnoForm.get('apellidos')?.dirty || alumnoForm.get('apellidos')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('apellidos')?.errors?.['required']">Apellidos son requeridos</div>
+                      <small *ngIf="alumnoForm.get('apellidos')?.errors?.['required']">Apellidos son requeridos</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="direccion" class="form-control" formControlName="direccion">
-                    <label for="direccion">Dirección:</label>
+                    <input type="text" id="direccion" class="form-control" formControlName="direccion" required placeholder="Dirección">
+                    <label for="direccion">Dirección</label>
                     <div
                       *ngIf="alumnoForm.get('direccion')?.errors && (alumnoForm.get('direccion')?.dirty || alumnoForm.get('direccion')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('direccion')?.errors?.['required']">Dirección es requerida</div>
+                      <small *ngIf="alumnoForm.get('direccion')?.errors?.['required']">Dirección es requerida</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento">
-                    <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
+                    <label for="fechaNacimiento">Fecha de nacimiento</label>
                     <div
                       *ngIf="alumnoForm.get('fechaNacimiento')?.errors && (alumnoForm.get('fechaNacimiento')?.dirty || alumnoForm.get('fechaNacimiento')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('fechaNacimiento')?.errors?.['required']">Fecha de Nacimiento es
-                        requerida</div>
+                      <small *ngIf="alumnoForm.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento es
+                        requerida</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="number" id="numeroExpediente" class="form-control" formControlName="numeroExpediente">
-                    <label for="numeroExpediente">Número de expediente:</label>
+                    <input type="number" id="numeroExpediente" class="form-control" formControlName="numeroExpediente" required placeholder="Número de expediente">
+                    <label for="numeroExpediente">Número de expediente</label>
                     <div
                       *ngIf="alumnoForm.get('numeroExpediente')?.errors && (alumnoForm.get('numeroExpediente')?.dirty || alumnoForm.get('numeroExpediente')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['required']">Número de expediente es
-                        requerido</div>
-                      <div *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['pattern']">Número de expediente debe ser
-                        un número válido</div>
+                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['required']">Número de expediente es
+                        requerido</small>
+                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['pattern']">Número de expediente debe ser
+                        un número válido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="nif" class="form-control" formControlName="nif">
-                    <label for="nif">DNI del alumno:</label>
+                    <input type="text" id="nif" class="form-control" formControlName="nif" required placeholder="DNI del alumno">
+                    <label for="nif">DNI del alumno</label>
                     <div
                       *ngIf="alumnoForm.get('nif')?.errors && (alumnoForm.get('nif')?.dirty || alumnoForm.get('nif')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</div>
-                      <div *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
-                        y una letra)</div>
+                      <small *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</small>
+                      <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
+                        y una letra)</small>
                     </div>
                   </div>
                 </div>
@@ -175,24 +175,26 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Contacto</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="email" id="email" class="form-control" formControlName="email">
-                    <label for="email">Email:</label>
+                    <input type="email" id="email" class="form-control" formControlName="email" required placeholder="Email">
+                    <label for="email">Email</label>
                     <div
                       *ngIf="alumnoForm.get('email')?.errors && (alumnoForm.get('email')?.dirty || alumnoForm.get('email')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('email')?.errors?.['required']">Email es requerido</div>
-                      <div *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email válido</div>
+                      <small *ngIf="alumnoForm.get('email')?.errors?.['required']">Email es requerido</small>
+                      <small *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email válido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="tel" id="telefono" class="form-control" formControlName="telefono">
-                    <label for="telefono">Teléfono:</label>
+                    <input type="tel" id="telefono" class="form-control" formControlName="telefono" required placeholder="Teléfono">
+                    <label for="telefono">Teléfono</label>
                     <div
                       *ngIf="alumnoForm.get('telefono')?.errors && (alumnoForm.get('telefono')?.dirty || alumnoForm.get('telefono')?.touched)"
-                      class="text-danger">
-                      <div *ngIf="alumnoForm.get('telefono')?.errors?.['required']">Teléfono es requerido</div>
-                      <div *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono válido
-                      </div>
+                      class="text-danger d-flex flex-column">
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['required']">Teléfono es requerido</small>
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono válido
+                      </small>
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['maxlength']">No debe tener más de 9 caracteres
+                      </small>
                     </div>
                   </div>
                 </div>
@@ -205,14 +207,14 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Pagos</h5>
                   <div class="form-group form-floating mb-3">
-                    <select class="form-control" id="tipoTarifa" formControlName="tipoTarifa" required>
+                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de tarifa">
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
                     </select>
                     <label for="tipoTarifa">Tipo de tarifa:</label>
                     <div
                       *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</div>
+                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</small>
                     </div>
                   </div>
                 </div>
@@ -223,32 +225,32 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Información adicional</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta">
-                    <label for="fechaAlta">Fecha de alta:</label>
+                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta" required placeholder="Fecha de alta">
+                    <label for="fechaAlta">Fecha de alta</label>
                     <div
                       *ngIf="alumnoForm.get('fechaAlta')?.errors && (alumnoForm.get('fechaAlta')?.dirty || alumnoForm.get('fechaAlta')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es requerida</div>
+                      <small *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es requerida</small>
                     </div>
-                    <div *ngIf="alumnoForm.errors?.['fechaAltaAnteriorAFechaNacimiento']" class="text-danger">
+                    <small *ngIf="alumnoForm.errors?.['fechaAltaAnteriorAFechaNacimiento']" class="text-danger">
                       Fecha de alta debe ser posterior a la fecha de nacimiento.
-                    </div>
+                    </small>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja">
-                    <label for="fechaBaja">Fecha de baja:</label>
+                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja" placeholder="Fecha de baja">
+                    <label for="fechaBaja">Fecha de baja</label>
                     <div
                       *ngIf="alumnoForm.get('fechaBaja')?.errors && (alumnoForm.get('fechaBaja')?.dirty || alumnoForm.get('fechaBaja')?.touched)"
                       class="text-danger">
-                      <div *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior a
-                        la fecha de alta</div>
+                      <small *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior a
+                        la fecha de alta</small>
                     </div>
                   </div>
-                  <div class="form-group form-floating mb-3">
-                    <select class="form-control" id="grado" formControlName="grado" required>
+                  <div class="form-group form-floating">
+                    <select class="form-control form-select" id="grado" formControlName="grado" required placeholder="Grado">
                       <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
                     </select>
-                    <label for="grado">Grado:</label>
+                    <label for="grado">Grado</label>
                   </div>
                 </div>
               </div>

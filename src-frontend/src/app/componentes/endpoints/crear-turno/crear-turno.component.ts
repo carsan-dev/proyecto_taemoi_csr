@@ -3,10 +3,12 @@ import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,11 +38,23 @@ export class CrearTurnoComponent implements OnInit {
   initForm(): void {
     this.turnoForm = this.fb.group({
       diaSemana: ['', Validators.required],
-      horaInicio: ['', Validators.required],
-      horaFin: ['', Validators.required],
+      horaInicio: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+      horaFin: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
       asignarGrupo: [false],
       grupoId: [''],
-    });
+    }, { validators: this.horasValidas });
   }
 
   obtenerGrupos(): void {
@@ -89,5 +103,15 @@ export class CrearTurnoComponent implements OnInit {
         complete: () => {},
       });
     }
+  }
+
+  horasValidas(group: AbstractControl): ValidationErrors | null {
+    const horaInicio = group.get('horaInicio')?.value;
+    const horaFin = group.get('horaFin')?.value;
+
+    if (horaInicio && horaFin && horaInicio >= horaFin) {
+      return { horasInvalidas: true };
+    }
+    return null;
   }
 }
