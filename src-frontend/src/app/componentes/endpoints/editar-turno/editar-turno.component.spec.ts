@@ -11,7 +11,7 @@ describe('EditarTurnoComponent', () => {
       imports: [EditarTurnoComponent]
     })
     .compileComponents();
-    
+
     fixture = TestBed.createComponent(EditarTurnoComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

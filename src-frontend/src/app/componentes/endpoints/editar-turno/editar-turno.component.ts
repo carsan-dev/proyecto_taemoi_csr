@@ -1,10 +1,12 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,7 +20,7 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
   templateUrl: './editar-turno.component.html',
   styleUrl: './editar-turno.component.scss',
 })
-export class ActualizarTurnoComponent implements OnInit {
+export class EditarTurnoComponent implements OnInit {
   turnoForm: FormGroup;
   diasSemana: string[] = [
     'Lunes',
@@ -40,9 +42,21 @@ export class ActualizarTurnoComponent implements OnInit {
   ) {
     this.turnoForm = this.fb.group({
       diaSemana: ['', Validators.required],
-      horaInicio: ['', Validators.required],
-      horaFin: ['', Validators.required],
-    });
+      horaInicio: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+      horaFin: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        ],
+      ],
+    }, { validators: this.horasValidas });
   }
 
   ngOnInit(): void {
@@ -106,5 +120,15 @@ export class ActualizarTurnoComponent implements OnInit {
 
   volver() {
     this.location.back();
+  }
+
+  horasValidas(group: AbstractControl): ValidationErrors | null {
+    const horaInicio = group.get('horaInicio')?.value;
+    const horaFin = group.get('horaFin')?.value;
+
+    if (horaInicio && horaFin && horaInicio >= horaFin) {
+      return { horasInvalidas: true };
+    }
+    return null;
   }
 }
