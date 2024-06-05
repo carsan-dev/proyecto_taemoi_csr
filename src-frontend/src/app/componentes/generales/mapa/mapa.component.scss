@@ -3,24 +3,17 @@
   height: 400px;
   backdrop-filter: blur(4px);
   margin: 0 auto;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 
   #map {
     height: 100%;
-    border-radius: 10px;
-  }
-}
-
-@media (max-width: 992px) {
-  .mapaContainer {
-    height: 300px;
   }
 }
 
 @media (max-width: 576px) {
   .mapaContainer {
-    height: 250px;
+    top: 5%;
+    right: 50%;
+    width: 80%;
+    height: 35%;
   }
 }
