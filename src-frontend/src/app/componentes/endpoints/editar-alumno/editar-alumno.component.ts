@@ -64,7 +64,7 @@ export class EditarAlumnoComponent implements OnInit {
           [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
         ],
         email: ['', [Validators.required, Validators.email]],
-        telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+        telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
         tipoTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],

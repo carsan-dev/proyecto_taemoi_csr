@@ -35,8 +35,8 @@ export class EditarEventoComponent implements OnInit {
     private location: Location
   ) {
     this.eventoForm = this.fb.group({
-      titulo: ['', Validators.required],
-      descripcion: ['', Validators.required],
+      titulo: ['', [Validators.required, Validators.maxLength(100)]],
+      descripcion: ['', [Validators.required, Validators.maxLength(500)]],
       fotoEvento: [null],
     });
   }

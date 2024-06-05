@@ -5,9 +5,13 @@
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
     <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()">
-      <div class="form-group mb-3">
+      <div class="form-group mb-3 form-floating">
+        <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre">
         <label for="nombre">Nombre</label>
-        <input type="text" id="nombre" formControlName="nombre" class="form-control">
+        <div *ngIf="grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched" class="text-danger">
+          <small *ngIf="grupoForm.get('nombre')?.errors?.['required']">Nombre del grupo es obligatorio.</small>
+          <small *ngIf="grupoForm.get('nombre')?.errors?.['maxlength']" class="text-danger">Nombre del grupo no puede superar los 50 caracteres.</small>
+        </div>
       </div>
       <div class="text-center">
         <button type="submit" class="btn btn-primary" [disabled]="grupoForm.invalid">Actualizar Grupo</button>

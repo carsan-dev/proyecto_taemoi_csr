@@ -73,7 +73,7 @@
 
     .form-group label {
       position: absolute;
-      top: 15px; /* Ajusta según sea necesario */
+      top: 15px;
       left: 20px;
       font-size: 1rem;
       font-weight: 500;
@@ -102,7 +102,7 @@
     .form-group .form-control:not(:placeholder-shown) ~ label {
       top: -5px;
       left: 5px;
-      font-size: 0.85rem !important;
+      font-size: 0.80rem !important;
       color: #007bff;
       background-color: #fff;
       height: 30px;
@@ -126,21 +126,10 @@
     input:-webkit-autofill ~ label {
       top: -5px;
       left: 15px;
-      font-size: 0.85rem !important;
+      font-size: 0.80rem !important;
       color: #007bff;
       background-color: #fff;
       height: 30px;
-    }
-
-    .dropdown .form-control {
-      border-radius: 30px;
-      padding: 10px 20px;
-    }
-
-    .list-group-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
   }
 }
@@ -172,4 +161,10 @@ input[type="file"] {
   font-size: 20px;
   cursor: pointer;
   color: #ff0000;
+}
+
+@media (max-width: 992px) {
+  .text-danger {
+    font-size: 0.80rem !important;
+  }
 }
