@@ -49,7 +49,7 @@ export class CrearAlumnoComponent implements OnInit {
         [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
       ],
       direccion: ['', Validators.required],
-      telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+      telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
       email: ['', [Validators.required, Validators.email]],
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
