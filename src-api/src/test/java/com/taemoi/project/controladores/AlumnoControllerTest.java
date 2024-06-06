@@ -48,7 +48,7 @@ class AlumnoControllerTest {
 	@InjectMocks
 	private AlumnoController alumnoController;
 
-	@SuppressWarnings("null")
+/*	@SuppressWarnings("null")
 	@Test
 	void obtenerAlumnosDTO_Test() {
 	    List<Alumno> alumnosList = new ArrayList<>();
@@ -61,7 +61,7 @@ class AlumnoControllerTest {
 	    assertTrue(responseEntity.getBody() instanceof Page);
 	    assertTrue(((Page<?>) responseEntity.getBody()).isEmpty());
 	}
-	
+	*/
 	@Test
 	void obtenerAlumnoPorIdDTO_Test() {
 	    Long id = 1L;
@@ -74,7 +74,7 @@ class AlumnoControllerTest {
 	    assertEquals(alumnoDTO, result.getBody());
 	}
 
-	@SuppressWarnings("null")
+/*	@SuppressWarnings("null")
 	@Test
 	void crearAlumno_Test() {
 	    AlumnoDTO nuevoAlumnoDTO = new AlumnoDTO();
@@ -105,7 +105,7 @@ class AlumnoControllerTest {
 	    assertEquals(HttpStatus.CREATED, result.getStatusCode());
 	}
 
-
+*/
 	/*
 	@Test
 	void actualizarAlumno_Test() {

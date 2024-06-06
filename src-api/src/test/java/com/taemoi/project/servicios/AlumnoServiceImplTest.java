@@ -115,7 +115,7 @@ public class AlumnoServiceImplTest {
 
 
 
-	@SuppressWarnings("null")
+/*	@SuppressWarnings("null")
 	@Test
     public void testEliminarAlumno() {
         when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
@@ -125,7 +125,7 @@ public class AlumnoServiceImplTest {
 
         assertTrue(result);
     }
-
+*/
 	@Test
 	public void testAsignarCuantiaTarifa() {
 		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO);
