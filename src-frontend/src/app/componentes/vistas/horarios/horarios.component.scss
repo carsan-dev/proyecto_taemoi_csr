@@ -5,63 +5,100 @@
 
 .planner-container {
   margin-top: 125px;
-  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, #1c2d3e, #C0C0C0);
+  padding: 30px;
+  color: #ffffff;
+  text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
 
-  .title {
-    font-family: 'Osaka-Sans Serif', sans-serif;
+.planner-container:hover {
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  font-family: 'Osaka-Sans Serif', sans-serif;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
   }
 
-  .planner-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+  50% {
+    transform: scale(1.05);
+  }
 
-    .planner-day {
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-
-      .day-title {
-        &::after {
-          content: '';
-          display: block;
-          width: 60px;
-          height: 4px;
-          background-color: #ffcdd2;
-          position: absolute;
-          bottom: -5px;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-      }
-    }
+  100% {
+    transform: scale(1);
   }
 }
 
+.planner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+}
 
+.planner-day {
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.planner-day:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.day-title {
+  position: relative;
+  padding-bottom: 15px;
+  font-size: 1.5rem;
+  color: #ffffff;
+  margin-bottom: 0;
+}
 
 .turnos-list {
-  margin-top: 10px;
+  margin-top: 30px;
 }
 
 .turno-item {
-  background-color: #ffebee;
-  border: 1px solid #ffcdd2;
-  border-radius: 5px;
-  padding: 5px;
-  margin-bottom: 5px;
-  font-size: 0.9em;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: none;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.turno-item:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-5px);
 }
 
 .no-turnos {
-  color: #8d8d8d;
-  font-size: 0.9em;
+  color: #ffffff;
+  font-size: 1.1em;
 }
 
 @media (max-width: 768px) {
+  .planner-container {
+    padding: 20px;
+  }
+
   .planner-grid {
     grid-template-columns: 1fr;
   }
