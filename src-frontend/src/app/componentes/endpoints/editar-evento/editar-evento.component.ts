@@ -64,7 +64,7 @@ export class EditarEventoComponent implements OnInit {
               evento.fotoEvento.tipo +
               ';base64,' +
               evento.fotoEvento.datos
-            : 'assets/media/default.webp';
+            : '../../../../assets/media/default.webp';
         });
     }
   }
@@ -127,7 +127,7 @@ export class EditarEventoComponent implements OnInit {
             if (this.evento) {
               this.evento.fotoEvento = null;
             }
-            this.imagenPreview = 'assets/media/default.webp';
+            this.imagenPreview = '../../../../assets/media/default.webp';
             this.eventoForm.patchValue({ fotoEvento: null });
           },
           error: (error) => {

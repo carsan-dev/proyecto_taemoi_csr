@@ -174,7 +174,7 @@ export class EditarAlumnoComponent implements OnInit {
         next: (response) => {
           this.inputFile.nativeElement.value = '';
           this.alumnoEditado.fotoAlumno = null;
-          this.imagenPreview = 'assets/media/default.webp';
+          this.imagenPreview = '../../../../assets/media/default.webp';
           this.obtenerAlumnos();
         },
 
@@ -199,7 +199,7 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoEditado = { ...alumno };
     this.imagenPreview = alumno.fotoAlumno
       ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos
-      : 'assets/media/default.webp';
+      : '../../../../assets/media/default.webp';
 
     this.alumnoForm.patchValue(this.alumnoEditado);
   }
