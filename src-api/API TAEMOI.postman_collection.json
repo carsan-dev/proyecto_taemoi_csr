@@ -8,7 +8,7 @@
 	},
 	"item": [
 		{
-			"name": "Alumnos",
+			"name": "Alumnos completo",
 			"item": [
 				{
 					"name": "Listar Alumnos",
@@ -305,6 +305,70 @@
 							]
 						},
 						"description": "#### Descripción\n\nEste endpoint permite a un usuario registrarse en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signup`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener los datos de registro del usuario en formato JSON.\n\n- `username` (requerido): Nombre de usuario del nuevo usuario.\n    \n- `email` (requerido): Correo electrónico del nuevo usuario.\n    \n- `password` (requerido): Contraseña del nuevo usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el registro es exitoso. Se devuelve el token de autenticación.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un usuario con el mismo nombre de usuario o correo electrónico."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Roles de Usuario Autenticado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/admin/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar usuario autenticado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/auth/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"user"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
@@ -1660,6 +1724,123 @@
 								"turnos"
 							]
 						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Imágenes",
+			"item": [
+				{
+					"name": "Borrar Imagen de Alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/2/imagen",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"2",
+								"imagen"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un alumno del sistema.\n\n#### URL\n\n`DELETE http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea eliminar.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se elimina el alumno exitosamente.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado."
+					},
+					"response": []
+				},
+				{
+					"name": "Borrar Imagen de Evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1/imagen",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1",
+								"imagen"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un alumno del sistema.\n\n#### URL\n\n`DELETE http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea eliminar.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se elimina el alumno exitosamente.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Email",
+			"item": [
+				{
+					"name": "Enviar email",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"Juan\",\r\n    \"apellidos\": \"Pérez\",\r\n    \"email\": \"juan.perez@example.com\",\r\n    \"asunto\": \"Consulta sobre clases\",\r\n    \"mensaje\": \"Hola, me gustaría obtener más información sobre las clases de Taekwondo.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/mail/enviar",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"mail",
+								"enviar"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite añadir un nuevo alumno al sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/alumnos`\n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del nuevo alumno en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del alumno.\n    \n- `apellidos` (requerido): Apellidos del alumno.\n    \n- `fechaNacimiento` (requerido): Fecha de nacimiento del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (opcional): Número de expediente del alumno.\n    \n- `nif` (requerido): Número de identificación fiscal (NIF) del alumno.\n    \n- `direccion` (opcional): Dirección del alumno.\n    \n- `email` (opcional): Correo electrónico del alumno.\n    \n- `telefono` (opcional): Número de teléfono del alumno.\n    \n- `tipoTarifa` (opcional): Tipo de tarifa del alumno.\n    \n- `fechaAlta` (opcional): Fecha de alta del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **201 Created** - Se ha creado el alumno exitosamente. Se devuelve el objeto del alumno creado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un alumno con el mismo NIF.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
