@@ -1,4 +1,4 @@
-<header class="header-nologuedo" *ngIf="!usuarioLogueado">
+<header class="header-anonimo" *ngIf="!usuarioLogueado">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -58,7 +58,7 @@
     </div>
   </nav>
 </header>
-<header class="header-loguedo" *ngIf="usuarioLogueado">
+<header class="header-admin-manager" *ngIf="usuarioLogueado && (isAdmin || isManager)">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -90,6 +90,70 @@
             <li class="nav-item me-3">
               <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
                 (click)="irARuta('/contacto')">Contacto</a>
+            </li>
+          </ul>
+        </div>
+        <div class="navbar-der d-flex align-items-center justify-content-center">
+          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
+            <li class="nav-item me-4">
+              <label class="switch">
+                <input type="checkbox">
+                <span class="slider round"></span>
+              </label>
+            </li>
+            <li class="nav-item me-4">
+              <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"><i
+                  class="bi bi-facebook fs-4"></i></a>
+            </li>
+            <li class="nav-item me-4">
+              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"><i
+                  class="bi bi-instagram fs-4"></i></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<header class="header-user" *ngIf="usuarioLogueado && isUser">
+  <nav class="navbar navbar-expand-lg bg-white p-0">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon text-black"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
+        <div class="navbar-izq">
+          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
+            <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
+          </a>
+          <ul class="navbar-nav list-links">
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
+                (click)="irARuta('/inicio')">Inicio</a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/eltaekwondo']" routerLinkActive="active"
+                (click)="irARuta('/eltaekwondo')">El Taekwondo</a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/logros']" routerLinkActive="active"
+                (click)="irARuta('/logros')">Logros</a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
+                (click)="irARuta('/horarios')">Horarios</a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
+                (click)="irARuta('/contacto')">Contacto</a>
+            </li>
+            <li class="nav-item mx-3">
+              <button type="button" class="btn btn-primary text-white fw-bold" [routerLink]="['/userpage']" routerLinkActive="active"
+                (click)="irARuta('/userpage')">Ver mis clases</button>
             </li>
           </ul>
         </div>

@@ -1,4 +1,5 @@
-header.header-nologuedo {
+header.header-anonimo,
+header.header-user {
   padding: 0;
   width: 80%;
   margin: 0 auto;
@@ -134,7 +135,7 @@ header.header-nologuedo {
   }
 }
 
-header.header-loguedo {
+header.header-admin-manager {
   padding: 0;
   z-index: 99;
 
