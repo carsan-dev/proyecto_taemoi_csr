@@ -5,7 +5,7 @@
         <h1 class="h2 fw-bold text-white m-0">INICIAR SESIÓN</h1>
         <img src="../../../../assets/media/Logo_escuela.svg" alt="Club Moi's Kim Do Logo" class="logo img-fluid">
       </div>
-      <form (ngSubmit)="login()" class="p-5">
+      <form (ngSubmit)="login()" class="p-5" method="post">
         <div class="mb-5">
           <input type="email" id="email" name="email" [(ngModel)]="credenciales.email" required class="form-control" placeholder="Email">
         </div>

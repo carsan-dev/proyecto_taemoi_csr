@@ -4,7 +4,7 @@
       <h2 class="text-center m-0">Editar Evento</h2>
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
-    <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()">
+    <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()" method="post">
       <div class="form-group form-floating mb-3">
         <input id="titulo" type="text" formControlName="titulo" class="form-control" required placeholder="Título"/>
         <label for="titulo" class="form-label">Título</label>
