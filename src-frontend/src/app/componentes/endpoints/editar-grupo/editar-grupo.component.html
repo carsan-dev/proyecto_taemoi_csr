@@ -4,7 +4,7 @@
       <h2 class="text-center m-0">Editar Grupo</h2>
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
-    <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()">
+    <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()" method="post">
       <div class="form-group mb-3 form-floating">
         <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre">
         <label for="nombre">Nombre</label>

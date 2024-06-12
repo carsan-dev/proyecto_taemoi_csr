@@ -87,7 +87,7 @@
         </app-paginacion>
       </div>
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
-        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)">
+        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)" method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
             <img class="imagen-perfil"
               [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp')"
