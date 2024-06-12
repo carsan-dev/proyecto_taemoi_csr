@@ -9,12 +9,13 @@ import {
   throwError,
 } from 'rxjs';
 import { LoginInterface } from '../../interfaces/login-interface';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthenticationService {
-  private urlBase = 'http://localhost:8080/api/auth';
+  private urlBase = environment.apiUrl + '/auth';
   private usuarioLogueadoSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   usuarioLogueadoCambio: Observable<boolean> =
@@ -81,7 +82,7 @@ export class AuthenticationService {
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username);
           this.emailSubject.next(email);
-          this.obtenerRoles(response.token).subscribe(); // Ensure roles are fetched after login
+          this.obtenerRoles(response.token).subscribe();
         }),
         catchError(this.manejarError)
       );
@@ -101,7 +102,7 @@ export class AuthenticationService {
       tap((roles) => {
         this.rolesSubject.next(roles);
         if (this.isLocalStorageAvailable()) {
-          localStorage.setItem('roles', JSON.stringify(roles)); // Store roles in localStorage
+          localStorage.setItem('roles', JSON.stringify(roles));
         }
       }),
       catchError(this.manejarError)
@@ -192,7 +193,7 @@ export class AuthenticationService {
             this.actualizarEstadoLogueado(true);
             this.usernameSubject.next(username);
             this.emailSubject.next(email);
-            this.obtenerRoles(token).subscribe(); // Ensure roles are fetched on app load
+            this.obtenerRoles(token).subscribe();
           }
         }
       }

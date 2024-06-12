@@ -2,12 +2,13 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EndpointsService {
-  private urlBase = 'http://localhost:8080/api';
+  private urlBase = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
