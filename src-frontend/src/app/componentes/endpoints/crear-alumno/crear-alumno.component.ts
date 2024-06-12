@@ -40,8 +40,7 @@ export class CrearAlumnoComponent implements OnInit {
       apellidos: ['', Validators.required],
       numeroExpediente: [
         '',
-        Validators.required,
-        Validators.pattern('^[0-9]+$'),
+        [Validators.required, Validators.pattern('^[0-9]+$')],
       ],
       fechaNacimiento: ['', Validators.required],
       nif: [
