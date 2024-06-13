@@ -4,10 +4,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +22,11 @@ import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
-import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
-import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.GrupoService;
 
@@ -71,9 +67,6 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private GrupoRepository grupoRepository;
 
-	@Autowired
-	private TurnoRepository turnoRepository;
-
 	/**
 	 * Inyección del servicio de grupo.
 	 */
@@ -102,16 +95,13 @@ public class InicializadorDatos implements CommandLineRunner {
 		if (alumnoRepository.count() == 0) {
 			generarAlumnos();
 		}
-
-		generarGrupos();
 		asignarAlumnosAGrupoAleatorio();
-		generarTurnos();
 	}
 
 	private void generarUsuarios() {
 		crearUsuarioSiNoExiste("moiskimdotaekwondo@gmail.com", "Moiskimdo", "Taekwondo", "09012013",
 				Roles.ROLE_MANAGER);
-		crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "17022003", Roles.ROLE_ADMIN);
+		crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "16082017", Roles.ROLE_ADMIN);
 		crearUsuarioSiNoExiste("usuarioPrueba@gmail.com", "Prueba", "Standard User", "12345678", Roles.ROLE_USER);
 	}
 
@@ -296,76 +286,6 @@ public class InicializadorDatos implements CommandLineRunner {
 
 		return gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
 	}
-
-	/**
-	 * Genera los grupos si no existen en la base de datos.
-	 */
-	private void generarGrupos() {
-		if (grupoRepository.count() == 0) {
-			Grupo grupo1 = new Grupo();
-			grupo1.setNombre("Grupo Lunes y Miércoles");
-			grupoRepository.save(grupo1);
-
-			Grupo grupo2 = new Grupo();
-			grupo2.setNombre("Grupo Martes y Jueves");
-			grupoRepository.save(grupo2);
-		}
-	}
-
-	private void generarTurnos() {
-	    Map<String, List<String[]>> turnosPorDia = new HashMap<>();
-	    
-	    turnosPorDia.put("Lunes", Arrays.asList(
-	        new String[]{"17:00", "18:00"},
-	        new String[]{"18:00", "19:00"},
-	        new String[]{"19:00", "20:30"}
-	    ));
-	    turnosPorDia.put("Martes", Arrays.asList(
-	        new String[]{"17:00", "18:00"},
-	        new String[]{"18:00", "19:00"},
-	        new String[]{"19:00", "20:00"}
-	    ));
-	    turnosPorDia.put("Miércoles", Arrays.asList(
-	        new String[]{"17:00", "18:00"},
-	        new String[]{"18:00", "19:00"},
-	        new String[]{"19:00", "20:30"}
-	    ));
-	    turnosPorDia.put("Jueves", Arrays.asList(
-	        new String[]{"17:00", "18:00"},
-	        new String[]{"18:00", "19:00"},
-	        new String[]{"19:00", "20:00"}
-	    ));
-	    
-	    Grupo grupoLunesMiercoles = grupoRepository.findByNombre("Grupo Lunes y Miércoles");
-	    Grupo grupoMartesJueves = grupoRepository.findByNombre("Grupo Martes y Jueves");
-	    
-	    for (Map.Entry<String, List<String[]>> entry : turnosPorDia.entrySet()) {
-	        String dia = entry.getKey();
-	        List<String[]> turnos = entry.getValue();
-	        
-	        Grupo grupo = null;
-	        if (dia.equals("Lunes") || dia.equals("Miércoles")) {
-	            grupo = grupoLunesMiercoles;
-	        } else if (dia.equals("Martes") || dia.equals("Jueves")) {
-	            grupo = grupoMartesJueves;
-	        }
-	        
-	        for (String[] horas : turnos) {
-	            String horaInicio = horas[0];
-	            String horaFin = horas[1];
-
-	            if (!turnoRepository.existsByDiaSemanaAndHoraInicioAndHoraFin(dia, horaInicio, horaFin)) {
-	                Turno turno = new Turno();
-	                turno.setDiaSemana(dia);
-	                turno.setHoraInicio(horaInicio);
-	                turno.setHoraFin(horaFin);
-	                turno.setGrupo(grupo);
-	                turnoRepository.save(turno);
-	            }
-	        }
-	    }
-	}
-
 
 	/**
 	 * Asigna todos los alumnos a un grupo aleatorio.
