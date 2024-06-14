@@ -88,7 +88,6 @@ export class SeleccionarAlumnosComponent implements OnInit {
   agregarAlumnos(): void {
     const token = localStorage.getItem('token');
     if (token && this.alumnosSeleccionados.length > 0) {
-      console.log('Alumnos seleccionados: ', this.alumnosSeleccionados); // Verificar la selección
       this.endpointsService
         .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados, token)
         .subscribe({
@@ -102,7 +101,6 @@ export class SeleccionarAlumnosComponent implements OnInit {
             });
           },
           error: (error) => {
-            console.error('Error al agregar alumnos: ', error); // Loguear errores
             Swal.fire({
               title: 'Error al agregar alumnos',
               text: 'No hemos podido agregar los alumnos',
