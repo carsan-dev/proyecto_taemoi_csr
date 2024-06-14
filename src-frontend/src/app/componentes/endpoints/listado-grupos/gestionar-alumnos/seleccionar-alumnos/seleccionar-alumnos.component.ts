@@ -118,7 +118,6 @@ export class SeleccionarAlumnosComponent implements OnInit {
     } else {
       this.alumnosSeleccionados.splice(index, 1);
     }
-    console.log('Alumnos seleccionados: ', this.alumnosSeleccionados); // Verificar la selección
   }
 
   cambiarPagina(pageNumber: number): void {
