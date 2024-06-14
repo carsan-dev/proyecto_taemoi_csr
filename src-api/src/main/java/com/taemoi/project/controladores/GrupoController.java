@@ -145,6 +145,25 @@ public class GrupoController {
             return ResponseEntity.notFound().build();
         }
     }
+    
+    /**
+     * Agrega un listado de alumnos a un grupo.
+     *
+     * @param grupoId El ID del grupo.
+     * @param alumnosIds La lista de IDs de alumno.
+     * @return ResponseEntity con estado OK si se agregan el alumno al grupo; de lo contrario, un ResponseEntity con estado NOT_FOUND.
+     */
+    @PostMapping("/{grupoId}/alumnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> agregarAlumnosAGrupo(@PathVariable @NonNull Long grupoId, @RequestBody List<Long> alumnosIds) {
+        Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
+        if (grupoOptional.isPresent()) {
+            grupoService.agregarAlumnosAGrupo(grupoId, alumnosIds);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     /**
      * Elimina un alumno de un grupo.
