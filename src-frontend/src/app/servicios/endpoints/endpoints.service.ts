@@ -160,6 +160,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  agregarAlumnosAGrupo(
+    grupoId: number,
+    alumnosIds: number[],
+    token: string
+  ): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos`, alumnosIds, {
+        headers,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarAlumnoDeGrupo(
     grupoId: number,
     alumnoId: number,

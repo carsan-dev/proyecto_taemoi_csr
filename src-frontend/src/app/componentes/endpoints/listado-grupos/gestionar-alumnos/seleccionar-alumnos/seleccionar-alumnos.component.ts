@@ -87,29 +87,28 @@ export class SeleccionarAlumnosComponent implements OnInit {
 
   agregarAlumnos(): void {
     const token = localStorage.getItem('token');
-    if (token) {
-      const requests = this.alumnosSeleccionados.map((alumnoId) =>
-        this.endpointsService
-          .agregarAlumnoAGrupo(this.grupoId, alumnoId, token)
-          .toPromise()
-      );
-
-      Promise.all(requests)
-        .then(() => {
-          Swal.fire({
-            title: 'Alumnos agregados',
-            text: 'Los alumnos han sido agregados al grupo exitosamente',
-            icon: 'success',
-          }).then(() => {
-            this.router.navigate(['/gestionarAlumnos', this.grupoId]);
-          });
-        })
-        .catch(() => {
-          Swal.fire({
-            title: 'Error al agregar alumnos',
-            text: 'No hemos podido agregar los alumnos',
-            icon: 'error',
-          });
+    if (token && this.alumnosSeleccionados.length > 0) {
+      console.log('Alumnos seleccionados: ', this.alumnosSeleccionados); // Verificar la selección
+      this.endpointsService
+        .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados, token)
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Alumnos agregados',
+              text: 'Los alumnos han sido agregados al grupo exitosamente',
+              icon: 'success',
+            }).then(() => {
+              this.router.navigate(['/gestionarAlumnos', this.grupoId]);
+            });
+          },
+          error: (error) => {
+            console.error('Error al agregar alumnos: ', error); // Loguear errores
+            Swal.fire({
+              title: 'Error al agregar alumnos',
+              text: 'No hemos podido agregar los alumnos',
+              icon: 'error',
+            });
+          },
         });
     }
   }
@@ -121,6 +120,7 @@ export class SeleccionarAlumnosComponent implements OnInit {
     } else {
       this.alumnosSeleccionados.splice(index, 1);
     }
+    console.log('Alumnos seleccionados: ', this.alumnosSeleccionados); // Verificar la selección
   }
 
   cambiarPagina(pageNumber: number): void {
