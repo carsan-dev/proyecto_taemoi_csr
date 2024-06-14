@@ -1,5 +1,10 @@
 package com.taemoi.project.configuracion;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -7,6 +12,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+
+import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -78,6 +85,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	
+	@Autowired
+    private DataSource dataSource;
 
 	/**
 	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la
@@ -88,14 +98,36 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Override
 	public void run(String... args) throws Exception {
-		generarGrados();
-		generarUsuarios();
-		generarCategorias();
+		
+        String sqlScript = new String(Files.readAllBytes(Paths.get("taemoidb.sql")), StandardCharsets.UTF_8);
+        String[] sqlStatements = sqlScript.split(";");
 
-		if (alumnoRepository.count() == 0) {
-			generarAlumnos();
-		}
-		asignarAlumnosAGrupoAleatorio();
+        try (Connection conn = dataSource.getConnection()) {
+            for (String sql : sqlStatements) {
+                if (!sql.trim().isEmpty()) {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute(sql.trim());
+                    }
+                }
+            }
+        }
+        if (gradoRepository.count() == 0) {
+            generarGrados();
+        }
+
+        if (usuarioRepository.count() == 0) {
+            generarUsuarios();
+        }
+
+        if (categoriaRepository.count() == 0) {
+            generarCategorias();
+        }
+
+        if (alumnoRepository.count() == 0) {
+            generarAlumnos();
+        }
+
+        asignarAlumnosAGrupoAleatorio();
 	}
 
 	private void generarUsuarios() {
