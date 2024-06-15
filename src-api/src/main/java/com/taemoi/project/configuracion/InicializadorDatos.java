@@ -1,9 +1,11 @@
 package com.taemoi.project.configuracion;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.Period;
@@ -100,17 +102,29 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		
-        String sqlScript = new String(Files.readAllBytes(Paths.get("taemoidb.sql")), StandardCharsets.UTF_8);
-        String[] sqlStatements = sqlScript.split(";");
+        try (InputStream inputStream = InicializadorDatos.class.getClassLoader().getResourceAsStream("taemoidb.sql")) {
+            if (inputStream == null) {
+                throw new FileNotFoundException("SQL script file not found in resources");
+            }
+            String sqlScript = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            String[] sqlStatements = sqlScript.split(";");
 
-        try (Connection conn = dataSource.getConnection()) {
-            for (String sql : sqlStatements) {
-                if (!sql.trim().isEmpty()) {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute(sql.trim());
+            try (Connection conn = dataSource.getConnection()) {
+                for (String sql : sqlStatements) {
+                    if (!sql.trim().isEmpty()) {
+                        try (Statement stmt = conn.createStatement()) {
+                            stmt.execute(sql.trim());
+                        } catch (SQLException e) {
+                            System.err.println("Failed to execute statement: " + sql);
+                            e.printStackTrace();
+                        }
                     }
                 }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         if (gradoRepository.count() == 0) {
             generarGrados();
