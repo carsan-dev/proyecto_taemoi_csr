@@ -54,5 +54,5 @@ El repositorio del proyecto contiene un API Restful desarrollado en SpringBoot p
     - [README.md](./docs/Diseño/README.md)
   - [2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf](./docs/2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf)
 - [src-api](./src-api/)
-- [src-frontend](/src-frontend/)
+- [src-frontend](./src-frontend/)
 - [README.md](./README.md)
