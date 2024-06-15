@@ -43,6 +43,7 @@ import com.taemoi.project.servicios.GrupoService;
  */
 @Component
 public class InicializadorDatos implements CommandLineRunner {
+    private static final String LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE";
 
 	/**
 	 * Inyección del repositorio de alumno.
@@ -234,12 +235,13 @@ public class InicializadorDatos implements CommandLineRunner {
 		return alumno;
 	}
 	
-    private String generarNif(Faker faker) {
-        String nif = faker.idNumber().valid();
-        if (nif.length() > 9) {
-            nif = nif.substring(0, 9);
-        }
-        return nif;
+
+
+    private static String generarNif(Faker faker) {
+        String numbers = String.format("%08d", faker.number().numberBetween(0, 100000000));
+        int index = Integer.parseInt(numbers) % 23;
+        char letter = LETTERS.charAt(index);
+        return numbers + letter;
     }
 
 	/**
