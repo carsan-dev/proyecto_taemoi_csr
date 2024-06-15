@@ -35,7 +35,7 @@
                   <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
                   <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
                   <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
-                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
+                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
                   <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
                   <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
                 </ul>
@@ -73,8 +73,8 @@
               <div class="card-body">
                 <h5 class="card-title">Información adicional</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
-                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
+                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</li>
+                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</li>
                   <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
                   <li class="list-group-item">Grado: {{ alumno.grado }}</li>
                 </ul>

@@ -201,7 +201,16 @@ export class EditarAlumnoComponent implements OnInit {
       ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos
       : '../../../../assets/media/default.webp';
 
-    this.alumnoForm.patchValue(this.alumnoEditado);
+    const fechaNacimiento = new Date(alumno.fechaNacimiento).toISOString().split('T')[0];
+    const fechaAlta = new Date(alumno.fechaAlta).toISOString().split('T')[0];
+    const fechaBaja = new Date(alumno.fechaBaja).toISOString().split('T')[0];
+    this.alumnoForm.patchValue({
+      ...this.alumnoEditado,
+      fechaNacimiento: fechaNacimiento,
+      fechaAlta: fechaAlta,
+      fechaBaja: fechaBaja
+
+    });
   }
 
   onFileSelected(event: any) {
