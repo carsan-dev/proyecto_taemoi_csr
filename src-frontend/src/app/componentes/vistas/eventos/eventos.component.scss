@@ -41,7 +41,6 @@
         }
       }
 
-
       img {
         border-radius: 15px;
         width: 100%;
@@ -65,16 +64,21 @@
 
         .event-title {
           margin: 0;
-          font-size: 1.5em;
+          font-size: 1em;
         }
 
         .event-description {
           margin: 8px 0 0;
+          font-size: 0.8em;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3; /* Número de líneas visibles antes del corte */
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: normal; /* Permitir múltiples líneas */
         }
       }
     }
-
-
   }
 
   @media (max-width: 992px) {

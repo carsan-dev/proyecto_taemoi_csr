@@ -4,7 +4,7 @@
       <h2 class="text-center m-0">Actualizar Turno</h2>
       <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
     </div>
-    <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()">
+    <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()" method="post">
       <div class="form-group form-floating mb-3">
         <select id="diaSemana" formControlName="diaSemana" class="form-select form-control">
           <option *ngFor="let dia of diasSemana" [value]="dia">{{ dia }}</option>

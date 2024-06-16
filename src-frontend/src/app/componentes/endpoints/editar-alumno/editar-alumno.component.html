@@ -13,7 +13,7 @@
             <div class="card-body d-flex flex-row justify-content-center align-items-center flex-wrap">
               <div class="profile-info d-flex align-items-center mb-3">
                 <img class="imagen-perfil me-3"
-                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp'"
                   alt="Perfil del alumno">
                 <div>
                   <h5 class="card-title">{{ alumno.nombre }} {{ alumno.apellidos }}</h5>
@@ -35,7 +35,7 @@
                   <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
                   <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
                   <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
-                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento }}</li>
+                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
                   <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
                   <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
                 </ul>
@@ -73,8 +73,8 @@
               <div class="card-body">
                 <h5 class="card-title">Información adicional</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta }}</li>
-                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja }}</li>
+                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</li>
+                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</li>
                   <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
                   <li class="list-group-item">Grado: {{ alumno.grado }}</li>
                 </ul>
@@ -87,10 +87,10 @@
         </app-paginacion>
       </div>
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
-        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)">
+        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)" method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
             <img class="imagen-perfil"
-              [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp')"
+              [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp')"
               alt="Perfil del alumno">
             <div class="d-flex flex-row align-items-center mt-3">
               <label for="inputFile" class="add-icon pe-2">

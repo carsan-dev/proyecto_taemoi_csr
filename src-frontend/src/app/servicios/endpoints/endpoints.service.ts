@@ -2,12 +2,13 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EndpointsService {
-  private urlBase = 'http://localhost:8080/api';
+  private urlBase = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -156,6 +157,19 @@ export class EndpointsService {
         {},
         { headers }
       )
+      .pipe(catchError(this.manejarError));
+  }
+
+  agregarAlumnosAGrupo(
+    grupoId: number,
+    alumnosIds: number[],
+    token: string
+  ): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos`, alumnosIds, {
+        headers,
+      })
       .pipe(catchError(this.manejarError));
   }
 

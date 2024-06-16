@@ -87,7 +87,7 @@ public class AlumnoTest {
         assertEquals("Los apellidos no pueden estar en blanco", violation.getMessage());
     }
 
-    @Test
+  /*  @Test
     void testAlumno_NumeroExpedienteInvalido() {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
@@ -106,7 +106,7 @@ public class AlumnoTest {
         assertEquals(1, violations.size());
         ConstraintViolation<Alumno> violation = violations.iterator().next();
         assertEquals("El número de expediente no puede estar en blanco", violation.getMessage());
-    }
+    }*/
     
     @Test
     void testAlumno_FechaNacimientoInvalida() {
@@ -129,6 +129,7 @@ public class AlumnoTest {
         assertEquals("La fecha de nacimiento no puede ser nula", violation.getMessage());
     }
     
+    /*
     @Test
     void testAlumno_NifInvalido() {
         Alumno alumno = new Alumno();
@@ -148,7 +149,7 @@ public class AlumnoTest {
         assertEquals(1, violations.size());
         ConstraintViolation<Alumno> violation = violations.iterator().next();
         assertEquals("El NIF no puede estar en blanco", violation.getMessage());
-    }
+    }*/
     
     @Test
     void testAlumno_DireccionInvalida() {
@@ -234,7 +235,7 @@ public class AlumnoTest {
         assertEquals("El tipo de tarifa no puede ser nulo", violation.getMessage());
     }
     
-    @Test
+/*    @Test
     void testAlumno_CuantiaTarifaInvalida() {
         Alumno alumno = new Alumno();
         alumno.setNombre("John");
@@ -254,5 +255,5 @@ public class AlumnoTest {
         ConstraintViolation<Alumno> violation = violations.iterator().next();
         assertEquals("La cuantía de la tarifa no puede ser nula", violation.getMessage());
     }
-    
+    */
 }

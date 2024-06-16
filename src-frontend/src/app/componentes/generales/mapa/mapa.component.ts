@@ -16,19 +16,26 @@ export class MapaComponent implements AfterViewInit {
   ngAfterViewInit() {
     if (typeof window !== 'undefined') {
       import('leaflet').then((L) => {
-        setTimeout(() => {
-          this.map = L.map('map').setView(this.localizacionConcreta, 13);
+        const leaflet = L.default;
+        this.map = leaflet.map('map').setView(this.localizacionConcreta, 13);
 
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          }).addTo(this.map);
+        leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(this.map);
 
-          const marker = L.marker(this.localizacionConcreta).addTo(this.map);
-          marker.bindPopup('<b>Ubicación:</b><br>C. Parada de la Cigüeña, 34a, 41806 Umbrete, Sevilla').openPopup();
+        const customIcon = leaflet.icon({
+          iconUrl: '../../../../assets/media/custom-marker.png',
+          iconSize: [38, 38],
+          iconAnchor: [22, 94],
+          popupAnchor: [-3, -76],
+        });
 
-        }, 0);
+        const marker = leaflet.marker(this.localizacionConcreta, { icon: customIcon }).addTo(this.map);
+        marker.bindPopup('<b>Ubicación:</b><br>C. Parada de la Cigüeña, 34a, 41806 Umbrete, Sevilla').openPopup();
+      }).catch(error => {
+        console.error('Error loading Leaflet:', error);
       });
     }
   }

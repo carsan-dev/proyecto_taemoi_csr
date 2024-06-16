@@ -1,7 +1,7 @@
 <div class="container mt-5">
   <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4">Crear Evento</h2>
-    <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="mt-4">
+    <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="mt-4" method="post">
       <div class="form-group form-floating mb-4">
         <input type="text" class="form-control" id="titulo" name="titulo" formControlName="titulo" required
           placeholder="Título">

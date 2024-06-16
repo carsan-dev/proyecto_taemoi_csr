@@ -1,0 +1,55 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: mysql
+    env_file:
+      - .env
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+     MYSQL_DATABASE: ${MYSQL_DATABASE}
+     MYSQL_USER: ${MYSQL_USER}
+     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"
+
+  backend:
+    build:
+      context: ./src-api
+      dockerfile: Dockerfile
+    container_name: springboot
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL_DOCKER: ${SPRING_DATASOURCE_URL_DOCKER}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+    volumes:
+      - .env:/app/.env:ro
+    links:
+      - database
+
+  frontend:
+    build:
+      context: ./src-frontend
+      dockerfile: Dockerfile
+    container_name: angular
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - ./src-frontend/dist/taemoi-angular-front/browser:/usr/share/nginx/html
+      - ./src-frontend/nginx.conf:/etc/nginx/nginx.conf
+
+volumes:
+  db_data:

@@ -9,12 +9,13 @@ import {
   throwError,
 } from 'rxjs';
 import { LoginInterface } from '../../interfaces/login-interface';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthenticationService {
-  private urlBase = 'http://localhost:8080/api/auth';
+  private urlBase = environment.apiUrl + '/auth';
   private usuarioLogueadoSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   usuarioLogueadoCambio: Observable<boolean> =
@@ -34,6 +35,15 @@ export class AuthenticationService {
     string | null
   >(null);
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
+
+  private isAdminSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  isAdminCambio: Observable<boolean> = this.isAdminSubject.asObservable();
+
+  private isManagerSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  isManagerCambio: Observable<boolean> = this.isManagerSubject.asObservable();
+
+  private isUserSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  isUserCambio: Observable<boolean> = this.isUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
     if (this.isLocalStorageAvailable()) {
@@ -81,7 +91,7 @@ export class AuthenticationService {
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username);
           this.emailSubject.next(email);
-          this.obtenerRoles(response.token).subscribe(); // Ensure roles are fetched after login
+          this.obtenerRoles(response.token).subscribe();
         }),
         catchError(this.manejarError)
       );
@@ -93,6 +103,9 @@ export class AuthenticationService {
     this.rolesSubject.next([]);
     this.usernameSubject.next(null);
     this.emailSubject.next(null);
+    this.isAdminSubject.next(false);
+    this.isManagerSubject.next(false);
+    this.isUserSubject.next(false);
   }
 
   obtenerRoles(token: string): Observable<string[]> {
@@ -100,8 +113,11 @@ export class AuthenticationService {
     return this.http.get<string[]>(`${this.urlBase}/roles`, { headers }).pipe(
       tap((roles) => {
         this.rolesSubject.next(roles);
+        this.isAdminSubject.next(roles.includes('ROLE_ADMIN'));
+        this.isManagerSubject.next(roles.includes('ROLE_ADMIN'));
+        this.isUserSubject.next(roles.includes('ROLE_USER'));
         if (this.isLocalStorageAvailable()) {
-          localStorage.setItem('roles', JSON.stringify(roles)); // Store roles in localStorage
+          localStorage.setItem('roles', JSON.stringify(roles));
         }
       }),
       catchError(this.manejarError)
@@ -113,8 +129,12 @@ export class AuthenticationService {
       const token = localStorage.getItem('token');
       const roles = localStorage.getItem('roles');
       if (roles) {
-        this.rolesSubject.next(JSON.parse(roles));
-        return of(JSON.parse(roles));
+        const parsedRoles = JSON.parse(roles);
+        this.rolesSubject.next(parsedRoles);
+        this.isAdminSubject.next(parsedRoles.includes('ROLE_ADMIN'));
+        this.isManagerSubject.next(parsedRoles.includes('ROLE_MANAGER'));
+        this.isUserSubject.next(parsedRoles.includes('ROLE_USER'));
+        return of(parsedRoles);
       } else if (token) {
         return this.obtenerRoles(token);
       } else {
@@ -192,7 +212,7 @@ export class AuthenticationService {
             this.actualizarEstadoLogueado(true);
             this.usernameSubject.next(username);
             this.emailSubject.next(email);
-            this.obtenerRoles(token).subscribe(); // Ensure roles are fetched on app load
+            this.obtenerRoles(token).subscribe();
           }
         }
       }

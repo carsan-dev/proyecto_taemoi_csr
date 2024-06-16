@@ -38,4 +38,6 @@ public interface GrupoService {
 	Grupo convertirDTOAEntidad(GrupoConAlumnosDTO grupoDTO);
 
 	List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId);
+
+	void agregarAlumnosAGrupo(@NonNull Long grupoId, List<Long> alumnosIds);
 }
