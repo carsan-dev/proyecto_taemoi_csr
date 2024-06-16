@@ -13,7 +13,7 @@
     <ul class="list-group mt-4">
       <li *ngFor="let alumno of alumnos" class="list-group-item d-flex justify-content-between align-items-center">
         <div class="form-check">
-          <input type="checkbox" class="form-check-input" (change)="toggleSeleccionAlumno(alumno.id)">
+          <input type="checkbox" class="form-check-input" [checked]="alumnosSeleccionados.includes(alumno.id)" (change)="toggleSeleccionAlumno(alumno.id)">
           <label class="form-check-label">{{ alumno.nombre }} {{ alumno.apellidos }}</label>
         </div>
       </li>

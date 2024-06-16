@@ -1,7 +1,7 @@
 <div class="container mt-5">
   <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4">Crear Turno</h2>
-    <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4">
+    <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4" method="post">
       <div class="form-group form-floating mb-3">
         <select formControlName="diaSemana" id="diaSemana" class="form-select form-control">
           <option value="" disabled selected>Selecciona un día...</option>

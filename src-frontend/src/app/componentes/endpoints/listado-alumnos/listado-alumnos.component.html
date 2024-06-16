@@ -33,7 +33,7 @@
               <td>
                 <div class="imagen-perfil-container">
                   <img class="imagen-perfil"
-                    [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : 'assets/media/default.webp'"
+                    [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp'"
                     alt="Perfil del alumno">
                 </div>
               </td>
@@ -41,7 +41,7 @@
               <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
               <td>{{ alumno.telefono }}</td>
               <td>{{ alumno.tipoTarifa }}</td>
-              <td>{{ alumno.fechaAlta }}</td>
+              <td>{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</td>
               <td>{{ alumno.categoria }}</td>
               <td>{{ alumno.grado }}</td>
             </tr>

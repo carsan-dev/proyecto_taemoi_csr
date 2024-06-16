@@ -7,6 +7,9 @@ com.taemoi.project.dtos.response
 com.taemoi.project.entidades
 com.taemoi.project.errores
 com.taemoi.project.errores.alumno
+com.taemoi.project.errores.evento
+com.taemoi.project.errores.grupo
+com.taemoi.project.errores.turno
 com.taemoi.project.errores.usuario
 com.taemoi.project.repositorios
 com.taemoi.project.servicios

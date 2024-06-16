@@ -3,7 +3,7 @@
   <div class="container-fluid my-5">
     <div class="box" *ngFor="let evento of eventos">
       <img
-      [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : 'assets/media/default.webp'"
+      [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : '../../../../assets/media/default.webp'"
       class="img-fluid event-img"
       alt="{{ evento.titulo }}">
       <div class="event-info">

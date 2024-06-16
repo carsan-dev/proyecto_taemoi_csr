@@ -13,6 +13,9 @@ import Swal from 'sweetalert2';
 })
 export class HeaderComponent implements OnInit {
   usuarioLogueado: boolean = false;
+  isAdmin: boolean = false;
+  isManager: boolean = false;
+  isUser: boolean = false;
 
   constructor(
     private authService: AuthenticationService,
@@ -22,6 +25,15 @@ export class HeaderComponent implements OnInit {
   ngOnInit(): void {
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
+    });
+    this.authService.isAdminCambio.subscribe((isAdmin: boolean) => {
+      this.isAdmin = isAdmin;
+    });
+    this.authService.isManagerCambio.subscribe((isManager: boolean) => {
+      this.isManager = isManager;
+    });
+    this.authService.isUserCambio.subscribe((isUser: boolean) => {
+      this.isUser = isUser;
     });
   }
 

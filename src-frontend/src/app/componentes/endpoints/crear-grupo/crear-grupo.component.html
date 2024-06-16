@@ -1,7 +1,7 @@
 <div class="container mt-5">
   <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4">Crear Grupo</h2>
-    <form [formGroup]="grupoForm" (ngSubmit)="crearGrupo()">
+    <form [formGroup]="grupoForm" (ngSubmit)="crearGrupo()" method="post">
       <div class="form-group mb-3 form-floating">
         <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder="Nombre del grupo">
         <label for="nombre">Nombre del grupo:</label>

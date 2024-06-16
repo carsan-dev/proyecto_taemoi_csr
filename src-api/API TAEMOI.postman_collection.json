@@ -8,7 +8,7 @@
 	},
 	"item": [
 		{
-			"name": "Alumnos",
+			"name": "Alumnos completo",
 			"item": [
 				{
 					"name": "Listar Alumnos",
@@ -37,7 +37,7 @@
 								"admin"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite listar todos los alumnos registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los alumnos.\n- **404 Not Found** - Si no se encuentra ningún alumno.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite listar todos los alumnos registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los alumnos.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -102,7 +102,7 @@
 								"19"
 							]
 						},
-						"description": "StartFragment\n\n#### Descripción\n\nEste endpoint permite obtener la información de un alumno específico mediante su ID.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/{id}`\n\n- `{id}`: El ID del alumno que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea obtener.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentra el alumno, se devuelve la información del alumno.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite obtener la información de un alumno específico mediante su ID.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/{id}`\n\n- `{id}`: El ID del alumno que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea obtener.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentra el alumno, se devuelve la información del alumno.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -143,7 +143,7 @@
 								}
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite listar los alumnos registrados en el sistema de forma paginada.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\n- `page` : El número de página que se desea obtener.\n- `size` : El tamaño de la página, es decir, el número de elementos por página.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista paginada de alumnos.\n- **400 Bad Request** - Si los parámetros de paginación son inválidos.\n- **404 Not Found** - Si no se encuentra ningún alumno.\n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite listar los alumnos registrados en el sistema de forma paginada.\n\n#### URL\n\n`GET http://localhost:8080/api/admin`\n\n#### Parámetros de consulta\n\n- `page` : El número de página que se desea obtener.\n    \n- `size` : El tamaño de la página, es decir, el número de elementos por página.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista paginada de alumnos.\n    \n- **400 Bad Request** - Si los parámetros de paginación son inválidos.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
@@ -160,7 +160,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTc4MDE4ODEsImV4cCI6MTcxNzgzNzg4MX0.8NU-BAeOrsg8cxQ5cEljnwqSFJQeAyGqRLCXo5ONJDs",
 									"type": "string"
 								}
 							]
@@ -273,7 +273,7 @@
 								"signin"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite a un usuario iniciar sesión en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signin`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener las credenciales de inicio de sesión en formato JSON.\n\n- `username` (requerido): Nombre de usuario del usuario.\n    \n- `password` (requerido): Contraseña del usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el inicio de sesión es exitoso. Se devuelve el token de autenticación.\n    \n- **401 Unauthorized** - Si las credenciales de inicio de sesión son inválidas."
+						"description": "#### Descripción\n\nEste endpoint permite a un gestor iniciar sesión en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signin`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener las credenciales de inicio de sesión en formato JSON.\n\n- `username` (requerido): Nombre de usuario del gestor.\n    \n- `password` (requerido): Contraseña del gestor.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el inicio de sesión es exitoso. Se devuelve el token de autenticación.\n    \n- **401 Unauthorized** - Si las credenciales de inicio de sesión son inválidas."
 					},
 					"response": []
 				},
@@ -305,6 +305,70 @@
 							]
 						},
 						"description": "#### Descripción\n\nEste endpoint permite a un usuario registrarse en el sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/auth/signup`\n\n#### Parámetros del Cuerpo\n\nEl cuerpo de la solicitud debe contener los datos de registro del usuario en formato JSON.\n\n- `username` (requerido): Nombre de usuario del nuevo usuario.\n    \n- `email` (requerido): Correo electrónico del nuevo usuario.\n    \n- `password` (requerido): Contraseña del nuevo usuario.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Si el registro es exitoso. Se devuelve el token de autenticación.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un usuario con el mismo nombre de usuario o correo electrónico."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Roles de Usuario Autenticado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/auth/roles",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"roles"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los roles registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar usuario autenticado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/auth/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"user"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
@@ -445,7 +509,8 @@
 								"1",
 								"grupos"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener los grupos de un determinado alumno por su id.\n\n#### URL\n\n`GET http://localhost:8080/api/alumnos/{id}/grupos`\n\n- `{id}`: El ID del alumno del que deseas obtener el grupo.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno del que deseas obtener el grupo.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se encuentra el alumno, se devuelve la información de sus grupos asociados.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
@@ -781,7 +846,7 @@
 								"crear"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite añadir un nuevo alumno al sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/alumnos`\n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del nuevo alumno en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del alumno.\n    \n- `apellidos` (requerido): Apellidos del alumno.\n    \n- `fechaNacimiento` (requerido): Fecha de nacimiento del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (opcional): Número de expediente del alumno.\n    \n- `nif` (requerido): Número de identificación fiscal (NIF) del alumno.\n    \n- `direccion` (opcional): Dirección del alumno.\n    \n- `email` (opcional): Correo electrónico del alumno.\n    \n- `telefono` (opcional): Número de teléfono del alumno.\n    \n- `tipoTarifa` (opcional): Tipo de tarifa del alumno.\n    \n- `fechaAlta` (opcional): Fecha de alta del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **201 Created** - Se ha creado el alumno exitosamente. Se devuelve el objeto del alumno creado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un alumno con el mismo NIF.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite añadir un nuevo alumno al sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/alumnos/crear`\n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del nuevo alumno en un FormData con imagen opcional y el cuerpo en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del alumno.\n    \n- `apellidos` (requerido): Apellidos del alumno.\n    \n- `fechaNacimiento` (requerido): Fecha de nacimiento del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (requerido): Número de expediente del alumno.\n    \n- `nif` (requerido): Número de identificación fiscal (NIF) del alumno.\n    \n- `direccion` (requerido): Dirección del alumno.\n    \n- `email` (requerido): Correo electrónico del alumno.\n    \n- `telefono` (requerido): Número de teléfono del alumno.\n    \n- `tipoTarifa` (requerido): Tipo de tarifa del alumno.\n    \n- `fechaAlta` (requerido): Fecha de alta del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: form-data`\n    \n\n#### Respuestas\n\n- **201 Created** - Se ha creado el alumno exitosamente. Se devuelve el objeto del alumno creado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **409 Conflict** - Si ya existe un alumno con el mismo NIF.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -801,13 +866,14 @@
 						"method": "PUT",
 						"header": [],
 						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"nombre\": \"Juan\",\r\n  \"apellidos\": \"Perez\",\r\n  \"numeroExpediente\": \"12345675\",\r\n  \"fechaNacimiento\": \"1990-01-01\",\r\n  \"nif\": \"12345678A\",\r\n  \"direccion\": \"Calle Principal, 123\",\r\n  \"telefono\": 123456787,\r\n  \"email\": \"juan@examples.com\",\r\n  \"tipoTarifa\": \"FAMILIAR\",\r\n  \"fechaAlta\": \"2023-01-01\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "alumnoEditado",
+									"value": "{\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"numeroExpediente\": \"12345675\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"nif\": \"12345678A\",\n  \"direccion\": \"Calle Principal, 123\",\n  \"telefono\": 123456787,\n  \"email\": \"juan@examples.com\",\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"fechaAlta\": \"2023-01-01\"\n}",
+									"type": "text"
 								}
-							}
+							]
 						},
 						"url": {
 							"raw": "http://localhost:8080/api/alumnos/21",
@@ -822,7 +888,7 @@
 								"21"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite editar la información de un alumno existente en el sistema.\n\n#### URL\n\n`PUT http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea editar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea editar.\n    \n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos actualizados del alumno en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (opcional): Nombre actualizado del alumno.\n    \n- `apellidos` (opcional): Apellidos actualizados del alumno.\n    \n- `fechaNacimiento` (opcional): Fecha de nacimiento actualizada del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (opcional): Número de expediente actualizado del alumno.\n    \n- `nif` (opcional): Número de identificación fiscal (NIF) actualizado del alumno.\n    \n- `direccion` (opcional): Dirección actualizada del alumno.\n    \n- `email` (opcional): Correo electrónico actualizado del alumno.\n    \n- `telefono` (opcional): Número de teléfono actualizado del alumno.\n    \n- `tipoTarifa` (opcional): Tipo de tarifa actualizado del alumno.\n    \n- `fechaAlta` (opcional): Fecha de alta actualizada del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja actualizada del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Se ha actualizado el alumno exitosamente. Se devuelve el objeto del alumno actualizado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite modificar un alumno del sistema.\n\n#### URL\n\n`PUT http://localhost:8080/api/alumnos/{id}`\n\n- `{id}`: El ID del alumno que se desea modificar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno que se desea modificar.\n    \n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del alumno en un FormData con imagen opcional y el cuerpo modificado en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del alumno.\n    \n- `apellidos` (requerido): Apellidos del alumno.\n    \n- `fechaNacimiento` (requerido): Fecha de nacimiento del alumno (formato YYYY-MM-DD).\n    \n- `numeroExpediente` (requerido): Número de expediente del alumno.\n    \n- `nif` (requerido): Número de identificación fiscal (NIF) del alumno.\n    \n- `direccion` (requerido): Dirección del alumno.\n    \n- `email` (requerido): Correo electrónico del alumno.\n    \n- `telefono` (requerido): Número de teléfono del alumno.\n    \n- `tipoTarifa` (requerido): Tipo de tarifa del alumno.\n    \n- `fechaAlta` (requerido): Fecha de alta del alumno (formato YYYY-MM-DD).\n    \n- `fechaBaja` (opcional): Fecha de baja del alumno (formato YYYY-MM-DD).\n    \n\n#### Encabezados\n\n- `Content-Type: form-data`\n    \n\n#### Respuestas\n\n- **200 OK** - Alumno editado exitosamente.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **404 Not Found**: No se encuentra ningún alumno con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -898,7 +964,8 @@
 								"api",
 								"grupos"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite añadir un nuevo grupo al sistema.\n\n#### URL\n\n`POST http://localhost:8080/api/grupos`\n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del grupo.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **201 Created** - Se ha creado el grupo exitosamente. Se devuelve el objeto del grupo creado.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -938,7 +1005,8 @@
 								"grupos",
 								"1"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite modificar un grupo del sistema.\n\n#### URL\n\n`PUT http://localhost:8080/api/grupos/{id}`\n\n- `{id}`: El ID del grupo que se desea modificar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del grupo que se desea modificar.\n    \n\n#### Cuerpo de la Solicitud\n\nEl cuerpo de la solicitud debe contener los datos del grupo en formato JSON.\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): Nombre del grupo.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`\n    \n\n#### Respuestas\n\n- **200 OK** - Grupo editado exitosamente.\n    \n- **400 Bad Request** - Si hay un problema con los datos proporcionados.\n    \n- **404 Not Found**: No se encuentra ningún grupo con el ID especificado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -969,7 +1037,8 @@
 								"grupos",
 								"1"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un grupo del sistema.\n\n#### URL\n\n`DELETE http://localhost:8080/api/grupos/{id}`\n\n- `{id}`: El ID del grupo que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del grupo que se desea eliminar.\n    \n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Si se elimina el grupo exitosamente.\n    \n- **404 Not Found** - Si no se encuentra ningún alumno con el ID especificado."
 					},
 					"response": []
 				},
@@ -1002,7 +1071,8 @@
 								"alumnos",
 								"19"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite agregar un alumno a un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`POST http://localhost:8080/api/grupos/{grupoId}/alumnos/{alumnoId}`\n\n- `{grupoId}`: El ID del grupo al cual se desea agregar el alumno.\n    \n- `{alumnoId}`: El ID del alumno que se desea agregar al grupo.\n    \n\n#### Parámetros de ruta\n\n- `grupoId` (requerido): El ID del grupo.\n    \n- `alumnoId` (requerido): El ID del alumno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: El alumno fue agregado al grupo exitosamente.\n    \n- **404 Not Found**: No se encontró el grupo con el ID especificado.\n    \n- **500 Internal Server Error**: Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1035,7 +1105,8 @@
 								"alumnos",
 								"21"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un alumno de un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/grupos/{grupoId}/alumnos/{alumnoId}`\n\n- `{grupoId}`: El ID del grupo del cual se desea eliminar el alumno.\n    \n- `{alumnoId}`: El ID del alumno que se desea eliminar del grupo.\n    \n\n#### Parámetros de ruta\n\n- `grupoId` (requerido): El ID del grupo.\n    \n- `alumnoId` (requerido): El ID del alumno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **204 No Content**: El alumno fue eliminado del grupo exitosamente.\n    \n- **404 Not Found**: No se encontró el grupo con el ID especificado o el alumno no pertenece al grupo.\n    \n- **500 Internal Server Error**: Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1066,7 +1137,8 @@
 								"grupos",
 								"6"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener la información de un grupo específico, incluyendo los alumnos asociados a dicho grupo. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`GET http://localhost:8080/api/grupos/{id}`\n\n- `{id}`: El ID del grupo que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del grupo.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Información del grupo incluyendo los alumnos asociados.\n    \n- **404 Not Found**: No se encontró ningún grupo con el ID especificado.\n    \n- **500 Internal Server Error**: Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1078,7 +1150,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTcwMDE5MzYsImV4cCI6MTcxNzAzNzkzNn0.Cltae00fL3WG4M5fg0Xfe3I7Ogk0oiocPwa_u_OAIVA",
 									"type": "string"
 								}
 							]
@@ -1098,7 +1170,8 @@
 								"2",
 								"turnos"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de los turnos asociados a un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER', 'ROLE_ADMIN' o 'ROLE_USER'.\n\n#### URL\n\n`GET http://localhost:8080/api/grupos/{grupoId}/turnos`\n\n- `{grupoId}`: El ID del grupo del cual se desea obtener los turnos.\n    \n\n#### Parámetros de ruta\n\n- `grupoId` (requerido): El ID del grupo.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Lista de turnos del grupo.\n    \n- **404 Not Found**: No se encontró ningún turno asociado al grupo especificado.\n    \n- **500 Internal Server Error**: Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}
@@ -1115,7 +1188,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTcwMDI2NTIsImV4cCI6MTcxNzAzODY1Mn0.uyB3Uh4zD6R_44zvpBY23ex4LCd_WiFOKVurGaejCcw",
 									"type": "string"
 								}
 							]
@@ -1149,7 +1222,8 @@
 								"eventos",
 								"crear"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite crear un nuevo evento en el sistema. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'. El evento puede incluir una imagen opcional.\n\n#### URL\n\n`POST http://localhost:8080/api/eventos/crear`\n\n#### Parámetros del Cuerpo\n\n- `nuevo` (requerido): Un string en formato JSON que contiene los detalles del nuevo evento.\n    \n- `file` (opcional): Un archivo de imagen asociado al evento.\n    \n\n#### Ejemplo de Cuerpo\n\n``` json\n{\n    \"titulo\": \"Título del Evento\",\n    \"descripcion\": \"Descripción del Evento\"\n}\n\n ```\n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n- `Content-Type: multipart/form-data`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **201 Created**: Evento creado exitosamente. Devuelve el objeto del evento creado.\n    \n- **400 Bad Request**: Error al procesar la solicitud.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1190,7 +1264,8 @@
 								"eventos",
 								"1"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite actualizar la información de un evento existente en el sistema. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'. La actualización puede incluir una imagen opcional.\n\n#### URL\n\n`PUT http://localhost:8080/api/eventos/{id}`\n\n- `{id}`: El ID del evento que se desea actualizar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del evento.\n    \n\n#### Parámetros del Cuerpo\n\n- `eventoEditado` (requerido): Un string en formato JSON que contiene los detalles del evento actualizado.\n    \n- `file` (opcional): Un archivo de imagen asociado al evento.\n    \n\n#### Ejemplo de Cuerpo\n\n``` json\n{\n    \"titulo\": \"Nuevo Título del Evento\",\n    \"descripcion\": \"Nueva Descripción del Evento\"\n}\n\n ```\n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n- `Content-Type: multipart/form-data`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **200 OK**: Evento actualizado exitosamente. Devuelve el objeto del evento actualizado.\n    \n- **400 Bad Request**: Error al procesar la solicitud.\n    \n- **404 Not Found**: No se encontró ningún evento con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1221,7 +1296,8 @@
 								"eventos",
 								"3"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un evento existente en el sistema. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/eventos/{id}`\n\n- `{id}`: El ID del evento que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del evento.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: El evento fue eliminado exitosamente.\n    \n- **404 Not Found**: No se encontró ningún evento con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1252,7 +1328,8 @@
 								"eventos",
 								"1"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener la información de un evento específico mediante su ID. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`GET http://localhost:8080/api/eventos/{eventoId}`\n\n- `{eventoId}`: El ID del evento que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `eventoId` (requerido): El ID del evento.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Información del evento.\n    \n- **404 Not Found**: No se encontró ningún evento con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1275,7 +1352,8 @@
 								"api",
 								"eventos"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los eventos registrados en el sistema. No se requiere autenticación para esta solicitud.\n\n#### URL\n\n`GET http://localhost:8080/api/eventos`\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK**: Lista de todos los eventos.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				}
@@ -1320,7 +1398,8 @@
 								"turnos",
 								"crear"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite crear un nuevo turno y asignarlo a un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`POST http://localhost:8080/api/turnos/crear-asignando-grupo`\n\n#### Parámetros del Cuerpo\n\n- `turnoDTO` (requerido): Un objeto JSON que contiene los detalles del turno y la información del grupo al que se debe asignar.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n- `Content-Type: application/json`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **201 Created**: Turno creado y asignado al grupo exitosamente.\n    \n- **400 Bad Request**: Error en los datos proporcionados.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1360,7 +1439,8 @@
 								"turnos",
 								"crear-asignando-grupo"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite crear un nuevo turno y asignarlo a un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`POST http://localhost:8080/api/turnos/crear-asignando-grupo`\n\n#### Parámetros del Cuerpo\n\n- `turnoDTO` (requerido): Un objeto JSON que contiene los detalles del turno y la información del grupo al que se debe asignar.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n- `Content-Type: application/json`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **201 Created**: Turno creado y asignado al grupo exitosamente.\n    \n- **400 Bad Request**: Error en los datos proporcionados.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1400,47 +1480,8 @@
 								"turnos",
 								"1"
 							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Editar turno con grupo",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
-									"type": "string"
-								}
-							]
 						},
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"diaSemana\": \"Miércoles\",\r\n    \"horaInicio\": \"17:00\",\r\n    \"horaFin\": \"18:00\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8080/api/turnos/2",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"api",
-								"turnos",
-								"2"
-							]
-						}
+						"description": "#### Descripción\n\nEste endpoint permite actualizar la información de un turno existente. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`PUT http://localhost:8080/api/turnos/{turnoId}`\n\n- `{turnoId}`: El ID del turno que se desea actualizar.\n    \n\n#### Parámetros de ruta\n\n- `turnoId` (requerido): El ID del turno.\n    \n\n#### Parámetros del Cuerpo\n\n- `turnoDTO` (requerido): Un objeto JSON que contiene los detalles actualizados del turno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n- `Content-Type: application/json`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **200 OK**: Turno actualizado exitosamente. Devuelve el objeto del turno actualizado.\n    \n- **404 Not Found**: No se encontró ningún turno con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1471,38 +1512,8 @@
 								"turnos",
 								"1"
 							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Eliminar turno con grupo",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
-									"type": "string"
-								}
-							]
 						},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/api/turnos/2",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"api",
-								"turnos",
-								"2"
-							]
-						}
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un turno existente. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/turnos/{turnoId}`\n\n- `{turnoId}`: El ID del turno que se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `turnoId` (requerido): El ID del turno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **204 No Content**: El turno fue eliminado exitosamente.\n    \n- **404 Not Found**: No se encontró ningún turno con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1535,7 +1546,8 @@
 								"turnos",
 								"3"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite agregar un turno a un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`POST http://localhost:8080/api/grupos/{grupoId}/turnos/{turnoId}`\n\n- `{grupoId}`: El ID del grupo al cual se desea agregar el turno.\n    \n- `{turnoId}`: El ID del turno que se desea agregar al grupo.\n    \n\n#### Parámetros de ruta\n\n- `grupoId` (requerido): El ID del grupo.\n    \n- `turnoId` (requerido): El ID del turno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: El turno fue agregado al grupo exitosamente.\n    \n- **404 Not Found**: No se encontró el grupo o el turno con los IDs especificados.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1568,7 +1580,8 @@
 								"turnos",
 								"3"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar un turno de un grupo específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/grupos/{grupoId}/turnos/{turnoId}`\n\n- `{grupoId}`: El ID del grupo del cual se desea eliminar el turno.\n    \n- `{turnoId}`: El ID del turno que se desea eliminar del grupo.\n    \n\n#### Parámetros de ruta\n\n- `grupoId` (requerido): El ID del grupo.\n    \n- `turnoId` (requerido): El ID del turno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: El turno fue eliminado del grupo exitosamente.\n    \n- **404 Not Found**: No se encontró el grupo o el turno con los IDs especificados.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1599,7 +1612,8 @@
 								"turnos",
 								"3"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener la información de un turno específico mediante su ID. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`GET http://localhost:8080/api/turnos/{turnoId}`\n\n- `{turnoId}`: El ID del turno que se desea obtener.\n    \n\n#### Parámetros de ruta\n\n- `turnoId` (requerido): El ID del turno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Información del turno.\n    \n- **404 Not Found**: No se encontró ningún turno con el ID especificado.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1607,14 +1621,7 @@
 					"name": "Obtener todos los turnos",
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMDY0NTEsImV4cCI6MTcxNjM0MjQ1MX0.ol3zC0O-M7xXdsqWvfR2bxGA37vrhQ0WouhAzElrWSk",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
@@ -1629,7 +1636,8 @@
 								"api",
 								"turnos"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los turnos registrados en el sistema. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`GET http://localhost:8080/api/turnos`\n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Lista de todos los turnos.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				},
@@ -1637,19 +1645,12 @@
 					"name": "Obtener todos los turnos DTO",
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMDY0NTEsImV4cCI6MTcxNjM0MjQ1MX0.ol3zC0O-M7xXdsqWvfR2bxGA37vrhQ0WouhAzElrWSk",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/api/turnos",
+							"raw": "http://localhost:8080/api/turnos/dto",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1657,9 +1658,128 @@
 							"port": "8080",
 							"path": [
 								"api",
-								"turnos"
+								"turnos",
+								"dto"
 							]
-						}
+						},
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los turnos en formato DTO (Data Transfer Object) registrado en el sistema. No se requiere autenticación para esta solicitud.\n\n#### URL\n\n`GET http://localhost:8080/api/turnos/dto`\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK**: Lista de todos los turnos en formato DTO.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Imágenes",
+			"item": [
+				{
+					"name": "Borrar Imagen de Alumno",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/alumnos/2/imagen",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"alumnos",
+								"2",
+								"imagen"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar la imagen asociada a un alumno específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/alumnos/{id}/imagen`\n\n- `{id}`: El ID del alumno cuya imagen se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del alumno.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: La imagen del alumno fue eliminada exitosamente.\n    \n- **500 Internal Server Error**: Error interno en el servidor al intentar eliminar la imagen."
+					},
+					"response": []
+				},
+				{
+					"name": "Borrar Imagen de Evento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/eventos/1/imagen",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"eventos",
+								"1",
+								"imagen"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite eliminar la imagen asociada a un evento específico. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`DELETE http://localhost:8080/api/eventos/{id}/imagen`\n\n- `{id}`: El ID del evento cuya imagen se desea eliminar.\n    \n\n#### Parámetros de ruta\n\n- `id` (requerido): El ID del evento.\n    \n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: La imagen del evento fue eliminada exitosamente.\n    \n- **500 Internal Server Error**: Error interno en el servidor al intentar eliminar la imagen."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Email",
+			"item": [
+				{
+					"name": "Enviar email",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"Juan\",\r\n    \"apellidos\": \"Pérez\",\r\n    \"email\": \"juan.perez@example.com\",\r\n    \"asunto\": \"Consulta sobre clases\",\r\n    \"mensaje\": \"Hola, me gustaría obtener más información sobre las clases de Taekwondo.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/mail/enviar",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"mail",
+								"enviar"
+							]
+						},
+						"description": "#### Descripción\n\nEste endpoint permite enviar un correo electrónico con un mensaje formateado en HTML. La información del correo se pasa en el cuerpo de la solicitud.\n\n#### URL\n\n`POST http://localhost:8080/api/email/enviar`\n\n#### Parámetros del Cuerpo\n\n- `nombre` (requerido): El nombre de la persona que envía el mensaje.\n    \n- `apellidos` (requerido): Los apellidos de la persona que envía el mensaje.\n    \n- `email` (requerido): La dirección de correo electrónico de la persona que envía el mensaje.\n    \n- `asunto` (requerido): El asunto del mensaje.\n    \n- `mensaje` (requerido): El contenido del mensaje.\n    \n\n#### Encabezados\n\n- `Content-Type: application/json`: Tipo de contenido de la solicitud.\n    \n\n#### Respuestas\n\n- **200 OK**: El correo electrónico fue enviado exitosamente.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
 					},
 					"response": []
 				}

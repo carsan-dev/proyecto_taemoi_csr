@@ -1,4 +1,3 @@
-import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
@@ -27,6 +26,7 @@ import { roleGuard } from './guards/role.guard';
 import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos/listado-eventos.component';
 import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear-evento.component';
 import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
+import { NgModule } from '@angular/core';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -129,9 +129,8 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
 ];
-
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }
