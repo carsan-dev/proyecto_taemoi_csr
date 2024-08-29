@@ -314,35 +314,34 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Override
 	public List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId) {
-		Alumno alumno = alumnoRepository.findById(alumnoId)
-				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	        .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-		return alumno.getGrupos().stream()
-				.flatMap(grupo -> grupo.getTurnos().stream())
-				.map(turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(), turno.getHoraInicio(),
-						turno.getHoraFin()))
-				.collect(Collectors.toList());
+	    // Mapeando los turnos asignados al alumno a DTOs
+	    return alumno.getTurnos().stream()
+	        .map(turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(), turno.getHoraInicio(), turno.getHoraFin()))
+	        .collect(Collectors.toList());
 	}
 
 	@Override
 	public void asignarAlumnoATurno(Long alumnoId, Long turnoId) {
-		Alumno alumno = alumnoRepository.findById(alumnoId)
-			.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
-	
-		Turno turno = turnoRepository.findById(turnoId)
-			.orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
-	
-		// Verificar que el alumno ya esté asignado al grupo del turno
-		if (!alumno.getGrupos().contains(turno.getGrupo())) {
-			throw new IllegalArgumentException("El alumno no está asignado al grupo del turno.");
-		}
-	
-		// Asignar el turno al alumno si no está ya asignado
-		if (!alumno.getTurnos().contains(turno)) {
-			alumno.addTurno(turno);
-			alumnoRepository.save(alumno);  // Guarda la relación en la tabla intermedia
-		}
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	        .orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+
+	    Turno turno = turnoRepository.findById(turnoId)
+	        .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
+
+	    Grupo grupoDelTurno = turno.getGrupo();
+
+	    // Verificar si el alumno ya está asignado a este turno
+	    if (!alumno.getTurnos().contains(turno)) {
+	        alumno.addTurno(turno);
+	        alumnoRepository.save(alumno);  // Guarda la relación en la tabla intermedia
+	    }
+
+	    // No añadir al alumno al grupo completo, solo asignar el turno específico.
 	}
+
 
 	@Override
 	public void removerAlumnoDeTurno(Long alumnoId, Long turnoId) {

@@ -3,6 +3,7 @@ package com.taemoi.project.entidades;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Entity;
@@ -41,6 +42,7 @@ public class Turno {
     private Grupo grupo;
 
     @ManyToMany(mappedBy = "turnos", fetch = FetchType.EAGER)
+    @JsonBackReference
     private List<Alumno> alumnos = new ArrayList<>();
 
     public Turno() {}

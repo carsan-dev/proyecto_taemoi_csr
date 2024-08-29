@@ -2,6 +2,7 @@
   <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4">Gestionar Turnos de {{ alumno.nombre }} {{ alumno.apellidos }}</h2>
 
+    <!-- Sección para mostrar los turnos asignados al alumno -->
     <div *ngIf="turnos.length > 0; else noTurnos">
       <ul class="list-group">
         <li *ngFor="let turno of turnos" class="list-group-item d-flex justify-content-between align-items-center">
@@ -14,19 +15,23 @@
       <p class="text-center">Este alumno no tiene turnos asignados.</p>
     </ng-template>
 
+    <!-- Sección para agregar un nuevo turno al alumno -->
     <div class="mt-4">
       <h5 class="text-center">Agregar Turno</h5>
       <form (ngSubmit)="asignarTurno()" #turnoForm="ngForm">
         <div class="form-group">
           <label for="turnoSelect">Seleccione un turno</label>
           <select id="turnoSelect" class="form-control" [(ngModel)]="turnoSeleccionado" name="turnoSeleccionado" required>
-            <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</option>
+            <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">
+              {{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}
+            </option>
           </select>
         </div>
         <button type="submit" class="btn btn-primary mt-3" [disabled]="turnoForm.invalid">Asignar Turno</button>
       </form>
     </div>
 
+    <!-- Botón para volver a la vista anterior -->
     <div class="text-center mt-4">
       <button class="btn btn-secondary" (click)="volver()">Volver</button>
     </div>
