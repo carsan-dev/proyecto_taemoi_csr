@@ -1,5 +1,12 @@
-{"properties": [{
-  "name": "jwt.secret",
-  "type": "java.lang.String",
-  "description": "Secret token for spring auth"
-}]}
+{"properties": [
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "Secret token for spring auth"
+  },
+  {
+    "name": "cors.allowed.origin",
+    "type": "java.lang.String",
+    "description": "CORS variable for Cloud Hosting"
+  }
+]}

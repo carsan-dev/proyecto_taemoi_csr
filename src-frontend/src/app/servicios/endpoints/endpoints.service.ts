@@ -46,10 +46,38 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerAlumnoPorId(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerGruposDelAlumno(alumnoId: number, token: string): Observable<any> {
     const headers = this.crearHeaders(token);
     return this.http
       .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  asignarAlumnoATurno(alumnoId: number, turnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .post<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, {}, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  removerAlumnoDeTurno(alumnoId: number, turnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .delete<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTurnosDelAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, { headers })
       .pipe(catchError(this.manejarError));
   }
 

@@ -27,6 +27,7 @@ import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos
 import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear-evento.component';
 import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
 import { NgModule } from '@angular/core';
+import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -88,6 +89,8 @@ export const routes: Routes = [
     component: SeleccionarAlumnosComponent,
     canActivate: [roleGuard],
   },
+  { path: 'gestionarAlumnos/:id', component: GestionarAlumnosComponent },
+  { path: 'gestionarTurnosAlumno/:alumnoId', component: GestionarTurnosAlumnoComponent },
   {
     path: 'turnosGrupo/:id',
     component: TurnosGrupoComponent,

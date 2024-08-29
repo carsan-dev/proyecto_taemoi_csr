@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
@@ -342,5 +343,55 @@ public class AlumnoController {
 		logger.info("## AlumnoController :: eliminarAlumno");
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
+	/**
+	 * Obtiene los turnos asociados a un alumno específico.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @return ResponseEntity que contiene una lista de TurnoDTO.
+	 */
+	@GetMapping("/{alumnoId}/turnos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
+		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
+		return ResponseEntity.ok(turnos);
+	}
+
+
+	/**
+	 * Asigna un alumno a un turno específico dentro de un grupo al que ya pertenece.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param turnoId  El ID del turno.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@PostMapping("/{alumnoId}/turnos/{turnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> asignarAlumnoATurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
+		try {
+			alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
+			return ResponseEntity.ok("Alumno asignado al turno con éxito");
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+		}
+	}
+
+	/**
+	 * Remueve a un alumno de un turno específico.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param turnoId  El ID del turno.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@DeleteMapping("/{alumnoId}/turnos/{turnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> removerAlumnoDeTurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
+		try {
+			alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
+			return ResponseEntity.ok("Alumno removido del turno con éxito");
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+		}
 	}
 }

@@ -16,6 +16,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -94,6 +95,12 @@ public class Alumno {
 	
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	private List<Grupo> grupos = new ArrayList<>();;
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "alumno_turno",
+		joinColumns = @JoinColumn(name = "alumno_id"),
+		inverseJoinColumns = @JoinColumn(name = "turno_id"))
+	private List<Turno> turnos = new ArrayList<>();
     
     @OneToOne(mappedBy = "alumno")
     @JsonManagedReference
@@ -256,6 +263,24 @@ public class Alumno {
 	public void setGrupos(List<Grupo> grupos) {
 		this.grupos = grupos;
 	}
+
+	public List<Turno> getTurnos() {
+		return turnos;
+	}
+
+	public void setTurnos(List<Turno> turnos) {
+		this.turnos = turnos;
+	}
+
+	public void addTurno(Turno turno) {
+        this.turnos.add(turno);
+        turno.getAlumnos().add(this);
+    }
+
+    public void removeTurno(Turno turno) {
+        this.turnos.remove(turno);
+        turno.getAlumnos().remove(this);
+    }
 
 	public Usuario getUsuario() {
 		return usuario;

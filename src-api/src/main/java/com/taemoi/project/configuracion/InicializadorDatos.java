@@ -1,12 +1,5 @@
 package com.taemoi.project.configuracion;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -15,8 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-import javax.sql.DataSource;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,9 +15,11 @@ import org.springframework.stereotype.Component;
 
 import com.github.javafaker.Faker;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
+import com.taemoi.project.entidades.NombresGrupo;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -36,6 +29,7 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
+import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.GrupoService;
 
@@ -83,14 +77,14 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private GrupoService grupoService;
 
+	@Autowired
+	private TurnoRepository turnoRepository;
+
 	/**
 	 * Inyección del codificador de contraseñas.
 	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-	
-	@Autowired
-    private DataSource dataSource;
 
 	/**
 	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la
@@ -101,31 +95,52 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Override
 	public void run(String... args) throws Exception {
-		
-        try (InputStream inputStream = InicializadorDatos.class.getClassLoader().getResourceAsStream("taemoidb.sql")) {
-            if (inputStream == null) {
-                throw new FileNotFoundException("SQL script file not found in resources");
-            }
-            String sqlScript = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            String[] sqlStatements = sqlScript.split(";");
 
-            try (Connection conn = dataSource.getConnection()) {
-                for (String sql : sqlStatements) {
-                    if (!sql.trim().isEmpty()) {
-                        try (Statement stmt = conn.createStatement()) {
-                            stmt.execute(sql.trim());
-                        } catch (SQLException e) {
-                            System.err.println("Failed to execute statement: " + sql);
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		Grupo lunesMiercolesInfantil = new Grupo();
+		lunesMiercolesInfantil.setNombre(NombresGrupo.LUNES_MIERCOLES_INFANTIL);
+		grupoRepository.save(lunesMiercolesInfantil);
+	
+		Grupo lunesMiercolesJoven = new Grupo();
+		lunesMiercolesJoven.setNombre(NombresGrupo.LUNES_MIERCOLES_JOVEN);
+		grupoRepository.save(lunesMiercolesJoven);
+	
+		Grupo lunesMiercolesAdulto = new Grupo();
+		lunesMiercolesAdulto.setNombre(NombresGrupo.LUNES_MIERCOLES_ADULTO);
+		grupoRepository.save(lunesMiercolesAdulto);
+	
+		Grupo martesJuevesInfantil = new Grupo();
+		martesJuevesInfantil.setNombre(NombresGrupo.MARTES_JUEVES_INFANTIL);
+		grupoRepository.save(martesJuevesInfantil);
+	
+		Grupo martesJuevesJoven = new Grupo();
+		martesJuevesJoven.setNombre(NombresGrupo.MARTES_JUEVES_JOVEN);
+		grupoRepository.save(martesJuevesJoven);
+	
+		Grupo martesJuevesAdulto = new Grupo();
+		martesJuevesAdulto.setNombre(NombresGrupo.MARTES_JUEVES_ADULTO);
+		grupoRepository.save(martesJuevesAdulto);
+	
+		Grupo competicion = new Grupo();
+		competicion.setNombre(NombresGrupo.COMPETICION);
+		grupoRepository.save(competicion);
+		
+		crearTurno("Lunes", "17:00", "18:00", lunesMiercolesInfantil, "Infantil");
+		crearTurno("Lunes", "18:00", "19:00", lunesMiercolesJoven, "Joven");
+		crearTurno("Lunes", "19:00", "20:30", lunesMiercolesAdulto, "Adulto");
+		
+		crearTurno("Martes", "17:00", "18:00", martesJuevesInfantil, "Infantil");
+		crearTurno("Martes", "18:00", "19:00", martesJuevesJoven, "Joven");
+		crearTurno("Martes", "19:00", "20:00", martesJuevesAdulto, "Adulto");
+		
+		crearTurno("Miércoles", "17:00", "18:00", lunesMiercolesInfantil, "Infantil");
+		crearTurno("Miércoles", "18:00", "19:00", lunesMiercolesJoven, "Joven");
+		crearTurno("Miércoles", "19:00", "20:30", lunesMiercolesAdulto, "Adulto");
+		
+		crearTurno("Jueves", "17:00", "18:00", martesJuevesInfantil, "Infantil");
+		crearTurno("Jueves", "18:00", "19:00", martesJuevesJoven, "Joven");
+		crearTurno("Jueves", "19:00", "20:00", martesJuevesAdulto, "Adulto");
+		crearTurno("Jueves", "20:00", "21:30", competicion, "Competición");
+
         if (gradoRepository.count() == 0) {
             generarGrados();
         }
@@ -248,8 +263,16 @@ public class InicializadorDatos implements CommandLineRunner {
 
 		return alumno;
 	}
-	
 
+	private void crearTurno(String dia, String horaInicio, String horaFin, Grupo grupo, String tipo ) {
+		Turno nuevoTurno = new Turno();
+		nuevoTurno.setDiaSemana(dia);
+		nuevoTurno.setHoraInicio(horaInicio);
+		nuevoTurno.setHoraFin(horaFin);
+		nuevoTurno.setTipo(tipo);
+		nuevoTurno.setGrupo(grupo);
+		turnoRepository.save(nuevoTurno);
+	}
 
     private static String generarNif(Faker faker) {
         String numbers = String.format("%08d", faker.number().numberBetween(0, 100000000));
@@ -293,9 +316,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	private Categoria asignarCategoriaSegunEdad(int edad) {
 		TipoCategoria tipoCategoria;
-		if (edad >= 3 && edad <= 7) {
-			tipoCategoria = TipoCategoria.PRETKD;
-		} else if (edad >= 8 && edad <= 9) {
+		if (edad >= 8 && edad <= 9) {
 			tipoCategoria = TipoCategoria.INFANTIL;
 		} else if (edad >= 10 && edad <= 11) {
 			tipoCategoria = TipoCategoria.PRECADETE;
