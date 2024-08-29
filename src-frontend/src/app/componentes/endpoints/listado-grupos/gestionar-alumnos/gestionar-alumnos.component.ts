@@ -96,6 +96,9 @@ export class GestionarAlumnosComponent implements OnInit {
       });
     }
   }
+  gestionarTurnos(alumnoId: number): void {
+    this.router.navigate([`/gestionarTurnosAlumno`, alumnoId]);
+  }
 
   volver() {
     this.location.back();

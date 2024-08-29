@@ -51,7 +51,9 @@ public class SecurityConfiguration {
 	 */
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.csrf(AbstractHttpConfigurer::disable).authorizeHttpRequests(request -> request
+		http.csrf(AbstractHttpConfigurer::disable)
+			.authorizeHttpRequests(request -> request
+				.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/auth/roles")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/auth/user")
@@ -59,13 +61,19 @@ public class SecurityConfiguration {
 				.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
+				.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/turnos")
+				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/alumnos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.POST, "/api/alumnos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+				.requestMatchers(HttpMethod.POST, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
+				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.PUT, "/api/alumnos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.DELETE, "/api/alumnos/**")
+				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+				.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/turnos")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
