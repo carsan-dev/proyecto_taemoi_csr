@@ -16,7 +16,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class GestionarTurnosAlumnoComponent implements OnInit {
   alumnoId!: number;
-  alumno!: AlumnoDTO;
+  alumno: AlumnoDTO = {} as AlumnoDTO;
   turnos: Turno[] = [];
   turnosDisponibles: Turno[] = [];
   turnoSeleccionado!: number;
@@ -62,7 +62,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
     if (token) {
       this.endpointsService.obtenerTurnosDelAlumno(this.alumnoId, token).subscribe({
         next: (turnos: Turno[]) => {
-          this.turnos = turnos;
+          this.turnos = turnos;  // Asegúrate de que esta propiedad contiene solo los turnos del alumno
         },
         error: () => {
           Swal.fire({
@@ -80,7 +80,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
     if (token) {
       this.endpointsService.obtenerTurnos(token).subscribe({
         next: (turnos: Turno[]) => {
-          this.turnosDisponibles = turnos;
+          this.turnosDisponibles = turnos;  // Esto debería ser solo para turnos disponibles, no afecta a `this.turnos`
         },
         error: () => {
           Swal.fire({
@@ -93,6 +93,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
     }
   }
 
+
   asignarTurno(): void {
     const token = localStorage.getItem('token');
     if (token && this.turnoSeleccionado) {
@@ -101,10 +102,15 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
           Swal.fire('Turno asignado', 'El turno ha sido asignado al alumno con éxito', 'success');
           this.cargarTurnos();  // Recargar la lista de turnos
         },
-        error: () => {
+        error: (err) => {
+          console.error('Error al asignar turno:', err);
+          let errorMessage = 'No hemos podido asignar el turno al alumno';
+          if (err.error && typeof err.error === 'object') {
+            errorMessage = err.error.message || errorMessage;
+          }
           Swal.fire({
             title: 'Error al asignar turno',
-            text: 'No hemos podido asignar el turno al alumno',
+            text: errorMessage,
             icon: 'error',
           });
         },
@@ -112,13 +118,14 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
     }
   }
 
+
   removerTurno(turnoId: number): void {
     const token = localStorage.getItem('token');
     if (token) {
       this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId, token).subscribe({
-        next: () => {
+        next: (turnosActualizados: Turno[]) => {
+          this.turnos = turnosActualizados; // Actualizar la lista de turnos
           Swal.fire('Turno removido', 'El turno ha sido removido del alumno con éxito', 'success');
-          this.cargarTurnos();  // Recargar la lista de turnos
         },
         error: () => {
           Swal.fire({

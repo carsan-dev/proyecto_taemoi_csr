@@ -100,6 +100,7 @@ public class Alumno {
 	@JoinTable(name = "alumno_turno",
 		joinColumns = @JoinColumn(name = "alumno_id"),
 		inverseJoinColumns = @JoinColumn(name = "turno_id"))
+	@JsonManagedReference
 	private List<Turno> turnos = new ArrayList<>();
     
     @OneToOne(mappedBy = "alumno")
@@ -273,9 +274,12 @@ public class Alumno {
 	}
 
 	public void addTurno(Turno turno) {
-        this.turnos.add(turno);
-        turno.getAlumnos().add(this);
-    }
+	    if (!this.turnos.contains(turno)) {
+	        this.turnos.add(turno);
+	        turno.getAlumnos().add(this);
+	    }
+	}
+
 
     public void removeTurno(Turno turno) {
         this.turnos.remove(turno);

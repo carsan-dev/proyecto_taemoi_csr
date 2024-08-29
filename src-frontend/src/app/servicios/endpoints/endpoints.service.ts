@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
+import { Turno } from '../../interfaces/turno';
 
 @Injectable({
   providedIn: 'root',
@@ -67,12 +68,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  removerAlumnoDeTurno(alumnoId: number, turnoId: number, token: string): Observable<any> {
+  removerAlumnoDeTurno(alumnoId: number, turnoId: number, token: string): Observable<Turno[]> {
     const headers = this.crearHeaders(token);
     return this.http
-      .delete<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { headers })
+      .delete<Turno[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { headers })
       .pipe(catchError(this.manejarError));
   }
+
 
   obtenerTurnosDelAlumno(alumnoId: number, token: string): Observable<any> {
     const headers = this.crearHeaders(token);

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -369,13 +370,17 @@ public class AlumnoController {
 	@PostMapping("/{alumnoId}/turnos/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> asignarAlumnoATurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
-		try {
-			alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
-			return ResponseEntity.ok("Alumno asignado al turno con éxito");
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-		}
+	    try {
+	        alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
+	        // Respuesta exitosa en formato JSON
+	        return ResponseEntity.ok(Map.of("message", "Alumno asignado al turno y grupo con éxito"));
+	    } catch (IllegalArgumentException e) {
+	        // Respuesta de error en formato JSON
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+	    }
 	}
+
 
 	/**
 	 * Remueve a un alumno de un turno específico.
@@ -387,11 +392,16 @@ public class AlumnoController {
 	@DeleteMapping("/{alumnoId}/turnos/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> removerAlumnoDeTurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
-		try {
-			alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
-			return ResponseEntity.ok("Alumno removido del turno con éxito");
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-		}
+	    try {
+	        alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
+	        // Obtener la lista actualizada de turnos
+	        List<TurnoDTO> turnosActualizados = alumnoService.obtenerTurnosDelAlumno(alumnoId);
+	        // Retornar la lista actualizada
+	        return ResponseEntity.ok(turnosActualizados);
+	    } catch (IllegalArgumentException e) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+	    }
 	}
+
 }

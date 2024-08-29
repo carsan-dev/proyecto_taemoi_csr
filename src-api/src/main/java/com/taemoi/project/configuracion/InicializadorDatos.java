@@ -158,6 +158,7 @@ public class InicializadorDatos implements CommandLineRunner {
         }
 
         asignarAlumnosAGrupoAleatorio();
+        asignarAlumnosAGrupoYTurnos();
 	}
 
 	private void generarUsuarios() {
@@ -178,6 +179,22 @@ public class InicializadorDatos implements CommandLineRunner {
 			usuarioRepository.save(usuario);
 		}
 	}
+	
+    private void asignarAlumnosAGrupoYTurnos() {
+        List<Alumno> alumnos = alumnoRepository.findAll();
+        for (Alumno alumno : alumnos) {
+            if (alumno.getTurnos().isEmpty()) {
+                List<Grupo> grupos = alumno.getGrupos();
+                for (Grupo grupo : grupos) {
+                    List<Turno> turnos = turnoRepository.findByGrupo(grupo);
+                    for (Turno turno : turnos) {
+                        alumno.addTurno(turno);
+                    }
+                }
+                alumnoRepository.save(alumno);
+            }
+        }
+    }
 
 	/**
 	 * Genera los grados si no existen en la base de datos.
