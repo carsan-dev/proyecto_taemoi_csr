@@ -36,7 +36,6 @@
                   <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
                   <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
                   <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">Número de expediente: {{ alumno.numeroExpediente }}</li>
                   <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
                 </ul>
               </div>
@@ -143,18 +142,6 @@
                       class="text-danger">
                       <small *ngIf="alumnoForm.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento es
                         requerida</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="number" id="numeroExpediente" class="form-control" formControlName="numeroExpediente" required placeholder="Número de expediente">
-                    <label for="numeroExpediente">Número de expediente</label>
-                    <div
-                      *ngIf="alumnoForm.get('numeroExpediente')?.errors && (alumnoForm.get('numeroExpediente')?.dirty || alumnoForm.get('numeroExpediente')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['required']">Número de expediente es
-                        requerido</small>
-                      <small *ngIf="alumnoForm.get('numeroExpediente')?.errors?.['pattern']">Número de expediente debe ser
-                        un número válido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">

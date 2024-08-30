@@ -24,16 +24,6 @@
           </div>
         </div>
         <div class="form-group mb-3 form-floating">
-          <input type="number" class="form-control" id="numeroExpediente" name="numeroExpediente"
-            formControlName="numeroExpediente" required placeholder="Número de expediente">
-          <label for="numeroExpediente">Número de expediente</label>
-          <div *ngIf="alumnoData.get('numeroExpediente')?.errors && alumnoData.get('numeroExpediente')?.touched"
-            class="text-danger">
-            <small *ngIf="alumnoData.get('numeroExpediente')?.errors?.['required']">Número de expediente del alumno es
-              obligatorio.</small>
-          </div>
-        </div>
-        <div class="form-group mb-3 form-floating">
           <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
             formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
           <label for="fechaNacimiento">Fecha de nacimiento</label>

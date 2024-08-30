@@ -57,10 +57,6 @@ export class EditarAlumnoComponent implements OnInit {
         apellidos: ['', Validators.required],
         direccion: ['', Validators.required],
         fechaNacimiento: ['', Validators.required],
-        numeroExpediente: [
-          '',
-          [Validators.required, Validators.pattern('^[0-9]+$')],
-        ],
         nif: [
           '',
           [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
