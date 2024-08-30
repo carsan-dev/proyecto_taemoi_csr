@@ -330,27 +330,56 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    Turno turno = turnoRepository.findById(turnoId)
 	        .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
 
-	    // Verificar si el alumno ya está asignado a este turno
+	    Grupo grupoDelTurno = turno.getGrupo();
+
+	    // Verificar si el alumno ya está asignado al grupo del turno
+	    if (!alumno.getGrupos().contains(grupoDelTurno)) {
+	        // Si no está asignado, asignar al alumno al grupo del turno
+	        alumno.getGrupos().add(grupoDelTurno);
+	        grupoDelTurno.getAlumnos().add(alumno);
+	        grupoRepository.save(grupoDelTurno); // Guarda la relación en la tabla intermedia
+	    }
+
+	    // Asignar el turno al alumno si no está ya asignado
 	    if (!alumno.getTurnos().contains(turno)) {
 	        alumno.addTurno(turno);
-	        alumnoRepository.save(alumno);  // Guarda la relación en la tabla intermedia
 	    }
-	}
 
+	    alumnoRepository.save(alumno);  // Guarda la relación en la tabla intermedia
+
+	    // Verificar y eliminar el grupo si no quedan turnos del grupo
+	    verificarYEliminarGrupoSiNoQuedanTurnos(alumno, grupoDelTurno);
+	}
 
 	@Override
 	public void removerAlumnoDeTurno(Long alumnoId, Long turnoId) {
-		Alumno alumno = alumnoRepository.findById(alumnoId)
-			.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
-	
-		Turno turno = turnoRepository.findById(turnoId)
-			.orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
-	
-		// Verificar que el turno esté asignado al alumno antes de removerlo
-		if (alumno.getTurnos().contains(turno)) {
-			alumno.removeTurno(turno);
-			alumnoRepository.save(alumno);  // Elimina la relación en la tabla intermedia
-		}
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	        .orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+
+	    Turno turno = turnoRepository.findById(turnoId)
+	        .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
+
+	    // Verificar que el turno esté asignado al alumno antes de removerlo
+	    if (alumno.getTurnos().contains(turno)) {
+	        alumno.removeTurno(turno);
+	        alumnoRepository.save(alumno);  // Elimina la relación en la tabla intermedia
+	    }
+
+	    // Verificar y eliminar el grupo si no quedan turnos del grupo
+	    verificarYEliminarGrupoSiNoQuedanTurnos(alumno, turno.getGrupo());
+	}
+
+	private void verificarYEliminarGrupoSiNoQuedanTurnos(Alumno alumno, Grupo grupo) {
+	    boolean tieneTurnosDelGrupo = alumno.getTurnos().stream()
+	        .anyMatch(turno -> turno.getGrupo().equals(grupo));
+
+	    if (!tieneTurnosDelGrupo) {
+	        // Si no tiene turnos del grupo, eliminar el alumno de ese grupo
+	        alumno.getGrupos().remove(grupo);
+	        grupo.getAlumnos().remove(alumno);
+	        grupoRepository.save(grupo);
+	        alumnoRepository.save(alumno);
+	    }
 	}
 	
 
