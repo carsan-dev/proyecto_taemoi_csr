@@ -45,7 +45,6 @@ public class AuthenticationServiceImplTest {
 		MockitoAnnotations.openMocks(this);
 	}
 
-	@SuppressWarnings("null")
 	@Test
 	public void testSignup_EmailYaExiste() {
 		RegistroRequest request = new RegistroRequest("John", "Doe", "john@example.com", "password");

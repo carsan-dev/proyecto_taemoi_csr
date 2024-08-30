@@ -288,7 +288,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param id El ID del alumno a eliminar.
 	 * @return true si se elimina con éxito, false si el alumno no existe.
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public boolean eliminarAlumno(@NonNull Long id) {
 		return alumnoRepository.findById(id).map(alumno -> {
@@ -331,15 +330,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    Turno turno = turnoRepository.findById(turnoId)
 	        .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado"));
 
-	    Grupo grupoDelTurno = turno.getGrupo();
-
 	    // Verificar si el alumno ya está asignado a este turno
 	    if (!alumno.getTurnos().contains(turno)) {
 	        alumno.addTurno(turno);
 	        alumnoRepository.save(alumno);  // Guarda la relación en la tabla intermedia
 	    }
-
-	    // No añadir al alumno al grupo completo, solo asignar el turno específico.
 	}
 
 

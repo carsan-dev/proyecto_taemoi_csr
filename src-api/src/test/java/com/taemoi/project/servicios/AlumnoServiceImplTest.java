@@ -93,7 +93,6 @@ public class AlumnoServiceImplTest {
 		assertNotNull(result);
 	}
 
-	@SuppressWarnings("null")
 	@Test
 	public void testActualizarAlumno() {
 	    Alumno alumnoExistente = new Alumno();
@@ -171,7 +170,6 @@ public class AlumnoServiceImplTest {
 	    assertTrue(result);
 	}
 
-    @SuppressWarnings("null")
 	@Test
     public void testDatosAlumnoValidos() {
         AlumnoDTO alumnoDTO = new AlumnoDTO();
