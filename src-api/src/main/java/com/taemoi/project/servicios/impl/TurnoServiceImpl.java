@@ -93,7 +93,6 @@ public class TurnoServiceImpl implements TurnoService {
      *
      * @param turnoDTO Los datos del turno a crear.
      */
-    @SuppressWarnings("null")
     @Override
     public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
         // Crear el turno y asignar los valores de día, hora inicio y fin

@@ -378,7 +378,6 @@ public class InicializadorDatos implements CommandLineRunner {
 	 *
 	 * @param alumnos Lista de alumnos.
 	 */
-	@SuppressWarnings("null")
 	private void asignarAlumnosAGrupoAleatorio() {
 		List<Alumno> alumnosSinGrupo = alumnoRepository.findAlumnosSinGrupo();
 		List<Grupo> grupos = grupoRepository.findAll();
