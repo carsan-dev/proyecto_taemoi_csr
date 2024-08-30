@@ -31,6 +31,7 @@ import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
+import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 
 /**
@@ -46,6 +47,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+	
+	@Autowired
+	private AlumnoService alumnoService;
 
 	/**
 	 * Inyección del repositorio de usuario.
@@ -224,7 +228,7 @@ public class InicializadorDatos implements CommandLineRunner {
 		for (int i = 0; i < 20; i++) {
 			Alumno alumno = generarAlumno(faker);
 			if (!alumnoRepository.existsByEmail(alumno.getEmail())) {
-				alumnoRepository.save(alumno);
+				alumno = alumnoService.crearAlumno(alumno);
 				crearUsuarioParaAlumno(alumno);
 			}
 		}
@@ -256,7 +260,6 @@ public class InicializadorDatos implements CommandLineRunner {
 		Alumno alumno = new Alumno();
 		alumno.setNombre(faker.name().firstName());
 		alumno.setApellidos(faker.name().lastName());
-		alumno.setNumeroExpediente(faker.number().numberBetween(10000000, 99999999));
 		alumno.setFechaNacimiento(faker.date().birthday());
 		alumno.setNif(generarNif(faker));
 		alumno.setDireccion(faker.address().fullAddress());
