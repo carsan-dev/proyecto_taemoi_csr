@@ -248,7 +248,11 @@ public class AlumnoController {
 			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-			nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	        if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
+	            nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	        } else {
+	            nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
+	        }
 			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
 			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
 			nuevoAlumno.setCategoria(categoria);
