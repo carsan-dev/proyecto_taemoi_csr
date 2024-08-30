@@ -44,7 +44,7 @@ public class Alumno {
 	private String apellidos;
 
 	@Column(unique = true)
-	@NotNull(message = "El número de expediente no puede ser nulo")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer numeroExpediente;
 
 	@NotNull(message = "La fecha de nacimiento no puede ser nula")

@@ -38,10 +38,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData = this.fb.group({
       nombre: ['', Validators.required],
       apellidos: ['', Validators.required],
-      numeroExpediente: [
-        '',
-        [Validators.required, Validators.pattern('^[0-9]+$')],
-      ],
       fechaNacimiento: ['', Validators.required],
       nif: [
         '',
