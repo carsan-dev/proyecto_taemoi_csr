@@ -242,7 +242,6 @@ public class AlumnoController {
 			nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
 			nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
 			nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-			nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
 			nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
 			nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());

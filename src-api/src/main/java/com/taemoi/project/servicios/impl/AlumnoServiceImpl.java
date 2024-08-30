@@ -209,6 +209,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
 	        alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
 	    }
+	    Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
+	    if (maxNumeroExpediente == null) {
+	        maxNumeroExpediente = 0;
+	    }
+	    alumno.setNumeroExpediente(maxNumeroExpediente + 1);
 	    return alumnoRepository.save(alumno);
 	}
 
@@ -240,8 +245,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 			int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
 			Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
 			alumnoExistente.setCategoria(nuevaCategoria);
-
-			alumnoExistente.setNumeroExpediente(alumnoActualizado.getNumeroExpediente());
 			alumnoExistente.setNif(alumnoActualizado.getNif());
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			alumnoExistente.setEmail(alumnoActualizado.getEmail());
@@ -525,10 +528,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (alumnoDTO.getFechaNacimiento() == null || alumnoDTO.getFechaNacimiento().after(new Date())) {
 			return false;
 		}
-		if (alumnoDTO.getNumeroExpediente() == null || alumnoDTO.getNumeroExpediente() <= 0
-				|| alumnoDTO.getNif() == null || alumnoDTO.getNif().isEmpty()) {
-			return false;
-		}
+
 		if (alumnoDTO.getDireccion() == null || alumnoDTO.getDireccion().isEmpty() || alumnoDTO.getEmail() == null
 				|| alumnoDTO.getEmail().isEmpty()) {
 			return false;
