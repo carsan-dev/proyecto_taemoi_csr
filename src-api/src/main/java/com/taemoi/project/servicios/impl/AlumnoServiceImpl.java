@@ -206,7 +206,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Alumno crearAlumno(@NonNull Alumno alumno) {
-		return alumnoRepository.save(alumno);
+	    if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
+	        alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
+	    }
+	    return alumnoRepository.save(alumno);
 	}
 
 	@Override
@@ -251,6 +254,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 					|| (imagen != null && alumnoExistente.getFotoAlumno() != null)) {
 				alumnoExistente.setFotoAlumno(imagen);
 			}
+	        if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
+	            alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa()));
+	        } else {
+	            alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
+	        }
 			return alumnoRepository.save(alumnoExistente);
 		} else {
 			throw new RuntimeException("No se encontró el alumno con ID: " + id);

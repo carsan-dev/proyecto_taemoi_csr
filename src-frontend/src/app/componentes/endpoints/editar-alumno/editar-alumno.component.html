@@ -86,6 +86,7 @@
           (pageChange)="cambiarPagina($event)">
         </app-paginacion>
       </div>
+
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
         <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)" method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
@@ -215,6 +216,15 @@
                       *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
                       class="text-danger">
                       <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-floating mb-3">
+                    <input type="number" id="cuantiaTarifa" class="form-control" formControlName="cuantiaTarifa" required placeholder="Cuantía de Tarifa">
+                    <label for="cuantiaTarifa">Cuantía de Tarifa</label>
+                    <div
+                      *ngIf="alumnoForm.get('cuantiaTarifa')?.errors && (alumnoForm.get('cuantiaTarifa')?.dirty || alumnoForm.get('cuantiaTarifa')?.touched)"
+                      class="text-danger">
+                      <small *ngIf="alumnoForm.get('cuantiaTarifa')?.errors?.['required']">Cuantía de Tarifa es requerida</small>
                     </div>
                   </div>
                 </div>

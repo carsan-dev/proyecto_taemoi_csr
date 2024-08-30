@@ -45,6 +45,8 @@ export class EditarAlumnoComponent implements OnInit {
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
 
+  tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de tarifa
+
   constructor(
     private endpointsService: EndpointsService,
     private fb: FormBuilder
@@ -66,6 +68,7 @@ export class EditarAlumnoComponent implements OnInit {
         email: ['', [Validators.required, Validators.email]],
         telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
         tipoTarifa: ['', Validators.required],
+        cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],
         grado: [''],
@@ -78,6 +81,15 @@ export class EditarAlumnoComponent implements OnInit {
     if (typeof localStorage !== 'undefined') {
       this.obtenerAlumnos();
     }
+
+    // Escucha cambios en el tipo de tarifa para actualizar la cuantía
+    this.alumnoForm.get('tipoTarifa')?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
+      if (this.tipoTarifaEditado) { // Solo se actualiza si el usuario cambió el tipo de tarifa
+        const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
+        this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
+      }
+      this.tipoTarifaEditado = true; // Se marca como editado después de un cambio
+    });
   }
 
   obtenerAlumnos() {
@@ -203,13 +215,14 @@ export class EditarAlumnoComponent implements OnInit {
 
     const fechaNacimiento = new Date(alumno.fechaNacimiento).toISOString().split('T')[0];
     const fechaAlta = new Date(alumno.fechaAlta).toISOString().split('T')[0];
-    const fechaBaja = new Date(alumno.fechaBaja).toISOString().split('T')[0];
+    const fechaBaja = alumno.fechaBaja ? new Date(alumno.fechaBaja).toISOString().split('T')[0] : '';
+    this.tipoTarifaEditado = false; // Resetea la bandera antes de aplicar el valor
     this.alumnoForm.patchValue({
       ...this.alumnoEditado,
       fechaNacimiento: fechaNacimiento,
       fechaAlta: fechaAlta,
-      fechaBaja: fechaBaja
-
+      fechaBaja: fechaBaja,
+      cuantiaTarifa: alumno.cuantiaTarifa
     });
   }
 
@@ -259,5 +272,26 @@ export class EditarAlumnoComponent implements OnInit {
     return fechaAltaDate > fechaNacimientoDate
       ? null
       : { fechaAltaAnteriorAFechaNacimiento: true };
+  }
+
+  asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
+    switch (tipoTarifa) {
+      case TipoTarifa.ADULTO:
+        return 30.0;
+      case TipoTarifa.ADULTO_GRUPO:
+        return 20.0;
+      case TipoTarifa.FAMILIAR:
+        return 0.0;
+      case TipoTarifa.INFANTIL:
+        return 25.0;
+      case TipoTarifa.INFANTIL_GRUPO:
+        return 20.0;
+      case TipoTarifa.HERMANOS:
+        return 23.0;
+      case TipoTarifa.PADRES_HIJOS:
+        return 0.0;
+      default:
+        throw new Error('Tipo de tarifa no válido');
+    }
   }
 }
