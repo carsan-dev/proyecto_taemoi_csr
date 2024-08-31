@@ -254,6 +254,7 @@ public class AlumnoController {
 	        }
 			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
 			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
+			nuevoAlumno.setAutorizacionWeb(nuevoAlumnoDTO.getAutorizacionWeb());
 			nuevoAlumno.setCategoria(categoria);
 			nuevoAlumno.setGrado(grado);
 			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());

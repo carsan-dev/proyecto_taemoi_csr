@@ -67,6 +67,7 @@ export class EditarAlumnoComponent implements OnInit {
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],
+        autorizacionWeb: [true, Validators.required],
         grado: [''],
       },
       { validators: [this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]}
@@ -218,6 +219,7 @@ export class EditarAlumnoComponent implements OnInit {
       fechaNacimiento: fechaNacimiento,
       fechaAlta: fechaAlta,
       fechaBaja: fechaBaja,
+      autorizacionWeb: alumno.autorizacionWeb,
       cuantiaTarifa: alumno.cuantiaTarifa
     });
   }
