@@ -214,6 +214,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        maxNumeroExpediente = 0;
 	    }
 	    alumno.setNumeroExpediente(maxNumeroExpediente + 1);
+	    if (alumno.getAutorizacionWeb() == null) {
+	        alumno.setAutorizacionWeb(true);
+	    }
 	    return alumnoRepository.save(alumno);
 	}
 
@@ -252,6 +255,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
 			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
+			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
 
 			if ((imagen != null && alumnoExistente.getFotoAlumno() == null)
 					|| (imagen != null && alumnoExistente.getFotoAlumno() != null)) {
@@ -578,6 +582,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
-				alumno.getFechaBaja(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
+				alumno.getFechaBaja(), alumno.getAutorizacionWeb(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
 	}
 }

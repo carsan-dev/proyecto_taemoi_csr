@@ -80,6 +80,9 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
 	
+	@NotNull(message = "La autorización web no puede ser nula")
+	private Boolean autorizacionWeb = true;
+	
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     private Imagen fotoAlumno;
 
@@ -247,6 +250,14 @@ public class Alumno {
 
 	public void setFechaBaja(Date fechaBaja) {
 		this.fechaBaja = fechaBaja;
+	}
+	
+	public Boolean getAutorizacionWeb() {
+		return autorizacionWeb;
+	}
+
+	public void setAutorizacionWeb(Boolean autorizacionWeb) {
+		this.autorizacionWeb = autorizacionWeb;
 	}
 
 	public Imagen getFotoAlumno() {

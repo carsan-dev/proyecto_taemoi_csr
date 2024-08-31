@@ -1,166 +1,197 @@
-.container-fluid {
-  padding: 20px;
+$primary-color: #007bff;
+$border-radius: 30px;
+$input-padding: 20px;
+$label-font-size: 1rem;
+
+.container {
+  margin: auto;
 }
 
-.logo-img {
-  width: 150px;
-  height: auto;
+.card {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h3 {
+  font-size: 1.75rem;
   margin-bottom: 20px;
 }
 
-.row {
-  .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+
+  &:hover {
+    background-color: darken(#dc3545, 10%);
+    border-color: darken(#dc3545, 10%);
+  }
+}
+
+img {
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 2.5rem !important;
+
+  label {
+    font-size: $label-font-size;
+    font-weight: 500;
+    color: #8c8f92;
+    margin-left: 15px;
+    transition: all 0.2s ease; // Transición suave para todas las propiedades
   }
 
-  .card {
+  .form-control {
+    border-radius: $border-radius;
+    padding: $input-padding $input-padding 10px !important;
+    border: 1px solid #ced4da;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.2s ease;
     width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
 
-    .card-title {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .profile-info {
-      .imagen-perfil {
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border: 2px solid #ccc;
-      }
-
-      .card-title {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-
-      .card-text {
-        font-size: 0.9rem;
-        color: #6c757d;
-      }
-    }
-
-    .btn {
-      white-space: nowrap;
-    }
-  }
-
-  .imagen-perfil-container {
-    .imagen-perfil {
-      border-radius: 50%;
-      width: 275px;
-      height: 275px;
-      object-fit: cover;
-      border: 2px solid #ccc;
-    }
-  }
-
-  .card-body {
-    padding: 20px;
-
-    .form-group {
-      position: relative;
-      margin-bottom: 2.5rem !important;
-    }
-
-    .form-group label {
-      position: absolute;
-      top: 15px;
-      left: 20px;
-      font-size: 1rem;
-      font-weight: 500;
-      pointer-events: none;
-      transition: 0.2s ease all;
-      padding: 0 5px;
-      height: 30px;
-      color: #8c8f92;
-    }
-
-    .form-group .form-control {
-      border-radius: 30px;
-      padding: 20px 20px 10px !important;
-      border: 1px solid #ced4da;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-      transition: border-color 0.3s ease;
-      width: 100%;
-    }
-
-    .form-group .form-control:focus {
-      border-color: #007bff;
+    &:focus {
+      border-color: $primary-color;
       outline: none;
     }
 
-    .form-group .form-control:focus ~ label,
-    .form-group .form-control:not(:placeholder-shown) ~ label {
+    &:focus ~ label,
+    &:not(:placeholder-shown) ~ label {
       top: -5px;
-      left: 5px;
-      font-size: 0.80rem !important;
-      color: #007bff;
+      left: 0px;
+      font-size: 0.85rem !important;
+      color: $primary-color;
       background-color: #fff;
       height: 30px;
-    }
-
-    .form-group .form-control-little:focus ~ label,
-    .form-group .form-control-little:not(:placeholder-shown) ~ label {
-      left: 15px !important;
-    }
-
-    input:-webkit-autofill {
-      -webkit-box-shadow: 0 0 0 30px white inset !important;
-      -webkit-text-fill-color: #000 !important;
-    }
-
-    input:-webkit-autofill:focus {
-      border-color: #007bff;
-      outline: none;
-    }
-
-    input:-webkit-autofill ~ label {
-      top: -5px;
-      left: 15px;
-      font-size: 0.80rem !important;
-      color: #007bff;
-      background-color: #fff;
-      height: 30px;
+      padding: 0 5px; // Añadir un poco de espacio alrededor del texto
+      transition: all 0.2s ease; // Transición suave al cambiar a la esquina superior
     }
   }
+
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: #000 !important;
+  }
+
+  input:-webkit-autofill:focus {
+    border-color: $primary-color;
+    outline: none;
+  }
+
+  input:-webkit-autofill ~ label {
+    top: -12px;
+    left: 10px;
+    font-size: 0.85rem !important;
+    color: $primary-color;
+    background-color: #fff;
+    height: 30px;
+    padding: 0 5px;
+    transition: all 0.3s ease;
+  }
+}
+
+button[type="submit"] {
+  border-radius: $border-radius;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: darken(#1e7e34, 5%);
+  }
+}
+
+.form-check-inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+
+  .form-check-input {
+    margin-right: 10px;
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+
+  .form-check-label {
+    margin-bottom: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
+
+.d-flex {
+  display: flex;
+  flex-direction: column;
 }
 
 .image-container {
   position: relative;
-
-  div {
-    label {
-      cursor: pointer;
-    }
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 150px; /* Ajusta el tamaño a lo que prefieras */
+  height: 150px; /* Ajusta el tamaño a lo que prefieras */
+  margin-bottom: 15px;
 }
 
 .imagen-perfil {
   width: 150px;
   height: 150px;
-  border-radius: 50%;
+  border-radius: 50%; /* Esto hace que la imagen sea redonda */
   object-fit: cover;
   border: 2px solid #ccc;
 }
 
-input[type="file"] {
-  display: none;
+.add-icon {
+  position: absolute;
+  top: 60%;
+  right: -49px;
+  transform: translateY(-50%); /* Ajusta para centrar el ícono verticalmente */
+  background-color: #fff;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  i {
+    font-size: 1.5rem;
+    color: $primary-color;
+  }
+
+  input[type="file"] {
+    display: none; /* Oculta el input */
+  }
 }
 
 .remove-icon {
-  z-index: 1;
-  font-size: 20px;
+  position: absolute;
+  top: 50%;
+  right: -41px;
+  transform: translateY(-150%); /* Ajusta para centrar el ícono verticalmente */
+  background-color: #fff;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  color: #ff0000;
+
+  i {
+    font-size: 1.5rem;
+    color: $primary-color;
+  }
+
+  input[type="file"] {
+    display: none; /* Oculta el input */
+  }
 }
 
 @media (max-width: 992px) {
