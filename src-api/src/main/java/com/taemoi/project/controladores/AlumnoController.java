@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
@@ -113,7 +115,8 @@ public class AlumnoController {
 	        @RequestParam(required = false) Integer size,
 	        @RequestParam(required = false) String nombre,
 	        @RequestParam(required = false) Long gradoId,
-	        @RequestParam(required = false) Long categoriaId) {
+	        @RequestParam(required = false) Long categoriaId,
+			@RequestParam(required = false) Boolean incluirInactivos){
 
 	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 	    logger.info(
@@ -122,8 +125,9 @@ public class AlumnoController {
 
 	    Pageable pageable = (page != null && size != null) ? PageRequest.of(page - 1, size, Sort.by("nombre").ascending()) : Pageable.unpaged();
 	    boolean isPaged = page != null && size != null;
+	    boolean incluir = incluirInactivos != null ? incluirInactivos : false;
 
-	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
+	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, pageable);
 
 	    if (alumnos.isEmpty()) {
 	        logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
@@ -240,15 +244,19 @@ public class AlumnoController {
 			nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
 			nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
 			nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-			nuevoAlumno.setNumeroExpediente(nuevoAlumnoDTO.getNumeroExpediente());
 			nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
 			nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-			nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	        if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
+	            nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
+	        } else {
+	            nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
+	        }
 			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
 			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
+			nuevoAlumno.setAutorizacionWeb(nuevoAlumnoDTO.getAutorizacionWeb());
 			nuevoAlumno.setCategoria(categoria);
 			nuevoAlumno.setGrado(grado);
 			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
@@ -264,6 +272,21 @@ public class AlumnoController {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
 		}
 	}
+	
+	@PutMapping("/{id}/baja")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
+	    alumnoService.darDeBajaAlumno(id);
+	    return ResponseEntity.ok().build();
+	}
+	
+	@PutMapping("/{id}/alta")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> darDeAltaAlumno(@PathVariable @NonNull Long id) {
+	    alumnoService.darDeAltaAlumno(id);
+	    return ResponseEntity.ok().build();
+	}
+
 
 	/**
 	 * Actualiza la información de un alumno existente.
@@ -343,4 +366,63 @@ public class AlumnoController {
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
+
+	/**
+	 * Obtiene los turnos asociados a un alumno específico.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @return ResponseEntity que contiene una lista de TurnoDTO.
+	 */
+	@GetMapping("/{alumnoId}/turnos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
+		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
+		return ResponseEntity.ok(turnos);
+	}
+
+
+	/**
+	 * Asigna un alumno a un turno específico dentro de un grupo al que ya pertenece.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param turnoId  El ID del turno.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@PostMapping("/{alumnoId}/turnos/{turnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> asignarAlumnoATurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
+	    try {
+	        alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
+	        // Respuesta exitosa en formato JSON
+	        return ResponseEntity.ok(Map.of("message", "Alumno asignado al turno y grupo con éxito"));
+	    } catch (IllegalArgumentException e) {
+	        // Respuesta de error en formato JSON
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+	    }
+	}
+
+
+	/**
+	 * Remueve a un alumno de un turno específico.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param turnoId  El ID del turno.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@DeleteMapping("/{alumnoId}/turnos/{turnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> removerAlumnoDeTurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
+	    try {
+	        alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
+	        // Obtener la lista actualizada de turnos
+	        List<TurnoDTO> turnosActualizados = alumnoService.obtenerTurnosDelAlumno(alumnoId);
+	        // Retornar la lista actualizada
+	        return ResponseEntity.ok(turnosActualizados);
+	    } catch (IllegalArgumentException e) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+	    }
+	}
+
 }

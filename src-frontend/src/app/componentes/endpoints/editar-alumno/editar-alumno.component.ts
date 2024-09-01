@@ -44,6 +44,8 @@ export class EditarAlumnoComponent implements OnInit {
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
+  mostrarInactivos: boolean = false;
+  tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de tarifa
 
   constructor(
     private endpointsService: EndpointsService,
@@ -55,10 +57,6 @@ export class EditarAlumnoComponent implements OnInit {
         apellidos: ['', Validators.required],
         direccion: ['', Validators.required],
         fechaNacimiento: ['', Validators.required],
-        numeroExpediente: [
-          '',
-          [Validators.required, Validators.pattern('^[0-9]+$')],
-        ],
         nif: [
           '',
           [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
@@ -66,8 +64,10 @@ export class EditarAlumnoComponent implements OnInit {
         email: ['', [Validators.required, Validators.email]],
         telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
         tipoTarifa: ['', Validators.required],
+        cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],
+        autorizacionWeb: [true, Validators.required],
         grado: [''],
       },
       { validators: [this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]}
@@ -78,6 +78,15 @@ export class EditarAlumnoComponent implements OnInit {
     if (typeof localStorage !== 'undefined') {
       this.obtenerAlumnos();
     }
+
+    // Escucha cambios en el tipo de tarifa para actualizar la cuantía
+    this.alumnoForm.get('tipoTarifa')?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
+      if (this.tipoTarifaEditado) { // Solo se actualiza si el usuario cambió el tipo de tarifa
+        const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
+        this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
+      }
+      this.tipoTarifaEditado = true; // Se marca como editado después de un cambio
+    });
   }
 
   obtenerAlumnos() {
@@ -89,7 +98,8 @@ export class EditarAlumnoComponent implements OnInit {
           token,
           this.paginaActual,
           this.tamanoPagina,
-          this.nombreFiltro
+          this.nombreFiltro,
+          this.mostrarInactivos
         )
         .subscribe({
           next: (response) => {
@@ -203,13 +213,15 @@ export class EditarAlumnoComponent implements OnInit {
 
     const fechaNacimiento = new Date(alumno.fechaNacimiento).toISOString().split('T')[0];
     const fechaAlta = new Date(alumno.fechaAlta).toISOString().split('T')[0];
-    const fechaBaja = new Date(alumno.fechaBaja).toISOString().split('T')[0];
+    const fechaBaja = alumno.fechaBaja ? new Date(alumno.fechaBaja).toISOString().split('T')[0] : '';
+    this.tipoTarifaEditado = false; // Resetea la bandera antes de aplicar el valor
     this.alumnoForm.patchValue({
       ...this.alumnoEditado,
       fechaNacimiento: fechaNacimiento,
       fechaAlta: fechaAlta,
-      fechaBaja: fechaBaja
-
+      fechaBaja: fechaBaja,
+      autorizacionWeb: alumno.autorizacionWeb,
+      cuantiaTarifa: alumno.cuantiaTarifa
     });
   }
 
@@ -259,5 +271,31 @@ export class EditarAlumnoComponent implements OnInit {
     return fechaAltaDate > fechaNacimientoDate
       ? null
       : { fechaAltaAnteriorAFechaNacimiento: true };
+  }
+
+  asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
+    switch (tipoTarifa) {
+      case TipoTarifa.ADULTO:
+        return 30.0;
+      case TipoTarifa.ADULTO_GRUPO:
+        return 20.0;
+      case TipoTarifa.FAMILIAR:
+        return 0.0;
+      case TipoTarifa.INFANTIL:
+        return 25.0;
+      case TipoTarifa.INFANTIL_GRUPO:
+        return 20.0;
+      case TipoTarifa.HERMANOS:
+        return 23.0;
+      case TipoTarifa.PADRES_HIJOS:
+        return 0.0;
+      default:
+        throw new Error('Tipo de tarifa no válido');
+    }
+  }
+
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    this.obtenerAlumnos();
   }
 }

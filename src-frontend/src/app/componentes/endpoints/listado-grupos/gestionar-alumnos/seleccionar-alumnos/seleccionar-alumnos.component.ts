@@ -23,6 +23,7 @@ export class SeleccionarAlumnosComponent implements OnInit {
   tamanoPagina: number = 10;
   alumnosEnGrupo: AlumnoDTO[] = [];
   nombreFiltro: string = '';
+  mostrarInactivos: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -63,7 +64,8 @@ export class SeleccionarAlumnosComponent implements OnInit {
         token,
         this.paginaActual,
         this.tamanoPagina,
-        this.nombreFiltro
+        this.nombreFiltro,
+        this.mostrarInactivos
       )
       .subscribe({
         next: (response) => {

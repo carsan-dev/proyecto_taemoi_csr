@@ -16,6 +16,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -75,9 +76,15 @@ public class Alumno {
 
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
-
+	
+	@NotNull(message = "El estado de la baja no puede ser nulo")
+	private Boolean activo = true;
+	
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
+	
+	@NotNull(message = "La autorización web no puede ser nula")
+	private Boolean autorizacionWeb = true;
 	
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     private Imagen fotoAlumno;
@@ -94,6 +101,13 @@ public class Alumno {
 	
     @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	private List<Grupo> grupos = new ArrayList<>();;
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "alumno_turno",
+		joinColumns = @JoinColumn(name = "alumno_id"),
+		inverseJoinColumns = @JoinColumn(name = "turno_id"))
+	@JsonManagedReference
+	private List<Turno> turnos = new ArrayList<>();
     
     @OneToOne(mappedBy = "alumno")
     @JsonManagedReference
@@ -232,6 +246,14 @@ public class Alumno {
 	public void setFechaAlta(Date fechaAlta) {
 		this.fechaAlta = fechaAlta;
 	}
+	
+	public Boolean getActivo() {
+		return activo;
+	}
+
+	public void setActivo(Boolean activo) {
+		this.activo = activo;
+	}
 
 	public Date getFechaBaja() {
 		return fechaBaja;
@@ -239,6 +261,14 @@ public class Alumno {
 
 	public void setFechaBaja(Date fechaBaja) {
 		this.fechaBaja = fechaBaja;
+	}
+	
+	public Boolean getAutorizacionWeb() {
+		return autorizacionWeb;
+	}
+
+	public void setAutorizacionWeb(Boolean autorizacionWeb) {
+		this.autorizacionWeb = autorizacionWeb;
 	}
 
 	public Imagen getFotoAlumno() {
@@ -256,6 +286,27 @@ public class Alumno {
 	public void setGrupos(List<Grupo> grupos) {
 		this.grupos = grupos;
 	}
+
+	public List<Turno> getTurnos() {
+		return turnos;
+	}
+
+	public void setTurnos(List<Turno> turnos) {
+		this.turnos = turnos;
+	}
+
+	public void addTurno(Turno turno) {
+	    if (!this.turnos.contains(turno)) {
+	        this.turnos.add(turno);
+	        turno.getAlumnos().add(this);
+	    }
+	}
+
+
+    public void removeTurno(Turno turno) {
+        this.turnos.remove(turno);
+        turno.getAlumnos().remove(this);
+    }
 
 	public Usuario getUsuario() {
 		return usuario;

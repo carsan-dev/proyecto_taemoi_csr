@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
@@ -26,9 +27,9 @@ public interface AlumnoService {
 	
 	Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id);
 	
-	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, @NonNull Pageable pageable);
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, @NonNull Pageable pageable);
 	
-	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId);
+	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 	
 	Alumno crearAlumno(@Valid @NonNull Alumno alumno);
 
@@ -37,6 +38,12 @@ public interface AlumnoService {
 	void eliminarImagenAlumno(@NonNull Long id);
 	
 	boolean eliminarAlumno(@Valid @NonNull Long id);
+
+	List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId);
+
+	void asignarAlumnoATurno(Long alumnoId, Long turnoId);
+
+	void removerAlumnoDeTurno(Long alumnoId, Long turnoId);
 
 	double asignarCuantiaTarifa(TipoTarifa tipoTarifa);
 
@@ -53,4 +60,8 @@ public interface AlumnoService {
 	String generarContrasena(String nombre, String apellidos);
 
 	Imagen guardarImagen(@NonNull Imagen imagen);
+
+	Alumno darDeBajaAlumno(Long id);
+
+	Alumno darDeAltaAlumno(Long id);
 }

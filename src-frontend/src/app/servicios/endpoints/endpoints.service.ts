@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
+import { Turno } from '../../interfaces/turno';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +28,8 @@ export class EndpointsService {
     token: string,
     page: number,
     size: number,
-    nombre: string
+    nombre: string,
+    incluirInactivos: boolean
   ): Observable<any> {
     const headers = this.crearHeaders(token);
     let params = new HttpParams()
@@ -38,6 +40,12 @@ export class EndpointsService {
       params = params.set('nombre', nombre);
     }
 
+    if (incluirInactivos) {
+      params = params.set('incluirInactivos', 'true');
+    } else {
+      params = params.set('incluirInactivos', 'false');
+    }
+
     return this.http
       .get<any>(`${this.urlBase}/alumnos`, {
         headers: headers,
@@ -46,10 +54,39 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerAlumnoPorId(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerGruposDelAlumno(alumnoId: number, token: string): Observable<any> {
     const headers = this.crearHeaders(token);
     return this.http
       .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  asignarAlumnoATurno(alumnoId: number, turnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .post<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, {}, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  removerAlumnoDeTurno(alumnoId: number, turnoId: number, token: string): Observable<Turno[]> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .delete<Turno[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+
+  obtenerTurnosDelAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, { headers })
       .pipe(catchError(this.manejarError));
   }
 
@@ -99,6 +136,21 @@ export class EndpointsService {
       .delete<any>(`${this.urlBase}/alumnos/${id}`, { headers })
       .pipe(catchError(this.manejarError));
   }
+
+  darDeBajaAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/baja`, {}, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  darDeAltaAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/alta`, {}, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
 
   obtenerTodosLosGrupos(token: string): Observable<GrupoDTO[]> {
     const headers = this.crearHeaders(token);

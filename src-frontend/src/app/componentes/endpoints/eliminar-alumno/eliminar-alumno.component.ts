@@ -18,6 +18,7 @@ export class EliminarAlumnoComponent implements OnInit {
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
+  mostrarInactivos: boolean = false;
 
   constructor(private endpointsService: EndpointsService) {}
 
@@ -36,7 +37,8 @@ export class EliminarAlumnoComponent implements OnInit {
           token,
           this.paginaActual,
           this.tamanoPagina,
-          this.nombreFiltro
+          this.nombreFiltro,
+          this.mostrarInactivos
         )
         .subscribe({
           next: (response) => {
@@ -59,18 +61,55 @@ export class EliminarAlumnoComponent implements OnInit {
     this.obtenerAlumnos();
   }
 
+  darDeBajaAlumno(id: number) {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'El alumno será dado de baja',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, dar de baja',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService.darDeBajaAlumno(id, token).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Alumno dado de baja',
+                text: 'El alumno ha sido dado de baja correctamente.',
+                icon: 'success',
+              });
+              this.obtenerAlumnos();
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al dar de baja al alumno',
+                text: 'Ha ocurrido un error al intentar dar de baja al alumno.',
+                icon: 'error',
+              });
+            },
+          });
+        }
+      });
+    }
+  }
+
   eliminarAlumno(id: number) {
     const token = localStorage.getItem('token');
 
     if (token) {
       Swal.fire({
         title: '¿Estás seguro?',
-        text: 'No podrás revertir esto',
+        text: 'El alumno será eliminado permanentemente',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlo',
+        confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
       }).then((result) => {
         if (result.isConfirmed) {
@@ -86,12 +125,41 @@ export class EliminarAlumnoComponent implements OnInit {
             error: () => {
               Swal.fire({
                 title: 'Error al eliminar alumno',
-                text: 'Ha ocurrido un error al intentar eliminar el alumno.',
+                text: 'Ha ocurrido un error al intentar eliminar al alumno.',
                 icon: 'error',
               });
             },
           });
         }
+      });
+    }
+  }
+
+  darDeBajaAlumnosSeleccionados() {
+    const token = localStorage.getItem('token');
+    const alumnosSeleccionados = this.alumnos.filter(
+      (alumno) => alumno.selected
+    );
+
+    if (token && alumnosSeleccionados.length > 0) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Los alumnos seleccionados serán dados de baja',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, darlos de baja',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.darDeBajaAlumnoSecuencial(alumnosSeleccionados, token);
+        }
+      });
+    } else {
+      Swal.fire({
+        title: 'No hay alumnos seleccionados',
+        text: 'Por favor, seleccione al menos un alumno para dar de baja.',
+        icon: 'info',
       });
     }
   }
@@ -105,7 +173,7 @@ export class EliminarAlumnoComponent implements OnInit {
     if (token && alumnosSeleccionados.length > 0) {
       Swal.fire({
         title: '¿Estás seguro?',
-        text: 'No podrás revertir esto',
+        text: 'Los alumnos seleccionados serán eliminados permanentemente',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -123,6 +191,34 @@ export class EliminarAlumnoComponent implements OnInit {
         icon: 'info',
       });
     }
+  }
+
+  darDeBajaAlumnoSecuencial(alumnosSeleccionados: any[], token: string) {
+    if (alumnosSeleccionados.length === 0) {
+      Swal.fire({
+        title: 'Alumnos dados de baja',
+        text: 'Los alumnos seleccionados han sido dados de baja correctamente.',
+        icon: 'success',
+      });
+      this.obtenerAlumnos();
+      return;
+    }
+
+    const alumno = alumnosSeleccionados.pop();
+
+    this.endpointsService.darDeBajaAlumno(alumno.id, token).subscribe({
+      next: () => {
+        this.darDeBajaAlumnoSecuencial(alumnosSeleccionados, token);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error al dar de baja al alumno',
+          text: `Ha ocurrido un error al intentar dar de baja al alumno ${alumno.nombre} ${alumno.apellidos}.`,
+          icon: 'error',
+        });
+        this.darDeBajaAlumnoSecuencial(alumnosSeleccionados, token);
+      },
+    });
   }
 
   eliminarAlumnoSecuencial(alumnosSeleccionados: any[], token: string) {
@@ -155,6 +251,11 @@ export class EliminarAlumnoComponent implements OnInit {
 
   filtrarPorNombre(): void {
     this.paginaActual = 1;
+    this.obtenerAlumnos();
+  }
+
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
     this.obtenerAlumnos();
   }
 }

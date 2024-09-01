@@ -17,15 +17,13 @@ export class ListadoAlumnosComponent implements OnInit {
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
-  mostrarPaginas: number[] = [];
   nombreFiltro: string = '';
+  mostrarInactivos: boolean = false;
 
   constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.obtenerAlumnos();
-    }
+    this.obtenerAlumnos();
   }
 
   obtenerAlumnos() {
@@ -37,7 +35,8 @@ export class ListadoAlumnosComponent implements OnInit {
           token,
           this.paginaActual,
           this.tamanoPagina,
-          this.nombreFiltro
+          this.nombreFiltro,
+          this.mostrarInactivos
         )
         .subscribe({
           next: (response) => {
@@ -74,5 +73,84 @@ export class ListadoAlumnosComponent implements OnInit {
   filtrarPorNombre(): void {
     this.paginaActual = 1;
     this.obtenerAlumnos();
+  }
+
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    this.obtenerAlumnos();
+  }
+
+  darDeAlta(alumnoId: number) {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'El alumno será dado de alta.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, dar de alta',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService.darDeAltaAlumno(alumnoId, token).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Alumno dado de alta',
+                text: 'El alumno ha sido dado de alta correctamente.',
+                icon: 'success',
+              });
+              this.obtenerAlumnos(); // Vuelve a cargar la lista de alumnos
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al dar de alta',
+                text: 'Ha ocurrido un error al intentar dar de alta al alumno.',
+                icon: 'error',
+              });
+            },
+          });
+        }
+      });
+    }
+  }
+
+  darDeBaja(alumnoId: number) {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'El alumno será dado de baja.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, dar de baja',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService.darDeBajaAlumno(alumnoId, token).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Alumno dado de baja',
+                text: 'El alumno ha sido dado de baja correctamente.',
+                icon: 'success',
+              });
+              this.obtenerAlumnos(); // Vuelve a cargar la lista de alumnos
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al dar de baja',
+                text: 'Ha ocurrido un error al intentar dar de baja al alumno.',
+                icon: 'error',
+              });
+            },
+          });
+        }
+      });
+    }
   }
 }

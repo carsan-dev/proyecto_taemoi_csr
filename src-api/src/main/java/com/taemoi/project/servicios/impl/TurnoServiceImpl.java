@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Grupo;
+import com.taemoi.project.entidades.NombresGrupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.GrupoRepository;
@@ -92,26 +93,48 @@ public class TurnoServiceImpl implements TurnoService {
      *
      * @param turnoDTO Los datos del turno a crear.
      */
-    @SuppressWarnings("null")
-	@Override
+    @Override
     public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
+        // Crear el turno y asignar los valores de día, hora inicio y fin
         Turno turno = new Turno();
         turno.setDiaSemana(turnoDTO.getDiaSemana());
         turno.setHoraInicio(turnoDTO.getHoraInicio());
         turno.setHoraFin(turnoDTO.getHoraFin());
-
-        if (turnoDTO.getGrupoId() != null) {
-            Grupo grupoAsignado = grupoRepository.findById(turnoDTO.getGrupoId())
-                .orElseThrow(() -> new IllegalArgumentException("Grupo no encontrado con ID: " + turnoDTO.getGrupoId()));
-            turno.setGrupo(grupoAsignado);
-        } else {
-            throw new IllegalArgumentException("ID de grupo no puede ser nulo");
-        }
-
+    
+        // Buscar el grupo por ID
+        Grupo grupo = grupoRepository.findById(turnoDTO.getGrupoId())
+            .orElseThrow(() -> new IllegalArgumentException("No se encontró el grupo con el ID: " + turnoDTO.getGrupoId()));
+    
+        // Determinar el tipo de grupo basado en el nombre del grupo
+        String tipo = determinarTipoPorNombreGrupo(grupo.getNombre());
+        turno.setTipo(tipo);
+    
+        // Asigna el grupo al turno y viceversa
+        turno.setGrupo(grupo);
+        grupo.getTurnos().add(turno); // Esto asegura que el grupo esté al tanto de su nuevo turno
+    
+        // Guarda ambos objetos para actualizar la relación en la base de datos
         turnoRepository.save(turno);
+        grupoRepository.save(grupo);
+    }
+    
+    private String determinarTipoPorNombreGrupo(String nombreGrupo) {
+        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_INFANTIL) ||
+            nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_INFANTIL)) {
+            return "Infantil";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_JOVEN) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_JOVEN)) {
+            return "Joven";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_ADULTO) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_ADULTO)) {
+            return "Adulto";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.COMPETICION)) {
+            return "Competición";
+        } else {
+            throw new IllegalArgumentException("No se puede determinar el tipo para el grupo: " + nombreGrupo);
+        }
     }
 
-    
     /**
      * Actualiza los detalles de un turno existente.
      *
