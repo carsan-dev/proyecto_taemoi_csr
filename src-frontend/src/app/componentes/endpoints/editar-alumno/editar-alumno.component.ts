@@ -45,7 +45,6 @@ export class EditarAlumnoComponent implements OnInit {
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
   mostrarInactivos: boolean = false;
-
   tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de tarifa
 
   constructor(
@@ -293,5 +292,10 @@ export class EditarAlumnoComponent implements OnInit {
       default:
         throw new Error('Tipo de tarifa no válido');
     }
+  }
+
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    this.obtenerAlumnos();
   }
 }

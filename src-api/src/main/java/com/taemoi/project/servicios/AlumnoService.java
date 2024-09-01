@@ -62,4 +62,6 @@ public interface AlumnoService {
 	Imagen guardarImagen(@NonNull Imagen imagen);
 
 	Alumno darDeBajaAlumno(Long id);
+
+	Alumno darDeAltaAlumno(Long id);
 }

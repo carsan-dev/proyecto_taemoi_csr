@@ -279,6 +279,14 @@ public class AlumnoController {
 	    alumnoService.darDeBajaAlumno(id);
 	    return ResponseEntity.ok().build();
 	}
+	
+	@PutMapping("/{id}/alta")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> darDeAltaAlumno(@PathVariable @NonNull Long id) {
+	    alumnoService.darDeAltaAlumno(id);
+	    return ResponseEntity.ok().build();
+	}
+
 
 	/**
 	 * Actualiza la información de un alumno existente.

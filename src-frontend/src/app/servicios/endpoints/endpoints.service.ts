@@ -144,6 +144,14 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  darDeAltaAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/alta`, {}, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+
   obtenerTodosLosGrupos(token: string): Observable<GrupoDTO[]> {
     const headers = this.crearHeaders(token);
     return this.http
