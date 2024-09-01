@@ -28,7 +28,8 @@ export class EndpointsService {
     token: string,
     page: number,
     size: number,
-    nombre: string
+    nombre: string,
+    incluirInactivos: boolean
   ): Observable<any> {
     const headers = this.crearHeaders(token);
     let params = new HttpParams()
@@ -37,6 +38,12 @@ export class EndpointsService {
 
     if (nombre) {
       params = params.set('nombre', nombre);
+    }
+
+    if (incluirInactivos) {
+      params = params.set('incluirInactivos', 'true');
+    } else {
+      params = params.set('incluirInactivos', 'false');
     }
 
     return this.http
@@ -127,6 +134,13 @@ export class EndpointsService {
     const headers = this.crearHeaders(token);
     return this.http
       .delete<any>(`${this.urlBase}/alumnos/${id}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  darDeBajaAlumno(alumnoId: number, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/baja`, {}, { headers })
       .pipe(catchError(this.manejarError));
   }
 

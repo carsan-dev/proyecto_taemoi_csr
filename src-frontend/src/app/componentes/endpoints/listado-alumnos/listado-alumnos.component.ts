@@ -17,15 +17,13 @@ export class ListadoAlumnosComponent implements OnInit {
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
-  mostrarPaginas: number[] = [];
   nombreFiltro: string = '';
+  mostrarInactivos: boolean = false;
 
   constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.obtenerAlumnos();
-    }
+    this.obtenerAlumnos();
   }
 
   obtenerAlumnos() {
@@ -37,7 +35,8 @@ export class ListadoAlumnosComponent implements OnInit {
           token,
           this.paginaActual,
           this.tamanoPagina,
-          this.nombreFiltro
+          this.nombreFiltro,
+          this.mostrarInactivos
         )
         .subscribe({
           next: (response) => {
@@ -73,6 +72,11 @@ export class ListadoAlumnosComponent implements OnInit {
 
   filtrarPorNombre(): void {
     this.paginaActual = 1;
+    this.obtenerAlumnos();
+  }
+
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
     this.obtenerAlumnos();
   }
 }

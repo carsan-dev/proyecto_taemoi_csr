@@ -115,7 +115,8 @@ public class AlumnoController {
 	        @RequestParam(required = false) Integer size,
 	        @RequestParam(required = false) String nombre,
 	        @RequestParam(required = false) Long gradoId,
-	        @RequestParam(required = false) Long categoriaId) {
+	        @RequestParam(required = false) Long categoriaId,
+			@RequestParam(required = false) Boolean incluirInactivos){
 
 	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 	    logger.info(
@@ -124,8 +125,9 @@ public class AlumnoController {
 
 	    Pageable pageable = (page != null && size != null) ? PageRequest.of(page - 1, size, Sort.by("nombre").ascending()) : Pageable.unpaged();
 	    boolean isPaged = page != null && size != null;
+	    boolean incluir = incluirInactivos != null ? incluirInactivos : false;
 
-	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, pageable);
+	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, pageable);
 
 	    if (alumnos.isEmpty()) {
 	        logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
@@ -269,6 +271,13 @@ public class AlumnoController {
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
 		}
+	}
+	
+	@PutMapping("/{id}/baja")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
+	    alumnoService.darDeBajaAlumno(id);
+	    return ResponseEntity.ok().build();
 	}
 
 	/**

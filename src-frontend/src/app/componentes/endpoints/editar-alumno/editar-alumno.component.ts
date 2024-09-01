@@ -44,6 +44,7 @@ export class EditarAlumnoComponent implements OnInit {
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
+  mostrarInactivos: boolean = false;
 
   tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de tarifa
 
@@ -98,7 +99,8 @@ export class EditarAlumnoComponent implements OnInit {
           token,
           this.paginaActual,
           this.tamanoPagina,
-          this.nombreFiltro
+          this.nombreFiltro,
+          this.mostrarInactivos
         )
         .subscribe({
           next: (response) => {

@@ -10,6 +10,11 @@
       <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
         (ngModelChange)="filtrarPorNombre()" />
     </div>
+    <div class="col-md-6 col-lg-4 text-end">
+      <button class="btn btn-secondary" (click)="alternarInactivos()">
+        {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
+      </button>
+    </div>
   </div>
 
   <div class="row">
@@ -26,6 +31,7 @@
               <th>Fecha de Alta</th>
               <th>Categoría</th>
               <th>Grado</th>
+              <th *ngIf="mostrarInactivos">Fecha de Baja</th> <!-- Nuevo: Columna para fecha de baja -->
             </tr>
           </thead>
           <tbody>
@@ -44,6 +50,7 @@
               <td>{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</td>
               <td>{{ alumno.categoria }}</td>
               <td>{{ alumno.grado }}</td>
+              <td *ngIf="mostrarInactivos">{{ alumno.fechaBaja ? (alumno.fechaBaja | date:'dd/MM/yyyy') : 'N/A' }}</td> <!-- Nuevo: Fecha de baja -->
             </tr>
           </tbody>
         </table>
