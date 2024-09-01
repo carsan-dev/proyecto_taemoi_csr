@@ -4,6 +4,7 @@
       <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" class="my-5 card p-4 shadow-sm" method="post">
         <h3 class="text-center mb-4">Crear Alumno</h3>
         <div class="row">
+          <!-- Campo Nombre -->
           <div class="form-group col-md-6 mb-3 form-floating">
             <input type="text" class="form-control form-control-little" id="nombre" name="nombre"
               formControlName="nombre" required placeholder="Nombre">
@@ -12,6 +13,7 @@
               <small *ngIf="alumnoData.get('nombre')?.errors?.['required']">Nombre del alumno es obligatorio.</small>
             </div>
           </div>
+          <!-- Campo Apellidos -->
           <div class="form-group col-md-6 mb-3 form-floating">
             <input type="text" class="form-control form-control-little" id="apellidos" name="apellidos"
               formControlName="apellidos" required placeholder="Apellidos">
@@ -23,16 +25,7 @@
             </div>
           </div>
         </div>
-        <div class="form-group mb-3 form-floating">
-          <input type="number" class="form-control" id="numeroExpediente" name="numeroExpediente"
-            formControlName="numeroExpediente" required placeholder="Número de expediente">
-          <label for="numeroExpediente">Número de expediente</label>
-          <div *ngIf="alumnoData.get('numeroExpediente')?.errors && alumnoData.get('numeroExpediente')?.touched"
-            class="text-danger">
-            <small *ngIf="alumnoData.get('numeroExpediente')?.errors?.['required']">Número de expediente del alumno es
-              obligatorio.</small>
-          </div>
-        </div>
+        <!-- Campo Fecha de Nacimiento -->
         <div class="form-group mb-3 form-floating">
           <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
             formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
@@ -43,6 +36,7 @@
               obligatoria.</small>
           </div>
         </div>
+        <!-- Campo NIF -->
         <div class="form-group mb-3 form-floating">
           <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required placeholder="NIF">
           <label for="nif">NIF</label>
@@ -53,6 +47,7 @@
             </small>
           </div>
         </div>
+        <!-- Campo Dirección -->
         <div class="form-group mb-3 form-floating">
           <input type="text" class="form-control" id="direccion" name="direccion" formControlName="direccion" required
             placeholder="Dirección">
@@ -61,11 +56,13 @@
             <small *ngIf="alumnoData.get('direccion')?.errors?.['required']">Dirección del alumno es obligatoria.</small>
           </div>
         </div>
+        <!-- Campo Teléfono -->
         <div class="form-group mb-3 form-floating">
           <input type="tel" class="form-control" id="telefono" name="telefono" formControlName="telefono" required
             placeholder="Teléfono">
           <label for="telefono">Teléfono</label>
-          <div *ngIf="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched" class="text-danger d-flex flex-column">
+          <div *ngIf="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched"
+            class="text-danger d-flex flex-column">
             <small *ngIf="alumnoData.get('telefono')?.errors?.['required']">Teléfono del alumno es obligatorio.</small>
             <small *ngIf="alumnoData.get('telefono')?.errors?.['pattern']" class="text-danger">
               Teléfono del alumno sólo puede contener números.
@@ -75,6 +72,7 @@
             </small>
           </div>
         </div>
+        <!-- Campo Email -->
         <div class="form-group mb-3 form-floating">
           <input type="email" class="form-control" id="email" name="email" formControlName="email" required
             placeholder="Email">
@@ -84,8 +82,10 @@
             <small *ngIf="alumnoData.get('email')?.errors?.['email']">El email debe ser válido.</small>
           </div>
         </div>
+        <!-- Campo Selección de Tarifa -->
         <div class="form-group mb-3 form-floating">
-          <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa" required>
+          <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa"
+            required>
             <option value="" disabled selected>Selecciona una tarifa</option>
             <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
           </select>
@@ -96,19 +96,45 @@
             </small>
           </div>
         </div>
+        <!-- Campo Fecha de Alta -->
         <div class="form-group mb-3 form-floating">
           <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" formControlName="fechaAlta" required
             placeholder="Fecha de alta">
           <label for="fechaAlta">Fecha de alta</label>
-          <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" class="text-danger">
+          <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
+            class="text-danger">
             <small *ngIf="alumnoData.get('fechaAlta')?.errors?.['required']">Fecha de alta del alumno es obligatorio.
             </small>
           </div>
         </div>
+        <!-- Campo Imagen del Alumno -->
         <div class="form-group mb-3 form-floating">
           <input type="file" class="form-control" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)"
             accept="image/*">
           <label for="fotoAlumno">Imagen del alumno</label>
+          <!-- Botón para eliminar la imagen seleccionada -->
+          <button *ngIf="imagen" type="button" class="btn btn-danger mt-2" (click)="removeImage()">Eliminar Imagen</button>
+          <!-- Vista previa de la imagen seleccionada (opcional) -->
+          <div *ngIf="imagen" class="mt-2">
+            <p>Imagen seleccionada:</p>
+            <img [src]="imagenPreview" alt="Vista previa de la imagen" width="100">
+          </div>
+        </div>
+        <!-- Campo Autorización Web -->
+        <div class="form-group mb-3 autorizacion-web">
+          <label for="autorizacionWeb" class="text-black">Autorización Web</label>
+          <div class="d-flex flex-column">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
+                [value]="true">
+              <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
+                [value]="false">
+              <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+            </div>
+          </div>
         </div>
         <div class="text-center">
           <button type="submit" class="btn btn-primary mt-3" [disabled]="alumnoData.invalid">Crear Alumno</button>

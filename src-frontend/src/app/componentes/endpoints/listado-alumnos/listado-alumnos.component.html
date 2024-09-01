@@ -10,6 +10,11 @@
       <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
         (ngModelChange)="filtrarPorNombre()" />
     </div>
+    <div class="col-md-6 col-lg-4 text-end">
+      <button class="btn btn-secondary" (click)="alternarInactivos()">
+        {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
+      </button>
+    </div>
   </div>
 
   <div class="row">
@@ -26,6 +31,8 @@
               <th>Fecha de Alta</th>
               <th>Categoría</th>
               <th>Grado</th>
+              <th *ngIf="mostrarInactivos">Fecha de Baja</th>
+              <th>Acciones</th> <!-- Nuevo: Columna para acciones -->
             </tr>
           </thead>
           <tbody>
@@ -44,6 +51,11 @@
               <td>{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</td>
               <td>{{ alumno.categoria }}</td>
               <td>{{ alumno.grado }}</td>
+              <td *ngIf="mostrarInactivos">{{ alumno.fechaBaja ? (alumno.fechaBaja | date:'dd/MM/yyyy') : 'N/A' }}</td>
+              <td>
+                <button *ngIf="alumno.fechaBaja" class="btn btn-success btn-sm" (click)="darDeAlta(alumno.id)">Dar de Alta</button>
+                <button *ngIf="!alumno.fechaBaja" class="btn btn-danger btn-sm" (click)="darDeBaja(alumno.id)">Dar de Baja</button>
+              </td> <!-- Nuevo: Botones de acción -->
             </tr>
           </tbody>
         </table>

@@ -81,7 +81,6 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @param grupoDTO El objeto GrupoConAlumnosDTO con los datos del nuevo grupo.
 	 * @return El objeto GrupoConAlumnosDTO que representa el grupo creado.
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);

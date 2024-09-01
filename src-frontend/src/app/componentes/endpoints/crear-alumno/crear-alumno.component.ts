@@ -22,6 +22,7 @@ import { Router } from '@angular/router';
 export class CrearAlumnoComponent implements OnInit {
   alumnoData!: FormGroup;
   imagen: File | null = null;
+  imagenPreview: string | ArrayBuffer | null = null;
   tiposTarifa = Object.values(TipoTarifa);
 
   constructor(
@@ -38,10 +39,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData = this.fb.group({
       nombre: ['', Validators.required],
       apellidos: ['', Validators.required],
-      numeroExpediente: [
-        '',
-        [Validators.required, Validators.pattern('^[0-9]+$')],
-      ],
       fechaNacimiento: ['', Validators.required],
       nif: [
         '',
@@ -52,6 +49,7 @@ export class CrearAlumnoComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
+      autorizacionWeb: [true, Validators.required],
     });
   }
 
@@ -87,6 +85,19 @@ export class CrearAlumnoComponent implements OnInit {
     const fileList: FileList = event.target.files;
     if (fileList.length > 0) {
       this.imagen = fileList[0];
+      // Crear una vista previa de la imagen
+      const reader = new FileReader();
+      reader.onload = (e) => this.imagenPreview = e.target?.result ?? null;
+      reader.readAsDataURL(this.imagen);
+    }
+  }
+
+  removeImage() {
+    this.imagen = null;
+    this.imagenPreview = null;
+    const fileInput = document.getElementById('fotoAlumno') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';  // Limpiar el valor del input
     }
   }
 }

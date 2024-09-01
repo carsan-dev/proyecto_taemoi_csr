@@ -48,8 +48,6 @@ public class EventoController {
         }
     }
 	
-
-    @SuppressWarnings("null")
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> crearEvento(@RequestParam("nuevo") String eventoJson,

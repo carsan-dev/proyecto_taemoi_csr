@@ -69,6 +69,7 @@ export class GestionarAlumnosComponent implements OnInit {
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
         confirmButtonText: 'Sí, eliminarlo',
+        cancelButtonText: 'Cancelar'
       }).then((result) => {
         if (result.isConfirmed) {
           this.endpointsService
@@ -95,6 +96,9 @@ export class GestionarAlumnosComponent implements OnInit {
         }
       });
     }
+  }
+  gestionarTurnos(alumnoId: number): void {
+    this.router.navigate([`/gestionarTurnosAlumno`, alumnoId]);
   }
 
   volver() {
