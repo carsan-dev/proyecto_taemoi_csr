@@ -344,6 +344,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
 	    }
 	}
+	
+	@Override
+	public Alumno darDeAltaAlumno(@NonNull Long id) {
+	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+	    if (optionalAlumno.isPresent()) {
+	        Alumno alumno = optionalAlumno.get();
+	        alumno.setActivo(true);
+	        alumno.setFechaBaja(null);
+	        return alumnoRepository.save(alumno);
+	    } else {
+	        throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
+	    }
+	}
 
 	@Override
 	public List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId) {

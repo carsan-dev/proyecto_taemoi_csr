@@ -121,22 +121,37 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
 
   removerTurno(turnoId: number): void {
     const token = localStorage.getItem('token');
+
     if (token) {
-      this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId, token).subscribe({
-        next: (turnosActualizados: Turno[]) => {
-          this.turnos = turnosActualizados; // Actualizar la lista de turnos
-          Swal.fire('Turno removido', 'El turno ha sido removido del alumno con éxito', 'success');
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error al remover turno',
-            text: 'No hemos podido remover el turno del alumno',
-            icon: 'error',
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'El turno será removido del alumno. Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, remover',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId, token).subscribe({
+            next: (turnosActualizados: Turno[]) => {
+              this.turnos = turnosActualizados; // Actualizar la lista de turnos
+              Swal.fire('Turno removido', 'El turno ha sido removido del alumno con éxito', 'success');
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al remover turno',
+                text: 'No hemos podido remover el turno del alumno',
+                icon: 'error',
+              });
+            },
           });
-        },
+        }
       });
     }
   }
+
 
   volver() {
     this.location.back();
