@@ -27,9 +27,9 @@ public interface AlumnoService {
 	
 	Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id);
 	
-	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, @NonNull Pageable pageable);
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, @NonNull Pageable pageable);
 	
-	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId);
+	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 	
 	Alumno crearAlumno(@Valid @NonNull Alumno alumno);
 
@@ -60,4 +60,6 @@ public interface AlumnoService {
 	String generarContrasena(String nombre, String apellidos);
 
 	Imagen guardarImagen(@NonNull Imagen imagen);
+
+	Alumno darDeBajaAlumno(Long id);
 }

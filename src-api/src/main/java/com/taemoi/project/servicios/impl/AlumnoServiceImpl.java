@@ -147,25 +147,28 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 *                                  filtrado.
 	 */
 	@Override
-	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
-			@NonNull Pageable pageable) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
+	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, @NonNull Pageable pageable) {
+	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+	        List<Predicate> predicates = new ArrayList<>();
 
-			if (nombre != null && !nombre.isEmpty()) {
-				predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombre.toLowerCase() + "%"));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
-			}
+	        if (nombre != null && !nombre.isEmpty()) {
+	            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
+	                    "%" + nombre.toLowerCase() + "%"));
+	        }
+	        if (gradoId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
+	        }
+	        if (categoriaId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
+	        }
+	        if (!incluirInactivos) {
+	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+	        }
 
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		}, pageable);
+	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+	    }, pageable);
 	}
+
 
 	/**
 	 * Obtiene una lista de alumnos filtrados según los parámetros especificados.
@@ -179,23 +182,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 *                                  filtrado.
 	 */
 	@Override
-	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
+	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos) {
+	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+	        List<Predicate> predicates = new ArrayList<>();
 
-			if (nombre != null && !nombre.isEmpty()) {
-				predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombre.toLowerCase() + "%"));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
-			}
+	        if (nombre != null && !nombre.isEmpty()) {
+	            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
+	                    "%" + nombre.toLowerCase() + "%"));
+	        }
+	        if (gradoId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
+	        }
+	        if (categoriaId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
+	        }
+	        if (!incluirInactivos) {
+	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+	        }
 
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		});
+	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+	    });
 	}
 
 	/**
@@ -324,6 +330,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoRepository.delete(alumno);
 			return true;
 		}).orElse(false);
+	}
+	
+	@Override
+	public Alumno darDeBajaAlumno(@NonNull Long id) {
+	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+	    if (optionalAlumno.isPresent()) {
+	        Alumno alumno = optionalAlumno.get();
+	        alumno.setActivo(false);
+	        alumno.setFechaBaja(new Date());
+	        return alumnoRepository.save(alumno);
+	    } else {
+	        throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
+	    }
 	}
 
 	@Override
@@ -582,6 +601,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
-				alumno.getFechaBaja(), alumno.getAutorizacionWeb(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
+				alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
 	}
 }
