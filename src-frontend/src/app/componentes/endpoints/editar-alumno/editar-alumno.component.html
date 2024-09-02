@@ -249,18 +249,25 @@
                         la fecha de alta</small>
                     </div>
                   </div>
-                  <div class="form-group mb-3 autorizacion-web">
-                    <label for="autorizacionWeb" class="text-black">Autorización Web</label>
-                    <div class="d-flex flex-column">
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
-                          [value]="true">
-                        <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+                  <div class="form-group form-check mb-3">
+                    <label class="form-check-label me-3 text-black" for="competidor">¿Es competidor?</label>
+                    <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor">
+                  </div>
+
+                  <div *ngIf="alumnoForm.get('competidor')?.value">
+                    <div class="form-group form-floating mb-3">
+                      <input type="number" id="peso" class="form-control" formControlName="peso" placeholder="Peso" required>
+                      <label for="peso">Peso (kg)</label>
+                      <div *ngIf="alumnoForm.get('peso')?.errors && (alumnoForm.get('peso')?.dirty || alumnoForm.get('peso')?.touched)" class="text-danger">
+                        <small *ngIf="alumnoForm.get('peso')?.errors?.['required']">El peso es requerido</small>
                       </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
-                          [value]="false">
-                        <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+                    </div>
+
+                    <div class="form-group form-floating mb-3">
+                      <input type="date" id="fechaPeso" class="form-control" formControlName="fechaPeso" required>
+                      <label for="fechaPeso">Fecha del peso</label>
+                      <div *ngIf="alumnoForm.get('fechaPeso')?.errors && (alumnoForm.get('fechaPeso')?.dirty || alumnoForm.get('fechaPeso')?.touched)" class="text-danger">
+                        <small *ngIf="alumnoForm.get('fechaPeso')?.errors?.['required']">La fecha del peso es requerida</small>
                       </div>
                     </div>
                   </div>
@@ -283,7 +290,6 @@
           </div>
         </form>
       </div>
-
     </div>
   </div>
 </div>

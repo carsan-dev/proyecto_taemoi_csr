@@ -69,6 +69,9 @@ export class EditarAlumnoComponent implements OnInit {
         fechaBaja: [''],
         autorizacionWeb: [true, Validators.required],
         grado: [''],
+        competidor: [false], // Nuevo campo para competidor
+        peso: [''], // Nuevo campo para peso
+        fechaPeso: [''], // Nuevo campo para la fecha de registro del peso
       },
       { validators: [this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]}
     );
@@ -86,6 +89,25 @@ export class EditarAlumnoComponent implements OnInit {
         this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
       }
       this.tipoTarifaEditado = true; // Se marca como editado después de un cambio
+    });
+
+    // Escucha cambios en el campo competidor para validar peso y fechaPeso
+    this.alumnoForm.get('competidor')?.valueChanges.subscribe((isCompetidor: boolean) => {
+      const pesoControl = this.alumnoForm.get('peso');
+      const fechaPesoControl = this.alumnoForm.get('fechaPeso');
+
+      if (isCompetidor) {
+        pesoControl?.setValidators([Validators.required]);
+        fechaPesoControl?.setValidators([Validators.required]);
+        fechaPesoControl?.setValue(this.getFechaActual()); // Establece la fecha actual automáticamente
+      } else {
+        pesoControl?.clearValidators();
+        fechaPesoControl?.clearValidators();
+        this.alumnoForm.patchValue({ peso: '', fechaPeso: '' }); // Limpia los campos si no es competidor
+      }
+
+      pesoControl?.updateValueAndValidity();
+      fechaPesoControl?.updateValueAndValidity();
     });
   }
 
@@ -297,5 +319,17 @@ export class EditarAlumnoComponent implements OnInit {
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
     this.obtenerAlumnos();
+  }
+
+  onCompetidorChange(event: any) {
+    const isCompetidor = event.target.checked;
+    if (!isCompetidor) {
+      this.alumnoForm.patchValue({ peso: '', fechaPeso: '' });
+    }
+  }
+
+  private getFechaActual(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   }
 }

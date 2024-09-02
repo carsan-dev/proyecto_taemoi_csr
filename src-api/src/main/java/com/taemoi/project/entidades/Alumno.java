@@ -86,6 +86,14 @@ public class Alumno {
 	@NotNull(message = "La autorización web no puede ser nula")
 	private Boolean autorizacionWeb = true;
 	
+    @NotNull(message = "Si es competidor o no debe ser true o false, no null")
+    private Boolean competidor = false;
+
+    private Double peso;
+
+    @Temporal(TemporalType.DATE)
+    private Date fechaPeso;
+	
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     private Imagen fotoAlumno;
 
@@ -269,6 +277,30 @@ public class Alumno {
 
 	public void setAutorizacionWeb(Boolean autorizacionWeb) {
 		this.autorizacionWeb = autorizacionWeb;
+	}
+	
+	public Boolean getCompetidor() {
+		return competidor;
+	}
+
+	public void setCompetidor(Boolean competidor) {
+		this.competidor = competidor;
+	}
+
+	public Double getPeso() {
+		return peso;
+	}
+
+	public void setPeso(Double peso) {
+		this.peso = peso;
+	}
+
+	public Date getFechaPeso() {
+		return fechaPeso;
+	}
+
+	public void setFechaPeso(Date fechaPeso) {
+		this.fechaPeso = fechaPeso;
 	}
 
 	public Imagen getFotoAlumno() {
