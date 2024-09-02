@@ -216,13 +216,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
 	    }
 	    Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
+	    
 	    if (maxNumeroExpediente == null) {
 	        maxNumeroExpediente = 0;
 	    }
 	    alumno.setNumeroExpediente(maxNumeroExpediente + 1);
+	    
 	    if (alumno.getAutorizacionWeb() == null) {
 	        alumno.setAutorizacionWeb(true);
 	    }
+	    
+	    if (alumno.getCompetidor() != null && alumno.getCompetidor()) {
+	        alumno.setFechaPeso(new Date());
+	    }
+	    
 	    return alumnoRepository.save(alumno);
 	}
 
@@ -262,6 +269,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+	        alumnoExistente.setCompetidor(alumnoActualizado.getCompetidor());
+
+	        if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
+	            alumnoExistente.setPeso(alumnoActualizado.getPeso());
+	            alumnoExistente.setFechaPeso(new Date());
+	        } else {
+	            alumnoExistente.setPeso(null);
+	            alumnoExistente.setFechaPeso(null);
+	        }
 
 			if ((imagen != null && alumnoExistente.getFotoAlumno() == null)
 					|| (imagen != null && alumnoExistente.getFotoAlumno() != null)) {
@@ -614,6 +630,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
-				alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
+				alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
 	}
 }

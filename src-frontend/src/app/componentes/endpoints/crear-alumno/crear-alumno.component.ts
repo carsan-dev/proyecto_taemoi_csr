@@ -50,6 +50,8 @@ export class CrearAlumnoComponent implements OnInit {
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
       autorizacionWeb: [true, Validators.required],
+      competidor: [false],
+      peso: [null],
     });
   }
 
@@ -90,6 +92,16 @@ export class CrearAlumnoComponent implements OnInit {
       reader.onload = (e) => this.imagenPreview = e.target?.result ?? null;
       reader.readAsDataURL(this.imagen);
     }
+  }
+
+  onCompetidorChange(event: any): void {
+    if (event.target.checked) {
+      this.alumnoData.get('peso')?.setValidators([Validators.required, Validators.min(0)]);
+    } else {
+      this.alumnoData.get('peso')?.clearValidators();
+      this.alumnoData.get('peso')?.setValue(null);
+    }
+    this.alumnoData.get('peso')?.updateValueAndValidity();
   }
 
   removeImage() {

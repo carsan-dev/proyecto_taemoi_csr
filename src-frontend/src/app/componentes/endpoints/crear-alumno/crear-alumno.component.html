@@ -136,6 +136,14 @@
             </div>
           </div>
         </div>
+        <div class="form-group mb-3">
+          <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
+          <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor" (change)="onCompetidorChange($event)">
+        </div>
+        <div *ngIf="alumnoData.get('competidor')?.value" class="form-group mb-3 form-floating">
+          <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
+          <label for="peso">Peso (kg)</label>
+        </div>
         <div class="text-center">
           <button type="submit" class="btn btn-primary mt-3" [disabled]="alumnoData.invalid">Crear Alumno</button>
         </div>
