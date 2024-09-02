@@ -99,11 +99,13 @@ export class EditarAlumnoComponent implements OnInit {
       if (isCompetidor) {
         pesoControl?.setValidators([Validators.required]);
         fechaPesoControl?.setValidators([Validators.required]);
-        fechaPesoControl?.setValue(this.getFechaActual()); // Establece la fecha actual automáticamente
+
+        if (!pesoControl?.value) {
+          fechaPesoControl?.setValue(this.getFechaActual()); // Solo establece si no tiene fecha previa
+        }
       } else {
-        pesoControl?.clearValidators();
-        fechaPesoControl?.clearValidators();
-        this.alumnoForm.patchValue({ peso: '', fechaPeso: '' }); // Limpia los campos si no es competidor
+        // Cuando se desmarca competidor, no borres los valores actuales
+        // Pero mantén los valores para que no se pierdan al guardar
       }
 
       pesoControl?.updateValueAndValidity();
@@ -173,31 +175,32 @@ export class EditarAlumnoComponent implements OnInit {
     formData.append('alumnoEditado', JSON.stringify(this.alumnoForm.value));
 
     if (this.alumnoEditado.fotoAlumno === null) {
-      formData.append('file', 'null');
+        formData.append('file', 'null');
     } else if (this.alumnoEditado.fotoAlumno) {
-      formData.append('file', this.alumnoEditado.fotoAlumno);
+        formData.append('file', this.alumnoEditado.fotoAlumno);
     }
 
     if (token) {
-      this.endpointsService.actualizarAlumno(id, formData, token).subscribe({
-        next: (response) => {
-          Swal.fire({
-            title: '¡Bien!',
-            text: '¡Alumno actualizado correctamente!',
-            icon: 'success',
-          });
-          this.obtenerAlumnos();
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error al actualizar',
-            text: 'Error al actualizar al alumno',
-            icon: 'error',
-          });
-        },
-      });
+        this.endpointsService.actualizarAlumno(id, formData, token).subscribe({
+            next: (response) => {
+                Swal.fire({
+                    title: '¡Bien!',
+                    text: '¡Alumno actualizado correctamente!',
+                    icon: 'success',
+                });
+                this.obtenerAlumnos();
+            },
+            error: (error) => {
+                Swal.fire({
+                    title: 'Error al actualizar',
+                    text: 'Error al actualizar al alumno',
+                    icon: 'error',
+                });
+            },
+        });
     }
-  }
+}
+
 
   eliminarFoto(id: number) {
     const token = localStorage.getItem('token');
@@ -230,22 +233,37 @@ export class EditarAlumnoComponent implements OnInit {
     this.mostrarFormulario = !this.mostrarFormulario;
     this.alumnoEditado = { ...alumno };
     this.imagenPreview = alumno.fotoAlumno
-      ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos
-      : '../../../../assets/media/default.webp';
+        ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos
+        : '../../../../assets/media/default.webp';
 
-    const fechaNacimiento = new Date(alumno.fechaNacimiento).toISOString().split('T')[0];
-    const fechaAlta = new Date(alumno.fechaAlta).toISOString().split('T')[0];
-    const fechaBaja = alumno.fechaBaja ? new Date(alumno.fechaBaja).toISOString().split('T')[0] : '';
+    const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
+    const fechaAlta = this.formatDate(alumno.fechaAlta);
+    const fechaBaja = alumno.fechaBaja ? this.formatDate(alumno.fechaBaja) : '';
     this.tipoTarifaEditado = false; // Resetea la bandera antes de aplicar el valor
+
+    const peso = alumno.peso || '';
+    const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
+
     this.alumnoForm.patchValue({
-      ...this.alumnoEditado,
-      fechaNacimiento: fechaNacimiento,
-      fechaAlta: fechaAlta,
-      fechaBaja: fechaBaja,
-      autorizacionWeb: alumno.autorizacionWeb,
-      cuantiaTarifa: alumno.cuantiaTarifa
+        ...this.alumnoEditado,
+        fechaNacimiento: fechaNacimiento,
+        fechaAlta: fechaAlta,
+        fechaBaja: fechaBaja,
+        autorizacionWeb: alumno.autorizacionWeb,
+        cuantiaTarifa: alumno.cuantiaTarifa,
+        peso: peso,
+        fechaPeso: fechaPeso,
+        competidor: alumno.competidor
     });
+}
+
+  private formatDate(fecha: string): string {
+    const date = new Date(fecha);
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(date.getTime() - userTimezoneOffset);
+    return adjustedDate.toISOString().split('T')[0];
   }
+
 
   onFileSelected(event: any) {
     const file: File = event.target.files[0];

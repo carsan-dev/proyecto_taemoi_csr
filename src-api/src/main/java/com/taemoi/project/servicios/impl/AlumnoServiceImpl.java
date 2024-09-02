@@ -249,50 +249,54 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado.
 	 */
 	@Override
-	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
-			Imagen imagen) {
-		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
-		if (optionalAlumno.isPresent()) {
-			Alumno alumnoExistente = optionalAlumno.get();
-			alumnoExistente.setNombre(alumnoActualizado.getNombre());
-			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
-			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
+	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen) {
+	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+	    if (optionalAlumno.isPresent()) {
+	        Alumno alumnoExistente = optionalAlumno.get();
+	        alumnoExistente.setNombre(alumnoActualizado.getNombre());
+	        alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
+	        alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-			int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
-			Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-			alumnoExistente.setCategoria(nuevaCategoria);
-			alumnoExistente.setNif(alumnoActualizado.getNif());
-			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
-			alumnoExistente.setEmail(alumnoActualizado.getEmail());
-			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
-			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
-			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
-			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
-			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+	        int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+	        Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+	        alumnoExistente.setCategoria(nuevaCategoria);
+	        alumnoExistente.setNif(alumnoActualizado.getNif());
+	        alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
+	        alumnoExistente.setEmail(alumnoActualizado.getEmail());
+	        alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
+	        alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
+	        alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+	        alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
+	        alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+	        
+	        // Asegúrate de que estás actualizando el campo competidor y los campos asociados
 	        alumnoExistente.setCompetidor(alumnoActualizado.getCompetidor());
-
+	        
 	        if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
 	            alumnoExistente.setPeso(alumnoActualizado.getPeso());
-	            alumnoExistente.setFechaPeso(new Date());
+	            alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
 	        } else {
-	            alumnoExistente.setPeso(null);
-	            alumnoExistente.setFechaPeso(null);
+	            // Si no es competidor, no borres los valores de peso y fechaPeso,
+	            // Solo deja de mostrarlos en el formulario.
 	        }
 
-			if ((imagen != null && alumnoExistente.getFotoAlumno() == null)
-					|| (imagen != null && alumnoExistente.getFotoAlumno() != null)) {
-				alumnoExistente.setFotoAlumno(imagen);
-			}
+	        if (imagen != null) {
+	            alumnoExistente.setFotoAlumno(imagen);
+	        }
+
 	        if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
 	            alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa()));
 	        } else {
 	            alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
 	        }
-			return alumnoRepository.save(alumnoExistente);
-		} else {
-			throw new RuntimeException("No se encontró el alumno con ID: " + id);
-		}
+	        
+	        return alumnoRepository.save(alumnoExistente);
+	    } else {
+	        throw new RuntimeException("No se encontró el alumno con ID: " + id);
+	    }
 	}
+
+
 
 	/**
 	 * Elimina la imagen asociada a un alumno especificado por su ID.

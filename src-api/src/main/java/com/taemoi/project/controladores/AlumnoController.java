@@ -249,18 +249,25 @@ public class AlumnoController {
 			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+			
 	        if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
 	            nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
 	        } else {
 	            nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
 	        }
+	        
 			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
 			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
 			nuevoAlumno.setAutorizacionWeb(nuevoAlumnoDTO.getAutorizacionWeb());
+	        nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
+	        
+	        if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
+	            nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
+	        }
+
 			nuevoAlumno.setCategoria(categoria);
 			nuevoAlumno.setGrado(grado);
 			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
-
 			nuevoAlumno.setUsuario(usuarioExistente);
 			
 			usuarioExistente.setAlumno(nuevoAlumno);
