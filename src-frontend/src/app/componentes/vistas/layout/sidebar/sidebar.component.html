@@ -1,9 +1,9 @@
 <div class="sidebar-container">
-  <div class="d-flex justify-content-start p-2 sidebar-top-container">
-    <i class="fs-2 text-white bi-list" (click)="alternarVisibilidadSidebar()"></i>
+  <div class="d-flex justify-content-start p-2 sidebar-top-container" [ngClass]="{'button-visible': estaColapsado, 'button-hidden': !estaColapsado}">
+    <i class="fs-2 text-white bi-gear-fill toggle-sidebar-button" (click)="alternarVisibilidadSidebar()"></i>
   </div>
-  <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado}">
-    <div class="user-container pb-3">
+  <aside [ngClass]="{'sidebar': true, 'collapsed': estaColapsado, 'expanded': !estaColapsado}" class="custom-scrollbar">
+    <div class="user-container py-3">
       <h2 class="h2 text-white text-center mx-3">{{nombreUsuario}}</h2>
       <p class="text-white text-center mx-3">{{emailUsuario}}</p>
     </div>

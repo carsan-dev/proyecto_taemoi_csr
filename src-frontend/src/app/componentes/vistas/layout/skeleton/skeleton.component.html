@@ -1,13 +1,11 @@
+<!-- skeleton.component.html -->
 <div class="container-fluid vh-100 p-0 d-flex flex-column">
   <div class="row flex-grow-1">
-    <div *ngIf="tieneRolAdminOManager" [ngClass]="{'col-2': !sidebarColapsado, 'col-auto': sidebarColapsado}" class="p-0 bg-black transition-col">
-      <app-sidebar (colapsoCambiado)="onColapsoCambiado($event)"></app-sidebar>
-    </div>
+    <app-sidebar (colapsoCambiado)="onColapsoCambiado($event)" *ngIf="tieneRolAdminOManager"></app-sidebar>
     <div [ngClass]="{
-      'col-10': tieneRolAdminOManager && !sidebarColapsado,
-      'col-12': !tieneRolAdminOManager || (tieneRolAdminOManager && sidebarColapsado),
+      'col': tieneRolAdminOManager,
       'sidebar-colapsado': sidebarColapsado
-    }" class="p-0 d-flex flex-column">
+    }" class="content-container p-0 d-flex flex-column">
       <app-header class="row justify-content-center"></app-header>
       <main class="row" id="content">
         <ng-content></ng-content>
