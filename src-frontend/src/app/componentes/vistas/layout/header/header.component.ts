@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
@@ -9,13 +9,16 @@ import Swal from 'sweetalert2';
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './header.component.html',
-  styleUrl: './header.component.scss',
+  styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit {
   usuarioLogueado: boolean = false;
+  adminMenuVisible: boolean = false;
   isAdmin: boolean = false;
   isManager: boolean = false;
   isUser: boolean = false;
+  isHidden: boolean = false;
+  private lastScrollTop: number = 0;
 
   constructor(
     private authService: AuthenticationService,
@@ -37,8 +40,29 @@ export class HeaderComponent implements OnInit {
     });
   }
 
+  toggleAdminMenu() {
+    this.adminMenuVisible = !this.adminMenuVisible;
+  }
+
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    const currentScrollTop = window.scrollY || document.documentElement.scrollTop;
+    if (currentScrollTop > this.lastScrollTop && currentScrollTop > 100) {
+      this.isHidden = true;
+    } else {
+      this.isHidden = false;
+    }
+    this.lastScrollTop = currentScrollTop;
+  }
+
   irARuta(ruta: string) {
-    this.router.navigate([ruta]);
+    this.router.navigate([ruta]).then(() => {
+      const navbarToggler = document.querySelector('.navbar-collapse.show');
+      if (navbarToggler) {
+        (navbarToggler as HTMLElement).classList.remove('show');
+      }
+      this.adminMenuVisible = false;
+    });
   }
 
   cerrarSesion() {
@@ -47,7 +71,7 @@ export class HeaderComponent implements OnInit {
       this.authService.logout();
       Swal.fire({
         title: 'Sesión cerrada con éxito',
-        text: '¡Hasta la proxima!',
+        text: '¡Hasta la próxima!',
         icon: 'success',
       });
     } else {
@@ -58,6 +82,8 @@ export class HeaderComponent implements OnInit {
       });
       this.usuarioLogueado = false;
     }
-    this.router.navigate(['/inicio']);
+    this.router.navigate(['/inicio']).then(() => {
+      this.adminMenuVisible = false;
+    });
   }
 }
