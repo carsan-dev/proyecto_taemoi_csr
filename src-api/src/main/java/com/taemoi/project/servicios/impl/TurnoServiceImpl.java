@@ -119,18 +119,23 @@ public class TurnoServiceImpl implements TurnoService {
     }
     
     private String determinarTipoPorNombreGrupo(String nombreGrupo) {
-        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_INFANTIL) ||
-            nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_INFANTIL)) {
-            return "Infantil";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_JOVEN) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_JOVEN)) {
-            return "Joven";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.LUNES_MIERCOLES_ADULTO) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.MARTES_JUEVES_ADULTO)) {
-            return "Adulto";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.COMPETICION)) {
-            return "Competición";
-        } else {
+        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL) ||
+            nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL)) {
+            return "Taekwondo Infantil";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN)) {
+            return "Taekwondo Joven";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO)) {
+            return "Taekwondo Adulto";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_COMPETICION)) {
+            return "Taekwondo Competición";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.KICKBOXING)) {
+            return "Kickboxing";
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.PILATES)) {
+            return "Pilates";
+        } 
+        else {
             throw new IllegalArgumentException("No se puede determinar el tipo para el grupo: " + nombreGrupo);
         }
     }
