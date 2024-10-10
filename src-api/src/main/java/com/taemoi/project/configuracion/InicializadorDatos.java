@@ -100,51 +100,38 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-		Grupo lunesMiercolesInfantil = new Grupo();
-		lunesMiercolesInfantil.setNombre(NombresGrupo.LUNES_MIERCOLES_INFANTIL);
-		grupoRepository.save(lunesMiercolesInfantil);
-	
-		Grupo lunesMiercolesJoven = new Grupo();
-		lunesMiercolesJoven.setNombre(NombresGrupo.LUNES_MIERCOLES_JOVEN);
-		grupoRepository.save(lunesMiercolesJoven);
-	
-		Grupo lunesMiercolesAdulto = new Grupo();
-		lunesMiercolesAdulto.setNombre(NombresGrupo.LUNES_MIERCOLES_ADULTO);
-		grupoRepository.save(lunesMiercolesAdulto);
-	
-		Grupo martesJuevesInfantil = new Grupo();
-		martesJuevesInfantil.setNombre(NombresGrupo.MARTES_JUEVES_INFANTIL);
-		grupoRepository.save(martesJuevesInfantil);
-	
-		Grupo martesJuevesJoven = new Grupo();
-		martesJuevesJoven.setNombre(NombresGrupo.MARTES_JUEVES_JOVEN);
-		grupoRepository.save(martesJuevesJoven);
-	
-		Grupo martesJuevesAdulto = new Grupo();
-		martesJuevesAdulto.setNombre(NombresGrupo.MARTES_JUEVES_ADULTO);
-		grupoRepository.save(martesJuevesAdulto);
-	
-		Grupo competicion = new Grupo();
-		competicion.setNombre(NombresGrupo.COMPETICION);
-		grupoRepository.save(competicion);
+	    Grupo lunesMiercolesInfantil = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL);
+	    Grupo lunesMiercolesJoven = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN);
+	    Grupo lunesMiercolesAdulto = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO);
+	    Grupo martesJuevesInfantil = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL);
+	    Grupo martesJuevesJoven = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN);
+	    Grupo martesJuevesAdulto = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO);
+	    Grupo competicion = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_COMPETICION);
+	    Grupo pilates = obtenerOcrearGrupo(NombresGrupo.PILATES);
+	    Grupo kickboxing = obtenerOcrearGrupo(NombresGrupo.KICKBOXING);
 		
-		crearTurno("Lunes", "17:00", "18:00", lunesMiercolesInfantil, "Infantil");
-		crearTurno("Lunes", "18:00", "19:00", lunesMiercolesJoven, "Joven");
-		crearTurno("Lunes", "19:00", "20:30", lunesMiercolesAdulto, "Adulto");
-		
-		crearTurno("Martes", "17:00", "18:00", martesJuevesInfantil, "Infantil");
-		crearTurno("Martes", "18:00", "19:00", martesJuevesJoven, "Joven");
-		crearTurno("Martes", "19:00", "20:00", martesJuevesAdulto, "Adulto");
-		
-		crearTurno("Miércoles", "17:00", "18:00", lunesMiercolesInfantil, "Infantil");
-		crearTurno("Miércoles", "18:00", "19:00", lunesMiercolesJoven, "Joven");
-		crearTurno("Miércoles", "19:00", "20:30", lunesMiercolesAdulto, "Adulto");
-		
-		crearTurno("Jueves", "17:00", "18:00", martesJuevesInfantil, "Infantil");
-		crearTurno("Jueves", "18:00", "19:00", martesJuevesJoven, "Joven");
-		crearTurno("Jueves", "19:00", "20:00", martesJuevesAdulto, "Adulto");
-		crearTurno("Jueves", "20:00", "21:30", competicion, "Competición");
-
+	    if (turnoRepository.count() == 0) {
+			crearTurno("Lunes", "17:00", "18:00", lunesMiercolesInfantil, "Taekwondo Infantil");
+			crearTurno("Lunes", "18:00", "19:00", lunesMiercolesJoven, "Taekwondo Joven");
+			crearTurno("Lunes", "19:00", "20:30", lunesMiercolesAdulto, "Taekwondo Adulto");
+			crearTurno("Lunes", "20:30", "21:30", kickboxing, "Kickboxing");
+			
+			crearTurno("Martes", "10:00", "11:15", pilates, "Pilates");
+			crearTurno("Martes", "17:00", "18:00", martesJuevesInfantil, "Taekwondo Infantil");
+			crearTurno("Martes", "18:00", "19:00", martesJuevesJoven, "Taekwondo Joven");
+			crearTurno("Martes", "19:00", "20:00", martesJuevesAdulto, "Taekwondo Adulto");
+			
+			crearTurno("Miércoles", "17:00", "18:00", lunesMiercolesInfantil, "Taekwondo Infantil");
+			crearTurno("Miércoles", "18:00", "19:00", lunesMiercolesJoven, "Taekwondo Joven");
+			crearTurno("Miércoles", "19:00", "20:30", lunesMiercolesAdulto, "Taekwondo Adulto");
+			crearTurno("Miércoles", "20:30", "21:30", kickboxing, "Kickboxing");
+			
+			crearTurno("Jueves", "10:00", "11:15", pilates, "Pilates");
+			crearTurno("Jueves", "17:00", "18:00", martesJuevesInfantil, "Taekwondo Infantil");
+			crearTurno("Jueves", "18:00", "19:00", martesJuevesJoven, "Taekwondo Joven");
+			crearTurno("Jueves", "19:00", "20:00", martesJuevesAdulto, "Taekwondo Adulto");
+			crearTurno("Jueves", "20:00", "21:30", competicion, "Taekwondo Competición");
+	    }
         if (gradoRepository.count() == 0) {
             generarGrados();
         }
@@ -163,6 +150,15 @@ public class InicializadorDatos implements CommandLineRunner {
 
         asignarAlumnosAGrupoAleatorio();
         asignarAlumnosAGrupoYTurnos();
+	}
+	
+	private Grupo obtenerOcrearGrupo(String nombreGrupo) {
+	    return grupoRepository.findByNombre(nombreGrupo)
+	            .orElseGet(() -> {
+	                Grupo nuevoGrupo = new Grupo();
+	                nuevoGrupo.setNombre(nombreGrupo);
+	                return grupoRepository.save(nuevoGrupo);
+	            });
 	}
 
 	private void generarUsuarios() {
