@@ -42,13 +42,35 @@ export class ContactoComponent {
       this.contactForm.markAllAsTouched();
       return;
     }
-    const numeroWhatsApp = '34695568455';
-    const { nombre, apellidos, email, asunto, mensaje } =
-      this.contactForm.value;
+  
+    const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
     const nombreCompleto = `${nombre} ${apellidos}`;
     const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
-    this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp);
-    this.limpiarCampos();
+  
+    const numeroWhatsApp = '34695568455'; // Asegúrate de que el número esté en formato internacional sin el '+'
+  
+    this.spinner.show();
+  
+    this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp).subscribe({
+      next: () => {
+        this.spinner.hide();
+        Swal.fire({
+          title: 'Mensaje enviado',
+          text: '¡El mensaje de WhatsApp ha sido enviado correctamente!',
+          icon: 'success',
+        });
+        this.limpiarCampos();
+      },
+      error: (error) => {
+        this.spinner.hide();
+        Swal.fire({
+          title: 'Error al enviar mensaje',
+          text: 'Ha ocurrido un error al intentar enviar el mensaje de WhatsApp.',
+          icon: 'error',
+        });
+        console.error('Error al enviar WhatsApp:', error);
+      }
+    });
   }
 
   enviarCorreo() {
