@@ -4,9 +4,13 @@ import {
   ElementRef,
   OnInit,
   ViewChild,
+  ViewChildren, 
+  QueryList, 
+  Inject, 
+  PLATFORM_ID
 } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { HammerModule } from '@angular/platform-browser';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
@@ -22,6 +26,10 @@ import { Router } from '@angular/router';
 export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
   @ViewChild('videoPresentacion')
   videoPresentacion!: ElementRef<HTMLVideoElement>;
+
+  @ViewChildren('animatedImage')
+  images!: QueryList<ElementRef>;
+
   usuarioLogueado: boolean = false;
   eventoActualIndex: number = 0;
   idIntervalo: any;
@@ -65,8 +73,9 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
   ];
 
   constructor(
-    private authService: AuthenticationService,
-    private router: Router
+    private readonly authService: AuthenticationService,
+    private readonly router: Router,
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
   ngOnInit(): void {
@@ -82,6 +91,29 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
     video.addEventListener('canplaythrough', () => {
       video.muted = true;
       video.play();
+    });
+
+    if (isPlatformBrowser(this.platformId)) {
+      const options = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1
+      };
+
+      const observer = new IntersectionObserver(this.handleIntersection.bind(this), options);
+
+      this.images.forEach(image => {
+        observer.observe(image.nativeElement);
+      });
+    }
+  }
+
+  handleIntersection(entries: IntersectionObserverEntry[], observer: IntersectionObserver): void {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        (entry.target as HTMLElement).classList.add('fade-in');
+        observer.unobserve(entry.target);
+      }
     });
   }
 

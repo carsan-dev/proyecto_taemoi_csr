@@ -40,15 +40,39 @@
 
     .video-image {
       position: absolute;
-      bottom: -25px;
-      left: 50%;
-      transform: translate(-50%);
+      bottom: -18px;
+      left: 0;
       width: 100%;
-      max-width: 200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 20px;
 
       img {
+        min-width: 80px;
+        height: auto;
         mask-image: linear-gradient(to bottom, black 75%, transparent 95%);
       }
+
+      .video-image-item-1 {
+        max-width: 500px;
+        width: 19vw;
+        margin-right: auto;
+      }
+
+      .video-image-item-2 {
+        max-width: 400px;
+        width: 11vw;
+      }
+
+      .video-image-item-3 {
+        max-width: 300px;
+        width: 10vw;
+        margin-left: 30%;
+        margin-right: 4%;
+      }
+      
+      
     }
   }
 
@@ -66,16 +90,19 @@
 
         h1 {
           font-weight: 700;
+          font-family: 'Montserrat', sans-serif;
         }
 
         p {
           margin: 1rem auto;
-          width: 90%;
+          width: 75%;
+          font-family: 'Montserrat', sans-serif;
         }
 
         button {
           margin: 1rem auto;
           width: 180px;
+          font-family: 'Montserrat', sans-serif;
         }
       }
 
@@ -83,10 +110,19 @@
         flex: 1;
         text-align: center;
 
-        img {
+        & img {
           max-width: 100%;
           height: auto;
           filter: grayscale(100%);
+          border-radius: 7px;
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 1s ease, transform 1s ease;
+        }
+  
+        & img.fade-in {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
     }
@@ -216,6 +252,7 @@
           margin-bottom: 1rem;
           color: #333;
           text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+          font-family: 'Montserrat', sans-serif;
         }
 
         p {
@@ -223,29 +260,40 @@
           line-height: 1.8;
           color: #666;
           text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+          font-family: 'Montserrat', sans-serif;
         }
 
         .additional-info {
           font-size: 1rem;
           color: #555;
+          font-family: 'Montserrat', sans-serif;
 
           i {
             color: #890000;
+            font-family: 'Montserrat', sans-serif;
           }
 
           a {
             color: #0066cc;
             text-decoration: none;
+            font-family: 'Montserrat', sans-serif;
 
             &:hover {
               text-decoration: underline;
             }
+          }
+
+          .link-info {
+            color: #0066cc;
+            font-weight: 600;
+            cursor: pointer;
           }
         }
 
         .btn-primary {
           background-color: #890000;
           border-color: #890000;
+          font-family: 'Montserrat', sans-serif;
 
           &:hover {
             background-color: #660000;
