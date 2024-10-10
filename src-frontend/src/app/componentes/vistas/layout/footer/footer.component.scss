@@ -4,14 +4,20 @@ footer {
 
     h2 {
       font-size: 20px;
+      font-family: 'Montserrat', sans-serif;
     }
 
     p {
       font-size: 16px;
+      font-family: 'Montserrat', sans-serif;
     }
 
     img {
       width: 60%;
+    }
+
+    a {
+      font-family: 'Montserrat', sans-serif;
     }
 
     .nav-link {
@@ -21,6 +27,52 @@ footer {
     .social-footer {
       p {
         margin: 0;
+        font-family: 'Montserrat', sans-serif;
+      }
+    }
+
+    .nav-item {
+      position: relative;
+  
+      .dropdown-toggle {
+        cursor: pointer;
+        font-family: 'Montserrat', sans-serif;
+      }
+  
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 80px;
+        display: block;
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        background-color: #000000;
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+        padding: 0;
+        list-style: none;
+        min-width: 150px;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+  
+      &:hover > .dropdown-menu {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+      }
+  
+      .dropdown-item {
+        padding: 10px 20px;
+        color: white;
+        text-decoration: none;
+        display: block;
+        cursor: pointer;
+  
+        &:hover {
+          background-color: #222222;
+        }
       }
     }
   }
