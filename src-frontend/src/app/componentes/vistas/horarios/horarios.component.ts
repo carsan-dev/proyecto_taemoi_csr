@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './horarios.component.html',
-  styleUrl: './horarios.component.scss',
+  styleUrls: ['./horarios.component.scss'],
 })
 export class HorariosComponent implements OnInit {
   usuarioLogueado: boolean = false;
@@ -51,5 +51,28 @@ export class HorariosComponent implements OnInit {
 
   obtenerTurnosPorDia(diaSemana: string): any[] {
     return this.turnos.filter(turno => turno.diaSemana === diaSemana);
+  }
+
+  obtenerCategoria(grupoId: number): string {
+    switch (grupoId) {
+      case 8:
+        return 'Pilates';
+      case 9:
+        return 'Kickboxing';
+      case 7:
+        return 'Taekwondo Competición';
+      default:
+        return 'Taekwondo';
+    }
+  }
+
+  obtenerColorDeporte(deporte: string): string {
+    const colores: { [key: string]: string } = {
+      'Pilates': '#ffd6a5',
+      'Kickboxing': '#ffadad',
+      'Taekwondo Competición': '#fdffb6',
+      'Taekwondo': '#addeff'
+    };
+    return colores[deporte] || '#ffffff'; // Color blanco por defecto
   }
 }
