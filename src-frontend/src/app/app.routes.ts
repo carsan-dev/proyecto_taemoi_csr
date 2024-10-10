@@ -28,11 +28,15 @@ import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear
 import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
 import { NgModule } from '@angular/core';
 import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component';
+import { KickboxingComponent } from './componentes/vistas/kickboxing/kickboxing.component';
+import { PilatesComponent } from './componentes/vistas/pilates/pilates.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
   { path: 'inicio', component: EscaparatePrincipalComponent },
   { path: 'eltaekwondo', component: EltaekwondoComponent },
+  { path: 'kickboxing', component: KickboxingComponent },
+  { path: 'pilates', component: PilatesComponent },
   { path: 'horarios', component: HorariosComponent },
   { path: 'logros', component: EventosComponent },
   { path: 'contacto', component: ContactoComponent },
