@@ -13,7 +13,16 @@
         <h2 class="fw-bold h5 mt-4">MAPA WEB</h2>
         <ul class="list-unstyled text-decoration-underline pt-2">
           <li><a class="nav-link" (click)="irARuta('/inicio')">Inicio</a></li>
-          <li><a class="nav-link" (click)="irARuta('/eltaekwondo')">El Taekwondo</a></li>
+          <li class="nav-item dropdown me-3">
+            <div class="nav-link dropdown-toggle" id="deportesDropdown">
+              ¿Qué hacemos?
+            </div>
+            <ul class="dropdown-menu" aria-labelledby="deportesDropdown">
+              <li><a class="dropdown-item" (click)="irARuta('/eltaekwondo')">Taekwondo</a></li>
+              <li><a class="dropdown-item" (click)="irARuta('/kickboxing')">Kickboxing</a></li>
+              <li><a class="dropdown-item" (click)="irARuta('/pilates')">Pilates</a></li>
+            </ul>
+        </li>
           <li><a class="nav-link" (click)="irARuta('/logros')">Logros</a></li>
           <li><a class="nav-link" (click)="irARuta('/horarios')">Horarios</a></li>
           <li><a class="nav-link" (click)="irARuta('/contacto')">Contacto</a></li>
@@ -23,19 +32,21 @@
         <h2 class="fw-bold h5 mt-4">AUTOR</h2>
         <ul class="list-unstyled pt-2">
           <li><p>Web desarrollada por Carlos Sánchez Román</p></li>
-          <li><a class="nav-link" href="https://github.com/csanrom1702" target="_blank"><i class="bi bi-github fs-3"></i></a></li>
+          <li><a class="nav-link" href="https://github.com/csanrom1702" target="_blank" rel="noopener noreferrer"><i class="bi bi-github fs-3"></i></a></li>
         </ul>
       </div>
       <div class="col-12 col-md-2 mb-4 mb-md-0">
         <h2 class="fw-bold h5 mt-4">REDES SOCIALES</h2>
         <div class="pt-2 d-flex justify-content-start">
-          <a class="nav-link me-2" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"><i class="bi bi-facebook fs-4"></i></a>
-          <a class="nav-link ms-2" href="https://www.instagram.com/moiskimdo_/" target="_blank"><i class="bi bi-instagram fs-4"></i></a>
+          <a class="nav-link me-2" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
+          <a class="nav-link ms-2" href="https://www.instagram.com/moiskimdo_/" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
         </div>
       </div>
       <div class="col-12 col-md-2 mb-4 mb-md-0">
         <h2 class="fw-bold h5 mt-4">ATRIBUCIONES</h2>
-        <a class="nav-link text-decoration-underline pt-2" href="https://github.com/csanrom1702" target="_blank">Aikido Vectores por Vecteezy</a>
+        <a class="nav-link text-decoration-underline pt-2" href="https://es.vecteezy.com/vectores-gratis/aikido" target="_blank" rel="noopener noreferrer">Aikido Vectores por Vecteezy</a>
+        <a class="nav-link text-decoration-underline pt-2" href="https://es.vecteezy.com/vectores-gratis/kickboxing" target="_blank" rel="noopener noreferrer">Kickboxing Vectores por Vecteezy</a>
+        <a class="nav-link text-decoration-underline pt-2" href="https://es.vecteezy.com/vectores-gratis/pilates" target="_blank" rel="noopener noreferrer">Pilates Vectores por Vecteezy</a>
       </div>
     </div>
     <hr class="hr">

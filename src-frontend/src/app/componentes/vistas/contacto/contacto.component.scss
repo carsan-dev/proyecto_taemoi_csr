@@ -48,6 +48,7 @@
           font-size: 1rem;
           pointer-events: none;
           transition: all 0.2s ease;
+          font-family: 'Montserrat', sans-serif;
         }
 
         input,
@@ -60,6 +61,7 @@
           border-radius: 0.25rem;
           color: #000;
           background-color: white;
+          font-family: 'Montserrat', sans-serif;
 
           &:focus {
             outline: none;
@@ -86,20 +88,21 @@
           color: #dc3545;
           position: absolute;
           bottom: -1.5rem;
+          font-family: 'Montserrat', sans-serif;
         }
+      }
+
+      button {
+        font-family: 'Montserrat', sans-serif;
       }
     }
   }
-
-
 
   @media (max-width: 1288px) {
     .text-danger#asuntoError {
       bottom: -1.8rem !important;
     }
   }
-
-
 }
 
 @media (max-width: 992px) {
