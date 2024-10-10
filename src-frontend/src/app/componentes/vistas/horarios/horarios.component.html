@@ -1,15 +1,50 @@
-<div class="planner-container container p-3 mb-5 row text-center">
-  <h2 class="title fs-1 fw-bold">Horarios disponibles</h2>
-  <p class="subtitle">¡Ven con nosotros y disfruta!</p>
-  <div class="planner-grid mt-3">
-    <div *ngFor="let dia of diasSemana" class="planner-day border border-1 p-4">
-      <h3 class="day-title fs-4 mb-2 position-relative">{{ dia }}</h3>
-      <div class="turnos-list">
-        <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item">
-          <span class="hora">De {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
+<div class="planner-container container-fluid p-3 p-md-5 mb-5">
+  <h2 class="title fs-2 fs-md-1 fw-bold text-center">Horarios disponibles</h2>
+  <p class="subtitle text-center">¡Ven con nosotros y disfruta de nuestras clases!</p>
+
+  <!-- Tabla de horarios -->
+  <div class="table-responsive">
+    <table class="table table-hover table-bordered table-striped mt-4 d-none d-md-table">
+      <thead class="table-dark">
+        <tr>
+          <th>Día de la Semana</th>
+          <th>Turno (Hora de Inicio - Hora de Fin)</th>
+          <th>Deporte</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Agrupar turnos por día de la semana -->
+        <tr *ngFor="let dia of diasSemana">
+          <td class="align-middle fs-5">{{ dia }}</td>
+          <td>
+            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte">
+              <span class="turno-hora">{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+            </div>
+            <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos">
+              No hay turnos disponibles
+            </div>
+          </td>
+          <td>
+            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
+              <span class="categoria-deporte">{{ obtenerCategoria(turno.grupoId) }}</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Versión de tabla en formato vertical para pantallas pequeñas -->
+    <div class="d-md-none">
+      <div *ngFor="let dia of diasSemana" class="dia-container mb-4">
+        <div class="dia-header bg-dark text-white p-2 rounded">{{ dia }}</div>
+        <div *ngIf="obtenerTurnosPorDia(dia).length > 0">
+          <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte p-3 mt-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
+            <div class="turno-hora fw-bold">{{ turno.horaInicio }} - {{ turno.horaFin }}</div>
+            <div class="categoria-deporte text-muted">{{ obtenerCategoria(turno.grupoId) }}</div>
+          </div>
         </div>
-        <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos">
-          No hay turnos
+        <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos p-2 mt-2 text-muted">
+          No hay turnos disponibles
         </div>
       </div>
     </div>

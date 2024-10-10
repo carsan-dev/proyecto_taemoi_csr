@@ -6,6 +6,7 @@ public class TurnoCortoDTO {
     private String diaSemana;
     private String horaInicio;
     private String horaFin;
+    private Long grupoId;
 
     public TurnoCortoDTO() {}
 
@@ -33,6 +34,14 @@ public class TurnoCortoDTO {
 		this.horaFin = horaFin;
 	}
 
+	public Long getGrupoId() {
+		return grupoId;
+	}
+
+	public void setGrupoId(Long grupoId) {
+		this.grupoId = grupoId;
+	}
+
 	public static TurnoCortoDTO deTurno(Turno turno) {
         if (turno == null) {
             return null;
@@ -42,6 +51,7 @@ public class TurnoCortoDTO {
         turnoDTO.setDiaSemana(turno.getDiaSemana());
         turnoDTO.setHoraInicio(turno.getHoraInicio());
         turnoDTO.setHoraFin(turno.getHoraFin());
+        turnoDTO.setGrupoId(turno.getGrupo().getId());
         
         return turnoDTO;
     }
