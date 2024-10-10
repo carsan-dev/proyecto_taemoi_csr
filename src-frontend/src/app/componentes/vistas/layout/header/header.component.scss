@@ -68,7 +68,7 @@ header.fixed-header {
       right: 0;
       bottom: 0;
       background-color: rgb(0, 0, 0);
-      transition: .4s;
+      transition: 0.4s;
       border-radius: 34px;
 
       &:before {
@@ -79,22 +79,76 @@ header.fixed-header {
         left: 4px;
         bottom: 4px;
         background-color: white;
-        transition: .4s;
+        transition: 0.4s;
         border-radius: 50%;
       }
     }
 
-    input:checked+.slider {
+    input:checked + .slider {
       background-color: #2196F3;
     }
 
-    input:focus+.slider {
+    input:focus + .slider {
       box-shadow: 0 0 1px #2196F3;
     }
 
-    input:checked+.slider:before {
+    input:checked + .slider:before {
       transform: translateX(26px);
     }
+  }
+
+  .navbar-nav {
+    .dropdown {
+      position: relative;
+
+      &:hover > .dropdown-menu {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .dropdown-toggle::after {
+        display: none; // Opcional: oculta el icono de flecha
+      }
+    }
+
+    .dropdown-menu {
+      display: block; // Necesario para animar correctamente
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      position: absolute;
+      background-color: white;
+      margin-top: 0;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      padding: 0;
+      list-style: none;
+      min-width: 150px; // Ajusta según tus necesidades
+    }
+
+    .dropdown-item {
+      padding: 10px 20px;
+      color: black;
+      text-decoration: none;
+      display: block;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      &.active-link {
+        background-color: #e9ecef;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .nav-link.active,
+  .nav-item.active > .nav-link {
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 
   @media (max-width: 991px) {
@@ -127,6 +181,7 @@ header.fixed-header {
         margin: 0 !important;
         margin-right: 15px !important;
       }
+
       .me-3 {
         margin: 0 !important;
       }
@@ -137,6 +192,88 @@ header.fixed-header {
         margin-right: 14px !important;
       }
     }
+  }
+}
+/* Estilos para el header de administrador */
+.admin-menu {
+  position: fixed;
+  top: 20px;
+  right: 100px;
+  z-index: 1000;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  & * {
+    cursor: pointer;
+  }
+
+  &.show {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nav-item {
+    position: relative;
+
+    .dropdown-toggle {
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 80px;
+      display: block;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      padding: 0;
+      list-style: none;
+      min-width: 150px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    &:hover > .dropdown-menu {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      padding: 10px 20px;
+      color: black;
+      text-decoration: none;
+      display: block;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      &.active-link {
+        background-color: #e9ecef;
+        font-weight: bold;
+      }
+    }
+  }
+
+  /* Estilos para enlaces activos */
+  .nav-link.active,
+  .nav-item.active > .nav-link {
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 }
 
@@ -170,29 +307,3 @@ header.fixed-header {
   }
 }
 
-.admin-menu {
-  position: fixed;
-  top: 20px;
-  right: 100px;
-  z-index: 1000;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  padding: 10px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-
-  & * {
-    cursor: pointer;
-  }
-}
-
-.admin-menu.show {
-  display: flex;
-  opacity: 1;
-  transform: translateY(0);
-}
