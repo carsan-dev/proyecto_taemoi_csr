@@ -2,7 +2,6 @@
   <h2 class="title fs-2 fs-md-1 fw-bold text-center">Horarios disponibles</h2>
   <p class="subtitle text-center">¡Ven con nosotros y disfruta de nuestras clases!</p>
 
-  <!-- Tabla de horarios -->
   <div class="table-responsive">
     <table class="table table-hover table-bordered table-striped mt-4 d-none d-md-table">
       <thead class="table-dark">
@@ -13,7 +12,6 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Agrupar turnos por día de la semana -->
         <tr *ngFor="let dia of diasSemana">
           <td class="align-middle fs-5">{{ dia }}</td>
           <td>
@@ -33,7 +31,6 @@
       </tbody>
     </table>
 
-    <!-- Versión de tabla en formato vertical para pantallas pequeñas -->
     <div class="d-md-none">
       <div *ngFor="let dia of diasSemana" class="dia-container mb-4">
         <div class="dia-header bg-dark text-white p-2 rounded">{{ dia }}</div>
