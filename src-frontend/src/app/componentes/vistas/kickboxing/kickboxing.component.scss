@@ -1,0 +1,161 @@
+.main-content {
+  margin-top: 125px;
+
+  .first-banner-section {
+    .first-banner {
+      background: linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("../../../../assets/media/kickboxing.webp");
+      background-position: center;
+      background-size: cover;
+      height: 500px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      & p {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 4vw;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .info-divs-section {
+    .text-content {
+      width: 100%;
+      text-align: center;
+
+      @media (min-width: 768px) {
+        width: 60%;
+        text-align: left;
+      }
+
+      & hr {
+        opacity: 1;
+        border: 1.5px solid #890000;
+      }
+
+      & h1 {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+      }
+
+      & p {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 400;
+      }
+    }
+
+    .img-content {
+      width: 100%;
+      text-align: center;
+
+      @media (min-width: 768px) {
+        width: 40%;
+      }
+
+      & img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 7px;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 1s ease, transform 1s ease;
+      }
+
+      & img.fade-in {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  .second-banner-section {
+    .second-banner {
+      position: relative;
+      height: 450px;
+      border: 3px solid #890000;
+      border-radius: 7px;
+      text-align: center;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("../../../../assets/media/disciplina.webp");
+        background-position: center;
+        background-size: cover;
+        filter: grayscale(100%);
+        z-index: -1;
+      }
+
+      & p {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+      }
+
+      & button {
+        background-color: #890000;
+        border-color: #890000;
+        font-family: 'Montserrat', sans-serif;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .first-banner p {
+      font-size: 8vw;
+    }
+
+    .text-content {
+      text-align: center;
+
+      h1 {
+        text-align: center;
+      }
+
+      p {
+        text-align: center;
+      }
+    }
+
+    .img-content {
+      text-align: center;
+
+      img {
+        max-width: 100%;
+      }
+    }
+
+    .second-banner {
+      padding: 20px;
+      text-align: center;
+      border: 0 !important;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .first-banner {
+      height: 300px;
+
+      p {
+        font-size: 10vw;
+      }
+    }
+
+    .second-banner {
+      height: 300px;
+
+      p {
+        font-size: 6vw;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
