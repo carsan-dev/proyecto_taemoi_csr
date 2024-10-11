@@ -10,7 +10,8 @@
     </div>
     <div class="video-image d-flex flex-row justify-content-between">
       <img class="img-fluid video-image-item-1" src="../../../../assets/media/pilatera.svg" alt="Pilatera dibujada">
-      <img class="img-fluid video-image-item-2" src="../../../../assets/media/taekwondista.svg" alt="Taekwondista cinturón negro dibujado">
+      <img class="img-fluid video-image-item-2" src="../../../../assets/media/taekwondista.svg"
+        alt="Taekwondista cinturón negro dibujado">
       <img class="img-fluid video-image-item-3" src="../../../../assets/media/kickboxer.svg" alt="Kickboxer dibujado">
     </div>
   </div>
@@ -27,18 +28,21 @@
         <button type="button" class="btn btn-primary mt-5" (click)="irARuta('/horarios')">Consulta horarios</button>
       </div>
       <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/rafa_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
+        <img #animatedImage src="../../../../assets/media/rafa_competicion.webp"
+          alt="Se muestran dos competidores en una competición oficial">
       </div>
     </div>
-    <div class="info-div info-div-reverse mb-5 d-flex flex-column flex-md-row align-items-center">
+    <div class="info-div info-div-reverse d-flex flex-column flex-md-row align-items-center">
       <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/pablo_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
+        <img #animatedImage src="../../../../assets/media/pablo_competicion.webp"
+          alt="Se muestran dos competidores en una competición oficial">
       </div>
       <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
         <h1 class="h2 text-center">QUE HACEMOS</h1>
         <p class="mt-5">Ofrecemos clases dinámicas y emocionantes para niños y adultos de todas las edades. Desde los
           más
-          pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo, el kickboxing y el pilates en un ambiente
+          pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo, el kickboxing
+          y el pilates en un ambiente
           divertido y seguro.</p>
         <p class="mt-4">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de
           experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
@@ -46,6 +50,17 @@
         <button type="button" class="btn btn-danger mt-5" (click)="irARuta('/contacto')">Contáctanos</button>
       </div>
     </div>
+    <div class="info-div mb-5 d-flex flex-column flex-md-row align-items-center">
+      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
+          <h1 class="h2 text-center">POR QUÉ ELEGIRNOS</h1>
+          <p class="mt-5">En Moiskimdo, no solo te ofrecemos entrenamiento de alta calidad, sino también una comunidad que te apoyará en cada paso de tu viaje. Nuestros instructores están dedicados a ayudarte a alcanzar tus metas personales, ya sea mejorar tu forma física, aprender autodefensa o simplemente divertirte.</p>
+          <p class="mt-4">Creemos en el poder transformador de las artes marciales y el fitness para mejorar la confianza, la disciplina y el bienestar general.</p>
+          <button type="button" class="btn btn-primary mt-5" (click)="irARuta('/beneficios')">Descubre los beneficios</button>
+      </div>
+      <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
+          <img #animatedImage src="../../../../assets/media/beneficios.webp" alt="Representando los beneficios de entrenar con nosotros">
+      </div>
+  </div>
   </section>
   <section class="slider-section p-0">
     <div class="background-container"></div>
@@ -55,16 +70,19 @@
       </div>
     </div>
   </section>
-  <section class="map-section mb-5 d-flex flex-column align-items-center justify-content-center">
+  <section class="map-section d-flex flex-column align-items-center justify-content-center">
     <div class="card mt-4 img-content location-container">
       <app-mapa class="card-img-top"></app-mapa>
       <div class="card-body text-center">
         <h2 class="h5 my-4 fw-bold">Calle Parada de la Cigüeña, 34a 41806 Umbrete, Sevilla</h2>
-        <p>Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles de habilidad, estamos comprometidos a ayudarte a alcanzar tus metas, ya sea que busques mejorar tu condición física, aumentar tu confianza o pasártelo bien aprendiendo.</p>
+        <p>Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles de habilidad, estamos
+          comprometidos a ayudarte a alcanzar tus metas, ya sea que busques mejorar tu condición física, aumentar tu
+          confianza o pasártelo bien aprendiendo.</p>
         <p class="additional-info mt-4">
           <i class="bi bi-phone-fill"></i> Teléfono: +34 625 753 952<br>
           <i class="bi bi-envelope-at-fill"></i> Email: moiskimdotaekwondo&#64;gmail.com<br>
-          <i class="bi bi-calendar-date-fill"></i> Horario: Lun - Jue: 17:00 - 21:30. Para ver el horario completo, pulse <a (click)="irARuta('/horarios')" class="link-info">aquí</a>. 
+          <i class="bi bi-calendar-date-fill"></i> Horario: Lun - Jue: 17:00 - 21:30. Para ver el horario completo,
+          pulse <a (click)="irARuta('/horarios')" class="link-info">aquí</a>.
         </p>
         <button type="button" class="btn btn-primary mt-4" (click)="irARuta('/contacto')">Más información</button>
       </div>

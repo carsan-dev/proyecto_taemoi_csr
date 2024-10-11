@@ -90,19 +90,16 @@
 
         h1 {
           font-weight: 700;
-          font-family: 'Montserrat', sans-serif;
         }
 
         p {
           margin: 1rem auto;
           width: 75%;
-          font-family: 'Montserrat', sans-serif;
         }
 
         button {
           margin: 1rem auto;
           width: 180px;
-          font-family: 'Montserrat', sans-serif;
         }
       }
 
@@ -252,7 +249,6 @@
           margin-bottom: 1rem;
           color: #333;
           text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-          font-family: 'Montserrat', sans-serif;
         }
 
         p {
@@ -260,23 +256,19 @@
           line-height: 1.8;
           color: #666;
           text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
-          font-family: 'Montserrat', sans-serif;
         }
 
         .additional-info {
           font-size: 1rem;
           color: #555;
-          font-family: 'Montserrat', sans-serif;
 
           i {
             color: #890000;
-            font-family: 'Montserrat', sans-serif;
           }
 
           a {
             color: #0066cc;
             text-decoration: none;
-            font-family: 'Montserrat', sans-serif;
 
             &:hover {
               text-decoration: underline;
@@ -293,7 +285,6 @@
         .btn-primary {
           background-color: #890000;
           border-color: #890000;
-          font-family: 'Montserrat', sans-serif;
 
           &:hover {
             background-color: #660000;
