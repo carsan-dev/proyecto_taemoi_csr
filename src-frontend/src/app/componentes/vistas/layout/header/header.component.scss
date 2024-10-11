@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-
 header.fixed-header {
   position: fixed;
   top: 0;
@@ -33,8 +31,7 @@ header.fixed-header {
         justify-content: center;
 
         .nav-item {
-          * {
-            font-family: 'Montserrat', sans-serif;
+          * {     
             font-size: 18px;
           }
         }
