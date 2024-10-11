@@ -10,7 +10,7 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 })
 export class MapaComponent implements AfterViewInit {
   localizacionConcreta: [number, number] = [
-    37.3683719731871, -6.160806131969828,
+    37.368258873076506, -6.160836430640318,
   ];
   map!: any;
   routingControl?: any;
@@ -96,7 +96,7 @@ export class MapaComponent implements AfterViewInit {
         .bindPopup(
           `
         <b>Ubicación:</b><br>
-        C. Parada de la Cigüeña, 34a, 41806 Umbrete, Sevilla<br>
+        C. Parada de la Cigüeña 36, 41806 Umbrete, Sevilla<br>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${this.localizacionConcreta.join(
           ','
         )}" target="_blank">Abrir en Google Maps</a>
@@ -177,7 +177,7 @@ export class MapaComponent implements AfterViewInit {
 VERSION:3.0
 N:;Mi Ubicación;;;
 FN:Mi Ubicación
-ADR;TYPE=work:;;C. Parada de la Cigüeña, 34a;Umbrete;Sevilla;41806;España
+ADR;TYPE=work:;;C. Parada de la Cigüeña 36;Umbrete;Sevilla;41806;España
 END:VCARD`;
 
       const blob = new Blob([data], { type: 'text/vcard' });
