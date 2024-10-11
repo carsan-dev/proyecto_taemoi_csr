@@ -10,13 +10,9 @@ TaeMoi es una solución innovadora diseñada específicamente para la escuela de
 
 ### Curso Escolar 2023-2024
 
-#### Autor: Carlos Sánchez Román: [(Enlace a mi cuenta de gitHub)](https://github.com/csanrom1702)
-
-#### Tutor: Antonio Gabriel González Casado [(Enlace a su cuenta de gitHub)](https://github.com/prof-antonio-gabriel)
+#### Autor: Carlos Sánchez Román: [(Enlace a mi cuenta de gitHub)](https://github.com/carsan-dev)
 
 #### Fecha de Inicio: 06-03-2024
-
-#### Fecha de Finalización: 16-06-2024
 
 ---
 
