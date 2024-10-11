@@ -33,10 +33,14 @@ $Taemoi_Angular_Front-theme: mat.define-light-theme((color: (primary: $Taemoi_An
 
 @import "../node_modules/bootstrap/scss/bootstrap.scss";
 @import "../node_modules/bootstrap-icons/font/bootstrap-icons.css/";
-@import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+@import 'leaflet-control-geocoder/dist/Control.Geocoder.css';
+@import 'leaflet-minimap/dist/Control.MiniMap.min.css';
 
 * {
-  font-family: Verdana, sans-serif;
+  font-family: Montserrat, sans-serif;
   box-sizing: border-box;
 }
 
@@ -47,6 +51,6 @@ body {
 
 body {
   margin: 0;
-  font-family: Verdana, sans-serif;
+  font-family: Montserrat, sans-serif;
 }
 
