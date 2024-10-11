@@ -6,7 +6,6 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { WhatsAppService } from '../../../servicios/contacto/whats-app.service';
 import { MailService } from '../../../servicios/contacto/mail.service';
 import Swal from 'sweetalert2';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
@@ -24,7 +23,6 @@ export class ContactoComponent {
 
   constructor(
     private fb: FormBuilder,
-    private whatsappService: WhatsAppService,
     private mailService: MailService,
     private spinner: NgxSpinnerService
   ) {
@@ -42,35 +40,21 @@ export class ContactoComponent {
       this.contactForm.markAllAsTouched();
       return;
     }
-  
+
     const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
     const nombreCompleto = `${nombre} ${apellidos}`;
     const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
-  
-    const numeroWhatsApp = '34695568455'; // Asegúrate de que el número esté en formato internacional sin el '+'
-  
-    this.spinner.show();
-  
-    this.whatsappService.enviarMensaje(mensajeCompleto, numeroWhatsApp).subscribe({
-      next: () => {
-        this.spinner.hide();
-        Swal.fire({
-          title: 'Mensaje enviado',
-          text: '¡El mensaje de WhatsApp ha sido enviado correctamente!',
-          icon: 'success',
-        });
-        this.limpiarCampos();
-      },
-      error: (error) => {
-        this.spinner.hide();
-        Swal.fire({
-          title: 'Error al enviar mensaje',
-          text: 'Ha ocurrido un error al intentar enviar el mensaje de WhatsApp.',
-          icon: 'error',
-        });
-        console.error('Error al enviar WhatsApp:', error);
-      }
-    });
+
+    const numeroWhatsApp = '34695568455'; // Número en formato internacional sin '+'
+
+    // Codificar el mensaje
+    const encodedMessage = encodeURIComponent(mensajeCompleto);
+
+    // Generar el enlace de WhatsApp
+    const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${encodedMessage}`;
+
+    // Abrir el enlace en una nueva ventana o pestaña
+    window.open(whatsappUrl, '_blank');
   }
 
   enviarCorreo() {
