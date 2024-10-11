@@ -33,7 +33,6 @@ yarn-error.log
 /coverage
 /libpeerconnection.log
 testem.log
-/typings
 
 # System files
 .DS_Store
@@ -61,7 +60,6 @@ coverage/
 libpeerconnection.log/
 npm-debug.log
 testem.log
-typings/
 .angular/
 
 # e2e
