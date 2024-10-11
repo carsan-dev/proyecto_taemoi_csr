@@ -1,3 +1,15 @@
 <div class="mapaContainer text-center">
   <div id="map"></div>
+  <div class="map-buttons">
+    <button class="route-button" (click)="calculateRoute()">Cómo llegar</button>
+    <button class="download-button" (click)="downloadLocation()">Descargar ubicación</button>
+    <div class="share-buttons">
+      <button class="share-button share-button-facebook" (click)="shareOnFacebook()">
+        <i class="bi-facebook fs-5"></i>
+      </button>
+      <button class="share-button share-button-twitter" (click)="shareOnTwitter()">
+        <i class="bi-twitter-x fs-5"></i>
+      </button>
+    </div>
+  </div>
 </div>
