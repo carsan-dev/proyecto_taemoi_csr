@@ -40,7 +40,10 @@
               "src/styles.scss",
               "node_modules/bootstrap/scss/bootstrap.scss",
               "node_modules/ngx-spinner/animations/ball-clip-rotate.css",
-              "node_modules/leaflet/dist/leaflet.css"
+              "node_modules/leaflet/dist/leaflet.css",
+              "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css",
+              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.css",
+              "node_modules/leaflet-minimap/dist/Control.MiniMap.min.css"
             ],
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
