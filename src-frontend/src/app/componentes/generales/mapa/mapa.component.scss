@@ -1,6 +1,6 @@
 .mapaContainer {
   width: 100%;
-  height: 400px;
+  height: 600px;
   position: relative;
   margin: 0 auto;
   border-radius: 10px;
@@ -12,27 +12,85 @@
     border-radius: 10px;
   }
 
-  .route-button {
+  .route-button,
+  .download-button {
     position: absolute;
     bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: 1000;
     padding: 10px 20px;
-    background-color: #007bff;
+    background-color: #890000;
     border: none;
     border-radius: 5px;
     color: #fff;
     cursor: pointer;
     font-size: 16px;
+    margin: 5px;
   }
 
-  .route-button:hover {
-    background-color: #0056b3;
+  .share-button {
+    left: 5px;
+    position: absolute;
+    bottom: 10px;
+    z-index: 1000;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+  }
+
+  .route-button {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .share-button-twitter {
+    background-color: #000;
+    bottom: 75px;
+  }
+
+  .share-button-facebook {
+    background-color: #0866FF;
+  }
+
+  .download-button {
+    right: 10px;
+  }
+
+  .route-button:hover,
+  .download-button:hover {
+    background-color: #660000;
+  }
+}
+
+/* Estilos para el icono pulsante */
+.pulsating-icon .pulse {
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 123, 255, 0.5);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.leaflet-left .leaflet-control-minimap {
+  margin-left: 50px; /* Ajusta este valor según sea necesario */
+}
+
+@media (max-width: 1200px) {
+  .mapaContainer {
+    height: 500px;
   }
 }
 
 @media (max-width: 992px) {
+  .mapaContainer {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
   .mapaContainer {
     height: 300px;
   }
@@ -40,6 +98,47 @@
 
 @media (max-width: 576px) {
   .mapaContainer {
-    height: 250px;
+    height: 400px;
+  }
+
+  .pulsating-icon .pulse {
+    width: 15px;
+    height: 15px;
+  }
+
+  .map-buttons {
+    flex-direction: column;
+    bottom: 5px;
+  }
+
+  .route-button,
+  .share-button {
+    margin: 3px;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .download-button {
+    display: none;
+  }
+
+  .share-button {
+    padding: 8px;
+  }
+
+  .route-button {
+    right: 10px !important;
+    transform: none !important;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
   }
 }
