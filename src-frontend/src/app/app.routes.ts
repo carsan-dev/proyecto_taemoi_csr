@@ -38,7 +38,7 @@ export const routes: Routes = [
   { path: 'kickboxing', component: KickboxingComponent },
   { path: 'pilates', component: PilatesComponent },
   { path: 'horarios', component: HorariosComponent },
-  { path: 'logros', component: EventosComponent },
+  { path: 'eventos', component: EventosComponent },
   { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
   {
