@@ -68,10 +68,10 @@ export class HorariosComponent implements OnInit {
 
   obtenerColorDeporte(deporte: string): string {
     const colores: { [key: string]: string } = {
-      'Pilates': '#CFE7CF',
+      'Pilates': '#A8D2D4',
       'Kickboxing': '#FFA573',
       'Taekwondo Competición': '#F28B8B',
-      'Taekwondo': '#A3D1FF'
+      'Taekwondo': '#A6BFE3'
     };
     return colores[deporte] || '#ffffff';
   }

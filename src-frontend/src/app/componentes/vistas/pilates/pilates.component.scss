@@ -32,7 +32,7 @@
 
       & hr {
         opacity: 1;
-        border: 1.5px solid #8fbc8f;
+        border: 1.5px solid #57A2A8;
       }
 
       & h1 {
@@ -59,7 +59,7 @@
         opacity: 0;
         transform: translateY(30px);
         transition: opacity 1s ease, transform 1s ease;
-        box-shadow: 0 4px 10px rgba(143, 188, 143, 0.3);
+        box-shadow: 0 4px 10px rgba(87, 162, 168, 0.3);
       }
 
       & img.fade-in {
@@ -73,7 +73,7 @@
     .second-banner {
       position: relative;
       height: 450px;
-      border: 3px solid #8fbc8f;
+      border: 3px solid #57A2A8;
       border-radius: 7px;
       text-align: center;
 
@@ -101,12 +101,12 @@
       }
 
       & button {
-        background-color: #8fbc8f;
-        border-color: #8fbc8f;
+        background-color: #57A2A8;
+        border-color: #57A2A8;
 
         &:hover {
-          background-color: #79a379;
-          border-color: #79a379;
+          background-color: #468A8F;
+          border-color: #468A8F;
         }
       }
     }
