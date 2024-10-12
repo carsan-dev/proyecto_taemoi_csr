@@ -120,4 +120,11 @@ export class EscaparatePrincipalComponent implements OnInit, AfterViewInit {
   irARuta(ruta: string) {
     this.router.navigate([ruta]);
   }
+
+  scrollToMap() {
+    const mapSection = document.getElementById('map-section');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
 }

@@ -18,7 +18,7 @@
   <section class="p-0 info-divs-section">
     <div class="info-div mt-5 d-flex flex-column flex-md-row align-items-center">
       <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">QUIENES SOMOS</h1>
+        <h1 class="h2 text-center">QUIÉNES SOMOS</h1>
         <p class="mt-5">Somos una escuela de artes marciales ubicada en el corazón del Aljarafe Sevillano que lleva en
           activo más de
           15 años, con una gran pasión por los deportes que ejercemos y un carisma sin igual.</p>
@@ -34,11 +34,11 @@
     </div>
     <div class="info-div info-div-reverse d-flex flex-column flex-md-row align-items-center">
       <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/placeholder.webp"
+        <img #animatedImage src="../../../../assets/media/doble_puño.webp"
           alt="Se muestran dos competidores en una competición oficial">
       </div>
       <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">QUE HACEMOS</h1>
+        <h1 class="h2 text-center">QUÉ HACEMOS</h1>
         <p class="mt-5">Ofrecemos clases dinámicas y emocionantes para niños y adultos de todas las edades. Desde los
           más
           pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo, el kickboxing
@@ -55,7 +55,8 @@
           <h1 class="h2 text-center">POR QUÉ ELEGIRNOS</h1>
           <p class="mt-5">En Moiskimdo, no solo te ofrecemos entrenamiento de alta calidad, sino también una comunidad que te apoyará en cada paso de tu viaje. Nuestros instructores están dedicados a ayudarte a alcanzar tus metas personales, ya sea mejorar tu forma física, aprender autodefensa o simplemente divertirte.</p>
           <p class="mt-4">Creemos en el poder transformador de las artes marciales y el fitness para mejorar la confianza, la disciplina y el bienestar general.</p>
-          <button type="button" class="btn btn-primary mt-5" (click)="irARuta('/beneficios')">Descubre los beneficios</button>
+          <button type="button" class="btn btn-warning mt-5" (click)="scrollToMap()">¿Dónde estamos?</button>
+
       </div>
       <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
           <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Representando los beneficios de entrenar con nosotros">
@@ -71,7 +72,7 @@
     </div>
   </section>
   <section class="map-section d-flex flex-column align-items-center justify-content-center">
-    <div class="card mt-4 img-content location-container">
+    <div class="card mt-4 img-content location-container" id="map-section">
       <app-mapa class="card-img-top"></app-mapa>
       <div class="card-body text-center">
         <h2 class="h5 my-4 fw-bold">Calle Parada de la Cigüeña 36, 41806 Umbrete, Sevilla</h2>
