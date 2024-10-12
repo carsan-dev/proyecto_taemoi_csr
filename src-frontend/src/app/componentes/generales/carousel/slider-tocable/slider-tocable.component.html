@@ -1,11 +1,23 @@
-<div class="slider-container">
-  <div class="slider-item" *ngFor="let slideritem of imagenesSlider; let i = index" [ngClass]="{'seleccionado': i === indexSeleccionado,
-  'anterior': i === indexSeleccionado - 1,
-  'siguiente': i === indexSeleccionado + 1,
-  'escondidoIzquierdo': i < indexSeleccionado - 1,
-  'escondidoDerecho': i > indexSeleccionado + 1}">
-    <img [src]="slideritem.imgSrc" [alt]="slideritem.imgAlt" class="slider-img" (panright)="mostrarAnterior(i)"
-      (panleft)="mostrarSiguiente(i)">
-    <p *ngIf="i === indexSeleccionado" class="mt-5 text-center fw-bold">{{ slideritem.captionTexto }}</p>
+<div id="carouselSlider" class="carousel slide" data-bs-ride="carousel">
+  <div class="carousel-inner">
+    <!-- Iterar sobre los eventos y mostrar solo 5 imágenes -->
+    <div *ngFor="let evento of eventos.slice(0, 5); let i = index" class="carousel-item" [ngClass]="{'active': i === 0}">
+      <img
+        [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : '../../../../assets/media/default.webp'"
+        [alt]="evento.titulo"
+        class="d-block w-100 img-fluid event-img">
+      <div class="carousel-caption d-none d-md-block">
+        <p class="fw-bold">{{ evento.titulo }}</p>
+        <p>{{ evento.descripcion }}</p>
+      </div>
+    </div>
   </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#carouselSlider" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#carouselSlider" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
 </div>
