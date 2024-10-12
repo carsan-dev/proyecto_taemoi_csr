@@ -2,42 +2,45 @@
   <h2 class="title fs-1 fs-md-1 fw-bold text-center">Horarios disponibles</h2>
   <p class="subtitle text-center">¡Ven con nosotros y disfruta de nuestras clases!</p>
 
+  <!-- Table for larger screens -->
   <div class="table-responsive">
     <table class="table table-hover table-bordered table-striped mt-4 d-none d-md-table">
       <thead class="table-dark">
         <tr>
           <th>Día de la Semana</th>
-          <th>Turno (Hora de Inicio - Hora de Fin)</th>
-          <th>Deporte</th>
+          <th>Turnos</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let dia of diasSemana">
           <td class="align-middle fs-5">{{ dia }}</td>
           <td>
-            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte">
-              <span class="turno-hora">{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item p-2 my-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
+              <span class="turno-hora fw-bold">{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+              <span class="categoria-deporte ms-2 d-flex align-items-center">
+                <span>{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
+                <span class="ms-2">{{ obtenerCategoria(turno.grupoId) }}</span>
+              </span>
             </div>
             <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos">
               No hay turnos disponibles
-            </div>
-          </td>
-          <td>
-            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
-              <span class="categoria-deporte">{{ obtenerCategoria(turno.grupoId) }}</span>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
 
+    <!-- Version for small screens -->
     <div class="d-md-none">
       <div *ngFor="let dia of diasSemana" class="dia-container mb-4">
         <div class="dia-header bg-dark text-white p-2 rounded">{{ dia }}</div>
         <div *ngIf="obtenerTurnosPorDia(dia).length > 0">
-          <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item turno-deporte p-3 mt-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
+          <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item p-3 mt-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
             <div class="turno-hora fw-bold">{{ turno.horaInicio }} - {{ turno.horaFin }}</div>
-            <div class="categoria-deporte text-muted">{{ obtenerCategoria(turno.grupoId) }}</div>
+            <div class="categoria-deporte text-muted d-flex align-items-center">
+              <span>{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
+              <span class="ms-2">{{ obtenerCategoria(turno.grupoId) }}</span>
+            </div>
           </div>
         </div>
         <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos p-2 mt-2 text-muted">
