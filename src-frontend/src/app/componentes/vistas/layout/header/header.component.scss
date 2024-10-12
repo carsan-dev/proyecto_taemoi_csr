@@ -3,7 +3,7 @@ header.fixed-header {
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 100;
+  z-index: 1000;
   transition: top 0.3s ease-in-out;
 
   &.is-hidden {
