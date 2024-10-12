@@ -3,7 +3,8 @@
 
   .first-banner-section {
     .first-banner {
-      background: linear-gradient(to right, rgb(0 0 0 / .40), rgb(0 0 0 / .40)), url("../../../../assets/media/familia.webp");
+      background: linear-gradient(to right, rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.4)),
+        url("../../../../assets/media/familia.webp");
       background-position: center;
       background-size: cover;
       height: 500px;
@@ -15,7 +16,6 @@
       & p {
         font-size: 4vw;
         font-weight: 700;
-        
       }
     }
   }
@@ -32,7 +32,7 @@
 
       & hr {
         opacity: 1;
-        border: 1.5px solid #890000;
+        border: 1.5px solid #1e90ff;
       }
 
       & h1 {
@@ -59,6 +59,7 @@
         opacity: 0;
         transform: translateY(30px);
         transition: opacity 1s ease, transform 1s ease;
+        box-shadow: 0 4px 10px rgba(30, 144, 255, 0.3);
       }
 
       & img.fade-in {
@@ -72,7 +73,7 @@
     .second-banner {
       position: relative;
       height: 450px;
-      border: 3px solid #890000;
+      border: 3px solid #1e90ff;
       border-radius: 7px;
       text-align: center;
 
@@ -83,7 +84,12 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(to right, rgb(0 0 0 / .30), rgb(0 0 0 / .30)), url("../../../../assets/media/disciplina.webp");
+        background: linear-gradient(
+            to right,
+            rgb(0 0 0 / 0.3),
+            rgb(0 0 0 / 0.3)
+          ),
+          url("../../../../assets/media/disciplina.webp");
         background-position: center;
         background-size: cover;
         filter: grayscale(100%);
@@ -95,8 +101,13 @@
       }
 
       & button {
-        background-color: #890000;
-        border-color: #890000;
+        background-color: #1e90ff;
+        border-color: #1e90ff;
+
+        &:hover {
+          background-color: #1975d1;
+          border-color: #1975d1;
+        }
       }
     }
   }
@@ -104,6 +115,15 @@
   @media (max-width: 768px) {
     .first-banner p {
       font-size: 8vw;
+    }
+
+    .info-divs-section {
+      .img-content {
+        img {
+          box-shadow: none;
+          border-radius: 0;
+        }
+      }
     }
 
     .text-content {
@@ -130,28 +150,6 @@
       padding: 20px;
       text-align: center;
       border: 0 !important;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .first-banner {
-      height: 300px;
-
-      p {
-        font-size: 10vw;
-      }
-    }
-
-    .second-banner {
-      height: 300px;
-
-      p {
-        font-size: 6vw;
-      }
-
-      button {
-        width: 100%;
-      }
     }
   }
 }
