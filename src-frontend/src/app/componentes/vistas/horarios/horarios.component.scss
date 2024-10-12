@@ -77,26 +77,36 @@
   background: #f9f9f9;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   transition: background 0.3s ease, transform 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   &:hover {
     background: #f1f1f1;
     transform: translateY(-3px);
   }
-}
 
-.turno-hora {
-  font-weight: bold;
-  color: #000000;
-}
+  .turno-hora {
+    font-weight: bold;
+    color: #333;
+  }
 
-.categoria-deporte {
-  color: #17a2b8;
-  font-weight: 600;
-  text-transform: capitalize;
+  .categoria-deporte {
+    font-weight: normal;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+
+    .emoticono {
+      font-size: 1.5rem;
+      margin-right: 10px;
+    }
+  }
 }
 
 .no-turnos {
   color: #999999;
   font-style: italic;
   font-size: 0.9rem;
+  text-align: center;
 }

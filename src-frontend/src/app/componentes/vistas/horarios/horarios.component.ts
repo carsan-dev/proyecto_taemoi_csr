@@ -68,11 +68,22 @@ export class HorariosComponent implements OnInit {
 
   obtenerColorDeporte(deporte: string): string {
     const colores: { [key: string]: string } = {
-      'Pilates': '#ffd6a5',
-      'Kickboxing': '#ffadad',
-      'Taekwondo Competición': '#fdffb6',
-      'Taekwondo': '#addeff'
+      'Pilates': '#CFE7CF',
+      'Kickboxing': '#FFA573',
+      'Taekwondo Competición': '#F28B8B',
+      'Taekwondo': '#A3D1FF'
     };
-    return colores[deporte] || '#ffffff'; // Color blanco por defecto
+    return colores[deporte] || '#ffffff';
   }
+
+  obtenerEmoticonoCategoria(deporte: string): string {
+    const emoticonos: { [key: string]: string } = {
+      'Pilates': '🧘‍♀️',
+      'Kickboxing': '🥊', // Guante de boxeo
+      'Taekwondo': '🥋', // Kimono/dobok
+      'Taekwondo Competición': '🥋', // Usamos el mismo emoticono de kimono/dobok como aproximación
+    };
+    return emoticonos[deporte] || '❓'; // Emoticono por defecto en caso de que no se encuentre el deporte
+  }
+  
 }
