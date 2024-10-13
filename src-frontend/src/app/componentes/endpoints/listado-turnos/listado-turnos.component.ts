@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { GrupoDTO } from '../../../interfaces/grupo-dto';
 
 @Component({
@@ -27,9 +27,7 @@ export class ListadoTurnosComponent implements OnInit {
   grupos: GrupoDTO[] = [];
 
   constructor(
-    private endpointsService: EndpointsService,
-    private router: Router
-  ) {}
+    private readonly endpointsService: EndpointsService  ) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
