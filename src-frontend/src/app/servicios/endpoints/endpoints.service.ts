@@ -358,15 +358,22 @@ export class EndpointsService {
     token: string
   ): Observable<any> {
     const formData = new FormData();
-    const headers = this.crearHeaders(token);
+    const headers = this.crearHeaders(token); // Create headers for Authorization
+  
+    // Append event data as a JSON string
     formData.append('nuevo', JSON.stringify(eventoData));
+    
+    // Append the file if an image is provided
     if (imagen) {
       formData.append('file', imagen, imagen.name);
     }
-    return this.http
-      .post<any>(`${this.urlBase}/eventos/crear`, formData, { headers })
-      .pipe(catchError(this.manejarError));
+  
+    // Do not explicitly set the 'Content-Type' header, let Angular handle it
+    return this.http.post<any>(`${this.urlBase}/eventos/crear`, formData, {
+      headers, // Only the Authorization header will be added
+    }).pipe(catchError(this.manejarError));
   }
+  
 
   actualizarEvento(
     id: number,

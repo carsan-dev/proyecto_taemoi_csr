@@ -16,11 +16,12 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './crear-evento.component.html',
-  styleUrl: './crear-evento.component.scss',
+  styleUrls: ['./crear-evento.component.scss'],
 })
 export class CrearEventoComponent implements OnInit {
   eventoForm!: FormGroup;
   imagen: File | null = null;
+  imagePreview: string | null = null;  // To store the image preview URL
 
   constructor(
     private endpointsService: EndpointsService,
@@ -66,10 +67,19 @@ export class CrearEventoComponent implements OnInit {
         });
     }
   }
-  onFileChange(event: any) {
+
+  // Method to handle image selection and preview
+  onFileChange(event: any): void {
     const fileList: FileList = event.target.files;
     if (fileList.length > 0) {
       this.imagen = fileList[0];
+
+      // Create a preview of the image
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.imagen); // Read the file as a data URL to display the preview
     }
   }
 

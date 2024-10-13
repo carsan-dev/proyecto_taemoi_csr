@@ -3,9 +3,10 @@ export interface Evento {
   titulo: string;
   descripcion: string;
   fotoEvento: {
+    ruta: string | null;
+    url: string | null;
     id: number;
     nombre: string;
     tipo: string;
-    datos: string;
   } | null;
 }

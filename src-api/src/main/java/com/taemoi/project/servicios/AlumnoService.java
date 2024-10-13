@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
@@ -32,8 +33,10 @@ public interface AlumnoService {
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 	
 	Alumno crearAlumno(@Valid @NonNull Alumno alumno);
+	
+	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO);
 
-	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, Imagen imagen);
+	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, MultipartFile nuevaImagen);
 
 	void eliminarImagenAlumno(@NonNull Long id);
 	
@@ -58,8 +61,6 @@ public interface AlumnoService {
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
 	
 	String generarContrasena(String nombre, String apellidos);
-
-	Imagen guardarImagen(@NonNull Imagen imagen);
 
 	Alumno darDeBajaAlumno(Long id);
 

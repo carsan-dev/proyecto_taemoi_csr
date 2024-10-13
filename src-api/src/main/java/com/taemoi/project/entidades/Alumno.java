@@ -95,6 +95,7 @@ public class Alumno {
     private Date fechaPeso;
 	
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "foto_alumno_id")
     private Imagen fotoAlumno;
 
 	@ManyToOne(fetch = FetchType.EAGER)

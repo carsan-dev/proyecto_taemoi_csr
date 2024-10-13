@@ -8,5 +8,25 @@
     "name": "cors.allowed.origin",
     "type": "java.lang.String",
     "description": "CORS variable for Cloud Hosting"
+  },
+  {
+    "name": "spring.mail.from",
+    "type": "java.lang.String",
+    "description": "Remitente del mail"
+  },
+  {
+    "name": "app.imagenes.directorio.linux",
+    "type": "java.lang.String",
+    "description": "Directorio de recursos estáticos en Linux"
+  },
+  {
+    "name": "app.imagenes.directorio.windows",
+    "type": "java.lang.String",
+    "description": "Directorio de recursos estáticos en Windows"
+  },
+  {
+    "name": "app.base.url",
+    "type": "java.lang.String",
+    "description": "Url base de la aplicación"
   }
 ]}

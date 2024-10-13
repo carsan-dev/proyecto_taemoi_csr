@@ -59,6 +59,7 @@ public class SecurityConfiguration {
 				.requestMatchers(HttpMethod.GET, "/api/auth/user")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
 				.requestMatchers("/api/auth/**").permitAll()
+				.requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/turnos")

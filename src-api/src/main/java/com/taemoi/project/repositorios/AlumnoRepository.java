@@ -172,6 +172,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
     @Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
     List<Alumno> findAlumnosSinGrupo();
     
-    @Query("SELECT COALESCE(MAX(a.numeroExpediente), 0) FROM Alumno a")
+    @Query("SELECT MAX(a.numeroExpediente) FROM Alumno a")
     Integer findMaxNumeroExpediente();
 }

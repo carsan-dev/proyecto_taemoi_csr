@@ -232,9 +232,7 @@ export class EditarAlumnoComponent implements OnInit {
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
     this.alumnoEditado = { ...alumno };
-    this.imagenPreview = alumno.fotoAlumno
-        ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos
-        : '../../../../assets/media/default.webp';
+    this.imagenPreview = alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp';
 
     const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
     const fechaAlta = this.formatDate(alumno.fechaAlta);
