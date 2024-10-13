@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-eventos',
@@ -17,7 +18,8 @@ export class EventosComponent implements OnInit {
 
   constructor(
     private authService: AuthenticationService,
-    private endpointsService: EndpointsService
+    private endpointsService: EndpointsService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -41,5 +43,9 @@ export class EventosComponent implements OnInit {
         });
       },
     });
+  }
+
+  verDetalle(id: number) {
+    this.router.navigate(['/eventos', id]);
   }
 }

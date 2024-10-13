@@ -1,7 +1,7 @@
 <div class="main-container">
   <h2 class="text-center h1">METAS Y PRÓXIMOS EVENTOS</h2>
   <div class="container-fluid my-5">
-    <div class="box" *ngFor="let evento of eventos">
+    <div class="box" *ngFor="let evento of eventos" (click)="verDetalle(evento.id)">
       <img
       [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
       class="img-fluid event-img"
