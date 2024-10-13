@@ -1,0 +1,21 @@
+<div class="evento-banner-container mt-5" *ngIf="evento">
+    <div class="evento-banner row justify-content-center">
+      <!-- Imagen del evento con título superpuesto -->
+      <div class="col-12 evento-img-container position-relative d-flex justify-content-center">
+        <img #eventImg [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+          alt="{{ evento.titulo }}" class="event-img img-fluid rounded" />
+        <h1 class="evento-titulo position-absolute">{{ evento.titulo }}</h1>
+      </div>
+  
+      <!-- Descripción del evento debajo de la imagen -->
+      <div class="col-12 evento-text-container text-center mt-4">
+        <p class="evento-descripcion">{{ evento.descripcion }}</p>
+        <button class="btn evento-btn btn-primary mt-4" (click)="irARuta('/eventos')">Volver a eventos</button>
+      </div>
+    </div>
+  </div>
+  
+  <ngx-spinner *ngIf="!evento" bdColor="rgba(0, 0, 0, 0.8)" size="medium" color="#fff" type="ball-clip-rotate" [fullScreen]="true">
+    <p style="color: white"> Cargando evento... </p>
+  </ngx-spinner>
+  
