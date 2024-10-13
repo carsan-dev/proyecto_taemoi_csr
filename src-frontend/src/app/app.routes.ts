@@ -30,6 +30,7 @@ import { NgModule } from '@angular/core';
 import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component';
 import { KickboxingComponent } from './componentes/vistas/kickboxing/kickboxing.component';
 import { PilatesComponent } from './componentes/vistas/pilates/pilates.component';
+import { EventoDetalleComponent } from './componentes/vistas/eventos/evento-detalle/evento-detalle.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -39,6 +40,7 @@ export const routes: Routes = [
   { path: 'pilates', component: PilatesComponent },
   { path: 'horarios', component: HorariosComponent },
   { path: 'eventos', component: EventosComponent },
+  { path: 'eventos/:eventoId', component: EventoDetalleComponent },
   { path: 'contacto', component: ContactoComponent },
   { path: 'login', component: VistaLoginComponent },
   {
