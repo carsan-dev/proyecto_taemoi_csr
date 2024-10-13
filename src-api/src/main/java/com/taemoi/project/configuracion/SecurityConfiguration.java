@@ -97,6 +97,7 @@ public class SecurityConfiguration {
 				.requestMatchers(HttpMethod.DELETE, "/api/turnos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/eventos").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/eventos/**")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.POST, "/api/eventos/**")

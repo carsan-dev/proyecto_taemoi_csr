@@ -14,7 +14,6 @@ import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
-import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoTarifa;
 
 import jakarta.validation.Valid;
