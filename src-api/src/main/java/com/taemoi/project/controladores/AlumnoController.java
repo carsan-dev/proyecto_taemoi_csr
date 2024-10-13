@@ -3,11 +3,9 @@ package com.taemoi.project.controladores;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -37,21 +35,16 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Categoria;
-import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.Roles;
-import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositorios.AlumnoRepository;
-import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
+import com.taemoi.project.servicios.ImagenService;
 
 import jakarta.validation.Valid;
 
@@ -79,22 +72,13 @@ public class AlumnoController {
 	AlumnoRepository alumnoRepository;
 
 	/**
-	 * Inyección del repositorio de grado.
-	 */
-	@Autowired
-	private GradoRepository gradoRepository;
-
-	/**
 	 * Inyección del servicio de grupo.
 	 */
 	@Autowired
 	private GrupoService grupoService;
 
-	/**
-	 * Inyección del repositorio de usuario.
-	 */
 	@Autowired
-	private UsuarioRepository usuarioRepository;
+	private ImagenService imagenService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -186,100 +170,42 @@ public class AlumnoController {
 	 * @throws AlumnoDuplicadoException         si ya existe un alumno con el mismo
 	 *                                          NIF.
 	 */
-
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
-			@RequestParam(value = "file", required = false) MultipartFile file) {
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+	        @RequestParam(value = "file", required = false) MultipartFile file) {
+	    try {
+	        // Convertir el JSON recibido en AlumnoDTO
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-			if (file != null) {
-				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				Imagen imagenGuardada = alumnoService.guardarImagen(img);
-				nuevoAlumnoDTO.setFotoAlumno(imagenGuardada);
-			}
-			logger.info("## AlumnoController :: añadirAlumno");
-
-			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-			}
-
-			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-				throw new DatosAlumnoInvalidosException("Los datos del alumno a crear son inválidos.");
-			}
-
-			int edad = alumnoService.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
-
-			Categoria categoria = alumnoService.asignarCategoriaSegunEdad(edad);
-			Grado grado = alumnoService.asignarGradoSegunEdad(nuevoAlumnoDTO);
-
-			Grado gradoGuardado = gradoRepository.findByTipoGrado(grado.getTipoGrado());
-			if (gradoGuardado == null) {
-				gradoGuardado = gradoRepository.save(grado);
-			}
-
-			Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
-			if (alumnoExistente.isPresent()) {
-				throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
-			}
-
-			Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
-			if (usuarioExistente == null) {
-				usuarioExistente = new Usuario();
-				usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
-				usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
-				usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
-				String contrasena = alumnoService.generarContrasena(nuevoAlumnoDTO.getNombre(),
-						nuevoAlumnoDTO.getApellidos());
-				usuarioExistente.setContrasena(contrasena);
-				Set<Roles> roles = new HashSet<>();
-				roles.add(Roles.ROLE_USER);
-				usuarioExistente.setRoles(roles);
-				usuarioExistente = usuarioRepository.save(usuarioExistente);
-			}
-
-			Alumno nuevoAlumno = new Alumno();
-			nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
-			nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
-			nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-			nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
-			nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
-			nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
-			nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-			
-	        if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
-	            nuevoAlumno.setCuantiaTarifa(alumnoService.asignarCuantiaTarifa(nuevoAlumno.getTipoTarifa()));
-	        } else {
-	            nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
-	        }
-	        
-			nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta());
-			nuevoAlumno.setFechaBaja(nuevoAlumnoDTO.getFechaBaja());
-			nuevoAlumno.setAutorizacionWeb(nuevoAlumnoDTO.getAutorizacionWeb());
-	        nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
-	        
-	        if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
-	            nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
+	        // Si se proporciona un archivo de imagen, guardar la imagen
+	        if (file != null && !file.isEmpty()) {
+	            Imagen img = imagenService.guardarImagen(file);  // Guardar la imagen
+	            nuevoAlumnoDTO.setFotoAlumno(img);               // Asignar la imagen al DTO
 	        }
 
-			nuevoAlumno.setCategoria(categoria);
-			nuevoAlumno.setGrado(grado);
-			nuevoAlumno.setFotoAlumno(nuevoAlumnoDTO.getFotoAlumno());
-			nuevoAlumno.setUsuario(usuarioExistente);
-			
-			usuarioExistente.setAlumno(nuevoAlumno);
+	        // Delegar al servicio para crear el Alumno y Usuario asociado
+	        Alumno creado = alumnoService.crearAlumnoDesdeDTO(nuevoAlumnoDTO);
 
-			Alumno creado = alumnoService.crearAlumno(nuevoAlumno);
-			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
-			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
-		} catch (IOException e) {
-			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-		}
+	        // Convertir el Alumno creado a DTO para la respuesta
+	        AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
+
+	        // Retornar la respuesta con el Alumno creado en formato JSON
+	        return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
+
+	    } catch (AlumnoDuplicadoException e) {
+	        logger.error("Error de duplicado de alumno: {}", e.getMessage(), e);
+	        return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+	    } catch (IOException e) {
+	        logger.error("Error al procesar el archivo o el JSON: {}", e.getMessage(), e);
+	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+	    } catch (Exception e) {
+	        logger.error("Error inesperado al crear el alumno: {}", e.getMessage(), e);  // Log de excepciones genéricas
+	        return new ResponseEntity<>("Error inesperado al crear el alumno", HttpStatus.INTERNAL_SERVER_ERROR);
+	    }
 	}
-	
+
 	@PutMapping("/{id}/baja")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
@@ -310,36 +236,32 @@ public class AlumnoController {
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable @NonNull Long id,
-			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
-			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
-		logger.info("## AlumnoController :: modificarAlumno");
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+	        @Valid @RequestParam(value = "file", required = false) MultipartFile file,
+	        @Valid @RequestParam("alumnoEditado") String alumnoJson) {
+	    logger.info("## AlumnoController :: modificarAlumno");
+	    try {
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-			Imagen imagen = null;
+	        if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
+	            throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
+	        }
 
-			if (file != null) {
-				Imagen img = new Imagen(file.getOriginalFilename(), file.getContentType(), file.getBytes());
-				imagen = alumnoService.guardarImagen(img);
-			}
-			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-			}
+	        if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+	            throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
+	        }
 
-			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-				throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
-			}
+	        Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
+	        // Enviar el MultipartFile directamente
+	        Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
+	        AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+	        return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 
-			Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
-			Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, imagen);
-			AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
-			return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
-
-		} catch (IOException e) {
-			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-		}
+	    } catch (IOException e) {
+	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+	    }
 	}
+
 
 	/**
 	 * Elimina la imagen de un alumno especificado por su ID.

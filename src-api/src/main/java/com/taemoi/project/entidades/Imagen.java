@@ -1,12 +1,10 @@
 package com.taemoi.project.entidades;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -23,17 +21,21 @@ public class Imagen {
     @Size(max = 50, message = "El tipo no puede tener más de 50 caracteres")
     private String tipo;
     
-    @NotNull(message = "Los datos no pueden ser nulos")
-    @Column(length = 50000000)
-    private byte[] datos;
+    private String url;
+    
+    // En lugar de byte[], almacenamos la ruta del archivo
+    @NotBlank(message = "La ruta no puede estar en blanco")
+    @Size(max = 500, message = "La ruta no puede tener más de 500 caracteres")
+    private String ruta;
 
     public Imagen() {
     }
 
-    public Imagen(String nombre, String tipo, byte[] datos) {
+    public Imagen(String nombre, String tipo, String url, String ruta) {
         this.nombre = nombre;
         this.tipo = tipo;
-        this.datos = datos;
+        this.url = url;
+        this.ruta = ruta;
     }
 
 	public Long getId() {
@@ -60,11 +62,19 @@ public class Imagen {
 		this.tipo = tipo;
 	}
 
-	public byte[] getDatos() {
-		return datos;
+	public String getUrl() {
+		return url;
 	}
 
-	public void setDatos(byte[] datos) {
-		this.datos = datos;
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public String getRuta() {
+		return ruta;
+	}
+
+	public void setRuta(String ruta) {
+		this.ruta = ruta;
 	}
 }

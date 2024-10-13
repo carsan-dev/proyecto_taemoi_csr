@@ -3,7 +3,7 @@
     <!-- Iterar sobre los eventos y mostrar solo 5 imágenes -->
     <div *ngFor="let evento of eventos.slice(0, 5); let i = index" class="carousel-item" [ngClass]="{'active': i === 0}">
       <img
-        [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : '../../../../assets/media/default.webp'"
+        [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
         [alt]="evento.titulo"
         class="d-block w-100 img-fluid event-img">
       <div class="carousel-caption d-none d-md-block">

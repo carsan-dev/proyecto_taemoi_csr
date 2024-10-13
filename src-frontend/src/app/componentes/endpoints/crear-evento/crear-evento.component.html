@@ -13,6 +13,7 @@
             puede contener más de 100 caracteres.</small>
         </div>
       </div>
+
       <div class="form-group form-floating mb-4">
         <textarea type="text" class="form-control" id="descripcion" name="descripcion" formControlName="descripcion"
           rows="3" required (input)="adjustTextareaHeight($event)" placeholder="Descripción"></textarea>
@@ -24,11 +25,20 @@
             puede contener más de 500 caracteres.</small>
         </div>
       </div>
+
+      <!-- Image Input -->
       <div class="form-group form-floating mb-4">
         <input type="file" class="form-control" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)"
           accept="image/*" placeholder="Imagen del evento">
         <label for="fotoEvento" class="form-label">Imagen del evento</label>
       </div>
+
+      <!-- Image Preview -->
+      <div *ngIf="imagePreview" class="form-group mb-4 text-center">
+        <img [src]="imagePreview" alt="Imagen previa del evento" class="img-thumbnail" width="300" />
+        <p>Vista previa de la imagen seleccionada</p>
+      </div>
+
       <div class="text-center">
         <button type="submit" class="btn btn-primary" [disabled]="eventoForm.invalid">Crear Evento</button>
       </div>

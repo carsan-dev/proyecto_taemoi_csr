@@ -40,7 +40,7 @@
               <td>
                 <div class="imagen-perfil-container">
                   <img class="imagen-perfil"
-                    [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp'"
+                    [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
                     alt="Perfil del alumno">
                 </div>
               </td>

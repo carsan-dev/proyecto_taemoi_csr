@@ -17,7 +17,7 @@ import { CommonModule, Location } from '@angular/common';
   standalone: true,
   imports: [FormsModule, ReactiveFormsModule, CommonModule],
   templateUrl: './editar-evento.component.html',
-  styleUrl: './editar-evento.component.scss',
+  styleUrls: ['./editar-evento.component.scss'],
 })
 export class EditarEventoComponent implements OnInit {
   eventoForm!: FormGroup;
@@ -59,11 +59,10 @@ export class EditarEventoComponent implements OnInit {
             titulo: evento.titulo,
             descripcion: evento.descripcion,
           });
-          this.imagenPreview = evento.fotoEvento
-            ? 'data:' +
-              evento.fotoEvento.tipo +
-              ';base64,' +
-              evento.fotoEvento.datos
+
+          // Use `ruta` for image preview, and fallback to default image
+          this.imagenPreview = evento.fotoEvento?.url
+            ? evento.fotoEvento.url
             : '../../../../assets/media/default.webp';
         });
     }
@@ -105,6 +104,7 @@ export class EditarEventoComponent implements OnInit {
     }
   }
 
+  // Method to handle file selection and update image preview
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
     this.imagen = file;
@@ -116,6 +116,7 @@ export class EditarEventoComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
+  // Method to handle image deletion and reset the form image preview
   eliminarFoto(): void {
     const token = localStorage.getItem('token');
     if (token) {
