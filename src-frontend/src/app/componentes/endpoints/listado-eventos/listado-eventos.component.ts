@@ -73,13 +73,22 @@ export class ListadoEventosComponent implements OnInit {
     }
   }
 
-  abrirModal(imagenUrl: string) {
+  abrirModal(imagenUrl: string | null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
   
+    if (!imagenUrl || imagenUrl.trim() === '') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Imagen no disponible',
+        text: 'No hay imagen disponible para mostrar.',
+      });
+      return; // Detenemos la ejecución si no hay imagen
+    }
+  
     if (modal && modalImg) {
       modal.style.display = 'block';
-      modalImg.src = imagenUrl || '../../../../assets/media/default.webp';
+      modalImg.src = imagenUrl;
     }
   }
   
@@ -88,6 +97,5 @@ export class ListadoEventosComponent implements OnInit {
     if (modal) {
       modal.style.display = 'none';
     }
-  }
-  
+  }  
 }

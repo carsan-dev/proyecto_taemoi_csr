@@ -349,9 +349,18 @@ export class EditarAlumnoComponent implements OnInit {
     return today.toISOString().split('T')[0];
   }
 
-  abrirModal(imagenUrl: string) {
+  abrirModal(imagenUrl: string | null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
+  
+    if (!imagenUrl || imagenUrl.trim() === '') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Imagen no disponible',
+        text: 'No hay imagen disponible para mostrar.',
+      });
+      return; // Detenemos la ejecución si no hay imagen
+    }
   
     if (modal && modalImg) {
       modal.style.display = 'block';
@@ -364,6 +373,5 @@ export class EditarAlumnoComponent implements OnInit {
     if (modal) {
       modal.style.display = 'none';
     }
-  }
-  
+  }  
 }
