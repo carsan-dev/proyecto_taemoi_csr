@@ -1,6 +1,12 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
@@ -10,12 +16,17 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './crear-grupo.component.html',
-  styleUrl: './crear-grupo.component.scss'
+  styleUrl: './crear-grupo.component.scss',
 })
 export class CrearGrupoComponent implements OnInit {
   grupoForm!: FormGroup;
 
-  constructor(private fb: FormBuilder, private endpointsService: EndpointsService, private router: Router) { }
+  constructor(
+    private fb: FormBuilder,
+    private endpointsService: EndpointsService,
+    private router: Router,
+    private location: Location
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -23,7 +34,7 @@ export class CrearGrupoComponent implements OnInit {
 
   initForm(): void {
     this.grupoForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(50)]]
+      nombre: ['', [Validators.required, Validators.maxLength(50)]],
     });
   }
 
@@ -32,24 +43,28 @@ export class CrearGrupoComponent implements OnInit {
     const grupoForm = this.grupoForm.value;
 
     if (token) {
-    this.endpointsService.crearGrupo(grupoForm, token).subscribe({
-      next: (response) => {
-        Swal.fire({
-          title: 'Perfecto!',
-          text: 'Has creado un nuevo grupo!',
-          icon: 'success',
-        });
-        this.router.navigate(['/gruposListar']);
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
-          icon: 'error',
-        });
-      },
-      complete: () => {},
-    });
+      this.endpointsService.crearGrupo(grupoForm, token).subscribe({
+        next: (response) => {
+          Swal.fire({
+            title: 'Perfecto!',
+            text: 'Has creado un nuevo grupo!',
+            icon: 'success',
+          });
+          this.router.navigate(['/gruposListar']);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No has completado todos los campos requeridos',
+            icon: 'error',
+          });
+        },
+        complete: () => {},
+      });
+    }
   }
-}
+
+  volver() {
+    this.location.back();
+  }
 }

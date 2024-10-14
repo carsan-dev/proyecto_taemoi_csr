@@ -1,15 +1,22 @@
+$primary-color: #007bff;
+$border-radius: 10px;
+$input-padding: 15px;
+$label-font-size: 1rem;
+
 .container {
   max-width: 800px;
   margin: auto;
 }
 
 .card {
-  border-radius: 10px;
+  border-radius: $border-radius;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
 }
 
 h2 {
   font-size: 1.75rem;
+  font-weight: bold;
   margin-bottom: 20px;
 }
 
@@ -39,7 +46,7 @@ h2 {
 }
 
 button.btn-secondary {
-  border-radius: 30px;
+  border-radius: $border-radius;
   padding: 5px 10px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -52,27 +59,27 @@ button.btn-secondary {
 }
 
 button.btn-primary {
-  border-radius: 30px;
+  border-radius: $border-radius;
   padding: 10px 20px;
   font-size: 1rem;
   font-weight: 500;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #0056b3;
-    border-color: #004085;
+    background-color: darken($primary-color, 10%);
+    border-color: darken($primary-color, 15%);
   }
 }
 
 input[type="text"] {
-  border-radius: 30px;
+  border-radius: $border-radius;
   padding: 10px 20px;
   border: 1px solid #ced4da;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s ease;
 
   &:focus {
-    border-color: #007bff;
+    border-color: $primary-color;
     outline: none;
   }
 }

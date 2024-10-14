@@ -348,4 +348,22 @@ export class EditarAlumnoComponent implements OnInit {
     const today = new Date();
     return today.toISOString().split('T')[0];
   }
+
+  abrirModal(imagenUrl: string) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
+  
+    if (modal && modalImg) {
+      modal.style.display = 'block';
+      modalImg.src = imagenUrl;
+    }
+  }
+  
+  cerrarModal() {
+    const modal = document.getElementById('imageModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
 }

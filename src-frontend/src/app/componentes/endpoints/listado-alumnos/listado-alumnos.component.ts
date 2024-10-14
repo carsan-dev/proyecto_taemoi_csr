@@ -15,7 +15,7 @@ import { FormsModule } from '@angular/forms';
 export class ListadoAlumnosComponent implements OnInit {
   alumnos: any[] = [];
   paginaActual: number = 1;
-  tamanoPagina: number = 10;
+  tamanoPagina: number = 9;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;

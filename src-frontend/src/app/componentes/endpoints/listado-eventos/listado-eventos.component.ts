@@ -72,4 +72,22 @@ export class ListadoEventosComponent implements OnInit {
       });
     }
   }
+
+  abrirModal(imagenUrl: string) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
+  
+    if (modal && modalImg) {
+      modal.style.display = 'block';
+      modalImg.src = imagenUrl || '../../../../assets/media/default.webp';
+    }
+  }
+  
+  cerrarModal() {
+    const modal = document.getElementById('imageModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
 }

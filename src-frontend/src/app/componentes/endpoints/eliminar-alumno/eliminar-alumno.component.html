@@ -1,25 +1,26 @@
 <div class="container-fluid my-5">
   <div class="row">
     <div class="col-12 mt-3">
-      <div class="card p-4 shadow-sm">
-        <h3 class="text-center mb-4">Gestionar Alumnos</h3>
+      <div class="p-4">
+        <h2 class="text-center mb-5 fw-bold">Gestionar Alumnos</h2>
         <div class="row my-3 d-flex justify-content-center">
-          <div class="col-md-6 col-lg-4">
-            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
-              (ngModelChange)="filtrarPorNombre()" />
+          <!-- Para móviles, la columna de entrada y botones ocupan toda la pantalla -->
+          <div class="col-12 col-md-6 mb-3">
+            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro" (ngModelChange)="filtrarPorNombre()" />
           </div>
-          <div class="col-md-6 col-lg-4 text-end">
-            <button class="btn btn-secondary" (click)="alternarInactivos()">
+          <div class="col-12 col-md-6 text-md-end">
+            <button class="btn btn-secondary w-100 w-md-auto" (click)="alternarInactivos()">
               {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
             </button>
           </div>
         </div>
-        <div class="text-center mb-3">
-          <button class="btn btn-warning" (click)="darDeBajaAlumnosSeleccionados()">Dar de baja seleccionados</button>
-          <button class="btn btn-danger" (click)="eliminarAlumnosSeleccionados()">Eliminar seleccionados</button>
+        <div class="text-center mb-3 d-flex flex-column flex-md-row justify-content-center">
+          <!-- Botones ocupan toda la pantalla en móviles -->
+          <button class="btn btn-warning mb-2 mb-md-0 me-md-2" (click)="darDeBajaAlumnosSeleccionados()">Dar de baja seleccionados</button>
+          <button class="btn btn-danger mb-2 mb-md-0" (click)="eliminarAlumnosSeleccionados()">Eliminar seleccionados</button>
         </div>
         <div class="table-responsive">
-          <table class="table custom-table mt-4">
+          <table class="table table-sm custom-table mt-4">
             <thead>
               <tr class="text-center">
                 <th>Seleccionar</th>
@@ -39,9 +40,7 @@
                   </div>
                 </td>
                 <td class="align-middle">
-                  <img class="imagen-perfil"
-                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                  alt="Perfil del alumno">
+                  <img class="imagen-perfil" [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'" alt="Perfil del alumno">
                 </td>
                 <td class="align-middle">{{ alumno.nombre }}</td>
                 <td class="align-middle">{{ alumno.apellidos }}</td>
@@ -55,8 +54,7 @@
             </tbody>
           </table>
         </div>
-        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-          (pageChange)="cambiarPagina($event)">
+        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" (pageChange)="cambiarPagina($event)">
         </app-paginacion>
       </div>
     </div>

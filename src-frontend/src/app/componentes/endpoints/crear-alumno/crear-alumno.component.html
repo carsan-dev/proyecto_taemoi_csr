@@ -1,8 +1,8 @@
 <div class="container mb-5">
   <div class="row">
     <div class="mt-3 p-0">
-      <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" class="my-5 card p-4 shadow-sm" method="post">
-        <h3 class="text-center mb-4">Crear Alumno</h3>
+      <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" class="my-5 p-4" method="post">
+        <h2 class="text-center mb-5 fw-bold">Crear Alumno</h2>
         <div class="row">
           <!-- Campo Nombre -->
           <div class="form-group col-md-6 mb-3 form-floating">
@@ -25,26 +25,28 @@
             </div>
           </div>
         </div>
-        <!-- Campo Fecha de Nacimiento -->
-        <div class="form-group mb-3 form-floating">
-          <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
-            formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
-          <label for="fechaNacimiento">Fecha de nacimiento</label>
-          <div *ngIf="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched"
-            class="text-danger">
-            <small *ngIf="alumnoData.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento del alumno es
-              obligatoria.</small>
+        <div class="row">
+          <div class="form-group col-md-6 mb-3 form-floating">
+            <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
+              formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
+            <label for="fechaNacimiento">Fecha de nacimiento</label>
+            <div *ngIf="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento del alumno es
+                obligatoria.</small>
+            </div>
           </div>
-        </div>
-        <!-- Campo NIF -->
-        <div class="form-group mb-3 form-floating">
-          <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required placeholder="NIF">
-          <label for="nif">NIF</label>
-          <div *ngIf="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('nif')?.errors?.['required']">DNI del alumno es obligatorio.</small>
-            <small *ngIf="alumnoData.get('nif')?.errors?.['pattern']" class="text-danger">
-              DNI del alumno debe tener un formato válido (8 números y una letra)
-            </small>
+          <!-- Campo NIF -->
+          <div class="form-group col-md-6 mb-3 form-floating">
+            <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required
+              placeholder="NIF">
+            <label for="nif">NIF</label>
+            <div *ngIf="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('nif')?.errors?.['required']">DNI del alumno es obligatorio.</small>
+              <small *ngIf="alumnoData.get('nif')?.errors?.['pattern']" class="text-danger">
+                DNI del alumno debe tener un formato válido (8 números y una letra)
+              </small>
+            </div>
           </div>
         </div>
         <!-- Campo Dirección -->
@@ -53,7 +55,8 @@
             placeholder="Dirección">
           <label for="direccion">Dirección</label>
           <div *ngIf="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('direccion')?.errors?.['required']">Dirección del alumno es obligatoria.</small>
+            <small *ngIf="alumnoData.get('direccion')?.errors?.['required']">Dirección del alumno es
+              obligatoria.</small>
           </div>
         </div>
         <!-- Campo Teléfono -->
@@ -101,48 +104,54 @@
           <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" formControlName="fechaAlta" required
             placeholder="Fecha de alta">
           <label for="fechaAlta">Fecha de alta</label>
-          <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
-            class="text-danger">
+          <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" class="text-danger">
             <small *ngIf="alumnoData.get('fechaAlta')?.errors?.['required']">Fecha de alta del alumno es obligatorio.
             </small>
           </div>
         </div>
         <!-- Campo Imagen del Alumno -->
-        <div class="form-group mb-3 form-floating">
-          <input type="file" class="form-control" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)"
-            accept="image/*">
-          <label for="fotoAlumno">Imagen del alumno</label>
+        <div class="form-group mb-3 form-floating d-flex flex-column">
+          <div class="custom-file-input-container">
+            <input type="file" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*"
+              class="custom-file-input">
+            <label for="fotoAlumno" class="custom-file-label form-control">Subir imagen del alumno</label>
+          </div>
           <!-- Botón para eliminar la imagen seleccionada -->
-          <button *ngIf="imagen" type="button" class="btn btn-danger mt-2" (click)="removeImage()">Eliminar Imagen</button>
+          <button *ngIf="imagen" type="button" class="btn btn-danger btn-image mt-2" (click)="removeImage()">Eliminar
+            Imagen</button>
           <!-- Vista previa de la imagen seleccionada (opcional) -->
           <div *ngIf="imagen" class="mt-2">
             <p>Imagen seleccionada:</p>
-            <img [src]="imagenPreview" alt="Vista previa de la imagen" width="100">
+            <img [src]="imagenPreview" alt="Vista previa del alumno" width="100">
           </div>
         </div>
-        <!-- Campo Autorización Web -->
-        <div class="form-group mb-3 autorizacion-web">
-          <label for="autorizacionWeb" class="text-black">Autorización Web</label>
-          <div class="d-flex flex-column">
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
-                [value]="true">
-              <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
-                [value]="false">
-              <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+
+        <div class="row">
+          <!-- Campo Autorización Web -->
+          <div class="form-group col-md-6 mb-3 autorizacion-web">
+            <label for="autorizacionWeb" class="text-black">Autorización Web</label>
+            <div class="d-flex flex-column">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
+                  [value]="true">
+                <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
+                  [value]="false">
+                <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="form-group mb-3">
-          <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
-          <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor" (change)="onCompetidorChange($event)">
-        </div>
-        <div *ngIf="alumnoData.get('competidor')?.value" class="form-group mb-3 form-floating">
-          <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
-          <label for="peso">Peso (kg)</label>
+          <div class="form-group col-md-6 mb-3">
+            <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
+            <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
+              (change)="onCompetidorChange($event)">
+            <div *ngIf="alumnoData.get('competidor')?.value" class="form-group mt-3 form-floating">
+              <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
+              <label for="peso">Peso (kg)</label>
+            </div>
+          </div>
         </div>
         <div class="text-center">
           <button type="submit" class="btn btn-primary mt-3" [disabled]="alumnoData.invalid">Crear Alumno</button>

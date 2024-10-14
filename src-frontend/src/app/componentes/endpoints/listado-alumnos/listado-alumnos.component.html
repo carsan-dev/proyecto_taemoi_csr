@@ -1,14 +1,19 @@
 <div class="container-fluid py-5">
   <div class="row">
     <div class="col-md-12 mt-3 text-center">
-      <h2>Listado de Alumnos</h2>
+      <h2 class="fw-bold">Listado de Alumnos</h2>
     </div>
   </div>
 
   <div class="row my-3 d-flex justify-content-center">
     <div class="col-md-6 col-lg-4">
-      <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
-        (ngModelChange)="filtrarPorNombre()" />
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Filtrar por nombre"
+        [(ngModel)]="nombreFiltro"
+        (ngModelChange)="filtrarPorNombre()"
+      />
     </div>
     <div class="col-md-6 col-lg-4 text-end">
       <button class="btn btn-secondary" (click)="alternarInactivos()">
@@ -18,52 +23,62 @@
   </div>
 
   <div class="row">
-    <div class="col-md-12">
-      <div class="table-responsive">
-        <table class="table custom-table mt-4">
-          <thead>
-            <tr class="text-center">
-              <th>Foto</th>
-              <th>Nombre Completo</th>
-              <th>Edad</th>
-              <th>Teléfono</th>
-              <th>Tarifa</th>
-              <th>Fecha de Alta</th>
-              <th>Categoría</th>
-              <th>Grado</th>
-              <th *ngIf="mostrarInactivos">Fecha de Baja</th>
-              <th>Acciones</th> <!-- Nuevo: Columna para acciones -->
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let alumno of alumnos" class="text-center">
-              <td>
-                <div class="imagen-perfil-container">
-                  <img class="imagen-perfil"
-                    [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                    alt="Perfil del alumno">
-                </div>
-              </td>
-              <td>{{ alumno.nombre }} {{ alumno.apellidos }}</td>
-              <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
-              <td>{{ alumno.telefono }}</td>
-              <td>{{ alumno.tipoTarifa }}</td>
-              <td>{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</td>
-              <td>{{ alumno.categoria }}</td>
-              <td>{{ alumno.grado }}</td>
-              <td *ngIf="mostrarInactivos">{{ alumno.fechaBaja ? (alumno.fechaBaja | date:'dd/MM/yyyy') : 'N/A' }}</td>
-              <td>
-                <button *ngIf="alumno.fechaBaja" class="btn btn-success btn-sm" (click)="darDeAlta(alumno.id)">Dar de Alta</button>
-                <button *ngIf="!alumno.fechaBaja" class="btn btn-danger btn-sm" (click)="darDeBaja(alumno.id)">Dar de Baja</button>
-              </td> <!-- Nuevo: Botones de acción -->
-            </tr>
-          </tbody>
-        </table>
+    <div
+      *ngFor="let alumno of alumnos"
+      class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center"
+    >
+      <div class="card alumno-card my-3">
+        <div class="card-body d-flex">
+          <!-- Sección izquierda: imagen y nombre -->
+          <div class="left-section text-center">
+            <div class="imagen-perfil-container mx-auto">
+              <img
+                class="imagen-perfil"
+                [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                alt="Perfil del alumno"
+              />
+            </div>
+            <h4 class="mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
+            <p class="mt-1">Nº Exp: {{ alumno.numeroExpediente }}</p>
+          </div>
+
+          <!-- Sección derecha: datos del alumno -->
+          <div class="right-section ms-4">
+            <p>Edad: {{ calcularEdad(alumno.fechaNacimiento) }}</p>
+            <p>Teléfono: {{ alumno.telefono }}</p>
+            <p>Tarifa: {{ alumno.tipoTarifa }}</p>
+            <p>Alta: {{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</p>
+            <p>Categoría: {{ alumno.categoria }}</p>
+            <p>Grado: {{ alumno.grado }}</p>
+            <p *ngIf="mostrarInactivos">
+              Baja: {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yyyy') : 'N/A' }}
+            </p>
+            <div class="d-flex justify-content-start mt-2">
+              <button
+                *ngIf="alumno.fechaBaja"
+                class="btn btn-success btn-sm mx-1"
+                (click)="darDeAlta(alumno.id)"
+              >
+                Dar de Alta
+              </button>
+              <button
+                *ngIf="!alumno.fechaBaja"
+                class="btn btn-danger btn-sm mx-1"
+                (click)="darDeBaja(alumno.id)"
+              >
+                Dar de Baja
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-    (pageChange)="cambiarPagina($event)">
-  </app-paginacion>
+  <app-paginacion
+    [paginaActual]="paginaActual"
+    [totalPaginas]="totalPaginas"
+    [tamanoPagina]="tamanoPagina"
+    (pageChange)="cambiarPagina($event)"
+  ></app-paginacion>
 </div>

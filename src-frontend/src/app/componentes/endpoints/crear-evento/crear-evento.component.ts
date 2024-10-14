@@ -88,4 +88,13 @@ export class CrearEventoComponent implements OnInit {
     textarea.style.height = 'auto';
     textarea.style.height = `${textarea.scrollHeight}px`;
   }
+
+  removeImage() {
+    this.imagen = null;
+    this.imagePreview = null;
+    const fileInput = document.getElementById('fotoEvento') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';  // Limpiar el valor del input
+    }
+  }
 }
