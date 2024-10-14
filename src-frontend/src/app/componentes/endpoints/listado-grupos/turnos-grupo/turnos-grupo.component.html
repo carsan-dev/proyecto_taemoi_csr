@@ -3,15 +3,15 @@
     <div class="col-md-12">
       <div class="card p-4 shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-4">
-          <h2 class="text-center mb-4">Detalles del Grupo</h2>
+          <h2 class="text-center mb-4 fw-bold">Detalles del Grupo</h2>
           <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
         </div>
         <div class="mt-4">
-          <h3 class="mb-3">Turnos Asociados</h3>
+          <h3 class="mb-3 fw-bold">Turnos Asociados</h3>
           <ul class="list-group">
             <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let turno of turnos">
               <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
-              <button class="btn btn-danger btn-sm" (click)="eliminarTurnoDelGrupo(turno.id)">Eliminar</button>
+              <button class="btn btn-danger btn-sm rounded-pill" (click)="eliminarTurnoDelGrupo(turno.id)">Eliminar</button>
             </li>
           </ul>
         </div>

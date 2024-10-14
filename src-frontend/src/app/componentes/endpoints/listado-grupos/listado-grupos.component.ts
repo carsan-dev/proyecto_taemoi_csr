@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-listado-grupos',
@@ -14,7 +14,9 @@ import { RouterModule } from '@angular/router';
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
 
-  constructor(private endpointsService: EndpointsService) { }
+  constructor(private endpointsService: EndpointsService, 
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
@@ -74,5 +76,9 @@ export class ListadoGruposComponent implements OnInit {
         }
       });
     }
+  }
+
+  irARuta(ruta: string) {
+    this.router.navigate([ruta]);
   }
 }

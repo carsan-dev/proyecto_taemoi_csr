@@ -1,26 +1,33 @@
+$primary-color: #007bff;
+$border-radius: 10px;
+$input-padding: 15px;
+$label-font-size: 1rem;
+
 .container {
   max-width: 800px;
   margin: auto;
 }
 
 .card {
-  border-radius: 10px;
+  border-radius: $border-radius;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
 }
 
 h2 {
   font-size: 1.75rem;
+  font-weight: bold;
   margin-bottom: 20px;
 }
 
 h5 {
   font-size: 1.25rem;
+  font-weight: bold;
   margin-top: 20px;
   margin-bottom: 10px;
 }
 
 .list-group-item {
-  border: none;
   border-bottom: 1px solid #dee2e6;
   padding: 15px 20px;
   transition: background-color 0.3s ease;
@@ -49,21 +56,11 @@ h5 {
         border-color: #bd2130;
       }
     }
-
-    &.btn-success {
-      background-color: #28a745;
-      border-color: #28a745;
-
-      &:hover {
-        background-color: #218838;
-        border-color: #1e7e34;
-      }
-    }
   }
 }
 
 button.btn-secondary {
-  border-radius: 30px;
+  border-radius: $border-radius;
   padding: 5px 10px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -76,14 +73,14 @@ button.btn-secondary {
 }
 
 button.btn-primary {
-  border-radius: 30px;
+  border-radius: $border-radius;
   padding: 10px 20px;
   font-size: 1rem;
   font-weight: 500;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #0056b3;
-    border-color: #004085;
+    background-color: darken($primary-color, 10%);
+    border-color: darken($primary-color, 15%);
   }
 }

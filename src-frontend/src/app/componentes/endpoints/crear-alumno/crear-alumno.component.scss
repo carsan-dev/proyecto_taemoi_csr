@@ -1,6 +1,6 @@
 $primary-color: #007bff;
-$border-radius: 30px;
-$input-padding: 20px;
+$border-radius: 10px;
+$input-padding: 15px;
 $label-font-size: 1rem;
 
 .container {
@@ -10,6 +10,7 @@ $label-font-size: 1rem;
 .card {
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
 }
 
 h3 {
@@ -32,22 +33,59 @@ img {
   margin-top: 10px;
 }
 
+.custom-file-input-container {
+  position: relative;
+  display: inline-block;
+  width: auto; // Cambiar de 100% a auto para que no ocupe todo el ancho del contenedor
+
+  .custom-file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 2;
+    cursor: pointer;
+  }
+
+  .custom-file-label {
+    display: inline-block;
+    background-color: #8c8f92;
+    color: white;
+    padding: 10px 20px;
+    border-radius: $border-radius;
+    text-align: center;
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+
+  &:hover .custom-file-label{
+    background-color: darken(#8c8f92, 10%);
+    transition: background-color 0.3s ease;
+  }
+}
+
+.btn-image {
+  width: 100%; // Ancho total del contenedor
+  max-width: 200px; // Limitar el ancho máximo del botón
+}
 
 .form-group {
   position: relative;
-  margin-bottom: 2.5rem !important;
+  margin-bottom: 1.5rem !important;
 
   label {
     font-size: $label-font-size;
     font-weight: 500;
     color: #8c8f92;
     margin-left: 15px;
-    transition: all 0.2s ease; // Transición suave para todas las propiedades
+    transition: all 0.2s ease;
   }
 
-  .form-control {
+  .form-control,
+  .form-select {
     border-radius: $border-radius;
-    padding: $input-padding $input-padding 10px !important;
     border: 1px solid #ced4da;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
     transition: border-color 0.2s ease;
@@ -66,30 +104,22 @@ img {
       color: $primary-color;
       background-color: #fff;
       height: 30px;
-      padding: 0 5px; // Añadir un poco de espacio alrededor del texto
-      transition: all 0.2s ease; // Transición suave al cambiar a la esquina superior
+      padding: 0 5px;
+      transition: all 0.2s ease;
     }
   }
 
-  input:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    -webkit-text-fill-color: #000 !important;
-  }
+  .form-floating {
+    position: relative;
 
-  input:-webkit-autofill:focus {
-    border-color: $primary-color;
-    outline: none;
-  }
-
-  input:-webkit-autofill ~ label {
-    top: -12px;
-    left: 10px;
-    font-size: 0.85rem !important;
-    color: $primary-color;
-    background-color: #fff;
-    height: 30px;
-    padding: 0 5px;
-    transition: all 0.3s ease;
+    label {
+      position: absolute;
+      top: 0;
+      left: 15px;
+      padding: 0 5px;
+      font-size: $label-font-size;
+      transition: all 0.2s ease;
+    }
   }
 }
 
@@ -102,34 +132,5 @@ button[type="submit"] {
 
   &:hover {
     background-color: darken($primary-color, 10%);
-  }
-}
-
-.form-check-inline {
-  display: flex;
-  align-items: center;
-  margin-bottom: 5px;
-
-  .form-check-input {
-    margin-right: 10px;
-    margin-left: 0;
-    flex-shrink: 0;
-  }
-
-  .form-check-label {
-    margin-bottom: 0;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-}
-
-.d-flex {
-  display: flex;
-  flex-direction: column;
-}
-
-@media (max-width: 992px) {
-  .text-danger {
-    font-size: 0.80rem !important;
   }
 }

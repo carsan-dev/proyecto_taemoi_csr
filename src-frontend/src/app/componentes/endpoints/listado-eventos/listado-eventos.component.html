@@ -1,37 +1,35 @@
+<!-- Modal para ampliar la imagen -->
+<div id="imageModal" class="modal" (click)="cerrarModal()">
+  <span class="close" (click)="cerrarModal()">&times;</span>
+  <img class="modal-content" id="imgAmpliada">
+  <div id="caption"></div>
+</div>
+
 <div class="container-fluid py-5">
+  <div class="row mb-5">
+    <div class="col-md-12 text-center">
+      <h2 class="fw-bold">Listado de Eventos</h2>
+    </div>
+  </div>
+
   <div class="row">
-    <div class="col-md-12 mt-3">
-      <div class="card p-4">
-        <h2 class="text-center mb-4">Listado de Eventos</h2>
-        <div class="table-responsive">
-          <table class="table custom-table mt-4">
-            <thead>
-              <tr>
-                <th class="text-center">Foto</th>
-                <th class="text-center">Título</th>
-                <th class="text-center">Descripción</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let evento of eventos">
-                <td class="text-center">
-                  <div class="imagen-evento-container">
-                    <img [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'" alt="Eventos disponibles" class="imagen-evento"/>
-                  </div>
-                </td>
-                <td class="text-center">{{ evento.titulo }}</td>
-                <td class="text-center">{{ evento.descripcion }}</td>
-                <td class="text-center">
-                  <button class="btn btn-primary btn-sm me-1"
-                    [routerLink]="['/eventosEditar', evento.id]">Editar</button>
-                  <button class="btn btn-danger btn-sm" (click)="eliminarEvento(evento.id)">Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <ng-container *ngFor="let evento of eventos">
+      <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
+        <div class="card evento-card my-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-center mb-3">
+              <img [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                alt="Eventos disponibles" class="imagen-evento" (click)="abrirModal(evento.fotoEvento?.url)"/>
+            </div>
+            <h4 class="card-title text-center">{{ evento.titulo }}</h4>
+            <p class="text-center">{{ evento.descripcion }}</p>
+            <div class="d-flex justify-content-center mt-3">
+              <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">Editar</button>
+              <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 </div>

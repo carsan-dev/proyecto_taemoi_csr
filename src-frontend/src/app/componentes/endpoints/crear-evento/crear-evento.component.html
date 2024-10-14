@@ -1,47 +1,52 @@
-<div class="container mt-5">
-  <div class="card p-4 shadow-sm">
-    <h2 class="text-center mb-4">Crear Evento</h2>
-    <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="mt-4" method="post">
-      <div class="form-group form-floating mb-4">
-        <input type="text" class="form-control" id="titulo" name="titulo" formControlName="titulo" required
-          placeholder="Título">
-        <label for="titulo" class="form-label">Título</label>
-        <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no
-            puede contener más de 100 caracteres.</small>
+<div class="container mb-5">
+  <div class="row">
+    <div class="col-12">
+      <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="my-5 p-4" method="post">
+        <h2 class="text-center mb-4 fw-bold">Crear Evento</h2>
+
+        <div class="row">
+          <div class="form-group col-md-12 mb-3 form-floating">
+            <input type="text" class="form-control form-control-little" id="titulo" name="titulo" formControlName="titulo" required placeholder="Título">
+            <label for="titulo">Título</label>
+            <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched" class="text-danger">
+              <small *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no puede estar en blanco.</small>
+              <small *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no puede contener más de 100 caracteres.</small>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="form-group form-floating mb-4">
-        <textarea type="text" class="form-control" id="descripcion" name="descripcion" formControlName="descripcion"
-          rows="3" required (input)="adjustTextareaHeight($event)" placeholder="Descripción"></textarea>
-        <label for="descripcion" class="form-label">Descripción</label>
-        <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no
-            puede contener más de 500 caracteres.</small>
+        <div class="row">
+          <div class="form-group col-md-12 mb-3 form-floating">
+            <textarea class="form-control form-control-little" id="descripcion" name="descripcion" formControlName="descripcion" rows="3" required (input)="adjustTextareaHeight($event)" placeholder="Descripción"></textarea>
+            <label for="descripcion">Descripción</label>
+            <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched" class="text-danger">
+              <small *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no puede estar en blanco.</small>
+              <small *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no puede contener más de 500 caracteres.</small>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Image Input -->
-      <div class="form-group form-floating mb-4">
-        <input type="file" class="form-control" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)"
-          accept="image/*" placeholder="Imagen del evento">
-        <label for="fotoEvento" class="form-label">Imagen del evento</label>
-      </div>
+        <!-- Campo Imagen del Alumno -->
+        <div class="form-group mb-3 form-floating d-flex flex-column">
+          <div class="custom-file-input-container">
+            <input type="file" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)" accept="image/*"
+              class="custom-file-input">
+            <label for="fotoEvento" class="custom-file-label form-control">Subir imagen del evento</label>
+          </div>
+          <!-- Botón para eliminar la imagen seleccionada -->
+          <button *ngIf="imagen" type="button" class="btn btn-danger btn-image mt-2" (click)="removeImage()">Eliminar
+            Imagen</button>
+          <!-- Vista previa de la imagen seleccionada (opcional) -->
+          <div *ngIf="imagen" class="mt-2">
+            <p>Imagen seleccionada:</p>
+            <img [src]="imagePreview" alt="Vista previa del evento" width="100">
+          </div>
+        </div>
 
-      <!-- Image Preview -->
-      <div *ngIf="imagePreview" class="form-group mb-4 text-center">
-        <img [src]="imagePreview" alt="Imagen previa del evento" class="img-thumbnail" width="300" />
-        <p>Vista previa de la imagen seleccionada</p>
-      </div>
-
-      <div class="text-center">
-        <button type="submit" class="btn btn-primary" [disabled]="eventoForm.invalid">Crear Evento</button>
-      </div>
-    </form>
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary mt-3" [disabled]="eventoForm.invalid">Crear Evento</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>

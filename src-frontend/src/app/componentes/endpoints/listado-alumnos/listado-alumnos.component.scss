@@ -1,68 +1,66 @@
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: #ffffff;
+.alumno-card {
+  background-color: #fff;
   border-radius: 10px;
-  overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
 
-  thead {
-    tr {
-      background-color: #007bff;
-      color: white;
-      text-align: left;
+  .card-body {
+    display: flex; /* Hace que las dos secciones estén alineadas horizontalmente */
+    padding: 20px;
 
-      th {
-        padding: 15px;
-        font-size: 1rem;
-        font-weight: 500;
+    .left-section {
+      text-align: center;
+
+      .imagen-perfil-container {
+        .imagen-perfil {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          object-fit: cover;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      h4 {
+        margin-top: 15px;
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #333;
+      }
+
+      p {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+    }
+
+    .right-section {
+      flex-grow: 1;
+      margin-left: 20px;
+
+      p {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .btn {
+        font-size: 0.85rem;
+        padding: 5px 10px;
       }
     }
   }
-
-  tbody {
-    tr {
-      transition: background-color 0.3s ease;
-
-      &:hover {
-        background-color: #f5f5f5;
-      }
-
-      td {
-        padding: 15px;
-        border-bottom: 1px solid #dee2e6;
-        vertical-align: middle;
-
-        &:first-child {
-          text-align: center;
-        }
-
-        .imagen-perfil-container {
-          .imagen-perfil {
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #ccc;
-          }
-        }
-      }
-    }
-  }
 }
 
-.table-responsive {
-  overflow-x: auto;
-}
-
-h2 {
-  font-size: 2rem;
-  margin-bottom: 20px;
-}
-
-input[type="text"] {
+input[type='text'] {
   border-radius: 30px;
   padding: 10px 20px;
   border: 1px solid #ced4da;

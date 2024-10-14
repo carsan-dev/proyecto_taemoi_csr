@@ -1,40 +1,36 @@
-<div class="container-fluid my-5">
-  <div class="card p-4">
-    <h2 class="text-center mb-4">Horario de Turnos</h2>
-    <div class="table-responsive">
-      <table class="table custom-table mt-4">
-        <thead>
-          <tr>
-            <th class="text-center">Día de la Semana</th>
-            <th class="text-center">Turno</th>
-            <th class="text-center">Grupo</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let diaSemana of diasSemana">
-            <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
-              <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
-                <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length"
-                  class="text-center align-middle">{{ diaSemana }}</td>
-                <td class="text-center align-middle">{{ turno.turno }}</td>
-                <td class="text-center align-middle">{{ turno.grupo ? turno.grupo.nombre : 'Sin grupo' }}</td>
-                <td class="d-flex flex-column flex-md-row align-items-center justify-content-center">
-                  <button class="btn btn-secondary btn-sm me-md-1 mb-2 mb-md-0"
-                    [routerLink]="['/seleccionarGrupo', turno.id]">Añadir a Grupo</button>
-                  <button class="btn btn-primary btn-sm me-md-1 mb-2 mb-md-0"
-                    [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
-                  <button class="btn btn-danger btn-sm" (click)="eliminarTurno(turno.id)">Eliminar</button>
-                </td>
-              </tr>
-            </ng-container>
-            <tr *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
-              <td class="text-center">{{ diaSemana }}</td>
-              <td colspan="3" class="text-center">No hay turnos</td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
+<div class="container-fluid py-5">
+  <div class="row mb-5">
+    <div class="col-md-12 text-center">
+      <h2 class="fw-bold">Horario de Turnos</h2>
     </div>
+  </div>
+
+  <div class="row">
+    <ng-container *ngFor="let diaSemana of diasSemana">
+      <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
+        <div class="card turno-card my-3" *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
+          <div class="card-body">
+            <h4 class="card-title text-center">{{ diaSemana }}</h4>
+            <div *ngFor="let turno of obtenerTurnosPorDia(diaSemana)">
+              <div class="turno-info mt-4">
+                <p><strong>Turno:</strong> {{ turno.turno }}</p>
+                <p><strong>Grupo:</strong> {{ turno.grupo ? turno.grupo.nombre : 'Sin grupo' }}</p>
+                <div class="d-flex justify-content-start mt-2">
+                  <button class="btn btn-secondary btn-sm mx-1" [routerLink]="['/seleccionarGrupo', turno.id]">Añadir a Grupo</button>
+                  <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
+                  <button class="btn btn-danger btn-sm mx-1" (click)="eliminarTurno(turno.id)">Eliminar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card turno-card my-3" *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
+          <div class="card-body text-center">
+            <h4 class="card-title">{{ diaSemana }}</h4>
+            <p>No hay turnos</p>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </div>
 </div>
