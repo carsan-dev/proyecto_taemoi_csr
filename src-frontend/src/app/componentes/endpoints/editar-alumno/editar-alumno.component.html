@@ -65,7 +65,7 @@
                 <h5 class="card-title">Pagos</h5>
                 <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
                   <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
-                  <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
+                  <li class="list-group-item">Tipo de descuento: {{ alumno.tipoTarifa }}</li>
                 </ul>
               </div>
             </div>
@@ -173,24 +173,24 @@
                     <label class="form-check-label me-3 text-black" for="competidor">¿Es competidor?</label>
                     <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor">
                   </div>
-
+                  
                   <div *ngIf="alumnoForm.get('competidor')?.value">
                     <div class="form-group form-floating mb-3">
-                      <input type="number" id="peso" class="form-control" formControlName="peso" placeholder="Peso" required>
+                      <input type="number" id="peso" class="form-control" formControlName="peso" placeholder="Peso (kg)" [disabled]="!alumnoForm.get('competidor')?.value">
                       <label for="peso">Peso (kg)</label>
                       <div *ngIf="alumnoForm.get('peso')?.errors && (alumnoForm.get('peso')?.dirty || alumnoForm.get('peso')?.touched)" class="text-danger">
                         <small *ngIf="alumnoForm.get('peso')?.errors?.['required']">El peso es requerido</small>
                       </div>
                     </div>
-
+                  
                     <div class="form-group form-floating mb-3">
-                      <input type="date" id="fechaPeso" class="form-control" formControlName="fechaPeso" required>
+                      <input type="date" id="fechaPeso" class="form-control" formControlName="fechaPeso" placeholder="Fecha del peso" [disabled]="!alumnoForm.get('competidor')?.value">
                       <label for="fechaPeso">Fecha del peso</label>
                       <div *ngIf="alumnoForm.get('fechaPeso')?.errors && (alumnoForm.get('fechaPeso')?.dirty || alumnoForm.get('fechaPeso')?.touched)" class="text-danger">
                         <small *ngIf="alumnoForm.get('fechaPeso')?.errors?.['required']">La fecha del peso es requerida</small>
                       </div>
                     </div>
-                  </div>
+                  </div>                  
                 </div>
               </div>
             </div>
@@ -199,14 +199,14 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Pagos</h5>
                   <div class="form-group form-floating mb-3">
-                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de tarifa">
+                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de descuento">
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
                     </select>
-                    <label for="tipoTarifa">Tipo de tarifa:</label>
+                    <label for="tipoTarifa">Tipo de descuento:</label>
                     <div
                       *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
                       class="text-danger">
-                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</small>
+                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de descuento es requerido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
