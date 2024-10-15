@@ -26,9 +26,9 @@ export class CrearAlumnoComponent implements OnInit {
   tiposTarifa = Object.values(TipoTarifa);
 
   constructor(
-    private fb: FormBuilder,
-    private endpointsService: EndpointsService,
-    private router: Router
+    private readonly fb: FormBuilder,
+    private readonly endpointsService: EndpointsService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -51,7 +51,10 @@ export class CrearAlumnoComponent implements OnInit {
       fechaAlta: ['', Validators.required],
       autorizacionWeb: [true, Validators.required],
       competidor: [false],
-      peso: [null],
+      peso: [{ value: null, disabled: true }, Validators.required],
+      tieneLicencia: [false],  // Checkbox para "¿Tiene licencia federativa?"
+      numeroLicencia: [{ value: '', disabled: true }, Validators.required],  // Campo deshabilitado al principio
+      fechaLicencia: [{ value: '', disabled: true }, Validators.required],
     });
   }
 
@@ -97,11 +100,31 @@ export class CrearAlumnoComponent implements OnInit {
   onCompetidorChange(event: any): void {
     if (event.target.checked) {
       this.alumnoData.get('peso')?.setValidators([Validators.required, Validators.min(0)]);
+      this.alumnoData.get('peso')?.enable();
     } else {
       this.alumnoData.get('peso')?.clearValidators();
+      this.alumnoData.get('peso')?.disable();
       this.alumnoData.get('peso')?.setValue(null);
     }
     this.alumnoData.get('peso')?.updateValueAndValidity();
+  }
+
+  onLicenciaChange(event: any): void {
+    const tieneLicencia = event.target.checked;
+    const today = new Date().toISOString().split('T')[0]; // Formato de fecha en YYYY-MM-DD
+  
+    if (tieneLicencia) {
+      // Habilitar y rellenar los campos de licencia
+      this.alumnoData.get('numeroLicencia')?.enable();
+      this.alumnoData.get('fechaLicencia')?.setValue(today);
+      this.alumnoData.get('fechaLicencia')?.enable();
+    } else {
+      // Deshabilitar y limpiar los campos de licencia
+      this.alumnoData.get('numeroLicencia')?.disable();
+      this.alumnoData.get('numeroLicencia')?.setValue('');
+      this.alumnoData.get('fechaLicencia')?.disable();
+      this.alumnoData.get('fechaLicencia')?.setValue('');
+    }
   }
 
   removeImage() {
