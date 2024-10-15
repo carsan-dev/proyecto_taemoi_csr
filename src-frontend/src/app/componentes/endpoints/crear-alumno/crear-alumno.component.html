@@ -89,13 +89,13 @@
         <div class="form-group mb-3 form-floating">
           <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa"
             required>
-            <option value="" disabled selected>Selecciona una tarifa</option>
+            <option value="" disabled selected>Selecciona un descuento</option>
             <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
           </select>
-          <label for="tipoTarifa">Selecciona el tipo de tarifa</label>
+          <label for="tipoTarifa">Selecciona el tipo de descuento</label>
           <div *ngIf="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched"
             class="text-danger">
-            <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa del alumno es obligatorio.
+            <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">Tipo de descuento del alumno es obligatorio.
             </small>
           </div>
         </div>
@@ -125,31 +125,59 @@
             <img [src]="imagenPreview" alt="Vista previa del alumno" width="100">
           </div>
         </div>
-
-        <div class="row">
-          <!-- Campo Autorización Web -->
-          <div class="form-group col-md-6 mb-3 autorizacion-web">
-            <label for="autorizacionWeb" class="text-black">Autorización Web</label>
-            <div class="d-flex flex-column">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
-                  [value]="true">
-                <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
-                  [value]="false">
-                <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
-              </div>
+        <!-- Campo Autorización Web -->
+        <div class="form-group col-md-6 mb-3 autorizacion-web">
+          <label for="autorizacionWeb" class="text-black">Autorización Web</label>
+          <div class="d-flex flex-column">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
+                [value]="true">
+              <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
+                [value]="false">
+              <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
             </div>
           </div>
-          <div class="form-group col-md-6 mb-3">
-            <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
-            <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
-              (change)="onCompetidorChange($event)">
-            <div *ngIf="alumnoData.get('competidor')?.value" class="form-group mt-3 form-floating">
-              <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
-              <label for="peso">Peso (kg)</label>
+        </div>
+        <!-- Campo Competidor -->
+        <div class="form-group col-md-6 mb-3">
+          <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
+          <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
+            (change)="onCompetidorChange($event)">
+        </div>
+        <!-- Campo Peso (debajo del checkbox de Competidor) -->
+        <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('competidor')?.value">
+          <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
+          <label for="peso">Peso (kg)</label>
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label for="tieneLicencia" class="form-check-label me-3 text-black">¿Tiene licencia federativa?</label>
+          <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia" formControlName="tieneLicencia"
+            (change)="onLicenciaChange($event)">
+        </div>
+        <div class="row">
+          <!-- Campo Número de Licencia -->
+          <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('tieneLicencia')?.value">
+            <input type="text" class="form-control" id="numeroLicencia" name="numeroLicencia"
+              formControlName="numeroLicencia" placeholder="Número de Licencia">
+            <label for="numeroLicencia">Número de Licencia</label>
+            <div *ngIf="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('numeroLicencia')?.errors?.['required']">El número de licencia es
+                obligatorio.</small>
+            </div>
+          </div>
+          <!-- Campo Fecha de Licencia -->
+          <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('tieneLicencia')?.value">
+            <input type="date" class="form-control" id="fechaLicencia" name="fechaLicencia"
+              formControlName="fechaLicencia" placeholder="Fecha de Licencia">
+            <label for="fechaLicencia">Fecha de Licencia</label>
+            <div *ngIf="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('fechaLicencia')?.errors?.['required']">La fecha de licencia es
+                obligatoria.</small>
             </div>
           </div>
         </div>

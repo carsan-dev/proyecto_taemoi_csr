@@ -93,6 +93,14 @@ public class Alumno {
 
     @Temporal(TemporalType.DATE)
     private Date fechaPeso;
+    
+    @NotNull(message = "lieneLicencia debe ser true o false, no null")
+    private Boolean tieneLicencia = false;
+    
+    private Integer numeroLicencia;
+    
+    @Temporal(TemporalType.DATE)
+    private Date fechaLicencia;
 	
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "foto_alumno_id")
@@ -302,6 +310,30 @@ public class Alumno {
 
 	public void setFechaPeso(Date fechaPeso) {
 		this.fechaPeso = fechaPeso;
+	}
+
+	public Boolean getTieneLicencia() {
+		return tieneLicencia;
+	}
+
+	public void setTieneLicencia(Boolean tieneLicencia) {
+		this.tieneLicencia = tieneLicencia;
+	}
+
+	public Integer getNumeroLicencia() {
+		return numeroLicencia;
+	}
+
+	public void setNumeroLicencia(Integer numeroLicencia) {
+		this.numeroLicencia = numeroLicencia;
+	}
+
+	public Date getFechaLicencia() {
+		return fechaLicencia;
+	}
+
+	public void setFechaLicencia(Date fechaLicencia) {
+		this.fechaLicencia = fechaLicencia;
 	}
 
 	public Imagen getFotoAlumno() {

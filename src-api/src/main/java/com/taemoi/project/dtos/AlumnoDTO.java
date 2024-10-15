@@ -22,16 +22,21 @@ public class AlumnoDTO {
 	private Date fechaBaja;
 	private Boolean activo;
 	private Boolean autorizacionWeb;
-    private Boolean competidor;
-    private Double peso;
-    private Date fechaPeso;
+	private Boolean competidor;
+	private Double peso;
+	private Date fechaPeso;
 	private String categoria;
 	private String grado;
 	private Imagen fotoAlumno;
+	private Boolean tieneLicencia;
+	private Integer numeroLicencia;
+	private Date fechaLicencia;
 
-	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente, String nif,
-			String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
-			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso, String categoria, String grado, Imagen fotoAlumno) {
+	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
+			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
+			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso,
+			Date fechaPeso, String categoria, String grado, Imagen fotoAlumno, Boolean tieneLicencia,
+			Integer numeroLicencia, Date fechaLicencia) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -53,8 +58,10 @@ public class AlumnoDTO {
 		this.categoria = categoria;
 		this.grado = grado;
 		this.fotoAlumno = fotoAlumno;
+		this.numeroLicencia = numeroLicencia;
+		this.fechaLicencia = fechaLicencia;
 	}
-	
+
 	public AlumnoDTO() {
 		this.id = null;
 	}
@@ -130,11 +137,11 @@ public class AlumnoDTO {
 	public Date getFechaBaja() {
 		return fechaBaja;
 	}
-	
+
 	public void setFechaBaja(Date fechaBaja) {
 		this.fechaBaja = fechaBaja;
 	}
-	
+
 	public Boolean getActivo() {
 		return activo;
 	}
@@ -150,7 +157,7 @@ public class AlumnoDTO {
 	public void setAutorizacionWeb(Boolean autorizacionWeb) {
 		this.autorizacionWeb = autorizacionWeb;
 	}
-	
+
 	public Boolean getCompetidor() {
 		return competidor;
 	}
@@ -214,7 +221,6 @@ public class AlumnoDTO {
 	public void setCuantiaTarifa(Double cuantiaTarifa) {
 		this.cuantiaTarifa = cuantiaTarifa;
 	}
-	
 
 	public Imagen getFotoAlumno() {
 		return fotoAlumno;
@@ -224,11 +230,36 @@ public class AlumnoDTO {
 		this.fotoAlumno = fotoAlumno;
 	}
 
+	public Boolean getTieneLicencia() {
+		return tieneLicencia;
+	}
+
+	public void setTieneLicencia(Boolean tieneLicencia) {
+		this.tieneLicencia = tieneLicencia;
+	}
+
+	public Integer getNumeroLicencia() {
+		return numeroLicencia;
+	}
+
+	public void setNumeroLicencia(Integer numeroLicencia) {
+		this.numeroLicencia = numeroLicencia;
+	}
+
+	public Date getFechaLicencia() {
+		return fechaLicencia;
+	}
+
+	public void setFechaLicencia(Date fechaLicencia) {
+		this.fechaLicencia = fechaLicencia;
+	}
+
 	/**
 	 * Convierte un objeto Alumno en un objeto AlumnoDTO.
 	 *
 	 * @param alumno El objeto Alumno a convertir.
-	 * @return El objeto AlumnoDTO resultante, o null si el parámetro alumno es null.
+	 * @return El objeto AlumnoDTO resultante, o null si el parámetro alumno es
+	 *         null.
 	 */
 	public static AlumnoDTO deAlumno(Alumno alumno) {
 		if (alumno == null) {
@@ -239,15 +270,17 @@ public class AlumnoDTO {
 		String gradoTipo = alumno.getGrado() != null && alumno.getGrado().getTipoGrado() != null
 				? alumno.getGrado().getTipoGrado().name()
 				: null;
-		
-	    Integer telefono = null;
-	    if (alumno.getTelefono() != null) {
-	        telefono = Integer.valueOf(alumno.getTelefono());
-	    }
+
+		Integer telefono = null;
+		if (alumno.getTelefono() != null) {
+			telefono = Integer.valueOf(alumno.getTelefono());
+		}
 
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
-				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
-				telefono, alumno.getCuantiaTarifa(), alumno.getTipoTarifa(),
-				alumno.getFechaAlta(), alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
+				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
+				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(), alumno.getFechaBaja(),
+				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
+				alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno(), alumno.getTieneLicencia() ,alumno.getNumeroLicencia(),
+				alumno.getFechaLicencia());
 	}
 }

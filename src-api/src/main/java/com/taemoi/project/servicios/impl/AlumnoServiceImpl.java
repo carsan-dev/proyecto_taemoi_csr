@@ -224,137 +224,145 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Alumno crearAlumno(@NonNull Alumno alumno) {
-	    // Save the alumno image first, if exists
-	    Imagen imagen = alumno.getFotoAlumno();
-	    if (imagen != null) {
-	        imagenRepository.save(imagen); // Save image
-	        alumno.setFotoAlumno(imagen);  // Set the saved image to the alumno
-	    }
+		// Save the alumno image first, if exists
+		Imagen imagen = alumno.getFotoAlumno();
+		if (imagen != null) {
+			imagenRepository.save(imagen); // Save image
+			alumno.setFotoAlumno(imagen); // Set the saved image to the alumno
+		}
 
-	    // Generate and assign a unique student number (numeroExpediente)
-	    Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
-	    alumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
+		// Generate and assign a unique student number (numeroExpediente)
+		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
+		alumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
 
-	    // Set a default tarifa amount if it's not set or invalid
-	    if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
-	        alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
-	    }
+		// Set a default tarifa amount if it's not set or invalid
+		if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
+			alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
+		}
 
-	    // Set web authorization default if not set
-	    if (alumno.getAutorizacionWeb() == null) {
-	        alumno.setAutorizacionWeb(true);
-	    }
+		// Set web authorization default if not set
+		if (alumno.getAutorizacionWeb() == null) {
+			alumno.setAutorizacionWeb(true);
+		}
 
-	    // Set the current weight date if the student is a competitor
-	    if (Boolean.TRUE.equals(alumno.getCompetidor())) {
-	        alumno.setFechaPeso(new Date());
-	    }
+		// Set the current weight date if the student is a competitor
+		if (Boolean.TRUE.equals(alumno.getCompetidor())) {
+			alumno.setFechaPeso(new Date());
+		}
 
-	    // Save Alumno entity first
-	    Alumno alumnoGuardado = alumnoRepository.save(alumno);
+		// Save Alumno entity first
+		Alumno alumnoGuardado = alumnoRepository.save(alumno);
 
-	    // If there is a Usuario associated, save it after Alumno
-	    if (alumnoGuardado.getUsuario() != null) {
-	        Usuario usuario = alumnoGuardado.getUsuario();
-	        usuario.setAlumno(alumnoGuardado); // Ensure user references saved alumno
-	        usuarioRepository.save(usuario);   // Now save the Usuario
-	    }
+		// If there is a Usuario associated, save it after Alumno
+		if (alumnoGuardado.getUsuario() != null) {
+			Usuario usuario = alumnoGuardado.getUsuario();
+			usuario.setAlumno(alumnoGuardado); // Ensure user references saved alumno
+			usuarioRepository.save(usuario); // Now save the Usuario
+		}
 
-	    return alumnoGuardado;
+		return alumnoGuardado;
 	}
-	
+
 	@Override
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
-	    // Verificar si el Alumno ya existe
-	    Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
-	    if (alumnoExistente.isPresent()) {
-	        throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
-	    }
+		// Verificar si el Alumno ya existe
+		Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
+		if (alumnoExistente.isPresent()) {
+			throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
+		}
 
-	    // Crear nuevo Alumno
-	    Alumno nuevoAlumno = new Alumno();
-	    nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
-	    nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
-	    nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-	    nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
-	    nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
-	    nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
-	    nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-	    nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+		// Crear nuevo Alumno
+		Alumno nuevoAlumno = new Alumno();
+		nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
+		nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
+		nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
+		nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
+		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
+		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
+		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
+		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
 
-	    // Asignar CuantiaTarifa si no está definida o es menor o igual a 0
-	    if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
-	        nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa()));
-	    } else {
-	        nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
-	    }
+		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
+		if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
+			nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa()));
+		} else {
+			nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
+		}
 
-	    // Asignar AutorizacionWeb, si no está definida por defecto a true
-	    nuevoAlumno.setAutorizacionWeb(nuevoAlumnoDTO.getAutorizacionWeb() != null ? nuevoAlumnoDTO.getAutorizacionWeb() : true);
+		// Asignar AutorizacionWeb, si no está definida por defecto a true
+		nuevoAlumno.setAutorizacionWeb(
+				nuevoAlumnoDTO.getAutorizacionWeb() != null ? nuevoAlumnoDTO.getAutorizacionWeb() : true);
 
-	    // Asignar Competidor, Peso y FechaPeso si es aplicable
-	    nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
-	    if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
-	        nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
-	        nuevoAlumno.setFechaPeso(new Date());
-	    }
+		// Asignar Competidor, Peso y FechaPeso si es aplicable
+		nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
+		if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
+			nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
+			nuevoAlumno.setFechaPeso(new Date());
+		}
 
-	    // Asignar categoría según la edad del Alumno
-	    int edad = calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
-	    Categoria categoria = asignarCategoriaSegunEdad(edad);
-	    nuevoAlumno.setCategoria(categoria);
+		// Asignar categoría según la edad del Alumno
+		int edad = calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
+		Categoria categoria = asignarCategoriaSegunEdad(edad);
+		nuevoAlumno.setCategoria(categoria);
 
-	    // Asignar Grado según la edad del Alumno
-	    Grado grado = asignarGradoSegunEdad(nuevoAlumnoDTO);
-	    nuevoAlumno.setGrado(grado);
+		// Asignar Grado según la edad del Alumno
+		Grado grado = asignarGradoSegunEdad(nuevoAlumnoDTO);
+		nuevoAlumno.setGrado(grado);
 
-	    // Asignar imagen si se proporcionó
-	    if (nuevoAlumnoDTO.getFotoAlumno() != null) {
-	        // Guardar la imagen antes de asignarla al alumno
-	        Imagen imagenGuardada = imagenRepository.save(nuevoAlumnoDTO.getFotoAlumno());
-	        nuevoAlumno.setFotoAlumno(imagenGuardada);
-	    }
+		// Asignar imagen si se proporcionó
+		if (nuevoAlumnoDTO.getFotoAlumno() != null) {
+			// Guardar la imagen antes de asignarla al alumno
+			Imagen imagenGuardada = imagenRepository.save(nuevoAlumnoDTO.getFotoAlumno());
+			nuevoAlumno.setFotoAlumno(imagenGuardada);
+		}
 
-	    // Asignar fecha de alta
-	    nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta() != null ? nuevoAlumnoDTO.getFechaAlta() : new Date());
+		// Asignar fecha de alta
+		nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta() != null ? nuevoAlumnoDTO.getFechaAlta() : new Date());
 
-	    // Generar y asignar el número de expediente
-	    Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();  // Asegúrate de tener este método en tu repositorio
-	    nuevoAlumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
+		nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
+		if (nuevoAlumnoDTO.getTieneLicencia() != null && nuevoAlumnoDTO.getTieneLicencia()) {
+			nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
+			nuevoAlumno.setFechaLicencia(nuevoAlumnoDTO.getFechaLicencia());
+		}
 
-	    // Guardar primero el Alumno
-	    Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
+		// Generar y asignar el número de expediente
+		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente(); // Asegúrate de tener este método en
+																					// tu repositorio
+		nuevoAlumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
 
-	    // Verificar si el Usuario ya existe o crear uno nuevo
-	    Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
-	    if (usuarioExistente == null) {
-	        usuarioExistente = new Usuario();
-	        usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
-	        usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
-	        usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
+		// Guardar primero el Alumno
+		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
 
-	        // Generar y asignar contraseña al Usuario
-	        String contrasena = generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());
-	        usuarioExistente.setContrasena(contrasena);
+		// Verificar si el Usuario ya existe o crear uno nuevo
+		Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
+		if (usuarioExistente == null) {
+			usuarioExistente = new Usuario();
+			usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
+			usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
+			usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
 
-	        // Asignar roles de usuario
-	        Set<Roles> roles = new HashSet<>();
-	        roles.add(Roles.ROLE_USER);
-	        usuarioExistente.setRoles(roles);
+			// Generar y asignar contraseña al Usuario
+			String contrasena = generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());
+			usuarioExistente.setContrasena(contrasena);
 
-	        // Asignar Alumno guardado al Usuario
-	        usuarioExistente.setAlumno(alumnoGuardado);
+			// Asignar roles de usuario
+			Set<Roles> roles = new HashSet<>();
+			roles.add(Roles.ROLE_USER);
+			usuarioExistente.setRoles(roles);
 
-	        // Guardar el Usuario
-	        usuarioRepository.save(usuarioExistente);
-	    } else {
-	        // Si el Usuario ya existe, asegurar que esté asociado con el Alumno guardado
-	        usuarioExistente.setAlumno(alumnoGuardado);
-	        usuarioRepository.save(usuarioExistente);
-	    }
+			// Asignar Alumno guardado al Usuario
+			usuarioExistente.setAlumno(alumnoGuardado);
 
-	    // Finalmente, retornar el Alumno guardado
-	    return alumnoGuardado;
+			// Guardar el Usuario
+			usuarioRepository.save(usuarioExistente);
+		} else {
+			// Si el Usuario ya existe, asegurar que esté asociado con el Alumno guardado
+			usuarioExistente.setAlumno(alumnoGuardado);
+			usuarioRepository.save(usuarioExistente);
+		}
+
+		// Finalmente, retornar el Alumno guardado
+		return alumnoGuardado;
 	}
 
 	/**
@@ -368,78 +376,80 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado.
 	 */
 	@Override
-	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, MultipartFile nuevaImagen) {
-	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
-	    if (optionalAlumno.isPresent()) {
-	        Alumno alumnoExistente = optionalAlumno.get();
+	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
+			MultipartFile nuevaImagen) {
+		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+		if (optionalAlumno.isPresent()) {
+			Alumno alumnoExistente = optionalAlumno.get();
 
-	        // Actualizar datos generales del alumno
-	        alumnoExistente.setNombre(alumnoActualizado.getNombre());
-	        alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
-	        alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
+			// Actualizar datos generales del alumno
+			alumnoExistente.setNombre(alumnoActualizado.getNombre());
+			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
+			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-	        // Actualizar la edad y categoría según la nueva fecha de nacimiento
-	        int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
-	        Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-	        alumnoExistente.setCategoria(nuevaCategoria);
+			// Actualizar la edad y categoría según la nueva fecha de nacimiento
+			int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+			Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+			alumnoExistente.setCategoria(nuevaCategoria);
 
-	        // Actualizar otros campos del alumno
-	        alumnoExistente.setNif(alumnoActualizado.getNif());
-	        alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
-	        alumnoExistente.setEmail(alumnoActualizado.getEmail());
-	        alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
-	        alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
-	        alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
-	        alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
-	        alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+			// Actualizar otros campos del alumno
+			alumnoExistente.setNif(alumnoActualizado.getNif());
+			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
+			alumnoExistente.setEmail(alumnoActualizado.getEmail());
+			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
+			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
+			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
+			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
 
-	        // Actualizar los campos relacionados con "competidor"
-	        alumnoExistente.setCompetidor(alumnoActualizado.getCompetidor());
-	        if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-	            alumnoExistente.setPeso(alumnoActualizado.getPeso());
-	            alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
-	        }
+			// Actualizar los campos relacionados con "competidor"
+			alumnoExistente.setCompetidor(alumnoActualizado.getCompetidor());
+			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
+				alumnoExistente.setPeso(alumnoActualizado.getPeso());
+				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
+			}
 
-	        // Manejo de la imagen del alumno
-	        try {
-	            if (nuevaImagen != null && "null".equals(nuevaImagen.getOriginalFilename())) {
-	                // Si la imagen enviada es 'null', eliminar la imagen existente
-	                Imagen imagenAnterior = alumnoExistente.getFotoAlumno();
-	                if (imagenAnterior != null) {
-	                    // Eliminar la imagen del sistema de archivos y de la base de datos
-	                    imagenService.eliminarImagenDeSistema(imagenAnterior);
-	                    imagenRepository.delete(imagenAnterior);
-	                    alumnoExistente.setFotoAlumno(null); // Remover referencia de la imagen
-	                }
-	            } else if (nuevaImagen != null && !nuevaImagen.isEmpty()) {
-	                // Si hay una nueva imagen, reemplazar la imagen existente
-	                Imagen imagenAnterior = alumnoExistente.getFotoAlumno();
-	                if (imagenAnterior != null) {
-	                    // Eliminar la imagen anterior
-	                    imagenService.eliminarImagenDeSistema(imagenAnterior);
-	                    imagenRepository.delete(imagenAnterior);
-	                }
+			// Manejo de la imagen del alumno
+			try {
+				if (nuevaImagen != null && "null".equals(nuevaImagen.getOriginalFilename())) {
+					// Si la imagen enviada es 'null', eliminar la imagen existente
+					Imagen imagenAnterior = alumnoExistente.getFotoAlumno();
+					if (imagenAnterior != null) {
+						// Eliminar la imagen del sistema de archivos y de la base de datos
+						imagenService.eliminarImagenDeSistema(imagenAnterior);
+						imagenRepository.delete(imagenAnterior);
+						alumnoExistente.setFotoAlumno(null); // Remover referencia de la imagen
+					}
+				} else if (nuevaImagen != null && !nuevaImagen.isEmpty()) {
+					// Si hay una nueva imagen, reemplazar la imagen existente
+					Imagen imagenAnterior = alumnoExistente.getFotoAlumno();
+					if (imagenAnterior != null) {
+						// Eliminar la imagen anterior
+						imagenService.eliminarImagenDeSistema(imagenAnterior);
+						imagenRepository.delete(imagenAnterior);
+					}
 
-	                // Guardar la nueva imagen y asignarla al alumno
-	                Imagen nuevaImagenGuardada = imagenService.guardarImagen(nuevaImagen);
-	                alumnoExistente.setFotoAlumno(nuevaImagenGuardada);
-	            }
-	        } catch (IOException e) {
-	            throw new RuntimeException("Error al procesar la imagen", e);
-	        }
+					// Guardar la nueva imagen y asignarla al alumno
+					Imagen nuevaImagenGuardada = imagenService.guardarImagen(nuevaImagen);
+					alumnoExistente.setFotoAlumno(nuevaImagenGuardada);
+				}
+			} catch (IOException e) {
+				throw new RuntimeException("Error al procesar la imagen", e);
+			}
 
-	        // Si no se especifica una cuantía de tarifa o es inválida, se asigna una por defecto
-	        if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
-	            alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa()));
-	        } else {
-	            alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
-	        }
+			// Si no se especifica una cuantía de tarifa o es inválida, se asigna una por
+			// defecto
+			if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
+				alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa()));
+			} else {
+				alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
+			}
 
-	        // Guardar los cambios en el alumno en la base de datos
-	        return alumnoRepository.save(alumnoExistente);
-	    } else {
-	        throw new RuntimeException("No se encontró el alumno con ID: " + id);
-	    }
+			// Guardar los cambios en el alumno en la base de datos
+			return alumnoRepository.save(alumnoExistente);
+		} else {
+			throw new RuntimeException("No se encontró el alumno con ID: " + id);
+		}
 	}
 
 	/**
@@ -451,26 +461,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public void eliminarImagenAlumno(@NonNull Long id) {
-	    Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
-	    if (optionalAlumno.isPresent()) {
-	        Alumno alumno = optionalAlumno.get();
-	        Imagen imagen = alumno.getFotoAlumno();
-	        if (imagen != null) {
-	            // Eliminar la imagen del sistema de archivos antes de eliminar la referencia en la base de datos
-	            imagenService.eliminarImagenDeSistema(imagen);
-	            
-	            // Ahora eliminar la referencia en la base de datos
-	            alumno.setFotoAlumno(null);
-	            alumnoRepository.save(alumno);
-	            imagenRepository.delete(imagen);
-	        } else {
-	            throw new RuntimeException("El alumno no tiene una imagen asociada.");
-	        }
-	    } else {
-	        throw new RuntimeException("No se encontró el alumno con ID: " + id);
-	    }
-	}
+		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
+		if (optionalAlumno.isPresent()) {
+			Alumno alumno = optionalAlumno.get();
+			Imagen imagen = alumno.getFotoAlumno();
+			if (imagen != null) {
+				// Eliminar la imagen del sistema de archivos antes de eliminar la referencia en
+				// la base de datos
+				imagenService.eliminarImagenDeSistema(imagen);
 
+				// Ahora eliminar la referencia en la base de datos
+				alumno.setFotoAlumno(null);
+				alumnoRepository.save(alumno);
+				imagenRepository.delete(imagen);
+			} else {
+				throw new RuntimeException("El alumno no tiene una imagen asociada.");
+			}
+		} else {
+			throw new RuntimeException("No se encontró el alumno con ID: " + id);
+		}
+	}
 
 	/**
 	 * Elimina un alumno por su ID y elimina su imagen.
@@ -480,37 +490,36 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean eliminarAlumno(@NonNull Long id) {
-	    return alumnoRepository.findById(id).map(alumno -> {
+		return alumnoRepository.findById(id).map(alumno -> {
 
-	        // Eliminar la imagen del alumno si existe
-	        Imagen imagen = alumno.getFotoAlumno();
-	        if (imagen != null) {
-	            // Primero eliminar la imagen del sistema de archivos
-	            imagenService.eliminarImagenDeSistema(imagen);
+			// Eliminar la imagen del alumno si existe
+			Imagen imagen = alumno.getFotoAlumno();
+			if (imagen != null) {
+				// Primero eliminar la imagen del sistema de archivos
+				imagenService.eliminarImagenDeSistema(imagen);
 
-	            // Luego eliminar la imagen de la base de datos
-	            imagenRepository.delete(imagen);
-	        }
+				// Luego eliminar la imagen de la base de datos
+				imagenRepository.delete(imagen);
+			}
 
-	        // Eliminar el usuario asociado si existe
-	        if (alumno.getUsuario() != null) {
-	            usuarioRepository.delete(alumno.getUsuario());
-	        }
+			// Eliminar el usuario asociado si existe
+			if (alumno.getUsuario() != null) {
+				usuarioRepository.delete(alumno.getUsuario());
+			}
 
-	        // Eliminar las relaciones con grupos si existen
-	        for (Grupo grupo : grupoRepository.findAll()) {
-	            if (grupo.getAlumnos().contains(alumno)) {
-	                grupo.getAlumnos().remove(alumno);
-	                grupoRepository.save(grupo);
-	            }
-	        }
+			// Eliminar las relaciones con grupos si existen
+			for (Grupo grupo : grupoRepository.findAll()) {
+				if (grupo.getAlumnos().contains(alumno)) {
+					grupo.getAlumnos().remove(alumno);
+					grupoRepository.save(grupo);
+				}
+			}
 
-	        // Finalmente, eliminar el alumno
-	        alumnoRepository.delete(alumno);
-	        return true;
-	    }).orElse(false);
+			// Finalmente, eliminar el alumno
+			alumnoRepository.delete(alumno);
+			return true;
+		}).orElse(false);
 	}
-
 
 	@Override
 	public Alumno darDeBajaAlumno(@NonNull Long id) {
@@ -792,6 +801,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
 				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
 				alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(),
-				alumno.getPeso(), alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno());
+				alumno.getPeso(), alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno(),
+				alumno.getTieneLicencia(), alumno.getNumeroLicencia(), alumno.getFechaLicencia());
 	}
 }
