@@ -45,7 +45,7 @@ export class EditarAlumnoComponent implements OnInit {
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
   mostrarInactivos: boolean = false;
-  tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de tarifa
+  tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de descuento
 
   constructor(
     private endpointsService: EndpointsService,
@@ -78,40 +78,58 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Inicialización de los datos de alumnos si están en el localStorage
     if (typeof localStorage !== 'undefined') {
       this.obtenerAlumnos();
     }
-
-    // Escucha cambios en el tipo de tarifa para actualizar la cuantía
+  
+    // Escucha cambios en el tipo de descuento para actualizar la cuantía
     this.alumnoForm.get('tipoTarifa')?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
-      if (this.tipoTarifaEditado) { // Solo se actualiza si el usuario cambió el tipo de tarifa
+      if (this.tipoTarifaEditado) {
+        // Solo se actualiza si el usuario cambió el tipo de descuento
         const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
         this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
       }
       this.tipoTarifaEditado = true; // Se marca como editado después de un cambio
     });
-
-    // Escucha cambios en el campo competidor para validar peso y fechaPeso
+  
+    // Escucha cambios en el campo competidor para validar y habilitar/deshabilitar peso y fechaPeso
     this.alumnoForm.get('competidor')?.valueChanges.subscribe((isCompetidor: boolean) => {
       const pesoControl = this.alumnoForm.get('peso');
       const fechaPesoControl = this.alumnoForm.get('fechaPeso');
-
+  
       if (isCompetidor) {
+        // Si el alumno es competidor, requerimos peso y fechaPeso
         pesoControl?.setValidators([Validators.required]);
         fechaPesoControl?.setValidators([Validators.required]);
-
-        if (!pesoControl?.value) {
-          fechaPesoControl?.setValue(this.getFechaActual()); // Solo establece si no tiene fecha previa
+        
+        // Si no hay fecha de peso asignada, se establece la actual
+        if (!fechaPesoControl?.value) {
+          fechaPesoControl?.setValue(this.getFechaActual());
         }
+  
+        // Habilitamos los campos si estaban deshabilitados
+        pesoControl?.enable();
+        fechaPesoControl?.enable();
       } else {
-        // Cuando se desmarca competidor, no borres los valores actuales
-        // Pero mantén los valores para que no se pierdan al guardar
+        // Si no es competidor, deshabilitamos los campos
+        pesoControl?.clearValidators();
+        fechaPesoControl?.clearValidators();
+        
+        // Deshabilitamos los campos, pero no borramos sus valores
+        pesoControl?.disable();
+        fechaPesoControl?.disable();
       }
-
+  
+      // Actualizamos el estado y validación de los campos
       pesoControl?.updateValueAndValidity();
       fechaPesoControl?.updateValueAndValidity();
     });
+  
+    // Validaciones adicionales para fechas: fechaBaja debe ser posterior a fechaAlta y la fecha de nacimiento debe ser anterior a la fechaAlta
+    this.alumnoForm.setValidators([this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]);
   }
+  
 
   obtenerAlumnos() {
     const token = localStorage.getItem('token');
@@ -328,7 +346,7 @@ export class EditarAlumnoComponent implements OnInit {
       case TipoTarifa.PADRES_HIJOS:
         return 0.0;
       default:
-        throw new Error('Tipo de tarifa no válido');
+        throw new Error('Tipo de descuento no válido');
     }
   }
 
