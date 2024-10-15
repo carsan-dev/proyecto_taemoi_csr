@@ -45,7 +45,7 @@ export class EditarAlumnoComponent implements OnInit {
   imagenPreview: string | null = null;
   alumnoForm: FormGroup;
   mostrarInactivos: boolean = false;
-  tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de descuento
+  tipoTarifaEditado: boolean = false;
 
   constructor(
     private readonly endpointsService: EndpointsService,

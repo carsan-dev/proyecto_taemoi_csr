@@ -35,72 +35,104 @@
               </button>
             </div>
             <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-            (pageChange)="cambiarPagina($event)">
+              (pageChange)="cambiarPagina($event)">
             </app-paginacion>
           </div>
         </div>
-        <div class="row">
+        <div class="row" *ngFor="let alumno of alumnos">
           <div class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm">
               <div class="card-body">
-                <h5 class="card-title">Información Personal</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
-                  <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
-                  <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
-                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
-                  <li class="list-group-item">Tiene Licencia: {{ alumno.tieneLicencia ? 'Sí' : 'No' }}</li>
-        
-                  <!-- Solo mostrar los detalles de la licencia si tieneLicencia es verdadero -->
-                  <ng-container *ngIf="alumno.tieneLicencia">
-                    <li class="list-group-item">Número de Licencia: {{ alumno.numeroLicencia }}</li>
-                    <li class="list-group-item">Fecha de Licencia: {{ alumno.fechaLicencia | date:'dd/MM/yyyy' }}</li>
-                  </ng-container>
-                  <li class="list-group-item">Competidor: {{ alumno.competidor ? 'Sí' : 'No' }}</li>
-                  <ng-container *ngIf="alumno.competidor">
-                    <li class="list-group-item">Peso: {{ alumno.peso }} kg</li>
-                    <li class="list-group-item">Fecha del peso: {{ alumno.fechaPeso | date:'dd/MM/yyyy' }}</li>
-                  </ng-container>
-                </ul>
+                <h5 class="card-title mb-3">Información Personal</h5>
+                <div class="mb-3">
+                  <strong>Nombre:</strong> {{ alumno.nombre }}
+                </div>
+                <div class="mb-3">
+                  <strong>Apellidos:</strong> {{ alumno.apellidos }}
+                </div>
+                <div class="mb-3">
+                  <strong>Dirección:</strong> {{ alumno.direccion }}
+                </div>
+                <div class="mb-3">
+                  <strong>Fecha de Nacimiento:</strong> {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}
+                </div>
+                <div class="mb-3">
+                  <strong>DNI del alumno:</strong> {{ alumno.nif }}
+                </div>
+                <div class="mb-3">
+                  <strong>Tiene Licencia:</strong> {{ alumno.tieneLicencia ? 'Sí' : 'No' }}
+                </div>
+                <div *ngIf="alumno.tieneLicencia" class="border p-2 mt-3 bg-light rounded">
+                  <h6 class="text-secondary">Detalles de la Licencia</h6>
+                  <div class="mb-2">
+                    <strong>Número de Licencia:</strong> {{ alumno.numeroLicencia }}
+                  </div>
+                  <div>
+                    <strong>Fecha de Licencia:</strong> {{ alumno.fechaLicencia | date:'dd/MM/yyyy' }}
+                  </div>
+                </div>
+                <div class="mt-4">
+                  <strong>Competidor:</strong> {{ alumno.competidor ? 'Sí' : 'No' }}
+                </div>
+                <div *ngIf="alumno.competidor" class="border p-2 mt-3 bg-light rounded">
+                  <h6 class="text-secondary">Detalles de Competidor</h6>
+                  <div class="mb-2">
+                    <strong>Peso:</strong> {{ alumno.peso }} kg
+                  </div>
+                  <div>
+                    <strong>Fecha del peso:</strong> {{ alumno.fechaPeso | date:'dd/MM/yyyy' }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <div class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm">
               <div class="card-body">
-                <h5 class="card-title">Pagos</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
-                  <li class="list-group-item">Tipo de descuento: {{ alumno.tipoTarifa }}</li>
-                </ul>
+                <h5 class="card-title mb-3">Pagos</h5>
+                <div class="mb-3">
+                  <strong>Cuantía de tarifa:</strong> {{ alumno.cuantiaTarifa | currency:'EUR':'symbol':'1.2-2' }}
+                </div>
+                <div class="mb-3">
+                  <strong>Tipo de descuento:</strong> {{ alumno.tipoTarifa }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="row">
+        <div class="row" *ngFor="let alumno of alumnos">
           <div class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm">
               <div class="card-body">
-                <h5 class="card-title">Contacto</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Email: {{ alumno.email }}</li>
-                  <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
-                </ul>
+                <h5 class="card-title mb-3">Contacto</h5>
+                <div class="mb-3">
+                  <strong>Email:</strong> {{ alumno.email }}
+                </div>
+                <div class="mb-3">
+                  <strong>Teléfono:</strong> {{ alumno.telefono }}
+                </div>
               </div>
             </div>
           </div>
-          <div class="col-lg-6 col-md-12">
+          <div class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm">
               <div class="card-body">
-                <h5 class="card-title">Información adicional</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">Autorización Web: {{ alumno.autorizacionWeb ? 'Sí' : 'No' }}</li>
-                  <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
-                  <li class="list-group-item">Grado: {{ alumno.grado }}</li>
-                </ul>
+                <h5 class="card-title mb-3">Información adicional</h5>
+                <div class="mb-3">
+                  <strong>Fecha de alta:</strong> {{ alumno.fechaAlta | date:'dd/MM/yyyy' }}
+                </div>
+                <div *ngIf="alumno.fechaBaja" class="mb-3">
+                  <strong>Fecha de baja:</strong> {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}
+                </div>
+                <div class="mb-3">
+                  <strong>Autorización Web:</strong> {{ alumno.autorizacionWeb ? 'Sí' : 'No' }}
+                </div>
+                <div class="mb-3">
+                  <strong>Categoría:</strong> {{ alumno.categoria }}
+                </div>
+                <div class="mb-3">
+                  <strong>Grado:</strong> {{ alumno.grado }}
+                </div>
               </div>
             </div>
           </div>
@@ -108,7 +140,8 @@
       </div>
 
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
-        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)" method="post">
+        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
+          method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
             <img class="imagen-perfil"
               [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno?.ruta ? alumno.fotoEvento.ruta : '../../../../assets/media/default.webp')"
@@ -129,7 +162,8 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Información Personal</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="nombre" class="form-control" formControlName="nombre" required placeholder="Nombre">
+                    <input type="text" id="nombre" class="form-control" formControlName="nombre" required
+                      placeholder="Nombre">
                     <label for="nombre">Nombre</label>
                     <div
                       *ngIf="alumnoForm.get('nombre')?.errors && (alumnoForm.get('nombre')?.dirty || alumnoForm.get('nombre')?.touched)"
@@ -138,7 +172,8 @@
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos" required placeholder="Apellidos">
+                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos" required
+                      placeholder="Apellidos">
                     <label for="apellidos">Apellidos</label>
                     <div
                       *ngIf="alumnoForm.get('apellidos')?.errors && (alumnoForm.get('apellidos')?.dirty || alumnoForm.get('apellidos')?.touched)"
@@ -147,7 +182,8 @@
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="direccion" class="form-control" formControlName="direccion" required placeholder="Dirección">
+                    <input type="text" id="direccion" class="form-control" formControlName="direccion" required
+                      placeholder="Dirección">
                     <label for="direccion">Dirección</label>
                     <div
                       *ngIf="alumnoForm.get('direccion')?.errors && (alumnoForm.get('direccion')?.dirty || alumnoForm.get('direccion')?.touched)"
@@ -156,7 +192,8 @@
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
+                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento"
+                      required placeholder="Fecha de nacimiento">
                     <label for="fechaNacimiento">Fecha de nacimiento</label>
                     <div
                       *ngIf="alumnoForm.get('fechaNacimiento')?.errors && (alumnoForm.get('fechaNacimiento')?.dirty || alumnoForm.get('fechaNacimiento')?.touched)"
@@ -166,63 +203,82 @@
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="text" id="nif" class="form-control" formControlName="nif" required placeholder="DNI del alumno">
+                    <input type="text" id="nif" class="form-control" formControlName="nif" required
+                      placeholder="DNI del alumno">
                     <label for="nif">DNI del alumno</label>
                     <div
                       *ngIf="alumnoForm.get('nif')?.errors && (alumnoForm.get('nif')?.dirty || alumnoForm.get('nif')?.touched)"
                       class="text-danger">
                       <small *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</small>
-                      <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
+                      <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8
+                        números
                         y una letra)</small>
                     </div>
                   </div>
                   <div class="form-group form-check mb-3">
                     <label class="form-check-label me-3 text-black" for="tieneLicencia">¿Tiene licencia?</label>
-                    <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia" formControlName="tieneLicencia">
+                    <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia"
+                      formControlName="tieneLicencia">
                   </div>
-            
+
                   <!-- Mostrar los campos de licencia solo si tieneLicencia está activado -->
                   <div *ngIf="alumnoForm.get('tieneLicencia')?.value">
                     <!-- Campo de formulario para número de licencia -->
                     <div class="form-group form-floating mb-3">
-                      <input type="number" id="numeroLicencia" class="form-control" formControlName="numeroLicencia" required placeholder="Número de licencia">
+                      <input type="number" id="numeroLicencia" class="form-control" formControlName="numeroLicencia"
+                        required placeholder="Número de licencia">
                       <label for="numeroLicencia">Número de licencia</label>
-                      <div *ngIf="alumnoForm.get('numeroLicencia')?.errors && (alumnoForm.get('numeroLicencia')?.dirty || alumnoForm.get('numeroLicencia')?.touched)" class="text-danger">
-                        <small *ngIf="alumnoForm.get('numeroLicencia')?.errors?.['required']">El número de licencia es requerido</small>
+                      <div
+                        *ngIf="alumnoForm.get('numeroLicencia')?.errors && (alumnoForm.get('numeroLicencia')?.dirty || alumnoForm.get('numeroLicencia')?.touched)"
+                        class="text-danger">
+                        <small *ngIf="alumnoForm.get('numeroLicencia')?.errors?.['required']">El número de licencia es
+                          requerido</small>
                       </div>
                     </div>
-            
+
                     <!-- Campo de formulario para fecha de licencia -->
                     <div class="form-group form-floating mb-3">
-                      <input type="date" id="fechaLicencia" class="form-control" formControlName="fechaLicencia" required placeholder="Fecha de licencia">
+                      <input type="date" id="fechaLicencia" class="form-control" formControlName="fechaLicencia"
+                        required placeholder="Fecha de licencia">
                       <label for="fechaLicencia">Fecha de licencia</label>
-                      <div *ngIf="alumnoForm.get('fechaLicencia')?.errors && (alumnoForm.get('fechaLicencia')?.dirty || alumnoForm.get('fechaLicencia')?.touched)" class="text-danger">
-                        <small *ngIf="alumnoForm.get('fechaLicencia')?.errors?.['required']">La fecha de licencia es requerida</small>
+                      <div
+                        *ngIf="alumnoForm.get('fechaLicencia')?.errors && (alumnoForm.get('fechaLicencia')?.dirty || alumnoForm.get('fechaLicencia')?.touched)"
+                        class="text-danger">
+                        <small *ngIf="alumnoForm.get('fechaLicencia')?.errors?.['required']">La fecha de licencia es
+                          requerida</small>
                       </div>
                     </div>
                   </div>
                   <div class="form-group form-check mb-3">
                     <label class="form-check-label me-3 text-black" for="competidor">¿Es competidor?</label>
-                    <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor">
+                    <input type="checkbox" class="form-check-input form-switch" id="competidor"
+                      formControlName="competidor">
                   </div>
-                  
+
                   <div *ngIf="alumnoForm.get('competidor')?.value">
                     <div class="form-group form-floating mb-3">
-                      <input type="number" id="peso" class="form-control" formControlName="peso" placeholder="Peso (kg)" [disabled]="!alumnoForm.get('competidor')?.value">
+                      <input type="number" id="peso" class="form-control" formControlName="peso" placeholder="Peso (kg)"
+                        [disabled]="!alumnoForm.get('competidor')?.value">
                       <label for="peso">Peso (kg)</label>
-                      <div *ngIf="alumnoForm.get('peso')?.errors && (alumnoForm.get('peso')?.dirty || alumnoForm.get('peso')?.touched)" class="text-danger">
+                      <div
+                        *ngIf="alumnoForm.get('peso')?.errors && (alumnoForm.get('peso')?.dirty || alumnoForm.get('peso')?.touched)"
+                        class="text-danger">
                         <small *ngIf="alumnoForm.get('peso')?.errors?.['required']">El peso es requerido</small>
                       </div>
                     </div>
-                  
+
                     <div class="form-group form-floating mb-3">
-                      <input type="date" id="fechaPeso" class="form-control" formControlName="fechaPeso" placeholder="Fecha del peso" [disabled]="!alumnoForm.get('competidor')?.value">
+                      <input type="date" id="fechaPeso" class="form-control" formControlName="fechaPeso"
+                        placeholder="Fecha del peso" [disabled]="!alumnoForm.get('competidor')?.value">
                       <label for="fechaPeso">Fecha del peso</label>
-                      <div *ngIf="alumnoForm.get('fechaPeso')?.errors && (alumnoForm.get('fechaPeso')?.dirty || alumnoForm.get('fechaPeso')?.touched)" class="text-danger">
-                        <small *ngIf="alumnoForm.get('fechaPeso')?.errors?.['required']">La fecha del peso es requerida</small>
+                      <div
+                        *ngIf="alumnoForm.get('fechaPeso')?.errors && (alumnoForm.get('fechaPeso')?.dirty || alumnoForm.get('fechaPeso')?.touched)"
+                        class="text-danger">
+                        <small *ngIf="alumnoForm.get('fechaPeso')?.errors?.['required']">La fecha del peso es
+                          requerida</small>
                       </div>
                     </div>
-                  </div>                  
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,23 +287,27 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Pagos</h5>
                   <div class="form-group form-floating mb-3">
-                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de descuento">
+                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required
+                      placeholder="Tipo de descuento">
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
                     </select>
                     <label for="tipoTarifa">Tipo de descuento:</label>
                     <div
                       *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
                       class="text-danger">
-                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de descuento es requerido</small>
+                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de descuento es
+                        requerido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="number" id="cuantiaTarifa" class="form-control" formControlName="cuantiaTarifa" required placeholder="Cuantía de Tarifa">
+                    <input type="number" id="cuantiaTarifa" class="form-control" formControlName="cuantiaTarifa"
+                      required placeholder="Cuantía de Tarifa">
                     <label for="cuantiaTarifa">Cuantía de Tarifa</label>
                     <div
                       *ngIf="alumnoForm.get('cuantiaTarifa')?.errors && (alumnoForm.get('cuantiaTarifa')?.dirty || alumnoForm.get('cuantiaTarifa')?.touched)"
                       class="text-danger">
-                      <small *ngIf="alumnoForm.get('cuantiaTarifa')?.errors?.['required']">Cuantía de Tarifa es requerida</small>
+                      <small *ngIf="alumnoForm.get('cuantiaTarifa')?.errors?.['required']">Cuantía de Tarifa es
+                        requerida</small>
                     </div>
                   </div>
                 </div>
@@ -260,23 +320,27 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Contacto</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="email" id="email" class="form-control" formControlName="email" required placeholder="Email">
+                    <input type="email" id="email" class="form-control" formControlName="email" required
+                      placeholder="Email">
                     <label for="email">Email</label>
                     <div
                       *ngIf="alumnoForm.get('email')?.errors && (alumnoForm.get('email')?.dirty || alumnoForm.get('email')?.touched)"
                       class="text-danger">
                       <small *ngIf="alumnoForm.get('email')?.errors?.['required']">Email es requerido</small>
-                      <small *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email válido</small>
+                      <small *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email
+                        válido</small>
                     </div>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="tel" id="telefono" class="form-control" formControlName="telefono" required placeholder="Teléfono">
+                    <input type="tel" id="telefono" class="form-control" formControlName="telefono" required
+                      placeholder="Teléfono">
                     <label for="telefono">Teléfono</label>
                     <div
                       *ngIf="alumnoForm.get('telefono')?.errors && (alumnoForm.get('telefono')?.dirty || alumnoForm.get('telefono')?.touched)"
                       class="text-danger d-flex flex-column">
                       <small *ngIf="alumnoForm.get('telefono')?.errors?.['required']">Teléfono es requerido</small>
-                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono válido
+                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono
+                        válido
                       </small>
                       <small *ngIf="alumnoForm.get('telefono')?.errors?.['maxlength']">No debe tener más de 9 caracteres
                       </small>
@@ -290,29 +354,34 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Información adicional</h5>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta" required placeholder="Fecha de alta">
+                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta" required
+                      placeholder="Fecha de alta">
                     <label for="fechaAlta">Fecha de alta</label>
                     <div
                       *ngIf="alumnoForm.get('fechaAlta')?.errors && (alumnoForm.get('fechaAlta')?.dirty || alumnoForm.get('fechaAlta')?.touched)"
                       class="text-danger">
-                      <small *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es requerida</small>
+                      <small *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es
+                        requerida</small>
                     </div>
                     <small *ngIf="alumnoForm.errors?.['fechaAltaAnteriorAFechaNacimiento']" class="text-danger">
                       Fecha de alta debe ser posterior a la fecha de nacimiento.
                     </small>
                   </div>
                   <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja" placeholder="Fecha de baja">
+                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja"
+                      placeholder="Fecha de baja">
                     <label for="fechaBaja">Fecha de baja</label>
                     <div
                       *ngIf="alumnoForm.get('fechaBaja')?.errors && (alumnoForm.get('fechaBaja')?.dirty || alumnoForm.get('fechaBaja')?.touched)"
                       class="text-danger">
-                      <small *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior a
+                      <small *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior
+                        a
                         la fecha de alta</small>
                     </div>
                   </div>
                   <div class="form-group form-floating">
-                    <select class="form-control form-select" id="grado" formControlName="grado" required placeholder="Grado">
+                    <select class="form-control form-select" id="grado" formControlName="grado" required
+                      placeholder="Grado">
                       <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
                     </select>
                     <label for="grado">Grado</label>
