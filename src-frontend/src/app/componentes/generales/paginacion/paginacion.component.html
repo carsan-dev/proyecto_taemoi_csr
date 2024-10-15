@@ -1,37 +1,48 @@
-<div class="d-flex justify-content-center align-items-center">
-  <nav aria-label="Page navigation example" class="mt-4">
+<div class="pagination-wrapper d-flex justify-content-center align-items-center">
+  <nav aria-label="Page navigation example" class="mt-4 shadow-sm rounded">
     <ul class="pagination">
+      <!-- Botón de Primera Página -->
       <li class="page-item" [class.disabled]="paginaActual === 1">
-        <a class="page-link" (click)="cambiarPagina(1)" aria-label="First">
-          <span aria-hidden="true"><i class="bi bi-chevron-double-left fs-6"></i></span>
+        <a class="page-link" (click)="cambiarPagina(1)" aria-label="Primera página" tabindex="0">
+          <span aria-hidden="true"><i class="bi bi-chevron-double-left"></i></span>
         </a>
       </li>
+
+      <!-- Botón de Página Anterior -->
       <li class="page-item" [class.disabled]="paginaActual === 1">
-        <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" aria-label="Previous">
-          <span aria-hidden="true"><i class="bi bi-chevron-left fs-6"></i></span>
+        <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" aria-label="Página anterior" tabindex="0">
+          <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
         </a>
       </li>
+
+      <!-- Números de Páginas -->
       <ng-container *ngIf="totalPaginas <= 5">
         <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
-          <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
+          <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">{{ page }}</a>
         </li>
       </ng-container>
+
       <ng-container *ngIf="totalPaginas > 5">
         <li class="page-item" *ngFor="let page of mostrarPaginas" [class.active]="paginaActual === page">
-          <a class="page-link" (click)="cambiarPagina(page)">{{ page }}</a>
+          <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">{{ page }}</a>
         </li>
+        <!-- Puntos Suspensivos cuando hay muchas páginas -->
         <li class="page-item" *ngIf="mostrarPaginas[mostrarPaginas.length - 1] < totalPaginas">
           <a class="page-link disabled">...</a>
         </li>
       </ng-container>
+
+      <!-- Botón de Siguiente Página -->
       <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-        <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" aria-label="Next">
-          <span aria-hidden="true"><i class="bi bi-chevron-right fs-6"></i></span>
+        <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" aria-label="Página siguiente" tabindex="0">
+          <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
         </a>
       </li>
+
+      <!-- Botón de Última Página -->
       <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-        <a class="page-link" (click)="cambiarPagina(totalPaginas)" aria-label="Last">
-          <span aria-hidden="true"><i class="bi bi-chevron-double-right fs-6"></i></span>
+        <a class="page-link" (click)="cambiarPagina(totalPaginas)" aria-label="Última página" tabindex="0">
+          <span aria-hidden="true"><i class="bi bi-chevron-double-right"></i></span>
         </a>
       </li>
     </ul>

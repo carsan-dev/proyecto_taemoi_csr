@@ -32,22 +32,21 @@ export class PaginacionComponent implements OnChanges {
   private actualizarPaginasMostradas(): void {
     const paginasAMostrar = 5;
     const mitadDePaginasAMostrar = Math.floor(paginasAMostrar / 2);
-
+  
     let paginaInicio = this.paginaActual - mitadDePaginasAMostrar;
     let paginaFin = this.paginaActual + mitadDePaginasAMostrar;
-
+  
     if (paginaInicio < 1) {
       paginaInicio = 1;
       paginaFin = Math.min(this.totalPaginas, paginasAMostrar);
-    } else if (paginaFin > this.totalPaginas) {
+    }
+  
+    if (paginaFin > this.totalPaginas) {
       paginaFin = this.totalPaginas;
       paginaInicio = Math.max(1, this.totalPaginas - paginasAMostrar + 1);
     }
-
-    if (paginaFin === this.totalPaginas) {
-      paginaInicio = Math.max(1, paginaInicio - (paginasAMostrar - (paginaFin - paginaInicio)));
-    }
-
+  
     this.mostrarPaginas = Array.from({ length: paginaFin - paginaInicio + 1 }, (_, i) => paginaInicio + i);
   }
+  
 }
