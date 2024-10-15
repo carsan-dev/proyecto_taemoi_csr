@@ -166,6 +166,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerConteoAlumnosPorGrupo(token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+    .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, { headers })
+    .pipe(catchError(this.manejarError));
+  }
+
   crearGrupo(grupoData: any, token: string): Observable<any> {
     const headers = this.crearHeaders(token);
     return this.http

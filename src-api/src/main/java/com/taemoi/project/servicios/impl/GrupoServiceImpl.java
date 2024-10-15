@@ -2,7 +2,9 @@ package com.taemoi.project.servicios.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
+import com.taemoi.project.entidades.NombresGrupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
@@ -24,6 +27,8 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.servicios.GrupoService;
+
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del servicio para operaciones relacionadas con los grupos de
@@ -135,38 +140,92 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @param alumnoId El ID del alumno.
 	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
 	 */
+	@Transactional
 	@Override
 	public void agregarAlumnoAGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
-		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+	    // Buscar el grupo por su ID
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    // Buscar el alumno por su ID
+	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
-		if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
-			Grupo grupo = grupoOptional.get();
-			Alumno alumno = alumnoOptional.get();
-			grupo.addAlumno(alumno);
-			grupoRepository.save(grupo);
-		} else {
-			throw new GrupoNoEncontradoException(
-					"El grupo con ID " + grupoId + " o el alumno con ID " + alumnoId + " no existe.");
-		}
+	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        Alumno alumno = alumnoOptional.get();
+
+	        // Verificar si el alumno ya está en el grupo
+	        if (!grupo.getAlumnos().contains(alumno)) {
+	            // Añadir el alumno al grupo
+	            grupo.addAlumno(alumno);
+
+	            // Obtener los turnos del grupo y añadir el alumno a esos turnos
+	            List<Turno> turnosDelGrupo = grupo.getTurnos();
+	            for (Turno turno : turnosDelGrupo) {
+	                if (!turno.getAlumnos().contains(alumno)) {
+	                    // Añadir el alumno a cada turno del grupo
+	                    turno.getAlumnos().add(alumno);
+	                    alumno.getTurnos().add(turno);
+	                }
+	            }
+
+	            // Guardar el grupo y el alumno para actualizar las relaciones en la base de datos
+	            grupoRepository.save(grupo);
+	            alumnoRepository.save(alumno);
+	        } else {
+	            throw new IllegalArgumentException("El alumno ya pertenece a este grupo");
+	        }
+	    } else {
+	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen");
+	    }
 	}
 
 	@Override
 	public void agregarAlumnosAGrupo(@NonNull Long grupoId, @NonNull List<Long> alumnosIds) {
-		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 
-		if (grupoOptional.isPresent()) {
-			Grupo grupo = grupoOptional.get();
+	    if (grupoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        List<Alumno> alumnos = alumnoRepository.findAllById(alumnosIds);
 
-			List<Alumno> alumnos = alumnoRepository.findAllById(alumnosIds);
-			for (Alumno alumno : alumnos) {
-				grupo.addAlumno(alumno);
-			}
+	        for (Alumno alumno : alumnos) {
+	            // Añadir alumno al grupo si no está ya en el grupo
+	            if (!grupo.getAlumnos().contains(alumno)) {
+	                grupo.addAlumno(alumno);
 
-			grupoRepository.save(grupo);
-		} else {
-			throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " no existe.");
-		}
+	                // Inscribir el alumno en todos los turnos del grupo
+	                for (Turno turno : grupo.getTurnos()) {
+	                    if (!turno.getAlumnos().contains(alumno)) {
+	                        turno.getAlumnos().add(alumno);
+	                        alumno.getTurnos().add(turno);
+	                    }
+	                }
+	            }
+	        }
+
+	        // Guardar el grupo y los alumnos con las nuevas relaciones
+	        grupoRepository.save(grupo);
+	        alumnoRepository.saveAll(alumnos);
+	    } else {
+	        throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " no existe.");
+	    }
+	}
+	
+	@Override
+	public Map<String, Long> contarAlumnosPorGrupo() {
+	    Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
+
+	    // Obtener el número de alumnos en cada grupo
+	    conteoAlumnosPorGrupo.put("Taekwondo", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO));
+
+	    conteoAlumnosPorGrupo.put("Taekwondo Competición", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_COMPETICION));
+	    conteoAlumnosPorGrupo.put("Pilates", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.PILATES));
+	    conteoAlumnosPorGrupo.put("Kickboxing", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.KICKBOXING));
+
+	    return conteoAlumnosPorGrupo;
 	}
 
 	/**
@@ -178,23 +237,37 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
-		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
-		if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
-			Grupo grupo = grupoOptional.get();
-			Alumno alumno = alumnoOptional.get();
+	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        Alumno alumno = alumnoOptional.get();
 
-			if (grupo.getAlumnos().contains(alumno)) {
-				grupo.removeAlumno(alumno);
-				grupoRepository.save(grupo);
-			} else {
-				throw new AlumnoNoEncontradoEnGrupoException("El alumno no pertenece al grupo.");
-			}
-		} else {
-			throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
-		}
+	        // Verificar si el alumno está en el grupo
+	        if (grupo.getAlumnos().contains(alumno)) {
+	            // Eliminar las relaciones del alumno con los turnos del grupo
+	            List<Turno> turnosDelGrupo = grupo.getTurnos();
+
+	            for (Turno turno : turnosDelGrupo) {
+	                if (alumno.getTurnos().contains(turno)) {
+	                    alumno.getTurnos().remove(turno); // Eliminar relación en la tabla alumno_turno
+	                    turno.getAlumnos().remove(alumno); // Eliminar relación en la entidad turno
+	                }
+	            }
+
+	            // Actualizar la relación del alumno con el grupo
+	            grupo.removeAlumno(alumno);  // Remover el alumno del grupo
+	            grupoRepository.save(grupo); // Guardar el grupo actualizado
+	            alumnoRepository.save(alumno); // Guardar el alumno actualizado
+	        } else {
+	            throw new AlumnoNoEncontradoEnGrupoException("El alumno no pertenece al grupo.");
+	        }
+	    } else {
+	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
+	    }
 	}
+
 
 	/**
 	 * Agrega un turno a un grupo.

@@ -73,6 +73,15 @@ public class TurnoServiceImpl implements TurnoService {
                 .collect(Collectors.toList());
     }
     
+    @Override
+    public List<TurnoDTO> listarTurnosDTOCompleto() {
+        List<Turno> turnos = turnoRepository.findAll();
+        return turnos.stream()
+                .map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
+                .collect(Collectors.toList());
+    }
+
+    
     /**
      * Crea un nuevo turno sin asignarlo a ningún grupo.
      *

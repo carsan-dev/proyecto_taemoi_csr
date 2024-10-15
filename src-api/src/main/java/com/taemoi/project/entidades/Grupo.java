@@ -37,7 +37,7 @@ public class Grupo {
     @JsonBackReference
     private List<Alumno> alumnos = new ArrayList<>();
     
-    @OneToMany(mappedBy = "grupo")
+    @OneToMany(mappedBy = "grupo", fetch = FetchType.LAZY)
     @JsonBackReference
     private List<Turno> turnos;
 

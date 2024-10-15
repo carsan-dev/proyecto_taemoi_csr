@@ -1,6 +1,7 @@
 package com.taemoi.project.controladores;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,13 @@ public class GrupoController {
     @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
     public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
         return grupoService.obtenerTodosLosGrupos();
+    }
+    
+    @GetMapping("/conteo-alumnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Map<String, Long>> obtenerConteoAlumnosPorGrupo() {
+        Map<String, Long> conteoAlumnos = grupoService.contarAlumnosPorGrupo();
+        return ResponseEntity.ok(conteoAlumnos);
     }
 
     /**
