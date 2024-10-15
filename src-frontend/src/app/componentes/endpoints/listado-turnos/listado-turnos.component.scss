@@ -1,35 +1,69 @@
 .turno-card {
   background-color: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-
+  margin-bottom: 20px;
+  
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   }
 
   .card-body {
     padding: 20px;
 
     .card-title {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: bold;
       color: #333;
+      margin-bottom: 15px;
     }
 
     .turno-info {
       p {
-        font-size: 0.9rem;
-        color: #666;
-        margin-bottom: 5px;
+        font-size: 0.95rem;
+        color: #555;
+        margin-bottom: 10px;
       }
 
       .btn {
         font-size: 0.85rem;
-        padding: 5px 10px;
+        padding: 6px 12px;
       }
+    }
+  }
+}
+
+.alumnos-card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;  /* Asegura que las tarjetas ocupen todo el ancho de la columna */
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .card-body {
+    padding: 20px;
+    
+    h5 {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #007bff;
     }
   }
 }

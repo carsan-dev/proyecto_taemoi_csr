@@ -1,6 +1,7 @@
 package com.taemoi.project.servicios;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.lang.NonNull;
@@ -40,4 +41,6 @@ public interface GrupoService {
 	List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId);
 
 	void agregarAlumnosAGrupo(@NonNull Long grupoId, List<Long> alumnosIds);
+
+	Map<String, Long> contarAlumnosPorGrupo();
 }

@@ -25,14 +25,17 @@ export class ListadoTurnosComponent implements OnInit {
     'Domingo',
   ];
   grupos: GrupoDTO[] = [];
+  conteoAlumnosPorGrupo: any = {};
+  gruposMostrar: string[] = ['Taekwondo', 'Taekwondo Competición', 'Pilates', 'Kickboxing'];
 
   constructor(
-    private readonly endpointsService: EndpointsService  ) {}
+    private endpointsService: EndpointsService ) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
       this.obtenerTurnos();
       this.obtenerGrupos();
+      this.obtenerConteoAlumnosPorGrupo();
     }
   }
 
@@ -72,8 +75,34 @@ export class ListadoTurnosComponent implements OnInit {
     }
   }
 
+  obtenerConteoAlumnosPorGrupo(): void {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService.obtenerConteoAlumnosPorGrupo(token).subscribe({
+        next: (response) => {
+          this.conteoAlumnosPorGrupo = response;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido obtener el conteo de alumnos por grupo',
+            icon: 'error',
+          });
+        },
+      });
+    }
+  }
+
   obtenerTurnosPorDia(diaSemana: string): any[] {
     return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
+  }
+
+  obtenerTotalAlumnos(turno: any): number {
+    return turno.alumnos ? turno.alumnos.length : 0;
+  }
+
+  obtenerConteoAlumnos(grupoNombre: string): number {
+    return this.conteoAlumnosPorGrupo[grupoNombre] || 0;
   }
 
   eliminarTurno(turnoId: number): void {

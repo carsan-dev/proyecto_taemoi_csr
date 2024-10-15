@@ -42,12 +42,12 @@ public class TurnoController {
 	 *
 	 * @return ResponseEntity con la lista de objetos Turno y estado HTTP OK si tiene éxito.
 	 */
-    @GetMapping
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<Turno>> obtenerTurnos() {
-        List<Turno> turnos = turnoService.listarTurnos();
-        return new ResponseEntity<>(turnos, HttpStatus.OK);
-    }
+	@GetMapping
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<TurnoDTO>> obtenerTurnos() {
+	    List<TurnoDTO> turnosDTO = turnoService.listarTurnosDTOCompleto();
+	    return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
+	}
 
     /**
      * Obtiene un turno por su ID.

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -174,4 +175,7 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
     
     @Query("SELECT MAX(a.numeroExpediente) FROM Alumno a")
     Integer findMaxNumeroExpediente();
+    
+    @Query("SELECT COUNT(a) FROM Alumno a JOIN a.grupos g WHERE g.nombre = :nombreGrupo")
+    Long contarAlumnosPorGrupo(@Param("nombreGrupo") String nombreGrupo);
 }
