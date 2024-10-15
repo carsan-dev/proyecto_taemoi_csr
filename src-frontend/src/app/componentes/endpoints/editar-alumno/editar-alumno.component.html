@@ -50,6 +50,13 @@
                   <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
                   <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
                   <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
+                  <li class="list-group-item">Tiene Licencia: {{ alumno.tieneLicencia ? 'Sí' : 'No' }}</li>
+        
+                  <!-- Solo mostrar los detalles de la licencia si tieneLicencia es verdadero -->
+                  <ng-container *ngIf="alumno.tieneLicencia">
+                    <li class="list-group-item">Número de Licencia: {{ alumno.numeroLicencia }}</li>
+                    <li class="list-group-item">Fecha de Licencia: {{ alumno.fechaLicencia | date:'dd/MM/yyyy' }}</li>
+                  </ng-container>
                   <li class="list-group-item">Competidor: {{ alumno.competidor ? 'Sí' : 'No' }}</li>
                   <ng-container *ngIf="alumno.competidor">
                     <li class="list-group-item">Peso: {{ alumno.peso }} kg</li>
@@ -167,6 +174,31 @@
                       <small *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</small>
                       <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
                         y una letra)</small>
+                    </div>
+                  </div>
+                  <div class="form-group form-check mb-3">
+                    <label class="form-check-label me-3 text-black" for="tieneLicencia">¿Tiene licencia?</label>
+                    <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia" formControlName="tieneLicencia">
+                  </div>
+            
+                  <!-- Mostrar los campos de licencia solo si tieneLicencia está activado -->
+                  <div *ngIf="alumnoForm.get('tieneLicencia')?.value">
+                    <!-- Campo de formulario para número de licencia -->
+                    <div class="form-group form-floating mb-3">
+                      <input type="number" id="numeroLicencia" class="form-control" formControlName="numeroLicencia" required placeholder="Número de licencia">
+                      <label for="numeroLicencia">Número de licencia</label>
+                      <div *ngIf="alumnoForm.get('numeroLicencia')?.errors && (alumnoForm.get('numeroLicencia')?.dirty || alumnoForm.get('numeroLicencia')?.touched)" class="text-danger">
+                        <small *ngIf="alumnoForm.get('numeroLicencia')?.errors?.['required']">El número de licencia es requerido</small>
+                      </div>
+                    </div>
+            
+                    <!-- Campo de formulario para fecha de licencia -->
+                    <div class="form-group form-floating mb-3">
+                      <input type="date" id="fechaLicencia" class="form-control" formControlName="fechaLicencia" required placeholder="Fecha de licencia">
+                      <label for="fechaLicencia">Fecha de licencia</label>
+                      <div *ngIf="alumnoForm.get('fechaLicencia')?.errors && (alumnoForm.get('fechaLicencia')?.dirty || alumnoForm.get('fechaLicencia')?.touched)" class="text-danger">
+                        <small *ngIf="alumnoForm.get('fechaLicencia')?.errors?.['required']">La fecha de licencia es requerida</small>
+                      </div>
                     </div>
                   </div>
                   <div class="form-group form-check mb-3">
