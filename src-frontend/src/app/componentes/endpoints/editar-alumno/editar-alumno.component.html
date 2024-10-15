@@ -62,8 +62,8 @@
                 <div class="mb-3">
                   <strong>Tiene Licencia:</strong> {{ alumno.tieneLicencia ? 'Sí' : 'No' }}
                 </div>
-                <div *ngIf="alumno.tieneLicencia" class="border p-2 mt-3 bg-light rounded">
-                  <h6 class="text-secondary">Detalles de la Licencia</h6>
+                <div *ngIf="alumno.tieneLicencia" class="border p-2 my-3 bg-light rounded">
+                  <p class="text-secondary h6">Detalles de la Licencia</p>
                   <div class="mb-2">
                     <strong>Número de Licencia:</strong> {{ alumno.numeroLicencia }}
                   </div>
@@ -71,11 +71,11 @@
                     <strong>Fecha de Licencia:</strong> {{ alumno.fechaLicencia | date:'dd/MM/yyyy' }}
                   </div>
                 </div>
-                <div class="mt-4">
+                <div>
                   <strong>Competidor:</strong> {{ alumno.competidor ? 'Sí' : 'No' }}
                 </div>
                 <div *ngIf="alumno.competidor" class="border p-2 mt-3 bg-light rounded">
-                  <h6 class="text-secondary">Detalles de Competidor</h6>
+                  <p class="text-secondary h6">Detalles de Competidor</p>
                   <div class="mb-2">
                     <strong>Peso:</strong> {{ alumno.peso }} kg
                   </div>
