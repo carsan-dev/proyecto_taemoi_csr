@@ -58,6 +58,7 @@ public class AlumnoDTO {
 		this.categoria = categoria;
 		this.grado = grado;
 		this.fotoAlumno = fotoAlumno;
+		this.tieneLicencia = tieneLicencia;
 		this.numeroLicencia = numeroLicencia;
 		this.fechaLicencia = fechaLicencia;
 	}
