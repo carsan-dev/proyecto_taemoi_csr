@@ -48,8 +48,8 @@ export class EditarAlumnoComponent implements OnInit {
   tipoTarifaEditado: boolean = false; // Nueva bandera para saber si el usuario cambió el tipo de descuento
 
   constructor(
-    private endpointsService: EndpointsService,
-    private fb: FormBuilder
+    private readonly endpointsService: EndpointsService,
+    private readonly fb: FormBuilder
   ) {
     this.alumnoForm = this.fb.group(
       {
@@ -62,74 +62,124 @@ export class EditarAlumnoComponent implements OnInit {
           [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
         ],
         email: ['', [Validators.required, Validators.email]],
-        telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
+        telefono: [
+          '',
+          [
+            Validators.required,
+            Validators.pattern('^[0-9]+$'),
+            Validators.maxLength(9),
+          ],
+        ],
         tipoTarifa: ['', Validators.required],
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],
         autorizacionWeb: [true, Validators.required],
         grado: [''],
-        competidor: [false], // Nuevo campo para competidor
-        peso: [''], // Nuevo campo para peso
-        fechaPeso: [''], // Nuevo campo para la fecha de registro del peso
+        competidor: [false],
+        peso: [''],
+        fechaPeso: [''],
+        tieneLicencia: [false],
+        numeroLicencia: [''],
+        fechaLicencia: [''],
       },
-      { validators: [this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]}
+      {
+        validators: [
+          this.fechaBajaPosteriorAFechaAltaValidator,
+          this.fechaNacimientoPosteriorAFechaAltaValidator
+        ],
+      }
     );
   }
 
   ngOnInit(): void {
-    // Inicialización de los datos de alumnos si están en el localStorage
     if (typeof localStorage !== 'undefined') {
       this.obtenerAlumnos();
     }
-  
+
     // Escucha cambios en el tipo de descuento para actualizar la cuantía
-    this.alumnoForm.get('tipoTarifa')?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
-      if (this.tipoTarifaEditado) {
-        // Solo se actualiza si el usuario cambió el tipo de descuento
-        const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
-        this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
-      }
-      this.tipoTarifaEditado = true; // Se marca como editado después de un cambio
-    });
-  
-    // Escucha cambios en el campo competidor para validar y habilitar/deshabilitar peso y fechaPeso
-    this.alumnoForm.get('competidor')?.valueChanges.subscribe((isCompetidor: boolean) => {
-      const pesoControl = this.alumnoForm.get('peso');
-      const fechaPesoControl = this.alumnoForm.get('fechaPeso');
-  
-      if (isCompetidor) {
-        // Si el alumno es competidor, requerimos peso y fechaPeso
-        pesoControl?.setValidators([Validators.required]);
-        fechaPesoControl?.setValidators([Validators.required]);
-        
-        // Si no hay fecha de peso asignada, se establece la actual
-        if (!fechaPesoControl?.value) {
-          fechaPesoControl?.setValue(this.getFechaActual());
+    this.alumnoForm
+      .get('tipoTarifa')
+      ?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
+        if (this.tipoTarifaEditado) {
+          // Solo se actualiza si el usuario cambió el tipo de descuento
+          const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
+          this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
         }
-  
-        // Habilitamos los campos si estaban deshabilitados
-        pesoControl?.enable();
-        fechaPesoControl?.enable();
-      } else {
-        // Si no es competidor, deshabilitamos los campos
-        pesoControl?.clearValidators();
-        fechaPesoControl?.clearValidators();
-        
-        // Deshabilitamos los campos, pero no borramos sus valores
-        pesoControl?.disable();
-        fechaPesoControl?.disable();
-      }
-  
-      // Actualizamos el estado y validación de los campos
-      pesoControl?.updateValueAndValidity();
-      fechaPesoControl?.updateValueAndValidity();
-    });
-  
+        this.tipoTarifaEditado = true;
+      });
+
+    // Observador para cambios en el campo competidor
+    this.alumnoForm
+      .get('competidor')
+      ?.valueChanges.subscribe((isCompetidor: boolean) => {
+        this.handleCompetidorFields(isCompetidor);
+      });
+
+    this.alumnoForm
+      .get('tieneLicencia')
+      ?.valueChanges.subscribe((tieneLicencia: boolean) => {
+        this.handleLicenciaFields(tieneLicencia);
+      });
+
     // Validaciones adicionales para fechas: fechaBaja debe ser posterior a fechaAlta y la fecha de nacimiento debe ser anterior a la fechaAlta
-    this.alumnoForm.setValidators([this.fechaBajaPosteriorAFechaAltaValidator, this.fechaNacimientoPosteriorAFechaAltaValidator]);
+    this.alumnoForm.setValidators([
+      this.fechaBajaPosteriorAFechaAltaValidator,
+      this.fechaNacimientoPosteriorAFechaAltaValidator,
+    ]);
   }
-  
+
+  handleLicenciaFields(tieneLicencia: boolean) {
+    const numeroLicenciaControl = this.alumnoForm.get('numeroLicencia');
+    const fechaLicenciaControl = this.alumnoForm.get('fechaLicencia');
+
+    if (tieneLicencia) {
+      numeroLicenciaControl?.setValidators([Validators.required]);
+      fechaLicenciaControl?.setValidators([Validators.required]);
+
+      numeroLicenciaControl?.enable();
+      fechaLicenciaControl?.enable();
+    } else {
+      numeroLicenciaControl?.clearValidators();
+      fechaLicenciaControl?.clearValidators();
+
+      numeroLicenciaControl?.disable();
+      fechaLicenciaControl?.disable();
+    }
+
+    numeroLicenciaControl?.updateValueAndValidity();
+    fechaLicenciaControl?.updateValueAndValidity();
+  }
+  /**
+   * Controla la habilitación y validación de los campos relacionados con el competidor.
+   */
+  handleCompetidorFields(isCompetidor: boolean) {
+    const pesoControl = this.alumnoForm.get('peso');
+    const fechaPesoControl = this.alumnoForm.get('fechaPeso');
+
+    if (isCompetidor) {
+      pesoControl?.setValidators([Validators.required]);
+      fechaPesoControl?.setValidators([Validators.required]);
+
+      pesoControl?.enable();
+      fechaPesoControl?.enable();
+
+      // Si no hay fecha de peso asignada, establecer la fecha actual
+      if (!fechaPesoControl?.value) {
+        fechaPesoControl?.setValue(this.getFechaActual());
+      }
+    } else {
+      // Limpiar y deshabilitar los campos si no es competidor
+      pesoControl?.clearValidators();
+      fechaPesoControl?.clearValidators();
+
+      pesoControl?.disable();
+      fechaPesoControl?.disable();
+    }
+
+    pesoControl?.updateValueAndValidity();
+    fechaPesoControl?.updateValueAndValidity();
+  }
 
   obtenerAlumnos() {
     const token = localStorage.getItem('token');
@@ -193,32 +243,31 @@ export class EditarAlumnoComponent implements OnInit {
     formData.append('alumnoEditado', JSON.stringify(this.alumnoForm.value));
 
     if (this.alumnoEditado.fotoAlumno === null) {
-        formData.append('file', 'null');
+      formData.append('file', 'null');
     } else if (this.alumnoEditado.fotoAlumno) {
-        formData.append('file', this.alumnoEditado.fotoAlumno);
+      formData.append('file', this.alumnoEditado.fotoAlumno);
     }
 
     if (token) {
-        this.endpointsService.actualizarAlumno(id, formData, token).subscribe({
-            next: (response) => {
-                Swal.fire({
-                    title: '¡Bien!',
-                    text: '¡Alumno actualizado correctamente!',
-                    icon: 'success',
-                });
-                this.obtenerAlumnos();
-            },
-            error: (error) => {
-                Swal.fire({
-                    title: 'Error al actualizar',
-                    text: 'Error al actualizar al alumno',
-                    icon: 'error',
-                });
-            },
-        });
+      this.endpointsService.actualizarAlumno(id, formData, token).subscribe({
+        next: (response) => {
+          Swal.fire({
+            title: '¡Bien!',
+            text: '¡Alumno actualizado correctamente!',
+            icon: 'success',
+          });
+          this.obtenerAlumnos();
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error al actualizar',
+            text: 'Error al actualizar al alumno',
+            icon: 'error',
+          });
+        },
+      });
     }
-}
-
+  }
 
   eliminarFoto(id: number) {
     const token = localStorage.getItem('token');
@@ -250,7 +299,9 @@ export class EditarAlumnoComponent implements OnInit {
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
     this.alumnoEditado = { ...alumno };
-    this.imagenPreview = alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp';
+    this.imagenPreview = alumno.fotoAlumno?.url
+      ? alumno.fotoAlumno.url
+      : '../../../../assets/media/default.webp';
 
     const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
     const fechaAlta = this.formatDate(alumno.fechaAlta);
@@ -259,19 +310,25 @@ export class EditarAlumnoComponent implements OnInit {
 
     const peso = alumno.peso || '';
     const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
+    const numeroLicencia = alumno.numeroLicencia || '';
+    const fechaLicencia = alumno.fechaLicencia ? this.formatDate(alumno.fechaLicencia) : ''
 
+    // Actualizar el valor de 'tieneLicencia' desde la base de datos
     this.alumnoForm.patchValue({
-        ...this.alumnoEditado,
-        fechaNacimiento: fechaNacimiento,
-        fechaAlta: fechaAlta,
-        fechaBaja: fechaBaja,
-        autorizacionWeb: alumno.autorizacionWeb,
-        cuantiaTarifa: alumno.cuantiaTarifa,
-        peso: peso,
-        fechaPeso: fechaPeso,
-        competidor: alumno.competidor
+      ...this.alumnoEditado,
+      fechaNacimiento: fechaNacimiento,
+      fechaAlta: fechaAlta,
+      fechaBaja: fechaBaja,
+      autorizacionWeb: alumno.autorizacionWeb,
+      cuantiaTarifa: alumno.cuantiaTarifa,
+      peso: peso,
+      fechaPeso: fechaPeso,
+      competidor: alumno.competidor,
+      numeroLicencia: numeroLicencia,
+      fechaLicencia: fechaLicencia,
+      tieneLicencia: alumno.tieneLicencia
     });
-}
+  }
 
   private formatDate(fecha: string): string {
     const date = new Date(fecha);
@@ -279,7 +336,6 @@ export class EditarAlumnoComponent implements OnInit {
     const adjustedDate = new Date(date.getTime() - userTimezoneOffset);
     return adjustedDate.toISOString().split('T')[0];
   }
-
 
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
@@ -370,7 +426,7 @@ export class EditarAlumnoComponent implements OnInit {
   abrirModal(imagenUrl: string | null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
-  
+
     if (!imagenUrl || imagenUrl.trim() === '') {
       Swal.fire({
         icon: 'error',
@@ -379,17 +435,17 @@ export class EditarAlumnoComponent implements OnInit {
       });
       return; // Detenemos la ejecución si no hay imagen
     }
-  
+
     if (modal && modalImg) {
       modal.style.display = 'block';
       modalImg.src = imagenUrl;
     }
   }
-  
+
   cerrarModal() {
     const modal = document.getElementById('imageModal');
     if (modal) {
       modal.style.display = 'none';
     }
-  }  
+  }
 }

@@ -249,6 +249,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (Boolean.TRUE.equals(alumno.getCompetidor())) {
 			alumno.setFechaPeso(new Date());
 		}
+		
+		if (Boolean.TRUE.equals(alumno.getTieneLicencia())) {
+			alumno.setFechaLicencia(new Date());
+		}
 
 		// Save Alumno entity first
 		Alumno alumnoGuardado = alumnoRepository.save(alumno);
@@ -402,8 +406,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
 
+			alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
+			if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
+				alumnoExistente.setNumeroLicencia(alumnoActualizado.getNumeroLicencia());
+				alumnoExistente.setFechaLicencia(alumnoActualizado.getFechaLicencia());
+			}
+			
 			// Actualizar los campos relacionados con "competidor"
-			alumnoExistente.setCompetidor(alumnoActualizado.getCompetidor());
+			alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
 			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
 				alumnoExistente.setPeso(alumnoActualizado.getPeso());
 				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());

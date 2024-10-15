@@ -94,7 +94,7 @@ public class Alumno {
     @Temporal(TemporalType.DATE)
     private Date fechaPeso;
     
-    @NotNull(message = "lieneLicencia debe ser true o false, no null")
+    @NotNull(message = "tieneLicencia debe ser true o false, no null")
     private Boolean tieneLicencia = false;
     
     private Integer numeroLicencia;
