@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://taemoi.us-east-1.elasticbeanstalk.com/api'
+  apiUrl: 'http://localhost:8080/api'
 };
