@@ -151,6 +151,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerGrados(token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/grados`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, token: string): Observable<any> {
+    const headers = this.crearHeaders(token);
+    return this.http
+      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, { headers })
+      .pipe(catchError(this.manejarError));
+  }
 
   obtenerTodosLosGrupos(token: string): Observable<GrupoDTO[]> {
     const headers = this.crearHeaders(token);
