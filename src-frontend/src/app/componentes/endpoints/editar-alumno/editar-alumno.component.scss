@@ -264,6 +264,25 @@ button[type="submit"] {
   }
 }
 
+.licencia-status {
+  transition: color 0.5s ease-in-out, transform 0.5s ease-in-out;
+  font-weight: bold;
+
+  &.text-success {
+    color: green;
+    transform: scale(1.1);
+  }
+
+  &.text-danger {
+    color: red;
+    transform: scale(1.1);
+  }
+}
+
+.pulsing-text {
+  animation: pulse 1s infinite;
+}
+
 @media (max-width: 992px) {
   .text-danger {
     font-size: 0.80rem !important;
@@ -275,6 +294,18 @@ button[type="submit"] {
     transform: scale(0);
   }
   to {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
     transform: scale(1);
   }
 }

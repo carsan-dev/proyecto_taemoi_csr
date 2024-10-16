@@ -420,6 +420,17 @@ export class EditarAlumnoComponent implements OnInit {
       : { fechaAltaAnteriorAFechaNacimiento: true };
   }
 
+  licenciaEnVigor(fechaLicencia: string): boolean {
+    const fechaActual = new Date();
+    const fechaLic = new Date(fechaLicencia);
+    
+    const diferenciaAnios = fechaActual.getFullYear() - fechaLic.getFullYear();
+    
+    // Si la diferencia es menor a 1 año, la licencia está en vigor
+    return diferenciaAnios < 1;
+  }
+  
+
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
     switch (tipoTarifa) {
       case TipoTarifa.ADULTO:
