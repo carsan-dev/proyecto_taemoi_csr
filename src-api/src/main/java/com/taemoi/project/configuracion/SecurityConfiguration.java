@@ -76,6 +76,8 @@ public class SecurityConfiguration {
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+				.requestMatchers(HttpMethod.GET, "/api/grupos/**")
+				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/turnos")
 				.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(), Roles.ROLE_USER.toString())
 				.requestMatchers(HttpMethod.GET, "/api/grupos/conteo-alumnos")
