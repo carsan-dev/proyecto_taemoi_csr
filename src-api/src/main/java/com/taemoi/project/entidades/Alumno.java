@@ -52,15 +52,15 @@ public class Alumno {
 	private Date fechaNacimiento;
 
 	@NotBlank(message = "El NIF no puede estar en blanco")
-    @Size(min = 9, max = 9, message = "El NIF debe tener 9 caracteres")
+	@Size(min = 9, max = 9, message = "El NIF debe tener 9 caracteres")
 	private String nif;
 
 	@NotBlank(message = "La dirección no puede estar en blanco")
 	private String direccion;
 
 	@NotNull(message = "El teléfono no puede ser nulo")
-    @Min(value = 100000000, message = "El teléfono debe tener 9 dígitos")
-    @Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
+	@Min(value = 100000000, message = "El teléfono debe tener 9 dígitos")
+	@Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
 	private Integer telefono;
 
 	@Email(message = "La dirección de correo electrónico debe ser válida")
@@ -76,35 +76,35 @@ public class Alumno {
 
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
-	
+
 	@NotNull(message = "El estado de la baja no puede ser nulo")
 	private Boolean activo = true;
-	
+
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
-	
+
 	@NotNull(message = "La autorización web no puede ser nula")
 	private Boolean autorizacionWeb = true;
-	
-    @NotNull(message = "Si es competidor o no debe ser true o false, no null")
-    private Boolean competidor = false;
 
-    private Double peso;
+	@NotNull(message = "Si es competidor o no debe ser true o false, no null")
+	private Boolean competidor = false;
 
-    @Temporal(TemporalType.DATE)
-    private Date fechaPeso;
-    
-    @NotNull(message = "tieneLicencia debe ser true o false, no null")
-    private Boolean tieneLicencia = false;
-    
-    private Integer numeroLicencia;
-    
-    @Temporal(TemporalType.DATE)
-    private Date fechaLicencia;
-	
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "foto_alumno_id")
-    private Imagen fotoAlumno;
+	private Double peso;
+
+	@Temporal(TemporalType.DATE)
+	private Date fechaPeso;
+
+	@NotNull(message = "tieneLicencia debe ser true o false, no null")
+	private Boolean tieneLicencia = false;
+
+	private Integer numeroLicencia;
+
+	@Temporal(TemporalType.DATE)
+	private Date fechaLicencia;
+
+	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "foto_alumno_id")
+	private Imagen fotoAlumno;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "categoria_id")
@@ -115,20 +115,20 @@ public class Alumno {
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
 	private Grado grado;
-	
-    @ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
+
+	private Boolean aptoParaExamen;
+
+	@ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	private List<Grupo> grupos = new ArrayList<>();;
 
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "alumno_turno",
-		joinColumns = @JoinColumn(name = "alumno_id"),
-		inverseJoinColumns = @JoinColumn(name = "turno_id"))
+	@JoinTable(name = "alumno_turno", joinColumns = @JoinColumn(name = "alumno_id"), inverseJoinColumns = @JoinColumn(name = "turno_id"))
 	@JsonManagedReference
 	private List<Turno> turnos = new ArrayList<>();
-    
-    @OneToOne(mappedBy = "alumno")
-    @JsonManagedReference
-    private Usuario usuario;
+
+	@OneToOne(mappedBy = "alumno")
+	@JsonManagedReference
+	private Usuario usuario;
 
 	@OneToMany(mappedBy = "alumno")
 	private List<Examen> examenes;
@@ -256,6 +256,14 @@ public class Alumno {
 		this.grado = grado;
 	}
 
+    public Boolean getAptoParaExamen() {
+        return aptoParaExamen;
+    }
+
+    public void setAptoParaExamen(Boolean aptoParaExamen) {
+        this.aptoParaExamen = aptoParaExamen;
+    }
+
 	public Date getFechaAlta() {
 		return fechaAlta;
 	}
@@ -263,7 +271,7 @@ public class Alumno {
 	public void setFechaAlta(Date fechaAlta) {
 		this.fechaAlta = fechaAlta;
 	}
-	
+
 	public Boolean getActivo() {
 		return activo;
 	}
@@ -279,7 +287,7 @@ public class Alumno {
 	public void setFechaBaja(Date fechaBaja) {
 		this.fechaBaja = fechaBaja;
 	}
-	
+
 	public Boolean getAutorizacionWeb() {
 		return autorizacionWeb;
 	}
@@ -287,7 +295,7 @@ public class Alumno {
 	public void setAutorizacionWeb(Boolean autorizacionWeb) {
 		this.autorizacionWeb = autorizacionWeb;
 	}
-	
+
 	public Boolean getCompetidor() {
 		return competidor;
 	}
@@ -361,17 +369,16 @@ public class Alumno {
 	}
 
 	public void addTurno(Turno turno) {
-	    if (!this.turnos.contains(turno)) {
-	        this.turnos.add(turno);
-	        turno.getAlumnos().add(this);
-	    }
+		if (!this.turnos.contains(turno)) {
+			this.turnos.add(turno);
+			turno.getAlumnos().add(this);
+		}
 	}
 
-
-    public void removeTurno(Turno turno) {
-        this.turnos.remove(turno);
-        turno.getAlumnos().remove(this);
-    }
+	public void removeTurno(Turno turno) {
+		this.turnos.remove(turno);
+		turno.getAlumnos().remove(this);
+	}
 
 	public Usuario getUsuario() {
 		return usuario;
