@@ -95,7 +95,8 @@
           <label for="tipoTarifa">Selecciona el tipo de descuento</label>
           <div *ngIf="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched"
             class="text-danger">
-            <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">Tipo de descuento del alumno es obligatorio.
+            <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">Tipo de descuento del alumno es
+              obligatorio.
             </small>
           </div>
         </div>
@@ -109,6 +110,18 @@
             </small>
           </div>
         </div>
+        <!-- Campo Selección de Grado -->
+        <div class="form-group mb-3 form-floating">
+          <select class="form-control form-select" id="grado" name="grado" formControlName="grado" required>
+            <option value="" disabled selected>Selecciona un grado</option>
+            <option *ngFor="let grado of grados" [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+          </select>
+          <label for="grado">Selecciona el grado</label>
+          <div *ngIf="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched" class="text-danger">
+            <small *ngIf="alumnoData.get('grado')?.errors?.['required']">El grado del alumno es obligatorio.</small>
+          </div>
+        </div>
+
         <!-- Campo Imagen del Alumno -->
         <div class="form-group mb-3 form-floating d-flex flex-column">
           <div class="custom-file-input-container">

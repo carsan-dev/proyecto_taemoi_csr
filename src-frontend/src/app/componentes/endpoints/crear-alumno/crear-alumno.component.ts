@@ -24,6 +24,7 @@ export class CrearAlumnoComponent implements OnInit {
   imagen: File | null = null;
   imagenPreview: string | ArrayBuffer | null = null;
   tiposTarifa = Object.values(TipoTarifa);
+  grados: any[] = [];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -33,6 +34,7 @@ export class CrearAlumnoComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.cargarGrados();
   }
 
   initForm(): void {
@@ -52,10 +54,29 @@ export class CrearAlumnoComponent implements OnInit {
       autorizacionWeb: [true, Validators.required],
       competidor: [false],
       peso: [{ value: null, disabled: true }, Validators.required],
-      tieneLicencia: [false],  // Checkbox para "¿Tiene licencia federativa?"
-      numeroLicencia: [{ value: '', disabled: true }, Validators.required],  // Campo deshabilitado al principio
+      tieneLicencia: [false],
+      numeroLicencia: [{ value: '', disabled: true }, Validators.required],
       fechaLicencia: [{ value: '', disabled: true }, Validators.required],
+      grado: ['BLANCO', Validators.required],
     });
+  }
+
+  cargarGrados(): void {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService.obtenerGrados(token).subscribe({
+        next: (grados) => {
+          this.grados = grados;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron cargar los grados',
+            icon: 'error',
+          });
+        },
+      });
+    }
   }
 
   onSubmit(): void {
