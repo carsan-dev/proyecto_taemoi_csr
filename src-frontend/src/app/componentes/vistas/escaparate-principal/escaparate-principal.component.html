@@ -25,7 +25,7 @@
         <p class="mt-4">Únete a nuestra comunidad hoy mismo y descubre cómo el entrenamiento físico, la
           disciplina mental
           y la camaradería pueden transformar tu vida. ¡Te esperamos en Moiskimdo!</p>
-        <button type="button" class="btn taekwondo-button mt-5" (click)="irARuta('/horarios')">Consulta
+        <button type="button" class="btn taekwondo-button mt-5" routerLink="/horarios">Consulta
           horarios</button>
       </div>
       <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
@@ -48,7 +48,7 @@
         <p class="mt-4">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de
           experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
         <p class="mt-4">Contáctanos para más información pulsando abajo:</p>
-        <button type="button" class="btn kickboxing-button mt-5" (click)="irARuta('/contacto')">Contáctanos</button>
+        <button type="button" class="btn kickboxing-button mt-5" routerLink="/contacto">Contáctanos</button>
       </div>
     </div>
     <div class="info-div mb-5 d-flex flex-column flex-md-row align-items-center">
@@ -69,7 +69,7 @@
   </section>
   <section class="slider-section p-0 d-flex flex-column mb-5">
     <app-slider-tocable></app-slider-tocable>
-    <button type="button" class="btn btn-primary mt-5 align-self-center" (click)="irARuta('/eventos')">Ver todos los eventos</button>
+    <button type="button" class="btn btn-primary mt-5 align-self-center" routerLink="/eventos">Ver todos los eventos</button>
   </section>
   
   <section class="map-section d-flex flex-column align-items-center justify-content-center">
@@ -84,9 +84,9 @@
           <i class="bi bi-phone-fill"></i> Teléfono: +34 625 753 952<br>
           <i class="bi bi-envelope-at-fill"></i> Email: moiskimdotaekwondo&#64;gmail.com<br>
           <i class="bi bi-calendar-date-fill"></i> Horario: Lun - Jue: 17:00 - 21:30. Para ver el horario completo,
-          pulse <a (click)="irARuta('/horarios')" class="link-info">aquí</a>.
+          pulse <a routerLink="/contacto" class="link-info">aquí</a>.
         </p>
-        <button type="button" class="btn btn-primary mt-4" (click)="irARuta('/contacto')">Más información</button>
+        <button type="button" class="btn btn-primary mt-4" routerLink="/eventos">Más información</button>
       </div>
     </div>
   </section>

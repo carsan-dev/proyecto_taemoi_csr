@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
@@ -17,16 +16,11 @@ export class EventosComponent implements OnInit {
   usuarioLogueado: boolean = false;
 
   constructor(
-    private authService: AuthenticationService,
-    private endpointsService: EndpointsService,
-    private router: Router
+    private readonly endpointsService: EndpointsService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.usuarioLogueado = this.authService.comprobarLogueado();
-    this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
-      this.usuarioLogueado = estado;
-    });
     this.obtenerEventos();
   }
 

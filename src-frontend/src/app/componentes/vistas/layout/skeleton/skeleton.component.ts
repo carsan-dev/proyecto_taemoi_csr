@@ -25,7 +25,7 @@ export class SkeletonComponent implements OnInit, OnDestroy {
   sidebarColapsado: boolean = false;
   private unsubscribe$ = new Subject<void>();
 
-  constructor(private authService: AuthenticationService) {}
+  constructor(private readonly authService: AuthenticationService) {}
 
   ngOnInit(): void {
     this.authService.rolesCambio

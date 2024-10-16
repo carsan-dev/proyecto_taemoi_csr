@@ -21,8 +21,8 @@ export class HeaderComponent implements OnInit {
   private lastScrollTop: number = 0;
 
   constructor(
-    private authService: AuthenticationService,
-    private router: Router
+    private readonly authService: AuthenticationService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -46,23 +46,14 @@ export class HeaderComponent implements OnInit {
 
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
-    const currentScrollTop = window.scrollY || document.documentElement.scrollTop;
+    const currentScrollTop =
+      window.scrollY || document.documentElement.scrollTop;
     if (currentScrollTop > this.lastScrollTop && currentScrollTop > 100) {
       this.isHidden = true;
     } else {
       this.isHidden = false;
     }
     this.lastScrollTop = currentScrollTop;
-  }
-
-  irARuta(ruta: string) {
-    this.router.navigate([ruta]).then(() => {
-      const navbarToggler = document.querySelector('.navbar-collapse.show');
-      if (navbarToggler) {
-        (navbarToggler as HTMLElement).classList.remove('show');
-      }
-      this.adminMenuVisible = false;
-    });
   }
 
   cerrarSesion() {

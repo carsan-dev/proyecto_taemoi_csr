@@ -2,21 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-listado-grupos',
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './listado-grupos.component.html',
-  styleUrl: './listado-grupos.component.scss'
+  styleUrl: './listado-grupos.component.scss',
 })
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
 
-  constructor(private endpointsService: EndpointsService, 
-    private router: Router
-  ) { }
+  constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
@@ -47,22 +45,18 @@ export class ListadoGruposComponent implements OnInit {
     if (token) {
       Swal.fire({
         title: '¿Estás seguro?',
-        text: "No podrás revertir esto",
+        text: 'No podrás revertir esto',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
         confirmButtonText: 'Sí, eliminarlo',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
       }).then((result) => {
         if (result.isConfirmed) {
           this.endpointsService.eliminarGrupo(id, token).subscribe({
             next: () => {
-              Swal.fire(
-                'Eliminado!',
-                'El grupo ha sido eliminado.',
-                'success'
-              );
+              Swal.fire('Eliminado!', 'El grupo ha sido eliminado.', 'success');
               this.obtenerGrupos();
             },
             error: (error) => {
@@ -76,9 +70,5 @@ export class ListadoGruposComponent implements OnInit {
         }
       });
     }
-  }
-
-  irARuta(ruta: string) {
-    this.router.navigate([ruta]);
   }
 }
