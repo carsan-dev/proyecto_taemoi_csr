@@ -7,13 +7,12 @@
       </button>
       <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
         <div class="navbar-izq">
-          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
+          <a class="mb-0 mx-5 text-center" [routerLink]="['/inicio']">
             <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
           </a>
           <ul class="navbar-nav list-links">
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                (click)="irARuta('/inicio')">Inicio</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active">Inicio</a>
             </li>
             <li class="nav-item dropdown me-3" [routerLinkActive]="['active']"
               [routerLinkActiveOptions]="{ exact: false }">
@@ -22,36 +21,30 @@
               </div>
               <ul class="dropdown-menu" aria-labelledby="deportesDropdown">
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link"
-                    (click)="irARuta('/eltaekwondo')">
+                  <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">
                     Taekwondo
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link"
-                    (click)="irARuta('/kickboxing')">
+                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
                     Kickboxing
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link"
-                    (click)="irARuta('/pilates')">
+                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
                     Pilates
                   </a>
                 </li>
               </ul>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active"
-                (click)="irARuta('/eventos')">Eventos</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active">Eventos</a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                (click)="irARuta('/horarios')">Horarios</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active">Horarios</a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                (click)="irARuta('/contacto')">Contacto</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active">Contacto</a>
             </li>
           </ul>
         </div>
@@ -68,11 +61,11 @@
                 target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
             </li>
             <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank" rel="noopener noreferrer"><i
-                  class="bi bi-instagram fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+                rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
             </li>
             <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="irARuta('/login')"><i class="bi bi-person-fill fs-3"></i></a>
+              <a class="nav-link p-0 text-black" [routerLink]="['/login']"><i class="bi bi-person-fill fs-3"></i></a>
             </li>
           </ul>
         </div>
@@ -86,7 +79,7 @@
     <i class="bi bi-list"></i>
   </button>
   <div class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }">
-    <a class="nav-link text-black fw-bold" (click)="irARuta('/inicio')">Inicio</a>
+    <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']">Inicio</a>
 
     <!-- Menú desplegable Deportes -->
     <div class="nav-item dropdown">
@@ -94,25 +87,25 @@
         ¿Qué hacemos?
       </div>
       <div class="dropdown-menu">
-        <a class="dropdown-item" (click)="irARuta('/eltaekwondo')" routerLinkActive="active-link">
+        <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">
           Taekwondo
         </a>
-        <a class="dropdown-item" (click)="irARuta('/kickboxing')" routerLinkActive="active-link">
+        <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
           Kickboxing
         </a>
-        <a class="dropdown-item" (click)="irARuta('/pilates')" routerLinkActive="active-link">
+        <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
           Pilates
         </a>
       </div>
     </div>
 
-    <a class="nav-link text-black fw-bold" (click)="irARuta('/eventos')" routerLinkActive="active">
+    <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active">
       Eventos
     </a>
-    <a class="nav-link text-black fw-bold" (click)="irARuta('/horarios')" routerLinkActive="active">
+    <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active">
       Horarios
     </a>
-    <a class="nav-link text-black fw-bold" (click)="irARuta('/contacto')" routerLinkActive="active">
+    <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active">
       Contacto
     </a>
     <a class="nav-link text-black fw-bold" (click)="cerrarSesion()">Cerrar Sesión</a>
@@ -127,13 +120,13 @@
       </button>
       <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
         <div class="navbar-izq">
-          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
+          <a class="mb-0 mx-5 text-center" [routerLink]="['/inicio']">
             <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
           </a>
           <ul class="navbar-nav list-links">
             <li class="nav-item me-3">
               <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                (click)="irARuta('/inicio')">Inicio</a>
+                [routerLink]="['/inicio']">Inicio</a>
             </li>
             <li class="nav-item dropdown me-3" [routerLinkActive]="['active']"
               [routerLinkActiveOptions]="{ exact: false }">
@@ -143,19 +136,19 @@
               <ul class="dropdown-menu" aria-labelledby="deportesDropdown">
                 <li>
                   <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link"
-                    (click)="irARuta('/eltaekwondo')">
+                    [routerLink]="['/eltaekwondo']">
                     Taekwondo
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link"
-                    (click)="irARuta('/kickboxing')">
+                    [routerLink]="['/kickboxing']">
                     Kickboxing
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link"
-                    (click)="irARuta('/pilates')">
+                    [routerLink]="['/pilates']">
                     Pilates
                   </a>
                 </li>
@@ -163,19 +156,19 @@
             </li>
             <li class="nav-item me-3">
               <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active"
-                (click)="irARuta('/eventos')">Eventos</a>
+                [routerLink]="['/eventos']">Eventos</a>
             </li>
             <li class="nav-item me-3">
               <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                (click)="irARuta('/horarios')">Horarios</a>
+                [routerLink]="['/horarios']">Horarios</a>
             </li>
             <li class="nav-item me-3">
               <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                (click)="irARuta('/contacto')">Contacto</a>
+                [routerLink]="['/contacto']">Contacto</a>
             </li>
             <li class="nav-item mx-3">
               <button type="button" class="btn btn-primary text-white fw-bold" [routerLink]="['/userpage']"
-                routerLinkActive="active" (click)="irARuta('/userpage')">Ver mis clases</button>
+                routerLinkActive="active" [routerLink]="['/userpage']">Ver mis clases</button>
             </li>
           </ul>
         </div>
@@ -192,8 +185,8 @@
                 target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
             </li>
             <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank" rel="noopener noreferrer"><i
-                  class="bi bi-instagram fs-4"></i></a>
+              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+                rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
             </li>
             <li class="nav-item">
               <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>

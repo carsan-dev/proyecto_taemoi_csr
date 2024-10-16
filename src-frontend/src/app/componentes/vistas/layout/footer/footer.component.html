@@ -12,20 +12,20 @@
       <div class="col-12 col-md-2 mb-4 mb-md-0">
         <h2 class="fw-bold h5 mt-4">MAPA WEB</h2>
         <ul class="list-unstyled text-decoration-underline pt-2">
-          <li><a class="nav-link" (click)="irARuta('/inicio')">Inicio</a></li>
+          <li><a class="nav-link" routerLink="/inicio">Inicio</a></li>
           <li class="nav-item dropdown me-3">
             <div class="nav-link dropdown-toggle" id="deportesDropdown">
               ¿Qué hacemos?
             </div>
             <ul class="dropdown-menu" aria-labelledby="deportesDropdown">
-              <li><a class="dropdown-item" (click)="irARuta('/eltaekwondo')">Taekwondo</a></li>
-              <li><a class="dropdown-item" (click)="irARuta('/kickboxing')">Kickboxing</a></li>
-              <li><a class="dropdown-item" (click)="irARuta('/pilates')">Pilates</a></li>
+              <li><a class="dropdown-item" routerLink="/eltaekwondo">Taekwondo</a></li>
+              <li><a class="dropdown-item" routerLink="/kickboxing">Kickboxing</a></li>
+              <li><a class="dropdown-item" routerLink="/pilates">Pilates</a></li>
             </ul>
         </li>
-          <li><a class="nav-link" (click)="irARuta('/eventos')">Eventos</a></li>
-          <li><a class="nav-link" (click)="irARuta('/horarios')">Horarios</a></li>
-          <li><a class="nav-link" (click)="irARuta('/contacto')">Contacto</a></li>
+          <li><a class="nav-link" routerLink="/eventos">Eventos</a></li>
+          <li><a class="nav-link" routerLink="/horarios">Horarios</a></li>
+          <li><a class="nav-link" routerLink="/contacto">Contacto</a></li>
         </ul>
       </div>
       <div class="col-12 col-md-2 mb-4 mb-md-0">

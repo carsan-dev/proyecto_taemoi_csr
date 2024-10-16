@@ -1,7 +1,15 @@
 // sidebar.component.ts
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ElementRef } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import {
+  Component,
+  EventEmitter,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../../../servicios/generales/sidebar.service';
 import { Subscription } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
@@ -22,9 +30,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   emailUsuario: string | null = null;
 
   constructor(
-    private router: Router,
-    private sidebarService: SidebarService,
-    private authService: AuthenticationService
+    private readonly sidebarService: SidebarService,
+    private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
@@ -57,11 +64,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (!this.estaColapsado) {
       this.resetScrollPosition();
     }
-  }
-
-  irARuta(ruta: string) {
-    this.router.navigate([ruta]);
-    this.alternarColapso(); // Auto-collapse sidebar when navigating
   }
 
   alternarVisibilidadSidebar(): void {

@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
@@ -14,23 +13,11 @@ import { CommonModule } from '@angular/common';
 export class HorariosComponent implements OnInit {
   usuarioLogueado: boolean = false;
   turnos: any[] = [];
-  diasSemana: string[] = [
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-  ];
+  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves'];
 
-  constructor(
-    private authService: AuthenticationService,
-    private endpointsService: EndpointsService
-  ) {}
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    this.usuarioLogueado = this.authService.comprobarLogueado();
-    this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
-      this.usuarioLogueado = estado;
-    });
     this.obtenerTurnos();
   }
 
@@ -50,7 +37,7 @@ export class HorariosComponent implements OnInit {
   }
 
   obtenerTurnosPorDia(diaSemana: string): any[] {
-    return this.turnos.filter(turno => turno.diaSemana === diaSemana);
+    return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
   }
 
   obtenerCategoria(grupoId: number): string {
@@ -68,22 +55,21 @@ export class HorariosComponent implements OnInit {
 
   obtenerColorDeporte(deporte: string): string {
     const colores: { [key: string]: string } = {
-      'Pilates': '#A8D2D4',
-      'Kickboxing': '#FFA573',
+      Pilates: '#A8D2D4',
+      Kickboxing: '#FFA573',
       'Taekwondo Competición': '#F28B8B',
-      'Taekwondo': '#A6BFE3'
+      Taekwondo: '#A6BFE3',
     };
     return colores[deporte] || '#ffffff';
   }
 
   obtenerEmoticonoCategoria(deporte: string): string {
     const emoticonos: { [key: string]: string } = {
-      'Pilates': '🧘‍♀️',
-      'Kickboxing': '🥊', // Guante de boxeo
-      'Taekwondo': '🥋', // Kimono/dobok
+      Pilates: '🧘‍♀️',
+      Kickboxing: '🥊', // Guante de boxeo
+      Taekwondo: '🥋', // Kimono/dobok
       'Taekwondo Competición': '🥋', // Usamos el mismo emoticono de kimono/dobok como aproximación
     };
     return emoticonos[deporte] || '❓'; // Emoticono por defecto en caso de que no se encuentre el deporte
   }
-  
 }
