@@ -86,7 +86,7 @@ export class EditarAlumnoComponent implements OnInit {
       {
         validators: [
           this.fechaBajaPosteriorAFechaAltaValidator,
-          this.fechaNacimientoPosteriorAFechaAltaValidator
+          this.fechaNacimientoPosteriorAFechaAltaValidator,
         ],
       }
     );
@@ -94,7 +94,15 @@ export class EditarAlumnoComponent implements OnInit {
 
   ngOnInit(): void {
     if (typeof localStorage !== 'undefined') {
+      // Obtener la lista de alumnos
       this.obtenerAlumnos();
+  
+      // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
+      this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((fechaNacimiento: string) => {
+        if (fechaNacimiento) {
+          this.obtenerGradosDisponibles(fechaNacimiento);
+        }
+      });
     }
 
     // Escucha cambios en el tipo de descuento para actualizar la cuantía
@@ -180,6 +188,25 @@ export class EditarAlumnoComponent implements OnInit {
     pesoControl?.updateValueAndValidity();
     fechaPesoControl?.updateValueAndValidity();
   }
+
+  obtenerGradosDisponibles(fechaNacimiento: string) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.endpointsService.obtenerGradosPorFechaNacimiento(fechaNacimiento, token).subscribe({
+        next: (grados: TipoGrado[]) => {
+          this.tiposGrado = grados; // Asigna la lista de grados recibidos
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron cargar los grados disponibles.',
+            icon: 'error',
+          });
+        }
+      });
+    }
+  }
+  
 
   obtenerAlumnos() {
     const token = localStorage.getItem('token');
@@ -302,18 +329,24 @@ export class EditarAlumnoComponent implements OnInit {
     this.imagenPreview = alumno.fotoAlumno?.url
       ? alumno.fotoAlumno.url
       : '../../../../assets/media/default.webp';
-
+    this.tipoTarifaEditado = false;
     const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
+    if (fechaNacimiento) {
+      this.obtenerGradosDisponibles(fechaNacimiento);
+    }
     const fechaAlta = this.formatDate(alumno.fechaAlta);
     const fechaBaja = alumno.fechaBaja ? this.formatDate(alumno.fechaBaja) : '';
-    this.tipoTarifaEditado = false; // Resetea la bandera antes de aplicar el valor
-
     const peso = alumno.peso || '';
     const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
     const numeroLicencia = alumno.numeroLicencia || '';
-    const fechaLicencia = alumno.fechaLicencia ? this.formatDate(alumno.fechaLicencia) : ''
+    const fechaLicencia = alumno.fechaLicencia
+      ? this.formatDate(alumno.fechaLicencia)
+      : '';
+    const grado = alumno.grado || '';
+    const aptoParaExamen = alumno.aptoParaExamen
+      ? alumno.aptoParaExamen
+      : false;
 
-    // Actualizar el valor de 'tieneLicencia' desde la base de datos
     this.alumnoForm.patchValue({
       ...this.alumnoEditado,
       fechaNacimiento: fechaNacimiento,
@@ -326,7 +359,9 @@ export class EditarAlumnoComponent implements OnInit {
       competidor: alumno.competidor,
       numeroLicencia: numeroLicencia,
       fechaLicencia: fechaLicencia,
-      tieneLicencia: alumno.tieneLicencia
+      tieneLicencia: alumno.tieneLicencia,
+      grado: grado,
+      aptoParaExamen: aptoParaExamen,
     });
   }
 

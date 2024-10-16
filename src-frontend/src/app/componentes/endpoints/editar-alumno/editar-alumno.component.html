@@ -133,6 +133,9 @@
                 <div class="mb-3">
                   <strong>Grado:</strong> {{ alumno.grado }}
                 </div>
+                <div class="mb-3">
+                  <strong>Apto para examen:</strong> {{ alumno.aptoParaExamen ? 'Sí' : 'No' }}
+                </div>
               </div>
             </div>
           </div>
@@ -379,13 +382,12 @@
                         la fecha de alta</small>
                     </div>
                   </div>
-                  <div class="form-group form-floating">
-                    <select class="form-control form-select" id="grado" formControlName="grado" required
-                      placeholder="Grado">
+                  <div class="form-group form-floating mb-3">
+                    <select class="form-control form-select" id="grado" formControlName="grado" required>
                       <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
                     </select>
                     <label for="grado">Grado</label>
-                  </div>
+                  </div>             
                 </div>
               </div>
             </div>
