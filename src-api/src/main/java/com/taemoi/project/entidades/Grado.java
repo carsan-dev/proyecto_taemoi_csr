@@ -1,10 +1,12 @@
 package com.taemoi.project.entidades;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +16,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
@@ -25,6 +29,9 @@ public class Grado {
 	@NotNull(message = "El tipo de grado no puede ser nulo")
 	@Enumerated(EnumType.STRING)
 	private TipoGrado tipoGrado;
+	
+    @Temporal(TemporalType.DATE)
+    private Date fechaGrado;
 
 	@OneToMany(mappedBy = "grado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JsonBackReference
@@ -65,4 +72,11 @@ public class Grado {
 		this.tipoGrado = tipoGrado;
 	}
 
+	public Date getFechaGrado() {
+		return fechaGrado;
+	}
+
+	public void setFechaGrado(Date fechaGrado) {
+		this.fechaGrado = fechaGrado;
+	}
 }
