@@ -39,29 +39,26 @@ export class CrearGrupoComponent implements OnInit {
   }
 
   crearGrupo(): void {
-    const token = localStorage.getItem('token');
     const grupoForm = this.grupoForm.value;
 
-    if (token) {
-      this.endpointsService.crearGrupo(grupoForm, token).subscribe({
-        next: (response) => {
-          Swal.fire({
-            title: 'Perfecto!',
-            text: 'Has creado un nuevo grupo!',
-            icon: 'success',
-          });
-          this.router.navigate(['/gruposListar']);
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No has completado todos los campos requeridos',
-            icon: 'error',
-          });
-        },
-        complete: () => {},
-      });
-    }
+    this.endpointsService.crearGrupo(grupoForm).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: 'Perfecto!',
+          text: 'Has creado un nuevo grupo!',
+          icon: 'success',
+        });
+        this.router.navigate(['/gruposListar']);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No has completado todos los campos requeridos',
+          icon: 'error',
+        });
+      },
+      complete: () => {},
+    });
   }
 
   volver() {

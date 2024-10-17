@@ -21,49 +21,41 @@ export class VistaPrincipalUserComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    if (typeof localStorage !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        this.authService.obtenerUsuarioAutenticado(token).subscribe({
-          next: (usuario) => {
-            if (usuario && usuario.alumnoDTO) {
-              const alumnoId = usuario.alumnoDTO.id;
-              this.cargarGruposDelAlumno(alumnoId);
-            } else {
-              Swal.fire({
-                title: 'Error',
-                text: 'El usuario no tiene alumno asociado.',
-                icon: 'error',
-              });
-            }
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'Error al obtener el usuario.',
-              icon: 'error',
-            });
-          },
+    this.authService.obtenerUsuarioAutenticado().subscribe({
+      next: (usuario) => {
+        if (usuario && usuario.alumnoDTO) {
+          const alumnoId = usuario.alumnoDTO.id;
+          this.cargarGruposDelAlumno(alumnoId);
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: 'El usuario no tiene alumno asociado.',
+            icon: 'error',
+          });
+        }
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'Error al obtener el usuario.',
+          icon: 'error',
         });
-      }
-    }
+      },
+    });
   }
 
   cargarGruposDelAlumno(alumnoId: number) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGruposDelAlumno(alumnoId, token).subscribe({
-        next: (grupos) => {
-          this.grupos = grupos;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'Error al obtener los grupos del alumno.',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerGruposDelAlumno(alumnoId).subscribe({
+      next: (grupos) => {
+        this.grupos = grupos;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'Error al obtener los grupos del alumno.',
+          icon: 'error',
+        });
+      },
+    });
   }
 }

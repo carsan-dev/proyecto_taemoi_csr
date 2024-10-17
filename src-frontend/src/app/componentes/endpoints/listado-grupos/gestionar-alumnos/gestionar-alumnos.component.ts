@@ -27,31 +27,26 @@ export class GestionarAlumnosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.route.params.subscribe((params) => {
-        this.grupoId = +params['id'];
-        this.cargarGrupo();
-      });
-    }
+    this.route.params.subscribe((params) => {
+      this.grupoId = +params['id'];
+      this.cargarGrupo();
+    });
   }
 
   cargarGrupo(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGrupoPorId(this.grupoId, token).subscribe({
-        next: (grupo: GrupoDTO) => {
-          this.grupo = grupo;
-          this.alumnos = grupo.alumnos;
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerGrupoPorId(this.grupoId).subscribe({
+      next: (grupo: GrupoDTO) => {
+        this.grupo = grupo;
+        this.alumnos = grupo.alumnos;
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   redirigirSeleccionarAlumnos(): void {
@@ -59,43 +54,40 @@ export class GestionarAlumnosComponent implements OnInit {
   }
 
   eliminarAlumno(alumnoId: number): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'No podrás revertir esta acción',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlo',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.endpointsService
-            .eliminarAlumnoDeGrupo(this.grupoId, alumnoId, token)
-            .subscribe({
-              next: () => {
-                Swal.fire(
-                  'Eliminado',
-                  'Alumno correctamente eliminado del grupo!',
-                  'success'
-                );
-                this.alumnos = this.alumnos.filter(
-                  (alumno) => alumno.id !== alumnoId
-                );
-              },
-              error: () => {
-                Swal.fire({
-                  title: 'Error al eliminar alumno',
-                  text: 'No hemos podido eliminar el alumno',
-                  icon: 'error',
-                });
-              },
-            });
-        }
-      });
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'No podrás revertir esta acción',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminarlo',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .eliminarAlumnoDeGrupo(this.grupoId, alumnoId)
+          .subscribe({
+            next: () => {
+              Swal.fire(
+                'Eliminado',
+                'Alumno correctamente eliminado del grupo!',
+                'success'
+              );
+              this.alumnos = this.alumnos.filter(
+                (alumno) => alumno.id !== alumnoId
+              );
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error al eliminar alumno',
+                text: 'No hemos podido eliminar el alumno',
+                icon: 'error',
+              });
+            },
+          });
+      }
+    });
   }
   gestionarTurnos(alumnoId: number): void {
     this.router.navigate([`/gestionarTurnosAlumno`, alumnoId]);

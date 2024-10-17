@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
@@ -13,25 +13,17 @@ export class EndpointsService {
 
   constructor(private http: HttpClient) {}
 
-  private crearHeaders(token: string): HttpHeaders {
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
-
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
     return throwError(() => error);
   }
 
   obtenerAlumnos(
-    token: string,
     page: number,
     size: number,
     nombre: string,
     incluirInactivos: boolean
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -40,264 +32,231 @@ export class EndpointsService {
       params = params.set('nombre', nombre);
     }
 
-    if (incluirInactivos) {
-      params = params.set('incluirInactivos', 'true');
-    } else {
-      params = params.set('incluirInactivos', 'false');
-    }
+    params = params.set('incluirInactivos', incluirInactivos.toString());
 
     return this.http
       .get<any>(`${this.urlBase}/alumnos`, {
-        headers: headers,
         params: params,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerAlumnoPorId(alumnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerAlumnoPorId(alumnoId: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, { headers })
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGruposDelAlumno(alumnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerGruposDelAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { headers })
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  asignarAlumnoATurno(alumnoId: number, turnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  asignarAlumnoATurno(alumnoId: number, turnoId: number): Observable<any> {
     return this.http
-      .post<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, {}, { headers })
+      .post<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`,
+        {},
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
-  removerAlumnoDeTurno(alumnoId: number, turnoId: number, token: string): Observable<Turno[]> {
-    const headers = this.crearHeaders(token);
+  removerAlumnoDeTurno(alumnoId: number, turnoId: number): Observable<Turno[]> {
     return this.http
-      .delete<Turno[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { headers })
+      .delete<Turno[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-
-  obtenerTurnosDelAlumno(alumnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerTurnosDelAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, { headers })
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
   crearAlumno(
     alumnoData: any,
-    imagen: File | null,
-    token: string
+    imagen: File | null
   ): Observable<any> {
     const formData = new FormData();
-    const headers = this.crearHeaders(token);
     formData.append('nuevo', JSON.stringify(alumnoData));
     if (imagen) {
       formData.append('file', imagen, imagen.name);
     }
     return this.http
       .post<any>(`${this.urlBase}/alumnos/crear`, formData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   actualizarAlumno(
     id: number,
-    formData: FormData,
-    token: string
+    formData: FormData
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .put<any>(`${this.urlBase}/alumnos/${id}`, formData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarImagenAlumno(id: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarImagenAlumno(id: number): Observable<any> {
     return this.http
       .delete(`${this.urlBase}/alumnos/${id}/imagen`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarAlumnos(id: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarAlumnos(id: number): Observable<any> {
     return this.http
-      .delete<any>(`${this.urlBase}/alumnos/${id}`, { headers })
+      .delete<any>(`${this.urlBase}/alumnos/${id}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  darDeBajaAlumno(alumnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  darDeBajaAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/baja`, {}, { headers })
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/baja`, {}, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  darDeAltaAlumno(alumnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  darDeAltaAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/alta`, {}, { headers })
+      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/alta`, {}, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGrados(token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerGrados(): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/grados`, { headers })
+      .get<any>(`${this.urlBase}/grados`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerGradosPorFechaNacimiento(fechaNacimiento: string): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, { headers })
+      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTodosLosGrupos(token: string): Observable<GrupoDTO[]> {
-    const headers = this.crearHeaders(token);
+  obtenerTodosLosGrupos(): Observable<GrupoDTO[]> {
     return this.http
-      .get<GrupoDTO[]>(`${this.urlBase}/grupos`, { headers })
+      .get<GrupoDTO[]>(`${this.urlBase}/grupos`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGrupoPorId(id: number, token: string): Observable<GrupoDTO> {
-    const headers = this.crearHeaders(token);
+  obtenerGrupoPorId(id: number): Observable<GrupoDTO> {
     return this.http
-      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { headers })
+      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerConteoAlumnosPorGrupo(token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerConteoAlumnosPorGrupo(): Observable<any> {
     return this.http
-    .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, { headers })
-    .pipe(catchError(this.manejarError));
+      .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
   }
 
-  crearGrupo(grupoData: any, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  crearGrupo(grupoData: any): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos`, grupoData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   actualizarGrupo(
     id: number,
-    grupoData: GrupoDTO,
-    token: string
+    grupoData: GrupoDTO
   ): Observable<GrupoDTO> {
-    const headers = this.crearHeaders(token);
     return this.http
       .put<GrupoDTO>(`${this.urlBase}/grupos/${id}`, grupoData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarGrupo(id: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarGrupo(id: number): Observable<any> {
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${id}`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   agregarAlumnoAGrupo(
     grupoId: number,
-    alumnoId: number,
-    token: string
+    alumnoId: number
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .post<any>(
         `${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`,
         {},
-        { headers }
+        { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
 
   agregarAlumnosAGrupo(
     grupoId: number,
-    alumnosIds: number[],
-    token: string
+    alumnosIds: number[]
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos`, alumnosIds, {
-        headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   eliminarAlumnoDeGrupo(
     grupoId: number,
-    alumnoId: number,
-    token: string
+    alumnoId: number
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, {
-        headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnosDelGrupo(grupoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerTurnosDelGrupo(grupoId: number): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/grupos/${grupoId}/turnos`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   agregarTurnoAGrupo(
     grupoId: number,
-    turnoId: number,
-    token: string
+    turnoId: number
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
-      .post<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, null, {
-        headers: headers,
-      })
+      .post<any>(
+        `${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`,
+        null,
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
   eliminarTurnoDeGrupo(
     grupoId: number,
-    turnoId: number,
-    token: string
+    turnoId: number
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnos(token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerTurnos(): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/turnos`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
@@ -308,51 +267,45 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnoPorId(turnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerTurnoPorId(turnoId: number): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/turnos/${turnoId}`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  crearTurnoSinGrupo(turnoData: any, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  crearTurnoSinGrupo(turnoData: any): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/turnos/crear`, turnoData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  crearTurnoConGrupo(turnoData: any, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  crearTurnoConGrupo(turnoData: any): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/turnos/crear-asignando-grupo`, turnoData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   actualizarTurno(
     turnoId: number,
-    turnoData: any,
-    token: string
+    turnoData: any
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .put<any>(`${this.urlBase}/turnos/${turnoId}`, turnoData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarTurno(turnoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarTurno(turnoId: number): Observable<any> {
     return this.http
       .delete<any>(`${this.urlBase}/turnos/${turnoId}`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
@@ -363,64 +316,52 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerEventoPorId(eventoId: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  obtenerEventoPorId(eventoId: number): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/eventos/${eventoId}`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
   crearEvento(
     eventoData: any,
-    imagen: File | null,
-    token: string
+    imagen: File | null
   ): Observable<any> {
     const formData = new FormData();
-    const headers = this.crearHeaders(token); // Create headers for Authorization
-  
-    // Append event data as a JSON string
     formData.append('nuevo', JSON.stringify(eventoData));
-    
-    // Append the file if an image is provided
     if (imagen) {
       formData.append('file', imagen, imagen.name);
     }
-  
-    // Do not explicitly set the 'Content-Type' header, let Angular handle it
-    return this.http.post<any>(`${this.urlBase}/eventos/crear`, formData, {
-      headers, // Only the Authorization header will be added
-    }).pipe(catchError(this.manejarError));
+    return this.http
+      .post<any>(`${this.urlBase}/eventos/crear`, formData, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
   }
-  
 
   actualizarEvento(
     id: number,
-    formData: FormData,
-    token: string
+    formData: FormData
   ): Observable<any> {
-    const headers = this.crearHeaders(token);
     return this.http
       .put<any>(`${this.urlBase}/eventos/${id}`, formData, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarImagenEvento(id: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarImagenEvento(id: number): Observable<any> {
     return this.http
       .delete(`${this.urlBase}/eventos/${id}/imagen`, {
-        headers: headers,
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarEvento(id: number, token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  eliminarEvento(id: number): Observable<any> {
     return this.http
-      .delete<any>(`${this.urlBase}/eventos/${id}`, { headers })
+      .delete<any>(`${this.urlBase}/eventos/${id}`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 }

@@ -1,18 +1,15 @@
 package com.taemoi.project.servicios.impl;
 
-import java.util.Optional;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.taemoi.project.controladores.AdminController;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
@@ -21,6 +18,7 @@ import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AuthenticationService;
 import com.taemoi.project.servicios.JwtService;
+import com.taemoi.project.servicios.LoginAttemptService;
 
 import lombok.Builder;
 
@@ -31,13 +29,14 @@ import lombok.Builder;
 @Builder
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
-	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
-
 	/**
      * Inyección del repositorio de usuario.
      */
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+	
+	@Autowired 
+	private LoginAttemptService loginAttemptService;
 
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
@@ -91,22 +90,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @throws IllegalArgumentException Si el email o la contraseña proporcionados son inválidos.
      */
 	@Override
-    public JwtAuthenticationResponse signin(LoginRequest request) {
-        logger.info("Iniciando sesión para: {}", request.getEmail());
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getContrasena()));
+	public JwtAuthenticationResponse signin(LoginRequest request) {
+	    String email = request.getEmail();
+	    if (loginAttemptService.isBlocked(email)) {
+	        throw new LockedException("La cuenta está temporalmente bloqueada debido a múltiples intentos fallidos.");
+	    }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+	    try {
+	        Authentication authentication = authenticationManager.authenticate(
+	            new UsernamePasswordAuthenticationToken(email, request.getContrasena()));
 
-        Optional<Usuario> optionalUser = usuarioRepository.findByEmail(request.getEmail());
-        Usuario user = optionalUser.orElseThrow(() -> {
-            logger.error("Usuario no encontrado: {}", request.getEmail());
-            return new IllegalArgumentException("Email o contraseña inválidos.");
-        });
+	        SecurityContextHolder.getContext().setAuthentication(authentication);
+	        loginAttemptService.loginSucceeded(email);
 
-        logger.info("Usuario autenticado: {}", user.getEmail());
-        String jwt = jwtService.generateToken(user);
-        logger.info("Token JWT generado para: {}", user.getEmail());
-        return JwtAuthenticationResponse.builder().token(jwt).build();
-    }
+	        Usuario user = (Usuario) authentication.getPrincipal();
+	        String jwt = jwtService.generateToken(user);
+	        return new JwtAuthenticationResponse(jwt);
+	    } catch (BadCredentialsException e) {
+	        loginAttemptService.loginFailed(email);
+	        throw new BadCredentialsException("Credenciales inválidas.");
+	    }
+	}
 }

@@ -24,17 +24,14 @@ export class EventoDetalleComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.eventoId = +this.route.snapshot.paramMap.get('eventoId')!;
-      const token = localStorage.getItem('token') ?? '';
-      this.obtenerEvento(this.eventoId, token);
-    }
+    this.eventoId = +this.route.snapshot.paramMap.get('eventoId')!;
+    this.obtenerEvento(this.eventoId);
   }
 
-  obtenerEvento(id: number, token: string): void {
+  obtenerEvento(id: number): void {
     this.spinner.show(); // Mostrar el spinner cuando comience la carga
 
-    this.endpointsService.obtenerEventoPorId(id, token).subscribe({
+    this.endpointsService.obtenerEventoPorId(id).subscribe({
       next: (response: Evento) => {
         this.evento = response;
         this.spinner.hide(); // Ocultar el spinner cuando se haya cargado el evento

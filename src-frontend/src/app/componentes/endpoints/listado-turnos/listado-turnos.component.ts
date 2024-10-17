@@ -26,71 +26,64 @@ export class ListadoTurnosComponent implements OnInit {
   ];
   grupos: GrupoDTO[] = [];
   conteoAlumnosPorGrupo: any = {};
-  gruposMostrar: string[] = ['Taekwondo', 'Taekwondo Competición', 'Pilates', 'Kickboxing'];
+  gruposMostrar: string[] = [
+    'Taekwondo',
+    'Taekwondo Competición',
+    'Pilates',
+    'Kickboxing',
+  ];
 
-  constructor(
-    private endpointsService: EndpointsService ) {}
+  constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.obtenerTurnos();
-      this.obtenerGrupos();
-      this.obtenerConteoAlumnosPorGrupo();
-    }
+    this.obtenerTurnos();
+    this.obtenerGrupos();
+    this.obtenerConteoAlumnosPorGrupo();
   }
 
   obtenerTurnos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTurnos(token).subscribe({
-        next: (response) => {
-          this.turnos = response;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerTurnos().subscribe({
+      next: (response) => {
+        this.turnos = response;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   obtenerGrupos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTodosLosGrupos(token).subscribe({
-        next: (response) => {
-          this.grupos = response;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+      next: (response) => {
+        this.grupos = response;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   obtenerConteoAlumnosPorGrupo(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerConteoAlumnosPorGrupo(token).subscribe({
-        next: (response) => {
-          this.conteoAlumnosPorGrupo = response;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido obtener el conteo de alumnos por grupo',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerConteoAlumnosPorGrupo().subscribe({
+      next: (response) => {
+        this.conteoAlumnosPorGrupo = response;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido obtener el conteo de alumnos por grupo',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   obtenerTurnosPorDia(diaSemana: string): any[] {
@@ -106,38 +99,35 @@ export class ListadoTurnosComponent implements OnInit {
   }
 
   eliminarTurno(turnoId: number): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'No podrás revertir esta acción',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlo',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.endpointsService.eliminarTurno(turnoId, token).subscribe({
-            next: () => {
-              Swal.fire({
-                title: 'Eliminado',
-                text: 'El turno ha sido eliminado',
-                icon: 'success',
-              });
-              this.obtenerTurnos();
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error en la eliminación',
-                text: 'No hemos podido eliminar el turno' + error,
-                icon: 'error',
-              });
-            },
-          });
-        }
-      });
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'No podrás revertir esta acción',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminarlo',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarTurno(turnoId).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Eliminado',
+              text: 'El turno ha sido eliminado',
+              icon: 'success',
+            });
+            this.obtenerTurnos();
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la eliminación',
+              text: 'No hemos podido eliminar el turno' + error,
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
   }
 }

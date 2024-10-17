@@ -17,9 +17,7 @@ export class ListadoEventosComponent implements OnInit {
   constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.obtenerEventos();
-    }
+    this.obtenerEventos();
   }
 
   obtenerEventos(): void {
@@ -38,45 +36,42 @@ export class ListadoEventosComponent implements OnInit {
   }
 
   eliminarEvento(id: number): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'No podrás revertir esto',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminarlo',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.endpointsService.eliminarEvento(id, token).subscribe({
-            next: () => {
-              Swal.fire(
-                'Eliminado!',
-                'El evento ha sido eliminado correctamente.',
-                'success'
-              );
-              this.obtenerEventos();
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error en la petición',
-                text: 'No hemos podido eliminar el evento',
-                icon: 'error',
-              });
-            },
-          });
-        }
-      });
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'No podrás revertir esto',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminarlo',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarEvento(id).subscribe({
+          next: () => {
+            Swal.fire(
+              'Eliminado!',
+              'El evento ha sido eliminado correctamente.',
+              'success'
+            );
+            this.obtenerEventos();
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la petición',
+              text: 'No hemos podido eliminar el evento',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
   }
 
   abrirModal(imagenUrl: string | null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
-  
+
     if (!imagenUrl || imagenUrl.trim() === '') {
       Swal.fire({
         icon: 'error',
@@ -85,17 +80,17 @@ export class ListadoEventosComponent implements OnInit {
       });
       return; // Detenemos la ejecución si no hay imagen
     }
-  
+
     if (modal && modalImg) {
       modal.style.display = 'block';
       modalImg.src = imagenUrl;
     }
   }
-  
+
   cerrarModal() {
     const modal = document.getElementById('imageModal');
     if (modal) {
       modal.style.display = 'none';
     }
-  }  
+  }
 }

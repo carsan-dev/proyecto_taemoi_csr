@@ -49,6 +49,17 @@ public class JwtServiceImpl implements JwtService {
 	public String generateToken(UserDetails userDetails) {
 		return generateToken(new HashMap<>(), userDetails);
 	}
+	
+	// Generar un token de refresco con mayor duración
+	public String generateRefreshToken(UserDetails userDetails) {
+	    return Jwts.builder()
+	        .setSubject(userDetails.getUsername())
+	        .setIssuedAt(new Date(System.currentTimeMillis()))
+	        .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 7 días de validez
+	        .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+	        .compact();
+	}
+
 
     /**
      * Verifica si un token JWT dado es válido para los detalles del usuario proporcionados.
@@ -127,7 +138,11 @@ public class JwtServiceImpl implements JwtService {
 	 * @return La clave de firma.
 	 */
 	private Key getSigningKey() {
-		byte[] keyBytes = Decoders.BASE64.decode(jwtSigningKey);
-		return Keys.hmacShaKeyFor(keyBytes);
+	    if (jwtSigningKey == null) {
+	        throw new IllegalStateException("JWT secret key is not set.");
+	    }
+	    byte[] keyBytes = Decoders.BASE64.decode(jwtSigningKey);
+	    return Keys.hmacShaKeyFor(keyBytes);
 	}
+
 }

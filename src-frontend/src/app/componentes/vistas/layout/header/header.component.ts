@@ -57,8 +57,7 @@ export class HeaderComponent implements OnInit {
   }
 
   cerrarSesion() {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (this.usuarioLogueado) {
       this.authService.logout();
       Swal.fire({
         title: 'Sesión cerrada con éxito',
@@ -71,7 +70,6 @@ export class HeaderComponent implements OnInit {
         text: 'No has iniciado sesión. No se puede cerrar la sesión.',
         icon: 'warning',
       });
-      this.usuarioLogueado = false;
     }
     this.router.navigate(['/inicio']).then(() => {
       this.adminMenuVisible = false;

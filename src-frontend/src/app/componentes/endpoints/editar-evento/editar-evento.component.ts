@@ -49,58 +49,52 @@ export class EditarEventoComponent implements OnInit {
   }
 
   cargarEvento(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService
-        .obtenerEventoPorId(this.eventoId, token)
-        .subscribe((evento: Evento) => {
-          this.evento = evento;
-          this.eventoForm.patchValue({
-            titulo: evento.titulo,
-            descripcion: evento.descripcion,
-          });
-
-          // Use `ruta` for image preview, and fallback to default image
-          this.imagenPreview = evento.fotoEvento?.url
-            ? evento.fotoEvento.url
-            : '../../../../assets/media/default.webp';
+    this.endpointsService
+      .obtenerEventoPorId(this.eventoId)
+      .subscribe((evento: Evento) => {
+        this.evento = evento;
+        this.eventoForm.patchValue({
+          titulo: evento.titulo,
+          descripcion: evento.descripcion,
         });
-    }
+
+        // Use `ruta` for image preview, and fallback to default image
+        this.imagenPreview = evento.fotoEvento?.url
+          ? evento.fotoEvento.url
+          : '../../../../assets/media/default.webp';
+      });
   }
 
   actualizarEvento(): void {
     if (this.eventoForm.valid) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const formData = new FormData();
-        formData.append('eventoEditado', JSON.stringify(this.eventoForm.value));
+      const formData = new FormData();
+      formData.append('eventoEditado', JSON.stringify(this.eventoForm.value));
 
-        if (this.imagen) {
-          formData.append('file', this.imagen);
-        } else {
-          formData.append('file', 'null');
-        }
-
-        this.endpointsService
-          .actualizarEvento(this.eventoId, formData, token)
-          .subscribe({
-            next: (response) => {
-              Swal.fire({
-                title: 'Perfecto!',
-                text: 'El evento ha sido actualizado correctamente',
-                icon: 'success',
-              });
-              this.router.navigate(['/eventosListar']);
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error!',
-                text: 'No se ha podido actualizar el evento',
-                icon: 'error',
-              });
-            },
-          });
+      if (this.imagen) {
+        formData.append('file', this.imagen);
+      } else {
+        formData.append('file', 'null');
       }
+
+      this.endpointsService
+        .actualizarEvento(this.eventoId, formData)
+        .subscribe({
+          next: (response) => {
+            Swal.fire({
+              title: 'Perfecto!',
+              text: 'El evento ha sido actualizado correctamente',
+              icon: 'success',
+            });
+            this.router.navigate(['/eventosListar']);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error!',
+              text: 'No se ha podido actualizar el evento',
+              icon: 'error',
+            });
+          },
+        });
     }
   }
 
@@ -118,28 +112,23 @@ export class EditarEventoComponent implements OnInit {
 
   // Method to handle image deletion and reset the form image preview
   eliminarFoto(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService
-        .eliminarImagenEvento(this.eventoId, token)
-        .subscribe({
-          next: (response) => {
-            this.inputFile.nativeElement.value = '';
-            if (this.evento) {
-              this.evento.fotoEvento = null;
-            }
-            this.imagenPreview = '../../../../assets/media/default.webp';
-            this.eventoForm.patchValue({ fotoEvento: null });
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error!',
-              text: 'No se ha podido eliminar la imagen',
-              icon: 'error',
-            });
-          },
+    this.endpointsService.eliminarImagenEvento(this.eventoId).subscribe({
+      next: (response) => {
+        this.inputFile.nativeElement.value = '';
+        if (this.evento) {
+          this.evento.fotoEvento = null;
+        }
+        this.imagenPreview = '../../../../assets/media/default.webp';
+        this.eventoForm.patchValue({ fotoEvento: null });
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error!',
+          text: 'No se ha podido eliminar la imagen',
+          icon: 'error',
         });
-    }
+      },
+    });
   }
 
   volver() {

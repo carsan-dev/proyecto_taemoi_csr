@@ -36,73 +36,70 @@ export class CrearTurnoComponent implements OnInit {
   }
 
   initForm(): void {
-    this.turnoForm = this.fb.group({
-      diaSemana: ['', Validators.required],
-      horaInicio: [
-        '',
-        [
-          Validators.required,
-          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+    this.turnoForm = this.fb.group(
+      {
+        diaSemana: ['', Validators.required],
+        horaInicio: [
+          '',
+          [
+            Validators.required,
+            Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+          ],
         ],
-      ],
-      horaFin: [
-        '',
-        [
-          Validators.required,
-          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        horaFin: [
+          '',
+          [
+            Validators.required,
+            Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+          ],
         ],
-      ],
-      asignarGrupo: [false],
-      grupoId: [''],
-    }, { validators: this.horasValidas });
+        asignarGrupo: [false],
+        grupoId: [''],
+      },
+      { validators: this.horasValidas }
+    );
   }
 
   obtenerGrupos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTodosLosGrupos(token).subscribe({
-        next: (response) => {
-          this.grupos = response;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor para obtener los grupos',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+      next: (response) => {
+        this.grupos = response;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor para obtener los grupos',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   crearTurno(): void {
-    const token = localStorage.getItem('token');
     const turnoForm = this.turnoForm.value;
 
-    if (token) {
-      const turnoRequest = turnoForm.asignarGrupo
-        ? this.endpointsService.crearTurnoConGrupo(turnoForm, token)
-        : this.endpointsService.crearTurnoSinGrupo(turnoForm, token);
+    const turnoRequest = turnoForm.asignarGrupo
+      ? this.endpointsService.crearTurnoConGrupo(turnoForm)
+      : this.endpointsService.crearTurnoSinGrupo(turnoForm);
 
-      turnoRequest.subscribe({
-        next: (response) => {
-          Swal.fire({
-            title: 'Perfecto!',
-            text: 'Has creado un nuevo turno!',
-            icon: 'success',
-          });
-          this.router.navigate(['/turnosListar']);
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No has completado todos los campos requeridos',
-            icon: 'error',
-          });
-        },
-        complete: () => {},
-      });
-    }
+    turnoRequest.subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: 'Perfecto!',
+          text: 'Has creado un nuevo turno!',
+          icon: 'success',
+        });
+        this.router.navigate(['/turnosListar']);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No has completado todos los campos requeridos',
+          icon: 'error',
+        });
+      },
+      complete: () => {},
+    });
   }
 
   horasValidas(group: AbstractControl): ValidationErrors | null {
