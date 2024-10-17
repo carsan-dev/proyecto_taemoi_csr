@@ -21,7 +21,7 @@ import { CommonModule } from '@angular/common';
 export class CrearEventoComponent implements OnInit {
   eventoForm!: FormGroup;
   imagen: File | null = null;
-  imagePreview: string | null = null;  // To store the image preview URL
+  imagePreview: string | null = null; // To store the image preview URL
 
   constructor(
     private endpointsService: EndpointsService,
@@ -41,31 +41,26 @@ export class CrearEventoComponent implements OnInit {
   }
 
   onSubmit(): void {
-    const token = localStorage.getItem('token');
     const eventoForm = this.eventoForm.value;
 
-    if (token) {
-      this.endpointsService
-        .crearEvento(eventoForm, this.imagen, token)
-        .subscribe({
-          next: (response) => {
-            Swal.fire({
-              title: 'Perfecto!',
-              text: 'Has creado un nuevo evento',
-              icon: 'success',
-            });
-            this.router.navigate(['/eventosListar']);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No has completado todos los campos requeridos',
-              icon: 'error',
-            });
-          },
-          complete: () => {},
+    this.endpointsService.crearEvento(eventoForm, this.imagen).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: 'Perfecto!',
+          text: 'Has creado un nuevo evento',
+          icon: 'success',
         });
-    }
+        this.router.navigate(['/eventosListar']);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No has completado todos los campos requeridos',
+          icon: 'error',
+        });
+      },
+      complete: () => {},
+    });
   }
 
   // Method to handle image selection and preview
@@ -94,7 +89,7 @@ export class CrearEventoComponent implements OnInit {
     this.imagePreview = null;
     const fileInput = document.getElementById('fotoEvento') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = '';  // Limpiar el valor del input
+      fileInput.value = ''; // Limpiar el valor del input
     }
   }
 }

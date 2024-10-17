@@ -40,28 +40,24 @@ export class SeleccionarAlumnosComponent implements OnInit {
   }
 
   cargarGrupoYAlumnos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGrupoPorId(this.grupoId, token).subscribe({
-        next: (grupo) => {
-          this.alumnosEnGrupo = grupo.alumnos;
-          this.cargarAlumnos(token);
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerGrupoPorId(this.grupoId).subscribe({
+      next: (grupo) => {
+        this.alumnosEnGrupo = grupo.alumnos;
+        this.cargarAlumnos();
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor',
+          icon: 'error',
+        });
+      },
+    });
   }
 
-  cargarAlumnos(token: string): void {
+  cargarAlumnos(): void {
     this.endpointsService
       .obtenerAlumnos(
-        token,
         this.paginaActual,
         this.tamanoPagina,
         this.nombreFiltro,
@@ -88,10 +84,9 @@ export class SeleccionarAlumnosComponent implements OnInit {
   }
 
   agregarAlumnos(): void {
-    const token = localStorage.getItem('token');
-    if (token && this.alumnosSeleccionados.length > 0) {
+    if (this.alumnosSeleccionados.length > 0) {
       this.endpointsService
-        .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados, token)
+        .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados)
         .subscribe({
           next: () => {
             Swal.fire({
@@ -124,18 +119,12 @@ export class SeleccionarAlumnosComponent implements OnInit {
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.cargarAlumnos(token);
-    }
+    this.cargarAlumnos();
   }
 
   filtrarPorNombre(): void {
     this.paginaActual = 1;
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.cargarAlumnos(token);
-    }
+    this.cargarAlumnos();
   }
 
   volver() {

@@ -29,47 +29,39 @@ export class SeleccionarGrupoComponent implements OnInit {
   }
 
   obtenerGrupos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTodosLosGrupos(token).subscribe({
-        next: (response) => {
-          this.grupos = response;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+      next: (response) => {
+        this.grupos = response;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No hemos podido conectar con el servidor',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   asignarGrupo(grupoId: number): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService
-        .agregarTurnoAGrupo(grupoId, this.turnoId, token)
-        .subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Asignado',
-              text: 'El turno ha sido asignado al grupo',
-              icon: 'success',
-            }).then(() => {
-              this.router.navigate(['/turnosListar']);
-            });
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la asignación',
-              text: 'No hemos podido asignar el turno al grupo',
-              icon: 'error',
-            });
-          },
+    this.endpointsService.agregarTurnoAGrupo(grupoId, this.turnoId).subscribe({
+      next: () => {
+        Swal.fire({
+          title: 'Asignado',
+          text: 'El turno ha sido asignado al grupo',
+          icon: 'success',
+        }).then(() => {
+          this.router.navigate(['/turnosListar']);
         });
-    }
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la asignación',
+          text: 'No hemos podido asignar el turno al grupo',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   volver() {

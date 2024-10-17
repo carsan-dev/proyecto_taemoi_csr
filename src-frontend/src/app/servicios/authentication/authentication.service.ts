@@ -1,13 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  of,
-  tap,
-  throwError,
-} from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
 
@@ -16,10 +10,12 @@ import { environment } from '../../../environments/environment';
 })
 export class AuthenticationService {
   private urlBase = environment.apiUrl + '/auth';
+
   private usuarioLogueadoSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   usuarioLogueadoCambio: Observable<boolean> =
     this.usuarioLogueadoSubject.asObservable();
+
   private rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<
     string[]
   >([]);
@@ -36,119 +32,101 @@ export class AuthenticationService {
   >(null);
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
 
-  private isAdminSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private isAdminSubject: BehaviorSubject<boolean> =
+    new BehaviorSubject<boolean>(false);
   isAdminCambio: Observable<boolean> = this.isAdminSubject.asObservable();
 
-  private isManagerSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private isManagerSubject: BehaviorSubject<boolean> =
+    new BehaviorSubject<boolean>(false);
   isManagerCambio: Observable<boolean> = this.isManagerSubject.asObservable();
 
-  private isUserSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private isUserSubject: BehaviorSubject<boolean> =
+    new BehaviorSubject<boolean>(false);
   isUserCambio: Observable<boolean> = this.isUserSubject.asObservable();
 
+  private rolesCargados: boolean = false;
+
   constructor(private http: HttpClient) {
-    if (this.isLocalStorageAvailable()) {
-      this.verificarValidezToken();
-    }
-  }
-
-  private crearHeaders(token: string): HttpHeaders {
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
-
-  private isLocalStorageAvailable(): boolean {
-    try {
-      const testKey = '__localStorageTest__';
-      localStorage.setItem(testKey, testKey);
-      localStorage.removeItem(testKey);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    this.verificarEstadoAutenticacion();
   }
 
   comprobarLogueado(): boolean {
     return this.usuarioLogueadoSubject.value;
   }
 
-  login(credenciales: LoginInterface): Observable<any> {
+  login(credenciales: LoginInterface): Observable<string[]> {
     return this.http
       .post<any>(`${this.urlBase}/signin`, credenciales, {
         withCredentials: true,
       })
       .pipe(
-        tap((response) => {
+        switchMap(() => {
           const email = credenciales.email;
           const username = this.extraerNombreUsuario(email);
-          const tokenCreationTime = Date.now().toString();
-          if (this.isLocalStorageAvailable()) {
-            localStorage.setItem('token', response.token);
-            localStorage.setItem('email', email);
-            localStorage.setItem('username', username);
-            localStorage.setItem('tokenCreationTime', tokenCreationTime);
-          }
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username);
           this.emailSubject.next(email);
-          this.obtenerRoles(response.token).subscribe();
+          return this.obtenerRoles();
         }),
         catchError(this.manejarError)
       );
   }
 
   logout(): void {
-    this.eliminarToken();
-    this.actualizarEstadoLogueado(false);
-    this.rolesSubject.next([]);
-    this.usernameSubject.next(null);
-    this.emailSubject.next(null);
-    this.isAdminSubject.next(false);
-    this.isManagerSubject.next(false);
-    this.isUserSubject.next(false);
+    this.http
+      .post(`${this.urlBase}/logout`, {}, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          this.actualizarEstadoLogueado(false);
+          this.rolesSubject.next([]);
+          this.usernameSubject.next(null);
+          this.emailSubject.next(null);
+          this.isAdminSubject.next(false);
+          this.isManagerSubject.next(false);
+          this.isUserSubject.next(false);
+          this.rolesCargados = false;
+        },
+        error: (error) => {
+          console.error('Error al cerrar sesión', error);
+        },
+      });
   }
 
-  obtenerRoles(token: string): Observable<string[]> {
-    const headers = this.crearHeaders(token);
-    return this.http.get<string[]>(`${this.urlBase}/roles`, { headers }).pipe(
-      tap((roles) => {
-        this.rolesSubject.next(roles);
-        this.isAdminSubject.next(roles.includes('ROLE_ADMIN'));
-        this.isManagerSubject.next(roles.includes('ROLE_ADMIN'));
-        this.isUserSubject.next(roles.includes('ROLE_USER'));
-        if (this.isLocalStorageAvailable()) {
-          localStorage.setItem('roles', JSON.stringify(roles));
-        }
-      }),
-      catchError(this.manejarError)
-    );
+  obtenerRoles(): Observable<string[]> {
+    return this.http
+      .get<string[]>(`${this.urlBase}/roles`, { withCredentials: true })
+      .pipe(
+        tap((roles) => {
+          this.rolesSubject.next(roles);
+          this.isAdminSubject.next(roles.includes('ROLE_ADMIN'));
+          this.isManagerSubject.next(roles.includes('ROLE_MANAGER'));
+          this.isUserSubject.next(roles.includes('ROLE_USER'));
+          this.rolesCargados = true;
+        }),
+        catchError((error) => {
+          console.error('Error al obtener roles', error);
+          this.rolesSubject.next([]);
+          this.isAdminSubject.next(false);
+          this.isManagerSubject.next(false);
+          this.isUserSubject.next(false);
+          this.rolesCargados = true;
+          return of([]);
+        })
+      );
   }
 
   getRoles(): Observable<string[]> {
-    if (this.isLocalStorageAvailable()) {
-      const token = localStorage.getItem('token');
-      const roles = localStorage.getItem('roles');
-      if (roles) {
-        const parsedRoles = JSON.parse(roles);
-        this.rolesSubject.next(parsedRoles);
-        this.isAdminSubject.next(parsedRoles.includes('ROLE_ADMIN'));
-        this.isManagerSubject.next(parsedRoles.includes('ROLE_MANAGER'));
-        this.isUserSubject.next(parsedRoles.includes('ROLE_USER'));
-        return of(parsedRoles);
-      } else if (token) {
-        return this.obtenerRoles(token);
-      } else {
-        return of([]);
-      }
-    } else {
-      return of([]);
-    }
+    return this.rolesCambio;
   }
 
-  obtenerUsuarioAutenticado(token: string): Observable<any> {
-    const headers = this.crearHeaders(token);
+  // Nuevo método para obtener los roles actuales
+  getRolesActuales(): string[] {
+    return this.rolesSubject.value;
+  }
+
+  obtenerUsuarioAutenticado(): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/user`, { headers })
+      .get<any>(`${this.urlBase}/user`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
@@ -172,55 +150,59 @@ export class AuthenticationService {
   }
 
   obtenerNombreUsuario(): string | null {
-    if (this.isLocalStorageAvailable()) {
-      return localStorage.getItem('username');
-    }
-    return null;
+    return this.usernameSubject.value;
   }
 
   private extraerNombreUsuario(email: string): string {
     return email.substring(0, email.indexOf('@'));
   }
 
-  private eliminarToken(): void {
-    if (this.isLocalStorageAvailable()) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('email');
-      localStorage.removeItem('username');
-      localStorage.removeItem('tokenCreationTime');
-      localStorage.removeItem('roles');
-    }
-  }
-
-  private verificarValidezToken(): void {
-    if (this.isLocalStorageAvailable()) {
-      const token = localStorage.getItem('token');
-      const tokenCreationTime = localStorage.getItem('tokenCreationTime');
-
-      if (token && tokenCreationTime) {
-        const creationDate = new Date(parseInt(tokenCreationTime));
-        const expiryDate = new Date(
-          creationDate.getTime() + 10 * 60 * 60 * 1000
-        );
-
-        if (new Date() > expiryDate) {
-          this.eliminarToken();
-        } else {
-          const email = localStorage.getItem('email');
-          const username = localStorage.getItem('username');
-          if (email && username) {
-            this.actualizarEstadoLogueado(true);
-            this.usernameSubject.next(username);
-            this.emailSubject.next(email);
-            this.obtenerRoles(token).subscribe();
-          }
-        }
-      }
-    }
-  }
-
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
     return throwError(() => error);
+  }
+
+  // Método para verificar si los roles ya están cargados
+  rolesEstanCargados(): boolean {
+    return this.rolesCargados;
+  }
+
+  // Verificar el estado de autenticación al cargar el servicio
+  verificarEstadoAutenticacion() {
+    this.http
+      .get<boolean>(`${this.urlBase}/auth-status`, { withCredentials: true })
+      .pipe(
+        tap((isAuthenticated) => {
+          if (isAuthenticated) {
+            this.actualizarEstadoLogueado(true);
+            this.obtenerUsuarioAutenticado().subscribe({
+              next: (usuario) => {
+                const email = usuario.email;
+                const username = this.extraerNombreUsuario(email);
+                this.usernameSubject.next(username);
+                this.emailSubject.next(email);
+              },
+              error: (error) => {
+                console.error('Error al obtener usuario autenticado', error);
+              },
+            });
+            this.obtenerRoles().subscribe();
+          } else {
+            this.actualizarEstadoLogueado(false);
+            this.usernameSubject.next(null);
+            this.emailSubject.next(null);
+            this.rolesSubject.next([]);
+            this.isAdminSubject.next(false);
+            this.isManagerSubject.next(false);
+            this.isUserSubject.next(false);
+          }
+        }),
+        catchError((error) => {
+          console.error('Error al verificar estado de autenticación', error);
+          this.actualizarEstadoLogueado(false);
+          return of(false);
+        })
+      )
+      .subscribe();
   }
 }

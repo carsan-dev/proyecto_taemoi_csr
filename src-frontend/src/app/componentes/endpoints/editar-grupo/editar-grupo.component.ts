@@ -43,41 +43,35 @@ export class EditarGrupoComponent implements OnInit {
   }
 
   cargarGrupo(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService
-        .obtenerGrupoPorId(this.grupoId, token)
-        .subscribe((grupo: GrupoDTO) => {
-          this.grupoForm.patchValue({ nombre: grupo.nombre });
-        });
-    }
+    this.endpointsService
+      .obtenerGrupoPorId(this.grupoId)
+      .subscribe((grupo: GrupoDTO) => {
+        this.grupoForm.patchValue({ nombre: grupo.nombre });
+      });
   }
 
   actualizarGrupo(): void {
     if (this.grupoForm.valid) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        this.endpointsService
-          .actualizarGrupo(this.grupoId, this.grupoForm.value, token)
-          .subscribe({
-            next: (response) => {
-              Swal.fire({
-                title: 'Perfecto!',
-                text: 'Has creado un nuevo grupo!',
-                icon: 'success',
-              });
-              this.router.navigate(['/gruposListar']);
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error',
-                text: 'Error al actualizar el grupo',
-                icon: 'error',
-              });
-            },
-            complete: () => {},
-          });
-      }
+      this.endpointsService
+        .actualizarGrupo(this.grupoId, this.grupoForm.value)
+        .subscribe({
+          next: (response) => {
+            Swal.fire({
+              title: 'Perfecto!',
+              text: 'Has creado un nuevo grupo!',
+              icon: 'success',
+            });
+            this.router.navigate(['/gruposListar']);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: 'Error al actualizar el grupo',
+              icon: 'error',
+            });
+          },
+          complete: () => {},
+        });
     }
   }
 

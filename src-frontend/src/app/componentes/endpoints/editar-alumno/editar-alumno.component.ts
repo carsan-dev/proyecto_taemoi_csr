@@ -93,17 +93,17 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      // Obtener la lista de alumnos
-      this.obtenerAlumnos();
-  
-      // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
-      this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((fechaNacimiento: string) => {
+    // Obtener la lista de alumnos
+    this.obtenerAlumnos();
+
+    // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
+    this.alumnoForm
+      .get('fechaNacimiento')
+      ?.valueChanges.subscribe((fechaNacimiento: string) => {
         if (fechaNacimiento) {
           this.obtenerGradosDisponibles(fechaNacimiento);
         }
       });
-    }
 
     // Escucha cambios en el tipo de descuento para actualizar la cuantía
     this.alumnoForm
@@ -190,9 +190,9 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   obtenerGradosDisponibles(fechaNacimiento: string) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGradosPorFechaNacimiento(fechaNacimiento, token).subscribe({
+    this.endpointsService
+      .obtenerGradosPorFechaNacimiento(fechaNacimiento)
+      .subscribe({
         next: (grados: TipoGrado[]) => {
           this.tiposGrado = grados; // Asigna la lista de grados recibidos
         },
@@ -202,38 +202,31 @@ export class EditarAlumnoComponent implements OnInit {
             text: 'No se pudieron cargar los grados disponibles.',
             icon: 'error',
           });
-        }
+        },
       });
-    }
   }
-  
 
   obtenerAlumnos() {
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      this.endpointsService
-        .obtenerAlumnos(
-          token,
-          this.paginaActual,
-          this.tamanoPagina,
-          this.nombreFiltro,
-          this.mostrarInactivos
-        )
-        .subscribe({
-          next: (response) => {
-            this.alumnos = response.content;
-            this.totalPaginas = response.totalPages;
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No hemos podido conectar con el servidor',
-              icon: 'error',
-            });
-          },
-        });
-    }
+    this.endpointsService
+      .obtenerAlumnos(
+        this.paginaActual,
+        this.tamanoPagina,
+        this.nombreFiltro,
+        this.mostrarInactivos
+      )
+      .subscribe({
+        next: (response) => {
+          this.alumnos = response.content;
+          this.totalPaginas = response.totalPages;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   confirmarYActualizarAlumno(id: number, alumno: any) {
@@ -264,8 +257,6 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   actualizarAlumno(id: number) {
-    const token = localStorage.getItem('token');
-
     const formData = new FormData();
     formData.append('alumnoEditado', JSON.stringify(this.alumnoForm.value));
 
@@ -274,48 +265,42 @@ export class EditarAlumnoComponent implements OnInit {
     } else if (this.alumnoEditado.fotoAlumno) {
       formData.append('file', this.alumnoEditado.fotoAlumno);
     }
-
-    if (token) {
-      this.endpointsService.actualizarAlumno(id, formData, token).subscribe({
-        next: (response) => {
-          Swal.fire({
-            title: '¡Bien!',
-            text: '¡Alumno actualizado correctamente!',
-            icon: 'success',
-          });
-          this.obtenerAlumnos();
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error al actualizar',
-            text: 'Error al actualizar al alumno',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.actualizarAlumno(id, formData).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: '¡Bien!',
+          text: '¡Alumno actualizado correctamente!',
+          icon: 'success',
+        });
+        this.obtenerAlumnos();
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error al actualizar',
+          text: 'Error al actualizar al alumno',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   eliminarFoto(id: number) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.eliminarImagenAlumno(id, token).subscribe({
-        next: (response) => {
-          this.inputFile.nativeElement.value = '';
-          this.alumnoEditado.fotoAlumno = null;
-          this.imagenPreview = '../../../../assets/media/default.webp';
-          this.obtenerAlumnos();
-        },
+    this.endpointsService.eliminarImagenAlumno(id).subscribe({
+      next: (response) => {
+        this.inputFile.nativeElement.value = '';
+        this.alumnoEditado.fotoAlumno = null;
+        this.imagenPreview = '../../../../assets/media/default.webp';
+        this.obtenerAlumnos();
+      },
 
-        error: (error) => {
-          Swal.fire({
-            title: 'Error al actualizar',
-            text: 'Error al actualizar al alumno',
-            icon: 'error',
-          });
-        },
-      });
-    }
+      error: (error) => {
+        Swal.fire({
+          title: 'Error al actualizar',
+          text: 'Error al actualizar al alumno',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   cambiarPagina(pageNumber: number): void {
@@ -423,13 +408,12 @@ export class EditarAlumnoComponent implements OnInit {
   licenciaEnVigor(fechaLicencia: string): boolean {
     const fechaActual = new Date();
     const fechaLic = new Date(fechaLicencia);
-    
+
     const diferenciaAnios = fechaActual.getFullYear() - fechaLic.getFullYear();
-    
+
     // Si la diferencia es menor a 1 año, la licencia está en vigor
     return diferenciaAnios < 1;
   }
-  
 
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
     switch (tipoTarifa) {

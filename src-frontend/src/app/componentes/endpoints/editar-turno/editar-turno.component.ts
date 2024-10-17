@@ -40,23 +40,26 @@ export class EditarTurnoComponent implements OnInit {
     private endpointsService: EndpointsService,
     private location: Location
   ) {
-    this.turnoForm = this.fb.group({
-      diaSemana: ['', Validators.required],
-      horaInicio: [
-        '',
-        [
-          Validators.required,
-          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+    this.turnoForm = this.fb.group(
+      {
+        diaSemana: ['', Validators.required],
+        horaInicio: [
+          '',
+          [
+            Validators.required,
+            Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+          ],
         ],
-      ],
-      horaFin: [
-        '',
-        [
-          Validators.required,
-          Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        horaFin: [
+          '',
+          [
+            Validators.required,
+            Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
+          ],
         ],
-      ],
-    }, { validators: this.horasValidas });
+      },
+      { validators: this.horasValidas }
+    );
   }
 
   ngOnInit(): void {
@@ -65,57 +68,51 @@ export class EditarTurnoComponent implements OnInit {
   }
 
   cargarTurno(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTurnoPorId(this.turnoId, token).subscribe({
-        next: (turno) => {
-          this.turnoForm.patchValue({
-            diaSemana: turno.diaSemana,
-            horaInicio: turno.horaInicio,
-            horaFin: turno.horaFin,
-          });
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la carga del turno',
-            text: 'No hemos podido cargar los detalles del turno',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerTurnoPorId(this.turnoId).subscribe({
+      next: (turno) => {
+        this.turnoForm.patchValue({
+          diaSemana: turno.diaSemana,
+          horaInicio: turno.horaInicio,
+          horaFin: turno.horaFin,
+        });
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la carga del turno',
+          text: 'No hemos podido cargar los detalles del turno',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   onSubmit(): void {
     if (this.turnoForm.invalid) {
       return;
     }
-    const token = localStorage.getItem('token');
     const { diaSemana, horaInicio, horaFin } = this.turnoForm.value;
     const turnoActualizado = { diaSemana, horaInicio, horaFin };
 
-    if (token) {
-      this.endpointsService
-        .actualizarTurno(this.turnoId, turnoActualizado, token)
-        .subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Actualizado',
-              text: 'El turno ha sido actualizado',
-              icon: 'success',
-            }).then(() => {
-              this.router.navigate(['/turnosListar']);
-            });
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la actualización',
-              text: 'No hemos podido actualizar el turno',
-              icon: 'error',
-            });
-          },
-        });
-    }
+    this.endpointsService
+      .actualizarTurno(this.turnoId, turnoActualizado)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Actualizado',
+            text: 'El turno ha sido actualizado',
+            icon: 'success',
+          }).then(() => {
+            this.router.navigate(['/turnosListar']);
+          });
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la actualización',
+            text: 'No hemos podido actualizar el turno',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   volver() {

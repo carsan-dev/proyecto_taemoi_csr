@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, CommonModule],
   templateUrl: './vista-login.component.html',
-  styleUrl: './vista-login.component.scss',
+  styleUrls: ['./vista-login.component.scss'],
 })
 export class VistaLoginComponent implements OnInit {
   credenciales: LoginInterface = { email: '', contrasena: '' };
@@ -24,20 +24,28 @@ export class VistaLoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        this.authService.obtenerRoles(token);
-        this.authService.rolesCambio.subscribe((roles) => {
-          if (roles.length > 0) {
-            const nombreUsuario = this.authService.obtenerNombreUsuario();
-            Swal.fire({
-              title: 'Atención',
-              text: `Ya estás logueado, ${nombreUsuario}`,
-              icon: 'warning',
-            });
-            this.redirigirSegunRol(roles);
-          }
+    // Verificar si el usuario ya está autenticado
+    if (this.authService.comprobarLogueado()) {
+      // Verificar si los roles ya están cargados
+      if (this.authService.rolesEstanCargados()) {
+        const roles = this.authService.getRolesActuales();
+        const nombreUsuario = this.authService.obtenerNombreUsuario();
+        Swal.fire({
+          title: 'Atención',
+          text: `Ya estás logueado, ${nombreUsuario}`,
+          icon: 'warning',
+        });
+        this.redirigirSegunRol(roles);
+      } else {
+        // Obtener los roles si aún no están cargados
+        this.authService.obtenerRoles().subscribe((roles) => {
+          const nombreUsuario = this.authService.obtenerNombreUsuario();
+          Swal.fire({
+            title: 'Atención',
+            text: `Ya estás logueado, ${nombreUsuario}`,
+            icon: 'warning',
+          });
+          this.redirigirSegunRol(roles);
         });
       }
     }
@@ -55,13 +63,8 @@ export class VistaLoginComponent implements OnInit {
 
   login() {
     this.authService.login(this.credenciales).subscribe({
-      next: (response) => {
-        const token = response.token;
+      next: (roles) => {
         const nombreUsuario = this.authService.obtenerNombreUsuario();
-        localStorage.setItem('token', token);
-        localStorage.setItem('username', nombreUsuario ?? '');
-        this.authService.actualizarEstadoLogueado(true);
-        this.authService.obtenerRoles(token);
 
         Swal.fire({
           title: 'Inicio de sesión exitoso',
@@ -69,11 +72,7 @@ export class VistaLoginComponent implements OnInit {
           icon: 'success',
         });
 
-        this.authService.rolesCambio.subscribe((roles) => {
-          if (roles.length > 0) {
-            this.redirigirSegunRol(roles);
-          }
-        });
+        this.redirigirSegunRol(roles);
       },
       error: (error) => {
         Swal.fire({
@@ -82,7 +81,6 @@ export class VistaLoginComponent implements OnInit {
           icon: 'error',
         });
       },
-      complete: () => {},
     });
   }
 

@@ -47,7 +47,14 @@ export class CrearAlumnoComponent implements OnInit {
         [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
       ],
       direccion: ['', Validators.required],
-      telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],
+      telefono: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern('^[0-9]+$'),
+          Validators.maxLength(9),
+        ],
+      ],
       email: ['', [Validators.required, Validators.email]],
       tipoTarifa: ['', Validators.required],
       fechaAlta: ['', Validators.required],
@@ -62,49 +69,41 @@ export class CrearAlumnoComponent implements OnInit {
   }
 
   cargarGrados(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGrados(token).subscribe({
-        next: (grados) => {
-          this.grados = grados;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron cargar los grados',
-            icon: 'error',
-          });
-        },
-      });
-    }
+    this.endpointsService.obtenerGrados().subscribe({
+      next: (grados) => {
+        this.grados = grados;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los grados',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   onSubmit(): void {
-    const token = localStorage.getItem('token');
     const alumnoData = this.alumnoData.value;
 
-    if (token) {
-      this.endpointsService
-        .crearAlumno(alumnoData, this.imagen, token)
-        .subscribe({
-          next: (response) => {
-            Swal.fire({
-              title: 'Perfecto!',
-              text: 'Has creado un nuevo alumno',
-              icon: 'success',
-            });
-            this.router.navigate(['/alumnosListar']);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No has completado todos los campos requeridos',
-              icon: 'error',
-            });
-          },
-          complete: () => {},
+    this.endpointsService.crearAlumno(alumnoData, this.imagen).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: 'Perfecto!',
+          text: 'Has creado un nuevo alumno',
+          icon: 'success',
         });
-    }
+        this.router.navigate(['/alumnosListar']);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'No has completado todos los campos requeridos',
+          icon: 'error',
+        });
+      },
+      complete: () => {},
+    });
   }
 
   onFileChange(event: any) {
@@ -113,14 +112,16 @@ export class CrearAlumnoComponent implements OnInit {
       this.imagen = fileList[0];
       // Crear una vista previa de la imagen
       const reader = new FileReader();
-      reader.onload = (e) => this.imagenPreview = e.target?.result ?? null;
+      reader.onload = (e) => (this.imagenPreview = e.target?.result ?? null);
       reader.readAsDataURL(this.imagen);
     }
   }
 
   onCompetidorChange(event: any): void {
     if (event.target.checked) {
-      this.alumnoData.get('peso')?.setValidators([Validators.required, Validators.min(0)]);
+      this.alumnoData
+        .get('peso')
+        ?.setValidators([Validators.required, Validators.min(0)]);
       this.alumnoData.get('peso')?.enable();
     } else {
       this.alumnoData.get('peso')?.clearValidators();
@@ -133,7 +134,7 @@ export class CrearAlumnoComponent implements OnInit {
   onLicenciaChange(event: any): void {
     const tieneLicencia = event.target.checked;
     const today = new Date().toISOString().split('T')[0]; // Formato de fecha en YYYY-MM-DD
-  
+
     if (tieneLicencia) {
       // Habilitar y rellenar los campos de licencia
       this.alumnoData.get('numeroLicencia')?.enable();
@@ -153,7 +154,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.imagenPreview = null;
     const fileInput = document.getElementById('fotoAlumno') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = '';  // Limpiar el valor del input
+      fileInput.value = ''; // Limpiar el valor del input
     }
   }
 }
