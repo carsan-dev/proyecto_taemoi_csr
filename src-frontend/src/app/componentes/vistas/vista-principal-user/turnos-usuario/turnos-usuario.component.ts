@@ -9,11 +9,14 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
   standalone: true,
   imports: [CommonModule],
   templateUrl: './turnos-usuario.component.html',
-  styleUrl: './turnos-usuario.component.scss'
+  styleUrls: ['./turnos-usuario.component.scss'],
 })
 export class TurnosUsuarioComponent implements OnInit {
+  grupos: any[] = [];
   turnos: any[] = [];
-  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves'];
+  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  alumnoId!: number;
+  grupoSeleccionadoId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -22,20 +25,46 @@ export class TurnosUsuarioComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const token = localStorage.getItem('token');
-    const grupoId = this.route.snapshot.paramMap.get('id');
+    const alumnoId = this.route.snapshot.paramMap.get('id');
 
-    if (token && grupoId) {
-      this.cargarTurnosDelGrupo(Number(grupoId), token);
+    if (alumnoId) {
+      this.alumnoId = Number(alumnoId);
+      this.cargarGruposDelAlumno(this.alumnoId);
     }
   }
 
-  cargarTurnosDelGrupo(grupoId: number, token: string): void {
-    this.endpointsService.obtenerTurnosDelGrupo(grupoId, token).subscribe({
+  cargarGruposDelAlumno(alumnoId: number): void {
+    this.endpointsService.obtenerGruposDelAlumno(alumnoId).subscribe({
+      next: (grupos) => {
+        this.grupos = grupos;
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'Error al obtener los grupos del alumno.',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  verTurnos(grupoId: number): void {
+    if (this.grupoSeleccionadoId === grupoId) {
+      // Si ya está seleccionado, lo deseleccionamos
+      this.grupoSeleccionadoId = null;
+      this.turnos = [];
+    } else {
+      this.grupoSeleccionadoId = grupoId;
+      this.cargarTurnosDelGrupo(grupoId);
+    }
+  }
+
+  cargarTurnosDelGrupo(grupoId: number): void {
+    this.endpointsService.obtenerTurnosDelGrupo(grupoId).subscribe({
       next: (turnos) => {
         this.turnos = turnos;
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error en la petición',
           text: 'Error al obtener los turnos del grupo.',
