@@ -22,9 +22,9 @@ export class ContactoComponent {
   contactForm: FormGroup;
 
   constructor(
-    private fb: FormBuilder,
-    private mailService: MailService,
-    private spinner: NgxSpinnerService
+    private readonly fb: FormBuilder,
+    private readonly mailService: MailService,
+    private readonly spinner: NgxSpinnerService
   ) {
     this.contactForm = this.fb.group({
       nombre: ['', Validators.required],

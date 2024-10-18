@@ -25,9 +25,9 @@ export class CrearTurnoComponent implements OnInit {
   grupos: any[] = [];
 
   constructor(
-    private fb: FormBuilder,
-    private endpointsService: EndpointsService,
-    private router: Router
+    private readonly fb: FormBuilder,
+    private readonly endpointsService: EndpointsService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {

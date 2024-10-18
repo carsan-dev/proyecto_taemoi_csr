@@ -1,35 +1,39 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, tap, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
 import { Turno } from '../../interfaces/turno';
+import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
+import { throwError } from 'rxjs/internal/observable/throwError';
+import { Observable } from 'rxjs/internal/Observable';
+import { catchError } from 'rxjs/internal/operators/catchError';
+import { tap } from 'rxjs/internal/operators/tap';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EndpointsService {
-  private urlBase = environment.apiUrl;
+  private readonly urlBase = environment.apiUrl;
 
   constructor(private readonly http: HttpClient) {}
 
-  private gruposDelAlumnoSubject = new BehaviorSubject<any[]>([]);
+  private readonly gruposDelAlumnoSubject = new BehaviorSubject<any[]>([]);
   public gruposDelAlumno$ = this.gruposDelAlumnoSubject.asObservable();
 
-  private turnosDelAlumnoSubject = new BehaviorSubject<any[]>([]);
+  private readonly turnosDelAlumnoSubject = new BehaviorSubject<any[]>([]);
   public turnosDelAlumno$ = this.turnosDelAlumnoSubject.asObservable();
 
-  private conteoAlumnosPorGrupoSubject = new BehaviorSubject<any>({});
+  private readonly conteoAlumnosPorGrupoSubject = new BehaviorSubject<any>({});
   public conteoAlumnosPorGrupo$ = this.conteoAlumnosPorGrupoSubject.asObservable();
   public conteoAlumnosPorGrupo: any = {};
 
-  private turnosDelGrupoSubject = new BehaviorSubject<any[]>([]);
+  private readonly turnosDelGrupoSubject = new BehaviorSubject<any[]>([]);
   public turnosDelGrupo$ = this.turnosDelGrupoSubject.asObservable();
 
-  private turnosSubject = new BehaviorSubject<Turno[]>([]);
+  private readonly turnosSubject = new BehaviorSubject<Turno[]>([]);
   public turnos$ = this.turnosSubject.asObservable();
 
-  private eventosSubject = new BehaviorSubject<any[]>([]);
+  private readonly eventosSubject = new BehaviorSubject<any[]>([]);
   public eventos$ = this.eventosSubject.asObservable();
 
   private manejarError(error: any) {

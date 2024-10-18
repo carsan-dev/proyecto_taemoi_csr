@@ -55,7 +55,7 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
       },
     },
   ];
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}
 

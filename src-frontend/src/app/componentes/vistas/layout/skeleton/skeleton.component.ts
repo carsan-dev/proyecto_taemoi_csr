@@ -27,7 +27,7 @@ export class SkeletonComponent implements OnInit, OnDestroy {
   tieneRolAdminOManager: boolean = false;
   sidebarColapsado: boolean = false;
   mostrarLoader: boolean = false;
-  private unsubscribe$ = new Subject<void>();
+  private readonly unsubscribe$ = new Subject<void>();
 
   constructor(private readonly authService: AuthenticationService) {}
 

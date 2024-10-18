@@ -24,11 +24,11 @@ export class EditarGrupoComponent implements OnInit {
   grupoId!: number;
 
   constructor(
-    private fb: FormBuilder,
-    private endpointsService: EndpointsService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private location: Location
+    private readonly fb: FormBuilder,
+    private readonly endpointsService: EndpointsService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly location: Location
   ) {
     this.grupoForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(50)]],

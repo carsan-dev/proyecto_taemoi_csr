@@ -14,7 +14,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 })
 export class EventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,

@@ -4,7 +4,6 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { GrupoDTO } from '../../../interfaces/grupo-dto';
 
 @Component({
   selector: 'app-listado-turnos',

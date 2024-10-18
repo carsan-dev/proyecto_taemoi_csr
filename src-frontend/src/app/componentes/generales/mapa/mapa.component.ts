@@ -16,7 +16,7 @@ export class MapaComponent implements AfterViewInit {
   routingControl?: any;
   pulsatingIcon: any;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
   async ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {

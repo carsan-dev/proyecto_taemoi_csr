@@ -34,11 +34,11 @@ export class EditarTurnoComponent implements OnInit {
   turnoId!: number;
 
   constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router,
-    private endpointsService: EndpointsService,
-    private location: Location
+    private readonly fb: FormBuilder,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly endpointsService: EndpointsService,
+    private readonly location: Location
   ) {
     this.turnoForm = this.fb.group(
       {

@@ -21,7 +21,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   turnos: Turno[] = [];
   turnosDisponibles: Turno[] = [];
   turnoSeleccionado!: number;
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     private readonly route: ActivatedRoute,

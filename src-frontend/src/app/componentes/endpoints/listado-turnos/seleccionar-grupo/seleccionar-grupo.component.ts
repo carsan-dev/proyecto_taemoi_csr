@@ -17,10 +17,10 @@ export class SeleccionarGrupoComponent implements OnInit {
   turnoId!: number;
 
   constructor(
-    private endpointsService: EndpointsService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private location: Location
+    private readonly endpointsService: EndpointsService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {

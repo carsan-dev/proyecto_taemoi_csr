@@ -14,7 +14,7 @@ import { RouterModule } from '@angular/router';
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerGrupos();

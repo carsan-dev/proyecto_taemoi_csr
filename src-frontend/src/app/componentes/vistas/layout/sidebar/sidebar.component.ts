@@ -11,8 +11,8 @@ import {
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../../../servicios/generales/sidebar.service';
-import { Subscription } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-sidebar',
@@ -25,7 +25,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   @Output() colapsoCambiado = new EventEmitter<boolean>();
   @ViewChild('sidebarContainer') sidebarContainer!: ElementRef;
   estaColapsado: boolean = true; // Start collapsed by default
-  private subscription: Subscription = new Subscription();
+  private readonly subscription: Subscription = new Subscription();
   nombreUsuario: string | null = null;
   emailUsuario: string | null = null;
 

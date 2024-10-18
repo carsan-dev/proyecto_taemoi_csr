@@ -8,7 +8,6 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -25,7 +24,6 @@ export class PilatesComponent implements AfterViewInit {
   images!: QueryList<ElementRef>;
 
   constructor(
-    private readonly authService: AuthenticationService,
     @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
