@@ -305,9 +305,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Asignar categoría según la edad del Alumno
-		int edad = calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
-		Categoria categoria = asignarCategoriaSegunEdad(edad);
-		nuevoAlumno.setCategoria(categoria);
+		if (nuevoAlumnoDTO.getPeso() != null) {
+			int edad = calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
+			Categoria categoria = asignarCategoriaSegunEdad(edad);
+			nuevoAlumno.setCategoria(categoria);
+		}
 
 		// Asignar Grado según la edad del Alumno
 		Grado grado = asignarGradoSegunEdad(nuevoAlumnoDTO);
@@ -393,11 +395,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
 			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-			// Actualizar la edad y categoría según la nueva fecha de nacimiento
-			int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
-			Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-			alumnoExistente.setCategoria(nuevaCategoria);
-
 			Grado nuevoGrado = gradoRepository.findByTipoGrado(
 					alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
 			alumnoExistente.setGrado(nuevoGrado);
@@ -425,6 +422,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
 				alumnoExistente.setPeso(alumnoActualizado.getPeso());
 				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
+			}
+			
+			if (alumnoActualizado.getPeso() != null) {
+	            int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+	            Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+	            alumnoExistente.setCategoria(nuevaCategoria);
 			}
 
 			// Manejo de la imagen del alumno
@@ -678,10 +681,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			tipoCategoria = TipoCategoria.PRECADETE;
 		} else if (edad >= 12 && edad <= 14) {
 			tipoCategoria = TipoCategoria.CADETE;
-		} else if (edad >= 15 && edad <= 17) {
+		} else if (edad >= 15 && edad <= 16) {
 			tipoCategoria = TipoCategoria.JUNIOR;
-		} else if (edad >= 16 && edad <= 20) {
-			tipoCategoria = TipoCategoria.SUB21;
 		} else {
 			tipoCategoria = TipoCategoria.SENIOR;
 		}
