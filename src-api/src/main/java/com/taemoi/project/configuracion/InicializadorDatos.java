@@ -274,7 +274,6 @@ public class InicializadorDatos implements CommandLineRunner {
 				.toLocalDate();
 		int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
 
-		alumno.setCategoria(asignarCategoriaSegunEdad(edad));
 		alumno.setGrado(asignarGradoSegunEdad(edad));
 
 		return alumno;
@@ -322,31 +321,6 @@ public class InicializadorDatos implements CommandLineRunner {
 		default:
 			throw new IllegalArgumentException("Tipo de tarifa no válido: " + tipoTarifa);
 		}
-	}
-
-	/**
-	 * Asigna la categoría según la edad del alumno.
-	 *
-	 * @param edad Edad del alumno.
-	 * @return La categoría asignada.
-	 */
-	private Categoria asignarCategoriaSegunEdad(int edad) {
-		TipoCategoria tipoCategoria;
-		if (edad >= 8 && edad <= 9) {
-			tipoCategoria = TipoCategoria.INFANTIL;
-		} else if (edad >= 10 && edad <= 11) {
-			tipoCategoria = TipoCategoria.PRECADETE;
-		} else if (edad >= 12 && edad <= 14) {
-			tipoCategoria = TipoCategoria.CADETE;
-		} else if (edad >= 15 && edad <= 17) {
-			tipoCategoria = TipoCategoria.JUNIOR;
-		} else if (edad >= 16 && edad <= 20) {
-			tipoCategoria = TipoCategoria.SUB21;
-		} else {
-			tipoCategoria = TipoCategoria.SENIOR;
-		}
-
-		return categoriaRepository.findByNombre(tipoCategoria.getNombre());
 	}
 
 	/**
