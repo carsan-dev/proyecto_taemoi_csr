@@ -24,9 +24,9 @@ export class CrearEventoComponent implements OnInit {
   imagePreview: string | null = null; // To store the image preview URL
 
   constructor(
-    private endpointsService: EndpointsService,
-    private fb: FormBuilder,
-    private router: Router
+    private readonly endpointsService: EndpointsService,
+    private readonly fb: FormBuilder,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -41,27 +41,36 @@ export class CrearEventoComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.eventoForm.invalid) {
+      Swal.fire({
+        title: 'Formulario inválido',
+        text: 'Por favor, completa todos los campos requeridos.',
+        icon: 'warning',
+      });
+      return;
+    }
+  
     const eventoForm = this.eventoForm.value;
-
+  
     this.endpointsService.crearEvento(eventoForm, this.imagen).subscribe({
-      next: (response) => {
+      next: () => {
         Swal.fire({
-          title: 'Perfecto!',
+          title: '¡Perfecto!',
           text: 'Has creado un nuevo evento',
           icon: 'success',
         });
         this.router.navigate(['/eventosListar']);
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
+          text: 'No hemos podido crear el evento.',
           icon: 'error',
         });
       },
-      complete: () => {},
     });
   }
+  
 
   // Method to handle image selection and preview
   onFileChange(event: any): void {

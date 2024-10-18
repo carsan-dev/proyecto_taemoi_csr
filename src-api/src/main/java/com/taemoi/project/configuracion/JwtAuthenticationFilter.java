@@ -41,44 +41,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @throws ServletException Si ocurre un error durante el filtrado.
      * @throws IOException      Si ocurre un error de I/O durante el filtrado.
      */
-	@Override
-	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-	        @NonNull FilterChain filterChain) throws ServletException, IOException {
-	    try {
-	    	Cookie[] cookies = request.getCookies();
-	    	String jwt = null;
-	    	if (cookies != null) {
-	    	    for (Cookie cookie : cookies) {
-	    	        if ("jwt".equals(cookie.getName())) {
-	    	            jwt = cookie.getValue();
-	    	            break;
-	    	        }
-	    	    }
-	    	}
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
+        try {
+            Cookie[] cookies = request.getCookies();
+            String jwt = null;
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("jwt".equals(cookie.getName())) {
+                        jwt = cookie.getValue();
+                        break;
+                    }
+                }
+            }
 
-	    	if (jwt == null) {
-	    	    filterChain.doFilter(request, response);
-	    	    return;
-	    	}
+            if (jwt == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-	        final String userEmail = jwtService.extractUserName(jwt);
+            // Extraer el nombre de usuario del token JWT
+            final String userEmail = jwtService.extractUserName(jwt);
 
-	        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-	            UserDetails userDetails = usuarioService.userDetailsService().loadUserByUsername(userEmail);
-	            if (jwtService.isTokenValid(jwt, userDetails)) {
-	                // Autenticación válida
-	                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-	                    userDetails, null, userDetails.getAuthorities()
-	                );
-	                SecurityContextHolder.getContext().setAuthentication(authToken);
-	            }
-	        }
-	    } catch (Exception e) {
-	        logger.error("Error en la validación del token JWT", e);
-	        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
-	        return;
-	    }
-	    filterChain.doFilter(request, response);
-	}
+            // Verificar que el usuario no esté autenticado ya
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // Cargar los detalles del usuario
+                UserDetails userDetails = usuarioService.loadUserByUsername(userEmail);
+                
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
 
+            }
+        } catch (Exception e) {
+            logger.error("Error en la validación del token JWT", e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }

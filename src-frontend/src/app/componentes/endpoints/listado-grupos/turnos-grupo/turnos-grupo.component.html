@@ -8,12 +8,23 @@
         </div>
         <div class="mt-4">
           <h3 class="mb-3 fw-bold">Turnos Asociados</h3>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let turno of turnos">
-              <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
-              <button class="btn btn-danger btn-sm rounded-pill" (click)="eliminarTurnoDelGrupo(turno.id)">Eliminar</button>
-            </li>
-          </ul>
+          <!-- Usamos el async pipe para obtener los turnos del grupo -->
+          <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate">
+            <ul class="list-group">
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+                *ngFor="let turno of turnos"
+              >
+                <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
+                <button class="btn btn-danger btn-sm rounded-pill" (click)="eliminarTurnoDelGrupo(turno.id)">
+                  Eliminar
+                </button>
+              </li>
+            </ul>
+          </div>
+          <ng-template #noTurnosTemplate>
+            <div class="alert alert-warning text-center">No quedan más turnos en el grupo.</div>
+          </ng-template>
         </div>
       </div>
     </div>

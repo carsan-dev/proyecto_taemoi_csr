@@ -11,10 +11,9 @@ import { GrupoDTO } from '../../../interfaces/grupo-dto';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './listado-turnos.component.html',
-  styleUrl: './listado-turnos.component.scss',
+  styleUrls: ['./listado-turnos.component.scss'],
 })
 export class ListadoTurnosComponent implements OnInit {
-  turnos: any[] = [];
   diasSemana: string[] = [
     'Lunes',
     'Martes',
@@ -24,8 +23,6 @@ export class ListadoTurnosComponent implements OnInit {
     'Sábado',
     'Domingo',
   ];
-  grupos: GrupoDTO[] = [];
-  conteoAlumnosPorGrupo: any = {};
   gruposMostrar: string[] = [
     'Taekwondo',
     'Taekwondo Competición',
@@ -33,61 +30,16 @@ export class ListadoTurnosComponent implements OnInit {
     'Kickboxing',
   ];
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    this.obtenerTurnos();
-    this.obtenerGrupos();
-    this.obtenerConteoAlumnosPorGrupo();
+    this.endpointsService.obtenerTurnos();
+    this.endpointsService.obtenerTodosLosGrupos();
+    this.endpointsService.obtenerConteoAlumnosPorGrupo();
   }
 
-  obtenerTurnos(): void {
-    this.endpointsService.obtenerTurnos().subscribe({
-      next: (response) => {
-        this.turnos = response;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  obtenerGrupos(): void {
-    this.endpointsService.obtenerTodosLosGrupos().subscribe({
-      next: (response) => {
-        this.grupos = response;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  obtenerConteoAlumnosPorGrupo(): void {
-    this.endpointsService.obtenerConteoAlumnosPorGrupo().subscribe({
-      next: (response) => {
-        this.conteoAlumnosPorGrupo = response;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido obtener el conteo de alumnos por grupo',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  obtenerTurnosPorDia(diaSemana: string): any[] {
-    return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
+  obtenerTurnosPorDia(turnos: any[], diaSemana: string): any[] {
+    return turnos.filter((turno) => turno.diaSemana === diaSemana);
   }
 
   obtenerTotalAlumnos(turno: any): number {
@@ -95,7 +47,7 @@ export class ListadoTurnosComponent implements OnInit {
   }
 
   obtenerConteoAlumnos(grupoNombre: string): number {
-    return this.conteoAlumnosPorGrupo[grupoNombre] || 0;
+    return this.endpointsService.conteoAlumnosPorGrupo[grupoNombre] || 0;
   }
 
   eliminarTurno(turnoId: number): void {
@@ -117,12 +69,12 @@ export class ListadoTurnosComponent implements OnInit {
               text: 'El turno ha sido eliminado',
               icon: 'success',
             });
-            this.obtenerTurnos();
+            this.endpointsService.obtenerTurnos(); // Recargar los turnos
           },
-          error: (error) => {
+          error: () => {
             Swal.fire({
               title: 'Error en la eliminación',
-              text: 'No hemos podido eliminar el turno' + error,
+              text: 'No hemos podido eliminar el turno',
               icon: 'error',
             });
           },

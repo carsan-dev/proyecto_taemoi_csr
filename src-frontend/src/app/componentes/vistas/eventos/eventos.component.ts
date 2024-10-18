@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-eventos',
@@ -11,23 +12,20 @@ import { Router } from '@angular/router';
   templateUrl: './eventos.component.html',
   styleUrl: './eventos.component.scss',
 })
-export class EventosComponent implements OnInit {
+export class EventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
-  usuarioLogueado: boolean = false;
+  private subscriptions: Subscription = new Subscription();
 
   constructor(
-    private readonly endpointsService: EndpointsService,
+    public endpointsService: EndpointsService,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.obtenerEventos();
-  }
-
-  obtenerEventos() {
-    this.endpointsService.obtenerEventos().subscribe({
-      next: (response) => {
-        this.eventos = response;
+    // Suscribirse al observable de eventos
+    const eventosSubscription = this.endpointsService.eventos$.subscribe({
+      next: (eventos) => {
+        this.eventos = eventos;
       },
       error: (error) => {
         Swal.fire({
@@ -37,6 +35,15 @@ export class EventosComponent implements OnInit {
         });
       },
     });
+
+    this.subscriptions.add(eventosSubscription);
+
+    // Iniciar la carga de eventos
+    this.endpointsService.obtenerEventos();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   verDetalle(id: number) {

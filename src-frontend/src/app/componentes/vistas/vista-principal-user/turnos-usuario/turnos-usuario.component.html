@@ -5,7 +5,9 @@
       <i class="bi bi-arrow-left-circle"></i> Volver
     </button>
   </div>
-  <div *ngIf="grupos.length > 0; else noGruposTemplate">
+
+  <!-- Usamos el async pipe para obtener los grupos -->
+  <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
     <div *ngFor="let grupo of grupos" class="card shadow-lg mb-3">
       <div class="card-header text-center bg-primary text-white">
         <h3 class="card-title">{{ grupo.nombre }}</h3>
@@ -14,8 +16,10 @@
         <button class="btn btn-primary" (click)="verTurnos(grupo.id)">
           {{ grupo.id === grupoSeleccionadoId ? 'Ocultar Turnos' : 'Ver Turnos' }}
         </button>
+
         <div *ngIf="grupo.id === grupoSeleccionadoId">
-          <div *ngIf="diasSemana.length > 0; else noTurnosTemplate">
+          <!-- Usamos el async pipe para obtener los turnos del grupo -->
+          <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate">
             <table class="table custom-table table-striped mt-4">
               <thead class="thead-dark">
                 <tr>
@@ -26,11 +30,11 @@
               </thead>
               <tbody>
                 <ng-container *ngFor="let diaSemana of diasSemana">
-                  <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
-                    <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
+                  <ng-container *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0">
+                    <tr *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana); let i = index">
                       <td
                         *ngIf="i === 0"
-                        [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length"
+                        [attr.rowspan]="obtenerTurnosPorDia(turnos, diaSemana).length"
                         class="text-center align-middle font-weight-bold"
                       >
                         {{ diaSemana }}
@@ -39,7 +43,7 @@
                       <td class="text-center align-middle">{{ turno.horaFin }}</td>
                     </tr>
                   </ng-container>
-                  <tr *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
+                  <tr *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length === 0">
                     <td class="text-center align-middle font-weight-bold">{{ diaSemana }}</td>
                     <td colspan="2" class="text-center align-middle">No hay turnos</td>
                   </tr>
@@ -56,6 +60,7 @@
       </div>
     </div>
   </div>
+
   <ng-template #noGruposTemplate>
     <div class="alert alert-warning text-center mt-4" role="alert">
       No se encontraron grupos para este alumno.

@@ -1,4 +1,4 @@
-<div class="container-fluid py-5"> 
+<div class="container-fluid py-5" *ngIf="endpointsService.turnos$ | async as turnos">
   <div class="row mb-5 justify-content-center align-items-center">
     <div class="col-md-6 text-center mb-4">
       <h2 class="fw-bold">Horario de Turnos</h2>
@@ -22,29 +22,40 @@
   <div class="row">
     <ng-container *ngFor="let diaSemana of diasSemana">
       <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
-        <div class="card turno-card my-3" *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
+        <!-- Verificamos si hay turnos para el día actual -->
+        <div class="card turno-card my-3" *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0; else noTurnosTemplate">
           <div class="card-body">
             <h4 class="card-title text-center">{{ diaSemana }}</h4>
-            <div *ngFor="let turno of obtenerTurnosPorDia(diaSemana)">
+            <!-- Iteramos sobre los turnos del día actual -->
+            <div *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)">
               <div class="turno-info mt-4">
                 <p><strong>Turno:</strong> {{ turno.horaInicio }} - {{ turno.horaFin }}</p>
                 <p><strong>Grupo:</strong> {{ turno.grupoNombre ? turno.grupoNombre : 'Sin grupo' }}</p>
                 <p><strong>Total de alumnos:</strong> {{ obtenerTotalAlumnos(turno) }}</p>
                 <div class="d-flex justify-content-start mt-2">
-                  <button class="btn btn-secondary btn-sm mx-1" [routerLink]="['/seleccionarGrupo', turno.id]">Añadir a Grupo</button>
-                  <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/turnosEditar', turno.id]">Actualizar</button>
-                  <button class="btn btn-danger btn-sm mx-1" (click)="eliminarTurno(turno.id)">Eliminar</button>
+                  <button class="btn btn-secondary btn-sm mx-1" [routerLink]="['/seleccionarGrupo', turno.id]">
+                    Añadir a Grupo
+                  </button>
+                  <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/turnosEditar', turno.id]">
+                    Actualizar
+                  </button>
+                  <button class="btn btn-danger btn-sm mx-1" (click)="eliminarTurno(turno.id)">
+                    Eliminar
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="card turno-card my-3" *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
-          <div class="card-body text-center">
-            <h4 class="card-title">{{ diaSemana }}</h4>
-            <p>No hay turnos</p>
+        <!-- Plantilla alternativa cuando no hay turnos para el día actual -->
+        <ng-template #noTurnosTemplate>
+          <div class="card turno-card my-3">
+            <div class="card-body text-center">
+              <h4 class="card-title">{{ diaSemana }}</h4>
+              <p>No hay turnos</p>
+            </div>
           </div>
-        </div>
+        </ng-template>
       </div>
     </ng-container>
   </div>

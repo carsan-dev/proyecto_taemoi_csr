@@ -1,7 +1,7 @@
 <!-- Modal para ampliar la imagen -->
 <div id="imageModal" class="modal" (click)="cerrarModal()">
   <span class="close" (click)="cerrarModal()">&times;</span>
-  <img class="modal-content" id="imgAmpliada">
+  <img class="modal-content" id="imgAmpliada" />
   <div id="caption"></div>
 </div>
 
@@ -12,24 +12,33 @@
     </div>
   </div>
 
+  <!-- Usamos el async pipe para obtener los eventos -->
   <div class="row">
-    <ng-container *ngFor="let evento of eventos">
-      <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
-        <div class="card evento-card my-3">
-          <div class="card-body">
-            <div class="d-flex justify-content-center mb-3">
-              <img [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                alt="Eventos disponibles" class="imagen-evento" (click)="abrirModal(evento.fotoEvento?.url)"/>
-            </div>
-            <h4 class="card-title text-center">{{ evento.titulo }}</h4>
-            <p class="text-center">{{ evento.descripcion }}</p>
-            <div class="d-flex justify-content-center mt-3">
-              <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">Editar</button>
-              <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
+    <ng-container *ngIf="endpointsService.eventos$ | async as eventos">
+      <ng-container *ngFor="let evento of eventos">
+        <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
+          <div class="card evento-card my-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-center mb-3">
+                <img
+                  [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                  alt="Eventos disponibles"
+                  class="imagen-evento"
+                  (click)="abrirModal(evento.fotoEvento?.url)"
+                />
+              </div>
+              <h4 class="card-title text-center">{{ evento.titulo }}</h4>
+              <p class="text-center">{{ evento.descripcion }}</p>
+              <div class="d-flex justify-content-center mt-3">
+                <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">
+                  Editar
+                </button>
+                <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </ng-container>
   </div>
 </div>

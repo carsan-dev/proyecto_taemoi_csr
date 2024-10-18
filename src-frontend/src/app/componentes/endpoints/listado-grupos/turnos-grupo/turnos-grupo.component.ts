@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-turnos-grupo',
@@ -11,19 +12,24 @@ import { CommonModule, Location } from '@angular/common';
   templateUrl: './turnos-grupo.component.html',
   styleUrl: './turnos-grupo.component.scss',
 })
-export class TurnosGrupoComponent implements OnInit {
+export class TurnosGrupoComponent implements OnInit, OnDestroy {
   grupoId!: number;
   turnos: any[] = [];
+  private subscriptions: Subscription = new Subscription();
 
   constructor(
-    private route: ActivatedRoute,
-    private endpointsService: EndpointsService,
-    private location: Location
+    private readonly route: ActivatedRoute,
+    public endpointsService: EndpointsService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
     this.obtenerGrupoId();
     this.obtenerTurnos();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   obtenerGrupoId() {
@@ -37,9 +43,10 @@ export class TurnosGrupoComponent implements OnInit {
   }
 
   obtenerTurnos() {
-    this.endpointsService.obtenerTurnosDelGrupo(this.grupoId).subscribe({
-      next: (response) => {
-        this.turnos = response;
+    // Suscribirse al Observable expuesto por el BehaviorSubject
+    const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
+      next: (turnos) => {
+        this.turnos = turnos;
       },
       error: (error) => {
         let errorMessage = '';
@@ -55,6 +62,11 @@ export class TurnosGrupoComponent implements OnInit {
         });
       },
     });
+
+    this.subscriptions.add(turnosSubscription);
+
+    // Llamar al método que inicia la carga de datos
+    this.endpointsService.obtenerTurnosDelGrupo(this.grupoId);
   }
 
   eliminarTurnoDelGrupo(turnoId: number) {
@@ -63,40 +75,39 @@ export class TurnosGrupoComponent implements OnInit {
       text: '¡No podrás revertir esto!',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
       confirmButtonText: 'Sí, eliminarlo',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.endpointsService
-          .eliminarTurnoDeGrupo(this.grupoId, turnoId)
-          .subscribe({
-            next: (response) => {
-              Swal.fire({
-                title: 'Bien',
-                text: '¡Turno eliminado correctamente del grupo!',
-                icon: 'success',
-              }).then(() => {
-                this.actualizarTurnos();
-              });
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error',
-                text: 'No hemos podido eliminar el turno.',
-                icon: 'error',
-              });
-            },
-          });
+        this.endpointsService.eliminarTurnoDeGrupo(this.grupoId, turnoId).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Bien',
+              text: '¡Turno eliminado correctamente del grupo!',
+              icon: 'success',
+            }).then(() => {
+              // Llamar a actualizarTurnos para recargar los datos
+              this.actualizarTurnos();
+            });
+          },
+          error: () => {
+            Swal.fire({
+              title: 'Error',
+              text: 'No hemos podido eliminar el turno.',
+              icon: 'error',
+            });
+          },
+        });
       }
     });
   }
+  
 
   actualizarTurnos() {
-    this.endpointsService.obtenerTurnosDelGrupo(this.grupoId).subscribe({
-      next: (response) => {
-        this.turnos = response;
+    // Suscribirse al Observable expuesto por el BehaviorSubject
+    const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
+      next: (turnos) => {
+        this.turnos = turnos;
         if (this.turnos.length === 0) {
           Swal.fire({
             title: 'Advertencia',
@@ -106,22 +117,15 @@ export class TurnosGrupoComponent implements OnInit {
         }
       },
       error: (error) => {
-        if (error.status === 404) {
-          this.turnos = [];
-          Swal.fire({
-            title: 'Advertencia',
-            text: 'No quedan más turnos en el grupo.',
-            icon: 'warning',
-          });
-        } else {
-          Swal.fire({
-            title: 'Error',
-            text: 'Ha ocurrido un error al obtener los turnos.',
-            icon: 'error',
-          });
-        }
+        // Aunque es poco probable que el Observable emita un error aquí,
+        // puedes manejarlo si es necesario
       },
     });
+
+    this.subscriptions.add(turnosSubscription);
+
+    // Llamar al método para iniciar la carga de datos
+    this.endpointsService.obtenerTurnosDelGrupo(this.grupoId);
   }
 
   volver() {

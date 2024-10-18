@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 import { LoginInterface } from '../../interfaces/login-interface';
@@ -46,7 +46,7 @@ export class AuthenticationService {
 
   private rolesCargados: boolean = false;
 
-  constructor(private http: HttpClient) {
+  constructor(private readonly http: HttpClient) {
     this.verificarEstadoAutenticacion();
   }
 
@@ -64,33 +64,46 @@ export class AuthenticationService {
           const email = credenciales.email;
           const username = this.extraerNombreUsuario(email);
           this.actualizarEstadoLogueado(true);
-          this.usernameSubject.next(username);
-          this.emailSubject.next(email);
-          return this.obtenerRoles();
+          this.usernameSubject.next(username); // Actualizar nombre de usuario
+          this.emailSubject.next(email); // Actualizar email
+  
+          // Solo llamamos a obtenerRoles si los roles no han sido cargados
+          if (!this.rolesCargados) {
+            return this.obtenerRoles().pipe(
+              tap(() => {
+                // Si todo fue exitoso y los roles fueron obtenidos, confirmamos el login completo
+                return this.usuarioLogueadoSubject.next(true);
+              })
+            );
+          } else {
+            return of(this.rolesSubject.value);
+          }
         }),
         catchError(this.manejarError)
       );
   }
+  
+  
 
   logout(): void {
     this.http
       .post(`${this.urlBase}/logout`, {}, { withCredentials: true })
       .subscribe({
         next: () => {
+          // Limpiar todos los estados relacionados con el usuario
           this.actualizarEstadoLogueado(false);
-          this.rolesSubject.next([]);
-          this.usernameSubject.next(null);
-          this.emailSubject.next(null);
-          this.isAdminSubject.next(false);
-          this.isManagerSubject.next(false);
-          this.isUserSubject.next(false);
-          this.rolesCargados = false;
+          this.rolesSubject.next([]);  // Limpiar roles
+          this.usernameSubject.next(null);  // Limpiar nombre de usuario
+          this.emailSubject.next(null);  // Limpiar email
+          this.rolesCargados = false;  // Reiniciar roles cargados
         },
         error: (error) => {
           console.error('Error al cerrar sesión', error);
         },
       });
   }
+  
+  
 
   obtenerRoles(): Observable<string[]> {
     return this.http
@@ -98,17 +111,11 @@ export class AuthenticationService {
       .pipe(
         tap((roles) => {
           this.rolesSubject.next(roles);
-          this.isAdminSubject.next(roles.includes('ROLE_ADMIN'));
-          this.isManagerSubject.next(roles.includes('ROLE_MANAGER'));
-          this.isUserSubject.next(roles.includes('ROLE_USER'));
-          this.rolesCargados = true;
+          this.rolesCargados = true;  // Marcar que los roles ya se han cargado
         }),
         catchError((error) => {
           console.error('Error al obtener roles', error);
-          this.rolesSubject.next([]);
-          this.isAdminSubject.next(false);
-          this.isManagerSubject.next(false);
-          this.isUserSubject.next(false);
+          this.rolesSubject.next([]);  // Resetear los roles en caso de error
           this.rolesCargados = true;
           return of([]);
         })
@@ -149,8 +156,8 @@ export class AuthenticationService {
     this.usuarioLogueadoSubject.next(estado);
   }
 
-  obtenerNombreUsuario(): string | null {
-    return this.usernameSubject.value;
+  obtenerNombreUsuario(): Observable<string | null> {
+    return this.usernameCambio;
   }
 
   private extraerNombreUsuario(email: string): string {
@@ -186,7 +193,11 @@ export class AuthenticationService {
                 console.error('Error al obtener usuario autenticado', error);
               },
             });
-            this.obtenerRoles().subscribe();
+  
+            // Solo llamamos a obtenerRoles si los roles no han sido cargados
+            if (!this.rolesCargados) {
+              this.obtenerRoles().subscribe();
+            }
           } else {
             this.actualizarEstadoLogueado(false);
             this.usernameSubject.next(null);
@@ -205,4 +216,5 @@ export class AuthenticationService {
       )
       .subscribe();
   }
+  
 }

@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { Turno } from '../../../../../interfaces/turno';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-gestionar-turnos-alumno',
@@ -14,18 +15,18 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './gestionar-turnos-alumno.component.html',
   styleUrl: './gestionar-turnos-alumno.component.scss',
 })
-export class GestionarTurnosAlumnoComponent implements OnInit {
+export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   alumnoId!: number;
   alumno: AlumnoDTO = {} as AlumnoDTO;
   turnos: Turno[] = [];
   turnosDisponibles: Turno[] = [];
   turnoSeleccionado!: number;
+  private subscriptions: Subscription = new Subscription();
 
   constructor(
-    private route: ActivatedRoute,
-    private endpointsService: EndpointsService,
-    private router: Router,
-    private location: Location
+    private readonly route: ActivatedRoute,
+    public readonly endpointsService: EndpointsService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
@@ -33,8 +34,12 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
       this.alumnoId = +params['alumnoId'];
       this.cargarAlumno();
       this.cargarTurnos();
-      this.cargarTurnosDisponibles();
+      this.endpointsService.obtenerTurnos();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   cargarAlumno(): void {
@@ -53,33 +58,26 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
   }
 
   cargarTurnos(): void {
-    this.endpointsService.obtenerTurnosDelAlumno(this.alumnoId).subscribe({
-      next: (turnos: Turno[]) => {
-        this.turnos = turnos; // Asegúrate de que esta propiedad contiene solo los turnos del alumno
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido obtener los turnos del alumno',
-          icon: 'error',
-        });
-      },
-    });
-  }
+    // Suscribirse al Observable expuesto por el BehaviorSubject
+    const turnosSubscription = this.endpointsService.turnosDelAlumno$.subscribe(
+      {
+        next: (turnos: Turno[]) => {
+          this.turnos = turnos;
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido obtener los turnos del alumno',
+            icon: 'error',
+          });
+        },
+      }
+    );
 
-  cargarTurnosDisponibles(): void {
-    this.endpointsService.obtenerTurnos().subscribe({
-      next: (turnos: Turno[]) => {
-        this.turnosDisponibles = turnos; // Esto debería ser solo para turnos disponibles, no afecta a `this.turnos`
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido obtener los turnos disponibles',
-          icon: 'error',
-        });
-      },
-    });
+    this.subscriptions.add(turnosSubscription);
+
+    // Llamar al método que inicia la carga de datos
+    this.endpointsService.obtenerTurnosDelAlumno(this.alumnoId);
   }
 
   asignarTurno(): void {
@@ -133,6 +131,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
                 'El turno ha sido removido del alumno con éxito',
                 'success'
               );
+              this.cargarTurnos(); // Recargar la lista de turnos
             },
             error: () => {
               Swal.fire({

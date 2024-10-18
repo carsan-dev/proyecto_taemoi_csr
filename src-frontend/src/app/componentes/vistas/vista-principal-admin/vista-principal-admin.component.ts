@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-vista-principal-admin',
@@ -13,12 +13,16 @@ import { Router, RouterLink } from '@angular/router';
 export class VistaPrincipalAdminComponent implements OnInit {
   nombreUsuario: string | null = '';
 
-  constructor(
-    private authService: AuthenticationService,
-    private router: Router
-  ) {}
+  constructor(private readonly authService: AuthenticationService) {}
 
   ngOnInit(): void {
-    this.nombreUsuario = this.authService.obtenerNombreUsuario();
+    // Nos suscribimos al observable del nombre de usuario
+    this.authService.obtenerNombreUsuario().subscribe((nombre) => {
+      if (nombre) {
+        this.nombreUsuario = nombre;
+      } else {
+        this.nombreUsuario = '';
+      }
+    });
   }
 }
