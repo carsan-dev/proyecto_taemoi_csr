@@ -20,10 +20,10 @@ export class GestionarAlumnosComponent implements OnInit {
   alumnos: AlumnoDTO[] = [];
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private endpointsService: EndpointsService,
-    private location: Location
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly endpointsService: EndpointsService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {

@@ -15,7 +15,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 export class TurnosGrupoComponent implements OnInit, OnDestroy {
   grupoId!: number;
   turnos: any[] = [];
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     private readonly route: ActivatedRoute,

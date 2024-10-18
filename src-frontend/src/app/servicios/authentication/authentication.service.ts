@@ -1,46 +1,51 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
+import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
+import { Observable } from 'rxjs/internal/Observable';
+import { of } from 'rxjs/internal/observable/of';
+import { throwError } from 'rxjs/internal/observable/throwError';
+import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { tap } from 'rxjs/internal/operators/tap';
+import { catchError } from 'rxjs/internal/operators/catchError';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthenticationService {
-  private urlBase = environment.apiUrl + '/auth';
+  private readonly urlBase = environment.apiUrl + '/auth';
 
-  private usuarioLogueadoSubject: BehaviorSubject<boolean> =
+  private readonly usuarioLogueadoSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   usuarioLogueadoCambio: Observable<boolean> =
     this.usuarioLogueadoSubject.asObservable();
 
-  private rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<
+  private readonly rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<
     string[]
   >([]);
   rolesCambio: Observable<string[]> = this.rolesSubject.asObservable();
 
-  private usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<
+  private readonly usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<
     string | null
   >(null);
   usernameCambio: Observable<string | null> =
     this.usernameSubject.asObservable();
 
-  private emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<
+  private readonly emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<
     string | null
   >(null);
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
 
-  private isAdminSubject: BehaviorSubject<boolean> =
+  private readonly isAdminSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   isAdminCambio: Observable<boolean> = this.isAdminSubject.asObservable();
 
-  private isManagerSubject: BehaviorSubject<boolean> =
+  private readonly isManagerSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   isManagerCambio: Observable<boolean> = this.isManagerSubject.asObservable();
 
-  private isUserSubject: BehaviorSubject<boolean> =
+  private readonly isUserSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   isUserCambio: Observable<boolean> = this.isUserSubject.asObservable();
 
@@ -71,7 +76,7 @@ export class AuthenticationService {
           if (!this.rolesCargados) {
             return this.obtenerRoles().pipe(
               tap(() => {
-                // Si todo fue exitoso y los roles fueron obtenidos, confirmamos el login completo
+                // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
                 return this.usuarioLogueadoSubject.next(true);
               })
             );

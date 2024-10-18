@@ -15,7 +15,7 @@ import { Turno } from '../../../../interfaces/turno';
 })
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
   turnos: any[] = [];
   diasSemana: string[] = [
     'Lunes',

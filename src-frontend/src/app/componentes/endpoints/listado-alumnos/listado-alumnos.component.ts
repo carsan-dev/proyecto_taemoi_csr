@@ -20,7 +20,7 @@ export class ListadoAlumnosComponent implements OnInit {
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerAlumnos();

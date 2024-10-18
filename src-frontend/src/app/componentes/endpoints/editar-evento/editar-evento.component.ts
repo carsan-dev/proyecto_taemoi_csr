@@ -28,11 +28,11 @@ export class EditarEventoComponent implements OnInit {
   imagenPreview: string | null = null;
 
   constructor(
-    private fb: FormBuilder,
-    private endpointsService: EndpointsService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private location: Location
+    private readonly fb: FormBuilder,
+    private readonly endpointsService: EndpointsService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly location: Location
   ) {
     this.eventoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],

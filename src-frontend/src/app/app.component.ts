@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton.component';
 import { AuthenticationService } from './servicios/authentication/authentication.service';

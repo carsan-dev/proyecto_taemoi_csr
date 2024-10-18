@@ -15,7 +15,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 })
 export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
-  private subscriptions: Subscription = new Subscription();
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,
