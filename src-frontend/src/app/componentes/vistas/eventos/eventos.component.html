@@ -1,11 +1,16 @@
 <div class="main-container">
   <h2 class="text-center h1">METAS Y PRÓXIMOS EVENTOS</h2>
   <div class="container-fluid my-5">
-    <div class="box" *ngFor="let evento of eventos" (click)="verDetalle(evento.id)">
+    <div
+      class="box"
+      *ngFor="let evento of (endpointsService.eventos$ | async)"
+      (click)="verDetalle(evento.id)"
+    >
       <img
-      [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-      class="img-fluid event-img"
-      alt="{{ evento.titulo }}">
+        [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+        class="img-fluid event-img"
+        alt="{{ evento.titulo }}"
+      />
       <div class="event-info">
         <p class="event-title">{{ evento.titulo }}</p>
         <p class="event-description">{{ evento.descripcion }}</p>

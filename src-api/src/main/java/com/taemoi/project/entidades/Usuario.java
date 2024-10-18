@@ -23,7 +23,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
-import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -64,13 +63,10 @@ public class Usuario implements UserDetails {
     @JsonBackReference
 	private Alumno alumno;
 
-	@Transactional
-	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
-		roles.size();
-
-		return roles.stream().map(role -> new SimpleGrantedAuthority(role.name())).collect(Collectors.toList());
-	}
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream().map(role -> new SimpleGrantedAuthority(role.name())).collect(Collectors.toSet());
+    }
 
 	@Override
 	public String getUsername() {

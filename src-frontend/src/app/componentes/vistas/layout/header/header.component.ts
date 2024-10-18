@@ -13,12 +13,12 @@ import Swal from 'sweetalert2';
 })
 export class HeaderComponent implements OnInit {
   usuarioLogueado: boolean = false;
-  adminMenuVisible: boolean = false;
   isAdmin: boolean = false;
-  isManager: boolean = false;
   isUser: boolean = false;
   isHidden: boolean = false;
+  adminMenuVisible: boolean = false;
   private lastScrollTop: number = 0;
+  username: string | null = null;
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -26,17 +26,36 @@ export class HeaderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Escuchar cambios en el estado de usuario logueado
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
+
+      if (estado) {
+        this.comprobarRoles(); // Verificar roles si el usuario está logueado
+      }
     });
-    this.authService.isAdminCambio.subscribe((isAdmin: boolean) => {
-      this.isAdmin = isAdmin;
+
+    // Suscribirse a los cambios en el nombre de usuario
+    this.authService.usernameCambio.subscribe((username: string | null) => {
+      if (username) {
+        this.username = username; // Actualizar el nombre de usuario
+      } else {
+        this.username = null; // Limpiar el nombre de usuario si no existe
+      }
     });
-    this.authService.isManagerCambio.subscribe((isManager: boolean) => {
-      this.isManager = isManager;
-    });
-    this.authService.isUserCambio.subscribe((isUser: boolean) => {
-      this.isUser = isUser;
+
+    // Comprobar si ya está logueado al cargar el componente
+    if (this.authService.comprobarLogueado()) {
+      this.usuarioLogueado = true;
+      this.comprobarRoles();
+    }
+  }
+
+
+  comprobarRoles() {
+    this.authService.getRoles().subscribe((roles: string[]) => {
+      this.isAdmin = roles.includes('ROLE_ADMIN');
+      this.isUser = roles.includes('ROLE_USER');
     });
   }
 
@@ -59,10 +78,24 @@ export class HeaderComponent implements OnInit {
   cerrarSesion() {
     if (this.usuarioLogueado) {
       this.authService.logout();
-      Swal.fire({
-        title: 'Sesión cerrada con éxito',
-        text: '¡Hasta la próxima!',
-        icon: 'success',
+  
+      // Escuchar un solo cambio después de logout
+      const subscription = this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
+        if (!estado) {
+          Swal.fire({
+            title: 'Sesión cerrada con éxito',
+            text: '¡Hasta la próxima!',
+            icon: 'success',
+          });
+  
+          // Redirigir al usuario después de cerrar sesión
+          this.router.navigate(['/inicio']).then(() => {
+            this.adminMenuVisible = false;
+          });
+  
+          // Cancelar la suscripción después del logout
+          subscription.unsubscribe();
+        }
       });
     } else {
       Swal.fire({
@@ -71,8 +104,5 @@ export class HeaderComponent implements OnInit {
         icon: 'warning',
       });
     }
-    this.router.navigate(['/inicio']).then(() => {
-      this.adminMenuVisible = false;
-    });
-  }
+  }  
 }

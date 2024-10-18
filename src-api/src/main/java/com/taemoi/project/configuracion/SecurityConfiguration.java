@@ -50,9 +50,7 @@ public class SecurityConfiguration {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**")).authorizeHttpRequests(request -> request
-						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						.requestMatchers("/api/auth/**")
-						.permitAll()
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll().requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
@@ -130,10 +128,10 @@ public class SecurityConfiguration {
 	 */
 	@Bean
 	AuthenticationProvider authenticationProvider() {
-		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-		authProvider.setUserDetailsService(usuarioService.userDetailsService());
-		authProvider.setPasswordEncoder(passwordEncoder());
-		return authProvider;
+	    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+	    authProvider.setUserDetailsService(usuarioService);  // Ahora es válido
+	    authProvider.setPasswordEncoder(passwordEncoder());
+	    return authProvider;
 	}
 
 	/**

@@ -1,23 +1,30 @@
-<div id="carouselSlider" class="carousel slide" data-bs-ride="carousel">
-  <div class="carousel-inner">
-    <!-- Iterar sobre los eventos y mostrar solo 5 imágenes -->
-    <div *ngFor="let evento of eventos.slice(0, 5); let i = index" class="carousel-item" [ngClass]="{'active': i === 0}">
-      <img
-        [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-        [alt]="evento.titulo"
-        class="d-block w-100 img-fluid event-img">
-      <div class="carousel-caption">
-        <p class="fw-bold h2">{{ evento.titulo }}</p>
-        <p>{{ evento.descripcion }}</p>
+<div *ngIf="endpointsService.eventos$ | async as eventos">
+  <div id="carouselSlider" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <!-- Iteramos sobre los eventos y mostramos solo 5 imágenes -->
+      <div
+        *ngFor="let evento of (eventos.length ? eventos.slice(0, 5) : defaultFotos); let i = index"
+        class="carousel-item"
+        [ngClass]="{ 'active': i === 0 }"
+      >
+        <img
+          [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+          [alt]="evento.titulo"
+          class="d-block w-100 img-fluid event-img"
+        />
+        <div class="carousel-caption">
+          <p class="fw-bold h2">{{ evento.titulo }}</p>
+          <p>{{ evento.descripcion }}</p>
+        </div>
       </div>
     </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselSlider" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Anterior</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselSlider" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Siguiente</span>
+    </button>
   </div>
-  <button class="carousel-control-prev" type="button" data-bs-target="#carouselSlider" data-bs-slide="prev">
-    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    <span class="visually-hidden">Previous</span>
-  </button>
-  <button class="carousel-control-next" type="button" data-bs-target="#carouselSlider" data-bs-slide="next">
-    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    <span class="visually-hidden">Next</span>
-  </button>
 </div>

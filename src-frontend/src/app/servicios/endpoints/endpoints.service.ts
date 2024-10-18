@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, tap, throwError } from 'rxjs';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
 import { Turno } from '../../interfaces/turno';
@@ -11,7 +11,26 @@ import { Turno } from '../../interfaces/turno';
 export class EndpointsService {
   private urlBase = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
+
+  private gruposDelAlumnoSubject = new BehaviorSubject<any[]>([]);
+  public gruposDelAlumno$ = this.gruposDelAlumnoSubject.asObservable();
+
+  private turnosDelAlumnoSubject = new BehaviorSubject<any[]>([]);
+  public turnosDelAlumno$ = this.turnosDelAlumnoSubject.asObservable();
+
+  private conteoAlumnosPorGrupoSubject = new BehaviorSubject<any>({});
+  public conteoAlumnosPorGrupo$ = this.conteoAlumnosPorGrupoSubject.asObservable();
+  public conteoAlumnosPorGrupo: any = {};
+
+  private turnosDelGrupoSubject = new BehaviorSubject<any[]>([]);
+  public turnosDelGrupo$ = this.turnosDelGrupoSubject.asObservable();
+
+  private turnosSubject = new BehaviorSubject<Turno[]>([]);
+  public turnos$ = this.turnosSubject.asObservable();
+
+  private eventosSubject = new BehaviorSubject<any[]>([]);
+  public eventos$ = this.eventosSubject.asObservable();
 
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
@@ -44,14 +63,26 @@ export class EndpointsService {
 
   obtenerAlumnoPorId(alumnoId: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, { withCredentials: true })
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, {
+        withCredentials: true,
+      })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGruposDelAlumno(alumnoId: number): Observable<any> {
-    return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
+  obtenerGruposDelAlumno(alumnoId: number): void {
+    this.http
+      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (grupos) => {
+          this.gruposDelAlumnoSubject.next(grupos);
+        },
+        error: (error) => {
+          console.error('Error al obtener los grupos del alumno:', error);
+        },
+      });
   }
 
   asignarAlumnoATurno(alumnoId: number, turnoId: number): Observable<any> {
@@ -66,20 +97,30 @@ export class EndpointsService {
 
   removerAlumnoDeTurno(alumnoId: number, turnoId: number): Observable<Turno[]> {
     return this.http
-      .delete<Turno[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`, { withCredentials: true })
+      .delete<Turno[]>(
+        `${this.urlBase}/alumnos/${alumnoId}/turnos/${turnoId}`,
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnosDelAlumno(alumnoId: number): Observable<any> {
-    return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
+  obtenerTurnosDelAlumno(alumnoId: number): void {
+    this.http
+      .get<any[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (turnos) => {
+          this.turnosDelAlumnoSubject.next(turnos);
+        },
+        error: (error) => {
+          console.error('Error al obtener los turnos del alumno:', error);
+        },
+      });
   }
 
-  crearAlumno(
-    alumnoData: any,
-    imagen: File | null
-  ): Observable<any> {
+  crearAlumno(alumnoData: any, imagen: File | null): Observable<any> {
     const formData = new FormData();
     formData.append('nuevo', JSON.stringify(alumnoData));
     if (imagen) {
@@ -92,10 +133,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarAlumno(
-    id: number,
-    formData: FormData
-  ): Observable<any> {
+  actualizarAlumno(id: number, formData: FormData): Observable<any> {
     return this.http
       .put<any>(`${this.urlBase}/alumnos/${id}`, formData, {
         withCredentials: true,
@@ -119,13 +157,21 @@ export class EndpointsService {
 
   darDeBajaAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/baja`, {}, { withCredentials: true })
+      .put<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/baja`,
+        {},
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
   darDeAltaAlumno(alumnoId: number): Observable<any> {
     return this.http
-      .put<any>(`${this.urlBase}/alumnos/${alumnoId}/alta`, {}, { withCredentials: true })
+      .put<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/alta`,
+        {},
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
@@ -137,7 +183,9 @@ export class EndpointsService {
 
   obtenerGradosPorFechaNacimiento(fechaNacimiento: string): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, { withCredentials: true })
+      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, {
+        withCredentials: true,
+      })
       .pipe(catchError(this.manejarError));
   }
 
@@ -153,11 +201,22 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerConteoAlumnosPorGrupo(): Observable<any> {
-    return this.http
-      .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
-  }
+obtenerConteoAlumnosPorGrupo(): void {
+  this.http
+    .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, {
+      withCredentials: true,
+    })
+    .pipe(catchError(this.manejarError))
+    .subscribe({
+      next: (conteo) => {
+        this.conteoAlumnosPorGrupoSubject.next(conteo);
+        this.conteoAlumnosPorGrupo = conteo; // Actualizar la propiedad si es necesario
+      },
+      error: (error) => {
+        console.error('Error al obtener el conteo de alumnos por grupo:', error);
+      },
+    });
+}
 
   crearGrupo(grupoData: any): Observable<any> {
     return this.http
@@ -167,10 +226,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarGrupo(
-    id: number,
-    grupoData: GrupoDTO
-  ): Observable<GrupoDTO> {
+  actualizarGrupo(id: number, grupoData: GrupoDTO): Observable<GrupoDTO> {
     return this.http
       .put<GrupoDTO>(`${this.urlBase}/grupos/${id}`, grupoData, {
         withCredentials: true,
@@ -186,10 +242,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  agregarAlumnoAGrupo(
-    grupoId: number,
-    alumnoId: number
-  ): Observable<any> {
+  agregarAlumnoAGrupo(grupoId: number, alumnoId: number): Observable<any> {
     return this.http
       .post<any>(
         `${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`,
@@ -199,10 +252,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  agregarAlumnosAGrupo(
-    grupoId: number,
-    alumnosIds: number[]
-  ): Observable<any> {
+  agregarAlumnosAGrupo(grupoId: number, alumnosIds: number[]): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos/${grupoId}/alumnos`, alumnosIds, {
         withCredentials: true,
@@ -210,10 +260,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarAlumnoDeGrupo(
-    grupoId: number,
-    alumnoId: number
-  ): Observable<any> {
+  eliminarAlumnoDeGrupo(grupoId: number, alumnoId: number): Observable<any> {
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}`, {
         withCredentials: true,
@@ -221,31 +268,31 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnosDelGrupo(grupoId: number): Observable<any> {
-    return this.http
+  obtenerTurnosDelGrupo(grupoId: number): void {
+    this.http
       .get<any>(`${this.urlBase}/grupos/${grupoId}/turnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (turnos) => {
+          this.turnosDelGrupoSubject.next(turnos);
+        },
+        error: (error) => {
+          console.error('Error al obtener los turnos del grupo:', error);
+        },
+      });
+  }
+
+  agregarTurnoAGrupo(grupoId: number, turnoId: number): Observable<any> {
+    return this.http
+      .post<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, null, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  agregarTurnoAGrupo(
-    grupoId: number,
-    turnoId: number
-  ): Observable<any> {
-    return this.http
-      .post<any>(
-        `${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`,
-        null,
-        { withCredentials: true }
-      )
-      .pipe(catchError(this.manejarError));
-  }
-
-  eliminarTurnoDeGrupo(
-    grupoId: number,
-    turnoId: number
-  ): Observable<any> {
+  eliminarTurnoDeGrupo(grupoId: number, turnoId: number): Observable<any> {
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, {
         withCredentials: true,
@@ -253,12 +300,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnos(): Observable<any> {
-    return this.http
+  obtenerTurnos(): void {
+    this.http
       .get<any>(`${this.urlBase}/turnos`, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (turnos) => {
+          this.turnosSubject.next(turnos);
+        },
+        error: (error) => {
+          console.error('Error al obtener los turnos del alumno:', error);
+        },
+      });
   }
 
   obtenerTurnosDTO(): Observable<any> {
@@ -291,10 +346,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarTurno(
-    turnoId: number,
-    turnoData: any
-  ): Observable<any> {
+  actualizarTurno(turnoId: number, turnoData: any): Observable<any> {
     return this.http
       .put<any>(`${this.urlBase}/turnos/${turnoId}`, turnoData, {
         withCredentials: true,
@@ -310,10 +362,18 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerEventos(): Observable<any[]> {
-    return this.http
+  obtenerEventos(): void {
+    this.http
       .get<any[]>(`${this.urlBase}/eventos`)
-      .pipe(catchError(this.manejarError));
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (eventos) => {
+          this.eventosSubject.next(eventos);
+        },
+        error: (error) => {
+          console.error('Error al obtener los eventos:', error);
+        },
+      });
   }
 
   obtenerEventoPorId(eventoId: number): Observable<any> {
@@ -324,10 +384,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  crearEvento(
-    eventoData: any,
-    imagen: File | null
-  ): Observable<any> {
+  crearEvento(eventoData: any, imagen: File | null): Observable<any> {
     const formData = new FormData();
     formData.append('nuevo', JSON.stringify(eventoData));
     if (imagen) {
@@ -337,13 +394,16 @@ export class EndpointsService {
       .post<any>(`${this.urlBase}/eventos/crear`, formData, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap((nuevoEvento) => {
+          const eventosActuales = this.eventosSubject.getValue();
+          this.eventosSubject.next([...eventosActuales, nuevoEvento]);
+        }),
+        catchError(this.manejarError)
+      );
   }
-
-  actualizarEvento(
-    id: number,
-    formData: FormData
-  ): Observable<any> {
+  
+  actualizarEvento(id: number, formData: FormData): Observable<any> {
     return this.http
       .put<any>(`${this.urlBase}/eventos/${id}`, formData, {
         withCredentials: true,
@@ -359,9 +419,21 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  eliminarEvento(id: number): Observable<any> {
-    return this.http
+  eliminarEvento(id: number): void {
+    this.http
       .delete<any>(`${this.urlBase}/eventos/${id}`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: () => {
+          const eventosActuales = this.eventosSubject.getValue();
+          const eventosActualizados = eventosActuales.filter(
+            (evento) => evento.id !== id
+          );
+          this.eventosSubject.next(eventosActualizados);
+        },
+        error: (error) => {
+          console.error('Error al eliminar el evento:', error);
+        },
+      });
   }
 }

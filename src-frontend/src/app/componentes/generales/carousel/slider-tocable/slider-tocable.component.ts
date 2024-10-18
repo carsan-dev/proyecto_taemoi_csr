@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-slider-tocable',
@@ -10,7 +11,7 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
   templateUrl: './slider-tocable.component.html',
   styleUrl: './slider-tocable.component.scss',
 })
-export class SliderTocableComponent implements OnInit {
+export class SliderTocableComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   defaultFotos: any[] = [
     {
@@ -54,21 +55,14 @@ export class SliderTocableComponent implements OnInit {
       },
     },
   ];
+  private subscriptions: Subscription = new Subscription();
 
-  usuarioLogueado: boolean = false;
-
-  constructor(private readonly endpointsService: EndpointsService) {}
+  constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    this.obtenerEventos();
-  }
-
-  obtenerEventos() {
-    this.endpointsService.obtenerEventos().subscribe({
-      next: (response) => {
-        this.eventos = response.length
-          ? response.slice(0, 5)
-          : this.defaultFotos; // Mostrar fotos predeterminadas si no hay eventos
+    const eventosSubscription = this.endpointsService.eventos$.subscribe({
+      next: (eventos) => {
+        this.eventos = eventos.length ? eventos.slice(0, 5) : this.defaultFotos;
       },
       error: (error) => {
         Swal.fire({
@@ -76,8 +70,17 @@ export class SliderTocableComponent implements OnInit {
           text: 'No hemos podido obtener los eventos.',
           icon: 'error',
         });
-        this.eventos = this.defaultFotos; // Mostrar fotos predeterminadas en caso de error
+        this.eventos = this.defaultFotos;
       },
     });
+
+    this.subscriptions.add(eventosSubscription);
+
+    // Iniciar la carga de eventos
+    this.endpointsService.obtenerEventos();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 }

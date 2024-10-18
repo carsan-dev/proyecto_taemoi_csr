@@ -17,35 +17,40 @@ export class VistaLoginComponent implements OnInit {
   credenciales: LoginInterface = { email: '', contrasena: '' };
   passwordFieldType: string = 'password';
   passwordToggleIcon: string = 'bi bi-eye-fill';
+  nombreUsuario: string | null = '';
 
   constructor(
-    private authService: AuthenticationService,
-    private router: Router
+    private readonly authService: AuthenticationService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
     // Verificar si el usuario ya está autenticado
     if (this.authService.comprobarLogueado()) {
-      // Verificar si los roles ya están cargados
       if (this.authService.rolesEstanCargados()) {
         const roles = this.authService.getRolesActuales();
-        const nombreUsuario = this.authService.obtenerNombreUsuario();
-        Swal.fire({
-          title: 'Atención',
-          text: `Ya estás logueado, ${nombreUsuario}`,
-          icon: 'warning',
-        });
-        this.redirigirSegunRol(roles);
-      } else {
-        // Obtener los roles si aún no están cargados
-        this.authService.obtenerRoles().subscribe((roles) => {
-          const nombreUsuario = this.authService.obtenerNombreUsuario();
-          Swal.fire({
-            title: 'Atención',
-            text: `Ya estás logueado, ${nombreUsuario}`,
-            icon: 'warning',
-          });
+        this.authService.obtenerNombreUsuario().subscribe((nombreUsuario) => {
+          if (nombreUsuario) {  // Evitar mostrar "null"
+            Swal.fire({
+              title: 'Atención',
+              text: `Ya estás logueado, ${nombreUsuario}`,
+              icon: 'warning',
+            });
+          }
           this.redirigirSegunRol(roles);
+        });
+      } else {
+        this.authService.obtenerRoles().subscribe((roles) => {
+          this.authService.obtenerNombreUsuario().subscribe((nombreUsuario) => {
+            if (nombreUsuario) {  // Evitar mostrar "null"
+              Swal.fire({
+                title: 'Atención',
+                text: `Ya estás logueado, ${nombreUsuario}`,
+                icon: 'warning',
+              });
+            }
+            this.redirigirSegunRol(roles);
+          });
         });
       }
     }
@@ -64,15 +69,17 @@ export class VistaLoginComponent implements OnInit {
   login() {
     this.authService.login(this.credenciales).subscribe({
       next: (roles) => {
-        const nombreUsuario = this.authService.obtenerNombreUsuario();
-
-        Swal.fire({
-          title: 'Inicio de sesión exitoso',
-          text: `¡Bienvenido/a, ${nombreUsuario}!`,
-          icon: 'success',
+        this.authService.obtenerNombreUsuario().subscribe((nombreUsuario) => {
+          if (nombreUsuario) {  // Asegurarse de que el nombre de usuario no es null
+            Swal.fire({
+              title: 'Inicio de sesión exitoso',
+              text: `¡Bienvenido/a, ${nombreUsuario}!`,
+              icon: 'success',
+            });
+  
+            this.redirigirSegunRol(roles);
+          }
         });
-
-        this.redirigirSegunRol(roles);
       },
       error: (error) => {
         Swal.fire({

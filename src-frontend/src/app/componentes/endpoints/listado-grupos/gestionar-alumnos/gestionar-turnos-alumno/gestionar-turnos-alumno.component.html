@@ -1,9 +1,11 @@
 <div class="container my-5">
   <div class="card p-4 shadow-sm">
-    <h2 class="text-center mb-4 fw-bold">Gestionar Turnos de {{ alumno.nombre }} {{ alumno.apellidos }}</h2>
+    <h2 class="text-center mb-4 fw-bold">
+      Gestionar Turnos de {{ alumno.nombre }} {{ alumno.apellidos }}
+    </h2>
 
     <!-- Sección para mostrar los turnos asignados al alumno -->
-    <div *ngIf="turnos.length > 0; else noTurnos">
+    <div *ngIf="endpointsService.turnosDelAlumno$ | async as turnos; else noTurnos">
       <ul class="p-0">
         <li *ngFor="let turno of turnos" class="list-group-item d-flex justify-content-between align-items-center">
           <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
@@ -21,8 +23,15 @@
       <form (ngSubmit)="asignarTurno()" #turnoForm="ngForm">
         <div class="form-group">
           <label for="turnoSelect">Seleccione un turno</label>
-          <select id="turnoSelect" class="form-control" [(ngModel)]="turnoSeleccionado" name="turnoSeleccionado" required>
-            <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">
+          <select
+            id="turnoSelect"
+            class="form-control"
+            [(ngModel)]="turnoSeleccionado"
+            name="turnoSeleccionado"
+            required
+          >
+            <!-- Usamos el async pipe para obtener los turnos disponibles -->
+            <option *ngFor="let turno of endpointsService.turnos$ | async" [value]="turno.id">
               {{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}
             </option>
           </select>

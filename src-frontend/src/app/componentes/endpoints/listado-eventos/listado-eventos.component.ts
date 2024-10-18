@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 @Component({
   selector: 'app-listado-eventos',
@@ -11,19 +12,16 @@ import { RouterModule } from '@angular/router';
   templateUrl: './listado-eventos.component.html',
   styleUrl: './listado-eventos.component.scss',
 })
-export class ListadoEventosComponent implements OnInit {
+export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
-
-  constructor(private endpointsService: EndpointsService) {}
+  private subscriptions: Subscription = new Subscription();
+  
+  constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
-    this.obtenerEventos();
-  }
-
-  obtenerEventos(): void {
-    this.endpointsService.obtenerEventos().subscribe({
-      next: (response) => {
-        this.eventos = response;
+    const eventosSubscription = this.endpointsService.eventos$.subscribe({
+      next: (eventos) => {
+        this.eventos = eventos;
       },
       error: (error) => {
         Swal.fire({
@@ -33,7 +31,17 @@ export class ListadoEventosComponent implements OnInit {
         });
       },
     });
+
+    this.subscriptions.add(eventosSubscription);
+
+    // Iniciar la carga de eventos
+    this.endpointsService.obtenerEventos();
   }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
 
   eliminarEvento(id: number): void {
     Swal.fire({
@@ -41,29 +49,16 @@ export class ListadoEventosComponent implements OnInit {
       text: 'No podrás revertir esto',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
       confirmButtonText: 'Sí, eliminarlo',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.endpointsService.eliminarEvento(id).subscribe({
-          next: () => {
-            Swal.fire(
-              'Eliminado!',
-              'El evento ha sido eliminado correctamente.',
-              'success'
-            );
-            this.obtenerEventos();
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No hemos podido eliminar el evento',
-              icon: 'error',
-            });
-          },
-        });
+        this.endpointsService.eliminarEvento(id);
+        Swal.fire(
+          'Eliminado!',
+          'El evento ha sido eliminado correctamente.',
+          'success'
+        );
       }
     });
   }

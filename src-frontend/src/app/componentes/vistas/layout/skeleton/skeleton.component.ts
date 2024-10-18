@@ -5,7 +5,10 @@ import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { CommonModule } from '@angular/common';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs/internal/Subject';
+import { takeUntil } from 'rxjs/internal/operators/takeUntil';
+import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { of } from 'rxjs/internal/observable/of';
 
 @Component({
   selector: 'app-skeleton',
@@ -23,24 +26,28 @@ import { Subject, takeUntil } from 'rxjs';
 export class SkeletonComponent implements OnInit, OnDestroy {
   tieneRolAdminOManager: boolean = false;
   sidebarColapsado: boolean = false;
+  mostrarLoader: boolean = false;
   private unsubscribe$ = new Subject<void>();
 
   constructor(private readonly authService: AuthenticationService) {}
 
   ngOnInit(): void {
-    this.authService.rolesCambio
-      .pipe(takeUntil(this.unsubscribe$))
+    // Solo obtener roles si el usuario está autenticado
+    this.authService.usuarioLogueadoCambio
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        switchMap((estado: boolean) => {
+          if (estado) {
+            this.mostrarLoader = true;  // Mostrar loader
+            return this.authService.obtenerRoles();
+          }
+          return of([]);  // No hacer nada si no está autenticado
+        })
+      )
       .subscribe((roles: string[]) => {
+        this.mostrarLoader = false;  // Ocultar loader cuando roles se obtienen
         this.tieneRolAdminOManager =
           roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
-      });
-
-    this.authService.usuarioLogueadoCambio
-      .pipe(takeUntil(this.unsubscribe$))
-      .subscribe((estado: boolean) => {
-        if (!estado) {
-          this.tieneRolAdminOManager = false;
-        }
       });
   }
 

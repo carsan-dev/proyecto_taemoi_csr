@@ -1,5 +1,7 @@
 package com.taemoi.project.controladores;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -111,17 +115,16 @@ public class AuthenticationController {
 	    return ResponseEntity.ok().build();
 	}
 	
-    @GetMapping("/auth-status")
-    public ResponseEntity<Boolean> checkAuthStatus(HttpServletRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // Verificar si el usuario está autenticado y no es anónimo
-        boolean isAuthenticated = authentication != null &&
-                authentication.isAuthenticated() &&
-                !(authentication instanceof AnonymousAuthenticationToken);
-
-        return ResponseEntity.ok(isAuthenticated);
-    }
+	@GetMapping("/auth-status")
+	public ResponseEntity<Boolean> checkAuthStatus(HttpServletRequest request) {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    boolean isAuthenticated = authentication != null &&
+	            authentication.isAuthenticated() &&
+	            !(authentication instanceof AnonymousAuthenticationToken);
+	    
+	    logger.info("Estado de autenticación: {}", isAuthenticated);
+	    return ResponseEntity.ok(isAuthenticated);
+	}
 
 	/**
 	 * Obtiene los roles del usuario autenticado.
@@ -130,10 +133,31 @@ public class AuthenticationController {
 	 */
 	@GetMapping("/roles")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
-	public Set<String> obtenerRoles() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		Usuario usuario = (Usuario) authentication.getPrincipal();
-		return usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+	public ResponseEntity<?> obtenerRoles() {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+	    // Verificar si el usuario está autenticado
+	    if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+	        Map<String, String> response = new HashMap<>();
+	        response.put("error", "El usuario no está autenticado o es anónimo.");
+	        return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);
+	    }
+
+	    Object principal = authentication.getPrincipal();
+
+	    if (principal instanceof Usuario) {
+	        Usuario usuario = (Usuario) principal;
+	        Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+	        return ResponseEntity.ok(roles);
+	    } else if (principal instanceof UserDetails) {
+	        String email = ((UserDetails) principal).getUsername();
+	        Usuario usuario = usuarioService.encontrarPorEmail(email)
+	            .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+	        Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+	        return ResponseEntity.ok(roles);
+	    } else {
+	        throw new ClassCastException("El principal no es un Usuario ni un UserDetails. Tipo: " + principal.getClass().getName());
+	    }
 	}
 
 	@GetMapping("/user")
