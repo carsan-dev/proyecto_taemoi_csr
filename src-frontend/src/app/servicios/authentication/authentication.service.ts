@@ -119,8 +119,7 @@ export class AuthenticationService {
           this.rolesCargados = true;  // Marcar que los roles ya se han cargado
         }),
         catchError((error) => {
-          console.error('Error al obtener roles', error);
-          this.rolesSubject.next([]);  // Resetear los roles en caso de error
+          this.rolesSubject.next([]);
           this.rolesCargados = true;
           return of([]);
         })
