@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -253,31 +254,38 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * @return El alumno generado.
 	 */
 	private Alumno generarAlumno(Faker faker) {
-		Alumno alumno = new Alumno();
-		alumno.setNombre(faker.name().firstName());
-		alumno.setApellidos(faker.name().lastName());
-		alumno.setFechaNacimiento(faker.date().birthday());
-		alumno.setNif(generarNif(faker));
-		alumno.setDireccion(faker.address().fullAddress());
-		alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
-		alumno.setEmail(faker.internet().emailAddress());
-		alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
-		alumno.setFechaAlta(faker.date().birthday());
-		alumno.setFechaBaja(null);
-		TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
-		alumno.setTipoTarifa(tipoTarifa);
+	    Alumno alumno = new Alumno();
+	    alumno.setNombre(faker.name().firstName());
+	    alumno.setApellidos(faker.name().lastName());
+	    alumno.setFechaNacimiento(faker.date().birthday());
+	    alumno.setNif(generarNif(faker));
+	    alumno.setDireccion(faker.address().fullAddress());
+	    alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
+	    alumno.setEmail(faker.internet().emailAddress());
+	    alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
+	    alumno.setFechaAlta(faker.date().birthday());
+	    alumno.setFechaBaja(null);
 
-		double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
-		alumno.setCuantiaTarifa(cuantiaTarifa);
+	    // Asignar tipo de tarifa aleatoria
+	    TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
+	    alumno.setTipoTarifa(tipoTarifa);
 
-		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate();
-		int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
+	    // Asignar cuantía de la tarifa según el tipo
+	    double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
+	    alumno.setCuantiaTarifa(cuantiaTarifa);
 
-		alumno.setGrado(asignarGradoSegunEdad(edad));
+	    // Convertir la fecha de nacimiento de alumno a LocalDate
+	    LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+	    int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
 
-		return alumno;
+	    // Llamar al método asignarGradoSegunEdad que requiere la edad y la fecha de nacimiento
+	    alumno.setGrado(asignarGradoSegunEdad(edad, fechaNacimiento));
+	    
+	    alumno.setFechaGrado(new Date());
+
+	    return alumno;
 	}
+
 
 	private void crearTurno(String dia, String horaInicio, String horaFin, Grupo grupo, String tipo ) {
 		Turno nuevoTurno = new Turno();
@@ -329,22 +337,45 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * @param edad Edad del alumno.
 	 * @return El grado asignado.
 	 */
-	private Grado asignarGradoSegunEdad(int edad) {
-		List<TipoGrado> tiposGradoDisponibles;
-		if (edad > 15) {
-			tiposGradoDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA,
-					TipoGrado.VERDE, TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO);
-		} else {
-			tiposGradoDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
-					TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
-					TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO, TipoGrado.ROJO_NEGRO);
-		}
+	private Grado asignarGradoSegunEdad(int edad, LocalDate fechaNacimiento) {
+	    LocalDate fechaActual = LocalDate.now();
 
-		Random random = new Random();
-		TipoGrado tipoGradoSeleccionado = tiposGradoDisponibles.get(random.nextInt(tiposGradoDisponibles.size()));
+	    // Verificar si cumple 14 años en el año actual
+	    boolean cumpleCatorceEsteAno = fechaNacimiento.plusYears(14).getYear() == fechaActual.getYear();
 
-		return gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
+	    // Se considera menor si tiene menos de 13 años o tiene 13 pero no cumple 14 este año
+	    boolean esMenor = edad < 13 || (edad == 13 && !cumpleCatorceEsteAno);
+
+	    List<TipoGrado> gradosDisponibles;
+
+	    // Si el alumno es menor, asignar grados correspondientes a menores
+	    if (esMenor) {
+	        gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
+	                TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
+	                TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO,
+	                TipoGrado.ROJO_NEGRO_1º_PUM, TipoGrado.ROJO_NEGRO_2º_PUM, TipoGrado.ROJO_NEGRO_3º_PUM);
+	    } else {
+	        // Si el alumno es adulto, asignar grados correspondientes a adultos
+	        gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
+	                TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1º_DAN, TipoGrado.NEGRO_2º_DAN,
+	                TipoGrado.NEGRO_3º_DAN, TipoGrado.NEGRO_4º_DAN, TipoGrado.NEGRO_5º_DAN);
+	    }
+
+	    // Asignar un grado aleatoriamente de la lista de grados disponibles
+	    TipoGrado tipoGradoAsignado = gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
+
+	    // Buscar si el grado ya existe en la base de datos
+	    Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGradoAsignado);
+	    if (gradoExistente != null) {
+	        return gradoExistente;
+	    }
+
+	    // Si no existe, crear un nuevo grado y guardarlo
+	    Grado nuevoGrado = new Grado();
+	    nuevoGrado.setTipoGrado(tipoGradoAsignado);
+	    return gradoRepository.save(nuevoGrado);
 	}
+
 
 	/**
 	 * Asigna todos los alumnos a un grupo aleatorio.

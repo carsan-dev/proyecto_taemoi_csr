@@ -85,6 +85,7 @@ export class CrearAlumnoComponent implements OnInit {
 
   onSubmit(): void {
     const alumnoData = this.alumnoData.value;
+    alumnoData.aptoParaExamen = false;
 
     this.endpointsService.crearAlumno(alumnoData, this.imagen).subscribe({
       next: (response) => {
