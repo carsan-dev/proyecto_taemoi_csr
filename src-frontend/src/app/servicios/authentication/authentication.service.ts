@@ -21,20 +21,17 @@ export class AuthenticationService {
   usuarioLogueadoCambio: Observable<boolean> =
     this.usuarioLogueadoSubject.asObservable();
 
-  private readonly rolesSubject: BehaviorSubject<string[]> = new BehaviorSubject<
-    string[]
-  >([]);
+  private readonly rolesSubject: BehaviorSubject<string[]> =
+    new BehaviorSubject<string[]>([]);
   rolesCambio: Observable<string[]> = this.rolesSubject.asObservable();
 
-  private readonly usernameSubject: BehaviorSubject<string | null> = new BehaviorSubject<
-    string | null
-  >(null);
+  private readonly usernameSubject: BehaviorSubject<string | null> =
+    new BehaviorSubject<string | null>(null);
   usernameCambio: Observable<string | null> =
     this.usernameSubject.asObservable();
 
-  private readonly emailSubject: BehaviorSubject<string | null> = new BehaviorSubject<
-    string | null
-  >(null);
+  private readonly emailSubject: BehaviorSubject<string | null> =
+    new BehaviorSubject<string | null>(null);
   emailCambio: Observable<string | null> = this.emailSubject.asObservable();
 
   private readonly isAdminSubject: BehaviorSubject<boolean> =
@@ -48,6 +45,11 @@ export class AuthenticationService {
   private readonly isUserSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
   isUserCambio: Observable<boolean> = this.isUserSubject.asObservable();
+
+  private readonly alumnoIdSubject: BehaviorSubject<number | null> =
+    new BehaviorSubject<number | null>(null);
+  alumnoIdCambio: Observable<number | null> =
+    this.alumnoIdSubject.asObservable();
 
   private rolesCargados: boolean = false;
 
@@ -71,7 +73,7 @@ export class AuthenticationService {
           this.actualizarEstadoLogueado(true);
           this.usernameSubject.next(username); // Actualizar nombre de usuario
           this.emailSubject.next(email); // Actualizar email
-  
+
           // Solo llamamos a obtenerRoles si los roles no han sido cargados
           if (!this.rolesCargados) {
             return this.obtenerRoles().pipe(
@@ -87,8 +89,6 @@ export class AuthenticationService {
         catchError(this.manejarError)
       );
   }
-  
-  
 
   logout(): void {
     this.http
@@ -97,18 +97,16 @@ export class AuthenticationService {
         next: () => {
           // Limpiar todos los estados relacionados con el usuario
           this.actualizarEstadoLogueado(false);
-          this.rolesSubject.next([]);  // Limpiar roles
-          this.usernameSubject.next(null);  // Limpiar nombre de usuario
-          this.emailSubject.next(null);  // Limpiar email
-          this.rolesCargados = false;  // Reiniciar roles cargados
+          this.rolesSubject.next([]); // Limpiar roles
+          this.usernameSubject.next(null); // Limpiar nombre de usuario
+          this.emailSubject.next(null); // Limpiar email
+          this.rolesCargados = false; // Reiniciar roles cargados
         },
         error: (error) => {
           console.error('Error al cerrar sesión', error);
         },
       });
   }
-  
-  
 
   obtenerRoles(): Observable<string[]> {
     return this.http
@@ -116,7 +114,7 @@ export class AuthenticationService {
       .pipe(
         tap((roles) => {
           this.rolesSubject.next(roles);
-          this.rolesCargados = true;  // Marcar que los roles ya se han cargado
+          this.rolesCargados = true; // Marcar que los roles ya se han cargado
         }),
         catchError((error) => {
           this.rolesSubject.next([]);
@@ -138,7 +136,14 @@ export class AuthenticationService {
   obtenerUsuarioAutenticado(): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/user`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap((usuario) => {
+          if (usuario && usuario.alumnoDTO) {
+            this.guardarAlumnoId(usuario.alumnoDTO.id); // Guardamos el alumnoId
+          }
+        }),
+        catchError(this.manejarError)
+      );
   }
 
   tieneRolAdmin(): boolean {
@@ -178,6 +183,16 @@ export class AuthenticationService {
     return this.rolesCargados;
   }
 
+  // Método para guardar el alumnoId
+  private guardarAlumnoId(alumnoId: number): void {
+    this.alumnoIdSubject.next(alumnoId);
+  }
+
+  // Método para obtener el alumnoId actual
+  getAlumnoId(): number | null {
+    return this.alumnoIdSubject.value;
+  }
+
   // Verificar el estado de autenticación al cargar el servicio
   verificarEstadoAutenticacion() {
     this.http
@@ -197,7 +212,7 @@ export class AuthenticationService {
                 console.error('Error al obtener usuario autenticado', error);
               },
             });
-  
+
             // Solo llamamos a obtenerRoles si los roles no han sido cargados
             if (!this.rolesCargados) {
               this.obtenerRoles().subscribe();
@@ -220,5 +235,4 @@ export class AuthenticationService {
       )
       .subscribe();
   }
-  
 }

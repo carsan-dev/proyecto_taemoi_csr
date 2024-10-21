@@ -1,0 +1,52 @@
+<div class="container-fluid py-5">
+  <div class="row">
+    <div class="col-md-12 mt-3 text-center">
+      <h2 class="fw-bold">Listado de Alumnos Aptos para Examen</h2>
+    </div>
+  </div>
+
+  <!-- Filtro por deporte -->
+  <div class="row my-3 d-flex justify-content-center">
+    <div class="col-md-6 col-lg-4 text-center">
+      <select class="form-select" [(ngModel)]="deporteSeleccionado" (change)="cambiarDeporte(deporteSeleccionado)">
+        <option value="">Mostrar todos los deportes</option>
+        <option *ngFor="let deporte of deportesDisponibles" [value]="deporte">{{ deporte }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Listado de alumnos filtrados -->
+  <div class="row">
+    <div *ngFor="let alumno of alumnosFiltrados" class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
+      <div class="card alumno-card my-3">
+        <div class="card-body d-flex">
+          <!-- Sección izquierda: imagen y nombre -->
+          <div class="left-section text-center">
+            <div class="imagen-perfil-container mx-auto">
+              <img
+                class="imagen-perfil"
+                [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                alt="Perfil del alumno"
+              />
+            </div>
+            <h4 class="mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
+            <p class="mt-1">Nº Exp: {{ alumno.numeroExpediente }}</p>
+          </div>
+
+          <!-- Sección derecha: datos del alumno -->
+          <div class="right-section ms-4">
+            <p>Edad: {{ calcularEdad(alumno.fechaNacimiento) }}</p>
+            <p>Grado: {{ alumno.grado }}</p>
+
+            <!-- Mostramos los deportes en los que está el alumno -->
+            <p>Deportes: 
+              <span *ngFor="let deporte of alumno.deportes; let isLast = last">
+                {{ deporte }}<span *ngIf="!isLast">, </span>
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

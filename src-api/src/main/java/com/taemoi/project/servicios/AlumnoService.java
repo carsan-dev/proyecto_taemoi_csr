@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
@@ -65,9 +66,9 @@ public interface AlumnoService {
 
 	Alumno darDeAltaAlumno(Long id);
 
-	List<Alumno> obtenerAlumnosAptosParaExamen();
+	List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO();
 
-	List<Alumno> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion);
+	List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion);
 
-	Optional<Alumno> obtenerAlumnoAptoPorId(Long id);
+	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 }

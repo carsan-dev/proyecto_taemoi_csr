@@ -12,10 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.NombresGrupo;
@@ -331,18 +331,16 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @return Una lista de objetos TurnoDTO que representan los turnos del grupo.
 	 */
 	@Override
-	public List<TurnoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId) {
-		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-		if (grupoOptional.isPresent()) {
-			Grupo grupo = grupoOptional.get();
-			List<Turno> turnos = grupo.getTurnos();
-			List<TurnoDTO> turnoDTOs = new ArrayList<>();
-			for (Turno turno : turnos) {
-				turnoDTOs.add(TurnoDTO.deTurno(turno));
-			}
-			return turnoDTOs;
-		}
-		return Collections.emptyList();
+	public List<TurnoCortoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId) {
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    if (grupoOptional.isPresent()) {
+	        Grupo grupo = grupoOptional.get();
+	        // Convertir los turnos del grupo a TurnoCortoDTO
+	        return grupo.getTurnos().stream()
+	                .map(TurnoCortoDTO::deTurno)
+	                .collect(Collectors.toList());
+	    }
+	    return Collections.emptyList();
 	}
 
 	/**
@@ -360,6 +358,27 @@ public class GrupoServiceImpl implements GrupoService {
 		}
 		return Collections.emptyList();
 	}
+	
+	@Override
+	public List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId) {
+	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+
+	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+	        Alumno alumno = alumnoOptional.get();
+	        // Filtrar los turnos del grupo para los que el alumno está inscrito
+	        List<Turno> turnosAlumno = alumno.getTurnos().stream()
+	            .filter(turno -> turno.getGrupo().getId().equals(grupoId))
+	            .collect(Collectors.toList());
+
+	        // Convertir los turnos a DTO
+	        return turnosAlumno.stream()
+	            .map(TurnoCortoDTO::deTurno)
+	            .collect(Collectors.toList());
+	    }
+	    return Collections.emptyList();
+	}
+
 
 	/**
 	 * Convierte una entidad Grupo a un DTO GrupoConAlumnosDTO.

@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.servicios.GrupoService;
@@ -79,16 +79,28 @@ public class GrupoController {
      * @param grupoId El ID del grupo.
      * @return ResponseEntity que contiene una lista de objetos TurnoDTO si se encuentran turnos; de lo contrario, un ResponseEntity con estado NOT_FOUND.
      */
-	@GetMapping("/{grupoId}/turnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
-	public ResponseEntity<?> obtenerTurnosDelGrupo(@PathVariable @NonNull Long grupoId) {
-	    List<TurnoDTO> turnosDTO = grupoService.obtenerTurnosDelGrupo(grupoId);
-	    if (!turnosDTO.isEmpty()) {
-	        return ResponseEntity.ok(turnosDTO);
-	    } else {
-	        return ResponseEntity.notFound().build();
-	    }
-	}
+    @GetMapping("/{grupoId}/turnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelGrupo(@PathVariable @NonNull Long grupoId) {
+        List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelGrupo(grupoId);
+        if (!turnosDTO.isEmpty()) {
+            return ResponseEntity.ok(turnosDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{grupoId}/alumnos/{alumnoId}/turnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+    public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId, @PathVariable Long alumnoId) {
+        List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
+        if (!turnosDTO.isEmpty()) {
+            return ResponseEntity.ok(turnosDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 
 	/**
 	 * Crea un nuevo grupo.

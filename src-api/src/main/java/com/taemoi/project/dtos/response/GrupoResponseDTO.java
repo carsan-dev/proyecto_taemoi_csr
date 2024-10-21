@@ -4,6 +4,15 @@ public class GrupoResponseDTO {
     private Long id;
     private String nombre;
 
+	public GrupoResponseDTO() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public GrupoResponseDTO(Long id, String nombre) {
+		this.id = id;
+		this.nombre = nombre;
+	}
+
 	public String getNombre() {
 		return nombre;
 	}

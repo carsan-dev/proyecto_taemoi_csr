@@ -6,9 +6,9 @@ import java.util.Optional;
 
 import org.springframework.lang.NonNull;
 
-import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Grupo;
 
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public interface GrupoService {
 	
 	void eliminarTurnoDeGrupo(@NonNull Long grupoId, @NonNull Long turnoId);
 	
-	List<TurnoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId);
+	List<TurnoCortoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId);
 	
 	GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo);
 	
@@ -43,4 +43,6 @@ public interface GrupoService {
 	void agregarAlumnosAGrupo(@NonNull Long grupoId, List<Long> alumnosIds);
 
 	Map<String, Long> contarAlumnosPorGrupo();
+
+	List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);
 }

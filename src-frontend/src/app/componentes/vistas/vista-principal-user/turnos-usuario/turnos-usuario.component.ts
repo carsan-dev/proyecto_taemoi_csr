@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { Turno } from '../../../../interfaces/turno';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 
 @Component({
   selector: 'app-turnos-usuario',
@@ -16,7 +17,7 @@ import { Turno } from '../../../../interfaces/turno';
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
-  turnos: any[] = [];
+  turnos: Turno[] = [];
   diasSemana: string[] = [
     'Lunes',
     'Martes',
@@ -32,33 +33,39 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   constructor(
     private readonly route: ActivatedRoute,
     public endpointsService: EndpointsService,
-    private readonly location: Location
+    private readonly location: Location,
+    private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
-    const alumnoId = this.route.snapshot.paramMap.get('id');
+    const alumnoId = this.authService.getAlumnoId(); // Obtener el alumno ID del servicio de autenticación
 
     if (alumnoId) {
-      this.alumnoId = Number(alumnoId);
+      this.alumnoId = alumnoId;
       // Suscribirse a los grupos del alumno
-      const gruposSubscription =
-        this.endpointsService.gruposDelAlumno$.subscribe({
-          next: (grupos) => {
-            this.grupos = grupos;
-          },
-          error: () => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'Error al obtener los grupos del alumno.',
-              icon: 'error',
-            });
-          },
-        });
+      const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
+        next: (grupos) => {
+          this.grupos = grupos;
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'Error al obtener los grupos del alumno.',
+            icon: 'error',
+          });
+        },
+      });
 
       this.subscriptions.add(gruposSubscription);
 
       // Cargar los grupos del alumno
       this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
+    } else {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo obtener el ID del alumno autenticado.',
+        icon: 'error',
+      });
     }
   }
 
@@ -74,32 +81,42 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     } else {
       this.grupoSeleccionadoId = grupoId;
 
-      // Suscribirse a los turnos del grupo
-      const turnosSubscription =
-        this.endpointsService.turnosDelGrupo$.subscribe({
-          next: (turnos) => {
-            this.turnos = turnos;
+      // Obtener el ID del alumno autenticado
+      const alumnoId = this.authService.getAlumnoId();
+
+      if (alumnoId) {
+        // Suscribirse a los turnos del alumno en el grupo
+        const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
+          next: (response) => {
+            this.turnos = response; // Ya estamos recibiendo solo los turnos del alumno
           },
           error: () => {
             Swal.fire({
               title: 'Error en la petición',
-              text: 'Error al obtener los turnos del grupo.',
+              text: 'Error al obtener los turnos del alumno en el grupo.',
               icon: 'error',
             });
           },
         });
 
-      this.subscriptions.add(turnosSubscription);
+        this.subscriptions.add(turnosSubscription);
 
-      // Cargar los turnos del grupo seleccionado
-      this.endpointsService.obtenerTurnosDelGrupo(grupoId);
+        // Llamar al nuevo método que obtiene los turnos del alumno en el grupo
+        this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo obtener el ID del alumno autenticado.',
+          icon: 'error',
+        });
+      }
     }
   }
 
   obtenerTurnosPorDia(turnos: Turno[], diaSemana: string): Turno[] {
     return turnos.filter((turno) => turno.diaSemana === diaSemana);
   }
-  
+
   volver() {
     this.location.back();
   }

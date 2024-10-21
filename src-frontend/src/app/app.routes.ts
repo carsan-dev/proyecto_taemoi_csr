@@ -31,6 +31,7 @@ import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-
 import { KickboxingComponent } from './componentes/vistas/kickboxing/kickboxing.component';
 import { PilatesComponent } from './componentes/vistas/pilates/pilates.component';
 import { EventoDetalleComponent } from './componentes/vistas/eventos/evento-detalle/evento-detalle.component';
+import { ListadoExamenesComponent } from './componentes/endpoints/listado-examenes/listado-examenes.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -49,7 +50,7 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   { path: 'userpage', component: VistaPrincipalUserComponent },
-  { path: 'userpage/:id/turnos', component: TurnosUsuarioComponent },
+  { path: 'userpage/:grupoId/turnos', component: TurnosUsuarioComponent },
   {
     path: 'alumnosListar',
     component: ListadoAlumnosComponent,
@@ -68,6 +69,11 @@ export const routes: Routes = [
   {
     path: 'alumnosEliminar',
     component: EliminarAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'listadoExamenes',
+    component: ListadoExamenesComponent,
     canActivate: [roleGuard],
   },
   {
