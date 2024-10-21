@@ -1,19 +1,18 @@
 <div class="container">
-  <div class="card shadow-sm">
-    <div class="card-header text-center bg-primary text-white">
+  <div class="card shadow-lg mb-5 animated-card">
+    <div class="card-header text-center bg-gradient-primary text-white">
       <h1 class="card-title m-0">Tus grupos asociados</h1>
     </div>
     <div class="card-body">
-      <!-- Usamos el async pipe para obtener los grupos del alumno -->
       <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
         <div class="row d-flex justify-content-center align-items-center flex-row">
-          <div *ngFor="let grupo of grupos" class="col-md-6 mb-4">
-            <div class="card h-100 shadow-sm">
+          <div *ngFor="let grupo of grupos" class="col-md-6 mb-4 animated-group">
+            <div class="card h-100 shadow-sm group-card">
               <div class="card-body d-flex flex-column justify-content-between">
                 <h5 class="card-title">{{ grupo.nombre }}</h5>
                 <button
                   type="button"
-                  class="btn btn-primary mt-3"
+                  class="btn btn-primary mt-3 btn-glow"
                   [routerLink]="['/userpage/' + grupo.id + '/turnos']"
                 >
                   <i class="bi bi-calendar-check"></i> Consultar turnos
@@ -27,8 +26,9 @@
   </div>
 
   <ng-template #noGruposTemplate>
-    <div class="alert alert-warning text-center" role="alert">
-      No se encontraron grupos para este alumno.
+    <div class="alert alert-info text-center animated-fade-in" role="alert">
+      <h3>No se encontraron grupos para este alumno.</h3>
+      <p>¡Únete a un grupo para comenzar!</p>
     </div>
   </ng-template>
 </div>

@@ -5,70 +5,96 @@
 }
 
 .card {
-  border-radius: 15px;
+  border-radius: 20px;
   border: none;
   overflow: hidden;
+  transition: all 0.3s ease-in-out;
 
   &-header {
-    background-color: #007bff;
+    background: linear-gradient(90deg, #007bff, #00d4ff);
     color: #fff;
     padding: 20px;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: bold;
+    border-bottom: 4px solid #00bfff;
   }
 
   &-body {
-    padding: 30px;
+    padding: 40px;
+    background-color: #f7f9fc;
+  }
+}
+
+.group-card {
+  border-radius: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  &:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
   }
 }
 
 .card-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .btn-primary {
   background-color: #007bff;
   border: none;
-  border-radius: 30px;
-  padding: 10px 20px;
-  font-size: 1rem;
-  transition: background-color 0.3s;
+  border-radius: 50px;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  text-transform: uppercase;
+
+  &.btn-glow {
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+  }
 
   &:hover {
     background-color: #0056b3;
+    box-shadow: 0 0 25px rgba(0, 123, 255, 0.7);
   }
 }
 
-.alert-warning {
+.animated-card {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.animated-group {
+  animation: fadeIn 1s ease-in-out;
+}
+
+.animated-fade-in {
+  animation: fadeIn 0.7s ease-in-out;
+}
+
+@keyframes slideInUp {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.alert-info {
   font-size: 1.25rem;
   padding: 20px;
   border-radius: 10px;
-}
-
-@media (max-width: 767.98px) {
-  .card {
-    &-header {
-      font-size: 1.25rem;
-    }
-
-    &-body {
-      padding: 15px;
-    }
-  }
-
-  .card-title {
-    font-size: 1rem;
-  }
-
-  .btn-primary {
-    padding: 8px 16px;
-    font-size: 0.875rem;
-  }
-
-  .alert-warning {
-    font-size: 1rem;
-    padding: 15px;
-  }
+  background-color: #e9f5ff;
+  color: #007bff;
 }

@@ -45,6 +45,21 @@ header.fixed-header {
     .nav-item {
       cursor: pointer;
 
+      .btn-ver-clases {
+        background-color: #007bff; // Azul primario ya definido
+        border: none;
+        border-radius: 50px; // Botones redondeados como en los turnos
+        padding: 6px 15px;
+        font-size: 1rem !important;
+        text-transform: uppercase;
+        box-shadow: 0 0 7px rgba(0, 123, 255, 0.6); // Sombra similar
+      
+        &:hover {
+          background-color: #0056b3; // Azul más oscuro en hover
+          box-shadow: 0 0 17px rgba(0, 123, 255, 0.7);
+        }
+      }
+
       .nav-link {
         &.active {
           text-decoration: underline;
