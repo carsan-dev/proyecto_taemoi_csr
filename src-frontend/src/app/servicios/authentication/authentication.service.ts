@@ -186,11 +186,23 @@ export class AuthenticationService {
   // Método para guardar el alumnoId
   private guardarAlumnoId(alumnoId: number): void {
     this.alumnoIdSubject.next(alumnoId);
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.setItem('alumnoId', alumnoId.toString()); // Guardar en sessionStorage
+    }
   }
 
   // Método para obtener el alumnoId actual
   getAlumnoId(): number | null {
-    return this.alumnoIdSubject.value;
+    const alumnoId = this.alumnoIdSubject.value;
+    
+    if (alumnoId) {
+      return alumnoId;
+    } else if (typeof window !== 'undefined' && window.sessionStorage) {
+      const storedAlumnoId = sessionStorage.getItem('alumnoId');
+      return storedAlumnoId ? parseInt(storedAlumnoId, 10) : null;
+    }
+    
+    return null;
   }
 
   // Verificar el estado de autenticación al cargar el servicio

@@ -1,6 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -14,6 +13,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
   templateUrl: './turnos-usuario.component.html',
   styleUrls: ['./turnos-usuario.component.scss'],
 })
+
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
@@ -31,35 +31,18 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupoSeleccionadoId: number | null = null;
 
   constructor(
-    private readonly route: ActivatedRoute,
     public endpointsService: EndpointsService,
     private readonly location: Location,
     private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
-    const alumnoId = this.authService.getAlumnoId(); // Obtener el alumno ID del servicio de autenticación
-
+    // Intentar obtener el alumnoId del servicio o de sessionStorage
+    const alumnoId = this.authService.getAlumnoId();
+  
     if (alumnoId) {
       this.alumnoId = alumnoId;
-      // Suscribirse a los grupos del alumno
-      const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
-        next: (grupos) => {
-          this.grupos = grupos;
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'Error al obtener los grupos del alumno.',
-            icon: 'error',
-          });
-        },
-      });
-
-      this.subscriptions.add(gruposSubscription);
-
-      // Cargar los grupos del alumno
-      this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
+      this.cargarGruposDelAlumno();
     } else {
       Swal.fire({
         title: 'Error',
@@ -68,9 +51,26 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       });
     }
   }
+  
+  cargarGruposDelAlumno(): void {
+    // Suscribirse a los grupos del alumno
+    const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
+      next: (grupos) => {
+        this.grupos = grupos;
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error en la petición',
+          text: 'Error al obtener los grupos del alumno.',
+          icon: 'error',
+        });
+      },
+    });
 
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
+    this.subscriptions.add(gruposSubscription);
+
+    // Llamar a la API para obtener los grupos del alumno
+    this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
   }
 
   verTurnos(grupoId: number): void {
@@ -88,7 +88,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
         // Suscribirse a los turnos del alumno en el grupo
         const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
           next: (response) => {
-            this.turnos = response; // Ya estamos recibiendo solo los turnos del alumno
+            this.turnos = response; // Asigna los turnos recibidos
           },
           error: () => {
             Swal.fire({
@@ -101,7 +101,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
         this.subscriptions.add(turnosSubscription);
 
-        // Llamar al nuevo método que obtiene los turnos del alumno en el grupo
+        // Llamar al método que obtiene los turnos del alumno en el grupo
         this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
       } else {
         Swal.fire({
@@ -117,7 +117,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     return turnos.filter((turno) => turno.diaSemana === diaSemana);
   }
 
-  volver() {
+  volver(): void {
     this.location.back();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 }
