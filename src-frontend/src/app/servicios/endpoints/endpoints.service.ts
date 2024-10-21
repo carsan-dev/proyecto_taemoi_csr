@@ -179,6 +179,31 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+    // Obtener todos los alumnos aptos para examen (genérico)
+    obtenerAlumnosAptosParaExamen(): Observable<any[]> {
+      return this.http
+        .get<any[]>(`${this.urlBase}/alumnos/aptos`, { withCredentials: true })
+        .pipe(catchError(this.manejarError));
+    }
+  
+    // Obtener alumnos aptos para examen por deporte
+    obtenerAlumnosAptosPorDeporte(deporte: string): Observable<any[]> {
+      const params = new HttpParams().set('deporte', deporte);
+      return this.http
+        .get<any[]>(`${this.urlBase}/alumnos/aptos/deporte`, {
+          params,
+          withCredentials: true,
+        })
+        .pipe(catchError(this.manejarError));
+    }
+  
+    // Obtener un alumno apto para examen por su ID
+    obtenerAlumnoAptoPorId(id: number): Observable<any> {
+      return this.http
+        .get<any>(`${this.urlBase}/alumnos/aptos/${id}`, { withCredentials: true })
+        .pipe(catchError(this.manejarError));
+    }
+
   obtenerGrados(): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/grados`, { withCredentials: true })

@@ -27,6 +27,7 @@ public class AlumnoDTO {
 	private Date fechaPeso;
 	private String categoria;
 	private String grado;
+	private Date fechaGrado;
 	private Imagen fotoAlumno;
 	private Boolean tieneLicencia;
 	private Integer numeroLicencia;
@@ -36,7 +37,7 @@ public class AlumnoDTO {
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso,
-			Date fechaPeso, String categoria, String grado, Imagen fotoAlumno, Boolean tieneLicencia,
+			Date fechaPeso, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
 			Integer numeroLicencia, Date fechaLicencia, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
@@ -58,6 +59,7 @@ public class AlumnoDTO {
 		this.fechaPeso = fechaPeso;
 		this.categoria = categoria;
 		this.grado = grado;
+		this.fechaGrado = fechaGrado;
 		this.fotoAlumno = fotoAlumno;
 		this.tieneLicencia = tieneLicencia;
 		this.numeroLicencia = numeroLicencia;
@@ -201,6 +203,14 @@ public class AlumnoDTO {
 		this.grado = grado;
 	}
 
+	public Date getFechaGrado() {
+		return fechaGrado;
+	}
+
+	public void setFechaGrado(Date fechaGrado) {
+		this.fechaGrado = fechaGrado;
+	}
+
 	public Integer getNumeroExpediente() {
 		return numeroExpediente;
 	}
@@ -291,7 +301,8 @@ public class AlumnoDTO {
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(), alumno.getFechaBaja(),
 				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
-				alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFotoAlumno(), alumno.getTieneLicencia() ,alumno.getNumeroLicencia(),
-				alumno.getFechaLicencia(), alumno.getAptoParaExamen());
+				alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(),
+				alumno.getTieneLicencia(), alumno.getNumeroLicencia(), alumno.getFechaLicencia(),
+				alumno.getAptoParaExamen());
 	}
 }

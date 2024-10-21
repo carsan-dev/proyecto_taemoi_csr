@@ -82,6 +82,7 @@ export class EditarAlumnoComponent implements OnInit {
         tieneLicencia: [false],
         numeroLicencia: [''],
         fechaLicencia: [''],
+        aptoParaExamen: [false],
       },
       {
         validators: [
@@ -164,6 +165,7 @@ export class EditarAlumnoComponent implements OnInit {
   handleCompetidorFields(isCompetidor: boolean) {
     const pesoControl = this.alumnoForm.get('peso');
     const fechaPesoControl = this.alumnoForm.get('fechaPeso');
+    const categoriaControl = this.alumnoForm.get('categoria');
 
     if (isCompetidor) {
       pesoControl?.setValidators([Validators.required]);
@@ -183,6 +185,8 @@ export class EditarAlumnoComponent implements OnInit {
 
       pesoControl?.disable();
       fechaPesoControl?.disable();
+      categoriaControl?.setValue(null);  // Eliminar la categoría del formulario
+      this.alumnoEditado.categoria = null;  // Eliminar la categoría del alumno editado
     }
 
     pesoControl?.updateValueAndValidity();
@@ -328,9 +332,7 @@ export class EditarAlumnoComponent implements OnInit {
       ? this.formatDate(alumno.fechaLicencia)
       : '';
     const grado = alumno.grado || '';
-    const aptoParaExamen = alumno.aptoParaExamen
-      ? alumno.aptoParaExamen
-      : false;
+    const aptoParaExamen = alumno.aptoParaExamen ? alumno.aptoParaExamen : false;
 
     this.alumnoForm.patchValue({
       ...this.alumnoEditado,

@@ -353,5 +353,33 @@ public class AlumnoController {
 	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
 	    }
 	}
+	
+    // Endpoint para obtener todos los alumnos aptos para examen
+    @GetMapping("/aptos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<AlumnoDTO>> obtenerAlumnosAptosParaExamen() {
+        List<Alumno> alumnosAptos = alumnoService.obtenerAlumnosAptosParaExamen();
+        return ResponseEntity.ok(alumnosAptos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+    }
 
+    // Endpoint para obtener alumnos aptos para examen por deporte
+    @GetMapping("/aptos/deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<AlumnoDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
+        String exclusion = "competición";
+        if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")) {
+            exclusion = "";  // No excluimos nada para kickboxing o pilates
+        }
+        List<Alumno> alumnosAptos = alumnoService.obtenerAlumnosAptosPorDeporte(deporte, exclusion);
+        return ResponseEntity.ok(alumnosAptos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+    }
+
+    // Endpoint para obtener un alumno apto para examen por su ID
+    @GetMapping("/aptos/{id}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<AlumnoDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
+        Optional<Alumno> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
+        return alumno.map(value -> ResponseEntity.ok(AlumnoDTO.deAlumno(value)))
+                     .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }

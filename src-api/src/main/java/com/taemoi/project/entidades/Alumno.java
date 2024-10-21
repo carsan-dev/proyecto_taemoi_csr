@@ -115,6 +115,9 @@ public class Alumno {
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
 	private Grado grado;
+	
+	@Temporal(TemporalType.DATE)
+	private Date fechaGrado;
 
 	private Boolean aptoParaExamen;
 
@@ -256,7 +259,15 @@ public class Alumno {
 		this.grado = grado;
 	}
 
-    public Boolean getAptoParaExamen() {
+    public Date getFechaGrado() {
+		return fechaGrado;
+	}
+
+	public void setFechaGrado(Date fechaGrado) {
+		this.fechaGrado = fechaGrado;
+	}
+
+	public Boolean getAptoParaExamen() {
         return aptoParaExamen;
     }
 

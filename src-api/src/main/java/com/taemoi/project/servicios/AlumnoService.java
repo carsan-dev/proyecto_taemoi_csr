@@ -64,4 +64,10 @@ public interface AlumnoService {
 	Alumno darDeBajaAlumno(Long id);
 
 	Alumno darDeAltaAlumno(Long id);
+
+	List<Alumno> obtenerAlumnosAptosParaExamen();
+
+	List<Alumno> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion);
+
+	Optional<Alumno> obtenerAlumnoAptoPorId(Long id);
 }
