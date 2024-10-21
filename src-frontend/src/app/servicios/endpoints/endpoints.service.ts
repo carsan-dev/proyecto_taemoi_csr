@@ -24,7 +24,8 @@ export class EndpointsService {
   public turnosDelAlumno$ = this.turnosDelAlumnoSubject.asObservable();
 
   private readonly conteoAlumnosPorGrupoSubject = new BehaviorSubject<any>({});
-  public conteoAlumnosPorGrupo$ = this.conteoAlumnosPorGrupoSubject.asObservable();
+  public conteoAlumnosPorGrupo$ =
+    this.conteoAlumnosPorGrupoSubject.asObservable();
   public conteoAlumnosPorGrupo: any = {};
 
   private readonly turnosDelGrupoSubject = new BehaviorSubject<any[]>([]);
@@ -85,6 +86,28 @@ export class EndpointsService {
         },
         error: (error) => {
           console.error('Error al obtener los grupos del alumno:', error);
+        },
+      });
+  }
+
+  obtenerTurnosDelAlumnoEnGrupo(grupoId: number, alumnoId: number): void {
+    this.http
+      .get<any[]>(
+        `${this.urlBase}/grupos/${grupoId}/alumnos/${alumnoId}/turnos`,
+        {
+          withCredentials: true,
+        }
+      )
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (turnos) => {
+          this.turnosDelGrupoSubject.next(turnos); // Actualiza el BehaviorSubject con los turnos filtrados
+        },
+        error: (error) => {
+          console.error(
+            'Error al obtener los turnos del alumno en el grupo:',
+            error
+          );
         },
       });
   }
@@ -179,30 +202,32 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-    // Obtener todos los alumnos aptos para examen (genérico)
-    obtenerAlumnosAptosParaExamen(): Observable<any[]> {
-      return this.http
-        .get<any[]>(`${this.urlBase}/alumnos/aptos`, { withCredentials: true })
-        .pipe(catchError(this.manejarError));
-    }
-  
-    // Obtener alumnos aptos para examen por deporte
-    obtenerAlumnosAptosPorDeporte(deporte: string): Observable<any[]> {
-      const params = new HttpParams().set('deporte', deporte);
-      return this.http
-        .get<any[]>(`${this.urlBase}/alumnos/aptos/deporte`, {
-          params,
-          withCredentials: true,
-        })
-        .pipe(catchError(this.manejarError));
-    }
-  
-    // Obtener un alumno apto para examen por su ID
-    obtenerAlumnoAptoPorId(id: number): Observable<any> {
-      return this.http
-        .get<any>(`${this.urlBase}/alumnos/aptos/${id}`, { withCredentials: true })
-        .pipe(catchError(this.manejarError));
-    }
+  // Obtener todos los alumnos aptos para examen (genérico)
+  obtenerAlumnosAptosParaExamen(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/aptos`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  // Obtener alumnos aptos para examen por deporte
+  obtenerAlumnosAptosPorDeporte(deporte: string): Observable<any[]> {
+    const params = new HttpParams().set('deporte', deporte);
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/aptos/deporte`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  // Obtener un alumno apto para examen por su ID
+  obtenerAlumnoAptoPorId(id: number): Observable<any> {
+    return this.http
+      .get<any>(`${this.urlBase}/alumnos/aptos/${id}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
 
   obtenerGrados(): Observable<any> {
     return this.http
@@ -230,22 +255,25 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-obtenerConteoAlumnosPorGrupo(): void {
-  this.http
-    .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, {
-      withCredentials: true,
-    })
-    .pipe(catchError(this.manejarError))
-    .subscribe({
-      next: (conteo) => {
-        this.conteoAlumnosPorGrupoSubject.next(conteo);
-        this.conteoAlumnosPorGrupo = conteo; // Actualizar la propiedad si es necesario
-      },
-      error: (error) => {
-        console.error('Error al obtener el conteo de alumnos por grupo:', error);
-      },
-    });
-}
+  obtenerConteoAlumnosPorGrupo(): void {
+    this.http
+      .get<any>(`${this.urlBase}/grupos/conteo-alumnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (conteo) => {
+          this.conteoAlumnosPorGrupoSubject.next(conteo);
+          this.conteoAlumnosPorGrupo = conteo; // Actualizar la propiedad si es necesario
+        },
+        error: (error) => {
+          console.error(
+            'Error al obtener el conteo de alumnos por grupo:',
+            error
+          );
+        },
+      });
+  }
 
   crearGrupo(grupoData: any): Observable<any> {
     return this.http
@@ -305,6 +333,7 @@ obtenerConteoAlumnosPorGrupo(): void {
       .pipe(catchError(this.manejarError))
       .subscribe({
         next: (turnos) => {
+          console.log('Turnos recibidos:', turnos);
           this.turnosDelGrupoSubject.next(turnos);
         },
         error: (error) => {
@@ -431,7 +460,7 @@ obtenerConteoAlumnosPorGrupo(): void {
         catchError(this.manejarError)
       );
   }
-  
+
   actualizarEvento(id: number, formData: FormData): Observable<any> {
     return this.http
       .put<any>(`${this.urlBase}/eventos/${id}`, formData, {

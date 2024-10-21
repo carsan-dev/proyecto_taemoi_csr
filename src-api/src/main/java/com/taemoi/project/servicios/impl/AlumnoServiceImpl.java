@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
@@ -681,24 +682,37 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 	}
 
-	// Obtener todos los alumnos aptos para examen
-	@Override
-	public List<Alumno> obtenerAlumnosAptosParaExamen() {
-		return alumnoRepository.findByAptoParaExamenTrue();
-	}
+    // Método para obtener alumnos aptos y mapear a AlumnoConGruposDTO
+    public List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO() {
+        List<Alumno> alumnos = alumnoRepository.findByAptoParaExamenTrue();  // Método existente
 
-	// Obtener alumnos aptos para examen por deporte, excluyendo "competición" en el
-	// caso de taekwondo
-	@Override
-	public List<Alumno> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion) {
-		return alumnoRepository.findAptosParaExamenPorDeporte(deporte, exclusion);
-	}
+        // Mapeo a AlumnoConGruposDTO
+        return alumnos.stream()
+            .map(AlumnoConGruposDTO::deAlumnoConGrupos)  // Reutilizamos el método estático de mapeo
+            .collect(Collectors.toList());
+    }
 
-	// Obtener un alumno apto para examen por su ID
-	@Override
-	public Optional<Alumno> obtenerAlumnoAptoPorId(Long id) {
-		return alumnoRepository.findAptoParaExamenById(id);
-	}
+ // Servicio para obtener alumnos aptos para examen por deporte, excluyendo "competición"
+    @Override
+    public List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion) {
+        List<Alumno> alumnos = alumnoRepository.findAptosParaExamenPorDeporte(deporte, exclusion);
+        
+        // Mapeamos la lista de alumnos a AlumnoConGruposDTO
+        return alumnos.stream()
+            .map(AlumnoConGruposDTO::deAlumnoConGrupos)  // Reutilizamos el método de mapeo
+            .collect(Collectors.toList());
+    }
+
+
+ // Servicio para obtener un alumno apto para examen por su ID
+    @Override
+    public Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id) {
+        Optional<Alumno> alumno = alumnoRepository.findAptoParaExamenById(id);
+        
+        // Convertimos el alumno a AlumnoConGruposDTO si está presente
+        return alumno.map(AlumnoConGruposDTO::deAlumnoConGrupos);
+    }
+
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.

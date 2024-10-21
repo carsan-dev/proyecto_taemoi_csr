@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
+import { calcularEdad } from '../../../utilities/calcular-edad';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -50,14 +51,7 @@ export class ListadoAlumnosComponent implements OnInit {
   }
 
   calcularEdad(fechaNacimiento: string): number {
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return edad;
+    return calcularEdad(fechaNacimiento); // Llama a una función utilitaria que calcule la edad
   }
 
   cambiarPagina(pageNumber: number): void {

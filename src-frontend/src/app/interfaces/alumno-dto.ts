@@ -1,4 +1,5 @@
 export interface AlumnoDTO {
+  grupos: any;
   id: number;
   nombre: string;
   apellidos: string;

@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Imagen;
@@ -356,30 +357,35 @@ public class AlumnoController {
 	
     // Endpoint para obtener todos los alumnos aptos para examen
     @GetMapping("/aptos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<AlumnoDTO>> obtenerAlumnosAptosParaExamen() {
-        List<Alumno> alumnosAptos = alumnoService.obtenerAlumnosAptosParaExamen();
-        return ResponseEntity.ok(alumnosAptos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+    public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosParaExamen() {
+        List<AlumnoConGruposDTO> alumnos = alumnoService.obtenerAlumnosAptosConGruposDTO();
+        return ResponseEntity.ok(alumnos);
     }
 
     // Endpoint para obtener alumnos aptos para examen por deporte
     @GetMapping("/aptos/deporte")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<AlumnoDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
         String exclusion = "competición";
         if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")) {
             exclusion = "";  // No excluimos nada para kickboxing o pilates
         }
-        List<Alumno> alumnosAptos = alumnoService.obtenerAlumnosAptosPorDeporte(deporte, exclusion);
-        return ResponseEntity.ok(alumnosAptos.stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+
+        // Llamamos al servicio modificado que devuelve AlumnoConGruposDTO
+        List<AlumnoConGruposDTO> alumnosAptos = alumnoService.obtenerAlumnosAptosPorDeporte(deporte, exclusion);
+        return ResponseEntity.ok(alumnosAptos);
     }
+
 
     // Endpoint para obtener un alumno apto para examen por su ID
     @GetMapping("/aptos/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AlumnoDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
-        Optional<Alumno> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
-        return alumno.map(value -> ResponseEntity.ok(AlumnoDTO.deAlumno(value)))
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
+        Optional<AlumnoConGruposDTO> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
+        
+        // Si el alumno está presente, lo devolvemos en la respuesta
+        return alumno.map(ResponseEntity::ok)
                      .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
 }

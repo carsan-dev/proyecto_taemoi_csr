@@ -50,8 +50,8 @@ public class SecurityConfiguration {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**")).authorizeHttpRequests(request -> request
-						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll().requestMatchers("/api/auth/**").permitAll()
-						.requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll().requestMatchers("/api/auth/**")
+						.permitAll().requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -71,6 +71,8 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/turnos")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/conteo-alumnos")
@@ -128,10 +130,10 @@ public class SecurityConfiguration {
 	 */
 	@Bean
 	AuthenticationProvider authenticationProvider() {
-	    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-	    authProvider.setUserDetailsService(usuarioService);  // Ahora es válido
-	    authProvider.setPasswordEncoder(passwordEncoder());
-	    return authProvider;
+		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+		authProvider.setUserDetailsService(usuarioService); // Ahora es válido
+		authProvider.setPasswordEncoder(passwordEncoder());
+		return authProvider;
 	}
 
 	/**
