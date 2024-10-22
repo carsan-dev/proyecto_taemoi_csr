@@ -1,13 +1,13 @@
 package com.taemoi.project.entidades;
 
 public class NombresGrupo {
-    public static final String TAEKWONDO_LUNES_MIERCOLES_INFANTIL = "Taekwondo Lunes y Miércoles Infantil";
-    public static final String TAEKWONDO_LUNES_MIERCOLES_JOVEN = "Taekwondo Lunes y Miércoles Joven";
-    public static final String TAEKWONDO_LUNES_MIERCOLES_ADULTO = "Taekwondo Lunes y Miércoles Adulto";
-    public static final String TAEKWONDO_MARTES_JUEVES_INFANTIL = "Taekwondo Martes y Jueves Infantil";
-    public static final String TAEKWONDO_MARTES_JUEVES_JOVEN = "Taekwondo Martes y Jueves Joven";
-    public static final String TAEKWONDO_MARTES_JUEVES_ADULTO = "Taekwondo Martes y Jueves Adulto";
+    public static final String TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO = "Taekwondo Lunes y Miércoles Primer Turno";
+    public static final String TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO = "Taekwondo Lunes y Miércoles Segundo Turno";
+    public static final String TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO = "Taekwondo Lunes y Miércoles Tercer Turno";
+    public static final String TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO = "Taekwondo Martes y Jueves Primer Turno";
+    public static final String TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO = "Taekwondo Martes y Jueves Segundo Turno";
+    public static final String TAEKWONDO_MARTES_JUEVES_TERCER_TURNO = "Taekwondo Martes y Jueves Tercer Turno";
     public static final String TAEKWONDO_COMPETICION = "Taekwondo Competición";
-    public static final String PILATES = "Pilates";
-    public static final String KICKBOXING = "Kickboxing";
+    public static final String PILATES_MARTES_JUEVES = "Pilates Martes y Jueves";
+    public static final String KICKBOXING_LUNES_MIERCOLES = "Kickboxing Lunes y Miércoles";
 }

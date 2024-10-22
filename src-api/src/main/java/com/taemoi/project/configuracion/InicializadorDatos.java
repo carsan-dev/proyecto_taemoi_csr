@@ -101,36 +101,36 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-	    Grupo lunesMiercolesInfantil = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL);
-	    Grupo lunesMiercolesJoven = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN);
-	    Grupo lunesMiercolesAdulto = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO);
-	    Grupo martesJuevesInfantil = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL);
-	    Grupo martesJuevesJoven = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN);
-	    Grupo martesJuevesAdulto = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO);
+	    Grupo taekwondoLunesMiercolesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO);
+	    Grupo taekwondoLunesMiercolesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO);
+	    Grupo taekwondoLunesMiercolesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO);
+	    Grupo taekwondoMartesJuevesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO);
+	    Grupo taekwondoMartesJuevesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO);
+	    Grupo taekwondoMartesJuevesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO);
 	    Grupo competicion = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_COMPETICION);
-	    Grupo pilates = obtenerOcrearGrupo(NombresGrupo.PILATES);
-	    Grupo kickboxing = obtenerOcrearGrupo(NombresGrupo.KICKBOXING);
+	    Grupo pilatesMartesJueves = obtenerOcrearGrupo(NombresGrupo.PILATES_MARTES_JUEVES);
+	    Grupo kickboxingLunesMiercoles = obtenerOcrearGrupo(NombresGrupo.KICKBOXING_LUNES_MIERCOLES);
 		
 	    if (turnoRepository.count() == 0) {
-			crearTurno("Lunes", "17:00", "18:00", lunesMiercolesInfantil, "Taekwondo Infantil");
-			crearTurno("Lunes", "18:00", "19:00", lunesMiercolesJoven, "Taekwondo Joven");
-			crearTurno("Lunes", "19:00", "20:30", lunesMiercolesAdulto, "Taekwondo Adulto");
-			crearTurno("Lunes", "20:30", "21:30", kickboxing, "Kickboxing");
+			crearTurno("Lunes", "17:00", "18:00", taekwondoLunesMiercolesPrimerTurno, "Taekwondo Primer Turno Lunes");
+			crearTurno("Lunes", "18:00", "19:00", taekwondoLunesMiercolesSegundoTurno, "Taekwondo Segundo Turno Lunes");
+			crearTurno("Lunes", "19:00", "20:30", taekwondoLunesMiercolesTercerTurno, "Taekwondo Tercer Turno Lunes");
+			crearTurno("Lunes", "20:30", "21:30", kickboxingLunesMiercoles, "Kickboxing Lunes");
 			
-			crearTurno("Martes", "10:00", "11:15", pilates, "Pilates");
-			crearTurno("Martes", "17:00", "18:00", martesJuevesInfantil, "Taekwondo Infantil");
-			crearTurno("Martes", "18:00", "19:00", martesJuevesJoven, "Taekwondo Joven");
-			crearTurno("Martes", "19:00", "20:00", martesJuevesAdulto, "Taekwondo Adulto");
+			crearTurno("Martes", "10:00", "11:15", pilatesMartesJueves, "Pilates Martes");
+			crearTurno("Martes", "17:00", "18:00", taekwondoMartesJuevesPrimerTurno, "Taekwondo Primer Turno Martes");
+			crearTurno("Martes", "18:00", "19:00", taekwondoMartesJuevesSegundoTurno, "Taekwondo Segundo Turno Martes");
+			crearTurno("Martes", "19:00", "20:00", taekwondoMartesJuevesTercerTurno, "Taekwondo Tercer Turno Martes");
 			
-			crearTurno("Miércoles", "17:00", "18:00", lunesMiercolesInfantil, "Taekwondo Infantil");
-			crearTurno("Miércoles", "18:00", "19:00", lunesMiercolesJoven, "Taekwondo Joven");
-			crearTurno("Miércoles", "19:00", "20:30", lunesMiercolesAdulto, "Taekwondo Adulto");
-			crearTurno("Miércoles", "20:30", "21:30", kickboxing, "Kickboxing");
+			crearTurno("Miércoles", "17:00", "18:00", taekwondoLunesMiercolesPrimerTurno, "Taekwondo Primer Turno Miércoles");
+			crearTurno("Miércoles", "18:00", "19:00", taekwondoLunesMiercolesSegundoTurno, "Taekwondo Segundo Turno Miércoles");
+			crearTurno("Miércoles", "19:00", "20:30", taekwondoLunesMiercolesTercerTurno, "Taekwondo Tercer Turno Miércoles");
+			crearTurno("Miércoles", "20:30", "21:30", kickboxingLunesMiercoles, "Kickboxing Miércoles");
 			
-			crearTurno("Jueves", "10:00", "11:15", pilates, "Pilates");
-			crearTurno("Jueves", "17:00", "18:00", martesJuevesInfantil, "Taekwondo Infantil");
-			crearTurno("Jueves", "18:00", "19:00", martesJuevesJoven, "Taekwondo Joven");
-			crearTurno("Jueves", "19:00", "20:00", martesJuevesAdulto, "Taekwondo Adulto");
+			crearTurno("Jueves", "10:00", "11:15", pilatesMartesJueves, "Pilates Jueves");
+			crearTurno("Jueves", "17:00", "18:00", taekwondoMartesJuevesPrimerTurno, "Taekwondo Primer Turno Jueves");
+			crearTurno("Jueves", "18:00", "19:00", taekwondoMartesJuevesSegundoTurno, "Taekwondo Segundo Turno Jueves");
+			crearTurno("Jueves", "19:00", "20:00", taekwondoMartesJuevesTercerTurno, "Taekwondo Tercer Turno Jueves");
 			crearTurno("Jueves", "20:00", "21:30", competicion, "Taekwondo Competición");
 	    }
         if (gradoRepository.count() == 0) {

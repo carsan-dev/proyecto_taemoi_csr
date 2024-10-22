@@ -7,55 +7,34 @@
   </div>
 
   <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
-    <div *ngFor="let grupo of grupos" class="card shadow-lg mb-4 animated-group">
-      <div class="card-header text-center bg-gradient-primary text-white">
-        <h3 class="card-title">{{ grupo.nombre }}</h3>
-      </div>
-      <div class="card-body">
-        <button class="btn btn-primary" (click)="verTurnos(grupo.id)">
-          {{ grupo.id === grupoSeleccionadoId ? 'Ocultar Turnos' : 'Ver Turnos' }}
-        </button>
+    <!-- Acordeón para mostrar los grupos con sus turnos -->
+    <div class="accordion" id="gruposAccordion">
+      <div *ngFor="let grupo of grupos; let i = index" class="card shadow-lg mb-3">
+        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{ grupo.nombre }}</h5>
+          <button class="btn btn-sm btn-outline-light" (click)="toggleVerTurnos(grupo.id, i)">
+            {{ grupo.id === grupoSeleccionadoId ? 'Ocultar Turnos' : 'Ver Turnos' }}
+          </button>
+        </div>
 
-        <div *ngIf="grupo.id === grupoSeleccionadoId" class="animated-turnos mt-4">
+        <!-- Control de visibilidad con animación -->
+        <div *ngIf="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i" 
+             class="card-body" 
+             [ngClass]="{ 'open': grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i }">
           <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate">
-            
-            <!-- Tabla de turnos ajustada al estilo del componente -->
-            <div class="table-responsive d-none d-md-block">
-              <table class="table custom-table table-hover table-bordered mt-4">
-                <thead class="thead-light">
-                  <tr>
-                    <th class="text-center">Día de la Semana</th>
-                    <th class="text-center">Turnos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let diaSemana of diasSemana">
-                    <td class="align-middle text-center font-weight-bold">{{ diaSemana }}</td>
-                    <td>
-                      <div *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)" class="turno-item p-2 my-2">
-                        <span class="turno-hora">{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                      </div>
-                      <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length === 0" class="no-turnos text-center">
-                        No hay turnos disponibles
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Versión para pantallas pequeñas -->
-            <div class="d-md-none">
-              <div *ngFor="let diaSemana of diasSemana" class="dia-container mb-4">
-                <div class="dia-header p-2 rounded">{{ diaSemana }}</div>
-                <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0">
-                  <div *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)" class="turno-item p-3 mt-2">
-                    <div class="turno-hora">{{ turno.horaInicio }} - {{ turno.horaFin }}</div>
-                  </div>
-                </div>
-                <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length === 0" class="no-turnos p-2 mt-2 text-muted">
-                  No hay turnos disponibles
-                </div>
+            <!-- Listado de turnos -->
+            <div *ngFor="let diaSemana of diasSemana" class="dia-container mb-4 animated-turnos">
+              <h6 class="dia-header p-2 rounded">{{ diaSemana }}</h6>
+              <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0">
+                <ul class="list-group">
+                  <li *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)" 
+                      class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                  </li>
+                </ul>
+              </div>
+              <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length === 0" class="no-turnos p-2 mt-2 text-muted">
+                No hay turnos disponibles
               </div>
             </div>
           </div>
