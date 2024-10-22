@@ -128,20 +128,20 @@ public class TurnoServiceImpl implements TurnoService {
     }
     
     private String determinarTipoPorNombreGrupo(String nombreGrupo) {
-        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL) ||
-            nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL)) {
+        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO) ||
+            nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO)) {
             return "Taekwondo Infantil";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN)) {
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO)) {
             return "Taekwondo Joven";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO)) {
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO) ||
+                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO)) {
             return "Taekwondo Adulto";
         } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_COMPETICION)) {
             return "Taekwondo Competición";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.KICKBOXING)) {
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.KICKBOXING_LUNES_MIERCOLES)) {
             return "Kickboxing";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.PILATES)) {
+        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.PILATES_MARTES_JUEVES)) {
             return "Pilates";
         } 
         else {

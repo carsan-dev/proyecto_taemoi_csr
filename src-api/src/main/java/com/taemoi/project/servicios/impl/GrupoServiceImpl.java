@@ -214,16 +214,16 @@ public class GrupoServiceImpl implements GrupoService {
 	    Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
 
 	    // Obtener el número de alumnos en cada grupo
-	    conteoAlumnosPorGrupo.put("Taekwondo", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_INFANTIL)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_INFANTIL)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_JOVEN)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_JOVEN)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_ADULTO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_ADULTO));
+	    conteoAlumnosPorGrupo.put("Taekwondo", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO)
+	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO));
 
 	    conteoAlumnosPorGrupo.put("Taekwondo Competición", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_COMPETICION));
-	    conteoAlumnosPorGrupo.put("Pilates", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.PILATES));
-	    conteoAlumnosPorGrupo.put("Kickboxing", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.KICKBOXING));
+	    conteoAlumnosPorGrupo.put("Pilates", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.PILATES_MARTES_JUEVES));
+	    conteoAlumnosPorGrupo.put("Kickboxing", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.KICKBOXING_LUNES_MIERCOLES));
 
 	    return conteoAlumnosPorGrupo;
 	}
@@ -378,7 +378,6 @@ public class GrupoServiceImpl implements GrupoService {
 	    }
 	    return Collections.emptyList();
 	}
-
 
 	/**
 	 * Convierte una entidad Grupo a un DTO GrupoConAlumnosDTO.

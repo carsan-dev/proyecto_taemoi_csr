@@ -13,7 +13,6 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
   templateUrl: './turnos-usuario.component.html',
   styleUrls: ['./turnos-usuario.component.scss'],
 })
-
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
@@ -29,6 +28,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   ];
   alumnoId!: number;
   grupoSeleccionadoId: number | null = null;
+  expandedGrupoIndex: number | null = null; // Variable para manejar el acordeón
 
   constructor(
     public endpointsService: EndpointsService,
@@ -37,9 +37,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Intentar obtener el alumnoId del servicio o de sessionStorage
     const alumnoId = this.authService.getAlumnoId();
-  
     if (alumnoId) {
       this.alumnoId = alumnoId;
       this.cargarGruposDelAlumno();
@@ -51,9 +49,8 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       });
     }
   }
-  
+
   cargarGruposDelAlumno(): void {
-    // Suscribirse a los grupos del alumno
     const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
       next: (grupos) => {
         this.grupos = grupos;
@@ -68,40 +65,36 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(gruposSubscription);
-
-    // Llamar a la API para obtener los grupos del alumno
     this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
   }
 
-  verTurnos(grupoId: number): void {
-    if (this.grupoSeleccionadoId === grupoId) {
-      // Deselecciona el grupo y limpia los turnos
+  toggleVerTurnos(grupoId: number, index: number): void {
+    // Si el grupo ya está expandido y seleccionado, lo colapsamos
+    if (this.grupoSeleccionadoId === grupoId && this.expandedGrupoIndex === index) {
       this.grupoSeleccionadoId = null;
+      this.expandedGrupoIndex = -1;
       this.turnos = [];
     } else {
+      // De lo contrario, expandimos el grupo y cargamos los turnos
       this.grupoSeleccionadoId = grupoId;
+      this.expandedGrupoIndex = index;
 
-      // Obtener el ID del alumno autenticado
       const alumnoId = this.authService.getAlumnoId();
-
       if (alumnoId) {
-        // Suscribirse a los turnos del alumno en el grupo
-        const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
-          next: (response) => {
-            this.turnos = response; // Asigna los turnos recibidos
-          },
-          error: () => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'Error al obtener los turnos del alumno en el grupo.',
-              icon: 'error',
-            });
-          },
-        });
-
+        const turnosSubscription =
+          this.endpointsService.turnosDelGrupo$.subscribe({
+            next: (response) => {
+              this.turnos = response;
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error en la petición',
+                text: 'Error al obtener los turnos del alumno en el grupo.',
+                icon: 'error',
+              });
+            },
+          });
         this.subscriptions.add(turnosSubscription);
-
-        // Llamar al método que obtiene los turnos del alumno en el grupo
         this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
       } else {
         Swal.fire({

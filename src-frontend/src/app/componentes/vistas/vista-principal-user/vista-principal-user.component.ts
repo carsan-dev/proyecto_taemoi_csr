@@ -70,4 +70,44 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     // Llamar al método que inicia la carga de datos
     this.endpointsService.obtenerGruposDelAlumno(alumnoId);
   }
+
+  obtenerClaseGrupo(grupoId: number): string {
+    switch (grupoId) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+        return 'taekwondo';
+      case 7:
+        return 'competicion';
+      case 8:
+        return 'pilates';
+      case 9:
+        return 'kickboxing';
+      default:
+        return ''; // Clase por defecto
+    }
+  }
+
+  obtenerEmoticonoCategoria(grupoId: number): string {
+    switch (grupoId) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+        return '🥋'; // Taekwondo
+      case 7:
+        return '🥋'; // Taekwondo Competición
+      case 8:
+        return '🧘‍♀️'; // Pilates
+      case 9:
+        return '🥊'; // Kickboxing
+      default:
+        return '❓'; // Emoticono por defecto
+    }
+  }
 }

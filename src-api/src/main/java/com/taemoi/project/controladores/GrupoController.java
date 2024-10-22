@@ -101,7 +101,6 @@ public class GrupoController {
         }
     }
 
-
 	/**
 	 * Crea un nuevo grupo.
 	 *
