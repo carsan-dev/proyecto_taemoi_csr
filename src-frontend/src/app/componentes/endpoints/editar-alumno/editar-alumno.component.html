@@ -1,12 +1,14 @@
 <div id="imageModal" class="modal" (click)="cerrarModal()">
-  <span class="close" (click)="cerrarModal()">&times;</span>
+  <span class="close" (click)="cerrarModal()"><i class="bi bi-x-circle-fill"></i></span>
   <img class="modal-content" id="imgAmpliada">
   <div id="caption"></div>
 </div>
 <div class="container-fluid pb-4">
   <div class="row">
     <div class="mt-5 d-flex flex-column flex-wrap justify-content-center align-items-center">
+      
       <div *ngIf="!mostrarFormulario" class="py-5 w-100">
+        
         <div class="row my-3 d-flex flex-row justify-content-between">
           <div class="col-md-6 col-lg-4">
             <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
@@ -18,17 +20,16 @@
             </button>
           </div>
         </div>
-        <div class="card-container">
+
+        <div class="card-container d-flex flex-wrap justify-content-center">
           <div *ngFor="let alumno of alumnos" class="card shadow-sm mb-4">
-            <div class="card-body d-flex flex-row justify-content-center align-items-center flex-wrap">
-              <div class="profile-info d-flex align-items-center mb-3">
-                <img class="imagen-perfil me-3"
+            <div class="card-body d-flex flex-column align-items-center text-center">
+              <div class="profile-info mb-3">
+                <img class="imagen-perfil"
                   [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
                   alt="Perfil del alumno" (click)="abrirModal(alumno.fotoAlumno?.url)">
-                <div>
-                  <h5 class="card-title mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h5>
-                  <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
-                </div>
+                <h5 class="card-title mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h5>
+                <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
               </div>
               <button class="btn btn-primary" (click)="alternarFormulario(alumno)">
                 Mostrar menú de edición
@@ -39,8 +40,9 @@
             </app-paginacion>
           </div>
         </div>
-        <div class="row" *ngFor="let alumno of alumnos">
-          <div class="col-lg-6 col-md-12 mb-4">
+
+        <div class="row mt-5">
+          <div *ngFor="let alumno of alumnos" class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title mb-3">Información Personal</h5>
@@ -75,7 +77,7 @@
                       {{ licenciaEnVigor(alumno.fechaLicencia) ? 'Licencia en vigor' : 'Licencia caducada' }}
                     </div>
                   </div>
-                </div>                
+                </div>
                 <div>
                   <strong>Competidor:</strong> {{ alumno.competidor ? 'Sí' : 'No' }}
                 </div>
@@ -91,7 +93,7 @@
               </div>
             </div>
           </div>
-          <div class="col-lg-6 col-md-12 mb-4">
+          <div class="col-lg-6 col-md-12 mb-4" *ngFor="let alumno of alumnos">
             <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title mb-3">Pagos</h5>
@@ -104,9 +106,7 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="row" *ngFor="let alumno of alumnos">
-          <div class="col-lg-6 col-md-12 mb-4">
+          <div class="col-lg-6 col-md-12 mb-4" *ngFor="let alumno of alumnos">
             <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title mb-3">Contacto</h5>
@@ -119,7 +119,7 @@
               </div>
             </div>
           </div>
-          <div class="col-lg-6 col-md-12 mb-4">
+          <div class="col-lg-6 col-md-12 mb-4" *ngFor="let alumno of alumnos">
             <div class="card shadow-sm">
               <div class="card-body">
                 <h5 class="card-title mb-3">Información adicional</h5>
@@ -140,16 +140,15 @@
                 </div>
                 <div class="mb-3">
                   <strong>Apto para examen:</strong> {{ alumno.aptoParaExamen ? 'Sí' : 'No' }}
-                  <!-- Mostrar la fecha de grado si está disponible -->
                   <span *ngIf="alumno?.fechaGrado" class="ms-3">
                     <strong>Fecha de Grado:</strong> {{ alumno.fechaGrado | date: 'dd/MM/yyyy' }}
                   </span>
                 </div>
-                
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
       <div *ngIf="mostrarFormulario" class="py-5 w-100">

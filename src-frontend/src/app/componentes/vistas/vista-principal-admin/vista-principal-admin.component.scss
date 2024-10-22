@@ -40,6 +40,11 @@
         background-color: #0056b3;
         box-shadow: 0 0 10px rgba(0, 86, 179, 0.5);
       }
+
+      &.btn-success:hover {
+        background-color: #1b6d2d;
+        box-shadow: 0 0 10px rgba(27, 109, 45, 0.5);
+      }
     }
   }
 }
