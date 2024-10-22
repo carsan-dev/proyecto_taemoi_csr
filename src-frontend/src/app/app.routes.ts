@@ -72,7 +72,7 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
-    path: 'listadoExamenes',
+    path: 'examenesListar',
     component: ListadoExamenesComponent,
     canActivate: [roleGuard],
   },
