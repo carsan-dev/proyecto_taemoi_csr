@@ -619,7 +619,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Mapeando los turnos asignados al alumno a DTOs
 		return alumno.getTurnos().stream().map(
-				turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(), turno.getHoraInicio(), turno.getHoraFin()))
+				turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(), turno.getHoraInicio(), turno.getHoraFin(), turno.getTipo()))
 				.collect(Collectors.toList());
 	}
 

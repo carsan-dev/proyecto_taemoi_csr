@@ -55,9 +55,21 @@ export class CrearTurnoComponent implements OnInit {
         ],
         asignarGrupo: [false],
         grupoId: [''],
+        tipoGrupo: ['', Validators.required],  // Añadimos tipoGrupo aquí
       },
       { validators: this.horasValidas }
     );
+
+    // Asegurarnos de que tipoGrupo solo es requerido si asignarGrupo es true
+    this.turnoForm.get('asignarGrupo')?.valueChanges.subscribe((asignarGrupo) => {
+      const tipoGrupoControl = this.turnoForm.get('tipoGrupo');
+      if (asignarGrupo) {
+        tipoGrupoControl?.setValidators([Validators.required]);
+      } else {
+        tipoGrupoControl?.clearValidators();
+      }
+      tipoGrupoControl?.updateValueAndValidity();
+    });
   }
 
   obtenerGrupos(): void {
@@ -78,8 +90,13 @@ export class CrearTurnoComponent implements OnInit {
   crearTurno(): void {
     const turnoForm = this.turnoForm.value;
 
+    // Si se asigna a un grupo, también debe enviarse el tipo de grupo
     const turnoRequest = turnoForm.asignarGrupo
-      ? this.endpointsService.crearTurnoConGrupo(turnoForm)
+      ? this.endpointsService.crearTurnoConGrupo({
+          ...turnoForm,
+          grupoId: turnoForm.grupoId,
+          tipoGrupo: turnoForm.tipoGrupo, // Añadimos el tipo de grupo aquí
+        })
       : this.endpointsService.crearTurnoSinGrupo(turnoForm);
 
     turnoRequest.subscribe({

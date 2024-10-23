@@ -1,146 +1,192 @@
-@font-face {
-  font-family: 'Osaka-Sans Serif';
-  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
-}
-
 .contact-form {
-  margin-top: 125px;
-  background: url("../../../../assets/media/fondo_formulario.webp");
-  background-position: center;
+  background: url("../../../../assets/media/fondo_formulario.webp") no-repeat
+    center center;
   background-size: cover;
   max-width: 100%;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 
-  .left-container {
-    background-color: rgba(0, 0, 0, 0.7);
-    height: 100%;
-    flex: 1;
-    min-height: 100vh;
+  .row {
+    margin-top: 100px;
+    display: flex; // Asegura que las columnas se comporten como flexbox
+    align-items: stretch; // Ambos hijos tendrán la misma altura
+    width: 100%;
 
-    & img {
-      width: 350px;
+    .left-container,
+    .right-container {
+      flex: 1; // Ambos contenedores ocupan el mismo espacio de forma flexible
+      display: flex;
+      flex-direction: column;
+      justify-content: center; // Centra verticalmente el contenido dentro de cada contenedor
+      padding: 40px;
+      border-radius: 15px;
     }
 
-    & p {
-      font-family: 'Osaka-Sans Serif', sans-serif;
+    .left-container {
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 1s ease-in-out;
+
+      .logo-escuela {
+        width: 200px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        animation: scaleUp 1s ease-in-out;
+
+        &:hover {
+          transform: scale(1.2);
+          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+      }
     }
-  }
 
-  .right-container {
-    flex: 1;
+    .right-container {
+      background-color: #ffffff;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      transition: box-shadow 0.3s ease;
 
-    form {
-      position: relative;
+      &:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      }
 
       .form-group {
         position: relative;
-        margin-bottom: 4rem;
+        margin-bottom: 2rem;
+        animation: slideUp 0.8s ease-in-out;
 
         label {
           position: absolute;
           top: 1rem;
-          left: 0.5rem;
-          padding: 0 0.5rem;
-          color: #aaa;
+          left: 0.75rem;
+          background-color: transparent;
+          padding: 0 0.25rem;
           font-size: 1rem;
+          color: #999;
           pointer-events: none;
-          transition: all 0.2s ease;
+          transition: 0.3s ease-in-out;
         }
 
         input,
         select,
         textarea {
           width: 100%;
-          padding: 1rem 0.5rem 0.5rem 0.5rem;
+          padding: 1rem 0.75rem;
           font-size: 1rem;
           border: 1px solid #ccc;
-          border-radius: 0.25rem;
-          color: #000;
-          background-color: white;
+          border-radius: 0.5rem;
+          transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease;
 
           &:focus {
-            outline: none;
             border-color: #007bff;
-
-            &+label {
-              top: -1.5rem;
-              left: 0;
-              color: #007bff;
-              font-size: 0.75rem;
-            }
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
           }
 
-          &:not(:placeholder-shown)+label {
-            top: -1.5rem;
+          &:focus + label,
+          &:not(:placeholder-shown) + label {
+            top: -1.4rem;
             left: 0;
-            color: #007bff;
             font-size: 0.75rem;
+            color: #007bff;
           }
         }
-
-        .text-danger {
-          font-size: 0.875rem;
-          color: #dc3545;
-          position: absolute;
-          bottom: -1.5rem;
-        }
-      }
-
-      button {
       }
     }
-  }
 
-  @media (max-width: 1288px) {
-    .text-danger#asuntoError {
-      bottom: -1.8rem !important;
+    button {
+      font-size: 1.25rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 50px;
+      transition: background-color 0.3s ease, transform 0.3s ease,
+        box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      &.btn-success {
+        background-color: #28a745;
+        border: none;
+
+        &:hover {
+          background-color: #218838;
+        }
+      }
+
+      &.btn-primary {
+        background-color: #007bff;
+        border: none;
+
+        &:hover {
+          background-color: #0056b3;
+        }
+      }
+    }
+
+    @media (max-width: 992px) {
+      .row {
+        flex-direction: column;
+      }
+
+      .left-container,
+      .right-container {
+        margin-bottom: 30px;
+        text-align: center;
+        flex: none; // Desactivar el comportamiento flex en pantallas pequeñas
+      }
+
+      .left-container {
+        margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .right-container {
+        padding: 20px;
+      }
+
+      .form-group {
+        input,
+        select,
+        textarea {
+          font-size: 0.9rem;
+        }
+      }
     }
   }
 }
 
-@media (max-width: 992px) {
-  .contact-form {
-    flex-direction: column !important;
+// Animaciones
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
 
-    .left-container,
-    .right-container {
-      width: 100%;
-    }
+@keyframes scaleUp {
+  0% {
+    transform: scale(0.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
-    .left-container {
-      margin-bottom: 2rem;
-      min-height: auto !important;
-
-      img {
-        width: 125px;
-      }
-    }
-
-    .form-group {
-      margin-bottom: 4rem !important;
-
-      label {
-        margin-bottom: 2rem;
-        font-size: 0.80rem !important;
-      }
-
-      input,
-      select,
-      textarea {
-        font-size: 0.80rem !important;
-      }
-
-      .text-danger {
-        bottom: -2.3rem !important;
-        font-size: 0.7rem !important;
-      }
-
-      .text-danger#asuntoError {
-        bottom: -2.3rem !important;
-      }
-    }
+@keyframes slideUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
