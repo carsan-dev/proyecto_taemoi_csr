@@ -13,25 +13,28 @@ public class TurnoDTO {
     private String horaFin;
     private Long grupoId;
     private String grupoNombre;
+    private String tipoGrupo;
     private List<AlumnoDTO> alumnos;
 
 	public TurnoDTO() {
 	}
 
-	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, Long grupoId, String grupoNombre) {
+	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, Long grupoId, String grupoNombre, String tipoGrupo) {
 		this.id = id;
 		this.diaSemana = diaSemana;
 		this.horaInicio = horaInicio;
 		this.horaFin = horaFin;
 		this.grupoId = grupoId;
 		this.grupoNombre = grupoNombre;
+		this.tipoGrupo = tipoGrupo;
 	}
 	
-	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin) {
+	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, String tipoGrupo) {
 		this.id = id;
 		this.diaSemana = diaSemana;
 		this.horaInicio = horaInicio;
 		this.horaFin = horaFin;
+		this.tipoGrupo = tipoGrupo;
 	}
     
     public Long getId() {
@@ -82,6 +85,14 @@ public class TurnoDTO {
 		this.grupoNombre = grupoNombre;
 	}
 
+	public String getTipoGrupo() {
+		return tipoGrupo;
+	}
+
+	public void setTipoGrupo(String tipoGrupo) {
+		this.tipoGrupo = tipoGrupo;
+	}
+
 	public List<AlumnoDTO> getAlumnos() {
 		return alumnos;
 	}
@@ -104,6 +115,7 @@ public class TurnoDTO {
         // Mapear el grupoId y grupoNombre
         turnoDTO.setGrupoId(turno.getGrupo() != null ? turno.getGrupo().getId() : null);
         turnoDTO.setGrupoNombre(turno.getGrupo() != null ? turno.getGrupo().getNombre() : "Sin grupo");
+        turnoDTO.setTipoGrupo(turno.getTipo());
 
         // Mapear la lista de alumnos a AlumnoDTO
         if (turno.getAlumnos() != null) {

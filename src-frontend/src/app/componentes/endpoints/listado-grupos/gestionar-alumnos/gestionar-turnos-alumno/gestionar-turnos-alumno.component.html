@@ -8,7 +8,7 @@
     <div *ngIf="endpointsService.turnosDelAlumno$ | async as turnos; else noTurnos">
       <ul class="p-0">
         <li *ngFor="let turno of turnos" class="list-group-item d-flex justify-content-between align-items-center">
-          <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
+          <span><strong>{{turno.tipoGrupo}}</strong> - {{ turno.horaInicio }} a {{ turno.horaFin }} </span>
           <button class="btn btn-danger btn-sm rounded-pill" (click)="removerTurno(turno.id)">Remover Turno</button>
         </li>
       </ul>
@@ -32,7 +32,7 @@
           >
             <!-- Usamos el async pipe para obtener los turnos disponibles -->
             <option *ngFor="let turno of endpointsService.turnos$ | async" [value]="turno.id">
-              {{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}
+              {{turno.tipoGrupo}} - {{ turno.horaInicio }} a {{ turno.horaFin }}
             </option>
           </select>
         </div>

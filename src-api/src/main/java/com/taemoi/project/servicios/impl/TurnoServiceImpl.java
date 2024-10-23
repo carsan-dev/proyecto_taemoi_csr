@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Grupo;
-import com.taemoi.project.entidades.NombresGrupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositorios.GrupoRepository;
@@ -104,49 +103,25 @@ public class TurnoServiceImpl implements TurnoService {
      */
     @Override
     public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
-        // Crear el turno y asignar los valores de día, hora inicio y fin
         Turno turno = new Turno();
         turno.setDiaSemana(turnoDTO.getDiaSemana());
         turno.setHoraInicio(turnoDTO.getHoraInicio());
         turno.setHoraFin(turnoDTO.getHoraFin());
-    
-        // Buscar el grupo por ID
+
+        // Obtener el grupo por ID
         Grupo grupo = grupoRepository.findById(turnoDTO.getGrupoId())
             .orElseThrow(() -> new IllegalArgumentException("No se encontró el grupo con el ID: " + turnoDTO.getGrupoId()));
-    
-        // Determinar el tipo de grupo basado en el nombre del grupo
-        String tipo = determinarTipoPorNombreGrupo(grupo.getNombre());
-        turno.setTipo(tipo);
-    
-        // Asigna el grupo al turno y viceversa
+
+        // Usar el tipo de grupo directamente del frontend
+        turno.setTipo(turnoDTO.getTipoGrupo());  // <- Aquí usamos el tipo de grupo del DTO
+
+        // Asignar el grupo al turno
         turno.setGrupo(grupo);
-        grupo.getTurnos().add(turno); // Esto asegura que el grupo esté al tanto de su nuevo turno
-    
-        // Guarda ambos objetos para actualizar la relación en la base de datos
+        grupo.getTurnos().add(turno);
+
+        // Guardar ambos objetos
         turnoRepository.save(turno);
         grupoRepository.save(grupo);
-    }
-    
-    private String determinarTipoPorNombreGrupo(String nombreGrupo) {
-        if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO) ||
-            nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO)) {
-            return "Taekwondo Infantil";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO)) {
-            return "Taekwondo Joven";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO) ||
-                   nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO)) {
-            return "Taekwondo Adulto";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.TAEKWONDO_COMPETICION)) {
-            return "Taekwondo Competición";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.KICKBOXING_LUNES_MIERCOLES)) {
-            return "Kickboxing";
-        } else if (nombreGrupo.equalsIgnoreCase(NombresGrupo.PILATES_MARTES_JUEVES)) {
-            return "Pilates";
-        } 
-        else {
-            throw new IllegalArgumentException("No se puede determinar el tipo para el grupo: " + nombreGrupo);
-        }
     }
 
     /**

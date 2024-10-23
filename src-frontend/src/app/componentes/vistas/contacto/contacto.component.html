@@ -1,63 +1,77 @@
-<div class="contact-form justify-content-between align-items-center p-0 mx-5 mb-5">
-  <div class="left-container d-flex flex-column justify-content-center align-items-center">
-    <div class="text-container text-center">
-      <p class="mt-5 display-5 text-white">MOIS KIM DO</p>
-      <p class="display-2 text-white">TAEKWONDO</p>
+<div class="contact-form container-fluid p-5 mb-5">
+  <div class="row justify-content-between align-items-center same-height-wrapper">
+    <div class="left-container col-lg-5 d-flex flex-column justify-content-center align-items-center p-5">
+      <div class="text-container text-center mb-4 animate-fade-in">
+        <p class="mt-5 display-5 text-white fw-bold">MOI'S KIM DO</p>
+        <p class="display-2 text-white fw-light">TAEKWONDO</p>
+      </div>
+      <div class="img-container animate-fade-in">
+        <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela de taekwondo"
+          class="my-4 logo-escuela rounded-circle shadow animate-scale">
+      </div>
     </div>
-    <div class="img-container">
-      <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela de taekwondo" class="my-4">
+
+    <div class="right-container col-lg-6 my-5 p-4 bg-light shadow rounded-lg overflow-hidden">
+      <form [formGroup]="contactForm" class="mx-5" (ngSubmit)="onSubmit()">
+        <div class="form-group position-relative my-4 animate-slide-up">
+          <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder=" " required>
+          <label for="nombre" class="form-label">Nombre:</label>
+          <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched" class="text-danger">
+            El campo nombre es obligatorio.
+          </div>
+        </div>
+
+        <div class="form-group position-relative mb-4">
+          <input type="text" formControlName="apellidos" id="apellidos" class="form-control" placeholder=" " required>
+          <label for="apellidos" class="form-label">Apellidos:</label>
+          <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched"
+            class="text-danger">
+            El campo apellidos es obligatorio.
+          </div>
+        </div>
+
+        <div class="form-group position-relative mb-4">
+          <input type="email" formControlName="email" id="email" class="form-control" placeholder=" " required>
+          <label for="email" class="form-label">Correo electrónico:</label>
+          <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="text-danger">
+            Campo email obligatorio y debe ser válido.
+          </div>
+        </div>
+
+        <div class="form-group position-relative mb-4">
+          <select formControlName="asunto" id="asunto" class="form-select">
+            <option value="" disabled selected>Selecciona un asunto</option>
+            <option value="Inscripción">Inscripción</option>
+            <option value="Consulta de horarios">Consulta de horarios</option>
+            <option value="Información sobre clases">Información sobre clases</option>
+            <option value="Otros">Otros motivos</option>
+          </select>
+          <label for="asunto" class="form-label">Asunto:</label>
+          <div *ngIf="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched" class="text-danger"
+            id="asuntoError">
+            El campo asunto es obligatorio.
+          </div>
+        </div>
+
+        <div class="form-group position-relative mb-4">
+          <textarea formControlName="mensaje" id="mensaje" class="form-control" rows="6" placeholder=" "
+            required></textarea>
+          <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
+          <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched" class="text-danger">
+            El campo mensaje es obligatorio.
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-around mt-3">
+          <button type="button" (click)="enviarWhatsApp()" class="btn btn-success btn-lg shadow"
+            [disabled]="contactForm.invalid">
+            Enviar <i class="bi bi-whatsapp"></i>
+          </button>
+          <button type="submit" class="btn btn-primary btn-lg shadow" [disabled]="contactForm.invalid">
+            Enviar <i class="bi bi-envelope"></i>
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
-  <div class="right-container my-5">
-    <form [formGroup]="contactForm" class="mx-5" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <input type="text" formControlName="nombre" id="nombre" class="form-control" placeholder=" " required>
-        <label for="nombre" class="form-label">Nombre:</label>
-        <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched" class="text-danger">
-          El campo nombre es obligatorio.
-        </div>
-      </div>
-      <div class="form-group">
-        <input type="text" formControlName="apellidos" id="apellidos" class="form-control" placeholder=" " required>
-        <label for="apellidos" class="form-label">Apellidos:</label>
-        <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched" class="text-danger">
-          El campo apellidos es obligatorio.
-        </div>
-      </div>
-      <div class="form-group">
-        <input type="email" formControlName="email" id="email" class="form-control" placeholder=" " required>
-        <label for="email" class="form-label">Correo electrónico:</label>
-        <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="text-danger">
-          Campo email obligatorio y debe ser válido.
-        </div>
-      </div>
-      <div class="form-group">
-        <select formControlName="asunto" id="asunto" class="form-select">
-          <option value="" disabled selected>Selecciona un asunto</option>
-          <option value="Inscripción">Inscripción</option>
-          <option value="Consulta de horarios">Consulta de horarios</option>
-          <option value="Información sobre clases">Información sobre clases</option>
-          <option value="Otros">Otros motivos</option>
-        </select>
-        <label for="asunto" class="form-label">Asunto:</label>
-        <div *ngIf="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched" class="text-danger" id="asuntoError">
-          El campo asunto es obligatorio.
-        </div>
-      </div>
-      <div class="form-group">
-        <textarea formControlName="mensaje" id="mensaje" class="form-control" rows="7" placeholder=" " required></textarea>
-        <label for="mensaje" class="form-label">Cuerpo del mensaje:</label>
-        <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched" class="text-danger">
-          El campo mensaje es obligatorio.
-        </div>
-      </div>
-      <div class="d-flex justify-content-around mt-3">
-        <button type="button" (click)="enviarWhatsApp()" class="btn btn-success" [disabled]="contactForm.invalid">Enviar <i
-            class="bi bi-whatsapp"></i></button>
-        <button type="submit" class="btn btn-secondary" [disabled]="contactForm.invalid">Enviar <i
-            class="bi bi-envelope"></i></button>
-      </div>
-    </form>
   </div>
 </div>
-<ngx-spinner bdColor="rgba(0, 0, 0, 0.8)" size="medium" color="#fff" type="ball-clip-rotate" [fullScreen]="true"><p style="color: white"> Enviando... </p></ngx-spinner>
