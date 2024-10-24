@@ -50,14 +50,14 @@ public class GradoController {
 					TipoGrado.AMARILLO.name(), TipoGrado.AMARILLO_NARANJA.name(), TipoGrado.NARANJA.name(),
 					TipoGrado.NARANJA_VERDE.name(), TipoGrado.VERDE.name(), TipoGrado.VERDE_AZUL.name(),
 					TipoGrado.AZUL.name(), TipoGrado.AZUL_ROJO.name(), TipoGrado.ROJO.name(),
-					TipoGrado.ROJO_NEGRO_1º_PUM.name(), TipoGrado.ROJO_NEGRO_2º_PUM.name(),
-					TipoGrado.ROJO_NEGRO_3º_PUM.name());
+					TipoGrado.ROJO_NEGRO_1_PUM.name(), TipoGrado.ROJO_NEGRO_2_PUM.name(),
+					TipoGrado.ROJO_NEGRO_3_PUM.name());
 		} else {
 			// Grados para adultos
 			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO.name(), TipoGrado.AMARILLO.name(),
 					TipoGrado.NARANJA.name(), TipoGrado.VERDE.name(), TipoGrado.AZUL.name(), TipoGrado.ROJO.name(),
-					TipoGrado.NEGRO_1º_DAN.name(), TipoGrado.NEGRO_2º_DAN.name(), TipoGrado.NEGRO_3º_DAN.name(),
-					TipoGrado.NEGRO_4º_DAN.name(), TipoGrado.NEGRO_5º_DAN.name());
+					TipoGrado.NEGRO_1_DAN.name(), TipoGrado.NEGRO_2_DAN.name(), TipoGrado.NEGRO_3_DAN.name(),
+					TipoGrado.NEGRO_4_DAN.name(), TipoGrado.NEGRO_5_DAN.name());
 		}
 
 		return ResponseEntity.ok(gradosDisponibles);

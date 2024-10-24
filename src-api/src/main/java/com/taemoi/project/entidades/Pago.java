@@ -35,7 +35,7 @@ public class Pago {
 
 	@NotNull(message = "La fecha del pago no puede ser nula")
 	@Temporal(TemporalType.DATE)
-	private Date fecha;
+	private Date fechaRegistro;
 
 	@NotNull(message = "La cuantía del pago no puede ser nula")
 	private Double cuantia;
@@ -43,6 +43,18 @@ public class Pago {
 	@NotNull(message = "El estado del pago no puede ser nulo")
 	@Enumerated(EnumType.STRING)
 	private EstadoPago estado;
+	
+	@Temporal(TemporalType.DATE)
+	private Date fechaPago;
+    
+    @ManyToOne
+    @JoinColumn(name = "producto_id")
+    private Producto producto;
+
+    public enum EstadoPago {
+        PAGADO,
+        PENDIENTE
+    }
 
 	public Long getId() {
 		return id;
@@ -76,14 +88,6 @@ public class Pago {
 		this.concepto = concepto;
 	}
 
-	public Date getFecha() {
-		return fecha;
-	}
-
-	public void setFecha(Date fecha) {
-		this.fecha = fecha;
-	}
-
 	public Double getCuantia() {
 		return cuantia;
 	}
@@ -98,6 +102,30 @@ public class Pago {
 
 	public void setEstado(EstadoPago estado) {
 		this.estado = estado;
+	}
+
+	public Producto getProducto() {
+		return producto;
+	}
+
+	public void setProducto(Producto producto) {
+		this.producto = producto;
+	}
+
+	public Date getFechaRegistro() {
+		return fechaRegistro;
+	}
+
+	public void setFechaRegistro(Date fechaRegistro) {
+		this.fechaRegistro = fechaRegistro;
+	}
+
+	public Date getFechaPago() {
+		return fechaPago;
+	}
+
+	public void setFechaPago(Date fechaPago) {
+		this.fechaPago = fechaPago;
 	}
 
 }

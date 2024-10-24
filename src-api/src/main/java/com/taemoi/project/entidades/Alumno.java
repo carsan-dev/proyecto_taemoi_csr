@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -133,11 +134,13 @@ public class Alumno {
 	@JsonManagedReference
 	private Usuario usuario;
 
-	@OneToMany(mappedBy = "alumno")
-	private List<Examen> examenes;
+    @OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Examen> examenes;
 
-	@OneToMany(mappedBy = "alumno")
-	private List<Pago> pagos;
+    @OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Pago> pagos;
 
 	public Long getId() {
 		return id;

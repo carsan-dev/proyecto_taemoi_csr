@@ -1,38 +1,33 @@
 package com.taemoi.project.entidades;
 
-import java.util.Date;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class Examen {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@ManyToOne
-	@JoinColumn(name = "alumno_id")
-	private Alumno alumno;
+    @ManyToOne
+    @JoinColumn(name = "alumno_id")
+    private Alumno alumno;
 
-	@ManyToOne
-	@JoinColumn(name = "grado_id")
-	private Grado grado;
+    @ManyToOne
+    @JoinColumn(name = "grado_actual_id")
+    private Grado gradoActual; // Grado que el alumno tiene actualmente
 
-	@Temporal(TemporalType.DATE)
-	@NotNull(message = "La fecha del examen no puede ser nula")
-	private Date fecha;
+    @ManyToOne
+    @JoinColumn(name = "grado_proximo_id")
+    private Grado gradoProximo; // Grado al que va a pasar
 
-	@ManyToOne
-	@JoinColumn(name = "examen_grado_id")
-	private Grado examenGrado;
+    @ManyToOne
+    @JoinColumn(name = "pago_id", nullable = true)
+    private Pago pago; // Relación con el pago del examen
 
 	public Long getId() {
 		return id;
@@ -50,28 +45,27 @@ public class Examen {
 		this.alumno = alumno;
 	}
 
-	public Grado getGrado() {
-		return grado;
+	public Grado getGradoActual() {
+		return gradoActual;
 	}
 
-	public void setGrado(Grado grado) {
-		this.grado = grado;
+	public void setGradoActual(Grado gradoActual) {
+		this.gradoActual = gradoActual;
 	}
 
-	public Date getFecha() {
-		return fecha;
+	public Grado getGradoProximo() {
+		return gradoProximo;
 	}
 
-	public void setFecha(Date fecha) {
-		this.fecha = fecha;
+	public void setGradoProximo(Grado gradoProximo) {
+		this.gradoProximo = gradoProximo;
 	}
 
-	public Grado getExamenGrado() {
-		return examenGrado;
+	public Pago getPago() {
+		return pago;
 	}
 
-	public void setExamenGrado(Grado examenGrado) {
-		this.examenGrado = examenGrado;
+	public void setPago(Pago pago) {
+		this.pago = pago;
 	}
-
 }

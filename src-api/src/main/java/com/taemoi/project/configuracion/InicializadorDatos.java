@@ -16,20 +16,22 @@ import org.springframework.stereotype.Component;
 
 import com.github.javafaker.Faker;
 import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.NombresGrupo;
+import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
+import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
+import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -84,6 +86,9 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	@Autowired
 	private TurnoRepository turnoRepository;
+	
+	@Autowired
+	private ProductoRepository productoRepository;
 
 	/**
 	 * Inyección del codificador de contraseñas.
@@ -133,6 +138,9 @@ public class InicializadorDatos implements CommandLineRunner {
 			crearTurno("Jueves", "19:00", "20:00", taekwondoMartesJuevesTercerTurno, "Taekwondo Tercer Turno Jueves");
 			crearTurno("Jueves", "20:00", "21:30", competicion, "Taekwondo Competición");
 	    }
+
+	    inicializarProductos();
+	    
         if (gradoRepository.count() == 0) {
             generarGrados();
         }
@@ -161,6 +169,197 @@ public class InicializadorDatos implements CommandLineRunner {
 	                return grupoRepository.save(nuevoGrupo);
 	            });
 	}
+	
+	private void inicializarProductos() {
+	    if (productoRepository.count() == 0) {  // Solo cargar si no hay productos
+	        List<Producto> productos = Arrays.asList(
+	            new Producto("CINTURÓN BLANCO INFANTIL", 3.2, ""),
+	            new Producto("CINTURÓN BLANCO JUNIOR", 4.2, ""),
+	            new Producto("CINTURÓN BLANCO ADULTO", 4.2, ""),
+	            new Producto("CINTURÓN BLANCO-AMARILLO INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN BLANCO-AMARILLO ADULTO", 6.2, ""),
+	            new Producto("CINTURÓN AMARILLO INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN AMARILLO JUNIOR", 4.8, ""),
+	            new Producto("CINTURÓN AMARILLO ADULTO", 5.2, ""),
+	            new Producto("CINTURÓN AMARILLO-NARANJA INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN AMARILLO-NARANJA ADULTO", 6.2, ""),
+	            new Producto("CINTURÓN NARANJA INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN NARANJA JUNIOR", 4.8, ""),
+	            new Producto("CINTURÓN NARANJA ADULTO", 5.2, ""),
+	            new Producto("CINTURÓN NARANJA-VERDE INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN NARANJA-VERDE ADULTO", 6.2, ""),
+	            new Producto("CINTURÓN VERDE INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN VERDE JUNIOR", 4.8, ""),
+	            new Producto("CINTURÓN VERDE ADULTO", 5.2, ""),
+	            new Producto("CINTURÓN VERDE-AZUL INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN VERDE-AZUL ADULTO", 6.2, ""),
+	            new Producto("CINTURÓN AZUL INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN AZUL JUNIOR", 4.8, ""),
+	            new Producto("CINTURÓN AZUL ADULTO", 5.2, ""),
+	            new Producto("CINTURÓN AZUL-ROJO INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN AZUL-ROJO ADULTO", 6.2, ""),
+	            new Producto("CINTURÓN ROJO INFANTIL", 4.8, ""),
+	            new Producto("CINTURÓN ROJO JUNIOR", 4.8, ""),
+	            new Producto("CINTURÓN ROJO ADULTO", 5.2, ""),
+	            new Producto("ANTEBRACERA CONFORT", 17.75, ""),
+	            new Producto("ANTEBRACERA WTF", 19.85, ""),
+	            new Producto("ANTEBRACERA SILVER FIT", 21.0, ""),
+	            new Producto("ANTEBRACERA ADIDAS", 24.0, ""),
+	            new Producto("ANTEBRACERA CON CODERA PROTEC BLANCA", 21.6, ""),
+	            new Producto("ANTEBRACERA CON CODERA PROTEC ULTRA LIGHT", 21.6, ""),
+	            new Producto("ANTEBRACERA DE ESPUMA", 8.35, ""),
+	            new Producto("BUCAL SIMPLE", 3.5, ""),
+	            new Producto("BUCAL ORTODONCIA DOBLE SHOCK DOCTOR", 29.9, ""),
+	            new Producto("BUCAL DE GEL BLANCO", 10.0, ""),
+	            new Producto("BORDADO NOMBRE EN DOBOK", 15.0, ""),
+	            new Producto("BORDADO LETRA PARA FALD N", 1.27, ""),
+	            new Producto("CASCO DAEDO BLANCO", 36.0, ""),
+	            new Producto("CASCO DAEDO COLOR", 36.5, ""),
+	            new Producto("CASCO CON MÁSCARA INTEGRADA DAEDO", 48.0, ""),
+	            new Producto("CASCO PROTEC INSPIRE BLANCO", 32.4, ""),
+	            new Producto("CHÁNDAL COMPLETO EQUIPO COMPETIDORES", 85.0, ""),
+	            new Producto("CHAQUETA DEL CHÁNDAL COMPETIDORES", 30.63, ""),
+	            new Producto("PANTALÓN CHÁNDAL COMPETIDORES", 19.69, ""),
+	            new Producto("CAMISETA COMPETIDORES", 17.19, ""),
+	            new Producto("BERMUDAS COMPETIDORES", 12.5, ""),
+	            new Producto("CINTURÓN NEGRO LISO ANCHO 5CMS", 17.0, ""),
+	            new Producto("CINTURÓN DE COLOR LARGO 330 CMS", 7.2, ""),
+	            new Producto("COQUILLA + PORTA COQUILLA", 12.0, ""),
+	            new Producto("COQUILLA FEMENINA COMPLETA", 14.5, ""),
+	            new Producto("COQUILLA MASCULINA COMPLETA", 16.7, ""),
+	            new Producto("BANDERITA PEQUEÑA PARA CINTURÓN", 1.2, ""),
+	            new Producto("DERECHOS DE EXAMEN 1º DAN", 200, ""),
+	            new Producto("DERECHOS DE EXAMEN 1º PUM", 130, ""),
+	            new Producto("DERECHOS DE EXAMEN 2º DAN", 220, ""),
+	            new Producto("DERECHOS DE EXAMEN 2º PUM", 140, ""),
+	            new Producto("DERECHOS DE EXAMEN 3º DAN", 270, ""),
+	            new Producto("DERECHOS DE EXAMEN 3º PUM", 155, ""),
+	            new Producto("DERECHOS DE EXAMEN 4º DAN", 360, ""),
+	            new Producto("DERECHOS DE EXAMEN 5º DAN", 410, ""),
+	            new Producto("DERECHOS DE EXAMEN CINTURÓN ROJO BORDADO", 50, ""),
+	            new Producto("DERECHOS DE EXAMEN ROJO", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN AZUL/ROJO", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN AZUL", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN VERDE/AZUL", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN VERDE", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN NARANJA/VERDE", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN NARANJA", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN AMARILLO/NARANJA", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN AMARILLO", 30, ""),
+	            new Producto("DERECHOS DE EXAMEN BLANCO/AMARILLO", 30, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 0000 (100 CMS)", 35.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 000 (110 CMS)", 35.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 00 (120 CMS)", 36.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 0 (130 CMS)", 36.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 1 (140 CMS)", 37.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 2 (150 CMS)", 39.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 3 (160 CMS)", 41.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 4 (170 CMS)", 42.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 5 (180 CMS)", 43.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 6 (190 CMS)", 44.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 7 (200 CMS)", 45.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO BLANCO TALLA 8 (210 CMS)", 46.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 0000 (100 CMS)", 36.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 000 (110 CMS)", 36.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 00 (120 CMS)", 37.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 0 (130 CMS)", 37.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 1 (140 CMS)", 38.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 2 (150 CMS)", 40.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 3 (160 CMS)", 42.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 4 (170 CMS)", 43.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 5 (180 CMS)", 44.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 6 (190 CMS)", 45.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 7 (200 CMS)", 46.2, ""),
+	            new Producto("DOBOK DAEDO CUELLO NEGRO TALLA 8 (210 CMS)", 47.2, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 0000 (100 CMS)", 32.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 000 (110 CMS)", 32.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 00 (120 CMS)", 32.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 0 (130 CMS)", 37.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 1 (140 CMS)", 37.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 2 (150 CMS)", 37.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 3 (160 CMS)", 37.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 4 (170 CMS)", 39.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 5 (180 CMS)", 42.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO BLANCO TALLA 6 (190 CMS)", 42.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 0000 (100 CMS)", 36.5, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 000 (110 CMS)", 36.5, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 00 (120 CMS)", 36.5, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 0 (130 CMS)", 36.5, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 1 (140 CMS)", 40.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 2 (150 CMS)", 40.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 3 (160 CMS)", 40.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 4 (170 CMS)", 43.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 5 (180 CMS)", 46.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 6 (190 CMS)", 48.9, ""),
+	            new Producto("DOBOK ADIDAS CUELLO NEGRO TALLA 7 (200 CMS)", 48.9, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,30 y 1,40", 58.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,50", 58.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,60", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,70", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,80", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 1,90", 68.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 2,00", 68.0, ""),
+	            new Producto("DOBOK POOMSAE DAN MASCULINO TALLA 2,10", 68.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,30 y 1,40", 58.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,50", 58.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,60", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,70", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,80", 64.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 1,90", 68.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 2,00", 68.0, ""),
+	            new Producto("DOBOK POOMSAE DAN FEMENINO TALLA 2,10", 68.0, ""),
+	            new Producto("ESPINILLERAS CONFORT", 20.9, ""),
+	            new Producto("ESPINILLERAS WTF", 24.0, ""),
+	            new Producto("ESPINILLERAS SILVER FIT", 30.0, ""),
+	            new Producto("ESPINILLERAS ADIDAS", 25.2, ""),
+	            new Producto("ESPINILLERAS ADIDAS CON RODILLERAS", 30.6, ""),
+	            new Producto("GUANTILLAS WTF", 28.2, ""),
+	            new Producto("INCIENSO", 2.5, ""),
+	            new Producto("MACUTO DAEDO ROJO-NEGRO", 31.5, ""),
+	            new Producto("MACUTO ADIDAS ROJO-AZUL", 44.9, ""),
+	            new Producto("MÁSCARA DESMONTABLE PARA CASCO", 25.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 000 (1,10CMS)", 13.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 00 (1,20CMS)", 13.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 0 (1,30CMS)", 13.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 1 (1,40CMS)", 16.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 2 (1,50CMS)", 16.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 3 (1,60CMS)", 16.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 4 (1,70CMS)", 16.0, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 5 (1,80CMS)", 16.5, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 6 (1,90CMS)", 16.5, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 7 (2,00CMS)", 16.5, ""),
+	            new Producto("PANTALÓN SUELTO DAEDO TALLA 8 (2,10CMS)", 18.0, ""),
+	            new Producto("PATUCOS ELECTRÓNICOS NICO G2", 55.0, ""),
+	            new Producto("PATUCO DAEDO NO ELECTRÓNICO NICO SIN TALÓN", 28.2, ""),
+	            new Producto("PETO DAEDO NORMAL HOMOLOGADO", 28.2, ""),
+	            new Producto("PETO DAEDO WTF", 38.6, ""),
+	            new Producto("PROTECTOR PARA SENOS BASIC", 22.95, ""),
+	            new Producto("PROTECTOR PARA SENOS", 32.0, ""),
+	            new Producto("PROTECTOR FEMENINO ECONO GUARD", 36.45, ""),
+	            new Producto("BOTINES DAEDO NUEVAS ZAPATILLAS ACTION", 45.5, ""),
+	            new Producto("BOTINES DAAEDO ANTIGUAS", 36.0, ""),
+	            new Producto("BOTINES DAEDO CONFORT", 23.0, ""),
+	            new Producto("BOTINES ADIDAS", 72.95, ""),
+	            new Producto("LETRAS GRANDES BORDADAS CINTURÓN", 0.42, ""),
+	            new Producto("LETRAS PEQUEÑAS BORDADAS CINTURÓN", 0.24, ""),
+	            new Producto("PAO IRAN CON CAVO PROTEC", 34.2, ""),
+	            new Producto("KICKING MITT CUADRADO DAEDO", 28.5, ""),
+	            new Producto("PAO PIEL OVALADO", 62.6, ""),
+	            new Producto("PAO IRAN CON CAVO ADIDAS 2", 52.9, ""),
+	            new Producto("PAO ESCUDO PEQUEÑO 42X20X15 CMS", 41.75, ""),
+	            new Producto("PAO ESCUDO MEDIANO 60X30X15 CMS", 62.6, ""),
+	            new Producto("PAO ESCUDO GRANDE 70X33X20 CMS", 83.5, ""),
+	            new Producto("MIT DE BRAZO", 35.0, ""),
+	            new Producto("MIT SIMPLE ADIDAS", 23.2, ""),
+	            new Producto("MIT DOBLE DAEDO", 22.95, ""),
+	            new Producto("MIT SIMPLE DAEDO", 19.0, ""),
+	            new Producto("MIT DOBLE DAEDO PARA NIÑOS", 17.0, "")
+	        );
+	        productoRepository.saveAll(productos);
+	    }
+	}
+
+
 
 	private void generarUsuarios() {
 		crearUsuarioSiNoExiste("moiskimdotaekwondo@gmail.com", "Moiskimdo", "Taekwondo", "09012013",
@@ -353,12 +552,12 @@ public class InicializadorDatos implements CommandLineRunner {
 	        gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
 	                TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
 	                TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO,
-	                TipoGrado.ROJO_NEGRO_1º_PUM, TipoGrado.ROJO_NEGRO_2º_PUM, TipoGrado.ROJO_NEGRO_3º_PUM);
+	                TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
 	    } else {
 	        // Si el alumno es adulto, asignar grados correspondientes a adultos
 	        gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-	                TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1º_DAN, TipoGrado.NEGRO_2º_DAN,
-	                TipoGrado.NEGRO_3º_DAN, TipoGrado.NEGRO_4º_DAN, TipoGrado.NEGRO_5º_DAN);
+	                TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN,
+	                TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
 	    }
 
 	    // Asignar un grado aleatoriamente de la lista de grados disponibles

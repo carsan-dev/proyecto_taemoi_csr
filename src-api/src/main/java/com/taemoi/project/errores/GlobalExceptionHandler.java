@@ -13,6 +13,7 @@ import com.taemoi.project.errores.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.errores.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.errores.evento.EventoNoEncontradoException;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
+import com.taemoi.project.errores.pago.PagoNotFoundException;
 import com.taemoi.project.errores.turno.TurnoNoEncontradoException;
 import com.taemoi.project.errores.usuario.ListaUsuariosVaciaException;
 
@@ -68,4 +69,9 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<String> handleEventoNoEncontradoException(EventoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
+
+    @ExceptionHandler(PagoNotFoundException.class)
+    public ResponseEntity<String> handlePagoNotFoundException(PagoNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
 }
