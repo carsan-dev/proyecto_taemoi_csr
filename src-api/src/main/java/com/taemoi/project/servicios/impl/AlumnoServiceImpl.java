@@ -24,10 +24,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.PagoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
+import com.taemoi.project.dtos.response.AlumnoParaExamenDTO;
+import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
+import com.taemoi.project.entidades.Examen;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
@@ -254,10 +258,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (Boolean.TRUE.equals(alumno.getTieneLicencia())) {
 			alumno.setFechaLicencia(new Date());
 		}
-		
-	    if (alumno.getGrado() != null) {
-	        alumno.setFechaGrado(new Date()); // Fecha de grado específica para el alumno
-	    }
+
+		if (alumno.getGrado() != null) {
+			alumno.setFechaGrado(new Date()); // Fecha de grado específica para el alumno
+		}
 
 		// Save Alumno entity first
 		Alumno alumnoGuardado = alumnoRepository.save(alumno);
@@ -316,27 +320,28 @@ public class AlumnoServiceImpl implements AlumnoService {
 			nuevoAlumno.setCategoria(categoria);
 		}
 
-	    if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
-	        // Buscar y asignar el grado seleccionado
-	        TipoGrado tipoGradoSeleccionado = TipoGrado.valueOf(nuevoAlumnoDTO.getGrado());
-	        Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
-	        nuevoAlumno.setGrado(gradoSeleccionado);
-	    } else {
-	        // Si no se seleccionó un grado, puedes asignar un valor por defecto (ejemplo: Blanco)
-	        Grado gradoPorDefecto = gradoRepository.findByTipoGrado(TipoGrado.BLANCO);
-	        nuevoAlumno.setGrado(gradoPorDefecto);
-	    }
+		if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
+			// Buscar y asignar el grado seleccionado
+			TipoGrado tipoGradoSeleccionado = TipoGrado.valueOf(nuevoAlumnoDTO.getGrado());
+			Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
+			nuevoAlumno.setGrado(gradoSeleccionado);
+		} else {
+			// Si no se seleccionó un grado, puedes asignar un valor por defecto (ejemplo:
+			// Blanco)
+			Grado gradoPorDefecto = gradoRepository.findByTipoGrado(TipoGrado.BLANCO);
+			nuevoAlumno.setGrado(gradoPorDefecto);
+		}
 
-	    // **Asignar fecha de grado actual al alumno**
-	    nuevoAlumno.setFechaGrado(new Date());
+		// **Asignar fecha de grado actual al alumno**
+		nuevoAlumno.setFechaGrado(new Date());
 
-	    if (nuevoAlumnoDTO.getAptoParaExamen() != null) {
-	        // Asignar el valor manualmente si está presente en el DTO
-	        nuevoAlumno.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen());
-	    } else {
-	        // Si no está presente, calcular automáticamente si es apto
-	        nuevoAlumno.setAptoParaExamen(esAptoParaExamen(nuevoAlumno));
-	    }
+		if (nuevoAlumnoDTO.getAptoParaExamen() != null) {
+			// Asignar el valor manualmente si está presente en el DTO
+			nuevoAlumno.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen());
+		} else {
+			// Si no está presente, calcular automáticamente si es apto
+			nuevoAlumno.setAptoParaExamen(esAptoParaExamen(nuevoAlumno));
+		}
 
 		// Asignar imagen si se proporcionó
 		if (nuevoAlumnoDTO.getFotoAlumno() != null) {
@@ -416,18 +421,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
 			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-	        // Obtener el grado actual
-	        Grado gradoActual = alumnoExistente.getGrado();
+			// Obtener el grado actual
+			Grado gradoActual = alumnoExistente.getGrado();
 
-	        // Buscar el nuevo grado (si se actualiza)
-	        Grado nuevoGrado = gradoRepository.findByTipoGrado(
-	                alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
+			// Buscar el nuevo grado (si se actualiza)
+			Grado nuevoGrado = gradoRepository.findByTipoGrado(
+					alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
 
-	        // **Si el grado cambia, actualizar la fecha de grado**
-	        if (nuevoGrado != null && !nuevoGrado.equals(gradoActual)) {
-	            alumnoExistente.setGrado(nuevoGrado);
-	            alumnoExistente.setFechaGrado(new Date()); // Fecha actual si el grado cambia
-	        }
+			// **Si el grado cambia, actualizar la fecha de grado**
+			if (nuevoGrado != null && !nuevoGrado.equals(gradoActual)) {
+				alumnoExistente.setGrado(nuevoGrado);
+				alumnoExistente.setFechaGrado(new Date()); // Fecha actual si el grado cambia
+			}
 
 			// Actualizar otros campos del alumno
 			alumnoExistente.setNif(alumnoActualizado.getNif());
@@ -446,33 +451,33 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			// Actualizar los campos relacionados con "competidor"
-	        alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
-	        if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-	            // Si es competidor, actualizar el peso y la fecha de peso
-	            alumnoExistente.setPeso(alumnoActualizado.getPeso());
-	            alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
+			alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
+			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
+				// Si es competidor, actualizar el peso y la fecha de peso
+				alumnoExistente.setPeso(alumnoActualizado.getPeso());
+				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
 
-	            // Actualizar la categoría en función de la edad
-	            int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
-	            Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-	            alumnoExistente.setCategoria(nuevaCategoria);
-	        } else {
-	            // Si ya no es competidor, eliminar la categoría
-	            alumnoExistente.setCategoria(null);
-	        }
+				// Actualizar la categoría en función de la edad
+				int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+				alumnoExistente.setCategoria(nuevaCategoria);
+			} else {
+				// Si ya no es competidor, eliminar la categoría
+				alumnoExistente.setCategoria(null);
+			}
 
 			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
 				int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
 				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
 				alumnoExistente.setCategoria(nuevaCategoria);
 			}
-			
-	        if (alumnoActualizado.getAptoParaExamen() != null) {
-	            alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
-	        } else {
-	            // Si no se asignó manualmente, calcular si es apto automáticamente
-	            alumnoExistente.setAptoParaExamen(esAptoParaExamen(alumnoExistente));
-	        }
+
+			if (alumnoActualizado.getAptoParaExamen() != null) {
+				alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
+			} else {
+				// Si no se asignó manualmente, calcular si es apto automáticamente
+				alumnoExistente.setAptoParaExamen(esAptoParaExamen(alumnoExistente));
+			}
 
 			// Manejo de la imagen del alumno
 			try {
@@ -618,9 +623,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
 		// Mapeando los turnos asignados al alumno a DTOs
-		return alumno.getTurnos().stream().map(
-				turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(), turno.getHoraInicio(), turno.getHoraFin(), turno.getTipo()))
-				.collect(Collectors.toList());
+		return alumno.getTurnos().stream().map(turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(),
+				turno.getHoraInicio(), turno.getHoraFin(), turno.getTipo())).collect(Collectors.toList());
 	}
 
 	@Override
@@ -682,37 +686,113 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 	}
 
-    // Método para obtener alumnos aptos y mapear a AlumnoConGruposDTO
-    public List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO() {
-        List<Alumno> alumnos = alumnoRepository.findByAptoParaExamenTrue();  // Método existente
+	// Método para obtener alumnos aptos y mapear a AlumnoConGruposDTO
+	public List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO() {
+		List<Alumno> alumnos = alumnoRepository.findByAptoParaExamenTrue(); // Método existente
 
-        // Mapeo a AlumnoConGruposDTO
-        return alumnos.stream()
-            .map(AlumnoConGruposDTO::deAlumnoConGrupos)  // Reutilizamos el método estático de mapeo
-            .collect(Collectors.toList());
-    }
+		// Mapeo a AlumnoConGruposDTO
+		return alumnos.stream().map(AlumnoConGruposDTO::deAlumnoConGrupos) // Reutilizamos el método estático de mapeo
+				.collect(Collectors.toList());
+	}
 
- // Servicio para obtener alumnos aptos para examen por deporte, excluyendo "competición"
-    @Override
-    public List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion) {
-        List<Alumno> alumnos = alumnoRepository.findAptosParaExamenPorDeporte(deporte, exclusion);
-        
-        // Mapeamos la lista de alumnos a AlumnoConGruposDTO
-        return alumnos.stream()
-            .map(AlumnoConGruposDTO::deAlumnoConGrupos)  // Reutilizamos el método de mapeo
-            .collect(Collectors.toList());
-    }
+	// Servicio para obtener alumnos aptos para examen por deporte, excluyendo
+	// "competición"
+	@Override
+	public List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion) {
+		List<Alumno> alumnos = alumnoRepository.findAptosParaExamenPorDeporte(deporte, exclusion);
 
+		// Mapeamos la lista de alumnos a AlumnoConGruposDTO
+		return alumnos.stream().map(AlumnoConGruposDTO::deAlumnoConGrupos) // Reutilizamos el método de mapeo
+				.collect(Collectors.toList());
+	}
 
- // Servicio para obtener un alumno apto para examen por su ID
-    @Override
-    public Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id) {
-        Optional<Alumno> alumno = alumnoRepository.findAptoParaExamenById(id);
-        
-        // Convertimos el alumno a AlumnoConGruposDTO si está presente
-        return alumno.map(AlumnoConGruposDTO::deAlumnoConGrupos);
-    }
+	// Servicio para obtener un alumno apto para examen por su ID
+	@Override
+	public Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id) {
+		Optional<Alumno> alumno = alumnoRepository.findAptoParaExamenById(id);
 
+		// Convertimos el alumno a AlumnoConGruposDTO si está presente
+		return alumno.map(AlumnoConGruposDTO::deAlumnoConGrupos);
+	}
+
+	@Override
+	public List<AlumnoParaExamenDTO> obtenerAlumnosAptosConDetallesExamen() {
+		List<Alumno> alumnosAptos = alumnoRepository.findByAptoParaExamenTrue();
+
+		return alumnosAptos.stream().map(alumno -> {
+			// Obtener el examen asociado (suponiendo un solo examen por alumno)
+			Examen examen = (alumno.getExamenes() != null && !alumno.getExamenes().isEmpty())
+					? alumno.getExamenes().get(0)
+					: null;
+
+			// Grado actual
+			String gradoActual = (alumno.getGrado() != null) ? alumno.getGrado().getTipoGrado().name() : "Sin grado";
+
+			// Siguiente grado
+			String siguienteGrado = "No asignado";
+			if (alumno.getGrado() != null) {
+			    boolean esMenor = esAlumnoMenor(alumno);
+			    TipoGrado siguienteTipoGrado = obtenerSiguienteGradoSegunEdadYGradoActual(alumno.getGrado().getTipoGrado(), esMenor);
+			    if (siguienteTipoGrado != null) {
+			        siguienteGrado = siguienteTipoGrado.name();
+			    }
+			}
+
+			// Estado del pago y cuantía
+			String estadoPago = "Sin pago";
+			Double cuantiaPago = 0.0;
+			PagoDTO pagoDTO = null;
+			if (examen != null && examen.getPago() != null) {
+				estadoPago = examen.getPago().getEstado().name();
+				cuantiaPago = examen.getPago().getCuantia();
+				pagoDTO = PagoDTO.dePago(examen.getPago());
+			}
+
+			// Grupos del alumno
+			List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
+					.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
+
+			Imagen fotoAlumno = alumno.getFotoAlumno();
+
+			return new AlumnoParaExamenDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
+					alumno.getNumeroExpediente(), alumno.getFechaNacimiento(), gradoActual, siguienteGrado, estadoPago,
+					cuantiaPago, gruposDTO, alumno.getEmail(), alumno.getTelefono().toString(), pagoDTO, fotoAlumno);
+		}).collect(Collectors.toList());
+	}
+
+	@Override
+	public void actualizarGradoAlumno(Long alumnoId) {
+		// Obtener el alumno
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+		// Determinar si el alumno es menor
+		boolean esMenor = esAlumnoMenor(alumno);
+
+		// Obtener el siguiente grado apropiado según la edad y el grado actual
+		TipoGrado siguienteGradoTipo = obtenerSiguienteGradoSegunEdadYGradoActual(alumno.getGrado().getTipoGrado(),
+				esMenor);
+
+		if (siguienteGradoTipo == null) {
+			throw new RuntimeException("No hay siguiente grado disponible para el alumno.");
+		}
+
+		Grado siguienteGrado = gradoRepository.findByTipoGrado(siguienteGradoTipo);
+		if (siguienteGrado == null) {
+			// Si no existe, creamos y guardamos el nuevo grado
+			siguienteGrado = new Grado();
+			siguienteGrado.setTipoGrado(siguienteGradoTipo);
+			gradoRepository.save(siguienteGrado);
+		}
+
+		// Actualizar el grado del alumno
+		alumno.setGrado(siguienteGrado);
+		alumno.setFechaGrado(new Date());
+		alumno.setAptoParaExamen(false); // Restablecer 'aptoParaExamen'
+
+		// Guardar los cambios
+		alumnoRepository.save(alumno);
+	}
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
@@ -793,12 +873,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
 					TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
 					TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO,
-					TipoGrado.ROJO_NEGRO_1º_PUM, TipoGrado.ROJO_NEGRO_2º_PUM, TipoGrado.ROJO_NEGRO_3º_PUM);
+					TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
 		} else {
 			// Si el alumno es adulto, asignar grados correspondientes a adultos
 			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1º_DAN, TipoGrado.NEGRO_2º_DAN,
-					TipoGrado.NEGRO_3º_DAN, TipoGrado.NEGRO_4º_DAN, TipoGrado.NEGRO_5º_DAN);
+					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN,
+					TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
 		}
 
 		// Asignar un grado aleatoriamente de la lista de grados disponibles
@@ -814,6 +894,84 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Grado nuevoGrado = new Grado();
 		nuevoGrado.setTipoGrado(tipoGradoAsignado);
 		return gradoRepository.save(nuevoGrado);
+	}
+
+	private TipoGrado obtenerSiguienteGradoSegunEdadYGradoActual(TipoGrado gradoActual, boolean esMenor) {
+		if (esMenor) {
+			// Lógica para menores
+			switch (gradoActual) {
+			case BLANCO:
+				return TipoGrado.BLANCO_AMARILLO;
+			case BLANCO_AMARILLO:
+				return TipoGrado.AMARILLO;
+			case AMARILLO:
+				return TipoGrado.AMARILLO_NARANJA;
+			case AMARILLO_NARANJA:
+				return TipoGrado.NARANJA;
+			case NARANJA:
+				return TipoGrado.NARANJA_VERDE;
+			case NARANJA_VERDE:
+				return TipoGrado.VERDE;
+			case VERDE:
+				return TipoGrado.VERDE_AZUL;
+			case VERDE_AZUL:
+				return TipoGrado.AZUL;
+			case AZUL:
+				return TipoGrado.AZUL_ROJO;
+			case AZUL_ROJO:
+				return TipoGrado.ROJO;
+			case ROJO:
+				return TipoGrado.ROJO_NEGRO_1_PUM;
+			case ROJO_NEGRO_1_PUM:
+				return TipoGrado.ROJO_NEGRO_2_PUM;
+			case ROJO_NEGRO_2_PUM:
+				return TipoGrado.ROJO_NEGRO_3_PUM;
+			default:
+				return null; // No hay siguiente grado
+			}
+		} else {
+			// Lógica para adultos
+			switch (gradoActual) {
+			case BLANCO:
+				return TipoGrado.AMARILLO;
+			case BLANCO_AMARILLO:
+				return TipoGrado.AMARILLO;
+			case AMARILLO:
+				return TipoGrado.NARANJA;
+			case AMARILLO_NARANJA:
+				return TipoGrado.NARANJA;
+			case NARANJA:
+				return TipoGrado.VERDE;
+			case NARANJA_VERDE:
+				return TipoGrado.VERDE;
+			case VERDE:
+				return TipoGrado.AZUL;
+			case VERDE_AZUL:
+				return TipoGrado.AZUL;
+			case AZUL:
+				return TipoGrado.ROJO;
+			case AZUL_ROJO:
+				return TipoGrado.ROJO;
+			case ROJO:
+				return TipoGrado.NEGRO_1_DAN;
+			case ROJO_NEGRO_1_PUM:
+				return TipoGrado.NEGRO_1_DAN;
+			case NEGRO_1_DAN:
+				return TipoGrado.NEGRO_2_DAN;
+			case ROJO_NEGRO_2_PUM:
+				return TipoGrado.NEGRO_2_DAN;
+			case NEGRO_2_DAN:
+				return TipoGrado.NEGRO_3_DAN;
+			case NEGRO_3_DAN:
+				return TipoGrado.NEGRO_3_DAN;
+			case ROJO_NEGRO_3_PUM:
+				return TipoGrado.NEGRO_4_DAN;
+			case NEGRO_4_DAN:
+				return TipoGrado.NEGRO_5_DAN;
+			default:
+				return null;
+			}
+		}
 	}
 
 	/**
@@ -926,96 +1084,112 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @return true si el alumno es apto para examen, false en caso contrario.
 	 */
 	private boolean esAptoParaExamen(Alumno alumno) {
-	    if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
-	        return false;
-	    }
+		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
+			return false;
+		}
 
-	    // Validar el año de la fecha de grado
-	    LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	    int year = fechaGrado.getYear();
-	    
-	    if (year < 1900 || year > 2100) {
-	        // Si la fecha de grado está fuera de un rango razonable
-	        return false;
-	    }
+		// Validar el año de la fecha de grado
+		LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		int year = fechaGrado.getYear();
 
-	    // Calcular la edad del alumno
-	    int edad = calcularEdad(alumno.getFechaNacimiento());
+		if (year < 1900 || year > 2100) {
+			// Si la fecha de grado está fuera de un rango razonable
+			return false;
+		}
 
-	    // Obtener los meses requeridos en función de la edad y el tipo de grado
-	    long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
+		// Calcular la edad del alumno
+		int edad = calcularEdad(alumno.getFechaNacimiento());
 
-	    // Calcular la fecha mínima para el próximo examen
-	    LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
+		// Obtener los meses requeridos en función de la edad y el tipo de grado
+		long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
 
-	    // Si la fecha actual es igual o mayor que la fecha mínima, es apto para examen
-	    return !LocalDate.now().isBefore(fechaExamenPosible);
+		// Calcular la fecha mínima para el próximo examen
+		LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
+
+		// Si la fecha actual es igual o mayor que la fecha mínima, es apto para examen
+		return !LocalDate.now().isBefore(fechaExamenPosible);
 	}
 
 	/**
-	 * Calcula los meses requeridos para ser apto para examen según la edad y el grado.
+	 * Calcula los meses requeridos para ser apto para examen según la edad y el
+	 * grado.
 	 * 
 	 * @param edad      La edad del alumno.
 	 * @param tipoGrado El grado actual del alumno.
 	 * @return Los meses requeridos para ser apto para examen.
 	 */
 	private long obtenerMesesRequeridosParaExamen(int edad, TipoGrado tipoGrado) {
-	    if (edad < 13) {
-	        switch (tipoGrado) {
-	            case BLANCO:
-	                return 2;
-	            case BLANCO_AMARILLO:
-	                return 2;
-	            case AMARILLO:
-	                return 3;
-	            case AMARILLO_NARANJA:
-	                return 3;
-	            case NARANJA:
-	                return 4;
-	            case NARANJA_VERDE:
-	                return 4;
-	            case VERDE:
-	                return 6;
-	            case VERDE_AZUL:
-	                return 6;
-	            case AZUL:
-	                return 8;
-	            case AZUL_ROJO:
-	                return 10;
-	            case ROJO:
-	                return 12;
-	            case ROJO_NEGRO_1º_PUM:
-	                return 24;
-	            case ROJO_NEGRO_2º_PUM:
-	                return 36;
-	            default:
-	                return Long.MAX_VALUE; // No apto si no coincide
-	        }
-	    } else {
-	        switch (tipoGrado) {
-	            case BLANCO:
-	                return 3;
-	            case AMARILLO:
-	                return 5;
-	            case NARANJA:
-	                return 6;
-	            case VERDE:
-	                return 8;
-	            case AZUL:
-	                return 10;
-	            case ROJO:
-	                return 12;
-	            case NEGRO_1º_DAN:
-	                return 24;
-	            case NEGRO_2º_DAN:
-	                return 36;
-	            case NEGRO_3º_DAN:
-	                return 48;
-	            case NEGRO_4º_DAN:
-	                return 60;
-	            default:
-	                return Long.MAX_VALUE; // No apto si no coincide
-	        }
-	    }
+		if (edad < 13) {
+			switch (tipoGrado) {
+			case BLANCO:
+				return 2;
+			case BLANCO_AMARILLO:
+				return 2;
+			case AMARILLO:
+				return 3;
+			case AMARILLO_NARANJA:
+				return 3;
+			case NARANJA:
+				return 4;
+			case NARANJA_VERDE:
+				return 4;
+			case VERDE:
+				return 6;
+			case VERDE_AZUL:
+				return 6;
+			case AZUL:
+				return 8;
+			case AZUL_ROJO:
+				return 10;
+			case ROJO:
+				return 12;
+			case ROJO_NEGRO_1_PUM:
+				return 24;
+			case ROJO_NEGRO_2_PUM:
+				return 36;
+			default:
+				return Long.MAX_VALUE; // No apto si no coincide
+			}
+		} else {
+			switch (tipoGrado) {
+			case BLANCO:
+				return 3;
+			case AMARILLO:
+				return 5;
+			case NARANJA:
+				return 6;
+			case VERDE:
+				return 8;
+			case AZUL:
+				return 10;
+			case ROJO:
+				return 12;
+			case NEGRO_1_DAN:
+				return 24;
+			case NEGRO_2_DAN:
+				return 36;
+			case NEGRO_3_DAN:
+				return 48;
+			case NEGRO_4_DAN:
+				return 60;
+			default:
+				return Long.MAX_VALUE; // No apto si no coincide
+			}
+		}
 	}
+
+	private boolean esAlumnoMenor(Alumno alumno) {
+		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
+				.toLocalDate();
+		LocalDate fechaActual = LocalDate.now();
+		int edad = Period.between(fechaNacimiento, fechaActual).getYears();
+
+		// Verificar si cumple 14 años en el año actual
+		boolean cumpleCatorceEsteAno = fechaNacimiento.plusYears(14).getYear() == fechaActual.getYear();
+
+		// Se considera menor si tiene menos de 13 años o tiene 13 pero no cumple 14
+		// este año
+		return edad < 13 || (edad == 13 && !cumpleCatorceEsteAno);
+	}
+
 }

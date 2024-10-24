@@ -31,8 +31,12 @@ public class Grado {
 	@JsonBackReference
 	private Set<Alumno> alumnos = new HashSet<>();
 
-	@OneToMany(mappedBy = "grado", cascade = CascadeType.ALL)
-	private List<Examen> examenes;
+    @OneToMany(mappedBy = "gradoActual", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Examen> examenes;
+
+    @OneToMany(mappedBy = "gradoProximo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Examen> examenesProximos;
 
 	public Long getId() {
 		return id;
