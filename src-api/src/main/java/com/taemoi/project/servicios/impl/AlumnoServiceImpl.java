@@ -24,14 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.dtos.PagoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
-import com.taemoi.project.dtos.response.AlumnoParaExamenDTO;
-import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
-import com.taemoi.project.entidades.Examen;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
@@ -147,7 +143,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = obtenerAlumnoPorId(id);
-		return optionalAlumno.map(this::mapeoParaAlumnoDTO);
+		return optionalAlumno.map(AlumnoDTO::deAlumno);
 	}
 
 	/**
@@ -294,6 +290,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+		nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
 
 		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
 		if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
@@ -443,6 +440,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+			alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
 
 			alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
 			if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
@@ -715,85 +713,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return alumno.map(AlumnoConGruposDTO::deAlumnoConGrupos);
 	}
 
-	@Override
-	public List<AlumnoParaExamenDTO> obtenerAlumnosAptosConDetallesExamen() {
-		List<Alumno> alumnosAptos = alumnoRepository.findByAptoParaExamenTrue();
-
-		return alumnosAptos.stream().map(alumno -> {
-			// Obtener el examen asociado (suponiendo un solo examen por alumno)
-			Examen examen = (alumno.getExamenes() != null && !alumno.getExamenes().isEmpty())
-					? alumno.getExamenes().get(0)
-					: null;
-
-			// Grado actual
-			String gradoActual = (alumno.getGrado() != null) ? alumno.getGrado().getTipoGrado().name() : "Sin grado";
-
-			// Siguiente grado
-			String siguienteGrado = "No asignado";
-			if (alumno.getGrado() != null) {
-			    boolean esMenor = esAlumnoMenor(alumno);
-			    TipoGrado siguienteTipoGrado = obtenerSiguienteGradoSegunEdadYGradoActual(alumno.getGrado().getTipoGrado(), esMenor);
-			    if (siguienteTipoGrado != null) {
-			        siguienteGrado = siguienteTipoGrado.name();
-			    }
-			}
-
-			// Estado del pago y cuantía
-			String estadoPago = "Sin pago";
-			Double cuantiaPago = 0.0;
-			PagoDTO pagoDTO = null;
-			if (examen != null && examen.getPago() != null) {
-				estadoPago = examen.getPago().getEstado().name();
-				cuantiaPago = examen.getPago().getCuantia();
-				pagoDTO = PagoDTO.dePago(examen.getPago());
-			}
-
-			// Grupos del alumno
-			List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
-					.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
-
-			Imagen fotoAlumno = alumno.getFotoAlumno();
-
-			return new AlumnoParaExamenDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
-					alumno.getNumeroExpediente(), alumno.getFechaNacimiento(), gradoActual, siguienteGrado, estadoPago,
-					cuantiaPago, gruposDTO, alumno.getEmail(), alumno.getTelefono().toString(), pagoDTO, fotoAlumno);
-		}).collect(Collectors.toList());
-	}
-
-	@Override
-	public void actualizarGradoAlumno(Long alumnoId) {
-		// Obtener el alumno
-		Alumno alumno = alumnoRepository.findById(alumnoId)
-				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
-
-		// Determinar si el alumno es menor
-		boolean esMenor = esAlumnoMenor(alumno);
-
-		// Obtener el siguiente grado apropiado según la edad y el grado actual
-		TipoGrado siguienteGradoTipo = obtenerSiguienteGradoSegunEdadYGradoActual(alumno.getGrado().getTipoGrado(),
-				esMenor);
-
-		if (siguienteGradoTipo == null) {
-			throw new RuntimeException("No hay siguiente grado disponible para el alumno.");
-		}
-
-		Grado siguienteGrado = gradoRepository.findByTipoGrado(siguienteGradoTipo);
-		if (siguienteGrado == null) {
-			// Si no existe, creamos y guardamos el nuevo grado
-			siguienteGrado = new Grado();
-			siguienteGrado.setTipoGrado(siguienteGradoTipo);
-			gradoRepository.save(siguienteGrado);
-		}
-
-		// Actualizar el grado del alumno
-		alumno.setGrado(siguienteGrado);
-		alumno.setFechaGrado(new Date());
-		alumno.setAptoParaExamen(false); // Restablecer 'aptoParaExamen'
-
-		// Guardar los cambios
-		alumnoRepository.save(alumno);
-	}
-
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
 	 *
@@ -896,7 +815,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoRepository.save(nuevoGrado);
 	}
 
-	private TipoGrado obtenerSiguienteGradoSegunEdadYGradoActual(TipoGrado gradoActual, boolean esMenor) {
+/*	private TipoGrado obtenerSiguienteGradoSegunEdadYGradoActual(TipoGrado gradoActual, boolean esMenor) {
 		if (esMenor) {
 			// Lógica para menores
 			switch (gradoActual) {
@@ -973,7 +892,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 		}
 	}
-
+*/
 	/**
 	 * Calcula la edad a partir de la fecha de nacimiento.
 	 *
@@ -1058,24 +977,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param alumno El objeto Alumno a mapear.
 	 * @return El objeto AlumnoDTO mapeado.
 	 */
-	private AlumnoDTO mapeoParaAlumnoDTO(Alumno alumno) {
-		if (alumno == null) {
-			return null;
-		}
 
-		String categoriaNombre = alumno.getCategoria() != null ? alumno.getCategoria().getNombre() : null;
-		String gradoTipo = alumno.getGrado() != null && alumno.getGrado().getTipoGrado() != null
-				? alumno.getGrado().getTipoGrado().name()
-				: null;
-
-		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
-				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(),
-				alumno.getTelefono(), alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(),
-				alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(),
-				alumno.getPeso(), alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFechaGrado(),
-				alumno.getFotoAlumno(), alumno.getTieneLicencia(), alumno.getNumeroLicencia(),
-				alumno.getFechaLicencia(), alumno.getAptoParaExamen());
-	}
 
 	/**
 	 * Calcula si un alumno es apto para examen según su grado y su edad.
@@ -1178,7 +1080,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 	}
 
-	private boolean esAlumnoMenor(Alumno alumno) {
+/*	private boolean esAlumnoMenor(Alumno alumno) {
 		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
 				.toLocalDate();
 		LocalDate fechaActual = LocalDate.now();
@@ -1191,5 +1093,5 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// este año
 		return edad < 13 || (edad == 13 && !cumpleCatorceEsteAno);
 	}
-
+*/
 }

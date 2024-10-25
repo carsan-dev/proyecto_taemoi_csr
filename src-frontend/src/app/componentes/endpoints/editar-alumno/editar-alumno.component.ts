@@ -38,7 +38,6 @@ export class EditarAlumnoComponent implements OnInit {
     tipoTarifa: null,
     tipoGrado: null,
   };
-
   tiposTarifa = Object.values(TipoTarifa);
   tiposGrado = Object.values(TipoGrado);
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
@@ -46,6 +45,9 @@ export class EditarAlumnoComponent implements OnInit {
   alumnoForm: FormGroup;
   mostrarInactivos: boolean = false;
   tipoTarifaEditado: boolean = false;
+  deportes = ['TAEKWONDO', 'KICKBOXING', 'PILATES'];
+  grados: any[] = [];
+  todosLosGrados: any[] = [];
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -71,6 +73,7 @@ export class EditarAlumnoComponent implements OnInit {
           ],
         ],
         tipoTarifa: ['', Validators.required],
+        deporte: ['', Validators.required],
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaBaja: [''],
@@ -97,6 +100,10 @@ export class EditarAlumnoComponent implements OnInit {
     // Obtener la lista de alumnos
     this.obtenerAlumnos();
 
+    this.alumnoForm.get('deporte')?.valueChanges.subscribe((event: Event) => {
+      this.onDeporteChange(event);
+    });
+    
     // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
     this.alumnoForm
       .get('fechaNacimiento')
@@ -136,6 +143,8 @@ export class EditarAlumnoComponent implements OnInit {
       this.fechaBajaPosteriorAFechaAltaValidator,
       this.fechaNacimientoPosteriorAFechaAltaValidator,
     ]);
+
+    this.cargarGrados();
   }
 
   handleLicenciaFields(tieneLicencia: boolean) {
@@ -185,8 +194,8 @@ export class EditarAlumnoComponent implements OnInit {
 
       pesoControl?.disable();
       fechaPesoControl?.disable();
-      categoriaControl?.setValue(null);  // Eliminar la categoría del formulario
-      this.alumnoEditado.categoria = null;  // Eliminar la categoría del alumno editado
+      categoriaControl?.setValue(null); // Eliminar la categoría del formulario
+      this.alumnoEditado.categoria = null; // Eliminar la categoría del alumno editado
     }
 
     pesoControl?.updateValueAndValidity();
@@ -208,6 +217,22 @@ export class EditarAlumnoComponent implements OnInit {
           });
         },
       });
+  }
+
+  cargarGrados(): void {
+    this.endpointsService.obtenerGrados().subscribe({
+      next: (grados) => {
+        this.todosLosGrados = grados; // Almacena todos los grados
+        this.grados = grados; // Inicialmente, muestra todos los grados
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los grados',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   obtenerAlumnos() {
@@ -332,11 +357,14 @@ export class EditarAlumnoComponent implements OnInit {
       ? this.formatDate(alumno.fechaLicencia)
       : '';
     const grado = alumno.grado || '';
-    const aptoParaExamen = alumno.aptoParaExamen ? alumno.aptoParaExamen : false;
+    const aptoParaExamen = alumno.aptoParaExamen
+      ? alumno.aptoParaExamen
+      : false;
 
     this.alumnoForm.patchValue({
       ...this.alumnoEditado,
       fechaNacimiento: fechaNacimiento,
+      deporte: alumno.deporte,
       fechaAlta: fechaAlta,
       fechaBaja: fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
@@ -350,7 +378,33 @@ export class EditarAlumnoComponent implements OnInit {
       grado: grado,
       aptoParaExamen: aptoParaExamen,
     });
+    this.onDeporteChange(alumno.deporte);
   }
+
+// Método actualizado para recibir el evento y obtener el valor como string
+onDeporteChange(event: Event | string): void {
+  const deporteSeleccionado = typeof event === 'string' ? event : (event.target as HTMLSelectElement).value;
+  this.resetFormControls();
+
+  if (deporteSeleccionado === 'TAEKWONDO') {
+    this.showAllFields();
+    this.tiposTarifa = Object.values(TipoTarifa);
+    this.grados = this.todosLosGrados;
+  } else if (deporteSeleccionado === 'KICKBOXING') {
+    this.showAllFields();
+    this.tiposTarifa = [
+      TipoTarifa.PADRES_HIJOS,
+      TipoTarifa.HERMANOS,
+      TipoTarifa.FAMILIAR,
+    ];
+    this.filtrarGradosParaKickboxing();
+  } else if (deporteSeleccionado === 'PILATES') {
+    this.hideFieldsForPilates();
+    this.tiposTarifa = [];
+    this.grados = [];
+  }
+}
+
 
   private formatDate(fecha: string): string {
     const date = new Date(fecha);
@@ -479,5 +533,90 @@ export class EditarAlumnoComponent implements OnInit {
     if (modal) {
       modal.style.display = 'none';
     }
+  }
+
+  resetFormControls(): void {
+    // Remover validaciones de campos que podrían cambiar
+    this.alumnoForm.get('tipoTarifa')?.clearValidators();
+    this.alumnoForm.get('grado')?.clearValidators();
+    this.alumnoForm.get('competidor')?.clearValidators();
+    this.alumnoForm.get('tieneLicencia')?.clearValidators();
+    this.alumnoForm.get('numeroLicencia')?.clearValidators();
+    this.alumnoForm.get('fechaLicencia')?.clearValidators();
+
+    // Actualizar validez de los campos
+    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
+    this.alumnoForm.get('grado')?.updateValueAndValidity();
+    this.alumnoForm.get('competidor')?.updateValueAndValidity();
+    this.alumnoForm.get('tieneLicencia')?.updateValueAndValidity();
+    this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
+    this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
+
+    // Habilitar todos los campos
+    this.alumnoForm.get('tipoTarifa')?.enable();
+    this.alumnoForm.get('grado')?.enable();
+    this.alumnoForm.get('competidor')?.enable();
+    this.alumnoForm.get('tieneLicencia')?.enable();
+    this.alumnoForm.get('numeroLicencia')?.enable();
+    this.alumnoForm.get('fechaLicencia')?.enable();
+  }
+
+  showAllFields(): void {
+    // Añadir validaciones necesarias
+    this.alumnoForm.get('tipoTarifa')?.setValidators(Validators.required);
+    this.alumnoForm.get('grado')?.setValidators(Validators.required);
+
+    // Actualizar validez de los campos
+    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
+    this.alumnoForm.get('grado')?.updateValueAndValidity();
+  }
+
+  hideFieldsForPilates(): void {
+    // Deshabilitar campos no necesarios y remover validaciones
+    this.alumnoForm.get('tipoTarifa')?.disable();
+    this.alumnoForm.get('tipoTarifa')?.clearValidators();
+    this.alumnoForm.get('grado')?.disable();
+    this.alumnoForm.get('grado')?.clearValidators();
+    this.alumnoForm.get('competidor')?.disable();
+    this.alumnoForm.get('tieneLicencia')?.disable();
+    this.alumnoForm.get('numeroLicencia')?.disable();
+    this.alumnoForm.get('numeroLicencia')?.clearValidators();
+    this.alumnoForm.get('fechaLicencia')?.disable();
+    this.alumnoForm.get('fechaLicencia')?.clearValidators();
+
+    // Actualizar validez de los campos
+    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
+    this.alumnoForm.get('grado')?.updateValueAndValidity();
+    this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
+    this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
+  }
+
+  filtrarGradosParaKickboxing(): void {
+    const gradosCompletos = [
+      'BLANCO',
+      'AMARILLO',
+      'NARANJA',
+      'VERDE',
+      'AZUL',
+      'ROJO',
+      'NEGRO_1_DAN',
+      'NEGRO_2_DAN',
+      'NEGRO_3_DAN',
+      'NEGRO_4_DAN',
+      'NEGRO_5_DAN',
+    ];
+    this.grados = this.todosLosGrados.filter((grado) =>
+      gradosCompletos.includes(grado.tipoGrado)
+    );
+  }
+
+  getGradoNombre(grado: any): string {
+    const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
+
+    if (deporteSeleccionado === 'KICKBOXING' && grado.tipoGrado === 'ROJO') {
+      return 'MARRON';
+    }
+
+    return grado.tipoGrado;
   }
 }

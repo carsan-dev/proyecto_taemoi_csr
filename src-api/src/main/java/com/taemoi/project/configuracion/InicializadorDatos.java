@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -17,10 +18,10 @@ import org.springframework.stereotype.Component;
 import com.github.javafaker.Faker;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.NombresGrupo;
-import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -31,7 +32,6 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
-import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -86,9 +86,6 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	@Autowired
 	private TurnoRepository turnoRepository;
-	
-	@Autowired
-	private ProductoRepository productoRepository;
 
 	/**
 	 * Inyección del codificador de contraseñas.
@@ -139,7 +136,7 @@ public class InicializadorDatos implements CommandLineRunner {
 			crearTurno("Jueves", "20:00", "21:30", competicion, "Taekwondo Competición");
 	    }
 
-	    inicializarProductos();
+//	    inicializarProductos();
 	    
         if (gradoRepository.count() == 0) {
             generarGrados();
@@ -169,7 +166,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	                return grupoRepository.save(nuevoGrupo);
 	            });
 	}
-	
+	/*
 	private void inicializarProductos() {
 	    if (productoRepository.count() == 0) {  // Solo cargar si no hay productos
 	        List<Producto> productos = Arrays.asList(
@@ -358,7 +355,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	        productoRepository.saveAll(productos);
 	    }
 	}
-
+*/
 
 
 	private void generarUsuarios() {
@@ -481,6 +478,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	    alumno.setGrado(asignarGradoSegunEdad(edad, fechaNacimiento));
 	    
 	    alumno.setFechaGrado(new Date());
+	    
+	    Deporte deporteAleatorio = Deporte.values()[ThreadLocalRandom.current().nextInt(Deporte.values().length)];
+	    alumno.setDeporte(deporteAleatorio);
 
 	    return alumno;
 	}
