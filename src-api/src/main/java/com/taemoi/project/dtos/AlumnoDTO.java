@@ -3,6 +3,7 @@ package com.taemoi.project.dtos;
 import java.util.Date;
 
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.entidades.TipoTarifa;
 
@@ -25,6 +26,7 @@ public class AlumnoDTO {
 	private Boolean competidor;
 	private Double peso;
 	private Date fechaPeso;
+	private Deporte deporte;
 	private String categoria;
 	private String grado;
 	private Date fechaGrado;
@@ -37,7 +39,7 @@ public class AlumnoDTO {
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso,
-			Date fechaPeso, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
+			Date fechaPeso, Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
 			Integer numeroLicencia, Date fechaLicencia, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
@@ -57,6 +59,7 @@ public class AlumnoDTO {
 		this.competidor = competidor;
 		this.peso = peso;
 		this.fechaPeso = fechaPeso;
+		this.deporte = deporte;
 		this.categoria = categoria;
 		this.grado = grado;
 		this.fechaGrado = fechaGrado;
@@ -183,6 +186,14 @@ public class AlumnoDTO {
 		return fechaPeso;
 	}
 
+	public Deporte getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(Deporte deporte) {
+		this.deporte = deporte;
+	}
+
 	public void setFechaPeso(Date fechaPeso) {
 		this.fechaPeso = fechaPeso;
 	}
@@ -301,7 +312,7 @@ public class AlumnoDTO {
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(), alumno.getFechaBaja(),
 				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
-				alumno.getFechaPeso(), categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(),
+				alumno.getFechaPeso(), alumno.getDeporte(), categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(),
 				alumno.getTieneLicencia(), alumno.getNumeroLicencia(), alumno.getFechaLicencia(),
 				alumno.getAptoParaExamen());
 	}

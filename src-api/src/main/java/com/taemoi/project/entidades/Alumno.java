@@ -106,6 +106,9 @@ public class Alumno {
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "foto_alumno_id")
 	private Imagen fotoAlumno;
+	
+	@Enumerated(EnumType.STRING)
+	private Deporte deporte;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "categoria_id")
@@ -364,6 +367,14 @@ public class Alumno {
 
 	public void setFotoAlumno(Imagen fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
+	}
+
+	public Deporte getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(Deporte deporte) {
+		this.deporte = deporte;
 	}
 
 	public List<Grupo> getGrupos() {
