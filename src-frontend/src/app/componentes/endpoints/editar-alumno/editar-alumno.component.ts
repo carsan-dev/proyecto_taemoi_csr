@@ -13,6 +13,9 @@ import {
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AlumnoDTO } from '../../../interfaces/alumno-dto';
+import { Producto } from '../../../interfaces/producto';
 
 @Component({
   selector: 'app-editar-alumno',
@@ -28,6 +31,7 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
 })
 export class EditarAlumnoComponent implements OnInit {
   alumnos: any[] = [];
+  alumnoId: number | null = null;
   paginaActual: number = 1;
   tamanoPagina: number = 1;
   totalPaginas: number = 0;
@@ -48,10 +52,15 @@ export class EditarAlumnoComponent implements OnInit {
   deportes = ['TAEKWONDO', 'KICKBOXING', 'PILATES'];
   grados: any[] = [];
   todosLosGrados: any[] = [];
+  products: Producto[] = [];
+  selectedProductoId: number | null = null;
+  productosAlumno: Producto[] = [];
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {
     this.alumnoForm = this.fb.group(
       {
@@ -98,12 +107,22 @@ export class EditarAlumnoComponent implements OnInit {
 
   ngOnInit(): void {
     // Obtener la lista de alumnos
-    this.obtenerAlumnos();
+    this.route.params.subscribe((params) => {
+      const idParam = params['id'];
+      if (idParam) {
+        this.alumnoId = +idParam;
+        this.mostrarFormulario = true;
+        this.obtenerAlumnoPorId(this.alumnoId);
+        this.obtenerProductosAlumno(this.alumnoId);
+      }
+      this.obtenerAlumnos();
+    });
+    this.obtenerProductos();
 
     this.alumnoForm.get('deporte')?.valueChanges.subscribe((event: Event) => {
       this.onDeporteChange(event);
     });
-    
+
     // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
     this.alumnoForm
       .get('fechaNacimiento')
@@ -145,6 +164,81 @@ export class EditarAlumnoComponent implements OnInit {
     ]);
 
     this.cargarGrados();
+  }
+
+  obtenerAlumnoPorId(id: number) {
+    this.endpointsService.obtenerAlumnoPorId(id).subscribe({
+      next: (alumno) => {
+        this.alumnoEditado = alumno;
+        this.imagenPreview = alumno.fotoAlumno?.url
+          ? alumno.fotoAlumno.url
+          : '../../../../assets/media/default.webp';
+
+        this.configurarFormulario(alumno);
+      },
+      error: (error) => {
+        // Manejar el error si el alumno no se encuentra
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo obtener el alumno con el ID especificado.',
+          icon: 'error',
+        });
+        this.router.navigate(['/alumnosEditar']);
+      },
+    });
+  }
+
+  configurarFormulario(alumno: any): void {
+    const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
+    if (fechaNacimiento) {
+      this.obtenerGradosDisponibles(fechaNacimiento);
+    }
+
+    const fechaAlta = this.formatDate(alumno.fechaAlta);
+    const fechaBaja = alumno.fechaBaja ? this.formatDate(alumno.fechaBaja) : '';
+    const peso = alumno.peso || '';
+    const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
+    const numeroLicencia = alumno.numeroLicencia || '';
+    const fechaLicencia = alumno.fechaLicencia
+      ? this.formatDate(alumno.fechaLicencia)
+      : '';
+    const grado = alumno.grado || '';
+    const aptoParaExamen = alumno.aptoParaExamen ?? false;
+
+    this.alumnoForm.patchValue({
+      ...alumno,
+      fechaNacimiento: fechaNacimiento,
+      deporte: alumno.deporte,
+      fechaAlta: fechaAlta,
+      fechaBaja: fechaBaja,
+      autorizacionWeb: alumno.autorizacionWeb,
+      cuantiaTarifa: alumno.cuantiaTarifa,
+      peso: peso,
+      fechaPeso: fechaPeso,
+      competidor: alumno.competidor,
+      numeroLicencia: numeroLicencia,
+      fechaLicencia: fechaLicencia,
+      tieneLicencia: alumno.tieneLicencia,
+      grado: grado,
+      aptoParaExamen: aptoParaExamen,
+    });
+
+    this.onDeporteChange(alumno.deporte);
+  }
+
+  obtenerProductosAlumno(alumnoId: number) {
+    this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
+      next: (productos) => {
+        this.productosAlumno = productos;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron obtener los productos del alumno.',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   handleLicenciaFields(tieneLicencia: boolean) {
@@ -258,6 +352,21 @@ export class EditarAlumnoComponent implements OnInit {
       });
   }
 
+  obtenerProductos() {
+    this.endpointsService.obtenerTodosLosProductos().subscribe({
+      next: (productos: Producto[]) => {
+        this.products = productos;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los productos.',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
   confirmarYActualizarAlumno(id: number, alumno: any) {
     if (this.alumnoForm.invalid) {
       Swal.fire({
@@ -339,72 +448,53 @@ export class EditarAlumnoComponent implements OnInit {
 
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
-    this.alumnoEditado = { ...alumno };
-    this.imagenPreview = alumno.fotoAlumno?.url
-      ? alumno.fotoAlumno.url
-      : '../../../../assets/media/default.webp';
-    this.tipoTarifaEditado = false;
-    const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
-    if (fechaNacimiento) {
-      this.obtenerGradosDisponibles(fechaNacimiento);
+
+    if (this.mostrarFormulario) {
+      this.alumnoEditado = { ...alumno };
+      this.imagenPreview = alumno.fotoAlumno?.url
+        ? alumno.fotoAlumno.url
+        : '../../../../assets/media/default.webp';
+      this.tipoTarifaEditado = false;
+
+      this.configurarFormulario(alumno);
+
+      // Navegar a la ruta con el ID del alumno
+      this.router.navigate(['/alumnosEditar', alumno.id]);
+
+      this.obtenerProductosAlumno(alumno.id);
+    } else {
+      // Navegar a la ruta sin ID cuando se cierra el formulario
+      this.router.navigate(['/alumnosEditar']);
+      this.productosAlumno = [];
     }
-    const fechaAlta = this.formatDate(alumno.fechaAlta);
-    const fechaBaja = alumno.fechaBaja ? this.formatDate(alumno.fechaBaja) : '';
-    const peso = alumno.peso || '';
-    const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
-    const numeroLicencia = alumno.numeroLicencia || '';
-    const fechaLicencia = alumno.fechaLicencia
-      ? this.formatDate(alumno.fechaLicencia)
-      : '';
-    const grado = alumno.grado || '';
-    const aptoParaExamen = alumno.aptoParaExamen
-      ? alumno.aptoParaExamen
-      : false;
-
-    this.alumnoForm.patchValue({
-      ...this.alumnoEditado,
-      fechaNacimiento: fechaNacimiento,
-      deporte: alumno.deporte,
-      fechaAlta: fechaAlta,
-      fechaBaja: fechaBaja,
-      autorizacionWeb: alumno.autorizacionWeb,
-      cuantiaTarifa: alumno.cuantiaTarifa,
-      peso: peso,
-      fechaPeso: fechaPeso,
-      competidor: alumno.competidor,
-      numeroLicencia: numeroLicencia,
-      fechaLicencia: fechaLicencia,
-      tieneLicencia: alumno.tieneLicencia,
-      grado: grado,
-      aptoParaExamen: aptoParaExamen,
-    });
-    this.onDeporteChange(alumno.deporte);
   }
 
-// Método actualizado para recibir el evento y obtener el valor como string
-onDeporteChange(event: Event | string): void {
-  const deporteSeleccionado = typeof event === 'string' ? event : (event.target as HTMLSelectElement).value;
-  this.resetFormControls();
+  // Método actualizado para recibir el evento y obtener el valor como string
+  onDeporteChange(event: Event | string): void {
+    const deporteSeleccionado =
+      typeof event === 'string'
+        ? event
+        : (event.target as HTMLSelectElement).value;
+    this.resetFormControls();
 
-  if (deporteSeleccionado === 'TAEKWONDO') {
-    this.showAllFields();
-    this.tiposTarifa = Object.values(TipoTarifa);
-    this.grados = this.todosLosGrados;
-  } else if (deporteSeleccionado === 'KICKBOXING') {
-    this.showAllFields();
-    this.tiposTarifa = [
-      TipoTarifa.PADRES_HIJOS,
-      TipoTarifa.HERMANOS,
-      TipoTarifa.FAMILIAR,
-    ];
-    this.filtrarGradosParaKickboxing();
-  } else if (deporteSeleccionado === 'PILATES') {
-    this.hideFieldsForPilates();
-    this.tiposTarifa = [];
-    this.grados = [];
+    if (deporteSeleccionado === 'TAEKWONDO') {
+      this.showAllFields();
+      this.tiposTarifa = Object.values(TipoTarifa);
+      this.grados = this.todosLosGrados;
+    } else if (deporteSeleccionado === 'KICKBOXING') {
+      this.showAllFields();
+      this.tiposTarifa = [
+        TipoTarifa.PADRES_HIJOS,
+        TipoTarifa.HERMANOS,
+        TipoTarifa.FAMILIAR,
+      ];
+      this.filtrarGradosParaKickboxing();
+    } else if (deporteSeleccionado === 'PILATES') {
+      this.hideFieldsForPilates();
+      this.tiposTarifa = [TipoTarifa.PILATES];
+      this.grados = [];
+    }
   }
-}
-
 
   private formatDate(fecha: string): string {
     const date = new Date(fecha);
@@ -473,6 +563,8 @@ onDeporteChange(event: Event | string): void {
 
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
     switch (tipoTarifa) {
+      case TipoTarifa.PILATES:
+        return 30.0;
       case TipoTarifa.ADULTO:
         return 30.0;
       case TipoTarifa.ADULTO_GRUPO:
@@ -572,18 +664,26 @@ onDeporteChange(event: Event | string): void {
   }
 
   hideFieldsForPilates(): void {
-    // Deshabilitar campos no necesarios y remover validaciones
-    this.alumnoForm.get('tipoTarifa')?.disable();
-    this.alumnoForm.get('tipoTarifa')?.clearValidators();
+    this.alumnoForm.get('tipoTarifa')?.setValue(TipoTarifa.PILATES);
+
     this.alumnoForm.get('grado')?.disable();
     this.alumnoForm.get('grado')?.clearValidators();
+    this.alumnoForm.get('grado')?.setValue(null);
+  
     this.alumnoForm.get('competidor')?.disable();
+    this.alumnoForm.get('competidor')?.setValue(false);
+  
     this.alumnoForm.get('tieneLicencia')?.disable();
+    this.alumnoForm.get('tieneLicencia')?.setValue(false);
+  
     this.alumnoForm.get('numeroLicencia')?.disable();
     this.alumnoForm.get('numeroLicencia')?.clearValidators();
+    this.alumnoForm.get('numeroLicencia')?.setValue(null);
+  
     this.alumnoForm.get('fechaLicencia')?.disable();
     this.alumnoForm.get('fechaLicencia')?.clearValidators();
-
+    this.alumnoForm.get('fechaLicencia')?.setValue(null);
+  
     // Actualizar validez de los campos
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
@@ -618,5 +718,9 @@ onDeporteChange(event: Event | string): void {
     }
 
     return grado.tipoGrado;
+  }
+  
+  navegarAGestionProductos(alumnoId: number) {
+    this.router.navigate(['/alumnos', alumnoId, 'productos']);
   }
 }
