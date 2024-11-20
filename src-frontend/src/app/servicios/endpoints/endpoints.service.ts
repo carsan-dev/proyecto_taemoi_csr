@@ -8,6 +8,8 @@ import { throwError } from 'rxjs/internal/observable/throwError';
 import { Observable } from 'rxjs/internal/Observable';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
+import { AlumnoDTO } from '../../interfaces/alumno-dto';
+import { Producto } from '../../interfaces/producto';
 
 @Injectable({
   providedIn: 'root',
@@ -226,6 +228,59 @@ export class EndpointsService {
       .get<any>(`${this.urlBase}/alumnos/aptos/${id}`, {
         withCredentials: true,
       })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTodosLosProductos(): Observable<Producto[]> {
+    return this.http
+      .get<Producto[]>(`${this.urlBase}/productos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerProductosDelAlumno(alumnoId: number): Observable<Producto[]> {
+    return this.http
+      .get<Producto[]>(`${this.urlBase}/alumnos/${alumnoId}/productos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  asignarProductoAAlumno(
+    alumnoId: number,
+    productoId: number
+  ): Observable<AlumnoDTO> {
+    return this.http
+      .post<AlumnoDTO>(
+        `${this.urlBase}/alumnos/${alumnoId}/productos/${productoId}`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarProducto(
+    productoId: number,
+    producto: Producto
+  ): Observable<Producto> {
+    return this.http
+      .put<Producto>(`${this.urlBase}/productos/${productoId}`, producto, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  // Nuevo método para eliminar un producto de un alumno
+  eliminarProductoDeAlumno(
+    alumnoId: number,
+    productoId: number
+  ): Observable<AlumnoDTO> {
+    return this.http
+      .delete<AlumnoDTO>(
+        `${this.urlBase}/alumnos/${alumnoId}/productos/${productoId}`,
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
