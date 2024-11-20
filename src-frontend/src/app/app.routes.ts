@@ -31,7 +31,7 @@ import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-
 import { KickboxingComponent } from './componentes/vistas/kickboxing/kickboxing.component';
 import { PilatesComponent } from './componentes/vistas/pilates/pilates.component';
 import { EventoDetalleComponent } from './componentes/vistas/eventos/evento-detalle/evento-detalle.component';
-import { ListadoExamenesComponent } from './componentes/endpoints/listado-examenes/listado-examenes.component';
+import { ProductosAlumnoComponent } from './componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -62,6 +62,16 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
+    path: 'alumnosEditar/:id',
+    component: EditarAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'alumnos/:id/productos',
+    component: ProductosAlumnoComponent,
+    canActivate: [roleGuard],
+  },
+  {
     path: 'alumnosCrear',
     component: CrearAlumnoComponent,
     canActivate: [roleGuard],
@@ -69,11 +79,6 @@ export const routes: Routes = [
   {
     path: 'alumnosEliminar',
     component: EliminarAlumnoComponent,
-    canActivate: [roleGuard],
-  },
-  {
-    path: 'examenesListar',
-    component: ListadoExamenesComponent,
     canActivate: [roleGuard],
   },
   {
