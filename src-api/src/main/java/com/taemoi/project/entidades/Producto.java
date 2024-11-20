@@ -1,31 +1,53 @@
 package com.taemoi.project.entidades;
 
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Producto {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @NotBlank(message = "El nombre del producto no puede estar vacío")
-    private String nombre;
+	private String concepto;
 
-    @NotNull(message = "El precio no puede ser nulo")
-    private Double precio;
+	private Date fecha;
 
-    private String notas;  // Campo opcional para notas adicionales
+	private Integer cantidad;
 
-	public Producto(String nombre, double precio, String notas) {
-		this.nombre = nombre;
-		this.precio = precio;
-		this.notas = notas;
+	private Double precio;
+
+	private Boolean pagado;
+
+	private Date fechaPago;
+
+	private String notas;
+
+	@ManyToOne
+	@JsonBackReference
+	private Alumno alumno;
+	
+	public Producto(String concepto, double precio, String notas) {
+	    this.concepto = concepto;
+	    this.precio = precio;
+	    this.notas = notas;
+	    this.fecha = new Date();
+	    this.cantidad = 1;
+	    this.pagado = false;
 	}
+
+
+	public Producto() {
+		// TODO Auto-generated constructor stub
+	}
+
 
 	public Long getId() {
 		return id;
@@ -35,12 +57,28 @@ public class Producto {
 		this.id = id;
 	}
 
-	public String getNombre() {
-		return nombre;
+	public String getConcepto() {
+		return concepto;
 	}
 
-	public void setNombre(String nombre) {
-		this.nombre = nombre;
+	public void setConcepto(String concepto) {
+		this.concepto = concepto;
+	}
+
+	public Date getFecha() {
+		return fecha;
+	}
+
+	public void setFecha(Date fecha) {
+		this.fecha = fecha;
+	}
+
+	public Integer getCantidad() {
+		return cantidad;
+	}
+
+	public void setCantidad(Integer cantidad) {
+		this.cantidad = cantidad;
 	}
 
 	public Double getPrecio() {
@@ -51,6 +89,22 @@ public class Producto {
 		this.precio = precio;
 	}
 
+	public Boolean getPagado() {
+		return pagado;
+	}
+
+	public void setPagado(Boolean pagado) {
+		this.pagado = pagado;
+	}
+
+	public Date getFechaPago() {
+		return fechaPago;
+	}
+
+	public void setFechaPago(Date fechaPago) {
+		this.fechaPago = fechaPago;
+	}
+
 	public String getNotas() {
 		return notas;
 	}
@@ -58,5 +112,12 @@ public class Producto {
 	public void setNotas(String notas) {
 		this.notas = notas;
 	}
-    
+
+	public Alumno getAlumno() {
+		return alumno;
+	}
+
+	public void setAlumno(Alumno alumno) {
+		this.alumno = alumno;
+	}
 }
