@@ -1,0 +1,58 @@
+<!-- productos-alumno.component.html -->
+<div class="text-center mt-4">
+    <button class="btn btn-secondary" (click)="volver()">Volver</button>
+  </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Productos asignados al alumno:</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Fecha</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Pagado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let producto of productosAlumno">
+                    <td>{{ producto.concepto }}</td>
+                    <td>{{ producto.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <input type="number" [(ngModel)]="producto.cantidad"
+                            (change)="actualizarProducto(alumnoId, producto)" class="form-control form-control-sm" />
+                    </td>
+                    <td>{{ producto.precio | currency:'EUR':'symbol':'1.2-2' }}</td>
+                    <td>
+                        <input type="checkbox" [(ngModel)]="producto.pagado"
+                            (change)="actualizarProducto(alumnoId, producto)" />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger"
+                            (click)="eliminarProducto(alumnoId, producto.id)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+                <tr *ngIf="!productosAlumno || productosAlumno.length === 0">
+                    <td colspan="6" class="text-center">No hay productos asignados</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Sección para asignar un nuevo producto -->
+        <div class="mt-3 d-flex align-items-center">
+            <select class="form-control me-2" [(ngModel)]="selectedProductoId" required>
+                <option [ngValue]="null">Seleccione un producto</option>
+                <option *ngFor="let producto of products" [ngValue]="producto.id">
+                    {{ producto.concepto }} - {{ producto.precio | currency:'EUR':'symbol':'1.2-2' }}
+                </option>
+            </select>
+            <button type="button" class="btn btn-sm btn-primary" (click)="asignarProducto(alumnoId)">
+                Asignar Producto
+            </button>
+        </div>
+    </div>
+</div>
