@@ -1,4 +1,5 @@
 export enum TipoTarifa {
+  PILATES = 'PILATES',
   ADULTO = 'ADULTO',
   ADULTO_GRUPO = 'ADULTO_GRUPO',
   FAMILIAR = 'FAMILIAR',
