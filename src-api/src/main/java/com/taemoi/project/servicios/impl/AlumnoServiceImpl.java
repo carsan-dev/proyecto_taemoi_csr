@@ -31,6 +31,7 @@ import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
+import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -39,16 +40,17 @@ import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
+import com.taemoi.project.errores.producto.ProductoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
+import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ImagenService;
-
 import jakarta.persistence.criteria.Predicate;
 
 /**
@@ -92,6 +94,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private ImagenService imagenService;
+	
+	@Autowired
+	private ProductoRepository productoRepository;
 
 	/**
 	 * Inyección del PasswordEncoder para codificar la contraseña del usuario
@@ -614,6 +619,55 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
 		}
 	}
+	
+	@Override
+	public Alumno asignarProducto(Long alumnoId, Long productoId) {
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	        .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+
+	    Producto productoTemplate = productoRepository.findById(productoId)
+	        .orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+
+	    // Crear una nueva instancia del producto para el alumno
+	    Producto nuevoProducto = new Producto();
+	    nuevoProducto.setConcepto(productoTemplate.getConcepto());
+	    nuevoProducto.setFecha(new Date());
+	    nuevoProducto.setCantidad(1); // Puedes ajustar la cantidad predeterminada
+	    nuevoProducto.setPrecio(productoTemplate.getPrecio());
+	    nuevoProducto.setPagado(false);
+	    nuevoProducto.setNotas(productoTemplate.getNotas());
+	    nuevoProducto.setAlumno(alumno);
+
+	    productoRepository.save(nuevoProducto);
+
+	    alumno.getProductos().add(nuevoProducto);
+
+	    return alumnoRepository.save(alumno);
+	}
+
+
+	@Override
+    public Alumno eliminarProducto(Long alumnoId, Long productoId) {
+        Alumno alumno = alumnoRepository.findById(alumnoId)
+                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con id " + alumnoId));
+        Producto producto = productoRepository.findById(productoId)
+                .orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado con id " + productoId));
+
+        if (!producto.getAlumno().getId().equals(alumnoId)) {
+            throw new RuntimeException("El producto no pertenece al alumno especificado");
+        }
+
+        alumno.getProductos().remove(producto);
+        productoRepository.delete(producto);
+        return alumnoRepository.save(alumno);
+    }
+
+	@Override
+    public List<Producto> obtenerProductosDelAlumno(Long alumnoId) {
+        Alumno alumno = alumnoRepository.findById(alumnoId)
+                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con id " + alumnoId));
+        return alumno.getProductos();
+    }
 
 	@Override
 	public List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId) {
@@ -722,6 +776,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
 		switch (tipoTarifa) {
+		case PILATES:
+			return 30.0;
 		case ADULTO:
 			return 30.0;
 		case ADULTO_GRUPO:

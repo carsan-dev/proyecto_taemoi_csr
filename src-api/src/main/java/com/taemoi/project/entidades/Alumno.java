@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -137,13 +136,9 @@ public class Alumno {
 	@JsonManagedReference
 	private Usuario usuario;
 
-    @OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference
-    private List<Examen> examenes;
-
-    @OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference
-    private List<Pago> pagos;
+	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<Producto> productos = new ArrayList<>();
 
 	public Long getId() {
 		return id;
@@ -167,22 +162,6 @@ public class Alumno {
 
 	public void setApellidos(String apellidos) {
 		this.apellidos = apellidos;
-	}
-
-	public List<Examen> getExamenes() {
-		return examenes;
-	}
-
-	public void setExamenes(List<Examen> examenes) {
-		this.examenes = examenes;
-	}
-
-	public List<Pago> getPagos() {
-		return pagos;
-	}
-
-	public void setPagos(List<Pago> pagos) {
-		this.pagos = pagos;
 	}
 
 	public TipoTarifa getTipoTarifa() {
@@ -412,4 +391,13 @@ public class Alumno {
 	public void setUsuario(Usuario usuario) {
 		this.usuario = usuario;
 	}
+
+	public List<Producto> getProductos() {
+		return productos;
+	}
+
+	public void setProductos(List<Producto> productos) {
+		this.productos = productos;
+	}
+	
 }
