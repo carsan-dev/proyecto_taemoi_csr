@@ -15,6 +15,7 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.TipoTarifa;
 
 import jakarta.validation.Valid;
@@ -71,4 +72,10 @@ public interface AlumnoService {
 	List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion);
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
+
+	Alumno eliminarProducto(Long alumnoId, Long productoId);
+
+	List<Producto> obtenerProductosDelAlumno(Long alumnoId);
+
+	Alumno asignarProducto(Long alumnoId, Long productoId);
 }

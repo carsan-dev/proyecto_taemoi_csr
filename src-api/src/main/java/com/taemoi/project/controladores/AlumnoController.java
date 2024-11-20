@@ -37,6 +37,7 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Imagen;
+import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
@@ -296,6 +297,27 @@ public class AlumnoController {
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
+	
+	@PostMapping("/{alumnoId}/productos/{productoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<Alumno> asignarProducto(@PathVariable Long alumnoId, @PathVariable Long productoId) {
+	    Alumno alumnoActualizado = alumnoService.asignarProducto(alumnoId, productoId);
+	    return ResponseEntity.ok(alumnoActualizado);
+	}
+
+    @DeleteMapping("/{alumnoId}/productos/{productoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Alumno> eliminarProducto(@PathVariable Long alumnoId, @PathVariable Long productoId) {
+        Alumno alumnoActualizado = alumnoService.eliminarProducto(alumnoId, productoId);
+        return ResponseEntity.ok(alumnoActualizado);
+    }
+
+    @GetMapping("/{alumnoId}/productos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<Producto>> obtenerProductosDelAlumno(@PathVariable Long alumnoId) {
+        List<Producto> productos = alumnoService.obtenerProductosDelAlumno(alumnoId);
+        return ResponseEntity.ok(productos);
+    }
 
 	/**
 	 * Obtiene los turnos asociados a un alumno específico.
