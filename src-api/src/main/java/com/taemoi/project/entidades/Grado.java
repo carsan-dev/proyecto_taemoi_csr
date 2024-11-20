@@ -1,7 +1,6 @@
 package com.taemoi.project.entidades;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -31,13 +30,6 @@ public class Grado {
 	@JsonBackReference
 	private Set<Alumno> alumnos = new HashSet<>();
 
-    @OneToMany(mappedBy = "gradoActual", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference
-    private List<Examen> examenes;
-
-    @OneToMany(mappedBy = "gradoProximo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Examen> examenesProximos;
-
 	public Long getId() {
 		return id;
 	}
@@ -52,14 +44,6 @@ public class Grado {
 
 	public void setAlumnos(Set<Alumno> alumnos) {
 		this.alumnos = alumnos;
-	}
-
-	public List<Examen> getExamenes() {
-		return examenes;
-	}
-
-	public void setExamenes(List<Examen> examenes) {
-		this.examenes = examenes;
 	}
 
 	public TipoGrado getTipoGrado() {
