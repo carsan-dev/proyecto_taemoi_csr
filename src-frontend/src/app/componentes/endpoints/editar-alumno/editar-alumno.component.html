@@ -104,9 +104,34 @@
                 <div class="mb-3">
                   <strong>Cuantía de tarifa:</strong> {{ alumno.cuantiaTarifa | currency:'EUR':'symbol':'1.2-2' }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3">
                   <strong>Tipo de descuento:</strong> {{ alumno.tipoTarifa }}
                 </div>
+                <strong class="card-title">Productos asignados:</strong>
+                <table class="table table-striped mt-3">
+                  <thead>
+                    <tr>
+                      <th>Concepto</th>
+                      <th>Fecha</th>
+                      <th>Cantidad</th>
+                      <th>Precio</th>
+                      <th>Pagado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let producto of alumno.productos">
+                      <td>{{ producto.concepto }}</td>
+                      <td>{{ producto.fecha | date:'dd/MM/yyyy' }}</td>
+                      <td>{{ producto.cantidad }}</td>
+                      <td>{{ producto.precio | currency:'EUR':'symbol':'1.2-2' }}</td>
+                      <td>{{ producto.pagado ? 'Sí' : 'No' }}</td>
+                    </tr>
+                    <tr *ngIf="!alumno.productos || alumno.productos.length === 0">
+                      <td colspan="5" class="text-center">No hay productos asignados</td>
+                    </tr>
+                    <button type="button" class="btn btn-primary mt-3" (click)="navegarAGestionProductos(alumno.id)">Gestionar Productos</button>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -179,10 +204,11 @@
                 <div class="card-body">
                   <h5 class="card-title mb-4">Información Personal</h5>
                   <div class="form-group mb-3 form-floating">
-                    <select class="form-control form-select" id="deporte" formControlName="deporte" required (change)="onDeporteChange($event)">
+                    <select class="form-control form-select" id="deporte" formControlName="deporte" required
+                      (change)="onDeporteChange($event)">
                       <option value="" disabled selected>Selecciona un deporte</option>
                       <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
-                    </select>                    
+                    </select>
                     <label for="deporte">Selecciona el deporte</label>
                     <div *ngIf="alumnoForm.get('deporte')?.errors && alumnoForm.get('deporte')?.touched"
                       class="text-danger">
@@ -315,7 +341,7 @@
               <div class="card shadow-sm">
                 <div class="card-body">
                   <h5 class="card-title mb-4">Pagos</h5>
-                  <div class="form-group form-floating mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="form-group form-floating mb-3">
                     <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required
                       placeholder="Tipo de descuento">
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
@@ -416,7 +442,7 @@
                     </select>
                     <label for="grado">Grado</label>
                     <!-- Mensajes de error -->
-                  </div>                  
+                  </div>
                   <div class="form-group form-check mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
                     <label class="form-check-label me-3 text-black" for="aptoParaExamen">¿Apto para examen?</label>
                     <input type="checkbox" class="form-check-input form-switch" id="aptoParaExamen"
