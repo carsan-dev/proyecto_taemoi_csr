@@ -31,7 +31,6 @@ import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -40,13 +39,11 @@ import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
-import com.taemoi.project.errores.producto.ProductoNoEncontradoException;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
-import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -95,9 +92,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private ImagenService imagenService;
 	
-	@Autowired
-	private ProductoRepository productoRepository;
-
 	/**
 	 * Inyección del PasswordEncoder para codificar la contraseña del usuario
 	 * creado.
@@ -619,55 +613,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
 		}
 	}
-	
-	@Override
-	public Alumno asignarProducto(Long alumnoId, Long productoId) {
-	    Alumno alumno = alumnoRepository.findById(alumnoId)
-	        .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
-
-	    Producto productoTemplate = productoRepository.findById(productoId)
-	        .orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
-
-	    // Crear una nueva instancia del producto para el alumno
-	    Producto nuevoProducto = new Producto();
-	    nuevoProducto.setConcepto(productoTemplate.getConcepto());
-	    nuevoProducto.setFecha(new Date());
-	    nuevoProducto.setCantidad(1); // Puedes ajustar la cantidad predeterminada
-	    nuevoProducto.setPrecio(productoTemplate.getPrecio());
-	    nuevoProducto.setPagado(false);
-	    nuevoProducto.setNotas(productoTemplate.getNotas());
-	    nuevoProducto.setAlumno(alumno);
-
-	    productoRepository.save(nuevoProducto);
-
-	    alumno.getProductos().add(nuevoProducto);
-
-	    return alumnoRepository.save(alumno);
-	}
-
-
-	@Override
-    public Alumno eliminarProducto(Long alumnoId, Long productoId) {
-        Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con id " + alumnoId));
-        Producto producto = productoRepository.findById(productoId)
-                .orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado con id " + productoId));
-
-        if (!producto.getAlumno().getId().equals(alumnoId)) {
-            throw new RuntimeException("El producto no pertenece al alumno especificado");
-        }
-
-        alumno.getProductos().remove(producto);
-        productoRepository.delete(producto);
-        return alumnoRepository.save(alumno);
-    }
-
-	@Override
-    public List<Producto> obtenerProductosDelAlumno(Long alumnoId) {
-        Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con id " + alumnoId));
-        return alumno.getProductos();
-    }
 
 	@Override
 	public List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId) {
@@ -871,84 +816,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoRepository.save(nuevoGrado);
 	}
 
-/*	private TipoGrado obtenerSiguienteGradoSegunEdadYGradoActual(TipoGrado gradoActual, boolean esMenor) {
-		if (esMenor) {
-			// Lógica para menores
-			switch (gradoActual) {
-			case BLANCO:
-				return TipoGrado.BLANCO_AMARILLO;
-			case BLANCO_AMARILLO:
-				return TipoGrado.AMARILLO;
-			case AMARILLO:
-				return TipoGrado.AMARILLO_NARANJA;
-			case AMARILLO_NARANJA:
-				return TipoGrado.NARANJA;
-			case NARANJA:
-				return TipoGrado.NARANJA_VERDE;
-			case NARANJA_VERDE:
-				return TipoGrado.VERDE;
-			case VERDE:
-				return TipoGrado.VERDE_AZUL;
-			case VERDE_AZUL:
-				return TipoGrado.AZUL;
-			case AZUL:
-				return TipoGrado.AZUL_ROJO;
-			case AZUL_ROJO:
-				return TipoGrado.ROJO;
-			case ROJO:
-				return TipoGrado.ROJO_NEGRO_1_PUM;
-			case ROJO_NEGRO_1_PUM:
-				return TipoGrado.ROJO_NEGRO_2_PUM;
-			case ROJO_NEGRO_2_PUM:
-				return TipoGrado.ROJO_NEGRO_3_PUM;
-			default:
-				return null; // No hay siguiente grado
-			}
-		} else {
-			// Lógica para adultos
-			switch (gradoActual) {
-			case BLANCO:
-				return TipoGrado.AMARILLO;
-			case BLANCO_AMARILLO:
-				return TipoGrado.AMARILLO;
-			case AMARILLO:
-				return TipoGrado.NARANJA;
-			case AMARILLO_NARANJA:
-				return TipoGrado.NARANJA;
-			case NARANJA:
-				return TipoGrado.VERDE;
-			case NARANJA_VERDE:
-				return TipoGrado.VERDE;
-			case VERDE:
-				return TipoGrado.AZUL;
-			case VERDE_AZUL:
-				return TipoGrado.AZUL;
-			case AZUL:
-				return TipoGrado.ROJO;
-			case AZUL_ROJO:
-				return TipoGrado.ROJO;
-			case ROJO:
-				return TipoGrado.NEGRO_1_DAN;
-			case ROJO_NEGRO_1_PUM:
-				return TipoGrado.NEGRO_1_DAN;
-			case NEGRO_1_DAN:
-				return TipoGrado.NEGRO_2_DAN;
-			case ROJO_NEGRO_2_PUM:
-				return TipoGrado.NEGRO_2_DAN;
-			case NEGRO_2_DAN:
-				return TipoGrado.NEGRO_3_DAN;
-			case NEGRO_3_DAN:
-				return TipoGrado.NEGRO_3_DAN;
-			case ROJO_NEGRO_3_PUM:
-				return TipoGrado.NEGRO_4_DAN;
-			case NEGRO_4_DAN:
-				return TipoGrado.NEGRO_5_DAN;
-			default:
-				return null;
-			}
-		}
-	}
-*/
 	/**
 	 * Calcula la edad a partir de la fecha de nacimiento.
 	 *
@@ -1026,14 +893,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		String cadena = (nombre + apellidos).toLowerCase();
 		return passwordEncoder.encode(cadena);
 	}
-
-	/**
-	 * Mapea un objeto Alumno a un objeto AlumnoDTO.
-	 *
-	 * @param alumno El objeto Alumno a mapear.
-	 * @return El objeto AlumnoDTO mapeado.
-	 */
-
 
 	/**
 	 * Calcula si un alumno es apto para examen según su grado y su edad.
@@ -1135,19 +994,4 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 		}
 	}
-
-/*	private boolean esAlumnoMenor(Alumno alumno) {
-		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate();
-		LocalDate fechaActual = LocalDate.now();
-		int edad = Period.between(fechaNacimiento, fechaActual).getYears();
-
-		// Verificar si cumple 14 años en el año actual
-		boolean cumpleCatorceEsteAno = fechaNacimiento.plusYears(14).getYear() == fechaActual.getYear();
-
-		// Se considera menor si tiene menos de 13 años o tiene 13 pero no cumple 14
-		// este año
-		return edad < 13 || (edad == 13 && !cumpleCatorceEsteAno);
-	}
-*/
 }
