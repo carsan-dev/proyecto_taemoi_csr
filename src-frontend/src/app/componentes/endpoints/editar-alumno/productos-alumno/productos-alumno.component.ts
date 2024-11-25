@@ -6,25 +6,32 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ProductosAlumnoNotasComponent } from '../../../generales/productos-alumno-notas/productos-alumno-notas.component';
 
 @Component({
   selector: 'app-productos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent],
   templateUrl: './productos-alumno.component.html',
-  styleUrl: './productos-alumno.component.scss'
+  styleUrl: './productos-alumno.component.scss',
 })
 export class ProductosAlumnoComponent implements OnInit {
   alumnoId!: number;
-  productosAlumno: Producto[] = [];
+  productosAlumno: ProductoAlumnoDTO[] = [];
   products: Producto[] = [];
   selectedProductoId: number | null = null;
+
+  mostrarModalNotas = false;
+  productoSeleccionado!: ProductoAlumnoDTO;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly endpointsService: EndpointsService,
-    private readonly location: Location
-  ) { }
+    private readonly location: Location,
+    private readonly modalService: NgbModal
+  ) {}
 
   ngOnInit(): void {
     this.alumnoId = +this.route.snapshot.paramMap.get('id')!;
@@ -43,7 +50,7 @@ export class ProductosAlumnoComponent implements OnInit {
           text: 'No se han podido obtener los productos del alumno',
           icon: 'error',
         });
-      }
+      },
     });
   }
 
@@ -58,7 +65,7 @@ export class ProductosAlumnoComponent implements OnInit {
           text: 'No se han podido obtener los productos',
           icon: 'error',
         });
-      }
+      },
     });
   }
 
@@ -72,8 +79,21 @@ export class ProductosAlumnoComponent implements OnInit {
       return;
     }
 
+    const detalles: ProductoAlumnoDTO = {
+      id: 0,
+      productoId: this.selectedProductoId,
+      alumnoId: alumnoId,
+      concepto: '',
+      fechaAsignacion: new Date(),
+      cantidad: 1,
+      precio: 0,
+      pagado: false,
+      fechaPago: null,
+      notas: '',
+    };
+
     this.endpointsService
-      .asignarProductoAAlumno(alumnoId, this.selectedProductoId)
+      .asignarProductoAAlumno(alumnoId, this.selectedProductoId, detalles)
       .subscribe({
         next: () => {
           this.obtenerProductosAlumno(alumnoId);
@@ -95,48 +115,89 @@ export class ProductosAlumnoComponent implements OnInit {
     this.selectedProductoId = null;
   }
 
-  actualizarProducto(alumnoId: number, producto: Producto) {
-    this.endpointsService.actualizarProducto(producto.id, producto).subscribe({
-      next: (productoActualizado: Producto) => {
+  eliminarProducto(alumnoId: number, productoAlumnoId: number) {
+    this.endpointsService.eliminarProductoAlumno(productoAlumnoId).subscribe({
+      next: () => {
+        this.obtenerProductosAlumno(alumnoId);
         Swal.fire({
           title: 'Éxito',
-          text: 'Producto actualizado correctamente',
+          text: 'Producto eliminado correctamente',
           icon: 'success',
         });
       },
       error: (error) => {
         Swal.fire({
           title: 'Error',
-          text: 'No se pudo actualizar el producto',
+          text: 'No se pudo eliminar el producto',
           icon: 'error',
         });
       },
     });
   }
 
-  eliminarProducto(alumnoId: number, productoId: number) {
+  actualizarProducto(alumnoId: number, productoAlumno: ProductoAlumnoDTO) {
     this.endpointsService
-      .eliminarProductoDeAlumno(alumnoId, productoId)
+      .actualizarProductoAlumno(productoAlumno.id, productoAlumno)
       .subscribe({
-        next: () => {
-          this.obtenerProductosAlumno(alumnoId);
+        next: (productoActualizado) => {
           Swal.fire({
             title: 'Éxito',
-            text: 'Producto eliminado correctamente',
+            text: 'Producto actualizado correctamente',
             icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
           });
+          this.obtenerProductosAlumno(alumnoId);
         },
         error: (error) => {
           Swal.fire({
             title: 'Error',
-            text: 'No se pudo eliminar el producto',
+            text: 'No se pudo actualizar el producto',
             icon: 'error',
           });
         },
       });
   }
 
+  abrirModalNotas(productoAlumno: ProductoAlumnoDTO) {
+    this.productoSeleccionado = { ...productoAlumno };
+    this.mostrarModalNotas = true;
+  }
+
+  cerrarModalNotas() {
+    this.mostrarModalNotas = false;
+  }
+
+  guardarNotas(productoActualizado: ProductoAlumnoDTO) {
+    this.endpointsService
+      .actualizarProductoAlumno(productoActualizado.id, productoActualizado)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Notas actualizadas correctamente',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+          });
+          this.obtenerProductosAlumno(this.alumnoId);
+          this.cerrarModalNotas();
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron actualizar las notas',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  calcularTotal(precio: number, cantidad: number): number {
+    return precio * cantidad;
+  }
   
+
   volver() {
     this.location.back();
   }
