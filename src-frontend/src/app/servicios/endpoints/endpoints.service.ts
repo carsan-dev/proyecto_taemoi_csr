@@ -8,8 +8,8 @@ import { throwError } from 'rxjs/internal/observable/throwError';
 import { Observable } from 'rxjs/internal/Observable';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { AlumnoDTO } from '../../interfaces/alumno-dto';
 import { Producto } from '../../interfaces/producto';
+import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -239,9 +239,9 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerProductosDelAlumno(alumnoId: number): Observable<Producto[]> {
+  obtenerProductosDelAlumno(alumnoId: number): Observable<ProductoAlumnoDTO[]> {
     return this.http
-      .get<Producto[]>(`${this.urlBase}/alumnos/${alumnoId}/productos`, {
+      .get<ProductoAlumnoDTO[]>(`${this.urlBase}/productos-alumno/alumno/${alumnoId}`, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
@@ -249,38 +249,37 @@ export class EndpointsService {
 
   asignarProductoAAlumno(
     alumnoId: number,
-    productoId: number
-  ): Observable<AlumnoDTO> {
+    productoId: number,
+    detalles: ProductoAlumnoDTO
+  ): Observable<ProductoAlumnoDTO> {
     return this.http
-      .post<AlumnoDTO>(
-        `${this.urlBase}/alumnos/${alumnoId}/productos/${productoId}`,
-        {},
+      .post<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/alumno/${alumnoId}/producto/${productoId}`,
+        detalles,
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarProducto(
-    productoId: number,
-    producto: Producto
-  ): Observable<Producto> {
+    // Nuevo método para eliminar un producto de un alumno
+    eliminarProductoAlumno(
+      id: number
+    ): Observable<any> {
+      return this.http
+        .delete<void>(
+          `${this.urlBase}/productos-alumno/${id}`,
+          { withCredentials: true }
+        )
+        .pipe(catchError(this.manejarError));
+    }
+
+    actualizarProductoAlumno(
+      id: number, detalles: ProductoAlumnoDTO
+  ): Observable<ProductoAlumnoDTO> {
     return this.http
-      .put<Producto>(`${this.urlBase}/productos/${productoId}`, producto, {
+      .put<ProductoAlumnoDTO>(`${this.urlBase}/productos-alumno/${id}`, detalles, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
-  }
-
-  // Nuevo método para eliminar un producto de un alumno
-  eliminarProductoDeAlumno(
-    alumnoId: number,
-    productoId: number
-  ): Observable<AlumnoDTO> {
-    return this.http
-      .delete<AlumnoDTO>(
-        `${this.urlBase}/alumnos/${alumnoId}/productos/${productoId}`,
-        { withCredentials: true }
-      )
       .pipe(catchError(this.manejarError));
   }
 

@@ -1,5 +1,7 @@
-export interface Producto {
+export interface ProductoAlumnoDTO {
     id: number;
+    productoId: number;
+    alumnoId: number;
     concepto: string;
     fechaAsignacion: Date;
     cantidad: number;
@@ -8,3 +10,4 @@ export interface Producto {
     fechaPago: Date | null;
     notas: string;
   }
+  
