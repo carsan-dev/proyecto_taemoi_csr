@@ -283,9 +283,28 @@ button[type="submit"] {
   animation: pulse 1s infinite;
 }
 
+.precio-animacion {
+  animation: bounce 1s infinite;
+}
+
 @media (max-width: 992px) {
   .text-danger {
     font-size: 0.80rem !important;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  80% {
+    transform: translateY(-2px);
   }
 }
 

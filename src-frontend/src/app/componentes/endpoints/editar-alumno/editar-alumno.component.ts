@@ -14,8 +14,8 @@ import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AlumnoDTO } from '../../../interfaces/alumno-dto';
 import { Producto } from '../../../interfaces/producto';
+import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 
 @Component({
   selector: 'app-editar-alumno',
@@ -54,7 +54,7 @@ export class EditarAlumnoComponent implements OnInit {
   todosLosGrados: any[] = [];
   products: Producto[] = [];
   selectedProductoId: number | null = null;
-  productosAlumno: Producto[] = [];
+  productosAlumno: ProductoAlumnoDTO[] = [];
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -113,11 +113,9 @@ export class EditarAlumnoComponent implements OnInit {
         this.alumnoId = +idParam;
         this.mostrarFormulario = true;
         this.obtenerAlumnoPorId(this.alumnoId);
-        this.obtenerProductosAlumno(this.alumnoId);
       }
       this.obtenerAlumnos();
     });
-    this.obtenerProductos();
 
     this.alumnoForm.get('deporte')?.valueChanges.subscribe((event: Event) => {
       this.onDeporteChange(event);
@@ -173,6 +171,7 @@ export class EditarAlumnoComponent implements OnInit {
         this.imagenPreview = alumno.fotoAlumno?.url
           ? alumno.fotoAlumno.url
           : '../../../../assets/media/default.webp';
+        this.alumnoId = alumno.id;
 
         this.configurarFormulario(alumno);
       },
@@ -226,7 +225,7 @@ export class EditarAlumnoComponent implements OnInit {
     this.onDeporteChange(alumno.deporte);
   }
 
-  obtenerProductosAlumno(alumnoId: number) {
+  obtenerProductosAlumno(alumnoId: number, alumno: any) {
     this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
       next: (productos) => {
         this.productosAlumno = productos;
@@ -237,6 +236,7 @@ export class EditarAlumnoComponent implements OnInit {
           text: 'No se pudieron obtener los productos del alumno.',
           icon: 'error',
         });
+        alumno.productos = [];
       },
     });
   }
@@ -340,6 +340,11 @@ export class EditarAlumnoComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.alumnos = response.content;
+
+          this.alumnos.forEach((alumno) => {
+            this.obtenerProductosAlumno(alumno.id, alumno);
+          });
+
           this.totalPaginas = response.totalPages;
         },
         error: (error) => {
@@ -350,21 +355,6 @@ export class EditarAlumnoComponent implements OnInit {
           });
         },
       });
-  }
-
-  obtenerProductos() {
-    this.endpointsService.obtenerTodosLosProductos().subscribe({
-      next: (productos: Producto[]) => {
-        this.products = productos;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los productos.',
-          icon: 'error',
-        });
-      },
-    });
   }
 
   confirmarYActualizarAlumno(id: number, alumno: any) {
@@ -455,17 +445,14 @@ export class EditarAlumnoComponent implements OnInit {
         ? alumno.fotoAlumno.url
         : '../../../../assets/media/default.webp';
       this.tipoTarifaEditado = false;
-
       this.configurarFormulario(alumno);
 
       // Navegar a la ruta con el ID del alumno
       this.router.navigate(['/alumnosEditar', alumno.id]);
 
-      this.obtenerProductosAlumno(alumno.id);
     } else {
       // Navegar a la ruta sin ID cuando se cierra el formulario
       this.router.navigate(['/alumnosEditar']);
-      this.productosAlumno = [];
     }
   }
 
@@ -718,6 +705,10 @@ export class EditarAlumnoComponent implements OnInit {
     }
 
     return grado.tipoGrado;
+  }
+
+  calcularTotal(precio: number, cantidad: number): number {
+    return precio * cantidad;
   }
   
   navegarAGestionProductos(alumnoId: number) {
