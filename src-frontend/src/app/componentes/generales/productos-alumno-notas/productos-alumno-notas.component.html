@@ -1,0 +1,22 @@
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
+  <div class="modal-dialog" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Notas de {{ productoAlumno.concepto }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <textarea class="form-control" rows="5" [(ngModel)]="productoAlumno.notas"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarNotas()">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalVisible" (click)="cerrarModal()"></div>
