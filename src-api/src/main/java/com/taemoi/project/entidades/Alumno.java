@@ -136,9 +136,8 @@ public class Alumno {
 	@JsonManagedReference
 	private Usuario usuario;
 
-	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
-	@JsonManagedReference
-	private List<Producto> productos = new ArrayList<>();
+	@OneToMany(mappedBy = "alumno")
+	private List<ProductoAlumno> productosAlumno = new ArrayList<>();
 
 	public Long getId() {
 		return id;
@@ -392,12 +391,11 @@ public class Alumno {
 		this.usuario = usuario;
 	}
 
-	public List<Producto> getProductos() {
-		return productos;
+	public List<ProductoAlumno> getProductosAlumno() {
+		return productosAlumno;
 	}
 
-	public void setProductos(List<Producto> productos) {
-		this.productos = productos;
+	public void setProductosAlumno(List<ProductoAlumno> productosAlumno) {
+		this.productosAlumno = productosAlumno;
 	}
-	
 }

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.entidades.Producto;
@@ -68,36 +66,5 @@ public class ProductoController {
     public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
     	productoService.eliminarProducto(id);
         return ResponseEntity.noContent().build();
-    }
-	
-    // Endpoint para agregar producto a un alumno
-    @PostMapping("/alumno/{alumnoId}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> agregarProductoAAlumno(@PathVariable Long alumnoId, @RequestBody Producto producto) {
-        Producto nuevoProducto = productoService.agregarProductoAAlumno(alumnoId, producto);
-        return new ResponseEntity<>(nuevoProducto, HttpStatus.CREATED);
-    }
-
-    // Endpoint para obtener todos los productos de un alumno
-    @GetMapping("/alumno/{alumnoId}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> obtenerProductosDeAlumno(@PathVariable Long alumnoId) {
-        List<Producto> productos = productoService.obtenerProductosDeAlumno(alumnoId);
-        return ResponseEntity.ok(productos);
-    }
-
-    // Endpoint para actualizar el estado de pago de un producto
-    @PutMapping("/{productoId}/estado")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> actualizarEstadoPago(@PathVariable Long productoId, @RequestParam boolean pagado) {
-        Producto producto = productoService.actualizarEstadoPago(productoId, pagado);
-        return ResponseEntity.ok(producto);
-    }
-    
-    @PostMapping("/reserva/{alumnoId}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Producto> crearReservaPlaza(@PathVariable Long alumnoId) {
-        Producto reservaPlaza = productoService.crearReservaPlaza(alumnoId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(reservaPlaza);
     }
 }

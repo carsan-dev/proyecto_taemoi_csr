@@ -7,14 +7,6 @@ import com.taemoi.project.entidades.Producto;
 
 public interface ProductoService {
 
-	Producto agregarProductoAAlumno(Long alumnoId, Producto producto);
-
-	List<Producto> obtenerProductosDeAlumno(Long alumnoId);
-
-	Producto actualizarEstadoPago(Long productoId, boolean pagado);
-	
-	Producto crearReservaPlaza(Long alumnoId);
-
     List<Producto> obtenerTodosLosProductos();
 
     Optional<Producto> obtenerProductoPorId(Long id);

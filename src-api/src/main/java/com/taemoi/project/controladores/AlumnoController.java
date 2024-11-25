@@ -37,7 +37,6 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.alumno.DatosAlumnoInvalidosException;
@@ -47,7 +46,6 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 import com.taemoi.project.servicios.ImagenService;
-
 import jakarta.validation.Valid;
 
 /**
@@ -81,7 +79,7 @@ public class AlumnoController {
 
 	@Autowired
 	private ImagenService imagenService;
-
+	
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
 	 * proporcionados.
@@ -96,32 +94,32 @@ public class AlumnoController {
 	 */
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> obtenerAlumnosDTO(
-	        @RequestParam(required = false) Integer page,
-	        @RequestParam(required = false) Integer size,
-	        @RequestParam(required = false) String nombre,
-	        @RequestParam(required = false) Long gradoId,
-	        @RequestParam(required = false) Long categoriaId,
-			@RequestParam(required = false) Boolean incluirInactivos){
+	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
+			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId,
+			@RequestParam(required = false) Boolean incluirInactivos) {
 
-	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
-	    logger.info(
-	            "## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
-	            page, size, nombre, gradoId, categoriaId);
+		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
+		logger.info(
+				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
+				page, size, nombre, gradoId, categoriaId);
 
-	    Pageable pageable = (page != null && size != null) ? PageRequest.of(page - 1, size, Sort.by("nombre").ascending()) : Pageable.unpaged();
-	    boolean isPaged = page != null && size != null;
-	    boolean incluir = incluirInactivos != null ? incluirInactivos : false;
+		Pageable pageable = (page != null && size != null)
+				? PageRequest.of(page - 1, size, Sort.by("nombre").ascending())
+				: Pageable.unpaged();
+		boolean isPaged = page != null && size != null;
+		boolean incluir = incluirInactivos != null ? incluirInactivos : false;
 
-	    Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, pageable);
+		Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, pageable);
 
-	    if (alumnos.isEmpty()) {
-	        logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
-	        return ResponseEntity.ok(isPaged ? Page.empty(pageable) : Collections.emptyList());
-	    }
+		if (alumnos.isEmpty()) {
+			logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");
+			return ResponseEntity.ok(isPaged ? Page.empty(pageable) : Collections.emptyList());
+		}
 
-	    logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-	    return ResponseEntity.ok(isPaged ? alumnos.map(AlumnoDTO::deAlumno) : alumnos.getContent().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
+		return ResponseEntity.ok(isPaged ? alumnos.map(AlumnoDTO::deAlumno)
+				: alumnos.getContent().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
 	}
 
 	/**
@@ -145,8 +143,9 @@ public class AlumnoController {
 	 * Obtiene los grupos a los que pertenece un alumno especificado por su ID.
 	 *
 	 * @param alumnoId El ID del alumno cuyos grupos se desean obtener.
-	 * @return ResponseEntity que contiene una lista de GrupoResponseDTO si se encuentran grupos; 
-	 *         ResponseEntity.notFound() si no se encuentran grupos para el alumno especificado.
+	 * @return ResponseEntity que contiene una lista de GrupoResponseDTO si se
+	 *         encuentran grupos; ResponseEntity.notFound() si no se encuentran
+	 *         grupos para el alumno especificado.
 	 */
 	@GetMapping("/{alumnoId}/grupos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
@@ -175,53 +174,52 @@ public class AlumnoController {
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
-	        @RequestParam(value = "file", required = false) MultipartFile file) {
-	    try {
-	        // Convertir el JSON recibido en AlumnoDTO
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+			@RequestParam(value = "file", required = false) MultipartFile file) {
+		try {
+			// Convertir el JSON recibido en AlumnoDTO
+			ObjectMapper objectMapper = new ObjectMapper();
+			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-	        // Si se proporciona un archivo de imagen, guardar la imagen
-	        if (file != null && !file.isEmpty()) {
-	            Imagen img = imagenService.guardarImagen(file);  // Guardar la imagen
-	            nuevoAlumnoDTO.setFotoAlumno(img);               // Asignar la imagen al DTO
-	        }
+			// Si se proporciona un archivo de imagen, guardar la imagen
+			if (file != null && !file.isEmpty()) {
+				Imagen img = imagenService.guardarImagen(file); // Guardar la imagen
+				nuevoAlumnoDTO.setFotoAlumno(img); // Asignar la imagen al DTO
+			}
 
-	        // Delegar al servicio para crear el Alumno y Usuario asociado
-	        Alumno creado = alumnoService.crearAlumnoDesdeDTO(nuevoAlumnoDTO);
+			// Delegar al servicio para crear el Alumno y Usuario asociado
+			Alumno creado = alumnoService.crearAlumnoDesdeDTO(nuevoAlumnoDTO);
 
-	        // Convertir el Alumno creado a DTO para la respuesta
-	        AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
+			// Convertir el Alumno creado a DTO para la respuesta
+			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
 
-	        // Retornar la respuesta con el Alumno creado en formato JSON
-	        return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
+			// Retornar la respuesta con el Alumno creado en formato JSON
+			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
 
-	    } catch (AlumnoDuplicadoException e) {
-	        logger.error("Error de duplicado de alumno: {}", e.getMessage(), e);
-	        return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
-	    } catch (IOException e) {
-	        logger.error("Error al procesar el archivo o el JSON: {}", e.getMessage(), e);
-	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-	    } catch (Exception e) {
-	        logger.error("Error inesperado al crear el alumno: {}", e.getMessage(), e);  // Log de excepciones genéricas
-	        return new ResponseEntity<>("Error inesperado al crear el alumno", HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
+		} catch (AlumnoDuplicadoException e) {
+			logger.error("Error de duplicado de alumno: {}", e.getMessage(), e);
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+		} catch (IOException e) {
+			logger.error("Error al procesar el archivo o el JSON: {}", e.getMessage(), e);
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (Exception e) {
+			logger.error("Error inesperado al crear el alumno: {}", e.getMessage(), e); // Log de excepciones genéricas
+			return new ResponseEntity<>("Error inesperado al crear el alumno", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 	@PutMapping("/{id}/baja")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
-	    alumnoService.darDeBajaAlumno(id);
-	    return ResponseEntity.ok().build();
+		alumnoService.darDeBajaAlumno(id);
+		return ResponseEntity.ok().build();
 	}
-	
+
 	@PutMapping("/{id}/alta")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> darDeAltaAlumno(@PathVariable @NonNull Long id) {
-	    alumnoService.darDeAltaAlumno(id);
-	    return ResponseEntity.ok().build();
+		alumnoService.darDeAltaAlumno(id);
+		return ResponseEntity.ok().build();
 	}
-
 
 	/**
 	 * Actualiza la información de un alumno existente.
@@ -238,39 +236,40 @@ public class AlumnoController {
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable @NonNull Long id,
-	        @Valid @RequestParam(value = "file", required = false) MultipartFile file,
-	        @Valid @RequestParam("alumnoEditado") String alumnoJson) {
-	    logger.info("## AlumnoController :: modificarAlumno");
-	    try {
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
+			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
+			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
+		logger.info("## AlumnoController :: modificarAlumno");
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			AlumnoDTO nuevoAlumnoDTO = objectMapper.readValue(alumnoJson, AlumnoDTO.class);
 
-	        if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
-	            throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
-	        }
+			if (!alumnoService.fechaNacimientoValida(nuevoAlumnoDTO.getFechaNacimiento())) {
+				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
+			}
 
-	        if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
-	            throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
-	        }
+			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+				throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
+			}
 
-	        Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
-	        // Enviar el MultipartFile directamente
-	        Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
-	        AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
-	        return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
+			Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
+			// Enviar el MultipartFile directamente
+			Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
+			AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+			return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 
-	    } catch (IOException e) {
-	        return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-	    }
+		} catch (IOException e) {
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		}
 	}
-
 
 	/**
 	 * Elimina la imagen de un alumno especificado por su ID.
 	 *
 	 * @param id El ID del alumno cuya imagen se eliminará.
-	 * @return ResponseEntity que indica el resultado de la eliminación. Retorna ResponseEntity.ok() si la eliminación es exitosa.
-	 * @throws Exception Si ocurre un error durante la eliminación de la imagen del alumno.
+	 * @return ResponseEntity que indica el resultado de la eliminación. Retorna
+	 *         ResponseEntity.ok() si la eliminación es exitosa.
+	 * @throws Exception Si ocurre un error durante la eliminación de la imagen del
+	 *                   alumno.
 	 */
 	@DeleteMapping("/{id}/imagen")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -297,27 +296,6 @@ public class AlumnoController {
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
-	
-	@PostMapping("/{alumnoId}/productos/{productoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Alumno> asignarProducto(@PathVariable Long alumnoId, @PathVariable Long productoId) {
-	    Alumno alumnoActualizado = alumnoService.asignarProducto(alumnoId, productoId);
-	    return ResponseEntity.ok(alumnoActualizado);
-	}
-
-    @DeleteMapping("/{alumnoId}/productos/{productoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Alumno> eliminarProducto(@PathVariable Long alumnoId, @PathVariable Long productoId) {
-        Alumno alumnoActualizado = alumnoService.eliminarProducto(alumnoId, productoId);
-        return ResponseEntity.ok(alumnoActualizado);
-    }
-
-    @GetMapping("/{alumnoId}/productos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<Producto>> obtenerProductosDelAlumno(@PathVariable Long alumnoId) {
-        List<Producto> productos = alumnoService.obtenerProductosDelAlumno(alumnoId);
-        return ResponseEntity.ok(productos);
-    }
 
 	/**
 	 * Obtiene los turnos asociados a un alumno específico.
@@ -332,9 +310,9 @@ public class AlumnoController {
 		return ResponseEntity.ok(turnos);
 	}
 
-
 	/**
-	 * Asigna un alumno a un turno específico dentro de un grupo al que ya pertenece.
+	 * Asigna un alumno a un turno específico dentro de un grupo al que ya
+	 * pertenece.
 	 *
 	 * @param alumnoId El ID del alumno.
 	 * @param turnoId  El ID del turno.
@@ -343,17 +321,16 @@ public class AlumnoController {
 	@PostMapping("/{alumnoId}/turnos/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> asignarAlumnoATurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
-	    try {
-	        alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
-	        // Respuesta exitosa en formato JSON
-	        return ResponseEntity.ok(Map.of("message", "Alumno asignado al turno y grupo con éxito"));
-	    } catch (IllegalArgumentException e) {
-	        // Respuesta de error en formato JSON
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
-	    }
+		try {
+			alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
+			// Respuesta exitosa en formato JSON
+			return ResponseEntity.ok(Map.of("message", "Alumno asignado al turno y grupo con éxito"));
+		} catch (IllegalArgumentException e) {
+			// Respuesta de error en formato JSON
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+		}
 	}
-
 
 	/**
 	 * Remueve a un alumno de un turno específico.
@@ -365,49 +342,47 @@ public class AlumnoController {
 	@DeleteMapping("/{alumnoId}/turnos/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> removerAlumnoDeTurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
-	    try {
-	        alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
-	        // Obtener la lista actualizada de turnos
-	        List<TurnoDTO> turnosActualizados = alumnoService.obtenerTurnosDelAlumno(alumnoId);
-	        // Retornar la lista actualizada
-	        return ResponseEntity.ok(turnosActualizados);
-	    } catch (IllegalArgumentException e) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                             .body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
-	    }
+		try {
+			alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
+			// Obtener la lista actualizada de turnos
+			List<TurnoDTO> turnosActualizados = alumnoService.obtenerTurnosDelAlumno(alumnoId);
+			// Retornar la lista actualizada
+			return ResponseEntity.ok(turnosActualizados);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+		}
 	}
-	
-    // Endpoint para obtener todos los alumnos aptos para examen
-    @GetMapping("/aptos")
-    public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosParaExamen() {
-        List<AlumnoConGruposDTO> alumnos = alumnoService.obtenerAlumnosAptosConGruposDTO();
-        return ResponseEntity.ok(alumnos);
-    }
 
-    // Endpoint para obtener alumnos aptos para examen por deporte
-    @GetMapping("/aptos/deporte")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
-        String exclusion = "competición";
-        if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")) {
-            exclusion = "";  // No excluimos nada para kickboxing o pilates
-        }
+	// Endpoint para obtener todos los alumnos aptos para examen
+	@GetMapping("/aptos")
+	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosParaExamen() {
+		List<AlumnoConGruposDTO> alumnos = alumnoService.obtenerAlumnosAptosConGruposDTO();
+		return ResponseEntity.ok(alumnos);
+	}
 
-        // Llamamos al servicio modificado que devuelve AlumnoConGruposDTO
-        List<AlumnoConGruposDTO> alumnosAptos = alumnoService.obtenerAlumnosAptosPorDeporte(deporte, exclusion);
-        return ResponseEntity.ok(alumnosAptos);
-    }
+	// Endpoint para obtener alumnos aptos para examen por deporte
+	@GetMapping("/aptos/deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
+		String exclusion = "competición";
+		if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")) {
+			exclusion = ""; // No excluimos nada para kickboxing o pilates
+		}
 
+		// Llamamos al servicio modificado que devuelve AlumnoConGruposDTO
+		List<AlumnoConGruposDTO> alumnosAptos = alumnoService.obtenerAlumnosAptosPorDeporte(deporte, exclusion);
+		return ResponseEntity.ok(alumnosAptos);
+	}
 
-    // Endpoint para obtener un alumno apto para examen por su ID
-    @GetMapping("/aptos/{id}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
-        Optional<AlumnoConGruposDTO> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
-        
-        // Si el alumno está presente, lo devolvemos en la respuesta
-        return alumno.map(ResponseEntity::ok)
-                     .orElseGet(() -> ResponseEntity.notFound().build());
-    }
+	// Endpoint para obtener un alumno apto para examen por su ID
+	@GetMapping("/aptos/{id}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
+		Optional<AlumnoConGruposDTO> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
+
+		// Si el alumno está presente, lo devolvemos en la respuesta
+		return alumno.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+	}
 
 }
