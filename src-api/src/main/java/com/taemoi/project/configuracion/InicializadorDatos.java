@@ -109,15 +109,15 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-	    Grupo taekwondoLunesMiercolesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO);
-	    Grupo taekwondoLunesMiercolesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO);
-	    Grupo taekwondoLunesMiercolesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO);
-	    Grupo taekwondoMartesJuevesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO);
-	    Grupo taekwondoMartesJuevesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO);
-	    Grupo taekwondoMartesJuevesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO);
-	    Grupo competicion = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_COMPETICION);
-	    Grupo pilatesMartesJueves = obtenerOcrearGrupo(NombresGrupo.PILATES_MARTES_JUEVES);
-	    Grupo kickboxingLunesMiercoles = obtenerOcrearGrupo(NombresGrupo.KICKBOXING_LUNES_MIERCOLES);
+	    Grupo taekwondoLunesMiercolesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO, "Taekwondo");
+	    Grupo taekwondoLunesMiercolesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO, "Taekwondo");
+	    Grupo taekwondoLunesMiercolesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO, "Taekwondo");
+	    Grupo taekwondoMartesJuevesPrimerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO, "Taekwondo");
+	    Grupo taekwondoMartesJuevesSegundoTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO, "Taekwondo");
+	    Grupo taekwondoMartesJuevesTercerTurno = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO, "Taekwondo");
+	    Grupo competicion = obtenerOcrearGrupo(NombresGrupo.TAEKWONDO_COMPETICION, "Taekwondo Competición");
+	    Grupo pilatesMartesJueves = obtenerOcrearGrupo(NombresGrupo.PILATES_MARTES_JUEVES, "Pilates");
+	    Grupo kickboxingLunesMiercoles = obtenerOcrearGrupo(NombresGrupo.KICKBOXING_LUNES_MIERCOLES, "Kickboxing");
 		
 	    if (turnoRepository.count() == 0) {
 			crearTurno("Lunes", "17:00", "18:00", taekwondoLunesMiercolesPrimerTurno, "Taekwondo Primer Turno Lunes");
@@ -164,11 +164,12 @@ public class InicializadorDatos implements CommandLineRunner {
         asignarAlumnosAGrupoYTurnos();
 	}
 	
-	private Grupo obtenerOcrearGrupo(String nombreGrupo) {
+	private Grupo obtenerOcrearGrupo(String nombreGrupo, String tipo) {
 	    return grupoRepository.findByNombre(nombreGrupo)
 	            .orElseGet(() -> {
 	                Grupo nuevoGrupo = new Grupo();
 	                nuevoGrupo.setNombre(nombreGrupo);
+	                nuevoGrupo.setTipo(tipo);
 	                return grupoRepository.save(nuevoGrupo);
 	            });
 	}

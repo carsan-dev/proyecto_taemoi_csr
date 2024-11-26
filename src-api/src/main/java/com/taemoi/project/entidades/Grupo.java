@@ -27,6 +27,8 @@ public class Grupo {
 	@NotBlank(message = "El nombre no puede estar en blanco")
     @Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
 	private String nombre;
+	
+	private String tipo;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -57,6 +59,14 @@ public class Grupo {
 		this.nombre = nombre;
 	}
 	
+	public String getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(String tipo) {
+		this.tipo = tipo;
+	}
+
 	public List<Alumno> getAlumnos() {
 		return alumnos;
 	}
