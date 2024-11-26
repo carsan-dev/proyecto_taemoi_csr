@@ -1,11 +1,14 @@
 package com.taemoi.project.servicios.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +21,6 @@ import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Grupo;
-import com.taemoi.project.entidades.NombresGrupo;
 import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
@@ -213,19 +215,36 @@ public class GrupoServiceImpl implements GrupoService {
 	public Map<String, Long> contarAlumnosPorGrupo() {
 	    Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
 
-	    // Obtener el número de alumnos en cada grupo
-	    conteoAlumnosPorGrupo.put("Taekwondo", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_PRIMER_TURNO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_SEGUNDO_TURNO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_SEGUNDO_TURNO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_TERCER_TURNO)
-	        + alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_MARTES_JUEVES_TERCER_TURNO));
+	    List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing");
 
-	    conteoAlumnosPorGrupo.put("Taekwondo Competición", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.TAEKWONDO_COMPETICION));
-	    conteoAlumnosPorGrupo.put("Pilates", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.PILATES_MARTES_JUEVES));
-	    conteoAlumnosPorGrupo.put("Kickboxing", alumnoRepository.contarAlumnosPorGrupo(NombresGrupo.KICKBOXING_LUNES_MIERCOLES));
+	    for (String tipo : tipos) {
+	        List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
+	        Set<Alumno> alumnosSet = new HashSet<>();
+	        for (Grupo grupo : grupos) {
+	            alumnosSet.addAll(grupo.getAlumnos());
+	        }
+	        conteoAlumnosPorGrupo.put(tipo, (long) alumnosSet.size());
+	    }
 
 	    return conteoAlumnosPorGrupo;
+	}
+	
+	@Override
+	public List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo) {
+	    List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
+
+	    if (grupos.isEmpty()) {
+	        throw new GrupoNoEncontradoException("No se encontraron grupos para el tipo de deporte " + tipo);
+	    }
+
+	    Set<Alumno> alumnosSet = new HashSet<>();
+	    for (Grupo grupo : grupos) {
+	        alumnosSet.addAll(grupo.getAlumnos());
+	    }
+
+	    return alumnosSet.stream()
+	            .map(AlumnoCortoDTO::deAlumno)
+	            .collect(Collectors.toList());
 	}
 
 	/**

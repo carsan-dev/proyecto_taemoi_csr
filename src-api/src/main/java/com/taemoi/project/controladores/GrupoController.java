@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.errores.grupo.GrupoNoEncontradoException;
@@ -57,6 +58,17 @@ public class GrupoController {
     public ResponseEntity<Map<String, Long>> obtenerConteoAlumnosPorGrupo() {
         Map<String, Long> conteoAlumnos = grupoService.contarAlumnosPorGrupo();
         return ResponseEntity.ok(conteoAlumnos);
+    }
+    
+    @GetMapping("/tipo/{tipo}/alumnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<AlumnoCortoDTO>> obtenerAlumnosPorCategoria(@PathVariable String tipo) {
+        try {
+            List<AlumnoCortoDTO> alumnos = grupoService.obtenerAlumnosPorTipo(tipo);
+            return ResponseEntity.ok(alumnos);
+        } catch (GrupoNoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     /**
