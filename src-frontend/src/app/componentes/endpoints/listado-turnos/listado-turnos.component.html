@@ -6,12 +6,16 @@
 
     <!-- Nueva columna para las tarjetas de conteo de alumnos -->
     <div class="row justify-content-center">
-      <ng-container *ngFor="let grupo of gruposMostrar">
+      <ng-container *ngFor="let tipo of gruposMostrar">
         <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center my-3">
-          <div class="card alumnos-card">
+          <div
+            class="card alumnos-card"
+            (click)="abrirModalAlumnos(tipo)"
+            style="cursor: pointer;"
+          >
             <div class="card-body text-center">
-              <h5 class="card-title">{{ grupo }}</h5>
-              <p>{{ obtenerConteoAlumnos(grupo) }} alumnos</p>
+              <h5 class="card-title">{{ tipo }}</h5>
+              <p>{{ obtenerConteoAlumnos(tipo) }} alumnos</p>
             </div>
           </div>
         </div>
@@ -60,3 +64,10 @@
     </ng-container>
   </div>
 </div>
+
+<app-grupo-alumnos-modal
+  *ngIf="mostrarModalAlumnos"
+  [grupoNombre]="grupoNombreModal"
+  [alumnos]="alumnosGrupoModal"
+  (cerrar)="cerrarModalAlumnos()"
+></app-grupo-alumnos-modal>
