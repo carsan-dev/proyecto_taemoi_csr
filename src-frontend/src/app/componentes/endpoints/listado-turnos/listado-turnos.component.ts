@@ -4,11 +4,12 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 
 @Component({
   selector: 'app-listado-turnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, GrupoAlumnosModalComponent],
   templateUrl: './listado-turnos.component.html',
   styleUrls: ['./listado-turnos.component.scss'],
 })
@@ -29,11 +30,15 @@ export class ListadoTurnosComponent implements OnInit {
     'Kickboxing',
   ];
 
+  // Variables para controlar el modal
+  mostrarModalAlumnos = false;
+  grupoNombreModal = '';
+  alumnosGrupoModal: any[] = [];
+
   constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.endpointsService.obtenerTurnos();
-    this.endpointsService.obtenerTodosLosGrupos();
     this.endpointsService.obtenerConteoAlumnosPorGrupo();
   }
 
@@ -80,5 +85,27 @@ export class ListadoTurnosComponent implements OnInit {
         });
       }
     });
+  }
+
+  abrirModalAlumnos(tipo: string) {
+    this.endpointsService.obtenerAlumnosPorTipo(tipo).subscribe({
+      next: (alumnos) => {
+        this.grupoNombreModal = tipo;
+        this.alumnosGrupoModal = alumnos;
+        this.mostrarModalAlumnos = true;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la obtención',
+          text: 'No hemos podido obtener los alumnos del grupo',
+          icon: 'error',
+        });
+      }
+    });
+  }
+  
+
+  cerrarModalAlumnos() {
+    this.mostrarModalAlumnos = false;
   }
 }
