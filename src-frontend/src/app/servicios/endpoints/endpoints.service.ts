@@ -241,9 +241,12 @@ export class EndpointsService {
 
   obtenerProductosDelAlumno(alumnoId: number): Observable<ProductoAlumnoDTO[]> {
     return this.http
-      .get<ProductoAlumnoDTO[]>(`${this.urlBase}/productos-alumno/alumno/${alumnoId}`, {
-        withCredentials: true,
-      })
+      .get<ProductoAlumnoDTO[]>(
+        `${this.urlBase}/productos-alumno/alumno/${alumnoId}`,
+        {
+          withCredentials: true,
+        }
+      )
       .pipe(catchError(this.manejarError));
   }
 
@@ -261,25 +264,27 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-    // Nuevo método para eliminar un producto de un alumno
-    eliminarProductoAlumno(
-      id: number
-    ): Observable<any> {
-      return this.http
-        .delete<void>(
-          `${this.urlBase}/productos-alumno/${id}`,
-          { withCredentials: true }
-        )
-        .pipe(catchError(this.manejarError));
-    }
-
-    actualizarProductoAlumno(
-      id: number, detalles: ProductoAlumnoDTO
-  ): Observable<ProductoAlumnoDTO> {
+  // Nuevo método para eliminar un producto de un alumno
+  eliminarProductoAlumno(id: number): Observable<any> {
     return this.http
-      .put<ProductoAlumnoDTO>(`${this.urlBase}/productos-alumno/${id}`, detalles, {
+      .delete<void>(`${this.urlBase}/productos-alumno/${id}`, {
         withCredentials: true,
       })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarProductoAlumno(
+    id: number,
+    detalles: ProductoAlumnoDTO
+  ): Observable<ProductoAlumnoDTO> {
+    return this.http
+      .put<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${id}`,
+        detalles,
+        {
+          withCredentials: true,
+        }
+      )
       .pipe(catchError(this.manejarError));
   }
 
@@ -327,6 +332,15 @@ export class EndpointsService {
           );
         },
       });
+  }
+
+  obtenerAlumnosPorTipo(tipo: string): Observable<any[]> {
+    const encodedTipo = encodeURIComponent(tipo);
+    return this.http.get<any[]>(
+      `${this.urlBase}/grupos/tipo/${encodedTipo}/alumnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
   }
 
   crearGrupo(grupoData: any): Observable<any> {
