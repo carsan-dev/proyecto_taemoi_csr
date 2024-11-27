@@ -233,7 +233,64 @@ export class EndpointsService {
 
   obtenerTodosLosProductos(): Observable<Producto[]> {
     return this.http
-      .get<Producto[]>(`${this.urlBase}/productos`, {
+      .get<Producto[]>(`${this.urlBase}/productos/todos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTodosLosProductosPaginado(
+    concepto: string,
+    page: number,
+    size: number,
+    orderBy: string,
+    order: string
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('orderBy', orderBy)
+      .set('order', order);
+
+    if (concepto) {
+      params = params.set('concepto', concepto);
+    }
+
+    return this.http
+      .get<any>(`${this.urlBase}/productos`, {
+        params: params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerProductoPorId(id: number): Observable<Producto> {
+    return this.http
+      .get<Producto>(`${this.urlBase}/productos/${id}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  crearProducto(producto: Producto): Observable<Producto> {
+    return this.http
+      .post<Producto>(`${this.urlBase}/productos`, producto, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarProducto(id: number, formData: FormData): Observable<any> {
+    return this.http
+      .put<any>(`${this.urlBase}/productos/${id}`, formData, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  eliminarProducto(id: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.urlBase}/productos/${id}`, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
@@ -336,8 +393,8 @@ export class EndpointsService {
 
   obtenerAlumnosPorTipo(tipo: string): Observable<any[]> {
     const encodedTipo = encodeURIComponent(tipo);
-    return this.http.get<any[]>(
-      `${this.urlBase}/grupos/tipo/${encodedTipo}/alumnos`, {
+    return this.http
+      .get<any[]>(`${this.urlBase}/grupos/tipo/${encodedTipo}/alumnos`, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
