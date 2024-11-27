@@ -1,0 +1,48 @@
+<!-- producto-editar.component.html -->
+
+<div class="container">
+    <h1>Editar Producto</h1>
+  
+    <form [formGroup]="productoForm" (ngSubmit)="onSubmit()">
+      <div class="form-group mb-3">
+        <label for="concepto">Concepto</label>
+        <input
+          type="text"
+          id="concepto"
+          formControlName="concepto"
+          class="form-control"
+          [ngClass]="{ 'is-invalid': productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched }"
+        />
+        <div
+          *ngIf="productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched"
+          class="invalid-feedback"
+        >
+          El concepto es requerido.
+        </div>
+      </div>
+  
+      <div class="form-group mb-3">
+        <label for="precio">Precio</label>
+        <input
+          type="number"
+          id="precio"
+          formControlName="precio"
+          class="form-control"
+          [ngClass]="{ 'is-invalid': productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched }"
+        />
+        <div
+          *ngIf="productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched"
+          class="invalid-feedback"
+        >
+          El precio es requerido y debe ser mayor o igual a 0.
+        </div>
+      </div>
+  
+      <!-- Agrega otros campos si es necesario -->
+  
+      <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid">
+        Actualizar Producto
+      </button>
+    </form>
+  </div>
+  
