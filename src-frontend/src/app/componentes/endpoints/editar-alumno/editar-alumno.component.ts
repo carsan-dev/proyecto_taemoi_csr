@@ -379,7 +379,6 @@ export class EditarAlumnoComponent implements OnInit {
     }).then((result) => {
       if (result.isConfirmed) {
         this.actualizarAlumno(id);
-        this.alternarFormulario(alumno);
       }
     });
   }
@@ -400,7 +399,9 @@ export class EditarAlumnoComponent implements OnInit {
           text: '¡Alumno actualizado correctamente!',
           icon: 'success',
         });
+        this.mostrarFormulario = false;
         this.obtenerAlumnos();
+        this.router.navigate(['/alumnosEditar']);
       },
       error: (error) => {
         Swal.fire({
