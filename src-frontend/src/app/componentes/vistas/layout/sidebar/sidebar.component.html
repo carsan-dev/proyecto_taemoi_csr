@@ -95,5 +95,22 @@
         </a>
       </li>
     </ul>
+    <ul class="list-unstyled my-5">
+      <li class="mx-4">
+        <h2 class="h6 text-white fw-bold">PRODUCTOS</h2>
+      </li>
+      <li class="mx-4">
+        <a (click)="alternarColapso()" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-bag-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/productosListar']" routerLinkActive="active">Consultar productos</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="alternarColapso()" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-bag-plus-fill fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/productosCrear']" routerLinkActive="active">Añadir productos</span>
+        </a>
+      </li>
+    </ul>
   </aside>
 </div>
