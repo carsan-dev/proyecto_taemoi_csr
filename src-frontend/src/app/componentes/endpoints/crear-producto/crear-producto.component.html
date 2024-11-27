@@ -1,0 +1,31 @@
+<div class="container mb-5">
+    <h1>Crear Nuevo Producto</h1>
+
+    <form [formGroup]="productoForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+            <label for="concepto">Concepto</label>
+            <input type="text" id="concepto" formControlName="concepto" class="form-control"
+                [ngClass]="{ 'is-invalid': productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched }" />
+            <div *ngIf="productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched"
+                class="invalid-feedback">
+                El concepto es requerido.
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="precio">Precio</label>
+            <input type="number" id="precio" formControlName="precio" class="form-control"
+                [ngClass]="{ 'is-invalid': productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched }" />
+            <div *ngIf="productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched"
+                class="invalid-feedback">
+                El precio es requerido y debe ser mayor o igual a 0.
+            </div>
+        </div>
+
+        <!-- Agrega otros campos si es necesario -->
+
+        <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid">
+            Crear Producto
+        </button>
+    </form>
+</div>
