@@ -32,6 +32,9 @@ import { KickboxingComponent } from './componentes/vistas/kickboxing/kickboxing.
 import { PilatesComponent } from './componentes/vistas/pilates/pilates.component';
 import { EventoDetalleComponent } from './componentes/vistas/eventos/evento-detalle/evento-detalle.component';
 import { ProductosAlumnoComponent } from './componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component';
+import { ListadoProductosComponent } from './componentes/endpoints/listado-productos/listado-productos.component';
+import { CrearProductoComponent } from './componentes/endpoints/crear-producto/crear-producto.component';
+import { EditarProductoComponent } from './componentes/endpoints/editar-producto/editar-producto.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -146,6 +149,21 @@ export const routes: Routes = [
   {
     path: 'eventosEditar/:id',
     component: EditarEventoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'productosListar',
+    component: ListadoProductosComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'productosCrear',
+    component: CrearProductoComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'productosEditar/:id',
+    component: EditarProductoComponent,
     canActivate: [roleGuard],
   },
 ];
