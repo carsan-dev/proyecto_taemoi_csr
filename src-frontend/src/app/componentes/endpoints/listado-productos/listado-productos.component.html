@@ -1,0 +1,66 @@
+<!-- listado-productos.component.html -->
+<div class="container">
+  <h1>Listado de Productos</h1>
+
+  <!-- Filtro por concepto -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <input type="text" class="form-control" placeholder="Buscar por concepto" [(ngModel)]="conceptoFiltro"
+        (ngModelChange)="filtrarPorConcepto()" />
+    </div>
+  </div>
+
+  <!-- Tabla de productos -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th (click)="ordenarPor('id')">
+          ID
+          <span *ngIf="orderBy === 'id'">
+            <i class="bi" [ngClass]="{
+                  'bi-arrow-up-circle-fill': order === 'asc',
+                  'bi-arrow-down-circle-fill': order === 'desc'
+                }"></i>
+          </span>
+        </th>
+        <th (click)="ordenarPor('concepto')">
+          Concepto
+          <span *ngIf="orderBy === 'concepto'">
+            <i class="bi" [ngClass]="{
+                  'bi-arrow-up-circle-fill': order === 'asc',
+                  'bi-arrow-down-circle-fill': order === 'desc'
+                }"></i>
+          </span>
+        </th>
+        <th (click)="ordenarPor('precio')">
+          Precio
+          <span *ngIf="orderBy === 'precio'">
+            <i class="bi" [ngClass]="{
+                  'bi-arrow-up-circle-fill': order === 'asc',
+                  'bi-arrow-down-circle-fill': order === 'desc'
+                }"></i>
+          </span>
+        </th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let producto of productos">
+        <td>{{ producto.id }}</td>
+        <td>{{ producto.concepto }}</td>
+        <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
+        <td>
+          <button class="btn btn-sm btn-primary me-2" [routerLink]="['/productosEditar', producto.id]">
+            <i class="bi-gear"></i> Editar
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="eliminarProducto(producto.id)">
+            <i class="bi-trash"></i> Eliminar
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+    (pageChange)="cambiarPagina($event)"></app-paginacion>
+</div>
