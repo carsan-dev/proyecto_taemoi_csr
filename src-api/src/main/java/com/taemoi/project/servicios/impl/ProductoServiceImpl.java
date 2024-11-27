@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.entidades.Producto;
@@ -22,9 +24,20 @@ public class ProductoServiceImpl implements ProductoService{
     }
     
     @Override
+    public Page<Producto> obtenerProductosPaginados(Pageable pageable) {
+        return productoRepository.findAll(pageable);
+    }
+	
+    @Override
     public Optional<Producto> obtenerProductoPorId(Long id) {
         return productoRepository.findById(id);
     }
+    
+    @Override
+    public Page<Producto> buscarProductosPorConcepto(String concepto, Pageable pageable) {
+        return productoRepository.findByConceptoContaining(concepto, pageable);
+    }
+
     
     @Override
     public Producto guardarProducto(Producto producto) {
