@@ -25,7 +25,7 @@ export class CrearGrupoComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
     private readonly router: Router,
-    private location: Location
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
