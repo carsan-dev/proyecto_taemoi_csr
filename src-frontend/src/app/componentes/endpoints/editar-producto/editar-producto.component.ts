@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 @Component({
   selector: 'app-editar-producto',
@@ -20,7 +20,8 @@ export class EditarProductoComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly location: Location
   ) {
     this.productoForm = this.fb.group({
       concepto: ['', Validators.required],
@@ -80,5 +81,9 @@ export class EditarProductoComponent implements OnInit {
         });
       },
     });
+  }
+
+  volver() {
+    this.location.back();
   }
 }

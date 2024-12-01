@@ -1,66 +1,74 @@
-<!-- listado-productos.component.html -->
-<div class="container">
-  <h1>Listado de Productos</h1>
+<div class="container mt-5">
+  <h1 class="text-center mb-4">Listado de Productos</h1>
 
   <!-- Filtro por concepto -->
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <input type="text" class="form-control" placeholder="Buscar por concepto" [(ngModel)]="conceptoFiltro"
-        (ngModelChange)="filtrarPorConcepto()" />
+  <div class="row mb-4">
+    <div class="col-md-6 mx-auto">
+      <div class="form-group form-floating">
+        <input type="text" id="conceptoFiltro" class="form-control" placeholder="Buscar por concepto"
+          [(ngModel)]="conceptoFiltro" (ngModelChange)="filtrarPorConcepto()" />
+        <label for="conceptoFiltro">Buscar por concepto</label>
+      </div>
     </div>
   </div>
 
   <!-- Tabla de productos -->
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th (click)="ordenarPor('id')">
-          ID
-          <span *ngIf="orderBy === 'id'">
-            <i class="bi" [ngClass]="{
-                  'bi-arrow-up-circle-fill': order === 'asc',
-                  'bi-arrow-down-circle-fill': order === 'desc'
-                }"></i>
-          </span>
-        </th>
-        <th (click)="ordenarPor('concepto')">
-          Concepto
-          <span *ngIf="orderBy === 'concepto'">
-            <i class="bi" [ngClass]="{
-                  'bi-arrow-up-circle-fill': order === 'asc',
-                  'bi-arrow-down-circle-fill': order === 'desc'
-                }"></i>
-          </span>
-        </th>
-        <th (click)="ordenarPor('precio')">
-          Precio
-          <span *ngIf="orderBy === 'precio'">
-            <i class="bi" [ngClass]="{
-                  'bi-arrow-up-circle-fill': order === 'asc',
-                  'bi-arrow-down-circle-fill': order === 'desc'
-                }"></i>
-          </span>
-        </th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let producto of productos">
-        <td>{{ producto.id }}</td>
-        <td>{{ producto.concepto }}</td>
-        <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
-        <td>
-          <button class="btn btn-sm btn-primary me-2" [routerLink]="['/productosEditar', producto.id]">
-            <i class="bi-gear"></i> Editar
-          </button>
-          <button class="btn btn-sm btn-danger" (click)="eliminarProducto(producto.id)">
-            <i class="bi-trash"></i> Eliminar
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover shadow-sm">
+      <thead class="table-primary">
+        <tr>
+          <th (click)="ordenarPor('id')" class="pointer">
+            ID
+            <span *ngIf="orderBy === 'id'">
+              <i class="bi" [ngClass]="{
+                    'bi-arrow-up-circle-fill': order === 'asc',
+                    'bi-arrow-down-circle-fill': order === 'desc'
+                  }"></i>
+            </span>
+          </th>
+          <th (click)="ordenarPor('concepto')" class="pointer">
+            Concepto
+            <span *ngIf="orderBy === 'concepto'">
+              <i class="bi" [ngClass]="{
+                    'bi-arrow-up-circle-fill': order === 'asc',
+                    'bi-arrow-down-circle-fill': order === 'desc'
+                  }"></i>
+            </span>
+          </th>
+          <th (click)="ordenarPor('precio')" class="pointer">
+            Precio
+            <span *ngIf="orderBy === 'precio'">
+              <i class="bi" [ngClass]="{
+                    'bi-arrow-up-circle-fill': order === 'asc',
+                    'bi-arrow-down-circle-fill': order === 'desc'
+                  }"></i>
+            </span>
+          </th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let producto of productos">
+          <td>{{ producto.id }}</td>
+          <td>{{ producto.concepto }}</td>
+          <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
+          <td>
+            <button class="btn btn-sm btn-primary me-2 shadow-sm" [routerLink]="['/productosEditar', producto.id]">
+              <i class="bi-gear"></i> Editar
+            </button>
+            <button class="btn btn-sm btn-danger shadow-sm" (click)="eliminarProducto(producto.id)">
+              <i class="bi-trash"></i> Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!productos || productos.length === 0">
+          <td colspan="4" class="text-center text-muted">No hay productos disponibles</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
+  <!-- Paginación -->
   <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
     (pageChange)="cambiarPagina($event)"></app-paginacion>
 </div>

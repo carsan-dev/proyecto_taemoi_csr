@@ -1,31 +1,59 @@
 <div class="container mb-5">
-    <h1>Crear Nuevo Producto</h1>
-
-    <form [formGroup]="productoForm" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-            <label for="concepto">Concepto</label>
-            <input type="text" id="concepto" formControlName="concepto" class="form-control"
-                [ngClass]="{ 'is-invalid': productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched }" />
-            <div *ngIf="productoForm.get('concepto')?.invalid && productoForm.get('concepto')?.touched"
-                class="invalid-feedback">
-                El concepto es requerido.
+    <div class="row">
+      <div class="col-12">
+        <form [formGroup]="productoForm" (ngSubmit)="onSubmit()" method="post" class="my-5 p-4">
+          <div class="d-flex justify-content-between align-items-start mb-4">
+            <h2 class="text-center mb-4 fw-bold">Crear Nuevo Producto</h2>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
+          </div>
+          <div class="row">
+            <!-- Campo Concepto -->
+            <div class="form-group col-md-12 mb-3 form-floating">
+              <input
+                type="text"
+                id="concepto"
+                formControlName="concepto"
+                class="form-control form-control-little"
+                placeholder="Concepto"
+              />
+              <label for="concepto">Concepto</label>
+              <div
+                *ngIf="productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched"
+                class="text-danger"
+              >
+                <small *ngIf="productoForm.get('concepto')?.errors?.['required']">El concepto es requerido.</small>
+              </div>
             </div>
-        </div>
-
-        <div class="form-group">
-            <label for="precio">Precio</label>
-            <input type="number" id="precio" formControlName="precio" class="form-control"
-                [ngClass]="{ 'is-invalid': productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched }" />
-            <div *ngIf="productoForm.get('precio')?.invalid && productoForm.get('precio')?.touched"
-                class="invalid-feedback">
-                El precio es requerido y debe ser mayor o igual a 0.
+  
+            <!-- Campo Precio -->
+            <div class="form-group col-md-12 mb-3 form-floating">
+              <input
+                type="number"
+                id="precio"
+                formControlName="precio"
+                class="form-control form-control-little"
+                placeholder="Precio"
+              />
+              <label for="precio">Precio</label>
+              <div
+                *ngIf="productoForm.get('precio')?.errors && productoForm.get('precio')?.touched"
+                class="text-danger"
+              >
+                <small *ngIf="productoForm.get('precio')?.errors?.['required']">
+                  El precio es requerido y debe ser mayor o igual a 0.
+                </small>
+              </div>
             </div>
-        </div>
-
-        <!-- Agrega otros campos si es necesario -->
-
-        <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid">
-            Crear Producto
-        </button>
-    </form>
-</div>
+  
+            <!-- Agrega otros campos si es necesario siguiendo el mismo patrón -->
+          </div>
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary mt-3" [disabled]="productoForm.invalid">
+              Crear Producto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
