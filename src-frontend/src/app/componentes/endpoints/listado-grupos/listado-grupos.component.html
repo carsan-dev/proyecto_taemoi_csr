@@ -1,9 +1,11 @@
 <div class="container-fluid py-5">
-  <div class="row d-flex justify-content-center align-items-center mb-5">
-      <h2 class="text-center fw-bold mb-4">Listado de Grupos</h2>
+  <div class="row justify-content-center mb-5">
+    <div class="col-md-8 text-center">
+      <h2 class="fw-bold mb-4">Listado de Grupos</h2>
       <button class="btn btn-success" routerLink="/gruposCrear">
         Crear Nuevo Grupo
       </button>
+    </div>
   </div>
 
   <div class="row">
@@ -19,11 +21,11 @@
           </div>
           
           <!-- Botones de acciones del grupo -->
-          <div class="d-flex justify-content-around mt-4">
-            <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/turnosGrupo', grupo.id]">Gestionar Turnos</button>
-            <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/gestionarAlumnos', grupo.id]">Gestionar Alumnos</button>
-            <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/gruposEditar', grupo.id]">Editar</button>
-            <button class="btn btn-danger btn-sm mx-1" (click)="eliminarGrupo(grupo.id)">Eliminar</button>
+          <div class="d-flex flex-wrap justify-content-center mt-4">
+            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/turnosGrupo', grupo.id]">Gestionar Turnos</button>
+            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/gestionarAlumnos', grupo.id]">Gestionar Alumnos</button>
+            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/gruposEditar', grupo.id]">Editar</button>
+            <button class="btn btn-danger btn-sm m-1" (click)="eliminarGrupo(grupo.id)">Eliminar</button>
           </div>
         </div>
       </div>
