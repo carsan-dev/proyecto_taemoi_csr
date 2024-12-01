@@ -24,9 +24,12 @@
           <!-- Sección izquierda: imagen y nombre -->
           <div class="left-section text-center">
             <div class="imagen-perfil-container mx-auto">
-              <img class="imagen-perfil"
-                [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                alt="Perfil del alumno" />
+              <a [routerLink]="['/alumnosEditar']" [queryParams]="{ nombre: alumno.nombre + ' ' + alumno.apellidos }">
+                <img class="imagen-perfil"
+                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                  alt="Perfil del alumno" />
+              </a>
+              
             </div>
             <h4 class="mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
             <p class="mt-1">Nº Exp: {{ alumno.numeroExpediente }}</p>
