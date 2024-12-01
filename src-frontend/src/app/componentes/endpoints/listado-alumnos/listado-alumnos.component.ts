@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-listado-alumnos',
   standalone: true,
-  imports: [CommonModule, PaginacionComponent, FormsModule],
+  imports: [CommonModule, PaginacionComponent, FormsModule, RouterLink],
   templateUrl: './listado-alumnos.component.html',
   styleUrl: './listado-alumnos.component.scss',
 })
