@@ -1,4 +1,3 @@
-<!-- Modal para ampliar la imagen -->
 <div id="imageModal" class="modal" (click)="cerrarModal()">
   <span class="close" (click)="cerrarModal()"><i class="bi bi-x-circle-fill"></i></span>
   <img class="modal-content" id="imgAmpliada" />
@@ -12,33 +11,43 @@
     </div>
   </div>
 
-  <!-- Usamos el async pipe para obtener los eventos -->
+  <!-- Listado de eventos -->
   <div class="row">
-    <ng-container *ngIf="endpointsService.eventos$ | async as eventos">
-      <ng-container *ngFor="let evento of eventos">
-        <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center">
-          <div class="card evento-card my-3">
-            <div class="card-body">
-              <div class="d-flex justify-content-center mb-3">
-                <img
-                  [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                  alt="Eventos disponibles"
-                  class="imagen-evento"
-                  (click)="abrirModal(evento.fotoEvento?.url)"
-                />
-              </div>
-              <h4 class="card-title text-center">{{ evento.titulo }}</h4>
-              <p class="text-center">{{ evento.descripcion }}</p>
-              <div class="d-flex justify-content-center mt-3">
-                <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">
-                  Editar
-                </button>
-                <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
-              </div>
+    <ng-container *ngIf="eventos && eventos.length > 0; else noEventos">
+      <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center" *ngFor="let evento of eventos">
+        <div class="card evento-card my-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-center mb-3">
+              <img [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                alt="Eventos disponibles" class="imagen-evento" (click)="abrirModal(evento.fotoEvento?.url)" />
+            </div>
+            <h4 class="card-title text-center">{{ evento.titulo }}</h4>
+            <p class="text-center">{{ evento.descripcion }}</p>
+            <div class="d-flex justify-content-center mt-3">
+              <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">
+                Editar
+              </button>
+              <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
             </div>
           </div>
         </div>
-      </ng-container>
+      </div>
     </ng-container>
   </div>
+
+  <!-- Plantilla para cuando no haya eventos -->
+  <ng-template #noEventos>
+    <div class="container-fluid d-flex justify-content-center align-items-center mt-5">
+      <div class="row w-100">
+        <div class="col-md-12 text-center">
+          <div class="no-eventos-container">
+            <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" class="no-eventos-imagen" />
+            <h3 class="mt-4">¡No hay eventos disponibles!</h3>
+            <p class="text-muted">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de abajo!</p>
+            <button class="btn btn-primary mt-3" [routerLink]="['/eventosCrear']">Crear Evento</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
 </div>
