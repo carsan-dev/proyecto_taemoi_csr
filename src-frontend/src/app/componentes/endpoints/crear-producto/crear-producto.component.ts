@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
@@ -18,7 +18,8 @@ export class CrearProductoComponent {
   constructor(
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly location: Location
   ) {
     this.productoForm = this.fb.group({
       concepto: ['', Validators.required],
@@ -56,5 +57,9 @@ export class CrearProductoComponent {
         });
       },
     });
+  }
+
+  volver() {
+    this.location.back();
   }
 }
