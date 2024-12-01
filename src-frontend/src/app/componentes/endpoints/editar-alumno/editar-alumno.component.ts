@@ -106,6 +106,14 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      const nombre = params['nombre'];
+      if (nombre) {
+        this.nombreFiltro = nombre;
+        this.filtrarPorNombre();
+      }
+    });
+
     // Obtener la lista de alumnos
     this.route.params.subscribe((params) => {
       const idParam = params['id'];
