@@ -48,6 +48,8 @@ import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ImagenService;
+
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 
 /**
@@ -159,26 +161,42 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
-			@NonNull Pageable pageable) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
+	        @NonNull Pageable pageable) {
+	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+	        List<Predicate> predicates = new ArrayList<>();
 
-			if (nombre != null && !nombre.isEmpty()) {
-				predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombre.toLowerCase() + "%"));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
-			}
-			if (!incluirInactivos) {
-				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-			}
+	        if (nombre != null && !nombre.isEmpty()) {
+	            String nombreLower = nombre.toLowerCase();
 
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		}, pageable);
+	            // Crear expresión para el nombre completo (nombre + ' ' + apellidos)
+	            Expression<String> fullNameExpression = criteriaBuilder.concat(
+	                    criteriaBuilder.lower(root.get("nombre")), 
+	                    criteriaBuilder.literal(" ")
+	            );
+	            fullNameExpression = criteriaBuilder.concat(fullNameExpression, criteriaBuilder.lower(root.get("apellidos")));
+
+	            // Crear predicado que compara el nombre completo con el valor buscado
+	            Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
+
+	            // También comparar individualmente el nombre y los apellidos
+	            Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombreLower + "%");
+	            Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")), "%" + nombreLower + "%");
+
+	            // Combinar los predicados con OR
+	            predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
+	        }
+	        if (gradoId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
+	        }
+	        if (categoriaId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
+	        }
+	        if (!incluirInactivos) {
+	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+	        }
+
+	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+	    }, pageable);
 	}
 
 	/**
@@ -193,27 +211,42 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 *                                  filtrado.
 	 */
 	@Override
-	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
-			boolean incluirInactivos) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
+	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos) {
+	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+	        List<Predicate> predicates = new ArrayList<>();
 
-			if (nombre != null && !nombre.isEmpty()) {
-				predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombre.toLowerCase() + "%"));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
-			}
-			if (!incluirInactivos) {
-				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-			}
+	        if (nombre != null && !nombre.isEmpty()) {
+	            String nombreLower = nombre.toLowerCase();
 
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		});
+	            // Crear expresión para el nombre completo (nombre + ' ' + apellidos)
+	            Expression<String> fullNameExpression = criteriaBuilder.concat(
+	                    criteriaBuilder.lower(root.get("nombre")), 
+	                    criteriaBuilder.literal(" ")
+	            );
+	            fullNameExpression = criteriaBuilder.concat(fullNameExpression, criteriaBuilder.lower(root.get("apellidos")));
+
+	            // Crear predicado que compara el nombre completo con el valor buscado
+	            Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
+
+	            // También comparar individualmente el nombre y los apellidos
+	            Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombreLower + "%");
+	            Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")), "%" + nombreLower + "%");
+
+	            // Combinar los predicados con OR
+	            predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
+	        }
+	        if (gradoId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
+	        }
+	        if (categoriaId != null) {
+	            predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
+	        }
+	        if (!incluirInactivos) {
+	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+	        }
+
+	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+	    });
 	}
 
 	/**
