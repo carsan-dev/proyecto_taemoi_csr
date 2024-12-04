@@ -13,8 +13,11 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Categoria;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
+import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
 
 import jakarta.validation.Valid;
@@ -55,6 +58,10 @@ public interface AlumnoService {
 	Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO);
 
 	int calcularEdad(Date fechaNacimiento);
+	
+    TipoGrado calcularSiguienteGrado(Alumno alumno);
+
+    //double calcularCuantiaExamen(Alumno alumno);
 
 	boolean fechaNacimientoValida(Date fechaNacimiento);
 
@@ -71,4 +78,6 @@ public interface AlumnoService {
 	List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion);
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
+
+	AlumnoConvocatoria agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte);
 }

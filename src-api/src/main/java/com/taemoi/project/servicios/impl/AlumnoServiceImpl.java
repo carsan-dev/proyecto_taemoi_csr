@@ -9,7 +9,9 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -27,10 +29,15 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Categoria;
+import com.taemoi.project.entidades.Convocatoria;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
+import com.taemoi.project.entidades.Producto;
+import com.taemoi.project.entidades.ProductoAlumno;
 import com.taemoi.project.entidades.Roles;
 import com.taemoi.project.entidades.TipoCategoria;
 import com.taemoi.project.entidades.TipoGrado;
@@ -39,11 +46,15 @@ import com.taemoi.project.entidades.Turno;
 import com.taemoi.project.entidades.Usuario;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
+import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
+import com.taemoi.project.repositorios.ConvocatoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
+import com.taemoi.project.repositorios.ProductoAlumnoRepository;
+import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
@@ -90,6 +101,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private TurnoRepository turnoRepository;
+	
+	@Autowired
+	private ConvocatoriaRepository convocatoriaRepository;
+	
+	@Autowired
+	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
+	
+	@Autowired
+	private ProductoRepository productoRepository;
+	
+	@Autowired
+	private ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Autowired
 	private ImagenService imagenService;
@@ -862,6 +885,220 @@ public class AlumnoServiceImpl implements AlumnoService {
 		int edad = Period.between(fechaNacimientoLocal, fechaActual).getYears();
 
 		return edad;
+	}
+	
+	@Override
+	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
+	    TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
+	    Deporte deporte = alumno.getDeporte();
+
+	    int edad = calcularEdad(alumno.getFechaNacimiento());
+
+	    boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+
+	    Map<TipoGrado, TipoGrado> nextGradeMap;
+
+	    if (deporte == Deporte.TAEKWONDO) {
+	        nextGradeMap = esMenor ? mapaGradosMenoresTaekwondo() : mapaGradosMayoresTaekwondo();
+	    } else if (deporte == Deporte.KICKBOXING) {
+	        nextGradeMap = mapaGradosKickboxing();
+	    } else {
+	        throw new IllegalArgumentException("Deporte no soportado: " + deporte);
+	    }
+
+	    return nextGradeMap.getOrDefault(gradoActual, null);
+	}
+
+	private Map<TipoGrado, TipoGrado> mapaGradosMenoresTaekwondo() {
+	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+	    mapa.put(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO);
+	    mapa.put(TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO);
+	    mapa.put(TipoGrado.AMARILLO, TipoGrado.AMARILLO_NARANJA);
+	    mapa.put(TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA);
+	    mapa.put(TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE);
+	    mapa.put(TipoGrado.NARANJA_VERDE, TipoGrado.VERDE);
+	    mapa.put(TipoGrado.VERDE, TipoGrado.VERDE_AZUL);
+	    mapa.put(TipoGrado.VERDE_AZUL, TipoGrado.AZUL);
+	    mapa.put(TipoGrado.AZUL, TipoGrado.AZUL_ROJO);
+	    mapa.put(TipoGrado.AZUL_ROJO, TipoGrado.ROJO);
+	    mapa.put(TipoGrado.ROJO, TipoGrado.ROJO_NEGRO_1_PUM);
+	    mapa.put(TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM);
+	    mapa.put(TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
+	    return mapa;
+	}
+
+	private Map<TipoGrado, TipoGrado> mapaGradosMayoresTaekwondo() {
+	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+	    mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
+	    mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
+	    mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
+	    mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
+	    mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
+	    mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
+	    mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
+	    mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
+	    mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
+	    mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+	    return mapa;
+	}
+	
+	private Map<TipoGrado, TipoGrado> mapaGradosKickboxing() {
+	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+	    mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
+	    mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
+	    mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
+	    mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
+	    mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
+	    mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
+	    mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
+	    mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
+	    mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
+	    mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+	    return mapa;
+	}
+	
+	private boolean cumple14EsteAnio(Date fechaNacimiento) {
+	    LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+	    LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
+	    int anioActual = LocalDate.now().getYear();
+	    return fechaCumple14.getYear() == anioActual;
+	}
+	
+	@Override
+	public AlumnoConvocatoria agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte) {
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+	    if (!alumno.getAptoParaExamen()) {
+	        throw new IllegalArgumentException("El alumno no está apto para examen.");
+	    }
+
+	    if (!alumno.getDeporte().equals(deporte)) {
+	        throw new IllegalArgumentException("El deporte del alumno no coincide con la convocatoria.");
+	    }
+
+	    Convocatoria convocatoriaActual = convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte)
+	            .orElseThrow(() -> new IllegalArgumentException("No hay una convocatoria actual para el deporte: " + deporte));
+
+	    // Verificar si el alumno ya está en la convocatoria
+	    boolean yaInscrito = convocatoriaActual.getAlumnosConvocatoria().stream()
+	            .anyMatch(ac -> ac.getAlumno().getId().equals(alumnoId));
+
+	    if (yaInscrito) {
+	        throw new IllegalArgumentException("El alumno ya está inscrito en la convocatoria actual.");
+	    }
+
+	    // Calcular el siguiente grado del alumno
+	    TipoGrado gradoSiguiente = calcularSiguienteGrado(alumno);
+	    if (gradoSiguiente == null) {
+	        throw new IllegalArgumentException("No se pudo determinar el siguiente grado para el alumno.");
+	    }
+
+	    // Obtener el producto correspondiente al siguiente grado
+	    Producto productoExamen = obtenerProductoPorGrado(gradoSiguiente);
+	    if (productoExamen == null) {
+	        throw new IllegalArgumentException("No se encontró un producto para el grado: " + gradoSiguiente);
+	    }
+
+	    // Crear una instancia de ProductoAlumno
+	    ProductoAlumno productoAlumno = new ProductoAlumno();
+	    productoAlumno.setAlumno(alumno);
+	    productoAlumno.setProducto(productoExamen);
+	    productoAlumno.setConcepto(productoExamen.getConcepto());
+	    productoAlumno.setFechaAsignacion(new Date());
+	    productoAlumno.setCantidad(1);
+	    productoAlumno.setPrecio(productoExamen.getPrecio());
+	    productoAlumno.setPagado(false); // Por defecto, no pagado
+	    productoAlumno.setNotas("Asignado automáticamente al agregar a la convocatoria.");
+
+	    // Guardar ProductoAlumno
+	    productoAlumno = productoAlumnoRepository.save(productoAlumno);
+
+	    // Añadir ProductoAlumno a la lista del alumno
+	    if (alumno.getProductosAlumno() == null) {
+	        alumno.setProductosAlumno(new ArrayList<>());
+	    }
+	    alumno.getProductosAlumno().add(productoAlumno);
+
+	    // Guardar cambios en el alumno
+	    alumnoRepository.save(alumno);
+
+	    // Crear el registro de AlumnoConvocatoria
+	    AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
+	    alumnoConvocatoria.setAlumno(alumno);
+	    alumnoConvocatoria.setConvocatoria(convocatoriaActual);
+	    alumnoConvocatoria.setCuantiaExamen(productoExamen.getPrecio());
+	    alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
+	    alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
+	    alumnoConvocatoria.setPagado(false); // Por defecto, no pagado
+
+	    // Guardar la relación AlumnoConvocatoria
+	    alumnoConvocatoria = alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+
+	    // Añadir la relación a las listas correspondientes
+	    if (convocatoriaActual.getAlumnosConvocatoria() == null) {
+	        convocatoriaActual.setAlumnosConvocatoria(new ArrayList<>());
+	    }
+	    convocatoriaActual.getAlumnosConvocatoria().add(alumnoConvocatoria);
+	    convocatoriaRepository.save(convocatoriaActual);
+
+	    if (alumno.getConvocatorias() == null) {
+	        alumno.setConvocatorias(new ArrayList<>());
+	    }
+	    alumno.getConvocatorias().add(alumnoConvocatoria);
+	    alumnoRepository.save(alumno);
+
+	    return alumnoConvocatoria;
+	}
+
+
+	private Producto obtenerProductoPorGrado(TipoGrado grado) {
+	    String nombreProducto = obtenerNombreProductoPorGrado(grado);
+	    return productoRepository.findByConcepto(nombreProducto)
+	            .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado para el grado: " + grado));
+	}
+
+	private String obtenerNombreProductoPorGrado(TipoGrado grado) {
+	    switch (grado) {
+	        case BLANCO_AMARILLO:
+	            return "DERECHOS DE EXAMEN BLANCO/AMARILLO";
+	        case AMARILLO:
+	            return "DERECHOS DE EXAMEN AMARILLO";
+	        case AMARILLO_NARANJA:
+	            return "DERECHOS DE EXAMEN AMARILLO/NARANJA";
+	        case NARANJA:
+	            return "DERECHOS DE EXAMEN NARANJA";
+	        case NARANJA_VERDE:
+	            return "DERECHOS DE EXAMEN NARANJA/VERDE";
+	        case VERDE:
+	            return "DERECHOS DE EXAMEN VERDE";
+	        case VERDE_AZUL:
+	            return "DERECHOS DE EXAMEN VERDE/AZUL";
+	        case AZUL:
+	            return "DERECHOS DE EXAMEN AZUL";
+	        case AZUL_ROJO:
+	            return "DERECHOS DE EXAMEN AZUL/ROJO";
+	        case ROJO:
+	            return "DERECHOS DE EXAMEN CINTURÓN ROJO BORDADO";
+	        case NEGRO_1_DAN:
+	            return "DERECHOS DE EXAMEN 1º DAN";
+	        case ROJO_NEGRO_1_PUM:
+	            return "DERECHOS DE EXAMEN 1º PUM";
+	        case NEGRO_2_DAN:
+	            return "DERECHOS DE EXAMEN 2º DAN";
+	        case ROJO_NEGRO_2_PUM:
+	            return "DERECHOS DE EXAMEN 2º PUM";
+	        case NEGRO_3_DAN:
+	            return "DERECHOS DE EXAMEN 3º DAN";
+	        case ROJO_NEGRO_3_PUM:
+	            return "DERECHOS DE EXAMEN 3º PUM";
+	        case NEGRO_4_DAN:
+	            return "DERECHOS DE EXAMEN 4º DAN";
+	        case NEGRO_5_DAN:
+	            return "DERECHOS DE EXAMEN 5º DAN";
+	        default:
+	            throw new IllegalArgumentException("Grado no soportado: " + grado);
+	    }
 	}
 
 	/**
