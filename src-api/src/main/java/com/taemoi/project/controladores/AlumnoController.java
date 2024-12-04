@@ -36,6 +36,8 @@ import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.AlumnoConvocatoria;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
@@ -46,6 +48,7 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.GrupoService;
 import com.taemoi.project.servicios.ImagenService;
+
 import jakarta.validation.Valid;
 
 /**
@@ -79,7 +82,7 @@ public class AlumnoController {
 
 	@Autowired
 	private ImagenService imagenService;
-	
+
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
 	 * proporcionados.
@@ -385,4 +388,15 @@ public class AlumnoController {
 		return alumno.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
+	@PostMapping("/{alumnoId}/convocatoria")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> agregarAlumnoAConvocatoriaActual(@PathVariable Long alumnoId,
+			@RequestParam Deporte deporte) {
+		try {
+			AlumnoConvocatoria alumnoConvocatoria = alumnoService.agregarAlumnoAConvocatoriaActual(alumnoId, deporte);
+			return ResponseEntity.ok(alumnoConvocatoria);
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
 }

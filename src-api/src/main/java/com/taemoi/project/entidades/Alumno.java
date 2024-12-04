@@ -138,6 +138,10 @@ public class Alumno {
 
 	@OneToMany(mappedBy = "alumno")
 	private List<ProductoAlumno> productosAlumno = new ArrayList<>();
+	
+	@OneToMany(mappedBy = "alumno")
+	private List<AlumnoConvocatoria> convocatorias = new ArrayList<>();
+
 
 	public Long getId() {
 		return id;
@@ -397,5 +401,13 @@ public class Alumno {
 
 	public void setProductosAlumno(List<ProductoAlumno> productosAlumno) {
 		this.productosAlumno = productosAlumno;
+	}
+
+	public List<AlumnoConvocatoria> getConvocatorias() {
+		return convocatorias;
+	}
+
+	public void setConvocatorias(List<AlumnoConvocatoria> convocatorias) {
+		this.convocatorias = convocatorias;
 	}
 }

@@ -237,7 +237,6 @@ public class InicializadorDatos implements CommandLineRunner {
 	        productos.add(new Producto("DERECHOS DE EXAMEN 4º DAN", 360.0, ""));
 	        productos.add(new Producto("DERECHOS DE EXAMEN 5º DAN", 410.0, ""));
 	        productos.add(new Producto("DERECHOS DE EXAMEN CINTURÓN ROJO BORDADO", 50.0, ""));
-	        productos.add(new Producto("DERECHOS DE EXAMEN ROJO", 30.0, ""));
 	        productos.add(new Producto("DERECHOS DE EXAMEN AZUL/ROJO", 30.0, ""));
 	        productos.add(new Producto("DERECHOS DE EXAMEN AZUL", 30.0, ""));
 	        productos.add(new Producto("DERECHOS DE EXAMEN VERDE/AZUL", 30.0, ""));
