@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import Swal from 'sweetalert2';
 import {
   AbstractControl,
@@ -60,7 +60,8 @@ export class EditarAlumnoComponent implements OnInit {
     private readonly endpointsService: EndpointsService,
     private readonly fb: FormBuilder,
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly location: Location
   ) {
     this.alumnoForm = this.fb.group(
       {
@@ -722,5 +723,9 @@ export class EditarAlumnoComponent implements OnInit {
   
   navegarAGestionProductos(alumnoId: number) {
     this.router.navigate(['/alumnos', alumnoId, 'productos']);
+  }
+
+  volver() {
+    this.location.back();
   }
 }
