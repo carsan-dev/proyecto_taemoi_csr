@@ -15,6 +15,7 @@
               (ngModelChange)="filtrarPorNombre()" />
           </div>
           <div class="col-md-6 col-lg-4 text-end">
+            <button class="btn btn-secondary me-3" (click)="volver()">Volver</button>
             <button class="btn btn-secondary" (click)="alternarInactivos()">
               {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
             </button>
