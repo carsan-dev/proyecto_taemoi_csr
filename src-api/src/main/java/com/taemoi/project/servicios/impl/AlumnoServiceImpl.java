@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Categoria;
@@ -965,7 +966,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 	
 	@Override
-	public AlumnoConvocatoria agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte) {
+	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId)
 	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -1048,7 +1049,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    alumno.getConvocatorias().add(alumnoConvocatoria);
 	    alumnoRepository.save(alumno);
 
-	    return alumnoConvocatoria;
+	    return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
 	}
 
 
@@ -1264,4 +1265,17 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 		}
 	}
+	
+	private AlumnoConvocatoriaDTO convertirAAlumnoConvocatoriaDTO(AlumnoConvocatoria alumnoConvocatoria) {
+	    AlumnoConvocatoriaDTO dto = new AlumnoConvocatoriaDTO();
+	    dto.setAlumnoId(alumnoConvocatoria.getAlumno().getId());
+	    dto.setNombre(alumnoConvocatoria.getAlumno().getNombre());
+	    dto.setApellidos(alumnoConvocatoria.getAlumno().getApellidos());
+	    dto.setCuantiaExamen(alumnoConvocatoria.getCuantiaExamen());
+	    dto.setGradoActual(alumnoConvocatoria.getGradoActual());
+	    dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
+	    dto.setPagado(alumnoConvocatoria.getPagado());
+	    return dto;
+	}
+
 }

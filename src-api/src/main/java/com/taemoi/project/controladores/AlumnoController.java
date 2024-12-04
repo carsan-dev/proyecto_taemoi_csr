@@ -34,9 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
@@ -393,8 +393,8 @@ public class AlumnoController {
 	public ResponseEntity<?> agregarAlumnoAConvocatoriaActual(@PathVariable Long alumnoId,
 			@RequestParam Deporte deporte) {
 		try {
-			AlumnoConvocatoria alumnoConvocatoria = alumnoService.agregarAlumnoAConvocatoriaActual(alumnoId, deporte);
-			return ResponseEntity.ok(alumnoConvocatoria);
+	        AlumnoConvocatoriaDTO alumnoConvocatoriaDTO = alumnoService.agregarAlumnoAConvocatoriaActual(alumnoId, deporte);
+	        return ResponseEntity.ok(alumnoConvocatoriaDTO);
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		}

@@ -12,8 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
@@ -79,5 +79,5 @@ public interface AlumnoService {
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 
-	AlumnoConvocatoria agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte);
+	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte);
 }

@@ -3,15 +3,19 @@ package com.taemoi.project.servicios;
 import java.util.List;
 import java.util.Optional;
 
-import com.taemoi.project.entidades.Convocatoria;
+import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.entidades.Deporte;
 
 public interface ConvocatoriaService {
-	Convocatoria crearConvocatoria(Convocatoria convocatoria);
 
-	List<Convocatoria> obtenerConvocatorias();
+	ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO);
 
-	Convocatoria obtenerConvocatoriaPorId(Long id);
+	List<ConvocatoriaDTO> obtenerConvocatorias();
 
-	Optional<Convocatoria> obtenerConvocatoriaActualPorDeporte(Deporte deporte);
+	ConvocatoriaDTO obtenerConvocatoriaPorId(Long id);
+
+	Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte);
+	
+	List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte);
+
 }
