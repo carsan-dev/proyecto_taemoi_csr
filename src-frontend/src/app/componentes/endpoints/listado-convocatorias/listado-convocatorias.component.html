@@ -1,0 +1,23 @@
+<!-- convocatorias.component.html -->
+<div>
+    <h1>Convocatorias</h1>
+    
+    <label for="deporte">Deporte:</label>
+    <select id="deporte" [(ngModel)]="deporteSeleccionado" (change)="obtenerConvocatorias()">
+      <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
+    </select>
+    
+    <button (click)="crearConvocatoria()">Crear Convocatoria</button>
+    
+    <ul>
+      <li *ngFor="let convocatoria of convocatorias" (click)="seleccionarConvocatoria(convocatoria)">
+        {{ convocatoria.fechaConvocatoria | date:'dd/MM/yyyy' }} - {{ convocatoria.deporte }}
+      </li>
+    </ul>
+    
+    <div *ngIf="convocatoriaSeleccionada">
+      <h2>Convocatoria Seleccionada</h2>
+      <!-- Mostrar detalles de la convocatoria y alumnos inscritos -->
+    </div>
+  </div>
+  
