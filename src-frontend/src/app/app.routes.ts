@@ -35,6 +35,7 @@ import { ProductosAlumnoComponent } from './componentes/endpoints/editar-alumno/
 import { ListadoProductosComponent } from './componentes/endpoints/listado-productos/listado-productos.component';
 import { CrearProductoComponent } from './componentes/endpoints/crear-producto/crear-producto.component';
 import { EditarProductoComponent } from './componentes/endpoints/editar-producto/editar-producto.component';
+import { ListadoConvocatoriasComponent } from './componentes/endpoints/listado-convocatorias/listado-convocatorias.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -166,6 +167,11 @@ export const routes: Routes = [
     component: EditarProductoComponent,
     canActivate: [roleGuard],
   },
+  {
+    path: 'convocatoriasListar',
+    component: ListadoConvocatoriasComponent,
+    canActivate: [roleGuard],
+  }
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
