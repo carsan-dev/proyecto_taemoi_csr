@@ -231,6 +231,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  agregarAlumnoAConvocatoriaActual(
+    alumnoId: number,
+    deporte: string
+  ): Observable<any> {
+    const params = new HttpParams().set('deporte', deporte);
+    return this.http
+      .post<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/convocatoria`,
+        {},
+        { params, withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerTodosLosProductos(): Observable<Producto[]> {
     return this.http
       .get<Producto[]>(`${this.urlBase}/productos/todos`, {
@@ -618,5 +632,29 @@ export class EndpointsService {
           console.error('Error al eliminar el evento:', error);
         },
       });
+  }
+
+  obtenerConvocatorias(deporte?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (deporte) {
+      params = params.set('deporte', deporte);
+    }
+    return this.http
+      .get<any[]>(`${this.urlBase}/convocatorias`, { params, withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+  
+  // Obtener convocatoria por ID
+  obtenerConvocatoriaPorId(id: number): Observable<any> {
+    return this.http
+      .get<any>(`${this.urlBase}/convocatorias/${id}`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+  
+  // Crear una nueva convocatoria
+  crearConvocatoria(convocatoria: any): Observable<any> {
+    return this.http
+      .post<any>(`${this.urlBase}/convocatorias`, convocatoria, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
   }
 }
