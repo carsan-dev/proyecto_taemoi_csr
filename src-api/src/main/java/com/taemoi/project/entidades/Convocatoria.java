@@ -50,6 +50,14 @@ public class Convocatoria {
 		this.fechaConvocatoria = fechaConvocatoria;
 	}
 
+	public Deporte getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(Deporte deporte) {
+		this.deporte = deporte;
+	}
+
 	public List<AlumnoConvocatoria> getAlumnosConvocatoria() {
 		return alumnosConvocatoria;
 	}

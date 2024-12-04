@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.taemoi.project.entidades.Convocatoria;
+import com.taemoi.project.dtos.ConvocatoriaDTO;
+import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.servicios.ConvocatoriaService;
 
 @RestController
@@ -25,22 +27,27 @@ public class ConvocatoriaController {
 
     @GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<Convocatoria>> obtenerConvocatorias() {
-        List<Convocatoria> convocatorias = convocatoriaService.obtenerConvocatorias();
+    public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(@RequestParam(required = false) Deporte deporte) {
+        List<ConvocatoriaDTO> convocatorias;
+        if (deporte != null) {
+            convocatorias = convocatoriaService.obtenerConvocatoriasPorDeporte(deporte);
+        } else {
+            convocatorias = convocatoriaService.obtenerConvocatorias();
+        }
         return ResponseEntity.ok(convocatorias);
     }
 
     @GetMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Convocatoria> obtenerConvocatoriaPorId(@PathVariable Long id) {
-        Convocatoria convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
+    public ResponseEntity<ConvocatoriaDTO> obtenerConvocatoriaPorId(@PathVariable Long id) {
+    	ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
         return ResponseEntity.ok(convocatoria);
     }
 
     @PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Convocatoria> crearConvocatoria(@RequestBody Convocatoria convocatoria) {
-        Convocatoria nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoria);
+    public ResponseEntity<ConvocatoriaDTO> crearConvocatoria(@RequestBody ConvocatoriaDTO convocatoriaDTO) {
+    	ConvocatoriaDTO nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoriaDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaConvocatoria);
     }
 }
