@@ -441,6 +441,27 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  agregarAConvocatoriaActual() {
+    const deporte = this.alumnoEditado.deporte;
+    this.endpointsService.agregarAlumnoAConvocatoriaActual(this.alumnoEditado.id, deporte).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: '¡Alumno agregado a la convocatoria actual!',
+          icon: 'success',
+        }); 
+        this.router.navigate(['/convocatoriasListar']);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error,
+          icon: 'error',
+        });
+      },
+    });
+  }
+  
+
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
     this.obtenerAlumnos();

@@ -134,7 +134,8 @@
                     <tr *ngIf="!productosAlumno || productosAlumno.length === 0">
                       <td colspan="5" class="text-center">No hay productos asignados</td>
                     </tr>
-                    <button type="button" class="btn btn-primary mt-3" (click)="navegarAGestionProductos(alumno.id)">Gestionar Productos</button>
+                    <button type="button" class="btn btn-primary mt-3"
+                      (click)="navegarAGestionProductos(alumno.id)">Gestionar Productos</button>
                   </tbody>
                 </table>
               </div>
@@ -455,9 +456,13 @@
                   </div>
 
                   <!-- Mostrar la fecha de grado a la derecha del campo de apto para examen -->
-                  <div *ngIf="alumnoEditado.grado && alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="mb-3" *ngIf="alumnoEditado.grado && alumnoForm.get('deporte')?.value !== 'PILATES'">
                     <strong>Fecha de Grado:</strong> {{ alumnoEditado.fechaGrado | date: 'dd/MM/yyyy' }}
                   </div>
+
+                  <button *ngIf="alumnoForm.get('aptoParaExamen')?.value" type="button" class="btn btn-success" (click)="agregarAConvocatoriaActual()">
+                    Agregar a convocatoria actual
+                  </button>
                 </div>
               </div>
             </div>
