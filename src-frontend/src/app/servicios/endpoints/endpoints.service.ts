@@ -231,16 +231,12 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  agregarAlumnoAConvocatoriaActual(
-    alumnoId: number,
-    deporte: string
-  ): Observable<any> {
-    const params = new HttpParams().set('deporte', deporte);
+  agregarAlumnoAConvocatoria(alumnoId: number, convocatoriaId: number): Observable<any> {
     return this.http
       .post<any>(
-        `${this.urlBase}/alumnos/${alumnoId}/convocatoria`,
+        `${this.urlBase}/alumnos/${convocatoriaId}/alumnos/${alumnoId}`,
         {},
-        { params, withCredentials: true }
+        { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
@@ -657,4 +653,13 @@ export class EndpointsService {
       .post<any>(`${this.urlBase}/convocatorias`, convocatoria, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
+
+  obtenerAlumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/convocatorias/${convocatoriaId}/alumnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+  
 }
