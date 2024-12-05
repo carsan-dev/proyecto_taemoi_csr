@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Deporte;
 
 public interface ConvocatoriaService {
@@ -17,5 +18,7 @@ public interface ConvocatoriaService {
 	Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte);
 	
 	List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte);
+
+	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
 
 }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Convocatoria;
 import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.repositorios.ConvocatoriaRepository;
@@ -56,6 +57,24 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
     public List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte) {
         return convocatoriaRepository.findByDeporte(deporte).stream()
                 .map(this::convertirAConvocatoriaDTO)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId) {
+        Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+                .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+
+        return convocatoria.getAlumnosConvocatoria().stream()
+                .map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(
+                        alumnoConvocatoria.getAlumno().getId(),
+                        alumnoConvocatoria.getAlumno().getNombre(),
+                        alumnoConvocatoria.getAlumno().getApellidos(),
+                        alumnoConvocatoria.getCuantiaExamen(),
+                        alumnoConvocatoria.getGradoActual(),
+                        alumnoConvocatoria.getGradoSiguiente(),
+                        alumnoConvocatoria.getPagado()
+                ))
                 .collect(Collectors.toList());
     }
     

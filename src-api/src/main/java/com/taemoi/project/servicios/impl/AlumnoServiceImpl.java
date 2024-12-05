@@ -881,12 +881,22 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public int calcularEdad(Date fechaNacimiento) {
-		LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		LocalDate fechaActual = LocalDate.now();
-		int edad = Period.between(fechaNacimientoLocal, fechaActual).getYears();
+	    LocalDate fechaNacimientoLocal;
 
-		return edad;
+	    if (fechaNacimiento instanceof java.sql.Date) {
+	        // Convertir java.sql.Date a LocalDate
+	        fechaNacimientoLocal = ((java.sql.Date) fechaNacimiento).toLocalDate();
+	    } else {
+	        // Convertir java.util.Date a LocalDate
+	        fechaNacimientoLocal = fechaNacimiento.toInstant()
+	                .atZone(ZoneId.systemDefault())
+	                .toLocalDate();
+	    }
+
+	    LocalDate fechaActual = LocalDate.now();
+	    return Period.between(fechaNacimientoLocal, fechaActual).getYears();
 	}
+
 	
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
@@ -965,8 +975,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    return fechaCumple14.getYear() == anioActual;
 	}
 	
-	@Override
-	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte) {
+	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId)
 	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -974,19 +983,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        throw new IllegalArgumentException("El alumno no está apto para examen.");
 	    }
 
-	    if (!alumno.getDeporte().equals(deporte)) {
-	        throw new IllegalArgumentException("El deporte del alumno no coincide con la convocatoria.");
+	    Convocatoria convocatoriaSeleccionada = convocatoriaRepository.findById(convocatoriaId)
+	            .orElseThrow(() -> new IllegalArgumentException("No se encontró la convocatoria con ID: " + convocatoriaId));
+
+	    if (!alumno.getDeporte().equals(convocatoriaSeleccionada.getDeporte())) {
+	        throw new IllegalArgumentException("El deporte del alumno no coincide con el deporte de la convocatoria.");
 	    }
 
-	    Convocatoria convocatoriaActual = convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte)
-	            .orElseThrow(() -> new IllegalArgumentException("No hay una convocatoria actual para el deporte: " + deporte));
-
-	    // Verificar si el alumno ya está en la convocatoria
-	    boolean yaInscrito = convocatoriaActual.getAlumnosConvocatoria().stream()
+	    // Verificar si el alumno ya está en la convocatoria seleccionada
+	    boolean yaInscrito = convocatoriaSeleccionada.getAlumnosConvocatoria().stream()
 	            .anyMatch(ac -> ac.getAlumno().getId().equals(alumnoId));
 
 	    if (yaInscrito) {
-	        throw new IllegalArgumentException("El alumno ya está inscrito en la convocatoria actual.");
+	        throw new IllegalArgumentException("El alumno ya está inscrito en la convocatoria seleccionada.");
 	    }
 
 	    // Calcular el siguiente grado del alumno
@@ -1010,7 +1019,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    productoAlumno.setCantidad(1);
 	    productoAlumno.setPrecio(productoExamen.getPrecio());
 	    productoAlumno.setPagado(false); // Por defecto, no pagado
-	    productoAlumno.setNotas("Asignado automáticamente al agregar a la convocatoria.");
+	    productoAlumno.setNotas("Asignado automáticamente al agregar al alumno a la convocatoria.");
 
 	    // Guardar ProductoAlumno
 	    productoAlumno = productoAlumnoRepository.save(productoAlumno);
@@ -1027,7 +1036,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    // Crear el registro de AlumnoConvocatoria
 	    AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
 	    alumnoConvocatoria.setAlumno(alumno);
-	    alumnoConvocatoria.setConvocatoria(convocatoriaActual);
+	    alumnoConvocatoria.setConvocatoria(convocatoriaSeleccionada);
 	    alumnoConvocatoria.setCuantiaExamen(productoExamen.getPrecio());
 	    alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
 	    alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
@@ -1037,11 +1046,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    alumnoConvocatoria = alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 
 	    // Añadir la relación a las listas correspondientes
-	    if (convocatoriaActual.getAlumnosConvocatoria() == null) {
-	        convocatoriaActual.setAlumnosConvocatoria(new ArrayList<>());
+	    if (convocatoriaSeleccionada.getAlumnosConvocatoria() == null) {
+	        convocatoriaSeleccionada.setAlumnosConvocatoria(new ArrayList<>());
 	    }
-	    convocatoriaActual.getAlumnosConvocatoria().add(alumnoConvocatoria);
-	    convocatoriaRepository.save(convocatoriaActual);
+	    convocatoriaSeleccionada.getAlumnosConvocatoria().add(alumnoConvocatoria);
+	    convocatoriaRepository.save(convocatoriaSeleccionada);
 
 	    if (alumno.getConvocatorias() == null) {
 	        alumno.setConvocatorias(new ArrayList<>());
@@ -1051,8 +1060,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	    return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
 	}
-
-
+	
 	private Producto obtenerProductoPorGrado(TipoGrado grado) {
 	    String nombreProducto = obtenerNombreProductoPorGrado(grado);
 	    return productoRepository.findByConcepto(nombreProducto)

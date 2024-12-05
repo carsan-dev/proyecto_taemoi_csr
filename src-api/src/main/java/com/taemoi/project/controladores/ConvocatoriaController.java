@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.servicios.ConvocatoriaService;
 
@@ -34,6 +35,7 @@ public class ConvocatoriaController {
         } else {
             convocatorias = convocatoriaService.obtenerConvocatorias();
         }
+        convocatorias.sort((c1, c2) -> c2.getFechaConvocatoria().compareTo(c1.getFechaConvocatoria()));
         return ResponseEntity.ok(convocatorias);
     }
 
@@ -50,4 +52,12 @@ public class ConvocatoriaController {
     	ConvocatoriaDTO nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoriaDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaConvocatoria);
     }
+    
+    @GetMapping("/{id}/alumnos")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
+        List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
+        return ResponseEntity.ok(alumnos);
+    }
+
 }
