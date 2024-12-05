@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 export class ListadoConvocatoriasComponent implements OnInit {
   convocatorias: any[] = [];
   convocatoriaSeleccionada: any;
+  alumnosInscritos: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
 
@@ -56,5 +57,16 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   seleccionarConvocatoria(convocatoria: any): void {
     this.convocatoriaSeleccionada = convocatoria;
+  
+    // Obtener alumnos inscritos en la convocatoria seleccionada
+    this.endpointsService.obtenerAlumnosDeConvocatoria(convocatoria.id).subscribe({
+      next: (data) => {
+        this.alumnosInscritos = data; // Asume que el backend devuelve una lista de AlumnoConvocatoriaDTO
+      },
+      error: (error) => {
+        console.error('Error al obtener alumnos de la convocatoria:', error);
+      },
+    });
   }
+  
 }
