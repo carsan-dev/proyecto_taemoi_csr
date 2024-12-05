@@ -15,7 +15,6 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
-import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
@@ -61,8 +60,6 @@ public interface AlumnoService {
 	
     TipoGrado calcularSiguienteGrado(Alumno alumno);
 
-    //double calcularCuantiaExamen(Alumno alumno);
-
 	boolean fechaNacimientoValida(Date fechaNacimiento);
 
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
@@ -79,5 +76,5 @@ public interface AlumnoService {
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 
-	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoriaActual(Long alumnoId, Deporte deporte);
+	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId);
 }
