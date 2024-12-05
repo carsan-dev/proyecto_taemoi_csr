@@ -52,6 +52,10 @@ $label-font-size: 1rem;
   cursor: pointer;
 }
 
+.modal.show {
+  display: block; /* Mostrar el modal */
+}
+
 .profile-info {
   cursor: pointer;
 }

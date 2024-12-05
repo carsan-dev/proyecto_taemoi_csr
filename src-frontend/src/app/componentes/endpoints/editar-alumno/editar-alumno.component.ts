@@ -55,6 +55,9 @@ export class EditarAlumnoComponent implements OnInit {
   products: Producto[] = [];
   selectedProductoId: number | null = null;
   productosAlumno: ProductoAlumnoDTO[] = [];
+  mostrarModalConvocatorias = false;
+  convocatoriasDisponibles: any[] = [];
+  convocatoriaActual: any | null = null;
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -107,7 +110,7 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       const nombre = params['nombre'];
       if (nombre) {
         this.nombreFiltro = nombre;
@@ -441,26 +444,34 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
-  agregarAConvocatoriaActual() {
-    const deporte = this.alumnoEditado.deporte;
-    this.endpointsService.agregarAlumnoAConvocatoriaActual(this.alumnoEditado.id, deporte).subscribe({
-      next: (response) => {
-        Swal.fire({
-          title: '¡Alumno agregado a la convocatoria actual!',
-          icon: 'success',
-        }); 
-        this.router.navigate(['/convocatoriasListar']);
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: error.error,
-          icon: 'error',
-        });
-      },
-    });
+  agregarAConvocatoriaEspecifica(convocatoria: any): void {
+    if (!this.alumnoId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se ha seleccionado un alumno válido.',
+        icon: 'error',
+      });
+      return;
+    }
+    this.endpointsService
+      .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Alumno agregado a la convocatoria seleccionada',
+            icon: 'success',
+          });
+          this.cerrarModalConvocatorias();
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error,
+            icon: 'error',
+          });
+        },
+      });
   }
-  
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
@@ -480,7 +491,6 @@ export class EditarAlumnoComponent implements OnInit {
 
       // Navegar a la ruta con el ID del alumno
       this.router.navigate(['/alumnosEditar', alumno.id]);
-
     } else {
       // Navegar a la ruta sin ID cuando se cierra el formulario
       this.router.navigate(['/alumnosEditar']);
@@ -645,6 +655,50 @@ export class EditarAlumnoComponent implements OnInit {
     }
   }
 
+  abrirModalConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    const modal = document.getElementById('convocatoriaModal');
+    if (modal) {
+      modal.style.display = 'block';
+    }
+  }
+  
+  cerrarModalConvocatorias(): void {
+    const modal = document.getElementById('convocatoriaModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
+  cargarConvocatoriasDisponibles(alumno: any): void {
+    const deporte = alumno.deporte; // Obtenemos el deporte del alumno
+  
+    this.endpointsService.obtenerConvocatorias(deporte).subscribe({
+      next: (convocatorias) => {
+        const hoy = new Date();
+  
+        // Encuentra la convocatoria actual basándote en la fecha de hoy
+        this.convocatoriaActual = convocatorias.find((convocatoria) => {
+          const fechaConvocatoria = new Date(convocatoria.fechaConvocatoria);
+          return (
+            fechaConvocatoria.getFullYear() === hoy.getFullYear() &&
+            fechaConvocatoria.getMonth() === hoy.getMonth() &&
+            fechaConvocatoria.getDate() === hoy.getDate()
+          );
+        });
+  
+        // Filtra convocatorias excluyendo la actual
+        this.convocatoriasDisponibles = convocatorias.filter(
+          (convocatoria) => convocatoria.id !== this.convocatoriaActual?.id
+        );
+      },
+      error: (error) => {
+        console.error('Error al obtener convocatorias disponibles:', error);
+      },
+    });
+  }
+
   resetFormControls(): void {
     // Remover validaciones de campos que podrían cambiar
     this.alumnoForm.get('tipoTarifa')?.clearValidators();
@@ -687,21 +741,21 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoForm.get('grado')?.disable();
     this.alumnoForm.get('grado')?.clearValidators();
     this.alumnoForm.get('grado')?.setValue(null);
-  
+
     this.alumnoForm.get('competidor')?.disable();
     this.alumnoForm.get('competidor')?.setValue(false);
-  
+
     this.alumnoForm.get('tieneLicencia')?.disable();
     this.alumnoForm.get('tieneLicencia')?.setValue(false);
-  
+
     this.alumnoForm.get('numeroLicencia')?.disable();
     this.alumnoForm.get('numeroLicencia')?.clearValidators();
     this.alumnoForm.get('numeroLicencia')?.setValue(null);
-  
+
     this.alumnoForm.get('fechaLicencia')?.disable();
     this.alumnoForm.get('fechaLicencia')?.clearValidators();
     this.alumnoForm.get('fechaLicencia')?.setValue(null);
-  
+
     // Actualizar validez de los campos
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
@@ -741,7 +795,7 @@ export class EditarAlumnoComponent implements OnInit {
   calcularTotal(precio: number, cantidad: number): number {
     return precio * cantidad;
   }
-  
+
   navegarAGestionProductos(alumnoId: number) {
     this.router.navigate(['/alumnos', alumnoId, 'productos']);
   }

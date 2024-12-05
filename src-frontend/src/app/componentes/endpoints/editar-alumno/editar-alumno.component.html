@@ -179,13 +179,47 @@
                     <strong>Fecha de Grado:</strong> {{ alumno.fechaGrado | date: 'dd/MM/yyyy' }}
                   </span>
                 </div>
+                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES' && alumno.aptoParaExamen">
+                  <button class="btn btn-primary" (click)="abrirModalConvocatorias(alumno)">
+                    Agregar a una convocatoria específica
+                  </button>
+                  <div id="convocatoriaModal" class="modal" (click)="cerrarModalConvocatorias()">
+                    <span class="close" (click)="cerrarModalConvocatorias()">
+                      <i class="bi bi-x-circle-fill"></i>
+                    </span>
+                    <div class="modal-content" (click)="$event.stopPropagation()">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Seleccionar Convocatoria</h5>
+                      </div>
+                      <div class="modal-body">
+                        <p>Convocatorias disponibles para {{ alumno.deporte }}:</p>
+                        <ul>
+                          <!-- Mostrar la convocatoria actual primero -->
+                          <li *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
+                            class="convocatoria-item">
+                            <strong>Convocatoria Actual:</strong>
+                            {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+                          </li>
+                          <!-- Listar todas las convocatorias después -->
+                          <li *ngFor="let convocatoria of convocatoriasDisponibles"
+                            (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
+                            {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }} -
+                            {{ convocatoria.deporte }}
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                          (click)="cerrarModalConvocatorias()">Cerrar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
-
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
         <h2 class="text-center mb-4">{{ alumnoForm.get('deporte')?.value }}</h2>
         <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
@@ -459,10 +493,6 @@
                   <div class="mb-3" *ngIf="alumnoEditado.grado && alumnoForm.get('deporte')?.value !== 'PILATES'">
                     <strong>Fecha de Grado:</strong> {{ alumnoEditado.fechaGrado | date: 'dd/MM/yyyy' }}
                   </div>
-
-                  <button *ngIf="alumnoForm.get('aptoParaExamen')?.value" type="button" class="btn btn-success" (click)="agregarAConvocatoriaActual()">
-                    Agregar a convocatoria actual
-                  </button>
                 </div>
               </div>
             </div>
