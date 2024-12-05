@@ -1,23 +1,47 @@
-<!-- convocatorias.component.html -->
 <div>
-    <h1>Convocatorias</h1>
-    
-    <label for="deporte">Deporte:</label>
-    <select id="deporte" [(ngModel)]="deporteSeleccionado" (change)="obtenerConvocatorias()">
-      <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
-    </select>
-    
-    <button (click)="crearConvocatoria()">Crear Convocatoria</button>
-    
-    <ul>
-      <li *ngFor="let convocatoria of convocatorias" (click)="seleccionarConvocatoria(convocatoria)">
-        {{ convocatoria.fechaConvocatoria | date:'dd/MM/yyyy' }} - {{ convocatoria.deporte }}
-      </li>
-    </ul>
-    
-    <div *ngIf="convocatoriaSeleccionada">
-      <h2>Convocatoria Seleccionada</h2>
-      <!-- Mostrar detalles de la convocatoria y alumnos inscritos -->
-    </div>
+  <h1>Convocatorias</h1>
+  
+  <label for="deporte">Deporte:</label>
+  <select id="deporte" [(ngModel)]="deporteSeleccionado" (change)="obtenerConvocatorias()">
+    <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
+  </select>
+  
+  <button (click)="crearConvocatoria()">Crear Convocatoria</button>
+  
+  <ul>
+    <li *ngFor="let convocatoria of convocatorias" (click)="seleccionarConvocatoria(convocatoria)">
+      {{ convocatoria.fechaConvocatoria | date:'dd/MM/yyyy' }} - {{ convocatoria.deporte }}
+    </li>
+  </ul>
+  
+  <div *ngIf="convocatoriaSeleccionada">
+    <h2>Convocatoria Seleccionada</h2>
+    <p>Fecha: {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}</p>
+    <p>Deporte: {{ convocatoriaSeleccionada.deporte }}</p>
+  
+    <h3>Alumnos Inscritos</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Apellidos</th>
+          <th>Grado Actual</th>
+          <th>Grado Siguiente</th>
+          <th>Cuantía</th>
+          <th>Pagado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let alumno of alumnosInscritos">
+          <td>{{ alumno.nombre }}</td>
+          <td>{{ alumno.apellidos }}</td>
+          <td>{{ alumno.gradoActual }}</td>
+          <td>{{ alumno.gradoSiguiente }}</td>
+          <td>{{ alumno.cuantiaExamen | currency: 'EUR':'symbol':'1.2-2' }}</td>
+          <td>{{ alumno.pagado ? 'Sí' : 'No' }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   
+</div>
