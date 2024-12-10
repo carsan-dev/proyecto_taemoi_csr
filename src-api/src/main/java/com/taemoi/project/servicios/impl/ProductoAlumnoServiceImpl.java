@@ -13,6 +13,7 @@ import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.entidades.ProductoAlumno;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.errores.producto.ProductoNoEncontradoException;
+import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.ProductoAlumnoRepository;
 import com.taemoi.project.repositorios.ProductoRepository;
@@ -29,6 +30,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
     @Autowired
     private AlumnoRepository alumnoRepository;
+    
+    @Autowired
+    private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
 	
     @Override
     public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
@@ -98,6 +102,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
         }
 
         ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+        
+        alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
+        .ifPresent(alumnoConvocatoria -> {
+            alumnoConvocatoria.setCuantiaExamen(updatedProductoAlumno.getPrecio());
+            alumnoConvocatoria.setPagado(updatedProductoAlumno.getPagado());
+            alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+        });
 
         return convertirADTO(updatedProductoAlumno);
     }

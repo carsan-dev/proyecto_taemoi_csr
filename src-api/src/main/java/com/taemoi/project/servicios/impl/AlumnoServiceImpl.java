@@ -1037,6 +1037,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
 	    alumnoConvocatoria.setAlumno(alumno);
 	    alumnoConvocatoria.setConvocatoria(convocatoriaSeleccionada);
+	    alumnoConvocatoria.setProductoAlumno(productoAlumno);
 	    alumnoConvocatoria.setCuantiaExamen(productoExamen.getPrecio());
 	    alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
 	    alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
