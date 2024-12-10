@@ -28,6 +28,10 @@ public class AlumnoConvocatoria {
     @ManyToOne
     @JoinColumn(name = "convocatoria_id")
     private Convocatoria convocatoria;
+    
+    @ManyToOne
+    @JoinColumn(name = "producto_alumno_id")
+    private ProductoAlumno productoAlumno;
 
     @NotNull(message = "La cuantía del examen no puede ser nula")
     private Double cuantiaExamen;
@@ -66,6 +70,14 @@ public class AlumnoConvocatoria {
 
 	public void setConvocatoria(Convocatoria convocatoria) {
 		this.convocatoria = convocatoria;
+	}
+
+	public ProductoAlumno getProductoAlumno() {
+		return productoAlumno;
+	}
+
+	public void setProductoAlumno(ProductoAlumno productoAlumno) {
+		this.productoAlumno = productoAlumno;
 	}
 
 	public Double getCuantiaExamen() {
