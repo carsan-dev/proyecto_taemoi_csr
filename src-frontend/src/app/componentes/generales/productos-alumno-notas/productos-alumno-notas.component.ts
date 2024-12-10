@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './productos-alumno-notas.component.html',
-  styleUrl: './productos-alumno-notas.component.scss'
+  styleUrls: ['./productos-alumno-notas.component.scss']
 })
 export class ProductosAlumnoNotasComponent {
   @Input() productoAlumno!: ProductoAlumnoDTO;
@@ -16,6 +16,7 @@ export class ProductosAlumnoNotasComponent {
   @Output() guardar = new EventEmitter<ProductoAlumnoDTO>();
 
   modalVisible = false;
+  modoEdicion = false;
 
   ngOnInit(): void {
     setTimeout(() => {
@@ -27,10 +28,17 @@ export class ProductosAlumnoNotasComponent {
     this.modalVisible = false;
     setTimeout(() => {
       this.cerrar.emit();
+      this.modoEdicion = false;
     }, 300);
+  }
+
+  habilitarEdicion() {
+    this.modoEdicion = true;
   }
 
   guardarNotas() {
     this.guardar.emit(this.productoAlumno);
+    this.modoEdicion = false;
+    this.cerrarModal();
   }
 }
