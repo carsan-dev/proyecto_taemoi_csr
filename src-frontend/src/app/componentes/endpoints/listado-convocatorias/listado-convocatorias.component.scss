@@ -1,0 +1,47 @@
+.convocatorias-container {
+  padding: 20px;
+  border-radius: 5px;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  .selected-convocatoria {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .card-title {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+
+    p {
+      margin-bottom: 5px;
+      strong {
+        color: #333;
+      }
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+
+      th,
+      td {
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .list-group-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: #e9ecef;
+    }
+  }
+}

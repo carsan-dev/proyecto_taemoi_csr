@@ -1,24 +1,61 @@
 .total-no-pagado {
-    color: red;
-    font-weight: bold;
+  color: #dc3545; /* Rojo Bootstrap */
+  font-weight: bold;
+}
+
+.total-animacion {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  60%,
+  100% {
+    transform: translateY(0);
   }
-  
-  .total-animacion {
-    animation: bounce 1s infinite;
+  40% {
+    transform: translateY(-5px);
   }
-  
-  @keyframes bounce {
-    0%,
-    20%,
-    60%,
-    100% {
-      transform: translateY(0);
-    }
-    40% {
-      transform: translateY(-5px);
-    }
-    80% {
-      transform: translateY(-2px);
-    }
+  80% {
+    transform: translateY(-2px);
   }
-  
+}
+
+/* Ajustes adicionales de estilo */
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.card-header h4 {
+  margin: 0;
+}
+
+.table thead th {
+  white-space: nowrap;
+}
+
+.table tbody td {
+  vertical-align: middle;
+}
+
+.btn-link {
+  text-decoration: none;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Clase para truncar las notas */
+.nota-truncada {
+  display: inline-block;
+  max-width: 100px; /* Ajusta según necesidad */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
