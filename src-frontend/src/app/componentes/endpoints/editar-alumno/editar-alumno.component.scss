@@ -6,21 +6,29 @@ $label-font-size: 1rem;
 .modal {
   display: none;
   position: fixed;
-  z-index: 9999;
+  z-index: 1050;
   padding-top: 100px;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: rgba(0, 0, 0, 0.8);
+  transition: opacity 0.3s ease-in-out;
+
+  &.show {
+    display: block;
+  }
+
+  .modal-content {
+    background-color: #fff;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 10px;
+  }
 }
 
-.modal-content {
-  margin: auto;
-  display: block;
-  width: 80%;
-  max-width: 700px;
-}
 
 #caption {
   margin: auto;
@@ -50,10 +58,6 @@ $label-font-size: 1rem;
   color: #bbb;
   text-decoration: none;
   cursor: pointer;
-}
-
-.modal.show {
-  display: block; /* Mostrar el modal */
 }
 
 .profile-info {

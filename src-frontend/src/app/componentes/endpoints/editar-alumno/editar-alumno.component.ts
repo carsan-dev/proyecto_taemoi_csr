@@ -56,8 +56,10 @@ export class EditarAlumnoComponent implements OnInit {
   selectedProductoId: number | null = null;
   productosAlumno: ProductoAlumnoDTO[] = [];
   mostrarModalConvocatorias = false;
+  mostrarModalEliminarConvocatorias = false;
   convocatoriasDisponibles: any[] = [];
   convocatoriaActual: any | null = null;
+  convocatoriasDelAlumno: any[] = [];
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -128,6 +130,10 @@ export class EditarAlumnoComponent implements OnInit {
       }
       this.obtenerAlumnos();
     });
+
+    if (this.alumnoId) {
+      this.cargarConvocatoriasDelAlumno(this.alumnoId);
+    }
 
     this.alumnoForm.get('deporte')?.valueChanges.subscribe((event: Event) => {
       this.onDeporteChange(event);
@@ -355,6 +361,7 @@ export class EditarAlumnoComponent implements OnInit {
 
           this.alumnos.forEach((alumno) => {
             this.obtenerProductosAlumno(alumno.id, alumno);
+            this.cargarConvocatoriasDelAlumno(alumno.id);
           });
 
           this.totalPaginas = response.totalPages;
@@ -444,6 +451,19 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  cargarConvocatoriasDelAlumno(alumnoId: number): void {
+    this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
+      next: (convocatorias) => {
+        this.convocatoriasDelAlumno = convocatorias;
+      },
+      error: (error) => {
+        console.error('Error al obtener convocatorias del alumno:', error);
+        this.convocatoriasDelAlumno = [];
+      },
+    });
+  }
+  
+
   agregarAConvocatoriaEspecifica(convocatoria: any): void {
     if (!this.alumnoId) {
       Swal.fire({
@@ -462,6 +482,8 @@ export class EditarAlumnoComponent implements OnInit {
             icon: 'success',
           });
           this.cerrarModalConvocatorias();
+          this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+          this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
         },
         error: (error) => {
           Swal.fire({
@@ -473,6 +495,58 @@ export class EditarAlumnoComponent implements OnInit {
       });
   }
 
+  abrirModalConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    this.mostrarModalConvocatorias = true;
+  }
+  
+  cerrarModalConvocatorias(): void {
+    this.mostrarModalConvocatorias = false;
+  }
+  
+  abrirModalEliminarConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDelAlumno(alumno.id);
+    this.mostrarModalEliminarConvocatorias = true;
+  }
+  
+  cerrarModalEliminarConvocatorias(): void {
+    this.mostrarModalEliminarConvocatorias = false;
+  }
+  
+
+  eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
+    if (!this.alumnoId) return;
+
+    this.cerrarModalEliminarConvocatorias();
+
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte} del ${this.formatDate(convocatoria.fechaConvocatoria)}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id).subscribe({
+          next: () => {
+            Swal.fire('Eliminado', 'El alumno ha sido eliminado de la convocatoria.', 'success');
+            this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+            this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
+          },
+          error: (error) => {
+            Swal.fire('Error', 'No se pudo eliminar al alumno de la convocatoria.', 'error');
+          },
+        });
+      }
+      else if (result.dismiss === Swal.DismissReason.cancel) {
+        this.abrirModalEliminarConvocatorias({ id: this.alumnoId });
+      }
+    });
+  }
+  
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
     this.obtenerAlumnos();
@@ -650,22 +724,6 @@ export class EditarAlumnoComponent implements OnInit {
 
   cerrarModal() {
     const modal = document.getElementById('imageModal');
-    if (modal) {
-      modal.style.display = 'none';
-    }
-  }
-
-  abrirModalConvocatorias(alumno: any): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDisponibles(alumno);
-    const modal = document.getElementById('convocatoriaModal');
-    if (modal) {
-      modal.style.display = 'block';
-    }
-  }
-  
-  cerrarModalConvocatorias(): void {
-    const modal = document.getElementById('convocatoriaModal');
     if (modal) {
       modal.style.display = 'none';
     }

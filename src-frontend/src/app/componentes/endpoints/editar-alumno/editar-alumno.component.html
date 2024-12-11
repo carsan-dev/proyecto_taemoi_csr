@@ -183,34 +183,56 @@
                   <button class="btn btn-primary" (click)="abrirModalConvocatorias(alumno)">
                     Agregar a una convocatoria específica
                   </button>
-                  <div id="convocatoriaModal" class="modal" (click)="cerrarModalConvocatorias()">
-                    <span class="close" (click)="cerrarModalConvocatorias()">
-                      <i class="bi bi-x-circle-fill"></i>
-                    </span>
+                  <button class="btn btn-danger ms-3" *ngIf="convocatoriasDelAlumno.length > 0"
+                    (click)="abrirModalEliminarConvocatorias(alumno)">
+                    Eliminar de la convocatoria
+                  </button>
+                  <div id="convocatoriaModal" class="modal" [class.show]="mostrarModalConvocatorias"
+                    (click)="cerrarModalConvocatorias()">
                     <div class="modal-content" (click)="$event.stopPropagation()">
                       <div class="modal-header">
                         <h5 class="modal-title">Seleccionar Convocatoria</h5>
                       </div>
                       <div class="modal-body">
-                        <p>Convocatorias disponibles para {{ alumno.deporte }}:</p>
+                        <p>Convocatorias disponibles para {{ alumnoEditado?.deporte }}:</p>
                         <ul>
-                          <!-- Mostrar la convocatoria actual primero -->
                           <li *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
                             class="convocatoria-item">
                             <strong>Convocatoria Actual:</strong>
                             {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }}
                           </li>
-                          <!-- Listar todas las convocatorias después -->
                           <li *ngFor="let convocatoria of convocatoriasDisponibles"
                             (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
-                            {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }} -
-                            {{ convocatoria.deporte }}
+                            {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoria.deporte }}
                           </li>
                         </ul>
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary"
                           (click)="cerrarModalConvocatorias()">Cerrar</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Modal de eliminar de convocatoria -->
+                  <div id="eliminarConvocatoriaModal" class="modal" [class.show]="mostrarModalEliminarConvocatorias"
+                    (click)="cerrarModalEliminarConvocatorias()">
+                    <div class="modal-content" (click)="$event.stopPropagation()">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Eliminar de Convocatoria</h5>
+                      </div>
+                      <div class="modal-body">
+                        <p>Elige la convocatoria de la que deseas eliminar al alumno:</p>
+                        <ul>
+                          <li *ngFor="let convocatoria of convocatoriasDelAlumno"
+                            (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)" class="convocatoria-item">
+                            {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoria.deporte }}
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                          (click)="cerrarModalEliminarConvocatorias()">Cerrar</button>
                       </div>
                     </div>
                   </div>
