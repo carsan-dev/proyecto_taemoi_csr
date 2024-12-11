@@ -77,4 +77,6 @@ public interface AlumnoService {
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 
 	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId);
+
+	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
 }

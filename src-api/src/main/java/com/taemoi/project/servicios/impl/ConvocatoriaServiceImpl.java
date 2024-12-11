@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Convocatoria;
 import com.taemoi.project.entidades.Deporte;
+import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.ConvocatoriaRepository;
 import com.taemoi.project.servicios.ConvocatoriaService;
 
@@ -19,6 +21,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	
 	@Autowired
 	private ConvocatoriaRepository convocatoriaRepository;
+	
+	@Autowired
+	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
 
     @Override
     public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
@@ -45,6 +50,14 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
                 .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + id));
 
         return convertirAConvocatoriaDTO(convocatoria);
+    }
+    
+    @Override
+    public List<ConvocatoriaDTO> obtenerConvocatoriasDeAlumno(Long alumnoId) {
+        List<AlumnoConvocatoria> relaciones = alumnoConvocatoriaRepository.findByAlumnoId(alumnoId);
+        return relaciones.stream()
+                .map(ac -> convertirAConvocatoriaDTO(ac.getConvocatoria()))
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -45,6 +45,14 @@ public class ConvocatoriaController {
     	ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
         return ResponseEntity.ok(convocatoria);
     }
+    
+    @GetMapping("/alumnos/{alumnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
+        List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
+        return ResponseEntity.ok(convocatorias);
+    }
+
 
     @PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
