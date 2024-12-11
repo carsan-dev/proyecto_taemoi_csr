@@ -10,6 +10,7 @@ import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
 import { Producto } from '../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
+import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -231,16 +232,31 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  agregarAlumnoAConvocatoria(alumnoId: number, convocatoriaId: number): Observable<any> {
+  agregarAlumnoAConvocatoria(
+    alumnoId: number,
+    convocatoriaId: number
+  ): Observable<any> {
     return this.http
       .post<any>(
-        `${this.urlBase}/alumnos/${convocatoriaId}/alumnos/${alumnoId}`,
+        `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
         {},
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
 
+  eliminarAlumnoDeConvocatoria(alumnoId: number, convocatoriaId: number): Observable<any> {
+    return this.http
+      .delete<any>(`${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerConvocatoriasDeAlumno(alumnoId: number): Observable<ConvocatoriaDTO[]> {
+    return this.http
+      .get<ConvocatoriaDTO[]>(`${this.urlBase}/convocatorias/alumnos/${alumnoId}`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+  
   obtenerTodosLosProductos(): Observable<Producto[]> {
     return this.http
       .get<Producto[]>(`${this.urlBase}/productos/todos`, {
@@ -636,21 +652,28 @@ export class EndpointsService {
       params = params.set('deporte', deporte);
     }
     return this.http
-      .get<any[]>(`${this.urlBase}/convocatorias`, { params, withCredentials: true })
+      .get<any[]>(`${this.urlBase}/convocatorias`, {
+        params,
+        withCredentials: true,
+      })
       .pipe(catchError(this.manejarError));
   }
-  
+
   // Obtener convocatoria por ID
   obtenerConvocatoriaPorId(id: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/convocatorias/${id}`, { withCredentials: true })
+      .get<any>(`${this.urlBase}/convocatorias/${id}`, {
+        withCredentials: true,
+      })
       .pipe(catchError(this.manejarError));
   }
-  
+
   // Crear una nueva convocatoria
   crearConvocatoria(convocatoria: any): Observable<any> {
     return this.http
-      .post<any>(`${this.urlBase}/convocatorias`, convocatoria, { withCredentials: true })
+      .post<any>(`${this.urlBase}/convocatorias`, convocatoria, {
+        withCredentials: true,
+      })
       .pipe(catchError(this.manejarError));
   }
 
@@ -661,5 +684,4 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
-  
 }
