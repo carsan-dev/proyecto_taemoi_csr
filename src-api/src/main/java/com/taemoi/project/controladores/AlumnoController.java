@@ -387,7 +387,7 @@ public class AlumnoController {
 		return alumno.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 	
-	@PostMapping("/{convocatoriaId}/alumnos/{alumnoId}")
+	@PostMapping("/{convocatoriaId}/alumno/{alumnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId) {
 	    try {
@@ -397,4 +397,14 @@ public class AlumnoController {
 	        return ResponseEntity.badRequest().body(e.getMessage());
 	    }
 	}
+	
+    @DeleteMapping("/{convocatoriaId}/alumno/{alumnoId}")
+    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> eliminarAlumnoDeConvocatoria(
+            @PathVariable Long convocatoriaId, 
+            @PathVariable Long alumnoId) {
+        
+        alumnoService.eliminarAlumnoDeConvocatoria(alumnoId, convocatoriaId);
+        return ResponseEntity.noContent().build();
+    }
 }

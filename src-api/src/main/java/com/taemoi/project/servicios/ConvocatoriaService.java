@@ -14,11 +14,12 @@ public interface ConvocatoriaService {
 	List<ConvocatoriaDTO> obtenerConvocatorias();
 
 	ConvocatoriaDTO obtenerConvocatoriaPorId(Long id);
+	
+	List<ConvocatoriaDTO> obtenerConvocatoriasDeAlumno(Long alumnoId);
 
 	Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte);
 	
 	List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte);
 
 	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
-
 }

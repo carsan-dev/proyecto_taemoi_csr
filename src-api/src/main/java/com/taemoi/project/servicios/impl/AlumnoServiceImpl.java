@@ -1062,6 +1062,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
 	}
 	
+	@Override
+	public void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId) {
+	    // Buscar el registro AlumnoConvocatoria
+	    AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)
+	        .orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
+
+	    // Eliminar la relación con ProductoAlumno antes de eliminar AlumnoConvocatoria
+	    ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
+	    if (productoAlumno != null) {
+	        alumnoConvocatoria.setProductoAlumno(null); // Desvincular antes de eliminar
+	        alumnoConvocatoriaRepository.save(alumnoConvocatoria); // Actualizar para garantizar la integridad
+	        productoAlumnoRepository.delete(productoAlumno);
+	    }
+
+	    // Finalmente, eliminar la relación AlumnoConvocatoria
+	    alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
+	}
+	
 	private Producto obtenerProductoPorGrado(TipoGrado grado) {
 	    String nombreProducto = obtenerNombreProductoPorGrado(grado);
 	    return productoRepository.findByConcepto(nombreProducto)
