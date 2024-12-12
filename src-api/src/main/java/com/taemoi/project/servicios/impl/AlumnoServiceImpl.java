@@ -975,12 +975,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    return fechaCumple14.getYear() == anioActual;
 	}
 	
+	@Override
 	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId)
 	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
 	    if (!alumno.getAptoParaExamen()) {
-	        throw new IllegalArgumentException("El alumno no está apto para examen.");
+	        throw new IllegalArgumentException("El alumno no está apto para examen." );
 	    }
 
 	    Convocatoria convocatoriaSeleccionada = convocatoriaRepository.findById(convocatoriaId)
@@ -1064,19 +1065,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 	
 	@Override
 	public void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId) {
-	    // Buscar el registro AlumnoConvocatoria
 	    AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)
 	        .orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
 
-	    // Eliminar la relación con ProductoAlumno antes de eliminar AlumnoConvocatoria
 	    ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
 	    if (productoAlumno != null) {
-	        alumnoConvocatoria.setProductoAlumno(null); // Desvincular antes de eliminar
-	        alumnoConvocatoriaRepository.save(alumnoConvocatoria); // Actualizar para garantizar la integridad
+	        alumnoConvocatoria.setProductoAlumno(null);
+	        alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 	        productoAlumnoRepository.delete(productoAlumno);
 	    }
 
-	    // Finalmente, eliminar la relación AlumnoConvocatoria
 	    alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
 	}
 	
