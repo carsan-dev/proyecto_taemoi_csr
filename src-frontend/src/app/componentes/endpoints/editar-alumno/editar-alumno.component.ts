@@ -464,7 +464,6 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
   
-
   agregarAConvocatoriaEspecifica(convocatoria: any): void {
     if (!this.alumnoId) {
       Swal.fire({
@@ -495,27 +494,6 @@ export class EditarAlumnoComponent implements OnInit {
         },
       });
   }
-
-  abrirModalConvocatorias(alumno: any): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDisponibles(alumno);
-    this.mostrarModalConvocatorias = true;
-  }
-  
-  cerrarModalConvocatorias(): void {
-    this.mostrarModalConvocatorias = false;
-  }
-  
-  abrirModalEliminarConvocatorias(alumno: any): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDelAlumno(alumno.id);
-    this.mostrarModalEliminarConvocatorias = true;
-  }
-  
-  cerrarModalEliminarConvocatorias(): void {
-    this.mostrarModalEliminarConvocatorias = false;
-  }
-  
 
   eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
     if (!this.alumnoId) return;
@@ -548,6 +526,26 @@ export class EditarAlumnoComponent implements OnInit {
         this.abrirModalEliminarConvocatorias({ id: this.alumnoId });
       }
     });
+  }
+
+  abrirModalConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    this.mostrarModalConvocatorias = true;
+  }
+  
+  cerrarModalConvocatorias(): void {
+    this.mostrarModalConvocatorias = false;
+  }
+  
+  abrirModalEliminarConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDelAlumno(alumno.id);
+    this.mostrarModalEliminarConvocatorias = true;
+  }
+  
+  cerrarModalEliminarConvocatorias(): void {
+    this.mostrarModalEliminarConvocatorias = false;
   }
   
   cambiarPagina(pageNumber: number): void {
