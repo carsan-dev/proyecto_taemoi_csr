@@ -26,9 +26,17 @@ $label-font-size: 1rem;
     border: 1px solid #888;
     width: 50%;
     border-radius: 10px;
+
+    .convocatoria-item {
+      cursor: pointer;
+
+      &:hover {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+    }
   }
 }
-
 
 #caption {
   margin: auto;
@@ -71,6 +79,43 @@ $label-font-size: 1rem;
 .card {
   border-radius: 10px; // Mantener consistencia con el segundo componente
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+// Contenedor general del deporte
+.deporte-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin: 10px auto;
+  max-width: 300px;
+  text-transform: uppercase;
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+}
+
+.deporte-text {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.taekwondo {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 2px solid #0d47a1;
+}
+
+.pilates {
+  background-color: #e0f7fa;
+  color: #57a2a8;
+  border: 2px solid #57a2a8;
+}
+
+.kickboxing {
+  background-color: #ffe5d4;
+  color: #ff4500;
+  border: 2px solid #ff4500;
 }
 
 h3 {

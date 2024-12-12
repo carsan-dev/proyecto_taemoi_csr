@@ -62,6 +62,8 @@ export class ListadoProductosComponent {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
