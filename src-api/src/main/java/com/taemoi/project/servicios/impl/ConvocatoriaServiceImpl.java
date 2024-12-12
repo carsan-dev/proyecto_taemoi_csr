@@ -37,20 +37,17 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Override
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
-		// Crear directamente la entidad desde el DTO y guardarla
 		Convocatoria convocatoria = new Convocatoria();
 		convocatoria.setFechaConvocatoria(convocatoriaDTO.getFechaConvocatoria());
 		convocatoria.setDeporte(convocatoriaDTO.getDeporte());
 		Convocatoria convocatoriaGuardada = convocatoriaRepository.save(convocatoria);
 
-		// Retornar el DTO generado
 		return convertirAConvocatoriaDTO(convocatoriaGuardada);
 	}
 
 	@Override
 	public List<ConvocatoriaDTO> obtenerConvocatorias() {
-		return convocatoriaRepository.findAll().stream().map(this::convertirAConvocatoriaDTO) // Convertir cada entidad
-																								// a DTO
+		return convocatoriaRepository.findAll().stream().map(this::convertirAConvocatoriaDTO)
 				.collect(Collectors.toList());
 	}
 
@@ -71,14 +68,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Override
 	public Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte) {
-		return convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte).map(this::convertirAConvocatoriaDTO); // Convertir
-																														// la
-																														// entidad
-																														// encontrada
-																														// (si
-																														// existe)
-																														// a
-																														// DTO
+		return convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte).map(this::convertirAConvocatoriaDTO);
 	}
 
 	@Override
@@ -110,9 +100,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 			ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
 			if (productoAlumno != null) {
-	            alumnoConvocatoria.setProductoAlumno(null);
-	            alumno.getProductosAlumno().remove(productoAlumno);
-	            productoAlumnoRepository.delete(productoAlumno);
+				alumnoConvocatoria.setProductoAlumno(null);
+				alumno.getProductosAlumno().remove(productoAlumno);
+				productoAlumnoRepository.delete(productoAlumno);
 			}
 			if (alumno != null) {
 				alumno.getConvocatorias().remove(alumnoConvocatoria);
