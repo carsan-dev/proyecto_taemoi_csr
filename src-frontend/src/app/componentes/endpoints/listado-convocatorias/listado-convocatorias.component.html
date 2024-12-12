@@ -1,26 +1,35 @@
 <div class="convocatorias-container container-fluid my-4">
   <h1 class="mb-4 text-center">Convocatorias</h1>
-  
+
   <div class="d-flex align-items-center mb-3">
     <label for="deporte" class="me-2 fw-bold">Deporte:</label>
-    <select id="deporte" class="form-select w-auto me-3" [(ngModel)]="deporteSeleccionado" (change)="obtenerConvocatorias()">
+    <select id="deporte" class="form-select w-auto me-3" [(ngModel)]="deporteSeleccionado"
+      (change)="obtenerConvocatorias()">
       <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
     </select>
-    
+
     <button class="btn btn-success" (click)="crearConvocatoria()">Crear Convocatoria</button>
   </div>
 
   <ul class="list-group mb-4">
-    <li *ngFor="let convocatoria of convocatorias" (click)="seleccionarConvocatoria(convocatoria)" class="list-group-item list-group-item-action">
-      <span class="fw-bold">{{ convocatoria.fechaConvocatoria | date:'dd/MM/yyyy' }}</span> - {{ convocatoria.deporte }}
+    <li *ngFor="let convocatoria of convocatorias"
+      class="list-group-item d-flex justify-content-between align-items-center">
+      <span (click)="seleccionarConvocatoria(convocatoria)" class="flex-grow-1">
+        <span class="fw-bold">{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span> - {{ convocatoria.deporte
+        }}
+      </span>
+      <button class="btn btn-danger btn-sm" (click)="eliminarConvocatoria(convocatoria)">
+        <i class="bi bi-trash"></i>
+      </button>
     </li>
   </ul>
-  
+
+
   <div *ngIf="convocatoriaSeleccionada" class="selected-convocatoria card p-3">
     <h2 class="card-title mb-3 text-secondary">Convocatoria Seleccionada</h2>
     <p><strong>Fecha:</strong> {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}</p>
     <p><strong>Deporte:</strong> {{ convocatoriaSeleccionada.deporte }}</p>
-  
+
     <h3 class="mt-4 mb-3 text-secondary">Alumnos Inscritos</h3>
     <table class="table table-striped align-middle">
       <thead class="table-dark">
