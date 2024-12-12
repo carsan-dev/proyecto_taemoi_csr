@@ -3,6 +3,8 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
+import { formatDate } from '../../../utilities/formatear-fecha';
 
 @Component({
   selector: 'app-listado-convocatorias',
@@ -20,7 +22,6 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -57,16 +58,61 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   seleccionarConvocatoria(convocatoria: any): void {
     this.convocatoriaSeleccionada = convocatoria;
-  
-    // Obtener alumnos inscritos en la convocatoria seleccionada
-    this.endpointsService.obtenerAlumnosDeConvocatoria(convocatoria.id).subscribe({
-      next: (data) => {
-        this.alumnosInscritos = data; // Asume que el backend devuelve una lista de AlumnoConvocatoriaDTO
-      },
-      error: (error) => {
-        console.error('Error al obtener alumnos de la convocatoria:', error);
-      },
+
+    this.endpointsService
+      .obtenerAlumnosDeConvocatoria(convocatoria.id)
+      .subscribe({
+        next: (data) => {
+          this.alumnosInscritos = data;
+        },
+        error: (error) => {
+          console.error('Error al obtener alumnos de la convocatoria:', error);
+        },
+      });
+  }
+
+  eliminarConvocatoria(convocatoria: any): void {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Vas a eliminar la convocatoria del ${formatDate(
+        convocatoria.fechaConvocatoria
+      )}. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarConvocatoria(convocatoria.id).subscribe({
+          next: () => {
+            Swal.fire(
+              '¡Eliminado!',
+              `La convocatoria del ${formatDate(
+                convocatoria.fechaConvocatoria
+              )} ha sido eliminada.`,
+              'success'
+            );
+            this.convocatorias = this.convocatorias.filter(
+              (c) => c.id !== convocatoria.id
+            );
+
+            if (this.convocatoriaSeleccionada?.id === convocatoria.id) {
+              this.convocatoriaSeleccionada = null;
+              this.alumnosInscritos = [];
+            }
+          },
+          error: (error) => {
+            console.error('Error al eliminar la convocatoria:', error);
+            Swal.fire(
+              'Error',
+              'Hubo un problema al eliminar la convocatoria. Por favor, intenta de nuevo.',
+              'error'
+            );
+          },
+        });
+      }
     });
   }
-  
 }
