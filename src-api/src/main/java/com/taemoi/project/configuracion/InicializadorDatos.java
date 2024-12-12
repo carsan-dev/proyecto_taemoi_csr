@@ -462,7 +462,8 @@ public class InicializadorDatos implements CommandLineRunner {
 	    alumno.setTelefono(faker.number().numberBetween(100000000, 999999999));
 	    alumno.setEmail(faker.internet().emailAddress());
 	    alumno.setCuantiaTarifa(faker.number().randomDouble(2, 50, 200));
-	    alumno.setFechaAlta(faker.date().birthday());
+	    LocalDate fechaAlta = LocalDate.of(2024, faker.number().numberBetween(1, 12), faker.number().numberBetween(1, 28));
+	    alumno.setFechaAlta(Date.from(fechaAlta.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 	    alumno.setFechaBaja(null);
 
 	    // Asignar tipo de tarifa aleatoria
