@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
@@ -17,15 +16,21 @@ export class ListadoConvocatoriasComponent implements OnInit {
   convocatorias: any[] = [];
   convocatoriaSeleccionada: any;
   alumnosInscritos: any[] = [];
+  alumnos: any[] = [];
+  alumnosFiltrados: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
+  paginaActual = 1;
+  tamanoPagina = 10;
+  alumnosCargadosCompletamente = false;
 
-  constructor(
-    private readonly endpointsService: EndpointsService,
-  ) {}
+  alumnoSeleccionado: number | null = null;
+
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerConvocatorias();
+    this.cargarAlumnosPaginados();
   }
 
   obtenerConvocatorias(): void {
@@ -35,8 +40,8 @@ export class ListadoConvocatoriasComponent implements OnInit {
         next: (data) => {
           this.convocatorias = data;
         },
-        error: (error) => {
-          console.error('Error al obtener las convocatorias:', error);
+        error: () => {
+          Swal.fire('Error', 'No se pudo obtener las convocatorias.', 'error');
         },
       });
   }
@@ -50,8 +55,8 @@ export class ListadoConvocatoriasComponent implements OnInit {
       next: (data) => {
         this.convocatorias.push(data);
       },
-      error: (error) => {
-        console.error('Error al crear la convocatoria:', error);
+      error: () => {
+        Swal.fire('Error', 'No se pudo crear la convocatoria.', 'error');
       },
     });
   }
@@ -64,9 +69,14 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .subscribe({
         next: (data) => {
           this.alumnosInscritos = data;
+          this.filtrarAlumnos();
         },
-        error: (error) => {
-          console.error('Error al obtener alumnos de la convocatoria:', error);
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudieron obtener los alumnos de la convocatoria.',
+            'error'
+          );
         },
       });
   }
@@ -79,39 +89,133 @@ export class ListadoConvocatoriasComponent implements OnInit {
       )}. Esta acción no se puede deshacer.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
         this.endpointsService.eliminarConvocatoria(convocatoria.id).subscribe({
           next: () => {
             Swal.fire(
               '¡Eliminado!',
-              `La convocatoria del ${formatDate(
-                convocatoria.fechaConvocatoria
-              )} ha sido eliminada.`,
+              'La convocatoria ha sido eliminada.',
               'success'
             );
             this.convocatorias = this.convocatorias.filter(
               (c) => c.id !== convocatoria.id
             );
-
             if (this.convocatoriaSeleccionada?.id === convocatoria.id) {
               this.convocatoriaSeleccionada = null;
               this.alumnosInscritos = [];
             }
           },
-          error: (error) => {
-            console.error('Error al eliminar la convocatoria:', error);
-            Swal.fire(
-              'Error',
-              'Hubo un problema al eliminar la convocatoria. Por favor, intenta de nuevo.',
-              'error'
-            );
+          error: () => {
+            Swal.fire('Error', 'No se pudo eliminar la convocatoria.', 'error');
           },
         });
+      }
+    });
+  }
+
+  cargarAlumnosPaginados(): void {
+    if (this.alumnosCargadosCompletamente) return;
+
+    this.endpointsService
+      .obtenerAlumnos(this.paginaActual, this.tamanoPagina)
+      .subscribe({
+        next: (response) => {
+          this.alumnos = [...this.alumnos, ...response.content];
+          this.paginaActual++;
+
+          if (response.totalPages === this.paginaActual) {
+            this.alumnosCargadosCompletamente = true;
+          }
+
+          this.filtrarAlumnos();
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo cargar los alumnos paginados.',
+            'error'
+          );
+        },
+      });
+  }
+
+  filtrarAlumnos(): void {
+    if (!this.convocatoriaSeleccionada) {
+      this.alumnosFiltrados = this.alumnos.filter(
+        (alumno) => alumno.aptoParaExamen
+      );
+      return;
+    }
+
+    this.alumnosFiltrados = this.alumnos.filter(
+      (alumno) =>
+        alumno.aptoParaExamen &&
+        !this.alumnosInscritos.some(
+          (inscrito) => inscrito.alumnoId === alumno.id
+        )
+    );
+  }
+
+  agregarAlumnoAConvocatoria(): void {
+    if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
+
+    this.endpointsService
+      .agregarAlumnoAConvocatoria(
+        this.alumnoSeleccionado,
+        this.convocatoriaSeleccionada.id
+      )
+      .subscribe({
+        next: () => {
+          Swal.fire(
+            'Alumno agregado',
+            'El alumno ha sido agregado a la convocatoria.',
+            'success'
+          );
+          this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudo agregar al alumno.', 'error');
+        },
+      });
+  }
+
+  eliminarAlumnoDeConvocatoria(alumno: any): void {
+    if (!this.convocatoriaSeleccionada) return;
+
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Vas a eliminar al alumno ${alumno.nombre} de la convocatoria.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .eliminarAlumnoDeConvocatoria(
+            alumno.alumnoId,
+            this.convocatoriaSeleccionada.id
+          )
+          .subscribe({
+            next: () => {
+              Swal.fire(
+                '¡Eliminado!',
+                'El alumno ha sido eliminado de la convocatoria.',
+                'success'
+              );
+              this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
+            },
+            error: () => {
+              Swal.fire('Error', 'No se pudo eliminar al alumno.', 'error');
+            },
+          });
       }
     });
   }
