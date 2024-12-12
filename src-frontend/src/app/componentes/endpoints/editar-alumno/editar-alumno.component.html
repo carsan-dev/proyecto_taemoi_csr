@@ -30,7 +30,6 @@
                 {{ alumno.deporte }}
               </h2>
             </div>
-
             <div class="card-body d-flex flex-column align-items-center text-center">
               <div class="profile-info mb-3">
                 <img class="imagen-perfil"
@@ -200,12 +199,12 @@
                         <h5 class="modal-title">Seleccionar Convocatoria</h5>
                       </div>
                       <div class="modal-body">
-                        <p>Convocatorias disponibles para {{ alumnoEditado?.deporte }}:</p>
+                        <p>Convocatorias disponibles para {{ alumno.deporte }}:</p>
                         <ul>
                           <li *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
-                            class="convocatoria-item">
+                            class="convocatoria-item actual">
                             <strong>Convocatoria Actual:</strong>
-                            {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+                            {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoriaActual.deporte }}
                           </li>
                           <li *ngFor="let convocatoria of convocatoriasDisponibles"
                             (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
@@ -249,7 +248,12 @@
         </div>
       </div>
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
-        <h2 class="text-center mb-4">{{ alumnoForm.get('deporte')?.value }}</h2>
+        <div class="deporte-container mb-4"
+        [ngClass]="{'taekwondo': alumnoForm.get('deporte')?.value === 'TAEKWONDO', 'pilates': alumnoForm.get('deporte')?.value === 'PILATES', 'kickboxing': alumnoForm.get('deporte')?.value === 'KICKBOXING'}">
+        <h2 class="deporte-text">
+          {{ alumnoForm.get('deporte')?.value }}
+        </h2>
+      </div>
         <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
           method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
