@@ -684,4 +684,13 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
+
+  eliminarConvocatoria(id: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.urlBase}/convocatorias/${id}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+  
 }
