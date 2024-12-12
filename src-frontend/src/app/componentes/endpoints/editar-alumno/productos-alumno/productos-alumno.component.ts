@@ -116,22 +116,37 @@ export class ProductosAlumnoComponent implements OnInit {
   }
 
   eliminarProducto(alumnoId: number, productoAlumnoId: number) {
-    this.endpointsService.eliminarProductoAlumno(productoAlumnoId).subscribe({
-      next: () => {
-        this.obtenerProductosAlumno(alumnoId);
-        Swal.fire({
-          title: 'Éxito',
-          text: 'Producto eliminado correctamente',
-          icon: 'success',
-        });
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo eliminar el producto',
-          icon: 'error',
-        });
-      },
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Si, eliminar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .eliminarProductoAlumno(productoAlumnoId)
+          .subscribe({
+            next: () => {
+              this.obtenerProductosAlumno(alumnoId);
+              Swal.fire({
+                title: 'Éxito',
+                text: 'Producto eliminado correctamente',
+                icon: 'success',
+              });
+            },
+            error: (error) => {
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo eliminar el producto',
+                icon: 'error',
+              });
+            },
+          });
+      }
     });
   }
 
@@ -196,7 +211,6 @@ export class ProductosAlumnoComponent implements OnInit {
   calcularTotal(precio: number, cantidad: number): number {
     return precio * cantidad;
   }
-  
 
   volver() {
     this.location.back();
