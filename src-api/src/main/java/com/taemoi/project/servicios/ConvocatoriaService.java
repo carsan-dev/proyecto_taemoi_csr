@@ -22,4 +22,6 @@ public interface ConvocatoriaService {
 	List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte);
 
 	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
+
+	void eliminarConvocatoria(Long convocatoriaId);
 }
