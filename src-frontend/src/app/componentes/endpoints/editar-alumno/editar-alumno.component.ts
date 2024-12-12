@@ -16,6 +16,7 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
 import { ActivatedRoute, Router } from '@angular/router';
 import { Producto } from '../../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
+import { formatDate } from '../../../utilities/formatear-fecha';
 
 @Component({
   selector: 'app-editar-alumno',
@@ -206,18 +207,18 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   configurarFormulario(alumno: any): void {
-    const fechaNacimiento = this.formatDate(alumno.fechaNacimiento);
+    const fechaNacimiento = formatDate(alumno.fechaNacimiento);
     if (fechaNacimiento) {
       this.obtenerGradosDisponibles(fechaNacimiento);
     }
 
-    const fechaAlta = this.formatDate(alumno.fechaAlta);
-    const fechaBaja = alumno.fechaBaja ? this.formatDate(alumno.fechaBaja) : '';
+    const fechaAlta = formatDate(alumno.fechaAlta);
+    const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
     const peso = alumno.peso || '';
-    const fechaPeso = alumno.fechaPeso ? this.formatDate(alumno.fechaPeso) : '';
+    const fechaPeso = alumno.fechaPeso ? formatDate(alumno.fechaPeso) : '';
     const numeroLicencia = alumno.numeroLicencia || '';
     const fechaLicencia = alumno.fechaLicencia
-      ? this.formatDate(alumno.fechaLicencia)
+      ? formatDate(alumno.fechaLicencia)
       : '';
     const grado = alumno.grado || '';
     const aptoParaExamen = alumno.aptoParaExamen ?? false;
@@ -523,7 +524,7 @@ export class EditarAlumnoComponent implements OnInit {
 
     Swal.fire({
       title: '¿Estás seguro?',
-      text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte} del ${this.formatDate(convocatoria.fechaConvocatoria)}`,
+      text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte} del ${formatDate(convocatoria.fechaConvocatoria)}`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
@@ -598,13 +599,6 @@ export class EditarAlumnoComponent implements OnInit {
       this.tiposTarifa = [TipoTarifa.PILATES];
       this.grados = [];
     }
-  }
-
-  private formatDate(fecha: string): string {
-    const date = new Date(fecha);
-    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-    const adjustedDate = new Date(date.getTime() - userTimezoneOffset);
-    return adjustedDate.toISOString().split('T')[0];
   }
 
   onFileSelected(event: any) {
