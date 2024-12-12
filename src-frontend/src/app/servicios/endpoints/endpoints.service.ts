@@ -48,8 +48,8 @@ export class EndpointsService {
   obtenerAlumnos(
     page: number,
     size: number,
-    nombre: string,
-    incluirInactivos: boolean
+    nombre: string = "",
+    incluirInactivos: boolean = false
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
