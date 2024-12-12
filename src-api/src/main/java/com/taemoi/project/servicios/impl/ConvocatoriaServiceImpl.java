@@ -9,93 +9,125 @@ import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Convocatoria;
 import com.taemoi.project.entidades.Deporte;
+import com.taemoi.project.entidades.ProductoAlumno;
 import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
+import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.ConvocatoriaRepository;
+import com.taemoi.project.repositorios.ProductoAlumnoRepository;
 import com.taemoi.project.servicios.ConvocatoriaService;
 
 @Service
 public class ConvocatoriaServiceImpl implements ConvocatoriaService {
-	
+
 	@Autowired
 	private ConvocatoriaRepository convocatoriaRepository;
-	
+
 	@Autowired
 	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
 
-    @Override
-    public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
-        // Crear directamente la entidad desde el DTO y guardarla
-        Convocatoria convocatoria = new Convocatoria();
-        convocatoria.setFechaConvocatoria(convocatoriaDTO.getFechaConvocatoria());
-        convocatoria.setDeporte(convocatoriaDTO.getDeporte());
-        Convocatoria convocatoriaGuardada = convocatoriaRepository.save(convocatoria);
+	@Autowired
+	private ProductoAlumnoRepository productoAlumnoRepository;
 
-        // Retornar el DTO generado
-        return convertirAConvocatoriaDTO(convocatoriaGuardada);
-    }
+	@Autowired
+	private AlumnoRepository alumnoRepository;
 
-    @Override
-    public List<ConvocatoriaDTO> obtenerConvocatorias() {
-        return convocatoriaRepository.findAll().stream()
-                .map(this::convertirAConvocatoriaDTO) // Convertir cada entidad a DTO
-                .collect(Collectors.toList());
-    }
+	@Override
+	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
+		// Crear directamente la entidad desde el DTO y guardarla
+		Convocatoria convocatoria = new Convocatoria();
+		convocatoria.setFechaConvocatoria(convocatoriaDTO.getFechaConvocatoria());
+		convocatoria.setDeporte(convocatoriaDTO.getDeporte());
+		Convocatoria convocatoriaGuardada = convocatoriaRepository.save(convocatoria);
 
-    @Override
-    public ConvocatoriaDTO obtenerConvocatoriaPorId(Long id) {
-        Convocatoria convocatoria = convocatoriaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + id));
+		// Retornar el DTO generado
+		return convertirAConvocatoriaDTO(convocatoriaGuardada);
+	}
 
-        return convertirAConvocatoriaDTO(convocatoria);
-    }
-    
-    @Override
-    public List<ConvocatoriaDTO> obtenerConvocatoriasDeAlumno(Long alumnoId) {
-        List<AlumnoConvocatoria> relaciones = alumnoConvocatoriaRepository.findByAlumnoId(alumnoId);
-        return relaciones.stream()
-                .map(ac -> convertirAConvocatoriaDTO(ac.getConvocatoria()))
-                .collect(Collectors.toList());
-    }
+	@Override
+	public List<ConvocatoriaDTO> obtenerConvocatorias() {
+		return convocatoriaRepository.findAll().stream().map(this::convertirAConvocatoriaDTO) // Convertir cada entidad
+																								// a DTO
+				.collect(Collectors.toList());
+	}
 
-    @Override
-    public Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte) {
-        return convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte)
-                .map(this::convertirAConvocatoriaDTO); // Convertir la entidad encontrada (si existe) a DTO
-    }
-	
-    @Override
-    public List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte) {
-        return convocatoriaRepository.findByDeporte(deporte).stream()
-                .map(this::convertirAConvocatoriaDTO)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
-    public List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId) {
-        Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
-                .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+	@Override
+	public ConvocatoriaDTO obtenerConvocatoriaPorId(Long id) {
+		Convocatoria convocatoria = convocatoriaRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + id));
 
-        return convocatoria.getAlumnosConvocatoria().stream()
-                .map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(
-                        alumnoConvocatoria.getAlumno().getId(),
-                        alumnoConvocatoria.getAlumno().getNombre(),
-                        alumnoConvocatoria.getAlumno().getApellidos(),
-                        alumnoConvocatoria.getCuantiaExamen(),
-                        alumnoConvocatoria.getGradoActual(),
-                        alumnoConvocatoria.getGradoSiguiente(),
-                        alumnoConvocatoria.getPagado()
-                ))
-                .collect(Collectors.toList());
-    }
-    
-    private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {
-        ConvocatoriaDTO dto = new ConvocatoriaDTO();
-        dto.setId(convocatoria.getId());
-        dto.setFechaConvocatoria(convocatoria.getFechaConvocatoria());
-        dto.setDeporte(convocatoria.getDeporte());
-        return dto;
-    }
+		return convertirAConvocatoriaDTO(convocatoria);
+	}
+
+	@Override
+	public List<ConvocatoriaDTO> obtenerConvocatoriasDeAlumno(Long alumnoId) {
+		List<AlumnoConvocatoria> relaciones = alumnoConvocatoriaRepository.findByAlumnoId(alumnoId);
+		return relaciones.stream().map(ac -> convertirAConvocatoriaDTO(ac.getConvocatoria()))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte) {
+		return convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte).map(this::convertirAConvocatoriaDTO); // Convertir
+																														// la
+																														// entidad
+																														// encontrada
+																														// (si
+																														// existe)
+																														// a
+																														// DTO
+	}
+
+	@Override
+	public List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte) {
+		return convocatoriaRepository.findByDeporte(deporte).stream().map(this::convertirAConvocatoriaDTO)
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId) {
+		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
+				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+
+		return convocatoria.getAlumnosConvocatoria().stream()
+				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getAlumno().getId(),
+						alumnoConvocatoria.getAlumno().getNombre(), alumnoConvocatoria.getAlumno().getApellidos(),
+						alumnoConvocatoria.getCuantiaExamen(), alumnoConvocatoria.getGradoActual(),
+						alumnoConvocatoria.getGradoSiguiente(), alumnoConvocatoria.getPagado()))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public void eliminarConvocatoria(Long convocatoriaId) {
+		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
+				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+
+		for (AlumnoConvocatoria alumnoConvocatoria : convocatoria.getAlumnosConvocatoria()) {
+			Alumno alumno = alumnoConvocatoria.getAlumno();
+
+			ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
+			if (productoAlumno != null) {
+	            alumnoConvocatoria.setProductoAlumno(null);
+	            alumno.getProductosAlumno().remove(productoAlumno);
+	            productoAlumnoRepository.delete(productoAlumno);
+			}
+			if (alumno != null) {
+				alumno.getConvocatorias().remove(alumnoConvocatoria);
+				alumnoRepository.save(alumno);
+			}
+			alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
+		}
+		convocatoriaRepository.delete(convocatoria);
+	}
+
+	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {
+		ConvocatoriaDTO dto = new ConvocatoriaDTO();
+		dto.setId(convocatoria.getId());
+		dto.setFechaConvocatoria(convocatoria.getFechaConvocatoria());
+		dto.setDeporte(convocatoria.getDeporte());
+		return dto;
+	}
 }
