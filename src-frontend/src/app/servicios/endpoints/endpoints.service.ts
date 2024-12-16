@@ -692,5 +692,12 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
-  
+
+  actualizarGradosDeConvocatoria(convocatoriaId: number): Observable<void> {
+    return this.http.put<void>(
+      `${this.urlBase}/convocatorias/${convocatoriaId}/actualizar-grados`,
+      {},
+      { withCredentials: true }
+    ).pipe(catchError(this.manejarError));
+  }
 }
