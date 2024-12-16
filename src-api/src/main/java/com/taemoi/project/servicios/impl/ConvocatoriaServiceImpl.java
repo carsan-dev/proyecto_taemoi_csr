@@ -94,7 +94,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
 		return convocatoria.getAlumnosConvocatoria().stream()
-				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getAlumno().getId(),
+				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(), alumnoConvocatoria.getAlumno().getId(),
 						alumnoConvocatoria.getAlumno().getNombre(), alumnoConvocatoria.getAlumno().getApellidos(),
 						alumnoConvocatoria.getCuantiaExamen(), alumnoConvocatoria.getGradoActual(),
 						alumnoConvocatoria.getGradoSiguiente(), alumnoConvocatoria.getPagado()))
@@ -144,6 +144,40 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	            alumnoRepository.save(alumno);
 	        }
 	    }
+	}
+	
+	@Override
+	public void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
+	    AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
+	            .orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+
+	    alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
+	    alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
+
+	    if (alumnoConvocatoriaDTO.getPagado()) {
+	        alumnoConvocatoria.setFechaPago(new Date());
+	    } else {
+	        alumnoConvocatoria.setFechaPago(null);
+	    }
+
+	    alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+
+	    Alumno alumno = alumnoConvocatoria.getAlumno();
+
+	    if (alumno.getFechaGrado() == null) {
+	        alumno.setFechaGrado(new Date()); // Configurar una fecha de grado por defecto si está vacía
+	    }
+
+	    // Actualizar ProductoAlumno (si aplica)
+	    productoAlumnoRepository.findByAlumnoIdAndProductoId(
+	            alumno.getId(),
+	            alumnoConvocatoria.getProductoAlumno().getProducto().getId()
+	    ).ifPresent(productoAlumno -> {
+	        productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+	        productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
+	        productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
+	        productoAlumnoRepository.save(productoAlumno);
+	    });
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {
