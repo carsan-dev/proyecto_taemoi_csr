@@ -79,15 +79,18 @@
           <td>{{ alumno.gradoSiguiente }}</td>
           <td>
             <input type="number" class="form-control form-control-sm" [(ngModel)]="alumno.cuantiaExamen"
-              (change)="actualizarAlumnoConvocatoria(alumno)" />
+              (change)="actualizarAlumnoConvocatoria(alumno)"
+              [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'" />
           </td>
           <td>
             <select class="form-select form-select-sm" [(ngModel)]="alumno.pagado"
-              (change)="actualizarAlumnoConvocatoria(alumno)">
-              <option [value]="true">Sí</option>
-              <option [value]="false">No</option>
+              (change)="actualizarAlumnoConvocatoria(alumno)"
+              [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'">
+              <option [value]="true" class="text-black">Sí</option>
+              <option [value]="false" class="text-black">No</option>
             </select>
           </td>
+
           <td>
             <button class="btn btn-danger btn-sm" (click)="eliminarAlumnoDeConvocatoria(alumno)">
               Eliminar
@@ -95,6 +98,7 @@
           </td>
         </tr>
       </tbody>
+
     </table>
 
     <h3 class="mt-4 mb-3 text-secondary">Agregar Alumno</h3>
