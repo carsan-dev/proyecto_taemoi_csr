@@ -77,11 +77,16 @@
           <td>{{ alumno.apellidos }}</td>
           <td>{{ alumno.gradoActual }}</td>
           <td>{{ alumno.gradoSiguiente }}</td>
-          <td>{{ alumno.cuantiaExamen | currency: 'EUR':'symbol':'1.2-2' }}</td>
           <td>
-            <span class="badge" [class.bg-success]="alumno.pagado" [class.bg-danger]="!alumno.pagado">
-              {{ alumno.pagado ? 'Sí' : 'No' }}
-            </span>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="alumno.cuantiaExamen"
+              (change)="actualizarAlumnoConvocatoria(alumno)" />
+          </td>
+          <td>
+            <select class="form-select form-select-sm" [(ngModel)]="alumno.pagado"
+              (change)="actualizarAlumnoConvocatoria(alumno)">
+              <option [value]="true">Sí</option>
+              <option [value]="false">No</option>
+            </select>
           </td>
           <td>
             <button class="btn btn-danger btn-sm" (click)="eliminarAlumnoDeConvocatoria(alumno)">
