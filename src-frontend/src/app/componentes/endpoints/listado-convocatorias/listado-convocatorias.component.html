@@ -4,23 +4,47 @@
   <!-- Filtro de deporte -->
   <div class="d-flex align-items-center mb-3">
     <label for="deporte" class="me-2 fw-bold">Deporte:</label>
-    <select id="deporte" class="form-select w-auto me-3" [(ngModel)]="deporteSeleccionado" (change)="obtenerConvocatorias()">
+    <select id="deporte" class="form-select w-auto me-3" [(ngModel)]="deporteSeleccionado"
+      (change)="obtenerConvocatorias()">
       <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
     </select>
-    <button class="btn btn-success" (click)="crearConvocatoria()">Crear Convocatoria</button>
+    <button class="btn btn-success ms-auto" (click)="crearConvocatoria()">Crear Convocatoria</button>
   </div>
 
-  <!-- Lista de convocatorias -->
-  <ul class="list-group mb-4">
-    <li *ngFor="let convocatoria of convocatorias" class="list-group-item d-flex justify-content-between align-items-center">
-      <span (click)="seleccionarConvocatoria(convocatoria)" class="flex-grow-1">
-        <span class="fw-bold">{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span> - {{ convocatoria.deporte }}
-      </span>
-      <button class="btn btn-danger btn-sm" (click)="eliminarConvocatoria(convocatoria)">
-        <i class="bi bi-trash"></i>
-      </button>
-    </li>
-  </ul>
+  <!-- Lista de convocatorias o mensaje de vacío -->
+  <ng-container *ngIf="convocatorias && convocatorias.length > 0; else noConvocatorias">
+    <ul class="list-group mb-4">
+      <li *ngFor="let convocatoria of convocatorias"
+        class="list-group-item d-flex justify-content-between align-items-center">
+        <span (click)="seleccionarConvocatoria(convocatoria)" class="flex-grow-1">
+          <span class="fw-bold">{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span> -
+          {{ convocatoria.deporte }}
+        </span>
+        <div>
+          <button class="btn btn-danger btn-sm" (click)="eliminarConvocatoria(convocatoria)">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </li>
+    </ul>
+  </ng-container>
+
+  <!-- Plantilla para cuando no haya convocatorias -->
+  <ng-template #noConvocatorias>
+    <div class="container-fluid d-flex justify-content-center align-items-center mt-5">
+      <div class="row w-100">
+        <div class="col-md-12 text-center">
+          <div class="no-convocatorias-container">
+            <img src="../../../../assets/media/placeholder_roto.svg" alt="No convocatorias"
+              class="no-convocatorias-imagen" />
+            <h3 class="mt-4">¡No hay convocatorias disponibles!</h3>
+            <p class="text-muted">Parece que no hay convocatorias registradas. ¡Crea una nueva pulsando el botón de
+              arriba!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
 
   <!-- Detalles de la convocatoria seleccionada -->
   <div *ngIf="convocatoriaSeleccionada" class="selected-convocatoria card p-3">
@@ -28,8 +52,13 @@
     <p><strong>Fecha:</strong> {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}</p>
     <p><strong>Deporte:</strong> {{ convocatoriaSeleccionada.deporte }}</p>
 
-    <!-- Listado de alumnos inscritos -->
-    <h3 class="mt-4 mb-3 text-secondary">Alumnos Inscritos</h3>
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="mt-4 mb-3 text-secondary">Alumnos Inscritos</h3>
+      <button class="btn btn-primary btn-sm" (click)="actualizarGrados(convocatoriaSeleccionada)"
+        [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
+        Actualizar Grados
+      </button>
+    </div>
     <table class="table table-striped align-middle">
       <thead class="table-dark">
         <tr>
@@ -63,22 +92,20 @@
       </tbody>
     </table>
 
-    <!-- Agregar alumnos -->
     <h3 class="mt-4 mb-3 text-secondary">Agregar Alumno</h3>
     <div class="d-flex align-items-center mb-3">
       <select id="alumnoSeleccionado" class="form-select w-auto me-3" [(ngModel)]="alumnoSeleccionado">
         <option value="" disabled>Seleccione un alumno</option>
-        <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
+        <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
+          {{ alumno.nombre }} {{ alumno.apellidos }}
+        </option>
       </select>
-      <button class="btn btn-success" [disabled]="!alumnoSeleccionado" (click)="agregarAlumnoAConvocatoria()">Agregar Alumno</button>
+      <button class="btn btn-success" [disabled]="!alumnoSeleccionado" (click)="agregarAlumnoAConvocatoria()">
+        Agregar Alumno
+      </button>
     </div>
 
-    <!-- Botón para cargar más alumnos -->
-    <button
-      *ngIf="!alumnosCargadosCompletamente"
-      class="btn btn-primary mt-3"
-      (click)="cargarAlumnosPaginados()"
-    >
+    <button *ngIf="!alumnosCargadosCompletamente" class="btn btn-primary mt-3" (click)="cargarAlumnosPaginados()">
       Cargar Más Alumnos
     </button>
   </div>
