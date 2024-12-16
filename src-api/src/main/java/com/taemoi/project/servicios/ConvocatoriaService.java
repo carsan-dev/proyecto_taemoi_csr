@@ -24,4 +24,6 @@ public interface ConvocatoriaService {
 	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
 
 	void eliminarConvocatoria(Long convocatoriaId);
+
+	void actualizarGradosDeConvocatoria(Long convocatoriaId);
 }

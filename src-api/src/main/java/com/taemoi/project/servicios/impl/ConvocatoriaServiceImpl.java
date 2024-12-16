@@ -1,5 +1,6 @@
 package com.taemoi.project.servicios.impl;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,11 +14,15 @@ import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Convocatoria;
 import com.taemoi.project.entidades.Deporte;
+import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.ProductoAlumno;
+import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.ConvocatoriaRepository;
+import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.ProductoAlumnoRepository;
+import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ConvocatoriaService;
 
 @Service
@@ -34,6 +39,12 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+	
+	@Autowired
+	private AlumnoService alumnoService;
+	
+	@Autowired
+	private GradoRepository gradoRepository;
 
 	@Override
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
@@ -111,6 +122,28 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
 		}
 		convocatoriaRepository.delete(convocatoria);
+	}
+	
+	@Override
+	public void actualizarGradosDeConvocatoria(Long convocatoriaId) {
+	    Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
+
+	    List<AlumnoConvocatoria> alumnosConvocatoria = convocatoria.getAlumnosConvocatoria();
+
+	    for (AlumnoConvocatoria alumnoConvocatoria : alumnosConvocatoria) {
+	        Alumno alumno = alumnoConvocatoria.getAlumno();
+
+	        TipoGrado nuevoGrado = alumnoService.calcularSiguienteGrado(alumno);
+	        if (nuevoGrado != null) {
+	            Grado nuevoGradoEntidad = gradoRepository.findByTipoGrado(nuevoGrado);
+
+	            alumno.setGrado(nuevoGradoEntidad);
+	            alumno.setFechaGrado(new Date());
+	            alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
+	            alumnoRepository.save(alumno);
+	        }
+	    }
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {
