@@ -1196,7 +1196,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param alumno El alumno para el cual se realiza el cálculo.
 	 * @return true si el alumno es apto para examen, false en caso contrario.
 	 */
-	private boolean esAptoParaExamen(Alumno alumno) {
+	@Override
+	public boolean esAptoParaExamen(Alumno alumno) {
 		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
 			return false;
 		}
@@ -1302,5 +1303,4 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    dto.setPagado(alumnoConvocatoria.getPagado());
 	    return dto;
 	}
-
 }

@@ -79,4 +79,6 @@ public interface AlumnoService {
 	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId);
 
 	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
+	
+	boolean esAptoParaExamen(Alumno alumno);
 }
