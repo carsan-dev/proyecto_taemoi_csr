@@ -83,5 +83,13 @@ public class ConvocatoriaController {
         convocatoriaService.actualizarGradosDeConvocatoria(convocatoriaId);
         return ResponseEntity.ok().build();
     }
-
+    
+    @PutMapping("/alumno/{alumnoConvocatoriaId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> actualizarAlumnoConvocatoria(
+            @PathVariable Long alumnoConvocatoriaId,
+            @RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
+        convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);
+        return ResponseEntity.ok().build();
+    }
 }

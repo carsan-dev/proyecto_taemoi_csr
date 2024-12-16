@@ -3,6 +3,8 @@ package com.taemoi.project.dtos.response;
 import com.taemoi.project.entidades.TipoGrado;
 
 public class AlumnoConvocatoriaDTO {
+	private Long id;
+	
 	private Long alumnoId;
 
 	private String nombre;
@@ -17,8 +19,9 @@ public class AlumnoConvocatoriaDTO {
 
 	private Boolean pagado;
 
-	public AlumnoConvocatoriaDTO(Long alumnoId, String nombre, String apellidos, Double cuantiaExamen,
+	public AlumnoConvocatoriaDTO(Long id, Long alumnoId, String nombre, String apellidos, Double cuantiaExamen,
 			TipoGrado gradoActual, TipoGrado gradoSiguiente, Boolean pagado) {
+		this.id = id;
 		this.alumnoId = alumnoId;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -30,6 +33,14 @@ public class AlumnoConvocatoriaDTO {
 
 	public AlumnoConvocatoriaDTO() {
 		// TODO Auto-generated constructor stub
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public Long getAlumnoId() {

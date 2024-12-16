@@ -26,4 +26,6 @@ public interface ConvocatoriaService {
 	void eliminarConvocatoria(Long convocatoriaId);
 
 	void actualizarGradosDeConvocatoria(Long convocatoriaId);
+
+	void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO);
 }

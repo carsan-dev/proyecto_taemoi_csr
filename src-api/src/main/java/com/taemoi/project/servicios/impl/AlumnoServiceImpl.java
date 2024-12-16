@@ -1198,31 +1198,30 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean esAptoParaExamen(Alumno alumno) {
-		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
-			return false;
-		}
+	    if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
+	        return false; // Si no hay grado o fecha de grado, no es apto
+	    }
 
-		// Validar el año de la fecha de grado
-		LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		int year = fechaGrado.getYear();
+	    try {
+	        LocalDate fechaGrado = alumno.getFechaGrado().toInstant()
+	                .atZone(ZoneId.systemDefault())
+	                .toLocalDate();
 
-		if (year < 1900 || year > 2100) {
-			// Si la fecha de grado está fuera de un rango razonable
-			return false;
-		}
+	        int edad = calcularEdad(alumno.getFechaNacimiento());
 
-		// Calcular la edad del alumno
-		int edad = calcularEdad(alumno.getFechaNacimiento());
+	        long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
 
-		// Obtener los meses requeridos en función de la edad y el tipo de grado
-		long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
+	        LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
 
-		// Calcular la fecha mínima para el próximo examen
-		LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
-
-		// Si la fecha actual es igual o mayor que la fecha mínima, es apto para examen
-		return !LocalDate.now().isBefore(fechaExamenPosible);
+	        // Si la fecha actual es igual o mayor a la fecha posible, es apto
+	        return !LocalDate.now().isBefore(fechaExamenPosible);
+	    } catch (Exception e) {
+	        // Registrar el error para depuración
+	        System.err.println("Error calculando aptitud para examen: " + e.getMessage());
+	        return false;
+	    }
 	}
+
 
 	/**
 	 * Calcula los meses requeridos para ser apto para examen según la edad y el
