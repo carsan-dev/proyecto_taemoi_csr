@@ -165,10 +165,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	    Alumno alumno = alumnoConvocatoria.getAlumno();
 
 	    if (alumno.getFechaGrado() == null) {
-	        alumno.setFechaGrado(new Date()); // Configurar una fecha de grado por defecto si está vacía
+	        alumno.setFechaGrado(new Date());
 	    }
 
-	    // Actualizar ProductoAlumno (si aplica)
 	    productoAlumnoRepository.findByAlumnoIdAndProductoId(
 	            alumno.getId(),
 	            alumnoConvocatoria.getProductoAlumno().getProducto().getId()

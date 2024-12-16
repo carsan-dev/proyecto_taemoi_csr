@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,7 +26,10 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   alumnoSeleccionado: number | null = null;
 
-  constructor(private readonly endpointsService: EndpointsService) {}
+  constructor(
+    private readonly endpointsService: EndpointsService,
+    private readonly changeDetectorRef: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.obtenerConvocatorias();
@@ -68,9 +71,9 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .obtenerAlumnosDeConvocatoria(convocatoria.id)
       .subscribe({
         next: (data) => {
-          this.alumnosInscritos = data.map(alumno => ({
+          this.alumnosInscritos = data.map((alumno) => ({
             ...alumno,
-            id: alumno.id
+            id: alumno.id,
           }));
           this.filtrarAlumnos();
         },
@@ -165,8 +168,8 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   actualizarGrados(convocatoria: any): void {
-    const hayNoPagados = this.alumnosInscritos.some(alumno => !alumno.pagado);
-  
+    const hayNoPagados = this.alumnosInscritos.some((alumno) => !alumno.pagado);
+
     if (hayNoPagados) {
       Swal.fire({
         title: '¿Estás seguro?',
@@ -186,17 +189,19 @@ export class ListadoConvocatoriasComponent implements OnInit {
       this.procesarActualizacionDeGrados(convocatoria);
     }
   }
-  
+
   procesarActualizacionDeGrados(convocatoria: any): void {
-    this.endpointsService.actualizarGradosDeConvocatoria(convocatoria.id).subscribe({
-      next: () => {
-        Swal.fire('Éxito', 'Grados actualizados correctamente.', 'success');
-        this.seleccionarConvocatoria(convocatoria);
-      },
-      error: () => {
-        Swal.fire('Error', 'No se pudieron actualizar los grados.', 'error');
-      },
-    });
+    this.endpointsService
+      .actualizarGradosDeConvocatoria(convocatoria.id)
+      .subscribe({
+        next: () => {
+          Swal.fire('Éxito', 'Grados actualizados correctamente.', 'success');
+          this.seleccionarConvocatoria(convocatoria);
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudieron actualizar los grados.', 'error');
+        },
+      });
   }
 
   actualizarAlumnoConvocatoria(alumno: any): void {
@@ -204,16 +209,23 @@ export class ListadoConvocatoriasComponent implements OnInit {
       cuantiaExamen: alumno.cuantiaExamen,
       pagado: alumno.pagado,
     };
-  
-    this.endpointsService.actualizarAlumnoConvocatoria(alumno.id, alumnoConvocatoriaDTO).subscribe({
-      next: () => {
-        Swal.fire('Éxito', 'Datos del alumno actualizados correctamente.', 'success');
-      },
-      error: () => {
-        Swal.fire('Error', 'No se pudo actualizar el alumno.', 'error');
-      },
-    });
-  }  
+
+    this.endpointsService
+      .actualizarAlumnoConvocatoria(alumno.id, alumnoConvocatoriaDTO)
+      .subscribe({
+        next: () => {
+          Swal.fire(
+            'Éxito',
+            'Datos del alumno actualizados correctamente.',
+            'success'
+          );
+          this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudo actualizar el alumno.', 'error');
+        },
+      });
+  }
 
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
