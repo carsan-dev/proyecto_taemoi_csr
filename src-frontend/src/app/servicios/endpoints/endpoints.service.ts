@@ -700,4 +700,13 @@ export class EndpointsService {
       { withCredentials: true }
     ).pipe(catchError(this.manejarError));
   }
+
+  actualizarAlumnoConvocatoria(alumnoConvocatoriaId: number, datos: any): Observable<void> {
+    return this.http.put<void>(
+      `${this.urlBase}/convocatorias/alumno/${alumnoConvocatoriaId}`,
+      datos,
+      { withCredentials: true }
+    ).pipe(catchError(this.manejarError));
+  }
+  
 }
