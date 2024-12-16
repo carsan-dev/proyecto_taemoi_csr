@@ -161,6 +161,41 @@ export class ListadoConvocatoriasComponent implements OnInit {
     );
   }
 
+  actualizarGrados(convocatoria: any): void {
+    const hayNoPagados = this.alumnosInscritos.some(alumno => !alumno.pagado);
+  
+    if (hayNoPagados) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Hay alumnos que no han pagado la convocatoria. ¿Deseas continuar?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, actualizar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.procesarActualizacionDeGrados(convocatoria);
+        }
+      });
+    } else {
+      this.procesarActualizacionDeGrados(convocatoria);
+    }
+  }
+  
+  procesarActualizacionDeGrados(convocatoria: any): void {
+    this.endpointsService.actualizarGradosDeConvocatoria(convocatoria.id).subscribe({
+      next: () => {
+        Swal.fire('Éxito', 'Grados actualizados correctamente.', 'success');
+        this.seleccionarConvocatoria(convocatoria);
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudieron actualizar los grados.', 'error');
+      },
+    });
+  }
+
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
 

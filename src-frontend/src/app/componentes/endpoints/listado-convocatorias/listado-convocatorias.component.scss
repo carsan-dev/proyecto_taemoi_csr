@@ -37,6 +37,35 @@
     }
   }
 
+  .no-convocatorias-container {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 10px;
+    background-color: rgba(0, 123, 255, 0.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+
+    .no-convocatorias-imagen {
+      width: 150px;
+      height: auto;
+      margin: auto;
+    }
+
+    h3 {
+      font-size: 1.75rem;
+      color: #007bff;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #666;
+    }
+  }
+
   .list-group-item {
     cursor: pointer;
     transition: background-color 0.2s;
