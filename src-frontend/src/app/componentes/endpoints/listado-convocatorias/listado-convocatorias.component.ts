@@ -68,7 +68,10 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .obtenerAlumnosDeConvocatoria(convocatoria.id)
       .subscribe({
         next: (data) => {
-          this.alumnosInscritos = data;
+          this.alumnosInscritos = data.map(alumno => ({
+            ...alumno,
+            id: alumno.id
+          }));
           this.filtrarAlumnos();
         },
         error: () => {
@@ -195,6 +198,22 @@ export class ListadoConvocatoriasComponent implements OnInit {
       },
     });
   }
+
+  actualizarAlumnoConvocatoria(alumno: any): void {
+    const alumnoConvocatoriaDTO = {
+      cuantiaExamen: alumno.cuantiaExamen,
+      pagado: alumno.pagado,
+    };
+  
+    this.endpointsService.actualizarAlumnoConvocatoria(alumno.id, alumnoConvocatoriaDTO).subscribe({
+      next: () => {
+        Swal.fire('Éxito', 'Datos del alumno actualizados correctamente.', 'success');
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo actualizar el alumno.', 'error');
+      },
+    });
+  }  
 
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
