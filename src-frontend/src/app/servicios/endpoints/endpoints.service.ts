@@ -234,16 +234,18 @@ export class EndpointsService {
 
   agregarAlumnoAConvocatoria(
     alumnoId: number,
-    convocatoriaId: number
+    convocatoriaId: number,
+    porRecompensa: boolean
   ): Observable<any> {
     return this.http
       .post<any>(
         `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
-        {},
+        { porRecompensa }, // Enviar como JSON
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
+  
 
   eliminarAlumnoDeConvocatoria(alumnoId: number, convocatoriaId: number): Observable<any> {
     return this.http
