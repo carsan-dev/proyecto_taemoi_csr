@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -386,25 +387,29 @@ public class AlumnoController {
 		// Si el alumno está presente, lo devolvemos en la respuesta
 		return alumno.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
-	
+
 	@PostMapping("/{convocatoriaId}/alumno/{alumnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId) {
-	    try {
-	        AlumnoConvocatoriaDTO alumnoConvocatoriaDTO = alumnoService.agregarAlumnoAConvocatoria(alumnoId, convocatoriaId);
-	        return ResponseEntity.ok(alumnoConvocatoriaDTO);
-	    } catch (Exception e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    }
+	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId,
+			@RequestBody Map<String, Boolean> params) {
+
+		try {
+			boolean porRecompensa = params.getOrDefault("porRecompensa", false); // Extraer el parámetro del cuerpo
+			AlumnoConvocatoriaDTO alumnoConvocatoriaDTO = alumnoService.agregarAlumnoAConvocatoria(alumnoId,
+					convocatoriaId, porRecompensa);
+
+			return ResponseEntity.ok(alumnoConvocatoriaDTO);
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
 	}
-	
-    @DeleteMapping("/{convocatoriaId}/alumno/{alumnoId}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarAlumnoDeConvocatoria(
-            @PathVariable Long convocatoriaId, 
-            @PathVariable Long alumnoId) {
-        
-        alumnoService.eliminarAlumnoDeConvocatoria(alumnoId, convocatoriaId);
-        return ResponseEntity.noContent().build();
-    }
+
+	@DeleteMapping("/{convocatoriaId}/alumno/{alumnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarAlumnoDeConvocatoria(@PathVariable Long convocatoriaId,
+			@PathVariable Long alumnoId) {
+
+		alumnoService.eliminarAlumnoDeConvocatoria(alumnoId, convocatoriaId);
+		return ResponseEntity.noContent().build();
+	}
 }

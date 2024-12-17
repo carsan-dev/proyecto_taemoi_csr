@@ -102,22 +102,22 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private TurnoRepository turnoRepository;
-	
+
 	@Autowired
 	private ConvocatoriaRepository convocatoriaRepository;
-	
+
 	@Autowired
 	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
-	
+
 	@Autowired
 	private ProductoRepository productoRepository;
-	
+
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Autowired
 	private ImagenService imagenService;
-	
+
 	/**
 	 * Inyección del PasswordEncoder para codificar la contraseña del usuario
 	 * creado.
@@ -185,42 +185,43 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
-	        @NonNull Pageable pageable) {
-	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-	        List<Predicate> predicates = new ArrayList<>();
+			@NonNull Pageable pageable) {
+		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+			List<Predicate> predicates = new ArrayList<>();
 
-	        if (nombre != null && !nombre.isEmpty()) {
-	            String nombreLower = nombre.toLowerCase();
+			if (nombre != null && !nombre.isEmpty()) {
+				String nombreLower = nombre.toLowerCase();
 
-	            // Crear expresión para el nombre completo (nombre + ' ' + apellidos)
-	            Expression<String> fullNameExpression = criteriaBuilder.concat(
-	                    criteriaBuilder.lower(root.get("nombre")), 
-	                    criteriaBuilder.literal(" ")
-	            );
-	            fullNameExpression = criteriaBuilder.concat(fullNameExpression, criteriaBuilder.lower(root.get("apellidos")));
+				// Crear expresión para el nombre completo (nombre + ' ' + apellidos)
+				Expression<String> fullNameExpression = criteriaBuilder
+						.concat(criteriaBuilder.lower(root.get("nombre")), criteriaBuilder.literal(" "));
+				fullNameExpression = criteriaBuilder.concat(fullNameExpression,
+						criteriaBuilder.lower(root.get("apellidos")));
 
-	            // Crear predicado que compara el nombre completo con el valor buscado
-	            Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
+				// Crear predicado que compara el nombre completo con el valor buscado
+				Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
 
-	            // También comparar individualmente el nombre y los apellidos
-	            Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombreLower + "%");
-	            Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")), "%" + nombreLower + "%");
+				// También comparar individualmente el nombre y los apellidos
+				Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
+						"%" + nombreLower + "%");
+				Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")),
+						"%" + nombreLower + "%");
 
-	            // Combinar los predicados con OR
-	            predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
-	        }
-	        if (gradoId != null) {
-	            predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
-	        }
-	        if (categoriaId != null) {
-	            predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
-	        }
-	        if (!incluirInactivos) {
-	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-	        }
+				// Combinar los predicados con OR
+				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
+			}
+			if (gradoId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
+			}
+			if (categoriaId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
+			}
+			if (!incluirInactivos) {
+				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+			}
 
-	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-	    }, pageable);
+			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+		}, pageable);
 	}
 
 	/**
@@ -235,42 +236,44 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 *                                  filtrado.
 	 */
 	@Override
-	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos) {
-	    return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-	        List<Predicate> predicates = new ArrayList<>();
+	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
+			boolean incluirInactivos) {
+		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
+			List<Predicate> predicates = new ArrayList<>();
 
-	        if (nombre != null && !nombre.isEmpty()) {
-	            String nombreLower = nombre.toLowerCase();
+			if (nombre != null && !nombre.isEmpty()) {
+				String nombreLower = nombre.toLowerCase();
 
-	            // Crear expresión para el nombre completo (nombre + ' ' + apellidos)
-	            Expression<String> fullNameExpression = criteriaBuilder.concat(
-	                    criteriaBuilder.lower(root.get("nombre")), 
-	                    criteriaBuilder.literal(" ")
-	            );
-	            fullNameExpression = criteriaBuilder.concat(fullNameExpression, criteriaBuilder.lower(root.get("apellidos")));
+				// Crear expresión para el nombre completo (nombre + ' ' + apellidos)
+				Expression<String> fullNameExpression = criteriaBuilder
+						.concat(criteriaBuilder.lower(root.get("nombre")), criteriaBuilder.literal(" "));
+				fullNameExpression = criteriaBuilder.concat(fullNameExpression,
+						criteriaBuilder.lower(root.get("apellidos")));
 
-	            // Crear predicado que compara el nombre completo con el valor buscado
-	            Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
+				// Crear predicado que compara el nombre completo con el valor buscado
+				Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
 
-	            // También comparar individualmente el nombre y los apellidos
-	            Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), "%" + nombreLower + "%");
-	            Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")), "%" + nombreLower + "%");
+				// También comparar individualmente el nombre y los apellidos
+				Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
+						"%" + nombreLower + "%");
+				Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")),
+						"%" + nombreLower + "%");
 
-	            // Combinar los predicados con OR
-	            predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
-	        }
-	        if (gradoId != null) {
-	            predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
-	        }
-	        if (categoriaId != null) {
-	            predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
-	        }
-	        if (!incluirInactivos) {
-	            predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-	        }
+				// Combinar los predicados con OR
+				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
+			}
+			if (gradoId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
+			}
+			if (categoriaId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
+			}
+			if (!incluirInactivos) {
+				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+			}
 
-	        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-	    });
+			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+		});
 	}
 
 	/**
@@ -854,8 +857,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		} else {
 			// Si el alumno es adulto, asignar grados correspondientes a adultos
 			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN,
-					TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN,
+					TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
 		}
 
 		// Asignar un grado aleatoriamente de la lista de grados disponibles
@@ -881,250 +884,221 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public int calcularEdad(Date fechaNacimiento) {
-	    LocalDate fechaNacimientoLocal;
+		LocalDate fechaNacimientoLocal;
 
-	    if (fechaNacimiento instanceof java.sql.Date) {
-	        // Convertir java.sql.Date a LocalDate
-	        fechaNacimientoLocal = ((java.sql.Date) fechaNacimiento).toLocalDate();
-	    } else {
-	        // Convertir java.util.Date a LocalDate
-	        fechaNacimientoLocal = fechaNacimiento.toInstant()
-	                .atZone(ZoneId.systemDefault())
-	                .toLocalDate();
-	    }
+		if (fechaNacimiento instanceof java.sql.Date) {
+			// Convertir java.sql.Date a LocalDate
+			fechaNacimientoLocal = ((java.sql.Date) fechaNacimiento).toLocalDate();
+		} else {
+			// Convertir java.util.Date a LocalDate
+			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		}
 
-	    LocalDate fechaActual = LocalDate.now();
-	    return Period.between(fechaNacimientoLocal, fechaActual).getYears();
+		LocalDate fechaActual = LocalDate.now();
+		return Period.between(fechaNacimientoLocal, fechaActual).getYears();
 	}
 
-	
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
-	    TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
-	    Deporte deporte = alumno.getDeporte();
+		TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
+		Deporte deporte = alumno.getDeporte();
 
-	    int edad = calcularEdad(alumno.getFechaNacimiento());
+		int edad = calcularEdad(alumno.getFechaNacimiento());
 
-	    boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
 
-	    Map<TipoGrado, TipoGrado> nextGradeMap;
+		Map<TipoGrado, TipoGrado> nextGradeMap;
 
-	    if (deporte == Deporte.TAEKWONDO) {
-	        nextGradeMap = esMenor ? mapaGradosMenoresTaekwondo() : mapaGradosMayoresTaekwondo();
-	    } else if (deporte == Deporte.KICKBOXING) {
-	        nextGradeMap = mapaGradosKickboxing();
-	    } else {
-	        throw new IllegalArgumentException("Deporte no soportado: " + deporte);
-	    }
+		if (deporte == Deporte.TAEKWONDO) {
+			nextGradeMap = esMenor ? mapaGradosMenoresTaekwondo() : mapaGradosMayoresTaekwondo();
+		} else if (deporte == Deporte.KICKBOXING) {
+			nextGradeMap = mapaGradosKickboxing();
+		} else {
+			throw new IllegalArgumentException("Deporte no soportado: " + deporte);
+		}
 
-	    return nextGradeMap.getOrDefault(gradoActual, null);
+		return nextGradeMap.getOrDefault(gradoActual, null);
 	}
 
 	private Map<TipoGrado, TipoGrado> mapaGradosMenoresTaekwondo() {
-	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-	    mapa.put(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO);
-	    mapa.put(TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO);
-	    mapa.put(TipoGrado.AMARILLO, TipoGrado.AMARILLO_NARANJA);
-	    mapa.put(TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA);
-	    mapa.put(TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE);
-	    mapa.put(TipoGrado.NARANJA_VERDE, TipoGrado.VERDE);
-	    mapa.put(TipoGrado.VERDE, TipoGrado.VERDE_AZUL);
-	    mapa.put(TipoGrado.VERDE_AZUL, TipoGrado.AZUL);
-	    mapa.put(TipoGrado.AZUL, TipoGrado.AZUL_ROJO);
-	    mapa.put(TipoGrado.AZUL_ROJO, TipoGrado.ROJO);
-	    mapa.put(TipoGrado.ROJO, TipoGrado.ROJO_NEGRO_1_PUM);
-	    mapa.put(TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM);
-	    mapa.put(TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
-	    return mapa;
+		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+		mapa.put(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO);
+		mapa.put(TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO);
+		mapa.put(TipoGrado.AMARILLO, TipoGrado.AMARILLO_NARANJA);
+		mapa.put(TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA);
+		mapa.put(TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE);
+		mapa.put(TipoGrado.NARANJA_VERDE, TipoGrado.VERDE);
+		mapa.put(TipoGrado.VERDE, TipoGrado.VERDE_AZUL);
+		mapa.put(TipoGrado.VERDE_AZUL, TipoGrado.AZUL);
+		mapa.put(TipoGrado.AZUL, TipoGrado.AZUL_ROJO);
+		mapa.put(TipoGrado.AZUL_ROJO, TipoGrado.ROJO);
+		mapa.put(TipoGrado.ROJO, TipoGrado.ROJO_NEGRO_1_PUM);
+		mapa.put(TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM);
+		mapa.put(TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
+		return mapa;
 	}
 
 	private Map<TipoGrado, TipoGrado> mapaGradosMayoresTaekwondo() {
-	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-	    mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
-	    mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
-	    mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
-	    mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
-	    mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
-	    mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
-	    mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
-	    mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
-	    mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
-	    mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
-	    return mapa;
+		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+		mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
+		mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
+		mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
+		mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
+		mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
+		mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
+		mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
+		mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
+		mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
+		mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+		return mapa;
 	}
-	
+
 	private Map<TipoGrado, TipoGrado> mapaGradosKickboxing() {
-	    Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-	    mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
-	    mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
-	    mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
-	    mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
-	    mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
-	    mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
-	    mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
-	    mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
-	    mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
-	    mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
-	    return mapa;
+		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
+		mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
+		mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
+		mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
+		mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
+		mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
+		mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
+		mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
+		mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
+		mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
+		mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+		return mapa;
 	}
-	
+
 	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-	    LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	    LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
-	    int anioActual = LocalDate.now().getYear();
-	    return fechaCumple14.getYear() == anioActual;
+		LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
+		int anioActual = LocalDate.now().getYear();
+		return fechaCumple14.getYear() == anioActual;
 	}
-	
+
 	@Override
-	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId) {
-	    Alumno alumno = alumnoRepository.findById(alumnoId)
-	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
-	    if (!alumno.getAptoParaExamen()) {
-	        throw new IllegalArgumentException("El alumno no está apto para examen." );
-	    }
+		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
-	    Convocatoria convocatoriaSeleccionada = convocatoriaRepository.findById(convocatoriaId)
-	            .orElseThrow(() -> new IllegalArgumentException("No se encontró la convocatoria con ID: " + convocatoriaId));
+		TipoGrado gradoSiguiente = calcularSiguienteGrado(alumno);
+		if (gradoSiguiente == null) {
+			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno");
+		}
 
-	    if (!alumno.getDeporte().equals(convocatoriaSeleccionada.getDeporte())) {
-	        throw new IllegalArgumentException("El deporte del alumno no coincide con el deporte de la convocatoria.");
-	    }
+		String conceptoProducto = porRecompensa ? obtenerNombreProductoPorGradoRecompensa(gradoSiguiente)
+				: obtenerNombreProductoPorGrado(gradoSiguiente);
 
-	    // Verificar si el alumno ya está en la convocatoria seleccionada
-	    boolean yaInscrito = convocatoriaSeleccionada.getAlumnosConvocatoria().stream()
-	            .anyMatch(ac -> ac.getAlumno().getId().equals(alumnoId));
+		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
+				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
 
-	    if (yaInscrito) {
-	        throw new IllegalArgumentException("El alumno ya está inscrito en la convocatoria seleccionada.");
-	    }
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(producto);
+		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumnoRepository.save(productoAlumno);
 
-	    // Calcular el siguiente grado del alumno
-	    TipoGrado gradoSiguiente = calcularSiguienteGrado(alumno);
-	    if (gradoSiguiente == null) {
-	        throw new IllegalArgumentException("No se pudo determinar el siguiente grado para el alumno.");
-	    }
+		AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
+		alumnoConvocatoria.setAlumno(alumno);
+		alumnoConvocatoria.setConvocatoria(convocatoria);
+		alumnoConvocatoria.setProductoAlumno(productoAlumno);
+		alumnoConvocatoria.setCuantiaExamen(producto.getPrecio());
+		alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
+		alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
+		alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 
-	    // Obtener el producto correspondiente al siguiente grado
-	    Producto productoExamen = obtenerProductoPorGrado(gradoSiguiente);
-	    if (productoExamen == null) {
-	        throw new IllegalArgumentException("No se encontró un producto para el grado: " + gradoSiguiente);
-	    }
-
-	    // Crear una instancia de ProductoAlumno
-	    ProductoAlumno productoAlumno = new ProductoAlumno();
-	    productoAlumno.setAlumno(alumno);
-	    productoAlumno.setProducto(productoExamen);
-	    productoAlumno.setConcepto(productoExamen.getConcepto());
-	    productoAlumno.setFechaAsignacion(new Date());
-	    productoAlumno.setCantidad(1);
-	    productoAlumno.setPrecio(productoExamen.getPrecio());
-	    productoAlumno.setPagado(false); // Por defecto, no pagado
-	    productoAlumno.setNotas("Asignado automáticamente al agregar al alumno a la convocatoria.");
-
-	    // Guardar ProductoAlumno
-	    productoAlumno = productoAlumnoRepository.save(productoAlumno);
-
-	    // Añadir ProductoAlumno a la lista del alumno
-	    if (alumno.getProductosAlumno() == null) {
-	        alumno.setProductosAlumno(new ArrayList<>());
-	    }
-	    alumno.getProductosAlumno().add(productoAlumno);
-
-	    // Guardar cambios en el alumno
-	    alumnoRepository.save(alumno);
-
-	    // Crear el registro de AlumnoConvocatoria
-	    AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
-	    alumnoConvocatoria.setAlumno(alumno);
-	    alumnoConvocatoria.setConvocatoria(convocatoriaSeleccionada);
-	    alumnoConvocatoria.setProductoAlumno(productoAlumno);
-	    alumnoConvocatoria.setCuantiaExamen(productoExamen.getPrecio());
-	    alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
-	    alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
-	    alumnoConvocatoria.setPagado(false); // Por defecto, no pagado
-
-	    // Guardar la relación AlumnoConvocatoria
-	    alumnoConvocatoria = alumnoConvocatoriaRepository.save(alumnoConvocatoria);
-
-	    // Añadir la relación a las listas correspondientes
-	    if (convocatoriaSeleccionada.getAlumnosConvocatoria() == null) {
-	        convocatoriaSeleccionada.setAlumnosConvocatoria(new ArrayList<>());
-	    }
-	    convocatoriaSeleccionada.getAlumnosConvocatoria().add(alumnoConvocatoria);
-	    convocatoriaRepository.save(convocatoriaSeleccionada);
-
-	    if (alumno.getConvocatorias() == null) {
-	        alumno.setConvocatorias(new ArrayList<>());
-	    }
-	    alumno.getConvocatorias().add(alumnoConvocatoria);
-	    alumnoRepository.save(alumno);
-
-	    return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
+		return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
 	}
-	
+
 	@Override
 	public void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId) {
-	    AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)
-	        .orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
+		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository
+				.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
 
-	    ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
-	    if (productoAlumno != null) {
-	        alumnoConvocatoria.setProductoAlumno(null);
-	        alumnoConvocatoriaRepository.save(alumnoConvocatoria);
-	        productoAlumnoRepository.delete(productoAlumno);
-	    }
+		ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
+		if (productoAlumno != null) {
+			alumnoConvocatoria.setProductoAlumno(null);
+			alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+			productoAlumnoRepository.delete(productoAlumno);
+		}
 
-	    alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
-	}
-	
-	private Producto obtenerProductoPorGrado(TipoGrado grado) {
-	    String nombreProducto = obtenerNombreProductoPorGrado(grado);
-	    return productoRepository.findByConcepto(nombreProducto)
-	            .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado para el grado: " + grado));
+		alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
 	}
 
 	private String obtenerNombreProductoPorGrado(TipoGrado grado) {
-	    switch (grado) {
-	        case BLANCO_AMARILLO:
-	            return "DERECHOS DE EXAMEN BLANCO/AMARILLO";
-	        case AMARILLO:
-	            return "DERECHOS DE EXAMEN AMARILLO";
-	        case AMARILLO_NARANJA:
-	            return "DERECHOS DE EXAMEN AMARILLO/NARANJA";
-	        case NARANJA:
-	            return "DERECHOS DE EXAMEN NARANJA";
-	        case NARANJA_VERDE:
-	            return "DERECHOS DE EXAMEN NARANJA/VERDE";
-	        case VERDE:
-	            return "DERECHOS DE EXAMEN VERDE";
-	        case VERDE_AZUL:
-	            return "DERECHOS DE EXAMEN VERDE/AZUL";
-	        case AZUL:
-	            return "DERECHOS DE EXAMEN AZUL";
-	        case AZUL_ROJO:
-	            return "DERECHOS DE EXAMEN AZUL/ROJO";
-	        case ROJO:
-	            return "DERECHOS DE EXAMEN CINTURÓN ROJO BORDADO";
-	        case NEGRO_1_DAN:
-	            return "DERECHOS DE EXAMEN 1º DAN";
-	        case ROJO_NEGRO_1_PUM:
-	            return "DERECHOS DE EXAMEN 1º PUM";
-	        case NEGRO_2_DAN:
-	            return "DERECHOS DE EXAMEN 2º DAN";
-	        case ROJO_NEGRO_2_PUM:
-	            return "DERECHOS DE EXAMEN 2º PUM";
-	        case NEGRO_3_DAN:
-	            return "DERECHOS DE EXAMEN 3º DAN";
-	        case ROJO_NEGRO_3_PUM:
-	            return "DERECHOS DE EXAMEN 3º PUM";
-	        case NEGRO_4_DAN:
-	            return "DERECHOS DE EXAMEN 4º DAN";
-	        case NEGRO_5_DAN:
-	            return "DERECHOS DE EXAMEN 5º DAN";
-	        default:
-	            throw new IllegalArgumentException("Grado no soportado: " + grado);
-	    }
+		switch (grado) {
+		case BLANCO_AMARILLO:
+			return "DERECHO DE EXAMEN BLANCO/AMARILLO";
+		case AMARILLO:
+			return "DERECHO DE EXAMEN AMARILLO";
+		case AMARILLO_NARANJA:
+			return "DERECHO DE EXAMEN AMARILLO/NARANJA";
+		case NARANJA:
+			return "DERECHO DE EXAMEN NARANJA";
+		case NARANJA_VERDE:
+			return "DERECHO DE EXAMEN NARANJA/VERDE";
+		case VERDE:
+			return "DERECHO DE EXAMEN VERDE";
+		case VERDE_AZUL:
+			return "DERECHO DE EXAMEN VERDE/AZUL";
+		case AZUL:
+			return "DERECHO DE EXAMEN AZUL";
+		case AZUL_ROJO:
+			return "DERECHO DE EXAMEN AZUL/ROJO";
+		case ROJO:
+			return "DERECHO DE EXAMEN ROJO BORDADO";
+		case NEGRO_1_DAN:
+			return "DERECHO DE EXAMEN 1º DAN";
+		case ROJO_NEGRO_1_PUM:
+			return "DERECHO DE EXAMEN 1º PUM";
+		case NEGRO_2_DAN:
+			return "DERECHO DE EXAMEN 2º DAN";
+		case ROJO_NEGRO_2_PUM:
+			return "DERECHO DE EXAMEN 2º PUM";
+		case NEGRO_3_DAN:
+			return "DERECHO DE EXAMEN 3º DAN";
+		case ROJO_NEGRO_3_PUM:
+			return "DERECHO DE EXAMEN 3º PUM";
+		case NEGRO_4_DAN:
+			return "DERECHO DE EXAMEN 4º DAN";
+		case NEGRO_5_DAN:
+			return "DERECHO DE EXAMEN 5º DAN";
+		default:
+			throw new IllegalArgumentException("Grado no soportado: " + grado);
+		}
+	}
+
+	private String obtenerNombreProductoPorGradoRecompensa(TipoGrado grado) {
+		switch (grado) {
+		case BLANCO_AMARILLO:
+			return "PASE DE GRADO POR RECOMPENSA BLANCO/AMARILLO";
+		case AMARILLO:
+			return "PASE DE GRADO POR RECOMPENSA AMARILLO";
+		case AMARILLO_NARANJA:
+			return "PASE DE GRADO POR RECOMPENSA AMARILLO/NARANJA";
+		case NARANJA:
+			return "PASE DE GRADO POR RECOMPENSA NARANJA";
+		case NARANJA_VERDE:
+			return "PASE DE GRADO POR RECOMPENSA NARANJA/VERDE";
+		case VERDE:
+			return "PASE DE GRADO POR RECOMPENSA VERDE";
+		case VERDE_AZUL:
+			return "PASE DE GRADO POR RECOMPENSA VERDE/AZUL";
+		case AZUL:
+			return "PASE DE GRADO POR RECOMPENSA AZUL";
+		case AZUL_ROJO:
+			return "PASE DE GRADO POR RECOMPENSA AZUL/ROJO";
+		case ROJO:
+			return "PASE DE GRADO POR RECOMPENSA ROJO BORDADO";
+		default:
+			throw new IllegalArgumentException("Grado no soportado: " + grado);
+		}
 	}
 
 	/**
@@ -1198,30 +1172,27 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean esAptoParaExamen(Alumno alumno) {
-	    if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
-	        return false; // Si no hay grado o fecha de grado, no es apto
-	    }
+		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
+			return false; // Si no hay grado o fecha de grado, no es apto
+		}
 
-	    try {
-	        LocalDate fechaGrado = alumno.getFechaGrado().toInstant()
-	                .atZone(ZoneId.systemDefault())
-	                .toLocalDate();
+		try {
+			LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-	        int edad = calcularEdad(alumno.getFechaNacimiento());
+			int edad = calcularEdad(alumno.getFechaNacimiento());
 
-	        long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
+			long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
 
-	        LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
+			LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
 
-	        // Si la fecha actual es igual o mayor a la fecha posible, es apto
-	        return !LocalDate.now().isBefore(fechaExamenPosible);
-	    } catch (Exception e) {
-	        // Registrar el error para depuración
-	        System.err.println("Error calculando aptitud para examen: " + e.getMessage());
-	        return false;
-	    }
+			// Si la fecha actual es igual o mayor a la fecha posible, es apto
+			return !LocalDate.now().isBefore(fechaExamenPosible);
+		} catch (Exception e) {
+			// Registrar el error para depuración
+			System.err.println("Error calculando aptitud para examen: " + e.getMessage());
+			return false;
+		}
 	}
-
 
 	/**
 	 * Calcula los meses requeridos para ser apto para examen según la edad y el
@@ -1290,16 +1261,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 		}
 	}
-	
+
 	private AlumnoConvocatoriaDTO convertirAAlumnoConvocatoriaDTO(AlumnoConvocatoria alumnoConvocatoria) {
-	    AlumnoConvocatoriaDTO dto = new AlumnoConvocatoriaDTO();
-	    dto.setAlumnoId(alumnoConvocatoria.getAlumno().getId());
-	    dto.setNombre(alumnoConvocatoria.getAlumno().getNombre());
-	    dto.setApellidos(alumnoConvocatoria.getAlumno().getApellidos());
-	    dto.setCuantiaExamen(alumnoConvocatoria.getCuantiaExamen());
-	    dto.setGradoActual(alumnoConvocatoria.getGradoActual());
-	    dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
-	    dto.setPagado(alumnoConvocatoria.getPagado());
-	    return dto;
+		AlumnoConvocatoriaDTO dto = new AlumnoConvocatoriaDTO();
+		dto.setAlumnoId(alumnoConvocatoria.getAlumno().getId());
+		dto.setNombre(alumnoConvocatoria.getAlumno().getNombre());
+		dto.setApellidos(alumnoConvocatoria.getAlumno().getApellidos());
+		dto.setCuantiaExamen(alumnoConvocatoria.getCuantiaExamen());
+		dto.setGradoActual(alumnoConvocatoria.getGradoActual());
+		dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
+		dto.setPagado(alumnoConvocatoria.getPagado());
+		return dto;
 	}
 }
