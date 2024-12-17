@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { NavigationStart, Router, RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
@@ -26,31 +26,34 @@ export class HeaderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Escuchar cambios en el estado de usuario logueado
     this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
       this.usuarioLogueado = estado;
 
       if (estado) {
-        this.comprobarRoles(); // Verificar roles si el usuario está logueado
+        this.comprobarRoles();
       }
     });
 
-    // Suscribirse a los cambios en el nombre de usuario
     this.authService.usernameCambio.subscribe((username: string | null) => {
       if (username) {
-        this.username = username; // Actualizar el nombre de usuario
+        this.username = username;
       } else {
-        this.username = null; // Limpiar el nombre de usuario si no existe
+        this.username = null;
       }
     });
 
-    // Comprobar si ya está logueado al cargar el componente
     if (this.authService.comprobarLogueado()) {
       this.usuarioLogueado = true;
       this.comprobarRoles();
     }
-  }
 
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationStart) {
+        this.adminMenuVisible = false;
+      }
+    });
+    
+  }
 
   comprobarRoles() {
     this.authService.getRoles().subscribe((roles: string[]) => {

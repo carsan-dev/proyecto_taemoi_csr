@@ -73,44 +73,53 @@
     </div>
   </nav>
 </header>
+
 <!-- Header para administradores -->
-<header class="admin" *ngIf="isAdmin">
-  <button class="admin-button" (click)="toggleAdminMenu()">
+<header class="admin-header" *ngIf="isAdmin">
+  <button class="admin-toggle-button" (click)="toggleAdminMenu()">
     <i class="bi bi-list"></i>
   </button>
-  <div class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }">
-    <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']">Inicio</a>
-
-    <!-- Menú desplegable Deportes -->
-    <div class="nav-item dropdown">
-      <div class="nav-link dropdown-toggle text-black fw-bold">
-        ¿Qué hacemos?
-      </div>
-      <div class="dropdown-menu">
-        <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">
-          Taekwondo
-        </a>
-        <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
-          Kickboxing
-        </a>
-        <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
-          Pilates
-        </a>
-      </div>
+  <nav class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }">
+    <div class="admin-menu-top">
+      <span class="admin-menu-title h2">Cabecera Principal</span>
+      <button class="admin-close-button" (click)="toggleAdminMenu()">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
-
-    <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active">
-      Eventos
-    </a>
-    <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active">
-      Horarios
-    </a>
-    <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active">
-      Contacto
-    </a>
-    <a class="nav-link text-black fw-bold" (click)="cerrarSesion()">Cerrar Sesión</a>
-  </div>
+    <ul class="admin-menu-list">
+      <li>
+        <a class="nav-link" [routerLink]="['/inicio']">Inicio</a>
+      </li>
+      <li class="nav-item dropdown">
+        <div class="dropdown-toggle nav-link">¿Qué hacemos?</div>
+        <ul class="dropdown-menu">
+          <li>
+            <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">Taekwondo</a>
+          </li>
+          <li>
+            <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">Kickboxing</a>
+          </li>
+          <li>
+            <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">Pilates</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active">Eventos</a>
+      </li>
+      <li>
+        <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active">Horarios</a>
+      </li>
+      <li>
+        <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">Contacto</a>
+      </li>
+      <li>
+        <a class="nav-link logout-link" (click)="cerrarSesion()">Cerrar Sesión</a>
+      </li>
+    </ul>
+  </nav>
 </header>
+
 <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}" *ngIf="usuarioLogueado && isUser">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">

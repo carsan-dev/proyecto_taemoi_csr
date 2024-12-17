@@ -1,7 +1,7 @@
 /* sidebar.component.scss */
 @font-face {
-  font-family: 'Osaka-Sans Serif';
-  src: url('../../../../../assets/fonts/osaka-re.ttf') format('truetype');
+  font-family: "Osaka-Sans Serif";
+  src: url("../../../../../assets/fonts/osaka-re.ttf") format("truetype");
 }
 
 .sidebar-container {
@@ -9,7 +9,7 @@
   top: 0;
   left: 0;
   height: 100vh;
-  z-index: 1050;
+  z-index: 1052;
 
   .sidebar-top-container {
     .toggle-sidebar-button {
@@ -20,18 +20,18 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #3a6864, #192D2B);
+      background: linear-gradient(135deg, #3a6864, #192d2b);
       color: white;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       transition: all 0.3s ease, left 0.4s ease;
       font-size: 2rem;
 
       &:hover {
-        background: linear-gradient(135deg, #192D2B, #3a6864);
+        background: linear-gradient(135deg, #192d2b, #3a6864);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         transform: translateY(-4px);
       }
-    
+
       &:active {
         transform: translateY(2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -56,7 +56,7 @@
     }
 
     .img-div {
-      background-image: linear-gradient(#192D2B 50%, #000000 50%);
+      background-image: linear-gradient(#192d2b 50%, #000000 50%);
       .centered-image {
         max-width: 50%;
         max-height: 50%;
@@ -66,10 +66,10 @@
     }
 
     .user-container {
-      background-color: #192D2B;
+      background-color: #192d2b;
 
       & h2 {
-        font-family: 'Osaka-Sans Serif', sans-serif;
+        font-family: "Osaka-Sans Serif", sans-serif;
         overflow: hidden;
         word-wrap: break-word;
         color: white;
@@ -109,7 +109,7 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #192D2B;
+  background-color: #192d2b;
   border-radius: 10px;
   border: 2px solid #0f1a1a;
 }
