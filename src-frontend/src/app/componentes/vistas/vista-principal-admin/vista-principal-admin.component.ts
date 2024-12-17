@@ -12,17 +12,53 @@ import { RouterLink } from '@angular/router';
 })
 export class VistaPrincipalAdminComponent implements OnInit {
   nombreUsuario: string | null = '';
+  usuarioLogueado: boolean = false;
+
+  // Array simple sin interfaz
+  seccionesAdmin = [
+    {
+      titulo: 'Alumnos',
+      descripcion: 'Gestiona información de los alumnos',
+      ruta: '/alumnosListar',
+      icono: 'bi bi-people',
+    },
+    {
+      titulo: 'Grupos',
+      descripcion: 'Organiza y administra grupos',
+      ruta: '/gruposListar',
+      icono: 'bi bi-people-fill',
+    },
+    {
+      titulo: 'Turnos',
+      descripcion: 'Controla y edita turnos disponibles',
+      ruta: '/turnosListar',
+      icono: 'bi bi-calendar3',
+    },
+    {
+      titulo: 'Eventos',
+      descripcion: 'Crea y administra eventos especiales',
+      ruta: '/eventosListar',
+      icono: 'bi bi-calendar-check',
+    },
+    {
+      titulo: 'Productos',
+      descripcion: 'Gestión de productos y servicios',
+      ruta: '/productosListar',
+      icono: 'bi bi-box-seam',
+    },
+    {
+      titulo: 'Convocatorias',
+      descripcion: 'Publica y gestiona convocatorias',
+      ruta: '/convocatoriasListar',
+      icono: 'bi bi-clipboard-check',
+    },
+  ];
 
   constructor(private readonly authService: AuthenticationService) {}
 
   ngOnInit(): void {
-    // Nos suscribimos al observable del nombre de usuario
     this.authService.obtenerNombreUsuario().subscribe((nombre) => {
-      if (nombre) {
-        this.nombreUsuario = nombre;
-      } else {
-        this.nombreUsuario = '';
-      }
+      this.nombreUsuario = nombre ?? '';
     });
   }
 }

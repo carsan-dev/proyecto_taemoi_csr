@@ -3,48 +3,93 @@
   src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
 }
 
-.admin-container {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("../../../../assets/media/recepcion_escuela.webp");
-  background-position: center;
-  background-size: cover;
-  min-height: 1080px;
+$primary-color: #007bff;
+$background-light: #f8f9fa;
+$font-color: #343a40;
+
+.admin-dashboard-container {
+  font-family: 'Osaka-Sans Serif', sans-serif;
+  color: $font-color;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  color: #fff;
 
-  h1 {
-    font-size: 3.5rem;
-    font-weight: bold;
-    margin-bottom: 20px;
-    font-family: 'Osaka-Sans Serif', sans-serif;
-  }
+  .dashboard-content {
+    flex: 1;
 
-  p.lead {
-    font-size: 1.5rem;
-    margin-bottom: 40px;
-  }
-
-  .admin-actions {
-    .btn {
-      border-radius: 30px;
-      padding: 15px 30px;
-      font-size: 1rem;
-      font-weight: bold;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      margin: 10px;
-
-      &:hover {
-        background-color: #0056b3;
-        box-shadow: 0 0 10px rgba(0, 86, 179, 0.5);
+    .intro {
+      h1 {
+        font-weight: bold;
+        font-size: 2.5rem;
       }
 
-      &.btn-success:hover {
-        background-color: #1b6d2d;
-        box-shadow: 0 0 10px rgba(27, 109, 45, 0.5);
+      .lead {
+        font-size: 1.25rem;
+        color: #555;
       }
     }
+
+    .admin-option {
+      border: none;
+      border-radius: 10px;
+      background: $background-light;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+
+      .card-body {
+        padding: 30px;
+
+        .icono-admin {
+          font-size: 3rem;
+          color: $primary-color;
+        }
+
+        .card-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-top: 20px;
+        }
+
+        .card-text {
+          font-size: 1rem;
+          color: #666;
+          margin-top: 10px;
+        }
+
+        .btn {
+          border-radius: 20px;
+          padding: 10px 20px;
+          font-weight: bold;
+          font-size: 1rem;
+          background-color: $primary-color;
+          border: none;
+
+          &:hover {
+            background-color: darken($primary-color, 10%);
+            box-shadow: 0 0 8px rgba(0,123,255,0.5);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsividad
+@media (max-width: 768px) {
+  .dashboard-content {
+    .intro h1 {
+      font-size: 2rem;
+    }
+    .intro .lead {
+      font-size: 1.1rem;
+    }
+  }
+
+  .admin-option .card-title {
+    font-size: 1.3rem;
   }
 }
