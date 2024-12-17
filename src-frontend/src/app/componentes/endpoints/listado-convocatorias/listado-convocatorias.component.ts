@@ -229,26 +229,38 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
-
-    this.endpointsService
-      .agregarAlumnoAConvocatoria(
-        this.alumnoSeleccionado,
-        this.convocatoriaSeleccionada.id
-      )
-      .subscribe({
-        next: () => {
-          Swal.fire(
-            'Alumno agregado',
-            'El alumno ha sido agregado a la convocatoria.',
-            'success'
-          );
-          this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
-        },
-        error: () => {
-          Swal.fire('Error', 'No se pudo agregar al alumno.', 'error');
-        },
-      });
+  
+    Swal.fire({
+      title: 'Selecciona el tipo de producto',
+      text: '¿Asignar el precio por antigüedad o por recompensa?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Por Recompensa',
+      cancelButtonText: 'Por Antigüedad',
+    }).then((result) => {
+      const porRecompensa = result.isConfirmed; // true si selecciona recompensa
+      this.endpointsService
+        .agregarAlumnoAConvocatoria(
+          this.alumnoSeleccionado!,
+          this.convocatoriaSeleccionada.id,
+          porRecompensa
+        )
+        .subscribe({
+          next: () => {
+            Swal.fire(
+              'Alumno agregado',
+              'El alumno ha sido asignado correctamente.',
+              'success'
+            );
+            this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
+          },
+          error: () => {
+            Swal.fire('Error', 'No se pudo agregar al alumno.', 'error');
+          },
+        });
+    });
   }
+  
 
   eliminarAlumnoDeConvocatoria(alumno: any): void {
     if (!this.convocatoriaSeleccionada) return;

@@ -185,9 +185,9 @@
                   </span>
                 </div>
                 <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES' && alumno.aptoParaExamen">
-                  <button class="btn btn-primary" (click)="abrirModalConvocatorias(alumno)">
+                  <button class="btn btn-primary" (click)="seleccionarTipoConvocatoria(alumno)">
                     Agregar a una convocatoria específica
-                  </button>
+                  </button>                  
                   <button class="btn btn-danger ms-3" *ngIf="convocatoriasDelAlumno.length > 0"
                     (click)="abrirModalEliminarConvocatorias(alumno)">
                     Eliminar de la convocatoria
