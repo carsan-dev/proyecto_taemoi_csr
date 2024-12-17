@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Osaka-Sans Serif';
+  src: url('../../../../../assets/fonts/osaka-re.ttf') format('truetype');
+}
+
 header.fixed-header {
   position: fixed;
   top: 0;
@@ -31,7 +36,7 @@ header.fixed-header {
         justify-content: center;
 
         .nav-item {
-          * {     
+          * {
             font-size: 18px;
           }
         }
@@ -53,7 +58,7 @@ header.fixed-header {
         font-size: 1rem !important;
         text-transform: uppercase;
         box-shadow: 0 0 7px rgba(0, 123, 255, 0.6); // Sombra similar
-      
+
         &:hover {
           background-color: #0056b3; // Azul más oscuro en hover
           box-shadow: 0 0 17px rgba(0, 123, 255, 0.7);
@@ -106,11 +111,11 @@ header.fixed-header {
     }
 
     input:checked + .slider {
-      background-color: #2196F3;
+      background-color: #2196f3;
     }
 
     input:focus + .slider {
-      box-shadow: 0 0 1px #2196F3;
+      box-shadow: 0 0 1px #2196f3;
     }
 
     input:checked + .slider:before {
@@ -129,12 +134,12 @@ header.fixed-header {
       }
 
       .dropdown-toggle::after {
-        display: none; // Opcional: oculta el icono de flecha
+        display: none;
       }
     }
 
     .dropdown-menu {
-      display: block; // Necesario para animar correctamente
+      display: block;
       visibility: hidden;
       opacity: 0;
       transform: translateY(-10px);
@@ -146,7 +151,7 @@ header.fixed-header {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       padding: 0;
       list-style: none;
-      min-width: 150px; // Ajusta según tus necesidades
+      min-width: 150px;
     }
 
     .dropdown-item {
@@ -215,109 +220,34 @@ header.fixed-header {
     }
   }
 }
-/* Estilos para el header de administrador */
-.admin-menu {
-  position: fixed;
-  top: 20px;
-  right: 100px;
-  z-index: 9999;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  padding: 10px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
 
-  & * {
-    cursor: pointer;
-  }
-
-  &.show {
-    display: flex;
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .nav-item {
-    position: relative;
-
-    .dropdown-toggle {
-      cursor: pointer;
-    }
-
-    .dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 80px;
-      display: block;
-      visibility: hidden;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      background-color: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      padding: 0;
-      list-style: none;
-      min-width: 150px;
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    &:hover > .dropdown-menu {
-      visibility: visible;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .dropdown-item {
-      padding: 10px 20px;
-      color: black;
-      text-decoration: none;
-      display: block;
-
-      &:hover {
-        background-color: #f8f9fa;
-      }
-
-      &.active-link {
-        background-color: #e9ecef;
-        font-weight: bold;
-      }
-    }
-  }
-
-  /* Estilos para enlaces activos */
-  .nav-link.active,
-  .nav-item.active > .nav-link {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-}
-
-.admin-button {
+.admin-header {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1000;
+  z-index: 1051;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-toggle-button {
+  border: none;
+  background: linear-gradient(135deg, #444, #222);
   border-radius: 50%;
   width: 60px;
   height: 60px;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #555, #333);
   color: white;
+  font-size: 2rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
-  font-size: 1.5rem;
 
   &:hover {
-    background: linear-gradient(135deg, #333, #555);
+    background: linear-gradient(135deg, #222, #444);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     transform: translateY(-4px);
   }
@@ -328,3 +258,198 @@ header.fixed-header {
   }
 }
 
+.admin-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 300px;
+  background-color: #000000;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(110%);
+  transition: transform 0.4s ease, opacity 0.3s ease;
+  opacity: 0;
+  z-index: 9999;
+  font-family: "Osaka-Sans Serif", sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff #0f1a1a;
+
+  &.show {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .admin-menu-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #192d2b;
+    padding: 1rem;
+    border-bottom: 1px solid #192d2b;
+
+    .admin-menu-title {
+      color: #ffffff;
+      font-family: 'Osaka-Sans Serif', sans-serif;
+    }
+
+    .admin-close-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #ffffff;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #cccccc;
+      }
+    }
+  }
+
+  .admin-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    li {
+      border-bottom: 1px solid #192d2b;
+
+      .nav-link {
+        display: block;
+        padding: 0.8rem 1.5rem;
+        text-decoration: none;
+        color: #ffffff;
+        font-weight: 500;
+        transition: background-color 0.3s ease, color 0.3s ease;
+
+        &:hover {
+          background: #192d2b;
+        }
+
+        &.active-link {
+          background: #3a6864;
+          font-weight: bold;
+        }
+      }
+
+      &.dropdown {
+        position: relative;
+        overflow: hidden;
+
+        .dropdown-toggle {
+          cursor: pointer;
+          display: block;
+          padding: 0.8rem 1.5rem;
+          text-decoration: none;
+          color: #ffffff;
+          font-weight: 500;
+          transition: background-color 0.3s ease, color 0.3s ease;
+          position: relative;
+
+          &:hover {
+            background: #192d2b;
+          }
+
+          &::after {
+            content: "▼";
+            font-size: 0.7rem;
+            margin-left: 5px;
+            transition: transform 0.3s ease;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+            position: relative;
+            top: 1px;
+          }
+        }
+
+        &:hover .dropdown-toggle::after {
+          transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+          display: block;
+          background-color: #000000;
+          border: 1px solid #192d2b;
+          // Importante: Sin posicionamiento absoluto, parte del flujo normal
+          position: static;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          transition: max-height 0.3s ease, opacity 0.3s ease;
+          max-height: 0; // Oculto por defecto
+          opacity: 0; // Transparente por defecto
+          overflow: hidden; // Oculta los ítems hasta que se expanda
+
+          .dropdown-item {
+            padding: 0.8rem 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            font-weight: 500;
+            transition: background 0.3s ease;
+
+            &:hover {
+              background: #192d2b;
+            }
+
+            &.active-link {
+              background-color: #3a6864;
+              font-weight: bold;
+            }
+          }
+        }
+
+        // Al hacer hover sobre todo el li.dropdown, expandimos el menú
+        &:hover {
+          .dropdown-menu {
+            max-height: 500px; // Un tamaño suficiente para todos los subítems
+            opacity: 1; // Ahora visible
+          }
+        }
+      }
+    }
+
+    .logout-link {
+      color: #e74c3c !important;
+      font-weight: bold;
+      cursor: pointer;
+
+      &:hover {
+        background: #192d2b;
+      }
+    }
+  }
+}
+
+.admin-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-menu::-webkit-scrollbar-track {
+  background: #0f1a1a;
+}
+
+.admin-menu::-webkit-scrollbar-thumb {
+  background-color: #192d2b;
+  border-radius: 10px;
+  border: 2px solid #0f1a1a;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .admin-menu {
+    width: 80%;
+  }
+
+  .admin-header {
+    top: 10px;
+    right: 10px;
+  }
+}
