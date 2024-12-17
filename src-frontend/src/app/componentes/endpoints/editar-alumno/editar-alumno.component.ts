@@ -464,21 +464,43 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
   
+  seleccionarTipoConvocatoria(alumno: any): void {
+    Swal.fire({
+      title: 'Selecciona el tipo de convocatoria',
+      text: '¿Asignar el precio por antigüedad o por recompensa?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Por Recompensa',
+      cancelButtonText: 'Por Antigüedad',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      const porRecompensa = result.isConfirmed; // true si selecciona recompensa
+      this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
+    });
+  }
+  
+  abrirModalConvocatoriasConTipo(alumno: any, porRecompensa: boolean): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    this.mostrarModalConvocatorias = true;
+  
+    // Guardar el tipo de producto seleccionado en una variable temporal
+    this.alumnoEditado.porRecompensa = porRecompensa;
+  }
+  
   agregarAConvocatoriaEspecifica(convocatoria: any): void {
-    if (!this.alumnoId) {
-      Swal.fire({
-        title: 'Error',
-        text: 'No se ha seleccionado un alumno válido.',
-        icon: 'error',
-      });
-      return;
-    }
+    if (!this.alumnoId) return;
+  
+    const porRecompensa = this.alumnoEditado.porRecompensa;
+  
     this.endpointsService
-      .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id)
+      .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
       .subscribe({
         next: () => {
           Swal.fire({
-            title: 'Alumno agregado a la convocatoria seleccionada',
+            title: 'Alumno agregado',
+            text: 'El alumno ha sido agregado correctamente a la convocatoria.',
             icon: 'success',
           });
           this.cerrarModalConvocatorias();
@@ -494,6 +516,7 @@ export class EditarAlumnoComponent implements OnInit {
         },
       });
   }
+  
 
   eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
     if (!this.alumnoId) return;
