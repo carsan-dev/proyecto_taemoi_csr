@@ -1,6 +1,6 @@
 @font-face {
-  font-family: 'Osaka-Sans Serif';
-  src: url('../../../../../assets/fonts/osaka-re.ttf') format('truetype');
+  font-family: "Osaka-Sans Serif";
+  src: url("../../../../../assets/fonts/osaka-re.ttf") format("truetype");
 }
 
 header.fixed-header {
@@ -168,6 +168,16 @@ header.fixed-header {
         background-color: #e9ecef;
         font-weight: bold;
       }
+
+      &:last-child:hover {
+        border-bottom-left-radius: 7px;
+        border-bottom-right-radius: 7px;
+
+        .dropdown-menu {
+          border-bottom-left-radius: 7px;
+          border-bottom-right-radius: 7px;
+        }
+      }
     }
   }
 
@@ -291,7 +301,7 @@ header.fixed-header {
 
     .admin-menu-title {
       color: #ffffff;
-      font-family: 'Osaka-Sans Serif', sans-serif;
+      font-family: "Osaka-Sans Serif", sans-serif;
     }
 
     .admin-close-button {

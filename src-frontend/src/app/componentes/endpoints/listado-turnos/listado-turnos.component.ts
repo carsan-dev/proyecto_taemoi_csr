@@ -28,6 +28,7 @@ export class ListadoTurnosComponent implements OnInit {
     'Taekwondo Competición',
     'Pilates',
     'Kickboxing',
+    'Defensa Personal Femenina',
   ];
 
   // Variables para controlar el modal

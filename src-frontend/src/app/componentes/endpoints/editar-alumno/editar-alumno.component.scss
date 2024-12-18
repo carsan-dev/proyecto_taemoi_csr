@@ -161,7 +161,7 @@ $label-font-size: 1rem;
   padding: 10px 20px;
   border-radius: 20px;
   margin: 10px auto;
-  max-width: 300px;
+  max-width: 600px;
   text-transform: uppercase;
   font-family: "Arial", sans-serif;
   font-weight: bold;
@@ -188,6 +188,12 @@ $label-font-size: 1rem;
   background-color: #ffe5d4;
   color: #ff4500;
   border: 2px solid #ff4500;
+}
+
+.defensa-personal-femenina {
+  background-color: #fce4ec;
+  color: #c2185b;
+  border: 2px solid #c2185b;
 }
 
 h3 {

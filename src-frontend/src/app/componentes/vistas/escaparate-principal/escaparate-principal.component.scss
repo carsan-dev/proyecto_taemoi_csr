@@ -134,6 +134,17 @@
             border-color: #468A8F;
           }
         }
+
+        .defensa-personal-button {
+          background-color: #c2185b;
+          border-color: #c2185b;
+          color: #fff;
+        
+          &:hover {
+            background-color: #d81b60;
+            border-color: #d81b60;
+          }
+        }
       }
 
       .img-content {

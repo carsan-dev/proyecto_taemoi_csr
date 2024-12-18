@@ -86,6 +86,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         return 'pilates';
       case 9:
         return 'kickboxing';
+      case 10:
+        return 'defensa_personal_femenina';
       default:
         return ''; // Clase por defecto
     }
@@ -99,15 +101,17 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       case 4:
       case 5:
       case 6:
-        return '🥋'; // Taekwondo
+        return '🥋';
       case 7:
-        return '🥋'; // Taekwondo Competición
+        return '🥋';
       case 8:
-        return '🧘‍♀️'; // Pilates
+        return '🧘‍♀️';
       case 9:
-        return '🥊'; // Kickboxing
+        return '🥊';
+      case 10:
+        return '🛡️';
       default:
-        return '❓'; // Emoticono por defecto
+        return '❓';
     }
   }
 }
