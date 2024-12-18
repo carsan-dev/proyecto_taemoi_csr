@@ -783,6 +783,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		switch (tipoTarifa) {
 		case PILATES:
 			return 30.0;
+		case DEFENSA_PERSONAL_FEMENINA:
+			return 30.0;
 		case ADULTO:
 			return 30.0;
 		case ADULTO_GRUPO:

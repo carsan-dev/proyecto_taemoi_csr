@@ -215,7 +215,7 @@ public class GrupoServiceImpl implements GrupoService {
 	public Map<String, Long> contarAlumnosPorGrupo() {
 	    Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
 
-	    List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing");
+	    List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing", "Defensa Personal Femenina");
 
 	    for (String tipo : tipos) {
 	        List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
