@@ -50,7 +50,12 @@ export class EditarAlumnoComponent implements OnInit {
   alumnoForm: FormGroup;
   mostrarInactivos: boolean = false;
   tipoTarifaEditado: boolean = false;
-  deportes = ['TAEKWONDO', 'KICKBOXING', 'PILATES'];
+  deportes = [
+    'TAEKWONDO',
+    'KICKBOXING',
+    'PILATES',
+    'DEFENSA_PERSONAL_FEMENINA',
+  ];
   grados: any[] = [];
   todosLosGrados: any[] = [];
   products: Producto[] = [];
@@ -463,7 +468,7 @@ export class EditarAlumnoComponent implements OnInit {
       },
     });
   }
-  
+
   seleccionarTipoConvocatoria(alumno: any): void {
     Swal.fire({
       title: 'Selecciona el tipo de convocatoria',
@@ -479,21 +484,21 @@ export class EditarAlumnoComponent implements OnInit {
       this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
     });
   }
-  
+
   abrirModalConvocatoriasConTipo(alumno: any, porRecompensa: boolean): void {
     this.alumnoId = alumno.id;
     this.cargarConvocatoriasDisponibles(alumno);
     this.mostrarModalConvocatorias = true;
-  
+
     // Guardar el tipo de producto seleccionado en una variable temporal
     this.alumnoEditado.porRecompensa = porRecompensa;
   }
-  
+
   agregarAConvocatoriaEspecifica(convocatoria: any): void {
     if (!this.alumnoId) return;
-  
+
     const porRecompensa = this.alumnoEditado.porRecompensa;
-  
+
     this.endpointsService
       .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
       .subscribe({
@@ -516,7 +521,6 @@ export class EditarAlumnoComponent implements OnInit {
         },
       });
   }
-  
 
   eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
     if (!this.alumnoId) return;
@@ -525,7 +529,9 @@ export class EditarAlumnoComponent implements OnInit {
 
     Swal.fire({
       title: '¿Estás seguro?',
-      text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte} del ${formatDate(convocatoria.fechaConvocatoria)}`,
+      text: `Eliminarás al alumno de la convocatoria de ${
+        convocatoria.deporte
+      } del ${formatDate(convocatoria.fechaConvocatoria)}`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
@@ -534,18 +540,27 @@ export class EditarAlumnoComponent implements OnInit {
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.endpointsService.eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id).subscribe({
-          next: () => {
-            Swal.fire('Eliminado', 'El alumno ha sido eliminado de la convocatoria.', 'success');
-            this.cargarConvocatoriasDelAlumno(this.alumnoId!);
-            this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
-          },
-          error: (error) => {
-            Swal.fire('Error', 'No se pudo eliminar al alumno de la convocatoria.', 'error');
-          },
-        });
-      }
-      else if (result.dismiss === Swal.DismissReason.cancel) {
+        this.endpointsService
+          .eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id)
+          .subscribe({
+            next: () => {
+              Swal.fire(
+                'Eliminado',
+                'El alumno ha sido eliminado de la convocatoria.',
+                'success'
+              );
+              this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+              this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
+            },
+            error: (error) => {
+              Swal.fire(
+                'Error',
+                'No se pudo eliminar al alumno de la convocatoria.',
+                'error'
+              );
+            },
+          });
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
         this.abrirModalEliminarConvocatorias({ id: this.alumnoId });
       }
     });
@@ -556,21 +571,21 @@ export class EditarAlumnoComponent implements OnInit {
     this.cargarConvocatoriasDisponibles(alumno);
     this.mostrarModalConvocatorias = true;
   }
-  
+
   cerrarModalConvocatorias(): void {
     this.mostrarModalConvocatorias = false;
   }
-  
+
   abrirModalEliminarConvocatorias(alumno: any): void {
     this.alumnoId = alumno.id;
     this.cargarConvocatoriasDelAlumno(alumno.id);
     this.mostrarModalEliminarConvocatorias = true;
   }
-  
+
   cerrarModalEliminarConvocatorias(): void {
     this.mostrarModalEliminarConvocatorias = false;
   }
-  
+
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
     this.obtenerAlumnos();
@@ -616,8 +631,12 @@ export class EditarAlumnoComponent implements OnInit {
       ];
       this.filtrarGradosParaKickboxing();
     } else if (deporteSeleccionado === 'PILATES') {
-      this.hideFieldsForPilates();
+      this.hideFieldsForPilatesOrDefPersFem();
       this.tiposTarifa = [TipoTarifa.PILATES];
+      this.grados = [];
+    } else if (deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
+      this.hideFieldsForPilatesOrDefPersFem();
+      this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
       this.grados = [];
     }
   }
@@ -684,6 +703,8 @@ export class EditarAlumnoComponent implements OnInit {
     switch (tipoTarifa) {
       case TipoTarifa.PILATES:
         return 30.0;
+      case TipoTarifa.DEFENSA_PERSONAL_FEMENINA:
+        return 30.0;
       case TipoTarifa.ADULTO:
         return 30.0;
       case TipoTarifa.ADULTO_GRUPO:
@@ -745,14 +766,14 @@ export class EditarAlumnoComponent implements OnInit {
       modal.style.display = 'none';
     }
   }
-  
+
   cargarConvocatoriasDisponibles(alumno: any): void {
     const deporte = alumno.deporte; // Obtenemos el deporte del alumno
-  
+
     this.endpointsService.obtenerConvocatorias(deporte).subscribe({
       next: (convocatorias) => {
         const hoy = new Date();
-  
+
         // Encuentra la convocatoria actual basándote en la fecha de hoy
         this.convocatoriaActual = convocatorias.find((convocatoria) => {
           const fechaConvocatoria = new Date(convocatoria.fechaConvocatoria);
@@ -762,7 +783,7 @@ export class EditarAlumnoComponent implements OnInit {
             fechaConvocatoria.getDate() === hoy.getDate()
           );
         });
-  
+
         // Filtra convocatorias excluyendo la actual
         this.convocatoriasDisponibles = convocatorias.filter(
           (convocatoria) => convocatoria.id !== this.convocatoriaActual?.id
@@ -810,8 +831,16 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoForm.get('grado')?.updateValueAndValidity();
   }
 
-  hideFieldsForPilates(): void {
-    this.alumnoForm.get('tipoTarifa')?.setValue(TipoTarifa.PILATES);
+  hideFieldsForPilatesOrDefPersFem(): void {
+    const deporte = this.alumnoForm.get('deporte')?.value;
+
+    if (deporte === 'PILATES') {
+      this.alumnoForm.get('tipoTarifa')?.setValue(TipoTarifa.PILATES);
+    } else if (deporte === 'DEFENSA_PERSONAL_FEMENINA') {
+      this.alumnoForm
+        .get('tipoTarifa')
+        ?.setValue(TipoTarifa.DEFENSA_PERSONAL_FEMENINA);
+    }
 
     this.alumnoForm.get('grado')?.disable();
     this.alumnoForm.get('grado')?.clearValidators();

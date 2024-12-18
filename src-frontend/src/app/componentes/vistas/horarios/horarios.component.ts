@@ -42,12 +42,14 @@ export class HorariosComponent implements OnInit {
 
   obtenerCategoria(grupoId: number): string {
     switch (grupoId) {
+      case 7:
+        return 'Taekwondo Competición';
       case 8:
         return 'Pilates';
       case 9:
         return 'Kickboxing';
-      case 7:
-        return 'Taekwondo Competición';
+      case 10:
+        return 'Defensa Personal Femenina';
       default:
         return 'Taekwondo';
     }
@@ -59,6 +61,7 @@ export class HorariosComponent implements OnInit {
       Kickboxing: '#FFA573',
       'Taekwondo Competición': '#F28B8B',
       Taekwondo: '#A6BFE3',
+      'Defensa Personal Femenina': '#F8BBD0',
     };
     return colores[deporte] || '#ffffff';
   }
@@ -66,10 +69,11 @@ export class HorariosComponent implements OnInit {
   obtenerEmoticonoCategoria(deporte: string): string {
     const emoticonos: { [key: string]: string } = {
       Pilates: '🧘‍♀️',
-      Kickboxing: '🥊', // Guante de boxeo
-      Taekwondo: '🥋', // Kimono/dobok
-      'Taekwondo Competición': '🥋', // Usamos el mismo emoticono de kimono/dobok como aproximación
+      Kickboxing: '🥊',
+      Taekwondo: '🥋',
+      'Taekwondo Competición': '🥋',
+      'Defensa Personal Femenina': '🛡️',
     };
-    return emoticonos[deporte] || '❓'; // Emoticono por defecto en caso de que no se encuentre el deporte
+    return emoticonos[deporte] || '❓';
   }
 }

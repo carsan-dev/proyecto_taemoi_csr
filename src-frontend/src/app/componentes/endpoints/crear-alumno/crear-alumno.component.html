@@ -10,6 +10,7 @@
             <option value="TAEKWONDO">Taekwondo</option>
             <option value="KICKBOXING">Kickboxing</option>
             <option value="PILATES">Pilates</option>
+            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
           </select>
           <label for="deporte">Selecciona el deporte</label>
           <div *ngIf="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched" class="text-danger">
@@ -99,7 +100,8 @@
           </div>
         </div>
         <!-- Campo Selección de Tarifa -->
-        <div class="form-group mb-3 form-floating" *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+        <div class="form-group mb-3 form-floating"
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa"
             required>
             <option value="" disabled selected>Selecciona un descuento</option>
@@ -124,7 +126,8 @@
           </div>
         </div>
         <!-- Campo Selección de Grado -->
-        <div class="form-group mb-3 form-floating" *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+        <div class="form-group mb-3 form-floating"
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <select class="form-control form-select" id="grado" name="grado" formControlName="grado" required>
             <option value="" disabled selected>Selecciona un grado</option>
             <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
@@ -140,7 +143,7 @@
         </div>
         <!-- Campo Imagen del Alumno -->
         <div class="form-group mb-3 form-floating d-flex flex-column"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <div class="custom-file-input-container">
             <input type="file" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*"
               class="custom-file-input">
@@ -156,7 +159,8 @@
           </div>
         </div>
         <!-- Campo Autorización Web -->
-        <div class="form-group col-md-6 mb-3 autorizacion-web" *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+        <div class="form-group col-md-6 mb-3 autorizacion-web"
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <label for="autorizacionWeb" class="text-black">Autorización Web</label>
           <div class="d-flex flex-column">
             <div class="form-check form-check-inline">
@@ -172,7 +176,8 @@
           </div>
         </div>
         <!-- Campo Competidor -->
-        <div class="form-group col-md-6 mb-3" *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+        <div class="form-group col-md-6 mb-3"
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
           <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
             (change)="onCompetidorChange($event)">
@@ -182,7 +187,8 @@
           <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
           <label for="peso">Peso (kg)</label>
         </div>
-        <div class="form-group col-md-6 mb-3" *ngIf="alumnoData.get('deporte')?.value !== 'PILATES'">
+        <div class="form-group col-md-6 mb-3"
+          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
           <label for="tieneLicencia" class="form-check-label me-3 text-black">¿Tiene licencia federativa?</label>
           <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia" formControlName="tieneLicencia"
             (change)="onLicenciaChange($event)">

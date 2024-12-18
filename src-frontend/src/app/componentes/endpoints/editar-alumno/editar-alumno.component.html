@@ -25,7 +25,7 @@
         <div class="card-container d-flex flex-wrap justify-content-center">
           <div *ngFor="let alumno of alumnos" class="card shadow-sm mb-4">
             <div class="deporte-container mt-3"
-              [ngClass]="{'taekwondo': alumno.deporte === 'TAEKWONDO', 'pilates': alumno.deporte === 'PILATES', 'kickboxing': alumno.deporte === 'KICKBOXING'}">
+              [ngClass]="{'taekwondo': alumno.deporte === 'TAEKWONDO', 'pilates': alumno.deporte === 'PILATES', 'kickboxing': alumno.deporte === 'KICKBOXING', 'defensa-personal-femenina': alumno.deporte === 'DEFENSA_PERSONAL_FEMENINA'}">
               <h2 class="deporte-text">
                 {{ alumno.deporte }}
               </h2>
@@ -68,7 +68,8 @@
                 <div class="mb-3">
                   <strong>DNI del alumno:</strong> {{ alumno.nif }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Tiene Licencia:</strong> {{ alumno.tieneLicencia ? 'Sí' : 'No' }}
                 </div>
                 <div *ngIf="alumno.tieneLicencia" class="border p-2 my-3 bg-light rounded">
@@ -88,7 +89,7 @@
                     </div>
                   </div>
                 </div>
-                <div *ngIf="alumno.deporte !== 'PILATES'">
+                <div *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Competidor:</strong> {{ alumno.competidor ? 'Sí' : 'No' }}
                 </div>
                 <div *ngIf="alumno.competidor" class="border p-2 mt-3 bg-light rounded">
@@ -169,25 +170,30 @@
                 <div *ngIf="alumno.fechaBaja" class="mb-3">
                   <strong>Fecha de baja:</strong> {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Autorización Web:</strong> {{ alumno.autorizacionWeb ? 'Sí' : 'No' }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Categoría:</strong> {{ alumno.categoria ? alumno.categoria : 'No es competidor' }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Grado:</strong> {{ alumno.grado }}
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES'">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <strong>Apto para examen:</strong> {{ alumno.aptoParaExamen ? 'Sí' : 'No' }}
                   <span *ngIf="alumno?.fechaGrado" class="ms-3">
                     <strong>Fecha de Grado:</strong> {{ alumno.fechaGrado | date: 'dd/MM/yyyy' }}
                   </span>
                 </div>
-                <div class="mb-3" *ngIf="alumno.deporte !== 'PILATES' && alumno.aptoParaExamen">
+                <div class="mb-3"
+                  *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA' && alumno.aptoParaExamen">
                   <button class="btn btn-primary" (click)="seleccionarTipoConvocatoria(alumno)">
                     Agregar a una convocatoria específica
-                  </button>                  
+                  </button>
                   <button class="btn btn-danger ms-3" *ngIf="convocatoriasDelAlumno.length > 0"
                     (click)="abrirModalEliminarConvocatorias(alumno)">
                     Eliminar de la convocatoria
@@ -204,7 +210,8 @@
                           <li *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
                             class="convocatoria-item actual">
                             <strong>Convocatoria Actual:</strong>
-                            {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoriaActual.deporte }}
+                            {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{
+                            convocatoriaActual.deporte }}
                           </li>
                           <li *ngFor="let convocatoria of convocatoriasDisponibles"
                             (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
@@ -249,11 +256,11 @@
       </div>
       <div *ngIf="mostrarFormulario" class="py-5 w-100">
         <div class="deporte-container mb-4"
-        [ngClass]="{'taekwondo': alumnoForm.get('deporte')?.value === 'TAEKWONDO', 'pilates': alumnoForm.get('deporte')?.value === 'PILATES', 'kickboxing': alumnoForm.get('deporte')?.value === 'KICKBOXING'}">
-        <h2 class="deporte-text">
-          {{ alumnoForm.get('deporte')?.value }}
-        </h2>
-      </div>
+          [ngClass]="{'taekwondo': alumnoForm.get('deporte')?.value === 'TAEKWONDO', 'pilates': alumnoForm.get('deporte')?.value === 'PILATES', 'kickboxing': alumnoForm.get('deporte')?.value === 'KICKBOXING', 'defensa-personal-femenina': alumnoForm.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA'}">
+          <h2 class="deporte-text">
+            {{ alumnoForm.get('deporte')?.value }}
+          </h2>
+        </div>
         <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
           method="post">
           <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
@@ -342,7 +349,8 @@
                         y una letra)</small>
                     </div>
                   </div>
-                  <div class="form-group form-check mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="form-group form-check mb-3"
+                    *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES' && alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
                     <label class="form-check-label me-3 text-black" for="tieneLicencia">¿Tiene licencia?</label>
                     <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia"
                       formControlName="tieneLicencia">
@@ -376,7 +384,8 @@
                       </div>
                     </div>
                   </div>
-                  <div class="form-group form-check mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="form-group form-check mb-3"
+                    *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES' && alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
                     <label class="form-check-label me-3 text-black" for="competidor">¿Es competidor?</label>
                     <input type="checkbox" class="form-check-input form-switch" id="competidor"
                       formControlName="competidor">
@@ -506,7 +515,8 @@
                         la fecha de alta</small>
                     </div>
                   </div>
-                  <div class="form-group form-floating mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="form-group form-floating mb-3"
+                    *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES' && alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
                     <select class="form-control form-select" id="grado" formControlName="grado" required>
                       <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
                         {{ getGradoNombre(grado) }}
@@ -515,14 +525,15 @@
                     <label for="grado">Grado</label>
                     <!-- Mensajes de error -->
                   </div>
-                  <div class="form-group form-check mb-3" *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="form-group form-check mb-3"
+                    *ngIf="alumnoForm.get('deporte')?.value !== 'PILATES' && alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
                     <label class="form-check-label me-3 text-black" for="aptoParaExamen">¿Apto para examen?</label>
                     <input type="checkbox" class="form-check-input form-switch" id="aptoParaExamen"
                       formControlName="aptoParaExamen">
                   </div>
 
-                  <!-- Mostrar la fecha de grado a la derecha del campo de apto para examen -->
-                  <div class="mb-3" *ngIf="alumnoEditado.grado && alumnoForm.get('deporte')?.value !== 'PILATES'">
+                  <div class="mb-3"
+                    *ngIf="alumnoEditado.grado && alumnoForm.get('deporte')?.value !== 'PILATES' && alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
                     <strong>Fecha de Grado:</strong> {{ alumnoEditado.fechaGrado | date: 'dd/MM/yyyy' }}
                   </div>
                 </div>

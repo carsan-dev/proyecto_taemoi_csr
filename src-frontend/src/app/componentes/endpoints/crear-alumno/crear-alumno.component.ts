@@ -73,8 +73,8 @@ export class CrearAlumnoComponent implements OnInit {
   cargarGrados(): void {
     this.endpointsService.obtenerGrados().subscribe({
       next: (grados) => {
-        this.todosLosGrados = grados; // Almacena todos los grados
-        this.grados = grados; // Inicialmente, muestra todos los grados
+        this.todosLosGrados = grados;
+        this.grados = grados;
       },
       error: (error) => {
         Swal.fire({
@@ -161,7 +161,7 @@ export class CrearAlumnoComponent implements OnInit {
     if (selectedDeporte === 'TAEKWONDO') {
       this.showAllFields();
       this.tiposTarifa = Object.values(TipoTarifa);
-      this.grados = this.todosLosGrados; // Restaurar todos los grados
+      this.grados = this.todosLosGrados;
     } else if (selectedDeporte === 'KICKBOXING') {
       this.showAllFields();
       this.tiposTarifa = [
@@ -170,15 +170,17 @@ export class CrearAlumnoComponent implements OnInit {
         TipoTarifa.FAMILIAR,
       ];
       this.filtrarGradosParaKickboxing();
-    } else if (selectedDeporte === 'PILATES') {
-      this.hideFieldsForPilates();
+    } else if (
+      selectedDeporte === 'PILATES' &&
+      selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA'
+    ) {
+      this.hideFieldsForPilatesOrDefPersFem();
       this.tiposTarifa = [];
-      this.grados = []; // No mostrar grados para Pilates
+      this.grados = [];
     }
   }
 
   resetFormControls(): void {
-    // Remover validaciones
     this.alumnoData.get('tipoTarifa')?.clearValidators();
     this.alumnoData.get('grado')?.clearValidators();
     this.alumnoData.get('competidor')?.clearValidators();
@@ -186,7 +188,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('numeroLicencia')?.clearValidators();
     this.alumnoData.get('fechaLicencia')?.clearValidators();
 
-    // Actualizar validez
     this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoData.get('grado')?.updateValueAndValidity();
     this.alumnoData.get('competidor')?.updateValueAndValidity();
@@ -194,7 +195,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
     this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
 
-    // Habilitar controles
     this.alumnoData.get('tipoTarifa')?.enable();
     this.alumnoData.get('grado')?.enable();
     this.alumnoData.get('competidor')?.enable();
@@ -204,17 +204,14 @@ export class CrearAlumnoComponent implements OnInit {
   }
 
   showAllFields(): void {
-    // Añadir validadores
     this.alumnoData.get('tipoTarifa')?.setValidators(Validators.required);
     this.alumnoData.get('grado')?.setValidators(Validators.required);
 
-    // Actualizar validez
     this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoData.get('grado')?.updateValueAndValidity();
   }
 
-  hideFieldsForPilates(): void {
-    // Deshabilitar y remover validadores
+  hideFieldsForPilatesOrDefPersFem(): void {
     this.alumnoData.get('tipoTarifa')?.disable();
     this.alumnoData.get('tipoTarifa')?.clearValidators();
     this.alumnoData.get('grado')?.disable();
@@ -226,7 +223,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('fechaLicencia')?.disable();
     this.alumnoData.get('fechaLicencia')?.clearValidators();
 
-    // Actualizar validez
     this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoData.get('grado')?.updateValueAndValidity();
     this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
