@@ -36,7 +36,7 @@
     <div class="info-div info-div-reverse d-flex flex-column flex-md-row align-items-center">
       <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
         <img #animatedImage src="../../../../assets/media/doble_puño.webp"
-          alt="Se muestran dos competidores en una competición oficial" class="kickboxing-image">
+          alt="Se muestran dos competidores en una competición oficial" class="left-image">
       </div>
       <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
         <h1 class="h2 text-center">QUÉ HACEMOS</h1>
@@ -51,7 +51,7 @@
         <button type="button" class="btn kickboxing-button mt-5" routerLink="/contacto">Contáctanos</button>
       </div>
     </div>
-    <div class="info-div mb-5 d-flex flex-column flex-md-row align-items-center">
+    <div class="info-div d-flex flex-column flex-md-row align-items-center">
       <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
         <h1 class="h2 text-center">POR QUÉ ELEGIRNOS</h1>
         <p class="mt-5">En Moiskimdo, no solo te ofrecemos entrenamiento de alta calidad, sino también una comunidad que
@@ -66,12 +66,30 @@
           alt="Representando los beneficios de entrenar con nosotros">
       </div>
     </div>
+    <div class="info-div mb-5 info-div-reverse d-flex flex-column flex-md-row align-items-center">
+      <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
+        <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Instructores impartiendo una clase"
+          class="left-image">
+      </div>
+      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
+        <h1 class="h2 text-center">NUESTROS INSTRUCTORES</h1>
+        <p class="mt-5">Detrás de cada clase inspiradora están nuestros instructores, profesionales altamente
+          capacitados y apasionados. Cada uno de ellos combina su experiencia en artes marciales con habilidades
+          pedagógicas para guiarte y motivarte durante tu entrenamiento.</p>
+        <p class="mt-4">Nuestros instructores valoran el progreso individual y trabajan codo a codo contigo, brindando
+          la atención personalizada y el apoyo necesarios para que puedas superar tus límites, independientemente de tu
+          nivel inicial.</p>
+        <button type="button" class="btn defensa-personal-button mt-5" routerLink="/instructores">Conoce a nuestro
+          equipo</button>
+      </div>
+    </div>
   </section>
   <section class="slider-section p-0 d-flex flex-column mb-5">
     <app-slider-tocable></app-slider-tocable>
-    <button type="button" class="btn btn-primary mt-5 align-self-center" routerLink="/eventos">Ver todos los eventos</button>
+    <button type="button" class="btn btn-primary mt-5 align-self-center" routerLink="/eventos">Ver todos los
+      eventos</button>
   </section>
-  
+
   <section class="map-section d-flex flex-column align-items-center justify-content-center">
     <div class="card mt-4 img-content location-container" id="map-section">
       <app-mapa class="card-img-top"></app-mapa>
