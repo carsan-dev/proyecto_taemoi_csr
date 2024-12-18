@@ -1,192 +1,118 @@
-.contact-form {
-  background: url("../../../../assets/media/fondo_formulario.webp") no-repeat
-    center center;
-  background-size: cover;
-  max-width: 100%;
+.contact-container {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 
   .row {
-    margin-top: 100px;
-    display: flex; // Asegura que las columnas se comporten como flexbox
-    align-items: stretch; // Ambos hijos tendrán la misma altura
-    width: 100%;
+    background: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  }
 
-    .left-container,
-    .right-container {
-      flex: 1; // Ambos contenedores ocupan el mismo espacio de forma flexible
-      display: flex;
-      flex-direction: column;
-      justify-content: center; // Centra verticalmente el contenido dentro de cada contenedor
-      padding: 40px;
-      border-radius: 15px;
-    }
+  .left-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+      url("../../../../assets/media/fondo_formulario.webp") no-repeat center
+        center;
+    background-size: cover;
+    text-align: center;
 
-    .left-container {
-      background-color: rgba(0, 0, 0, 0.6);
-      color: white;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-      animation: fadeIn 1s ease-in-out;
-
-      .logo-escuela {
-        width: 200px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-radius: 50%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        animation: scaleUp 1s ease-in-out;
-
-        &:hover {
-          transform: scale(1.2);
-          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
-        }
-      }
-    }
-
-    .right-container {
-      background-color: #ffffff;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-      transition: box-shadow 0.3s ease;
+    .logo {
+      width: 150px;
+      height: auto;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+      transition: transform 0.3s ease;
 
       &:hover {
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        transform: scale(1.05);
       }
+    }
+  }
 
-      .form-group {
+  .right-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    h3 {
+      color: #333;
+    }
+
+    form {
+      .form-floating {
         position: relative;
-        margin-bottom: 2rem;
-        animation: slideUp 0.8s ease-in-out;
 
         label {
-          position: absolute;
-          top: 1rem;
-          left: 0.75rem;
-          background-color: transparent;
-          padding: 0 0.25rem;
-          font-size: 1rem;
-          color: #999;
-          pointer-events: none;
-          transition: 0.3s ease-in-out;
+          color: #666;
+          transition: color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
         }
 
-        input,
-        select,
-        textarea {
-          width: 100%;
-          padding: 1rem 0.75rem;
-          font-size: 1rem;
+        .form-control,
+        .form-select {
           border: 1px solid #ccc;
-          border-radius: 0.5rem;
-          transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
           &:focus {
             border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
           }
 
-          &:focus + label,
-          &:not(:placeholder-shown) + label {
-            top: -1.4rem;
-            left: 0;
-            font-size: 0.75rem;
+          &:focus ~ label,
+          &:not(:placeholder-shown) ~ label,
+          select:not([value=""]):not(:invalid) ~ label {
             color: #007bff;
           }
         }
       }
-    }
 
-    button {
-      font-size: 1.25rem;
-      padding: 0.75rem 1.5rem;
-      border-radius: 50px;
-      transition: background-color 0.3s ease, transform 0.3s ease,
-        box-shadow 0.3s ease;
-
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-      }
-
-      &.btn-success {
-        background-color: #28a745;
-        border: none;
+      .btn {
+        border-radius: 50px;
+        font-size: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
 
         &:hover {
-          background-color: #218838;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-      }
 
-      &.btn-primary {
-        background-color: #007bff;
-        border: none;
-
-        &:hover {
-          background-color: #0056b3;
+        &.btn-success {
+          background-color: #28a745;
+          border: none;
+          &:hover {
+            background-color: #218838;
+          }
         }
-      }
-    }
 
-    @media (max-width: 992px) {
-      .row {
-        flex-direction: column;
-      }
-
-      .left-container,
-      .right-container {
-        margin-bottom: 30px;
-        text-align: center;
-        flex: none; // Desactivar el comportamiento flex en pantallas pequeñas
-      }
-
-      .left-container {
-        margin-bottom: 30px;
-        text-align: center;
-      }
-
-      .right-container {
-        padding: 20px;
-      }
-
-      .form-group {
-        input,
-        select,
-        textarea {
-          font-size: 0.9rem;
+        &.btn-primary {
+          background-color: #007bff;
+          border: none;
+          &:hover {
+            background-color: #0056b3;
+          }
         }
       }
     }
   }
-}
 
-// Animaciones
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
+  @media (max-width: 992px) {
+    .row {
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
 
-@keyframes scaleUp {
-  0% {
-    transform: scale(0.8);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
+    .left-section,
+    .right-section {
+      border-radius: 0;
+      padding: 3rem 1.5rem;
+    }
 
-@keyframes slideUp {
-  0% {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
+    .left-section {
+      background-position: center;
+      .logo {
+        width: 120px;
+      }
+    }
+
+    .right-section {
+      padding: 2rem 1rem;
+    }
   }
 }
