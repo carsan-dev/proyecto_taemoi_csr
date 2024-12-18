@@ -36,6 +36,7 @@ import { ListadoProductosComponent } from './componentes/endpoints/listado-produ
 import { CrearProductoComponent } from './componentes/endpoints/crear-producto/crear-producto.component';
 import { EditarProductoComponent } from './componentes/endpoints/editar-producto/editar-producto.component';
 import { ListadoConvocatoriasComponent } from './componentes/endpoints/listado-convocatorias/listado-convocatorias.component';
+import { DefensaPersonalFemeninaComponent } from './componentes/vistas/defensa-personal-femenina/defensa-personal-femenina.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
@@ -43,6 +44,7 @@ export const routes: Routes = [
   { path: 'eltaekwondo', component: EltaekwondoComponent },
   { path: 'kickboxing', component: KickboxingComponent },
   { path: 'pilates', component: PilatesComponent },
+  { path: 'defensapersonalfemenina', component: DefensaPersonalFemeninaComponent },
   { path: 'horarios', component: HorariosComponent },
   { path: 'eventos', component: EventosComponent },
   { path: 'eventos/:eventoId', component: EventoDetalleComponent },
