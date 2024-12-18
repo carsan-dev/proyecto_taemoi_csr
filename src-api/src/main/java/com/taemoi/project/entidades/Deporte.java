@@ -3,5 +3,6 @@ package com.taemoi.project.entidades;
 public enum Deporte {
 	TAEKWONDO,
 	KICKBOXING,
-	PILATES
+	PILATES,
+	DEFENSA_PERSONAL_FEMENINA
 }

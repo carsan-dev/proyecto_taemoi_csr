@@ -10,4 +10,5 @@ public class NombresGrupo {
     public static final String TAEKWONDO_COMPETICION = "Taekwondo Competición";
     public static final String PILATES_MARTES_JUEVES = "Pilates Martes y Jueves";
     public static final String KICKBOXING_LUNES_MIERCOLES = "Kickboxing Lunes y Miércoles";
+    public static final String DEFENSA_PERSONAL_FEMENINA_LUNES_MIERCOLES = "Defensa Personal Femenina Lunes y Miércoles";
 }
