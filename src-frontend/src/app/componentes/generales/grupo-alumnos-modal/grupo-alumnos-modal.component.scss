@@ -1,0 +1,21 @@
+.modal-content {
+  border: none;
+  overflow: hidden;
+}
+
+.modal-header {
+  border-bottom: none;
+}
+
+.list-group-item {
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.list-group-item:hover {
+  background-color: #f0f8ff;
+  transform: translateY(-2px);
+}
+
+.modal-footer {
+  border-top: none;
+}
