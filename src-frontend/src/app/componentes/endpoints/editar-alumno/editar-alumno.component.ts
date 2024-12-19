@@ -423,6 +423,7 @@ export class EditarAlumnoComponent implements OnInit {
           title: '¡Bien!',
           text: '¡Alumno actualizado correctamente!',
           icon: 'success',
+          timer: 2000,
         });
         this.mostrarFormulario = false;
         this.obtenerAlumnos();
@@ -480,7 +481,7 @@ export class EditarAlumnoComponent implements OnInit {
       confirmButtonColor: '#28a745',
       cancelButtonColor: '#6c757d',
     }).then((result) => {
-      const porRecompensa = result.isConfirmed; // true si selecciona recompensa
+      const porRecompensa = result.isConfirmed;
       this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
     });
   }
@@ -490,7 +491,6 @@ export class EditarAlumnoComponent implements OnInit {
     this.cargarConvocatoriasDisponibles(alumno);
     this.mostrarModalConvocatorias = true;
 
-    // Guardar el tipo de producto seleccionado en una variable temporal
     this.alumnoEditado.porRecompensa = porRecompensa;
   }
 
@@ -507,6 +507,7 @@ export class EditarAlumnoComponent implements OnInit {
             title: 'Alumno agregado',
             text: 'El alumno ha sido agregado correctamente a la convocatoria.',
             icon: 'success',
+            timer: 2000,
           });
           this.cerrarModalConvocatorias();
           this.cargarConvocatoriasDelAlumno(this.alumnoId!);
@@ -544,20 +545,21 @@ export class EditarAlumnoComponent implements OnInit {
           .eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id)
           .subscribe({
             next: () => {
-              Swal.fire(
-                'Eliminado',
-                'El alumno ha sido eliminado de la convocatoria.',
-                'success'
-              );
+              Swal.fire({
+                title: 'Eliminado',
+                text: 'El alumno ha sido eliminado de la convocatoria.',
+                icon: 'success',
+                timer: 2000,
+              });
               this.cargarConvocatoriasDelAlumno(this.alumnoId!);
               this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
             },
             error: (error) => {
-              Swal.fire(
-                'Error',
-                'No se pudo eliminar al alumno de la convocatoria.',
-                'error'
-              );
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo eliminar al alumno de la convocatoria.',
+                icon: 'error',
+              });
             },
           });
       } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -589,6 +591,86 @@ export class EditarAlumnoComponent implements OnInit {
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
     this.obtenerAlumnos();
+  }
+
+  reservarPlaza(alumnoId: number) {
+    const anoActual = new Date().getFullYear();
+    const proximoAno = anoActual + 1;
+    Swal.fire({
+      title: '¿Quiere añadir una reserva de plaza?',
+      text: `Temporada: ${anoActual}/${proximoAno}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí',
+      cancelButtonText: 'No',
+    }).then((resultado) => {
+      if (resultado.isConfirmed) {
+        Swal.fire({
+          title: '¿Ha sido abonada la reserva?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, pagada',
+          cancelButtonText: 'No',
+        }).then((resultadoPago) => {
+          const pagado = resultadoPago.isConfirmed;
+          this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Reserva creada',
+                text: 'La reserva de plaza ha sido añadida correctamente.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.obtenerProductosAlumno(alumnoId, this.alumnoEditado);
+            },
+            error: (err) => {
+              if (err.status === 409) {
+                Swal.fire({
+                  title: 'Reserva existente',
+                  text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonText: 'Sí, proceder',
+                  cancelButtonText: 'No',
+                }).then((respuesta) => {
+                  if (respuesta.isConfirmed) {
+                    this.endpointsService
+                      .reservarPlaza(alumnoId, pagado, true)
+                      .subscribe({
+                        next: () => {
+                          Swal.fire({
+                            title: 'Reserva creada',
+                            text: 'La reserva de plaza ha sido añadida correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                          });
+                          this.obtenerProductosAlumno(
+                            alumnoId,
+                            this.alumnoEditado
+                          );
+                        },
+                        error: () => {
+                          Swal.fire({
+                            title: 'Error',
+                            text: 'No se pudo crear la reserva.',
+                            icon: 'error',
+                          });
+                        },
+                      });
+                  }
+                });
+              } else {
+                Swal.fire({
+                  title: 'Error',
+                  text: 'No se pudo crear la reserva.',
+                  icon: 'error',
+                });
+              }
+            },
+          });
+        });
+      }
+    });
   }
 
   alternarFormulario(alumno: any): void {
@@ -750,6 +832,7 @@ export class EditarAlumnoComponent implements OnInit {
         icon: 'error',
         title: 'Imagen no disponible',
         text: 'No hay imagen disponible para mostrar.',
+        timer: 2000
       });
       return; // Detenemos la ejecución si no hay imagen
     }
