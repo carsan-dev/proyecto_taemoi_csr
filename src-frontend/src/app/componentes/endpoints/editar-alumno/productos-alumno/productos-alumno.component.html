@@ -25,53 +25,37 @@
             <td class="text-center">{{ productoAlumno.concepto }}</td>
             <td class="text-center">{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
             <td style="max-width:100px;" class="text-center">
-              <input
-                type="number"
-                class="form-control form-control-sm"
-                [(ngModel)]="productoAlumno.cantidad"
-                (change)="actualizarProducto(alumnoId, productoAlumno)"
-                min="1"
-              />
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.cantidad"
+                (change)="actualizarProducto(alumnoId, productoAlumno)" min="1" />
             </td>
-            <td class="text-center">{{ productoAlumno.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
             <td class="text-center">
-              <span
-                [ngClass]="{
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.precio"
+                (change)="actualizarProducto(alumnoId, productoAlumno)" min="0" step="0.01" title="Editar precio" />
+            </td>
+            <td class="text-center">
+              <span [ngClass]="{
                   'total-no-pagado': !productoAlumno.pagado,
                   'total-animacion': !productoAlumno.pagado
-                }"
-                [title]="!productoAlumno.pagado ? 'Este producto aún no está pagado' : ''"
-              >
+                }" [title]="!productoAlumno.pagado ? 'Este producto aún no está pagado' : ''">
                 {{ calcularTotal(productoAlumno.precio, productoAlumno.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
               </span>
             </td>
             <td class="text-center">
-              <input
-                type="checkbox"
-                [(ngModel)]="productoAlumno.pagado"
-                (change)="actualizarProducto(alumnoId, productoAlumno)"
-              />
+              <input type="checkbox" [(ngModel)]="productoAlumno.pagado"
+                (change)="actualizarProducto(alumnoId, productoAlumno)" />
             </td>
             <td class="text-center">{{ productoAlumno.fechaPago | date: 'dd/MM/yyyy' }}</td>
             <td class="text-center">
               <span class="nota-truncada" [title]="productoAlumno.notas">{{ productoAlumno.notas }}</span>
-              <button
-                type="button"
-                class="btn btn-sm btn-link ms-1"
-                (click)="abrirModalNotas(productoAlumno)"
-                title="Editar notas"
-              >
+              <button type="button" class="btn btn-sm btn-link ms-1" (click)="abrirModalNotas(productoAlumno)"
+                title="Editar notas">
                 <i class="bi bi-pencil-square"></i>
               </button>
             </td>
             <td class="text-center">
-              <button
-                type="button"
-                class="btn btn-sm btn-danger"
-                (click)="eliminarProducto(alumnoId, productoAlumno.id)"
-                title="Eliminar producto"
-              >
-                <i class="bi bi-trash"></i>  
+              <button type="button" class="btn btn-sm btn-danger"
+                (click)="eliminarProducto(alumnoId, productoAlumno.id)" title="Eliminar producto">
+                <i class="bi bi-trash"></i>
               </button>
             </td>
           </tr>
@@ -101,9 +85,5 @@
   </div>
 </div>
 
-<app-productos-alumno-notas
-  *ngIf="mostrarModalNotas"
-  [productoAlumno]="productoSeleccionado"
-  (cerrar)="cerrarModalNotas()"
-  (guardar)="guardarNotas($event)"
-></app-productos-alumno-notas>
+<app-productos-alumno-notas *ngIf="mostrarModalNotas" [productoAlumno]="productoSeleccionado"
+  (cerrar)="cerrarModalNotas()" (guardar)="guardarNotas($event)"></app-productos-alumno-notas>
