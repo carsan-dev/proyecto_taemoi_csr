@@ -48,7 +48,7 @@ export class EndpointsService {
   obtenerAlumnos(
     page: number,
     size: number,
-    nombre: string = "",
+    nombre: string = '',
     incluirInactivos: boolean = false
   ): Observable<any> {
     let params = new HttpParams()
@@ -245,20 +245,30 @@ export class EndpointsService {
       )
       .pipe(catchError(this.manejarError));
   }
-  
 
-  eliminarAlumnoDeConvocatoria(alumnoId: number, convocatoriaId: number): Observable<any> {
+  eliminarAlumnoDeConvocatoria(
+    alumnoId: number,
+    convocatoriaId: number
+  ): Observable<any> {
     return this.http
-      .delete<any>(`${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`, { withCredentials: true })
+      .delete<any>(
+        `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerConvocatoriasDeAlumno(alumnoId: number): Observable<ConvocatoriaDTO[]> {
+  obtenerConvocatoriasDeAlumno(
+    alumnoId: number
+  ): Observable<ConvocatoriaDTO[]> {
     return this.http
-      .get<ConvocatoriaDTO[]>(`${this.urlBase}/convocatorias/alumnos/${alumnoId}`, { withCredentials: true })
+      .get<ConvocatoriaDTO[]>(
+        `${this.urlBase}/convocatorias/alumnos/${alumnoId}`,
+        { withCredentials: true }
+      )
       .pipe(catchError(this.manejarError));
   }
-  
+
   obtenerTodosLosProductos(): Observable<Producto[]> {
     return this.http
       .get<Producto[]>(`${this.urlBase}/productos/todos`, {
@@ -349,15 +359,6 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  // Nuevo método para eliminar un producto de un alumno
-  eliminarProductoAlumno(id: number): Observable<any> {
-    return this.http
-      .delete<void>(`${this.urlBase}/productos-alumno/${id}`, {
-        withCredentials: true,
-      })
-      .pipe(catchError(this.manejarError));
-  }
-
   actualizarProductoAlumno(
     id: number,
     detalles: ProductoAlumnoDTO
@@ -369,6 +370,31 @@ export class EndpointsService {
         {
           withCredentials: true,
         }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  eliminarProductoAlumno(id: number): Observable<any> {
+    return this.http
+      .delete<void>(`${this.urlBase}/productos-alumno/${id}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  reservarPlaza(
+    alumnoId: number,
+    pagado: boolean,
+    forzar: boolean = false
+  ): Observable<ProductoAlumnoDTO> {
+    const params = new HttpParams()
+      .set('pagado', pagado.toString())
+      .set('forzar', forzar.toString());
+    return this.http
+      .post<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${alumnoId}/reservar-plaza`,
+        null,
+        { params, withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
@@ -408,7 +434,7 @@ export class EndpointsService {
       .subscribe({
         next: (conteo) => {
           this.conteoAlumnosPorGrupoSubject.next(conteo);
-          this.conteoAlumnosPorGrupo = conteo; // Actualizar la propiedad si es necesario
+          this.conteoAlumnosPorGrupo = conteo;
         },
         error: (error) => {
           console.error(
@@ -696,19 +722,25 @@ export class EndpointsService {
   }
 
   actualizarGradosDeConvocatoria(convocatoriaId: number): Observable<void> {
-    return this.http.put<void>(
-      `${this.urlBase}/convocatorias/${convocatoriaId}/actualizar-grados`,
-      {},
-      { withCredentials: true }
-    ).pipe(catchError(this.manejarError));
+    return this.http
+      .put<void>(
+        `${this.urlBase}/convocatorias/${convocatoriaId}/actualizar-grados`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
   }
 
-  actualizarAlumnoConvocatoria(alumnoConvocatoriaId: number, datos: any): Observable<void> {
-    return this.http.put<void>(
-      `${this.urlBase}/convocatorias/alumno/${alumnoConvocatoriaId}`,
-      datos,
-      { withCredentials: true }
-    ).pipe(catchError(this.manejarError));
+  actualizarAlumnoConvocatoria(
+    alumnoConvocatoriaId: number,
+    datos: any
+  ): Observable<void> {
+    return this.http
+      .put<void>(
+        `${this.urlBase}/convocatorias/alumno/${alumnoConvocatoriaId}`,
+        datos,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
   }
-  
 }
