@@ -36,7 +36,10 @@ export class EliminarAlumnoComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.alumnos = response.content;
+          this.alumnos = response.content.map((alumno: any) => ({
+            ...alumno,
+            activo: alumno.activo ?? true,
+          }));
           this.totalPaginas = response.totalPages;
         },
         error: () => {

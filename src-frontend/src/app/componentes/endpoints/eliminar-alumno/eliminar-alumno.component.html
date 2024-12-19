@@ -4,9 +4,9 @@
       <div class="p-4">
         <h2 class="text-center mb-5 fw-bold">Gestionar Alumnos</h2>
         <div class="row my-3 d-flex justify-content-center">
-          <!-- Para móviles, la columna de entrada y botones ocupan toda la pantalla -->
           <div class="col-12 col-md-6 mb-3">
-            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro" (ngModelChange)="filtrarPorNombre()" />
+            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
+              (ngModelChange)="filtrarPorNombre()" />
           </div>
           <div class="col-12 col-md-6 text-md-end">
             <button class="btn btn-secondary w-100 w-md-auto" (click)="alternarInactivos()">
@@ -15,9 +15,10 @@
           </div>
         </div>
         <div class="text-center mb-3 d-flex flex-column flex-md-row justify-content-center">
-          <!-- Botones ocupan toda la pantalla en móviles -->
-          <button class="btn btn-warning mb-2 mb-md-0 me-md-2" (click)="darDeBajaAlumnosSeleccionados()">Dar de baja seleccionados</button>
-          <button class="btn btn-danger mb-2 mb-md-0" (click)="eliminarAlumnosSeleccionados()">Eliminar seleccionados</button>
+          <button class="btn btn-warning mb-2 mb-md-0 me-md-2" (click)="darDeBajaAlumnosSeleccionados()">Dar de baja
+            seleccionados</button>
+          <button class="btn btn-danger mb-2 mb-md-0" (click)="eliminarAlumnosSeleccionados()">Eliminar
+            seleccionados</button>
         </div>
         <div class="table-responsive">
           <table class="table table-sm custom-table mt-4">
@@ -40,21 +41,30 @@
                   </div>
                 </td>
                 <td class="align-middle">
-                  <img class="imagen-perfil" [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'" alt="Perfil del alumno">
+                  <img class="imagen-perfil"
+                    [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                    alt="Perfil del alumno">
                 </td>
                 <td class="align-middle">{{ alumno.nombre }}</td>
                 <td class="align-middle">{{ alumno.apellidos }}</td>
                 <td class="align-middle">{{ alumno.numeroExpediente }}</td>
                 <td class="align-middle">{{ alumno.nif }}</td>
                 <td class="align-middle">
-                  <button class="btn btn-warning btn-sm" (click)="darDeBajaAlumno(alumno.id)">Dar de baja</button>
+                  <button *ngIf="alumno.activo" class="btn btn-warning btn-sm" (click)="darDeBajaAlumno(alumno.id)">
+                    Dar de baja
+                  </button>
+                  <button *ngIf="!alumno.activo" class="btn btn-secondary btn-sm" disabled
+                    title="Este alumno ya está inactivo">
+                    Inactivo
+                  </button>
                   <button class="btn btn-danger btn-sm" (click)="eliminarAlumno(alumno.id)">Eliminar</button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" (pageChange)="cambiarPagina($event)">
+        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+          (pageChange)="cambiarPagina($event)">
         </app-paginacion>
       </div>
     </div>
