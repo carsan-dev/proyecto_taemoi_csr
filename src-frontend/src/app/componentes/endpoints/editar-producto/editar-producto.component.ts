@@ -69,6 +69,7 @@ export class EditarProductoComponent implements OnInit {
           title: '¡Producto actualizado!',
           text: 'El producto se ha actualizado exitosamente',
           icon: 'success',
+          timer: 2000,
         }).then(() => {
           this.router.navigate(['/productosListar']);
         });

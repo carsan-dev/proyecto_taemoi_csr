@@ -35,6 +35,7 @@ export class VistaLoginComponent implements OnInit {
               title: 'Atención',
               text: `Ya estás logueado, ${nombreUsuario}`,
               icon: 'warning',
+              timer: 2000,
             });
           }
           this.redirigirSegunRol(roles);
@@ -47,6 +48,7 @@ export class VistaLoginComponent implements OnInit {
                 title: 'Atención',
                 text: `Ya estás logueado, ${nombreUsuario}`,
                 icon: 'warning',
+                timer: 2000,
               });
             }
             this.redirigirSegunRol(roles);
@@ -75,6 +77,7 @@ export class VistaLoginComponent implements OnInit {
               title: 'Inicio de sesión exitoso',
               text: `¡Bienvenido/a, ${nombreUsuario}!`,
               icon: 'success',
+              timer: 2000,
             });
   
             this.redirigirSegunRol(roles);

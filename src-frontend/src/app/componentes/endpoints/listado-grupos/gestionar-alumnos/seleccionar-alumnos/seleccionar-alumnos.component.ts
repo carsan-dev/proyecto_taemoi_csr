@@ -93,6 +93,7 @@ export class SeleccionarAlumnosComponent implements OnInit {
               title: 'Alumnos agregados',
               text: 'Los alumnos han sido agregados al grupo exitosamente',
               icon: 'success',
+              timer: 2000,
             }).then(() => {
               this.router.navigate(['/gestionarAlumnos', this.grupoId]);
             });

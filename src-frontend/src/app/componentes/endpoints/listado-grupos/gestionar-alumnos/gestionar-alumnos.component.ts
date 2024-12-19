@@ -69,11 +69,12 @@ export class GestionarAlumnosComponent implements OnInit {
           .eliminarAlumnoDeGrupo(this.grupoId, alumnoId)
           .subscribe({
             next: () => {
-              Swal.fire(
-                'Eliminado',
-                'Alumno correctamente eliminado del grupo!',
-                'success'
-              );
+              Swal.fire({
+                title: '¡Eliminado!',
+                text: 'Alumno correctamente eliminado del grupo.',
+                icon: 'success',
+                timer: 2000,
+              });
               this.alumnos = this.alumnos.filter(
                 (alumno) => alumno.id !== alumnoId
               );

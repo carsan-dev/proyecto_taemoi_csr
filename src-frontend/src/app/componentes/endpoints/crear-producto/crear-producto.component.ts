@@ -45,6 +45,7 @@ export class CrearProductoComponent {
           title: '¡Producto creado!',
           text: 'El producto se ha creado exitosamente',
           icon: 'success',
+          timer: 2000,
         }).then(() => {
           this.router.navigate(['/productosListar']);
         });

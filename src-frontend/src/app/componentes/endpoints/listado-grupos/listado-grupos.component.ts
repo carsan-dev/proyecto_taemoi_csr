@@ -49,7 +49,12 @@ export class ListadoGruposComponent implements OnInit {
       if (result.isConfirmed) {
         this.endpointsService.eliminarGrupo(id).subscribe({
           next: () => {
-            Swal.fire('Eliminado!', 'El grupo ha sido eliminado.', 'success');
+            Swal.fire({
+              title: '¡Eliminado!',
+              text: 'El grupo ha sido eliminado correctamente.',
+              icon: 'success',
+              timer: 2000,
+            });
             this.obtenerGrupos();
           },
           error: (error) => {

@@ -79,32 +79,32 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.endpointsService.eliminarTurnoDeGrupo(this.grupoId, turnoId).subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Bien',
-              text: '¡Turno eliminado correctamente del grupo!',
-              icon: 'success',
-            }).then(() => {
-              // Llamar a actualizarTurnos para recargar los datos
-              this.actualizarTurnos();
-            });
-          },
-          error: () => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No hemos podido eliminar el turno.',
-              icon: 'error',
-            });
-          },
-        });
+        this.endpointsService
+          .eliminarTurnoDeGrupo(this.grupoId, turnoId)
+          .subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Bien',
+                text: '¡Turno eliminado correctamente del grupo!',
+                icon: 'success',
+                timer: 2000,
+              }).then(() => {
+                this.actualizarTurnos();
+              });
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error',
+                text: 'No hemos podido eliminar el turno.',
+                icon: 'error',
+              });
+            },
+          });
       }
     });
   }
-  
 
   actualizarTurnos() {
-    // Suscribirse al Observable expuesto por el BehaviorSubject
     const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
       next: (turnos) => {
         this.turnos = turnos;
@@ -113,12 +113,16 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
             title: 'Advertencia',
             text: 'No quedan más turnos en el grupo.',
             icon: 'warning',
+            timer: 2000,
           });
         }
       },
       error: (error) => {
-        // Aunque es poco probable que el Observable emita un error aquí,
-        // puedes manejarlo si es necesario
+        Swal.fire({
+          title: 'Error',
+          text: 'No hemos podido obtener los turnos del grupo.',
+          icon: 'error',
+        });
       },
     });
 

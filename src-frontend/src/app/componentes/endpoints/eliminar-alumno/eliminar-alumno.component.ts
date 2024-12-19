@@ -72,6 +72,7 @@ export class EliminarAlumnoComponent implements OnInit {
               title: 'Alumno dado de baja',
               text: 'El alumno ha sido dado de baja correctamente.',
               icon: 'success',
+              timer: 2000,
             });
             this.obtenerAlumnos();
           },
@@ -105,6 +106,7 @@ export class EliminarAlumnoComponent implements OnInit {
               title: 'Alumno eliminado',
               text: 'El alumno ha sido eliminado correctamente.',
               icon: 'success',
+              timer: 2000,
             });
             this.obtenerAlumnos();
           },
@@ -182,6 +184,7 @@ export class EliminarAlumnoComponent implements OnInit {
         title: 'Alumnos dados de baja',
         text: 'Los alumnos seleccionados han sido dados de baja correctamente.',
         icon: 'success',
+        timer: 2000,
       });
       this.obtenerAlumnos();
       return;
@@ -210,6 +213,7 @@ export class EliminarAlumnoComponent implements OnInit {
         title: 'Alumnos eliminados',
         text: 'Los alumnos seleccionados han sido eliminados correctamente.',
         icon: 'success',
+        timer: 2000,
       });
       this.obtenerAlumnos();
       return;

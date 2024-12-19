@@ -101,6 +101,7 @@ export class EditarTurnoComponent implements OnInit {
             title: 'Actualizado',
             text: 'El turno ha sido actualizado',
             icon: 'success',
+            timer: 2000,
           }).then(() => {
             this.router.navigate(['/turnosListar']);
           });

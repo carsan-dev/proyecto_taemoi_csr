@@ -89,6 +89,7 @@ export class HeaderComponent implements OnInit {
             title: 'Sesión cerrada con éxito',
             text: '¡Hasta la próxima!',
             icon: 'success',
+            timer: 2000,
           });
   
           // Redirigir al usuario después de cerrar sesión
@@ -105,6 +106,7 @@ export class HeaderComponent implements OnInit {
         title: 'Atención',
         text: 'No has iniciado sesión. No se puede cerrar la sesión.',
         icon: 'warning',
+        timer: 2000,
       });
     }
   }  

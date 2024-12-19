@@ -15,7 +15,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
-  
+
   constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
@@ -42,7 +42,6 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-
   eliminarEvento(id: number): void {
     Swal.fire({
       title: '¿Estás seguro?',
@@ -54,11 +53,12 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     }).then((result) => {
       if (result.isConfirmed) {
         this.endpointsService.eliminarEvento(id);
-        Swal.fire(
-          'Eliminado!',
-          'El evento ha sido eliminado correctamente.',
-          'success'
-        );
+        Swal.fire({
+          title: '¡Eliminado!',
+          text: 'El evento ha sido eliminado correctamente.',
+          icon: 'success',
+          timer: 2000,
+        });
       }
     });
   }

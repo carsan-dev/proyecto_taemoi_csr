@@ -74,6 +74,7 @@ export class ContactoComponent {
           title: 'Correo enviado',
           text: '¡El correo ha sido enviado correctamente!.',
           icon: 'success',
+          timer: 2000,
         });
         this.limpiarCampos();
       },

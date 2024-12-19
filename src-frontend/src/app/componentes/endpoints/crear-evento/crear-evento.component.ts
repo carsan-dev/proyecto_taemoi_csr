@@ -46,6 +46,7 @@ export class CrearEventoComponent implements OnInit {
         title: 'Formulario inválido',
         text: 'Por favor, completa todos los campos requeridos.',
         icon: 'warning',
+        timer: 2000,
       });
       return;
     }
@@ -58,6 +59,7 @@ export class CrearEventoComponent implements OnInit {
           title: '¡Perfecto!',
           text: 'Has creado un nuevo evento',
           icon: 'success',
+          timer: 2000,
         });
         this.router.navigate(['/eventosListar']);
       },
