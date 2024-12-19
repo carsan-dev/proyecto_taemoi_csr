@@ -377,8 +377,8 @@ public class InicializadorDatos implements CommandLineRunner {
 			productos.add(new Producto("MIT DOBLE DAEDO", 22.95, ""));
 			productos.add(new Producto("MIT SIMPLE DAEDO", 19.0, ""));
 			productos.add(new Producto("MIT DOBLE DAEDO PARA NIÑOS", 17.0, ""));
+			productos.add(new Producto("RESERVA DE PLAZA", 15.0, ""));
 
-			// Guardar todos los productos en el repositorio
 			productoRepository.saveAll(productos);
 		}
 	}
