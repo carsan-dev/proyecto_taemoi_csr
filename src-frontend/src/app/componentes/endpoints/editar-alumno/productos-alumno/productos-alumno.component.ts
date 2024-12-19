@@ -101,6 +101,7 @@ export class ProductosAlumnoComponent implements OnInit {
             title: 'Éxito',
             text: 'Producto asignado correctamente',
             icon: 'success',
+            timer: 2000,
           });
         },
         error: (error) => {
@@ -136,6 +137,7 @@ export class ProductosAlumnoComponent implements OnInit {
                 title: 'Éxito',
                 text: 'Producto eliminado correctamente',
                 icon: 'success',
+                timer: 2000,
               });
             },
             error: (error) => {
