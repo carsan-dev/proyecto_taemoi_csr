@@ -22,114 +22,144 @@ import com.taemoi.project.servicios.ProductoAlumnoService;
 @Service
 public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
-    @Autowired
-    private ProductoAlumnoRepository productoAlumnoRepository;
+	@Autowired
+	private ProductoAlumnoRepository productoAlumnoRepository;
 
-    @Autowired
-    private ProductoRepository productoRepository;
+	@Autowired
+	private ProductoRepository productoRepository;
 
-    @Autowired
-    private AlumnoRepository alumnoRepository;
-    
-    @Autowired
-    private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
-	
-    @Override
-    public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
-        Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+	@Autowired
+	private AlumnoRepository alumnoRepository;
 
-        Producto producto = productoRepository.findById(productoId)
-                .orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+	@Autowired
+	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
 
-        ProductoAlumno productoAlumno = new ProductoAlumno();
-        productoAlumno.setAlumno(alumno);
-        productoAlumno.setProducto(producto);
-        productoAlumno.setConcepto(producto.getConcepto());
-        productoAlumno.setPrecio(producto.getPrecio());
-        productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
-        productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
-        productoAlumno.setFechaAsignacion(new Date());
-        productoAlumno.setNotas(detallesDTO.getNotas());
+	@Override
+	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
 
-        if (productoAlumno.getPagado()) {
-            productoAlumno.setFechaPago(new Date());
-        }
+		Producto producto = productoRepository.findById(productoId)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
 
-        ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(producto);
+		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
+		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setNotas(detallesDTO.getNotas());
 
-        // Convertir a DTO antes de retornar
-        return convertirADTO(savedProductoAlumno);
-    }
+		if (productoAlumno.getPagado()) {
+			productoAlumno.setFechaPago(new Date());
+		}
 
+		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-    @Override
-    public List<ProductoAlumnoDTO> obtenerProductosDeAlumno(Long alumnoId) {
-        List<ProductoAlumno> productosAlumno = productoAlumnoRepository.findByAlumnoId(alumnoId);
-        return productosAlumno.stream()
-                .map(this::convertirADTO)
-                .collect(Collectors.toList());
-    }
+		// Convertir a DTO antes de retornar
+		return convertirADTO(savedProductoAlumno);
+	}
 
-    @Override
-    public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
-        ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
-                .orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+	@Override
+	public List<ProductoAlumnoDTO> obtenerProductosDeAlumno(Long alumnoId) {
+		List<ProductoAlumno> productosAlumno = productoAlumnoRepository.findByAlumnoId(alumnoId);
+		return productosAlumno.stream().map(this::convertirADTO).collect(Collectors.toList());
+	}
 
-        if (detallesDTO.getCantidad() != null) {
-            productoAlumno.setCantidad(detallesDTO.getCantidad());
-        }
-        if (detallesDTO.getPrecio() != null) {
-            productoAlumno.setPrecio(detallesDTO.getPrecio());
-        }
-        if (detallesDTO.getConcepto() != null) {
-            productoAlumno.setConcepto(detallesDTO.getConcepto());
-        }
-        if (detallesDTO.getNotas() != null) {
-            productoAlumno.setNotas(detallesDTO.getNotas());
-        }
+	@Override
+	public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
+		ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
+				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
 
-        Boolean pagadoAntes = productoAlumno.getPagado();
-        Boolean pagadoAhora = detallesDTO.getPagado();
+		if (detallesDTO.getCantidad() != null) {
+			productoAlumno.setCantidad(detallesDTO.getCantidad());
+		}
+		if (detallesDTO.getPrecio() != null) {
+			productoAlumno.setPrecio(detallesDTO.getPrecio());
+		}
+		if (detallesDTO.getConcepto() != null) {
+			productoAlumno.setConcepto(detallesDTO.getConcepto());
+		}
+		if (detallesDTO.getNotas() != null) {
+			productoAlumno.setNotas(detallesDTO.getNotas());
+		}
 
-        if (pagadoAhora != null && !pagadoAhora.equals(pagadoAntes)) {
-            productoAlumno.setPagado(pagadoAhora);
-            if (pagadoAhora) {
-                productoAlumno.setFechaPago(new Date());
-            } else {
-                productoAlumno.setFechaPago(null);
-            }
-        }
+		Boolean pagadoAntes = productoAlumno.getPagado();
+		Boolean pagadoAhora = detallesDTO.getPagado();
 
-        ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
-        
-        alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
-        .ifPresent(alumnoConvocatoria -> {
-            alumnoConvocatoria.setCuantiaExamen(updatedProductoAlumno.getPrecio());
-            alumnoConvocatoria.setPagado(updatedProductoAlumno.getPagado());
-            alumnoConvocatoriaRepository.save(alumnoConvocatoria);
-        });
+		if (pagadoAhora != null && !pagadoAhora.equals(pagadoAntes)) {
+			productoAlumno.setPagado(pagadoAhora);
+			if (pagadoAhora) {
+				productoAlumno.setFechaPago(new Date());
+			} else {
+				productoAlumno.setFechaPago(null);
+			}
+		}
 
-        return convertirADTO(updatedProductoAlumno);
-    }
+		ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-    @Override
-    public void eliminarProductoAlumno(Long id) {
-        productoAlumnoRepository.deleteById(id);
-    }
-    
-    private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
-        ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
-        dto.setId(productoAlumno.getId());
-        dto.setAlumnoId(productoAlumno.getAlumno().getId());
-        dto.setProductoId(productoAlumno.getProducto().getId());
-        dto.setConcepto(productoAlumno.getConcepto());
-        dto.setPrecio(productoAlumno.getPrecio());
-        dto.setCantidad(productoAlumno.getCantidad());
-        dto.setPagado(productoAlumno.getPagado());
-        dto.setFechaAsignacion(productoAlumno.getFechaAsignacion());
-        dto.setFechaPago(productoAlumno.getFechaPago());
-        dto.setNotas(productoAlumno.getNotas());
-        return dto;
-    }
+		alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
+				.ifPresent(alumnoConvocatoria -> {
+					alumnoConvocatoria.setCuantiaExamen(updatedProductoAlumno.getPrecio());
+					alumnoConvocatoria.setPagado(updatedProductoAlumno.getPagado());
+					alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+				});
+
+		return convertirADTO(updatedProductoAlumno);
+	}
+
+	@Override
+	public void eliminarProductoAlumno(Long id) {
+		productoAlumnoRepository.deleteById(id);
+	}
+
+	@Override
+	public ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+
+		if (!forzar) {
+			boolean existeReserva = alumno.getProductosAlumno().stream()
+					.anyMatch(productoAlumno -> concepto.equals(productoAlumno.getConcepto()));
+
+			if (existeReserva) {
+				throw new IllegalStateException("Ya existe una reserva de plaza para esta temporada.");
+			}
+		}
+
+		Producto productoReserva = productoRepository.findByConcepto("RESERVA DE PLAZA")
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(productoReserva);
+		productoAlumno.setConcepto(concepto);
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(productoReserva.getPrecio());
+		productoAlumno.setPagado(pagado);
+		if (pagado) {
+			productoAlumno.setFechaPago(new Date());
+		}
+		productoAlumnoRepository.save(productoAlumno);
+
+		return convertirADTO(productoAlumno);
+	}
+
+	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
+		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
+		dto.setId(productoAlumno.getId());
+		dto.setAlumnoId(productoAlumno.getAlumno().getId());
+		dto.setProductoId(productoAlumno.getProducto().getId());
+		dto.setConcepto(productoAlumno.getConcepto());
+		dto.setPrecio(productoAlumno.getPrecio());
+		dto.setCantidad(productoAlumno.getCantidad());
+		dto.setPagado(productoAlumno.getPagado());
+		dto.setFechaAsignacion(productoAlumno.getFechaAsignacion());
+		dto.setFechaPago(productoAlumno.getFechaPago());
+		dto.setNotas(productoAlumno.getNotas());
+		return dto;
+	}
 }
