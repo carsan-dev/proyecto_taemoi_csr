@@ -1,20 +1,20 @@
-<div
-  class="modal fade"
-  [class.show]="modalVisible"
-  tabindex="-1"
-  role="dialog"
-  style="display: block;"
->
-  <div class="modal-dialog" role="document" (click)="$event.stopPropagation()">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Alumnos de {{ grupoNombre }}</h5>
-        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;"> 
+  <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content rounded-4 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">Alumnos de {{ grupoNombre }}</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
       </div>
       <div class="modal-body">
-        <ul>
-          <li *ngFor="let alumno of alumnos">
-            {{ alumno.nombre }} {{ alumno.apellidos }}
+        <ul class="list-group">
+          <li class="list-group-item list-group-item-action d-flex align-items-center" *ngFor="let alumno of alumnos">
+            <a 
+              [routerLink]="['/alumnosEditar']" 
+              [queryParams]="{ nombre: alumno.nombre + ' ' + alumno.apellidos }" 
+              class="text-decoration-none text-dark w-100">
+              <i class="bi bi-person-circle me-2 text-primary"></i>
+              {{ alumno.nombre }} {{ alumno.apellidos }}
+            </a>
           </li>
         </ul>
       </div>
@@ -26,8 +26,4 @@
     </div>
   </div>
 </div>
-<div
-  class="modal-backdrop fade"
-  [class.show]="modalVisible"
-  (click)="cerrarModal()"
-></div>
+<div class="modal-backdrop fade" [class.show]="modalVisible" (click)="cerrarModal()"></div>
