@@ -73,6 +73,7 @@ export class ListadoProductosComponent {
               title: 'Eliminado',
               text: 'El producto ha sido eliminado correctamente',
               icon: 'success',
+              timer: 2000,
             });
             // Recargar la lista de productos
             this.obtenerProductos();

@@ -96,6 +96,7 @@ export class CrearAlumnoComponent implements OnInit {
           title: 'Perfecto!',
           text: 'Has creado un nuevo alumno',
           icon: 'success',
+          timer: 2000,
         });
         this.router.navigate(['/alumnosListar']);
       },

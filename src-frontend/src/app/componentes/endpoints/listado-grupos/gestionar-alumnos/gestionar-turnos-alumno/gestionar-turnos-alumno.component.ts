@@ -86,12 +86,13 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
         .asignarAlumnoATurno(this.alumnoId, this.turnoSeleccionado)
         .subscribe({
           next: () => {
-            Swal.fire(
-              'Turno asignado',
-              'El turno ha sido asignado al alumno con éxito',
-              'success'
-            );
-            this.cargarTurnos(); // Recargar la lista de turnos
+            Swal.fire({
+              title: 'Turno asignado',
+              text: 'El turno ha sido asignado al alumno con éxito.',
+              icon: 'success',
+              timer: 2000,
+            });
+            this.cargarTurnos();
           },
           error: (err) => {
             console.error('Error al asignar turno:', err);
@@ -125,13 +126,14 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
           .removerAlumnoDeTurno(this.alumnoId, turnoId)
           .subscribe({
             next: (turnosActualizados: Turno[]) => {
-              this.turnos = turnosActualizados; // Actualizar la lista de turnos
-              Swal.fire(
-                'Turno removido',
-                'El turno ha sido removido del alumno con éxito',
-                'success'
-              );
-              this.cargarTurnos(); // Recargar la lista de turnos
+              this.turnos = turnosActualizados;
+              Swal.fire({
+                title: 'Turno removido',
+                text: 'El turno ha sido removido del alumno con éxito.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.cargarTurnos();
             },
             error: () => {
               Swal.fire({

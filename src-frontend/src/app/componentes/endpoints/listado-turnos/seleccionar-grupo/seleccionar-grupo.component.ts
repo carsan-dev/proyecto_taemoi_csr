@@ -50,6 +50,7 @@ export class SeleccionarGrupoComponent implements OnInit {
           title: 'Asignado',
           text: 'El turno ha sido asignado al grupo',
           icon: 'success',
+          timer: 2000,
         }).then(() => {
           this.router.navigate(['/turnosListar']);
         });

@@ -73,6 +73,7 @@ export class ListadoTurnosComponent implements OnInit {
               title: 'Eliminado',
               text: 'El turno ha sido eliminado',
               icon: 'success',
+              timer: 2000,
             });
             this.endpointsService.obtenerTurnos(); // Recargar los turnos
           },

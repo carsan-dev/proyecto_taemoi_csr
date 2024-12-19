@@ -44,7 +44,11 @@ export class ListadoConvocatoriasComponent implements OnInit {
           this.convocatorias = data;
         },
         error: () => {
-          Swal.fire('Error', 'No se pudo obtener las convocatorias.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo obtener las convocatorias.',
+            icon: 'error',
+          });
         },
       });
   }
@@ -59,7 +63,11 @@ export class ListadoConvocatoriasComponent implements OnInit {
         this.convocatorias.push(data);
       },
       error: () => {
-        Swal.fire('Error', 'No se pudo crear la convocatoria.', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo crear la convocatoria.',
+          icon: 'error',
+        });
       },
     });
   }
@@ -78,11 +86,11 @@ export class ListadoConvocatoriasComponent implements OnInit {
           this.filtrarAlumnos();
         },
         error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudieron obtener los alumnos de la convocatoria.',
-            'error'
-          );
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron obtener los alumnos de la convocatoria.',
+            icon: 'error',
+          });
         },
       });
   }
@@ -103,11 +111,12 @@ export class ListadoConvocatoriasComponent implements OnInit {
       if (result.isConfirmed) {
         this.endpointsService.eliminarConvocatoria(convocatoria.id).subscribe({
           next: () => {
-            Swal.fire(
-              '¡Eliminado!',
-              'La convocatoria ha sido eliminada.',
-              'success'
-            );
+            Swal.fire({
+              title: '¡Eliminado!',
+              text: 'La convocatoria ha sido eliminada.',
+              icon: 'success',
+              timer: 2000,
+            });
             this.convocatorias = this.convocatorias.filter(
               (c) => c.id !== convocatoria.id
             );
@@ -117,7 +126,11 @@ export class ListadoConvocatoriasComponent implements OnInit {
             }
           },
           error: () => {
-            Swal.fire('Error', 'No se pudo eliminar la convocatoria.', 'error');
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo eliminar la convocatoria.',
+              icon: 'error',
+            });
           },
         });
       }
@@ -141,11 +154,11 @@ export class ListadoConvocatoriasComponent implements OnInit {
           this.filtrarAlumnos();
         },
         error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo cargar los alumnos paginados.',
-            'error'
-          );
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo cargar los alumnos paginados.',
+            icon: 'error',
+          });
         },
       });
   }
@@ -195,11 +208,20 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .actualizarGradosDeConvocatoria(convocatoria.id)
       .subscribe({
         next: () => {
-          Swal.fire('Éxito', 'Grados actualizados correctamente.', 'success');
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Grados actualizados correctamente.',
+            icon: 'success',
+            timer: 2000,
+          });
           this.seleccionarConvocatoria(convocatoria);
         },
         error: () => {
-          Swal.fire('Error', 'No se pudieron actualizar los grados.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron actualizar los grados.',
+            icon: 'error',
+          });
         },
       });
   }
@@ -214,22 +236,27 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .actualizarAlumnoConvocatoria(alumno.id, alumnoConvocatoriaDTO)
       .subscribe({
         next: () => {
-          Swal.fire(
-            'Éxito',
-            'Datos del alumno actualizados correctamente.',
-            'success'
-          );
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Datos del alumno actualizados correctamente.',
+            icon: 'success',
+            timer: 2000,
+          });
           this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
         },
         error: () => {
-          Swal.fire('Error', 'No se pudo actualizar el alumno.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo actualizar el alumno.',
+            icon: 'error',
+          });
         },
       });
   }
 
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
-  
+
     Swal.fire({
       title: 'Selecciona el tipo de producto',
       text: '¿Asignar el precio por antigüedad o por recompensa?',
@@ -247,20 +274,24 @@ export class ListadoConvocatoriasComponent implements OnInit {
         )
         .subscribe({
           next: () => {
-            Swal.fire(
-              'Alumno agregado',
-              'El alumno ha sido asignado correctamente.',
-              'success'
-            );
+            Swal.fire({
+              title: 'Alumno agregado',
+              text: 'El alumno ha sido asignado correctamente.',
+              icon: 'success',
+              timer: 2000,
+            });
             this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
           },
           error: () => {
-            Swal.fire('Error', 'No se pudo agregar al alumno.', 'error');
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo agregar al alumno.',
+              icon: 'error',
+            });
           },
         });
     });
   }
-  
 
   eliminarAlumnoDeConvocatoria(alumno: any): void {
     if (!this.convocatoriaSeleccionada) return;
@@ -283,15 +314,20 @@ export class ListadoConvocatoriasComponent implements OnInit {
           )
           .subscribe({
             next: () => {
-              Swal.fire(
-                '¡Eliminado!',
-                'El alumno ha sido eliminado de la convocatoria.',
-                'success'
-              );
+              Swal.fire({
+                title: '¡Eliminado!',
+                text: 'El alumno ha sido eliminado de la convocatoria.',
+                icon: 'success',
+                timer: 2000,
+              });
               this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
             },
             error: () => {
-              Swal.fire('Error', 'No se pudo eliminar al alumno.', 'error');
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo eliminar al alumno.',
+                icon: 'error',
+              });
             },
           });
       }

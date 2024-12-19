@@ -105,6 +105,7 @@ export class CrearTurnoComponent implements OnInit {
           title: 'Perfecto!',
           text: 'Has creado un nuevo turno!',
           icon: 'success',
+          timer: 2000,
         });
         this.router.navigate(['/turnosListar']);
       },

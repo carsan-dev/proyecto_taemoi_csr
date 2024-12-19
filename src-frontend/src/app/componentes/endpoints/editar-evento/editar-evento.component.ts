@@ -84,6 +84,7 @@ export class EditarEventoComponent implements OnInit {
               title: 'Perfecto!',
               text: 'El evento ha sido actualizado correctamente',
               icon: 'success',
+              timer: 2000,
             });
             this.router.navigate(['/eventosListar']);
           },
