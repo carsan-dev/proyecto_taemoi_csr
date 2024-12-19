@@ -81,8 +81,7 @@ export class HeaderComponent implements OnInit {
   cerrarSesion() {
     if (this.usuarioLogueado) {
       this.authService.logout();
-  
-      // Escuchar un solo cambio después de logout
+
       const subscription = this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
         if (!estado) {
           Swal.fire({
@@ -91,13 +90,11 @@ export class HeaderComponent implements OnInit {
             icon: 'success',
             timer: 2000,
           });
-  
-          // Redirigir al usuario después de cerrar sesión
+
           this.router.navigate(['/inicio']).then(() => {
             this.adminMenuVisible = false;
           });
-  
-          // Cancelar la suscripción después del logout
+          
           subscription.unsubscribe();
         }
       });
