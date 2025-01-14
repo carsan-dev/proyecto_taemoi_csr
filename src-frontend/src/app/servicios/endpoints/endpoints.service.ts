@@ -53,17 +53,48 @@ export class EndpointsService {
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
-      .set('size', size.toString());
+      .set('size', size.toString())
+      .set('incluirInactivos', incluirInactivos.toString());
 
     if (nombre) {
       params = params.set('nombre', nombre);
     }
 
-    params = params.set('incluirInactivos', incluirInactivos.toString());
-
     return this.http
       .get<any>(`${this.urlBase}/alumnos`, {
-        params: params,
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerAlumnosSinPaginar(
+    incluirInactivos: boolean = false
+  ): Observable<any[]> {
+    const params = new HttpParams().set(
+      'incluirInactivos',
+      incluirInactivos.toString()
+    );
+
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTodosLosAlumnosSinPaginar(
+    mostrarInactivos: boolean = false
+  ): Observable<any[]> {
+    const params = new HttpParams().set(
+      'incluirInactivos',
+      mostrarInactivos.toString()
+    );
+
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos`, {
+        params,
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
@@ -395,6 +426,28 @@ export class EndpointsService {
         `${this.urlBase}/productos-alumno/${alumnoId}/reservar-plaza`,
         null,
         { params, withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  cargarMensualidadesGenerales(mesAno: string): Observable<any> {
+    return this.http
+      .post(`${this.urlBase}/productos-alumno/mensualidades/general`, mesAno, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  cargarMensualidadIndividual(
+    alumnoId: number,
+    mesAno: string,
+    forzar: boolean = false
+  ): Observable<any> {
+    return this.http
+      .post(
+        `${this.urlBase}/productos-alumno/mensualidades/individual?alumnoId=${alumnoId}&forzar=${forzar}`,
+        mesAno,
+        { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
