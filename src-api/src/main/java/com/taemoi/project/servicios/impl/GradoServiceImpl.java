@@ -11,9 +11,9 @@ import com.taemoi.project.servicios.GradoService;
 
 @Service
 public class GradoServiceImpl implements GradoService {
-	
-    @Autowired
-    private GradoRepository gradoRepository;
+
+	@Autowired
+	private GradoRepository gradoRepository;
 
 	@Override
 	public List<Grado> obtenerTodosLosGrados() {

@@ -19,20 +19,20 @@ import jakarta.validation.constraints.NotNull;
 @Entity
 public class Convocatoria {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @NotNull(message = "La fecha de la convocatoria no puede ser nula")
-    @Temporal(TemporalType.DATE)
-    private Date fechaConvocatoria;
-    
-    @Enumerated(EnumType.STRING)
-    @NotNull(message = "El deporte de la convocatoria no puede ser nulo")
-    private Deporte deporte;
+	@NotNull(message = "La fecha de la convocatoria no puede ser nula")
+	@Temporal(TemporalType.DATE)
+	private Date fechaConvocatoria;
 
-    @OneToMany(mappedBy = "convocatoria", cascade = CascadeType.ALL)
-    private List<AlumnoConvocatoria> alumnosConvocatoria = new ArrayList<>();
+	@Enumerated(EnumType.STRING)
+	@NotNull(message = "El deporte de la convocatoria no puede ser nulo")
+	private Deporte deporte;
+
+	@OneToMany(mappedBy = "convocatoria", cascade = CascadeType.ALL)
+	private List<AlumnoConvocatoria> alumnosConvocatoria = new ArrayList<>();
 
 	public Long getId() {
 		return id;

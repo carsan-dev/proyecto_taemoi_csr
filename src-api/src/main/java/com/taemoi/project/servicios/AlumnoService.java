@@ -23,25 +23,27 @@ import jakarta.validation.Valid;
 
 public interface AlumnoService {
 	Page<Alumno> obtenerTodosLosAlumnos(@NonNull Pageable pageable);
-	
-    List<Alumno> obtenerTodosLosAlumnos();
+
+	List<Alumno> obtenerTodosLosAlumnos();
 
 	Optional<Alumno> obtenerAlumnoPorId(@NonNull Long id);
-	
+
 	Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id);
-	
-	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, @NonNull Pageable pageable);
-	
+
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
+			@NonNull Pageable pageable);
+
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
-	
+
 	Alumno crearAlumno(@Valid @NonNull Alumno alumno);
-	
+
 	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO);
 
-	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento, MultipartFile nuevaImagen);
+	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
+			MultipartFile nuevaImagen);
 
 	void eliminarImagenAlumno(@NonNull Long id);
-	
+
 	boolean eliminarAlumno(@Valid @NonNull Long id);
 
 	List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId);
@@ -57,13 +59,13 @@ public interface AlumnoService {
 	Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO);
 
 	int calcularEdad(Date fechaNacimiento);
-	
-    TipoGrado calcularSiguienteGrado(Alumno alumno);
+
+	TipoGrado calcularSiguienteGrado(Alumno alumno);
 
 	boolean fechaNacimientoValida(Date fechaNacimiento);
 
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
-	
+
 	String generarContrasena(String nombre, String apellidos);
 
 	Alumno darDeBajaAlumno(Long id);
@@ -79,6 +81,6 @@ public interface AlumnoService {
 	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa);
 
 	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
-	
+
 	boolean esAptoParaExamen(Alumno alumno);
 }

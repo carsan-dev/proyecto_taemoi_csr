@@ -10,33 +10,33 @@ import jakarta.validation.constraints.Size;
 @Entity
 public class Imagen {
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-	
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
 	@NotBlank(message = "El nombre no puede estar en blanco")
 	@Size(max = 200, message = "El nombre no puede tener más de 200 caracteres")
-    private String nombre;
-	
-    @NotBlank(message = "El tipo no puede estar en blanco")
-    @Size(max = 50, message = "El tipo no puede tener más de 50 caracteres")
-    private String tipo;
-    
-    private String url;
-    
-    // En lugar de byte[], almacenamos la ruta del archivo
-    @NotBlank(message = "La ruta no puede estar en blanco")
-    @Size(max = 500, message = "La ruta no puede tener más de 500 caracteres")
-    private String ruta;
+	private String nombre;
 
-    public Imagen() {
-    }
+	@NotBlank(message = "El tipo no puede estar en blanco")
+	@Size(max = 50, message = "El tipo no puede tener más de 50 caracteres")
+	private String tipo;
 
-    public Imagen(String nombre, String tipo, String url, String ruta) {
-        this.nombre = nombre;
-        this.tipo = tipo;
-        this.url = url;
-        this.ruta = ruta;
-    }
+	private String url;
+
+	// En lugar de byte[], almacenamos la ruta del archivo
+	@NotBlank(message = "La ruta no puede estar en blanco")
+	@Size(max = 500, message = "La ruta no puede tener más de 500 caracteres")
+	private String ruta;
+
+	public Imagen() {
+	}
+
+	public Imagen(String nombre, String tipo, String url, String ruta) {
+		this.nombre = nombre;
+		this.tipo = tipo;
+		this.url = url;
+		this.ruta = ruta;
+	}
 
 	public Long getId() {
 		return id;

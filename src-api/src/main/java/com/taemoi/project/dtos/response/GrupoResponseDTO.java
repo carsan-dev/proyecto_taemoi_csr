@@ -1,8 +1,8 @@
 package com.taemoi.project.dtos.response;
 
 public class GrupoResponseDTO {
-    private Long id;
-    private String nombre;
+	private Long id;
+	private String nombre;
 
 	public GrupoResponseDTO() {
 		// TODO Auto-generated constructor stub

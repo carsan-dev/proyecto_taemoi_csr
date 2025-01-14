@@ -31,17 +31,17 @@ public class ProductoAlumno {
 	private Alumno alumno;
 
 	private String concepto;
-	
+
 	private Date fechaAsignacion;
-	
+
 	private Integer cantidad;
-	
+
 	private Double precio;
-	
+
 	private Boolean pagado;
-	
+
 	private Date fechaPago;
-	
+
 	private String notas;
 
 	public Long getId() {

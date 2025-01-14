@@ -13,10 +13,10 @@ import com.taemoi.project.entidades.Usuario;
 public interface UsuarioService extends UserDetailsService {
 
 	List<UsuarioDTO> obtenerTodos();
-	
-    @Override
-    UserDetails loadUserByUsername(String email) throws UsernameNotFoundException;
-	
+
+	@Override
+	UserDetails loadUserByUsername(String email) throws UsernameNotFoundException;
+
 	Optional<Usuario> encontrarPorEmail(String email);
 
 	/**

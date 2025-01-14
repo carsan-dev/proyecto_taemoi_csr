@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 import com.taemoi.project.entidades.Producto;
 
 @Repository
-public interface ProductoRepository extends JpaRepository<Producto, Long>{
-	
+public interface ProductoRepository extends JpaRepository<Producto, Long> {
+
 	Page<Producto> findByConceptoContaining(String concepto, Pageable pageable);
 
 	Optional<Producto> findByConcepto(String nombreProducto);

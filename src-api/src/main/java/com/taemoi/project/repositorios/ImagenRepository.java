@@ -9,6 +9,6 @@ import com.taemoi.project.entidades.Imagen;
  * Repositorio para la entidad Imagen.
  */
 @Repository
-public interface ImagenRepository extends JpaRepository<Imagen, Long>{
+public interface ImagenRepository extends JpaRepository<Imagen, Long> {
 
 }

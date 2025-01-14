@@ -3,10 +3,9 @@ package com.taemoi.project.entidades;
 public enum TipoGrado {
 	BLANCO("Blanco"), BLANCO_AMARILLO("Blanco-Amarillo"), AMARILLO("Amarillo"), AMARILLO_NARANJA("Amarillo-Naranja"),
 	NARANJA("Naranja"), NARANJA_VERDE("Naranja-Verde"), VERDE("Verde"), VERDE_AZUL("Verde-Azul"), AZUL("Azul"),
-	AZUL_ROJO("Azul-Rojo"), ROJO("Rojo"), ROJO_NEGRO_1_PUM("Rojo-Negro-1-Pum"),
-	ROJO_NEGRO_2_PUM("Rojo-Negro-2-Pum"), ROJO_NEGRO_3_PUM("Rojo-Negro-3-Pum"),
-	NEGRO_1_DAN("Negro-1-Dan"), NEGRO_2_DAN("Negro-2-Dan"), NEGRO_3_DAN("Negro-3-Dan"),
-	NEGRO_4_DAN("Negro-4-Dan"), NEGRO_5_DAN("Negro-5-Dan"),;
+	AZUL_ROJO("Azul-Rojo"), ROJO("Rojo"), ROJO_NEGRO_1_PUM("Rojo-Negro-1-Pum"), ROJO_NEGRO_2_PUM("Rojo-Negro-2-Pum"),
+	ROJO_NEGRO_3_PUM("Rojo-Negro-3-Pum"), NEGRO_1_DAN("Negro-1-Dan"), NEGRO_2_DAN("Negro-2-Dan"),
+	NEGRO_3_DAN("Negro-3-Dan"), NEGRO_4_DAN("Negro-4-Dan"), NEGRO_5_DAN("Negro-5-Dan"),;
 
 	private final String nombre;
 
@@ -35,19 +34,19 @@ public enum TipoGrado {
 		}
 		throw new IllegalArgumentException("Tipo de grado no válido: " + nombre);
 	}
-	
-    /**
-     * Obtiene el siguiente TipoGrado en el orden definido por la enumeración.
-     *
-     * @return El siguiente TipoGrado, o null si es el último grado.
-     */
-    public TipoGrado siguiente() {
-        int ordinal = this.ordinal();
-        TipoGrado[] values = TipoGrado.values();
-        if (ordinal < values.length - 1) {
-            return values[ordinal + 1];
-        } else {
-            return null; // O lanza una excepción si no hay siguiente grado
-        }
-    }
+
+	/**
+	 * Obtiene el siguiente TipoGrado en el orden definido por la enumeración.
+	 *
+	 * @return El siguiente TipoGrado, o null si es el último grado.
+	 */
+	public TipoGrado siguiente() {
+		int ordinal = this.ordinal();
+		TipoGrado[] values = TipoGrado.values();
+		if (ordinal < values.length - 1) {
+			return values[ordinal + 1];
+		} else {
+			return null; // O lanza una excepción si no hay siguiente grado
+		}
+	}
 }

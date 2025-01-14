@@ -70,23 +70,23 @@ public class ImagenServiceImpl implements ImagenService {
 	}
 
 	public void eliminarImagenDeSistema(Imagen imagen) {
-	    if (imagen != null && imagen.getRuta() != null) {
-	        Path rutaArchivo = Paths.get(imagen.getRuta()); // Usar la ruta física
+		if (imagen != null && imagen.getRuta() != null) {
+			Path rutaArchivo = Paths.get(imagen.getRuta()); // Usar la ruta física
 
-	        try {
-	            // Comprobar si el archivo existe antes de intentar eliminarlo
-	            if (Files.exists(rutaArchivo)) {
-	                Files.delete(rutaArchivo); // Eliminar el archivo
-	                System.out.println("Imagen eliminada correctamente del sistema de archivos: " + rutaArchivo);
-	            } else {
-	                System.out.println("La imagen no existe en el sistema de archivos: " + rutaArchivo);
-	            }
-	        } catch (IOException e) {
-	            throw new RuntimeException("Error al eliminar el archivo de imagen: " + rutaArchivo, e);
-	        }
-	    } else {
-	        throw new IllegalArgumentException("La imagen o su ruta no es válida.");
-	    }
+			try {
+				// Comprobar si el archivo existe antes de intentar eliminarlo
+				if (Files.exists(rutaArchivo)) {
+					Files.delete(rutaArchivo); // Eliminar el archivo
+					System.out.println("Imagen eliminada correctamente del sistema de archivos: " + rutaArchivo);
+				} else {
+					System.out.println("La imagen no existe en el sistema de archivos: " + rutaArchivo);
+				}
+			} catch (IOException e) {
+				throw new RuntimeException("Error al eliminar el archivo de imagen: " + rutaArchivo, e);
+			}
+		} else {
+			throw new IllegalArgumentException("La imagen o su ruta no es válida.");
+		}
 	}
 
 }

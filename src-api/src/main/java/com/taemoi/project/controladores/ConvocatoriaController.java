@@ -25,71 +25,69 @@ import com.taemoi.project.servicios.ConvocatoriaService;
 @RequestMapping("/api/convocatorias")
 public class ConvocatoriaController {
 
-    @Autowired
-    private ConvocatoriaService convocatoriaService;
+	@Autowired
+	private ConvocatoriaService convocatoriaService;
 
-    @GetMapping
+	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(@RequestParam(required = false) Deporte deporte) {
-        List<ConvocatoriaDTO> convocatorias;
-        if (deporte != null) {
-            convocatorias = convocatoriaService.obtenerConvocatoriasPorDeporte(deporte);
-        } else {
-            convocatorias = convocatoriaService.obtenerConvocatorias();
-        }
-        convocatorias.sort((c1, c2) -> c2.getFechaConvocatoria().compareTo(c1.getFechaConvocatoria()));
-        return ResponseEntity.ok(convocatorias);
-    }
+	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(@RequestParam(required = false) Deporte deporte) {
+		List<ConvocatoriaDTO> convocatorias;
+		if (deporte != null) {
+			convocatorias = convocatoriaService.obtenerConvocatoriasPorDeporte(deporte);
+		} else {
+			convocatorias = convocatoriaService.obtenerConvocatorias();
+		}
+		convocatorias.sort((c1, c2) -> c2.getFechaConvocatoria().compareTo(c1.getFechaConvocatoria()));
+		return ResponseEntity.ok(convocatorias);
+	}
 
-    @GetMapping("/{id}")
+	@GetMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ConvocatoriaDTO> obtenerConvocatoriaPorId(@PathVariable Long id) {
-    	ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
-        return ResponseEntity.ok(convocatoria);
-    }
-    
-    @GetMapping("/alumnos/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
-        List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
-        return ResponseEntity.ok(convocatorias);
-    }
+	public ResponseEntity<ConvocatoriaDTO> obtenerConvocatoriaPorId(@PathVariable Long id) {
+		ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
+		return ResponseEntity.ok(convocatoria);
+	}
 
+	@GetMapping("/alumnos/{alumnoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
+		List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
+		return ResponseEntity.ok(convocatorias);
+	}
 
-    @PostMapping
+	@PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ConvocatoriaDTO> crearConvocatoria(@RequestBody ConvocatoriaDTO convocatoriaDTO) {
-    	ConvocatoriaDTO nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoriaDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaConvocatoria);
-    }
-    
-    @GetMapping("/{id}/alumnos")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
-        List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
-        return ResponseEntity.ok(alumnos);
-    }
-    
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> eliminarConvocatoria(@PathVariable Long id) {
-        convocatoriaService.eliminarConvocatoria(id);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @PutMapping("/{convocatoriaId}/actualizar-grados")
+	public ResponseEntity<ConvocatoriaDTO> crearConvocatoria(@RequestBody ConvocatoriaDTO convocatoriaDTO) {
+		ConvocatoriaDTO nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoriaDTO);
+		return ResponseEntity.status(HttpStatus.CREATED).body(nuevaConvocatoria);
+	}
+
+	@GetMapping("/{id}/alumnos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> actualizarGrados(@PathVariable Long convocatoriaId) {
-        convocatoriaService.actualizarGradosDeConvocatoria(convocatoriaId);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PutMapping("/alumno/{alumnoConvocatoriaId}")
+	public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
+		List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
+		return ResponseEntity.ok(alumnos);
+	}
+
+	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> actualizarAlumnoConvocatoria(
-            @PathVariable Long alumnoConvocatoriaId,
-            @RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
-        convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);
-        return ResponseEntity.ok().build();
-    }
+	public ResponseEntity<Void> eliminarConvocatoria(@PathVariable Long id) {
+		convocatoriaService.eliminarConvocatoria(id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PutMapping("/{convocatoriaId}/actualizar-grados")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<Void> actualizarGrados(@PathVariable Long convocatoriaId) {
+		convocatoriaService.actualizarGradosDeConvocatoria(convocatoriaId);
+		return ResponseEntity.ok().build();
+	}
+
+	@PutMapping("/alumno/{alumnoConvocatoriaId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<Void> actualizarAlumnoConvocatoria(@PathVariable Long alumnoConvocatoriaId,
+			@RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
+		convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);
+		return ResponseEntity.ok().build();
+	}
 }

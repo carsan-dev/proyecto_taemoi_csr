@@ -10,17 +10,17 @@ import com.taemoi.project.entidades.Producto;
 
 public interface ProductoService {
 
-    List<Producto> obtenerTodosLosProductos();
-    
-    Page<Producto> obtenerProductosPaginados(Pageable pageable);
+	List<Producto> obtenerTodosLosProductos();
 
-    Optional<Producto> obtenerProductoPorId(Long id); 
+	Page<Producto> obtenerProductosPaginados(Pageable pageable);
+
+	Optional<Producto> obtenerProductoPorId(Long id);
 
 	Page<Producto> buscarProductosPorConcepto(String concepto, Pageable pageable);
-    
-    Producto guardarProducto(Producto producto);
-    
-    void eliminarProducto(Long id);
+
+	Producto guardarProducto(Producto producto);
+
+	void eliminarProducto(Long id);
 
 	Producto actualizarProducto(Long id, Producto productoDetalles);
 }

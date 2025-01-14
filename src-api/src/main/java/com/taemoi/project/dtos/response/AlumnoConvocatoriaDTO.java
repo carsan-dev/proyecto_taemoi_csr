@@ -4,7 +4,7 @@ import com.taemoi.project.entidades.TipoGrado;
 
 public class AlumnoConvocatoriaDTO {
 	private Long id;
-	
+
 	private Long alumnoId;
 
 	private String nombre;
