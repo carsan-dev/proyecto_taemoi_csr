@@ -617,43 +617,43 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean eliminarAlumno(@NonNull Long id) {
-	    return alumnoRepository.findById(id).map(alumno -> {
-	        Imagen imagen = alumno.getFotoAlumno();
-	        if (imagen != null) {
-	            imagenService.eliminarImagenDeSistema(imagen);
-	            imagenRepository.delete(imagen);
-	        }
+		return alumnoRepository.findById(id).map(alumno -> {
+			Imagen imagen = alumno.getFotoAlumno();
+			if (imagen != null) {
+				imagenService.eliminarImagenDeSistema(imagen);
+				imagenRepository.delete(imagen);
+			}
 
-	        if (alumno.getUsuario() != null) {
-	            Usuario usuario = alumno.getUsuario();
-	            alumno.setUsuario(null);
-	            usuarioRepository.delete(usuario);
-	        }
+			if (alumno.getUsuario() != null) {
+				Usuario usuario = alumno.getUsuario();
+				alumno.setUsuario(null);
+				usuarioRepository.delete(usuario);
+			}
 
-	        for (Grupo grupo : alumno.getGrupos()) {
-	            grupo.getAlumnos().remove(alumno);
-	            grupoRepository.save(grupo);
-	        }
+			for (Grupo grupo : alumno.getGrupos()) {
+				grupo.getAlumnos().remove(alumno);
+				grupoRepository.save(grupo);
+			}
 
-	        for (Turno turno : alumno.getTurnos()) {
-	            turno.getAlumnos().remove(alumno);
-	            turnoRepository.save(turno);
-	        }
+			for (Turno turno : alumno.getTurnos()) {
+				turno.getAlumnos().remove(alumno);
+				turnoRepository.save(turno);
+			}
 
-	        for (ProductoAlumno productoAlumno : alumno.getProductosAlumno()) {
-	            productoAlumnoRepository.delete(productoAlumno);
-	        }
+			for (ProductoAlumno productoAlumno : alumno.getProductosAlumno()) {
+				productoAlumnoRepository.delete(productoAlumno);
+			}
 
-	        for (AlumnoConvocatoria alumnoConvocatoria : alumno.getConvocatorias()) {
-	            if (alumnoConvocatoria.getProductoAlumno() != null) {
-	                productoAlumnoRepository.delete(alumnoConvocatoria.getProductoAlumno());
-	            }
-	            alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
-	        }
+			for (AlumnoConvocatoria alumnoConvocatoria : alumno.getConvocatorias()) {
+				if (alumnoConvocatoria.getProductoAlumno() != null) {
+					productoAlumnoRepository.delete(alumnoConvocatoria.getProductoAlumno());
+				}
+				alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
+			}
 
-	        alumnoRepository.delete(alumno);
-	        return true;
-	    }).orElse(false);
+			alumnoRepository.delete(alumno);
+			return true;
+		}).orElse(false);
 	}
 
 	@Override

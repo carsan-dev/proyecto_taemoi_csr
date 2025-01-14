@@ -40,8 +40,8 @@ public class AuthenticationServiceImplTest {
 	@InjectMocks
 	private AuthenticationServiceImpl authenticationService;
 
-    @BeforeEach
-    public void setUp() {
+	@BeforeEach
+	public void setUp() {
 		MockitoAnnotations.openMocks(this);
 	}
 

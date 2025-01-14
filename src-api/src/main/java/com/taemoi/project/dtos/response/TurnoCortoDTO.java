@@ -3,22 +3,23 @@ package com.taemoi.project.dtos.response;
 import com.taemoi.project.entidades.Turno;
 
 public class TurnoCortoDTO {
-    private String diaSemana;
-    private String horaInicio;
-    private String horaFin;
-    private Long grupoId;
+	private String diaSemana;
+	private String horaInicio;
+	private String horaFin;
+	private Long grupoId;
 
-    public TurnoCortoDTO() {}
+	public TurnoCortoDTO() {
+	}
 
 	public String getDiaSemana() {
-        return diaSemana;
-    }
+		return diaSemana;
+	}
 
-    public void setDiaSemana(String diaSemana) {
-        this.diaSemana = diaSemana;
-    }
-  
-    public String getHoraInicio() {
+	public void setDiaSemana(String diaSemana) {
+		this.diaSemana = diaSemana;
+	}
+
+	public String getHoraInicio() {
 		return horaInicio;
 	}
 
@@ -43,16 +44,16 @@ public class TurnoCortoDTO {
 	}
 
 	public static TurnoCortoDTO deTurno(Turno turno) {
-        if (turno == null) {
-            return null;
-        }
+		if (turno == null) {
+			return null;
+		}
 
-        TurnoCortoDTO turnoDTO = new TurnoCortoDTO();
-        turnoDTO.setDiaSemana(turno.getDiaSemana());
-        turnoDTO.setHoraInicio(turno.getHoraInicio());
-        turnoDTO.setHoraFin(turno.getHoraFin());
-        turnoDTO.setGrupoId(turno.getGrupo().getId());
-        
-        return turnoDTO;
-    }
+		TurnoCortoDTO turnoDTO = new TurnoCortoDTO();
+		turnoDTO.setDiaSemana(turno.getDiaSemana());
+		turnoDTO.setHoraInicio(turno.getHoraInicio());
+		turnoDTO.setHoraFin(turno.getHoraFin());
+		turnoDTO.setGrupoId(turno.getGrupo().getId());
+
+		return turnoDTO;
+	}
 }

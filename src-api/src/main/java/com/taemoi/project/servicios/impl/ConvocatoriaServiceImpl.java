@@ -39,10 +39,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
-	
+
 	@Autowired
 	private AlumnoService alumnoService;
-	
+
 	@Autowired
 	private GradoRepository gradoRepository;
 
@@ -94,10 +94,11 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
 		return convocatoria.getAlumnosConvocatoria().stream()
-				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(), alumnoConvocatoria.getAlumno().getId(),
-						alumnoConvocatoria.getAlumno().getNombre(), alumnoConvocatoria.getAlumno().getApellidos(),
-						alumnoConvocatoria.getCuantiaExamen(), alumnoConvocatoria.getGradoActual(),
-						alumnoConvocatoria.getGradoSiguiente(), alumnoConvocatoria.getPagado()))
+				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(),
+						alumnoConvocatoria.getAlumno().getId(), alumnoConvocatoria.getAlumno().getNombre(),
+						alumnoConvocatoria.getAlumno().getApellidos(), alumnoConvocatoria.getCuantiaExamen(),
+						alumnoConvocatoria.getGradoActual(), alumnoConvocatoria.getGradoSiguiente(),
+						alumnoConvocatoria.getPagado()))
 				.collect(Collectors.toList());
 	}
 
@@ -123,60 +124,58 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		}
 		convocatoriaRepository.delete(convocatoria);
 	}
-	
+
 	@Override
 	public void actualizarGradosDeConvocatoria(Long convocatoriaId) {
-	    Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
-	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
+		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
-	    List<AlumnoConvocatoria> alumnosConvocatoria = convocatoria.getAlumnosConvocatoria();
+		List<AlumnoConvocatoria> alumnosConvocatoria = convocatoria.getAlumnosConvocatoria();
 
-	    for (AlumnoConvocatoria alumnoConvocatoria : alumnosConvocatoria) {
-	        Alumno alumno = alumnoConvocatoria.getAlumno();
+		for (AlumnoConvocatoria alumnoConvocatoria : alumnosConvocatoria) {
+			Alumno alumno = alumnoConvocatoria.getAlumno();
 
-	        TipoGrado nuevoGrado = alumnoService.calcularSiguienteGrado(alumno);
-	        if (nuevoGrado != null) {
-	            Grado nuevoGradoEntidad = gradoRepository.findByTipoGrado(nuevoGrado);
+			TipoGrado nuevoGrado = alumnoService.calcularSiguienteGrado(alumno);
+			if (nuevoGrado != null) {
+				Grado nuevoGradoEntidad = gradoRepository.findByTipoGrado(nuevoGrado);
 
-	            alumno.setGrado(nuevoGradoEntidad);
-	            alumno.setFechaGrado(new Date());
-	            alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
-	            alumnoRepository.save(alumno);
-	        }
-	    }
+				alumno.setGrado(nuevoGradoEntidad);
+				alumno.setFechaGrado(new Date());
+				alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
+				alumnoRepository.save(alumno);
+			}
+		}
 	}
-	
+
 	@Override
 	public void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
-	    AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
-	            .orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
+				.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
 
-	    alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
-	    alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
+		alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
+		alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
 
-	    if (alumnoConvocatoriaDTO.getPagado()) {
-	        alumnoConvocatoria.setFechaPago(new Date());
-	    } else {
-	        alumnoConvocatoria.setFechaPago(null);
-	    }
+		if (alumnoConvocatoriaDTO.getPagado()) {
+			alumnoConvocatoria.setFechaPago(new Date());
+		} else {
+			alumnoConvocatoria.setFechaPago(null);
+		}
 
-	    alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+		alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 
-	    Alumno alumno = alumnoConvocatoria.getAlumno();
+		Alumno alumno = alumnoConvocatoria.getAlumno();
 
-	    if (alumno.getFechaGrado() == null) {
-	        alumno.setFechaGrado(new Date());
-	    }
+		if (alumno.getFechaGrado() == null) {
+			alumno.setFechaGrado(new Date());
+		}
 
-	    productoAlumnoRepository.findByAlumnoIdAndProductoId(
-	            alumno.getId(),
-	            alumnoConvocatoria.getProductoAlumno().getProducto().getId()
-	    ).ifPresent(productoAlumno -> {
-	        productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
-	        productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
-	        productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
-	        productoAlumnoRepository.save(productoAlumno);
-	    });
+		productoAlumnoRepository.findByAlumnoIdAndProductoId(alumno.getId(),
+				alumnoConvocatoria.getProductoAlumno().getProducto().getId()).ifPresent(productoAlumno -> {
+					productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+					productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
+					productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
+					productoAlumnoRepository.save(productoAlumno);
+				});
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {

@@ -369,7 +369,8 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
 		String exclusion = "competición";
-		if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates") || deporte.equalsIgnoreCase("defensa personal femenina")) {
+		if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")
+				|| deporte.equalsIgnoreCase("defensa personal femenina")) {
 			exclusion = "";
 		}
 

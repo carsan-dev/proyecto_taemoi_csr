@@ -17,36 +17,36 @@ import jakarta.validation.constraints.NotNull;
 @Entity
 public class AlumnoConvocatoria {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "alumno_id")
-    private Alumno alumno;
+	@ManyToOne
+	@JoinColumn(name = "alumno_id")
+	private Alumno alumno;
 
-    @ManyToOne
-    @JoinColumn(name = "convocatoria_id")
-    private Convocatoria convocatoria;
-    
-    @ManyToOne
-    @JoinColumn(name = "producto_alumno_id")
-    private ProductoAlumno productoAlumno;
+	@ManyToOne
+	@JoinColumn(name = "convocatoria_id")
+	private Convocatoria convocatoria;
 
-    @NotNull(message = "La cuantía del examen no puede ser nula")
-    private Double cuantiaExamen;
+	@ManyToOne
+	@JoinColumn(name = "producto_alumno_id")
+	private ProductoAlumno productoAlumno;
 
-    @NotNull(message = "El campo pagado no puede ser nulo")
-    private Boolean pagado = false;
+	@NotNull(message = "La cuantía del examen no puede ser nula")
+	private Double cuantiaExamen;
 
-    @Temporal(TemporalType.DATE)
-    private Date fechaPago;
+	@NotNull(message = "El campo pagado no puede ser nulo")
+	private Boolean pagado = false;
 
-    @Enumerated(EnumType.STRING)
-    private TipoGrado gradoActual;
+	@Temporal(TemporalType.DATE)
+	private Date fechaPago;
 
-    @Enumerated(EnumType.STRING)
-    private TipoGrado gradoSiguiente;
+	@Enumerated(EnumType.STRING)
+	private TipoGrado gradoActual;
+
+	@Enumerated(EnumType.STRING)
+	private TipoGrado gradoSiguiente;
 
 	public Long getId() {
 		return id;

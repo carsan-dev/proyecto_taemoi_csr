@@ -50,34 +50,34 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<String> handleListaAlumnosVaciaException(ListaAlumnosVaciaException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
-	
+
 	@ExceptionHandler(GrupoNoEncontradoException.class)
 	public ResponseEntity<String> handleGrupoNoEncontradoException(GrupoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
-	
+
 	@ExceptionHandler(TurnoNoEncontradoException.class)
 	public ResponseEntity<String> handleTurnoNoEncontradoException(TurnoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
-	
+
 	@ExceptionHandler(AlumnoNoEncontradoEnGrupoException.class)
 	public ResponseEntity<String> handleAlumnoNoEncontradoEnGrupoException(AlumnoNoEncontradoEnGrupoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
-	
+
 	@ExceptionHandler(EventoNoEncontradoException.class)
 	public ResponseEntity<String> handleEventoNoEncontradoException(EventoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
 
-    @ExceptionHandler(PagoNotFoundException.class)
-    public ResponseEntity<String> handlePagoNotFoundException(PagoNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    }
-    
-    @ExceptionHandler(ProductoNoEncontradoException.class)
-    public ResponseEntity<String> handleProductoNoEncontradoException(ProductoNoEncontradoException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    }
+	@ExceptionHandler(PagoNotFoundException.class)
+	public ResponseEntity<String> handlePagoNotFoundException(PagoNotFoundException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
+
+	@ExceptionHandler(ProductoNoEncontradoException.class)
+	public ResponseEntity<String> handleProductoNoEncontradoException(ProductoNoEncontradoException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
 }

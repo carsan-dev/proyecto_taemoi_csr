@@ -48,11 +48,11 @@ public class AlumnoServiceImplTest {
 
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
-	
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+
+	@BeforeEach
+	public void setUp() {
+		MockitoAnnotations.openMocks(this);
+	}
 
 	@Test
 	public void testObtenerTodosLosAlumnos() {
@@ -66,21 +66,21 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-    public void testObtenerAlumnoPorId() {
-        when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
+	public void testObtenerAlumnoPorId() {
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
 
-        Optional<Alumno> result = alumnoService.obtenerAlumnoPorId(1L);
+		Optional<Alumno> result = alumnoService.obtenerAlumnoPorId(1L);
 
-        assertTrue(result.isPresent());
-    }
+		assertTrue(result.isPresent());
+	}
 
 	@Test
 	public void testObtenerAlumnoDTOPorId() {
-	    when(alumnoRepository.findById(1L)).thenReturn(Optional.empty());
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.empty());
 
-	    Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoDTOPorId(1L);
+		Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoDTOPorId(1L);
 
-	    assertFalse(result.isPresent());
+		assertFalse(result.isPresent());
 	}
 
 	@Test
@@ -93,37 +93,36 @@ public class AlumnoServiceImplTest {
 		assertNotNull(result);
 	}
 
-	/*	@Test
-	public void testActualizarAlumno() {
-	    Alumno alumnoExistente = new Alumno();
-	    when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoExistente));
-	    when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+	/*
+	 * @Test public void testActualizarAlumno() { Alumno alumnoExistente = new
+	 * Alumno();
+	 * when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoExistente));
+	 * when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation ->
+	 * invocation.getArgument(0));
+	 * 
+	 * AlumnoDTO alumnoDTO = new AlumnoDTO(); Date fechaNacimiento = new Date();
+	 * Imagen imagen = new Imagen("nombre", "tipo", new byte[0]);
+	 * 
+	 * Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO,
+	 * fechaNacimiento, imagen);
+	 * 
+	 * verify(alumnoRepository).findById(1L);
+	 * verify(alumnoRepository).save(any(Alumno.class));
+	 * 
+	 * assertNotNull(result); }
+	 */
 
-	    AlumnoDTO alumnoDTO = new AlumnoDTO();
-	    Date fechaNacimiento = new Date();
-	    Imagen imagen = new Imagen("nombre", "tipo", new byte[0]);
-
-	    Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO, fechaNacimiento, imagen);
-
-	    verify(alumnoRepository).findById(1L);
-	    verify(alumnoRepository).save(any(Alumno.class));
-
-	    assertNotNull(result);
-	}
-*/
-
-
-/*	@SuppressWarnings("null")
-	@Test
-    public void testEliminarAlumno() {
-        when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
-        doNothing().when(alumnoRepository).delete(any(Alumno.class));
-
-        boolean result = alumnoService.eliminarAlumno(1L);
-
-        assertTrue(result);
-    }
-*/
+	/*
+	 * @SuppressWarnings("null")
+	 * 
+	 * @Test public void testEliminarAlumno() {
+	 * when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
+	 * doNothing().when(alumnoRepository).delete(any(Alumno.class));
+	 * 
+	 * boolean result = alumnoService.eliminarAlumno(1L);
+	 * 
+	 * assertTrue(result); }
+	 */
 	@Test
 	public void testAsignarCuantiaTarifa() {
 		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO);
@@ -132,24 +131,24 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-    public void testAsignarCategoriaSegunEdad() {
-        when(categoriaRepository.findByNombre(anyString())).thenReturn(new Categoria());
+	public void testAsignarCategoriaSegunEdad() {
+		when(categoriaRepository.findByNombre(anyString())).thenReturn(new Categoria());
 
-        Categoria result = alumnoService.asignarCategoriaSegunEdad(10);
+		Categoria result = alumnoService.asignarCategoriaSegunEdad(10);
 
-        assertNotNull(result);
-    }
+		assertNotNull(result);
+	}
 
 	@Test
 	public void testAsignarGradoSegunEdad() {
-	    when(gradoRepository.findByTipoGrado(any(TipoGrado.class))).thenReturn(new Grado());
+		when(gradoRepository.findByTipoGrado(any(TipoGrado.class))).thenReturn(new Grado());
 
-	    AlumnoDTO alumnoDTO = new AlumnoDTO();
-	    alumnoDTO.setFechaNacimiento(new Date());
+		AlumnoDTO alumnoDTO = new AlumnoDTO();
+		alumnoDTO.setFechaNacimiento(new Date());
 
-	    Grado result = alumnoService.asignarGradoSegunEdad(alumnoDTO);
+		Grado result = alumnoService.asignarGradoSegunEdad(alumnoDTO);
 
-	    assertNotNull(result);
+		assertNotNull(result);
 	}
 
 	@Test
@@ -161,33 +160,33 @@ public class AlumnoServiceImplTest {
 
 	@Test
 	public void testFechaNacimientoValida() {
-	    Calendar cal = Calendar.getInstance();
-	    cal.add(Calendar.YEAR, -20);
-	    Date fechaNacimientoValida = cal.getTime();
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.YEAR, -20);
+		Date fechaNacimientoValida = cal.getTime();
 
-	    boolean result = alumnoService.fechaNacimientoValida(fechaNacimientoValida);
+		boolean result = alumnoService.fechaNacimientoValida(fechaNacimientoValida);
 
-	    assertTrue(result);
+		assertTrue(result);
 	}
 
 	@Test
-    public void testDatosAlumnoValidos() {
-        AlumnoDTO alumnoDTO = new AlumnoDTO();
-        alumnoDTO.setNombre("Juan");
-        alumnoDTO.setApellidos("Perez");
-        alumnoDTO.setFechaNacimiento(new Date());
-        alumnoDTO.setNumeroExpediente(12345);
-        alumnoDTO.setNif("12345678A");
-        alumnoDTO.setDireccion("Calle Principal");
-        alumnoDTO.setEmail("juan@example.com");
-        alumnoDTO.setTelefono(123456789);
-        alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
-        alumnoDTO.setFechaAlta(new Date());
+	public void testDatosAlumnoValidos() {
+		AlumnoDTO alumnoDTO = new AlumnoDTO();
+		alumnoDTO.setNombre("Juan");
+		alumnoDTO.setApellidos("Perez");
+		alumnoDTO.setFechaNacimiento(new Date());
+		alumnoDTO.setNumeroExpediente(12345);
+		alumnoDTO.setNif("12345678A");
+		alumnoDTO.setDireccion("Calle Principal");
+		alumnoDTO.setEmail("juan@example.com");
+		alumnoDTO.setTelefono(123456789);
+		alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
+		alumnoDTO.setFechaAlta(new Date());
 
-        when(alumnoRepository.save(any(Alumno.class))).thenReturn(new Alumno());
+		when(alumnoRepository.save(any(Alumno.class))).thenReturn(new Alumno());
 
-        boolean result = alumnoService.datosAlumnoValidos(alumnoDTO);
+		boolean result = alumnoService.datosAlumnoValidos(alumnoDTO);
 
-        assertTrue(result);
-    }
+		assertTrue(result);
+	}
 }

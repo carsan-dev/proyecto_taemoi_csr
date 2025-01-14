@@ -86,44 +86,44 @@ public class AuthenticationController {
 	 *         token JWT.
 	 */
 	@PostMapping("/signin")
-	public ResponseEntity<JwtAuthenticationResponse> signin(@RequestBody LoginRequest request, HttpServletResponse response) {
-	    JwtAuthenticationResponse jwtResponse = authenticationService.signin(request);
+	public ResponseEntity<JwtAuthenticationResponse> signin(@RequestBody LoginRequest request,
+			HttpServletResponse response) {
+		JwtAuthenticationResponse jwtResponse = authenticationService.signin(request);
 
-	    // Crear la cookie HTTP-Only
-	    Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
-	    jwtCookie.setHttpOnly(true); // No accesible desde JavaScript
-	    jwtCookie.setSecure(false); // Solo se envía en conexiones HTTPS
-	    jwtCookie.setPath("/"); // Disponible para todo el dominio
-	    jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas de validez
+		// Crear la cookie HTTP-Only
+		Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
+		jwtCookie.setHttpOnly(true); // No accesible desde JavaScript
+		jwtCookie.setSecure(false); // Solo se envía en conexiones HTTPS
+		jwtCookie.setPath("/"); // Disponible para todo el dominio
+		jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas de validez
 
-	    // Agregar la cookie a la respuesta HTTP
-	    response.addCookie(jwtCookie);
+		// Agregar la cookie a la respuesta HTTP
+		response.addCookie(jwtCookie);
 
-	    // Retornar la respuesta con el cuerpo
-	    return ResponseEntity.ok(jwtResponse);
+		// Retornar la respuesta con el cuerpo
+		return ResponseEntity.ok(jwtResponse);
 	}
 
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout(HttpServletResponse response) {
-	    Cookie jwtCookie = new Cookie("jwt", null);
-	    jwtCookie.setHttpOnly(true);
-	    jwtCookie.setSecure(false); // Cambiar a true en producción
-	    jwtCookie.setPath("/");
-	    jwtCookie.setMaxAge(0); // Eliminar la cookie
+		Cookie jwtCookie = new Cookie("jwt", null);
+		jwtCookie.setHttpOnly(true);
+		jwtCookie.setSecure(false); // Cambiar a true en producción
+		jwtCookie.setPath("/");
+		jwtCookie.setMaxAge(0); // Eliminar la cookie
 
-	    response.addCookie(jwtCookie);
-	    return ResponseEntity.ok().build();
+		response.addCookie(jwtCookie);
+		return ResponseEntity.ok().build();
 	}
-	
+
 	@GetMapping("/auth-status")
 	public ResponseEntity<Boolean> checkAuthStatus(HttpServletRequest request) {
-	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-	    boolean isAuthenticated = authentication != null &&
-	            authentication.isAuthenticated() &&
-	            !(authentication instanceof AnonymousAuthenticationToken);
-	    
-	    logger.info("Estado de autenticación: {}", isAuthenticated);
-	    return ResponseEntity.ok(isAuthenticated);
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
+				&& !(authentication instanceof AnonymousAuthenticationToken);
+
+		logger.info("Estado de autenticación: {}", isAuthenticated);
+		return ResponseEntity.ok(isAuthenticated);
 	}
 
 	/**
@@ -134,30 +134,32 @@ public class AuthenticationController {
 	@GetMapping("/roles")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<?> obtenerRoles() {
-	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-	    // Verificar si el usuario está autenticado
-	    if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-	        Map<String, String> response = new HashMap<>();
-	        response.put("error", "El usuario no está autenticado o es anónimo.");
-	        return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);
-	    }
+		// Verificar si el usuario está autenticado
+		if (authentication == null || !authentication.isAuthenticated()
+				|| authentication instanceof AnonymousAuthenticationToken) {
+			Map<String, String> response = new HashMap<>();
+			response.put("error", "El usuario no está autenticado o es anónimo.");
+			return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);
+		}
 
-	    Object principal = authentication.getPrincipal();
+		Object principal = authentication.getPrincipal();
 
-	    if (principal instanceof Usuario) {
-	        Usuario usuario = (Usuario) principal;
-	        Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
-	        return ResponseEntity.ok(roles);
-	    } else if (principal instanceof UserDetails) {
-	        String email = ((UserDetails) principal).getUsername();
-	        Usuario usuario = usuarioService.encontrarPorEmail(email)
-	            .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
-	        Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
-	        return ResponseEntity.ok(roles);
-	    } else {
-	        throw new ClassCastException("El principal no es un Usuario ni un UserDetails. Tipo: " + principal.getClass().getName());
-	    }
+		if (principal instanceof Usuario) {
+			Usuario usuario = (Usuario) principal;
+			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+			return ResponseEntity.ok(roles);
+		} else if (principal instanceof UserDetails) {
+			String email = ((UserDetails) principal).getUsername();
+			Usuario usuario = usuarioService.encontrarPorEmail(email)
+					.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+			return ResponseEntity.ok(roles);
+		} else {
+			throw new ClassCastException(
+					"El principal no es un Usuario ni un UserDetails. Tipo: " + principal.getClass().getName());
+		}
 	}
 
 	@GetMapping("/user")

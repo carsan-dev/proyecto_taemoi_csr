@@ -42,9 +42,9 @@ public interface GrupoService {
 	List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId);
 
 	void agregarAlumnosAGrupo(@NonNull Long grupoId, List<Long> alumnosIds);
-	
+
 	List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo);
-	
+
 	Map<String, Long> contarAlumnosPorGrupo();
 
 	List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);

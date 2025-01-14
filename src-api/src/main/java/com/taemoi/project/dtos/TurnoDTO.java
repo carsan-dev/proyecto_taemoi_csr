@@ -6,20 +6,21 @@ import java.util.stream.Collectors;
 import com.taemoi.project.entidades.Turno;
 
 public class TurnoDTO {
-    
+
 	private Long id;
-    private String diaSemana;
-    private String horaInicio;
-    private String horaFin;
-    private Long grupoId;
-    private String grupoNombre;
-    private String tipoGrupo;
-    private List<AlumnoDTO> alumnos;
+	private String diaSemana;
+	private String horaInicio;
+	private String horaFin;
+	private Long grupoId;
+	private String grupoNombre;
+	private String tipoGrupo;
+	private List<AlumnoDTO> alumnos;
 
 	public TurnoDTO() {
 	}
 
-	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, Long grupoId, String grupoNombre, String tipoGrupo) {
+	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, Long grupoId, String grupoNombre,
+			String tipoGrupo) {
 		this.id = id;
 		this.diaSemana = diaSemana;
 		this.horaInicio = horaInicio;
@@ -28,7 +29,7 @@ public class TurnoDTO {
 		this.grupoNombre = grupoNombre;
 		this.tipoGrupo = tipoGrupo;
 	}
-	
+
 	public TurnoDTO(Long id, String diaSemana, String horaInicio, String horaFin, String tipoGrupo) {
 		this.id = id;
 		this.diaSemana = diaSemana;
@@ -36,8 +37,8 @@ public class TurnoDTO {
 		this.horaFin = horaFin;
 		this.tipoGrupo = tipoGrupo;
 	}
-    
-    public Long getId() {
+
+	public Long getId() {
 		return id;
 	}
 
@@ -46,14 +47,14 @@ public class TurnoDTO {
 	}
 
 	public String getDiaSemana() {
-        return diaSemana;
-    }
+		return diaSemana;
+	}
 
-    public void setDiaSemana(String diaSemana) {
-        this.diaSemana = diaSemana;
-    }
-  
-    public String getHoraInicio() {
+	public void setDiaSemana(String diaSemana) {
+		this.diaSemana = diaSemana;
+	}
+
+	public String getHoraInicio() {
 		return horaInicio;
 	}
 
@@ -101,29 +102,27 @@ public class TurnoDTO {
 		this.alumnos = alumnos;
 	}
 
-    public static TurnoDTO deTurno(Turno turno) {
-        if (turno == null) {
-            return null;
-        }
+	public static TurnoDTO deTurno(Turno turno) {
+		if (turno == null) {
+			return null;
+		}
 
-        TurnoDTO turnoDTO = new TurnoDTO();
-        turnoDTO.setId(turno.getId());
-        turnoDTO.setDiaSemana(turno.getDiaSemana());
-        turnoDTO.setHoraInicio(turno.getHoraInicio());
-        turnoDTO.setHoraFin(turno.getHoraFin());
-        
-        // Mapear el grupoId y grupoNombre
-        turnoDTO.setGrupoId(turno.getGrupo() != null ? turno.getGrupo().getId() : null);
-        turnoDTO.setGrupoNombre(turno.getGrupo() != null ? turno.getGrupo().getNombre() : "Sin grupo");
-        turnoDTO.setTipoGrupo(turno.getTipo());
+		TurnoDTO turnoDTO = new TurnoDTO();
+		turnoDTO.setId(turno.getId());
+		turnoDTO.setDiaSemana(turno.getDiaSemana());
+		turnoDTO.setHoraInicio(turno.getHoraInicio());
+		turnoDTO.setHoraFin(turno.getHoraFin());
 
-        // Mapear la lista de alumnos a AlumnoDTO
-        if (turno.getAlumnos() != null) {
-            turnoDTO.setAlumnos(turno.getAlumnos().stream()
-                    .map(AlumnoDTO::deAlumno)
-                    .collect(Collectors.toList()));
-        }
+		// Mapear el grupoId y grupoNombre
+		turnoDTO.setGrupoId(turno.getGrupo() != null ? turno.getGrupo().getId() : null);
+		turnoDTO.setGrupoNombre(turno.getGrupo() != null ? turno.getGrupo().getNombre() : "Sin grupo");
+		turnoDTO.setTipoGrupo(turno.getTipo());
 
-        return turnoDTO;
-    }
+		// Mapear la lista de alumnos a AlumnoDTO
+		if (turno.getAlumnos() != null) {
+			turnoDTO.setAlumnos(turno.getAlumnos().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+		}
+
+		return turnoDTO;
+	}
 }

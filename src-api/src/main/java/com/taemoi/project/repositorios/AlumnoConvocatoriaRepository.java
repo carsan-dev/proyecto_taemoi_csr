@@ -9,7 +9,7 @@ import com.taemoi.project.entidades.AlumnoConvocatoria;
 
 public interface AlumnoConvocatoriaRepository extends JpaRepository<AlumnoConvocatoria, Long> {
 	Optional<AlumnoConvocatoria> findByProductoAlumnoId(Long productoAlumnoId);
-	
+
 	Optional<AlumnoConvocatoria> findByConvocatoriaIdAndAlumnoId(Long convocatoriaId, Long alumnoId);
 
 	List<AlumnoConvocatoria> findByAlumnoId(Long alumnoId);

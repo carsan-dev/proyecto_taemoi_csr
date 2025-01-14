@@ -19,29 +19,25 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 public class Grupo {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
+
 	@NotBlank(message = "El nombre no puede estar en blanco")
-    @Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
+	@Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
 	private String nombre;
-	
+
 	private String tipo;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "alumno_grupo",
-        joinColumns = @JoinColumn(name = "grupo_id"),
-        inverseJoinColumns = @JoinColumn(name = "alumno_id")
-    )
-    @JsonBackReference
-    private List<Alumno> alumnos = new ArrayList<>();
-    
-    @OneToMany(mappedBy = "grupo", fetch = FetchType.LAZY)
-    @JsonBackReference
-    private List<Turno> turnos;
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
+	@JsonBackReference
+	private List<Alumno> alumnos = new ArrayList<>();
+
+	@OneToMany(mappedBy = "grupo", fetch = FetchType.LAZY)
+	@JsonBackReference
+	private List<Turno> turnos;
 
 	public Long getId() {
 		return id;
@@ -50,7 +46,7 @@ public class Grupo {
 	public void setId(Long id) {
 		this.id = id;
 	}
-	
+
 	public String getNombre() {
 		return nombre;
 	}
@@ -58,7 +54,7 @@ public class Grupo {
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
 	}
-	
+
 	public String getTipo() {
 		return tipo;
 	}
@@ -74,7 +70,7 @@ public class Grupo {
 	public void setAlumnos(List<Alumno> alumnos) {
 		this.alumnos = alumnos;
 	}
-	
+
 	public List<Turno> getTurnos() {
 		return turnos;
 	}
@@ -84,16 +80,16 @@ public class Grupo {
 	}
 
 	public void addAlumno(Alumno alumno) {
-        if (alumno != null) {
-            alumnos.add(alumno);
-            alumno.getGrupos().add(this);
-        }
-    }
+		if (alumno != null) {
+			alumnos.add(alumno);
+			alumno.getGrupos().add(this);
+		}
+	}
 
-    public void removeAlumno(Alumno alumno) {
-        if (alumno != null) {
-            alumnos.remove(alumno);
-            alumno.getGrupos().remove(this);
-        }
-    }
+	public void removeAlumno(Alumno alumno) {
+		if (alumno != null) {
+			alumnos.remove(alumno);
+			alumno.getGrupos().remove(this);
+		}
+	}
 }

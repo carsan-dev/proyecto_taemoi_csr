@@ -16,32 +16,32 @@ import com.taemoi.project.servicios.impl.JwtServiceImpl;
 public class JwtServiceImplTest {
 
 	@Autowired
-    private JwtServiceImpl jwtService = new JwtServiceImpl();
+	private JwtServiceImpl jwtService = new JwtServiceImpl();
 
-    @Test
-    public void testGenerarToken() {
-        UserDetails userDetails = new CustomUserDetails("John", "password");
-        String token = jwtService.generateToken(userDetails);
-        assertNotNull(token);
-    }
+	@Test
+	public void testGenerarToken() {
+		UserDetails userDetails = new CustomUserDetails("John", "password");
+		String token = jwtService.generateToken(userDetails);
+		assertNotNull(token);
+	}
 
-    @Test
-    public void testEsValidoToken_TokenValido() {
-        UserDetails userDetails = new CustomUserDetails("John", "password");
-        String token = jwtService.generateToken(userDetails);
+	@Test
+	public void testEsValidoToken_TokenValido() {
+		UserDetails userDetails = new CustomUserDetails("John", "password");
+		String token = jwtService.generateToken(userDetails);
 
-        boolean isValid = jwtService.isTokenValid(token, userDetails);
-        assertTrue(isValid);
-    }
+		boolean isValid = jwtService.isTokenValid(token, userDetails);
+		assertTrue(isValid);
+	}
 
-    @Test
-    public void testIsTokenValid_UsuarioIncorrecto() {
-        UserDetails userDetails = new CustomUserDetails("John", "password");
-        String token = jwtService.generateToken(userDetails);
-        
-        UserDetails invalidUserDetails = new CustomUserDetails("Alice", "password");
+	@Test
+	public void testIsTokenValid_UsuarioIncorrecto() {
+		UserDetails userDetails = new CustomUserDetails("John", "password");
+		String token = jwtService.generateToken(userDetails);
 
-        boolean isValid = jwtService.isTokenValid(token, invalidUserDetails);
-        assertFalse(isValid);
-    }
+		UserDetails invalidUserDetails = new CustomUserDetails("Alice", "password");
+
+		boolean isValid = jwtService.isTokenValid(token, invalidUserDetails);
+		assertFalse(isValid);
+	}
 }

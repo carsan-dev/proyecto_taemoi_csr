@@ -5,10 +5,10 @@ import com.taemoi.project.entidades.Imagen;
 
 public class AlumnoCortoDTO {
 	private Long id;
-    private String nombre;
-    private String apellidos;
+	private String nombre;
+	private String apellidos;
 	private Imagen fotoAlumno;
-	
+
 	public AlumnoCortoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno) {
 		super();
 		this.id = id;
@@ -16,7 +16,7 @@ public class AlumnoCortoDTO {
 		this.apellidos = apellidos;
 		this.fotoAlumno = fotoAlumno;
 	}
-	
+
 	public Long getId() {
 		return id;
 	}
@@ -48,12 +48,12 @@ public class AlumnoCortoDTO {
 	public void setFotoAlumno(Imagen fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
 	}
-	
-	public static AlumnoCortoDTO deAlumno(Alumno alumno) {
-	    if (alumno == null) {
-	        return null;
-	    }
 
-	    return new AlumnoCortoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
+	public static AlumnoCortoDTO deAlumno(Alumno alumno) {
+		if (alumno == null) {
+			return null;
+		}
+
+		return new AlumnoCortoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFotoAlumno());
 	}
 }

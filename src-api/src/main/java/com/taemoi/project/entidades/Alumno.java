@@ -105,7 +105,7 @@ public class Alumno {
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "foto_alumno_id")
 	private Imagen fotoAlumno;
-	
+
 	@Enumerated(EnumType.STRING)
 	private Deporte deporte;
 
@@ -118,7 +118,7 @@ public class Alumno {
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
 	private Grado grado;
-	
+
 	@Temporal(TemporalType.DATE)
 	private Date fechaGrado;
 
@@ -138,10 +138,9 @@ public class Alumno {
 
 	@OneToMany(mappedBy = "alumno")
 	private List<ProductoAlumno> productosAlumno = new ArrayList<>();
-	
+
 	@OneToMany(mappedBy = "alumno")
 	private List<AlumnoConvocatoria> convocatorias = new ArrayList<>();
-
 
 	public Long getId() {
 		return id;
@@ -247,7 +246,7 @@ public class Alumno {
 		this.grado = grado;
 	}
 
-    public Date getFechaGrado() {
+	public Date getFechaGrado() {
 		return fechaGrado;
 	}
 
@@ -256,12 +255,12 @@ public class Alumno {
 	}
 
 	public Boolean getAptoParaExamen() {
-        return aptoParaExamen;
-    }
+		return aptoParaExamen;
+	}
 
-    public void setAptoParaExamen(Boolean aptoParaExamen) {
-        this.aptoParaExamen = aptoParaExamen;
-    }
+	public void setAptoParaExamen(Boolean aptoParaExamen) {
+		this.aptoParaExamen = aptoParaExamen;
+	}
 
 	public Date getFechaAlta() {
 		return fechaAlta;

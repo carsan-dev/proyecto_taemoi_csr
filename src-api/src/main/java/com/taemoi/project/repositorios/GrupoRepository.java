@@ -13,7 +13,7 @@ import com.taemoi.project.entidades.Grupo;
  */
 @Repository
 public interface GrupoRepository extends JpaRepository<Grupo, Long> {
-    Optional<Grupo> findByNombre(String nombre);
+	Optional<Grupo> findByNombre(String nombre);
 
 	List<Grupo> findByTipoIgnoreCase(String tipo);
 }

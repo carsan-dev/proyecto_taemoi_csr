@@ -145,106 +145,106 @@ public class GrupoServiceImpl implements GrupoService {
 	@Transactional
 	@Override
 	public void agregarAlumnoAGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
-	    // Buscar el grupo por su ID
-	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-	    // Buscar el alumno por su ID
-	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+		// Buscar el grupo por su ID
+		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+		// Buscar el alumno por su ID
+		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
-	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
-	        Grupo grupo = grupoOptional.get();
-	        Alumno alumno = alumnoOptional.get();
+		if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+			Grupo grupo = grupoOptional.get();
+			Alumno alumno = alumnoOptional.get();
 
-	        // Verificar si el alumno ya está en el grupo
-	        if (!grupo.getAlumnos().contains(alumno)) {
-	            // Añadir el alumno al grupo
-	            grupo.addAlumno(alumno);
+			// Verificar si el alumno ya está en el grupo
+			if (!grupo.getAlumnos().contains(alumno)) {
+				// Añadir el alumno al grupo
+				grupo.addAlumno(alumno);
 
-	            // Obtener los turnos del grupo y añadir el alumno a esos turnos
-	            List<Turno> turnosDelGrupo = grupo.getTurnos();
-	            for (Turno turno : turnosDelGrupo) {
-	                if (!turno.getAlumnos().contains(alumno)) {
-	                    // Añadir el alumno a cada turno del grupo
-	                    turno.getAlumnos().add(alumno);
-	                    alumno.getTurnos().add(turno);
-	                }
-	            }
+				// Obtener los turnos del grupo y añadir el alumno a esos turnos
+				List<Turno> turnosDelGrupo = grupo.getTurnos();
+				for (Turno turno : turnosDelGrupo) {
+					if (!turno.getAlumnos().contains(alumno)) {
+						// Añadir el alumno a cada turno del grupo
+						turno.getAlumnos().add(alumno);
+						alumno.getTurnos().add(turno);
+					}
+				}
 
-	            // Guardar el grupo y el alumno para actualizar las relaciones en la base de datos
-	            grupoRepository.save(grupo);
-	            alumnoRepository.save(alumno);
-	        } else {
-	            throw new IllegalArgumentException("El alumno ya pertenece a este grupo");
-	        }
-	    } else {
-	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen");
-	    }
+				// Guardar el grupo y el alumno para actualizar las relaciones en la base de
+				// datos
+				grupoRepository.save(grupo);
+				alumnoRepository.save(alumno);
+			} else {
+				throw new IllegalArgumentException("El alumno ya pertenece a este grupo");
+			}
+		} else {
+			throw new GrupoNoEncontradoException("El grupo o el alumno no existen");
+		}
 	}
 
 	@Override
 	public void agregarAlumnosAGrupo(@NonNull Long grupoId, @NonNull List<Long> alumnosIds) {
-	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 
-	    if (grupoOptional.isPresent()) {
-	        Grupo grupo = grupoOptional.get();
-	        List<Alumno> alumnos = alumnoRepository.findAllById(alumnosIds);
+		if (grupoOptional.isPresent()) {
+			Grupo grupo = grupoOptional.get();
+			List<Alumno> alumnos = alumnoRepository.findAllById(alumnosIds);
 
-	        for (Alumno alumno : alumnos) {
-	            // Añadir alumno al grupo si no está ya en el grupo
-	            if (!grupo.getAlumnos().contains(alumno)) {
-	                grupo.addAlumno(alumno);
+			for (Alumno alumno : alumnos) {
+				// Añadir alumno al grupo si no está ya en el grupo
+				if (!grupo.getAlumnos().contains(alumno)) {
+					grupo.addAlumno(alumno);
 
-	                // Inscribir el alumno en todos los turnos del grupo
-	                for (Turno turno : grupo.getTurnos()) {
-	                    if (!turno.getAlumnos().contains(alumno)) {
-	                        turno.getAlumnos().add(alumno);
-	                        alumno.getTurnos().add(turno);
-	                    }
-	                }
-	            }
-	        }
+					// Inscribir el alumno en todos los turnos del grupo
+					for (Turno turno : grupo.getTurnos()) {
+						if (!turno.getAlumnos().contains(alumno)) {
+							turno.getAlumnos().add(alumno);
+							alumno.getTurnos().add(turno);
+						}
+					}
+				}
+			}
 
-	        // Guardar el grupo y los alumnos con las nuevas relaciones
-	        grupoRepository.save(grupo);
-	        alumnoRepository.saveAll(alumnos);
-	    } else {
-	        throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " no existe.");
-	    }
+			// Guardar el grupo y los alumnos con las nuevas relaciones
+			grupoRepository.save(grupo);
+			alumnoRepository.saveAll(alumnos);
+		} else {
+			throw new GrupoNoEncontradoException("El grupo con ID " + grupoId + " no existe.");
+		}
 	}
-	
+
 	@Override
 	public Map<String, Long> contarAlumnosPorGrupo() {
-	    Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
+		Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
 
-	    List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing", "Defensa Personal Femenina");
+		List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing",
+				"Defensa Personal Femenina");
 
-	    for (String tipo : tipos) {
-	        List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
-	        Set<Alumno> alumnosSet = new HashSet<>();
-	        for (Grupo grupo : grupos) {
-	            alumnosSet.addAll(grupo.getAlumnos());
-	        }
-	        conteoAlumnosPorGrupo.put(tipo, (long) alumnosSet.size());
-	    }
+		for (String tipo : tipos) {
+			List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
+			Set<Alumno> alumnosSet = new HashSet<>();
+			for (Grupo grupo : grupos) {
+				alumnosSet.addAll(grupo.getAlumnos());
+			}
+			conteoAlumnosPorGrupo.put(tipo, (long) alumnosSet.size());
+		}
 
-	    return conteoAlumnosPorGrupo;
+		return conteoAlumnosPorGrupo;
 	}
-	
+
 	@Override
 	public List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo) {
-	    List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
+		List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
 
-	    if (grupos.isEmpty()) {
-	        throw new GrupoNoEncontradoException("No se encontraron grupos para el tipo de deporte " + tipo);
-	    }
+		if (grupos.isEmpty()) {
+			throw new GrupoNoEncontradoException("No se encontraron grupos para el tipo de deporte " + tipo);
+		}
 
-	    Set<Alumno> alumnosSet = new HashSet<>();
-	    for (Grupo grupo : grupos) {
-	        alumnosSet.addAll(grupo.getAlumnos());
-	    }
+		Set<Alumno> alumnosSet = new HashSet<>();
+		for (Grupo grupo : grupos) {
+			alumnosSet.addAll(grupo.getAlumnos());
+		}
 
-	    return alumnosSet.stream()
-	            .map(AlumnoCortoDTO::deAlumno)
-	            .collect(Collectors.toList());
+		return alumnosSet.stream().map(AlumnoCortoDTO::deAlumno).collect(Collectors.toList());
 	}
 
 	/**
@@ -256,37 +256,36 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
-	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
-	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
-	        Grupo grupo = grupoOptional.get();
-	        Alumno alumno = alumnoOptional.get();
+		if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+			Grupo grupo = grupoOptional.get();
+			Alumno alumno = alumnoOptional.get();
 
-	        // Verificar si el alumno está en el grupo
-	        if (grupo.getAlumnos().contains(alumno)) {
-	            // Eliminar las relaciones del alumno con los turnos del grupo
-	            List<Turno> turnosDelGrupo = grupo.getTurnos();
+			// Verificar si el alumno está en el grupo
+			if (grupo.getAlumnos().contains(alumno)) {
+				// Eliminar las relaciones del alumno con los turnos del grupo
+				List<Turno> turnosDelGrupo = grupo.getTurnos();
 
-	            for (Turno turno : turnosDelGrupo) {
-	                if (alumno.getTurnos().contains(turno)) {
-	                    alumno.getTurnos().remove(turno); // Eliminar relación en la tabla alumno_turno
-	                    turno.getAlumnos().remove(alumno); // Eliminar relación en la entidad turno
-	                }
-	            }
+				for (Turno turno : turnosDelGrupo) {
+					if (alumno.getTurnos().contains(turno)) {
+						alumno.getTurnos().remove(turno); // Eliminar relación en la tabla alumno_turno
+						turno.getAlumnos().remove(alumno); // Eliminar relación en la entidad turno
+					}
+				}
 
-	            // Actualizar la relación del alumno con el grupo
-	            grupo.removeAlumno(alumno);  // Remover el alumno del grupo
-	            grupoRepository.save(grupo); // Guardar el grupo actualizado
-	            alumnoRepository.save(alumno); // Guardar el alumno actualizado
-	        } else {
-	            throw new AlumnoNoEncontradoEnGrupoException("El alumno no pertenece al grupo.");
-	        }
-	    } else {
-	        throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
-	    }
+				// Actualizar la relación del alumno con el grupo
+				grupo.removeAlumno(alumno); // Remover el alumno del grupo
+				grupoRepository.save(grupo); // Guardar el grupo actualizado
+				alumnoRepository.save(alumno); // Guardar el alumno actualizado
+			} else {
+				throw new AlumnoNoEncontradoEnGrupoException("El alumno no pertenece al grupo.");
+			}
+		} else {
+			throw new GrupoNoEncontradoException("El grupo o el alumno no existen.");
+		}
 	}
-
 
 	/**
 	 * Agrega un turno a un grupo.
@@ -351,15 +350,13 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public List<TurnoCortoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId) {
-	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-	    if (grupoOptional.isPresent()) {
-	        Grupo grupo = grupoOptional.get();
-	        // Convertir los turnos del grupo a TurnoCortoDTO
-	        return grupo.getTurnos().stream()
-	                .map(TurnoCortoDTO::deTurno)
-	                .collect(Collectors.toList());
-	    }
-	    return Collections.emptyList();
+		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+		if (grupoOptional.isPresent()) {
+			Grupo grupo = grupoOptional.get();
+			// Convertir los turnos del grupo a TurnoCortoDTO
+			return grupo.getTurnos().stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
+		}
+		return Collections.emptyList();
 	}
 
 	/**
@@ -377,25 +374,22 @@ public class GrupoServiceImpl implements GrupoService {
 		}
 		return Collections.emptyList();
 	}
-	
+
 	@Override
 	public List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId) {
-	    Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-	    Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
+		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
+		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
-	    if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
-	        Alumno alumno = alumnoOptional.get();
-	        // Filtrar los turnos del grupo para los que el alumno está inscrito
-	        List<Turno> turnosAlumno = alumno.getTurnos().stream()
-	            .filter(turno -> turno.getGrupo().getId().equals(grupoId))
-	            .collect(Collectors.toList());
+		if (grupoOptional.isPresent() && alumnoOptional.isPresent()) {
+			Alumno alumno = alumnoOptional.get();
+			// Filtrar los turnos del grupo para los que el alumno está inscrito
+			List<Turno> turnosAlumno = alumno.getTurnos().stream()
+					.filter(turno -> turno.getGrupo().getId().equals(grupoId)).collect(Collectors.toList());
 
-	        // Convertir los turnos a DTO
-	        return turnosAlumno.stream()
-	            .map(TurnoCortoDTO::deTurno)
-	            .collect(Collectors.toList());
-	    }
-	    return Collections.emptyList();
+			// Convertir los turnos a DTO
+			return turnosAlumno.stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
+		}
+		return Collections.emptyList();
 	}
 
 	/**

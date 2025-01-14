@@ -32,98 +32,94 @@ import com.taemoi.project.servicios.ImagenService;
 @RequestMapping("/api/eventos")
 public class EventoController {
 
-    @Autowired
-    private EventoService eventoService;
-    
-    @Autowired
-    private ImagenService imagenService;
-    
-    @GetMapping
-    public List<Evento> obtenerTodosLosEventos() {
-        return eventoService.obtenerTodosLosEventos();
-    }
-    
-    @GetMapping("/{eventoId}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Evento> obtenerEventoPorId(@PathVariable @NonNull Long eventoId) {
-        try {
-            Evento evento = eventoService.obtenerEventoPorId(eventoId);
-            return ResponseEntity.ok(evento);
-        } catch (TurnoNoEncontradoException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-	
-    @PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> crearEvento(@RequestParam("nuevo") String eventoJson,
-                                         @RequestParam(value = "file", required = false) MultipartFile file) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            Evento nuevoEvento = objectMapper.readValue(eventoJson, Evento.class);
+	@Autowired
+	private EventoService eventoService;
 
-            // Guardar el evento y la imagen (si existe)
-            Evento eventoCreado = eventoService.guardarEvento(nuevoEvento, file);
-            return new ResponseEntity<>(eventoCreado, HttpStatus.CREATED);
+	@Autowired
+	private ImagenService imagenService;
 
-        } catch (IOException e) {
-            return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-        }
-    }
+	@GetMapping
+	public List<Evento> obtenerTodosLosEventos() {
+		return eventoService.obtenerTodosLosEventos();
+	}
 
+	@GetMapping("/{eventoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<Evento> obtenerEventoPorId(@PathVariable @NonNull Long eventoId) {
+		try {
+			Evento evento = eventoService.obtenerEventoPorId(eventoId);
+			return ResponseEntity.ok(evento);
+		} catch (TurnoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> actualizarEvento(@PathVariable @NonNull Long id,
-                                              @RequestParam(value = "file", required = false) MultipartFile file,
-                                              @RequestParam("eventoEditado") String eventoJson) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            Evento eventoActualizado = objectMapper.readValue(eventoJson, Evento.class);
+	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> crearEvento(@RequestParam("nuevo") String eventoJson,
+			@RequestParam(value = "file", required = false) MultipartFile file) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			Evento nuevoEvento = objectMapper.readValue(eventoJson, Evento.class);
 
-            Imagen nuevaImagen = null;
+			// Guardar el evento y la imagen (si existe)
+			Evento eventoCreado = eventoService.guardarEvento(nuevoEvento, file);
+			return new ResponseEntity<>(eventoCreado, HttpStatus.CREATED);
 
-            // Si se proporciona una nueva imagen, guardar la imagen y eliminar la anterior
-            if (file != null && !file.isEmpty()) {
-                nuevaImagen = imagenService.guardarImagen(file);  // Guardar la nueva imagen
-            }
+		} catch (IOException e) {
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		}
+	}
 
-            // Actualizar el evento en la base de datos, incluyendo la nueva imagen
-            Evento evento = eventoService.actualizarEvento(id, eventoActualizado, nuevaImagen);
-            return new ResponseEntity<>(evento, HttpStatus.OK);
+	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarEvento(@PathVariable @NonNull Long id,
+			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam("eventoEditado") String eventoJson) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			Evento eventoActualizado = objectMapper.readValue(eventoJson, Evento.class);
 
-        } catch (IOException e) {
-            return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
-        }
-    }
-    
-    @DeleteMapping("/{id}/imagen")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarImagenEvento(@PathVariable @NonNull Long id) {
-        try {
-            eventoService.eliminarImagenEvento(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al eliminar la imagen del evento.");
-        }
-    }
+			Imagen nuevaImagen = null;
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> eliminarEvento(@PathVariable @NonNull Long id) {
-        try {
-            eventoService.eliminarEvento(id);
-            return ResponseEntity.ok().build();
-        } catch (EventoNoEncontradoException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", "El evento no fue encontrado."));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error al eliminar el evento: " + e.getMessage()));
-        }
-    }
+			// Si se proporciona una nueva imagen, guardar la imagen y eliminar la anterior
+			if (file != null && !file.isEmpty()) {
+				nuevaImagen = imagenService.guardarImagen(file); // Guardar la nueva imagen
+			}
 
+			// Actualizar el evento en la base de datos, incluyendo la nueva imagen
+			Evento evento = eventoService.actualizarEvento(id, eventoActualizado, nuevaImagen);
+			return new ResponseEntity<>(evento, HttpStatus.OK);
 
+		} catch (IOException e) {
+			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@DeleteMapping("/{id}/imagen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarImagenEvento(@PathVariable @NonNull Long id) {
+		try {
+			eventoService.eliminarImagenEvento(id);
+			return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al eliminar la imagen del evento.");
+		}
+	}
+
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarEvento(@PathVariable @NonNull Long id) {
+		try {
+			eventoService.eliminarEvento(id);
+			return ResponseEntity.ok().build();
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "El evento no fue encontrado."));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Error al eliminar el evento: " + e.getMessage()));
+		}
+	}
 
 }

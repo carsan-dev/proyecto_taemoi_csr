@@ -30,8 +30,9 @@ import com.taemoi.project.servicios.UsuarioService;
 
 /**
  * Controlador REST que maneja las operaciones relacionadas con administración.
- * Este controlador proporciona endpoints para administrar usuarios y alumnos en el sistema.
- * Todos los endpoints en este controlador requieren autorización con el rol ROLE_ADMIN.
+ * Este controlador proporciona endpoints para administrar usuarios y alumnos en
+ * el sistema. Todos los endpoints en este controlador requieren autorización
+ * con el rol ROLE_ADMIN.
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -39,54 +40,56 @@ public class AdminController {
 	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
 	/**
-     * Inyección del servicio de usuario.
-     */
+	 * Inyección del servicio de usuario.
+	 */
 	@Autowired
 	private UsuarioService usuarioService;
-	
+
 	/**
-     * Inyección del servicio de alumno.
-     */
+	 * Inyección del servicio de alumno.
+	 */
 	@Autowired
 	private AlumnoService alumnoService;
 
-    /**
-     * Obtiene una lista de alumnos paginada o no paginada según los parámetros proporcionados.
-     *
-     * @param page Número de página para paginación (opcional).
-     * @param size Tamaño de la página para paginación (opcional).
-     * @return ResponseEntity que contiene una lista de alumnos.
-     * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
-     */
+	/**
+	 * Obtiene una lista de alumnos paginada o no paginada según los parámetros
+	 * proporcionados.
+	 *
+	 * @param page Número de página para paginación (opcional).
+	 * @param size Tamaño de la página para paginación (opcional).
+	 * @return ResponseEntity que contiene una lista de alumnos.
+	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
+	 */
 	@GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<?> obtenerAlumnos(@RequestParam(required = false) Integer page,
-                                            @RequestParam(required = false) Integer size) {
-        if (page != null && size != null) {
-            logger.info("## AdminController :: mostrarAlumnos paginados");
-            Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
-            Page<Alumno> alumnos = alumnoService.obtenerTodosLosAlumnos(pageable);
-            if (alumnos.isEmpty()) {
-                throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
-            }
-            return ResponseEntity.ok(alumnos);
-        } else {
-            logger.info("## AdminController :: mostrarTodosLosAlumnos");
-            List<Alumno> alumnos = alumnoService.obtenerTodosLosAlumnos();
-            if (alumnos.isEmpty()) {
-                throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
-            }
-            return ResponseEntity.ok(alumnos);
-        }
-    }
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<?> obtenerAlumnos(@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer size) {
+		if (page != null && size != null) {
+			logger.info("## AdminController :: mostrarAlumnos paginados");
+			Pageable pageable = PageRequest.of(page - 1, size, Sort.by("nombre").ascending());
+			Page<Alumno> alumnos = alumnoService.obtenerTodosLosAlumnos(pageable);
+			if (alumnos.isEmpty()) {
+				throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
+			}
+			return ResponseEntity.ok(alumnos);
+		} else {
+			logger.info("## AdminController :: mostrarTodosLosAlumnos");
+			List<Alumno> alumnos = alumnoService.obtenerTodosLosAlumnos();
+			if (alumnos.isEmpty()) {
+				throw new ListaAlumnosVaciaException("No hay usuarios registrados en el sistema.");
+			}
+			return ResponseEntity.ok(alumnos);
+		}
+	}
 
-    /**
-     * Obtiene un alumno por su ID.
-     *
-     * @param id ID del alumno.
-     * @return ResponseEntity que contiene el alumno encontrado.
-     * @throws AlumnoNoEncontradoException si no se encuentra ningún alumno con el ID especificado.
-     */
+	/**
+	 * Obtiene un alumno por su ID.
+	 *
+	 * @param id ID del alumno.
+	 * @return ResponseEntity que contiene el alumno encontrado.
+	 * @throws AlumnoNoEncontradoException si no se encuentra ningún alumno con el
+	 *                                     ID especificado.
+	 */
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	public ResponseEntity<Alumno> obtenerAlumnoPorId(@PathVariable @NonNull Long id) {
@@ -96,12 +99,13 @@ public class AdminController {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 
-    /**
-     * Obtiene una lista de usuarios en el sistema.
-     *
-     * @return ResponseEntity que contiene una lista de usuarios.
-     * @throws ListaUsuariosVaciaException si no se encuentran usuarios en el sistema.
-     */
+	/**
+	 * Obtiene una lista de usuarios en el sistema.
+	 *
+	 * @return ResponseEntity que contiene una lista de usuarios.
+	 * @throws ListaUsuariosVaciaException si no se encuentran usuarios en el
+	 *                                     sistema.
+	 */
 	@GetMapping("/users")
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	public ResponseEntity<List<UsuarioDTO>> mostrarUsuarios() {

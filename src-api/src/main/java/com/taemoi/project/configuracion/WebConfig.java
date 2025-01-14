@@ -26,22 +26,21 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addCorsMappings(@NonNull CorsRegistry registry) {
 		registry.addMapping("/api/**")
 				.allowedOrigins("http://localhost:4200", "http://localhost:80", "http://localhost")
-				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS")
-				.allowedHeaders("*").allowCredentials(true);
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS").allowedHeaders("*")
+				.allowCredentials(true);
 	}
-	
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Linux path
-        String linuxPath = "/var/www/app/imagenes/";
 
-        // Windows path using %USERPROFILE%
-        String userProfile = System.getenv("USERPROFILE");
-        String windowsPath = Paths.get(userProfile, "static_resources", "imagenes").toString().replace("\\", "/");
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		// Linux path
+		String linuxPath = "/var/www/app/imagenes/";
 
-        registry.addResourceHandler("/imagenes/**")
-                .addResourceLocations("file:" + linuxPath)  // For Linux
-                .addResourceLocations("file:" + windowsPath + "/")  // For Windows
-                .setCachePeriod(3600);  // Optionally cache resources for one hour
-    }
+		// Windows path using %USERPROFILE%
+		String userProfile = System.getenv("USERPROFILE");
+		String windowsPath = Paths.get(userProfile, "static_resources", "imagenes").toString().replace("\\", "/");
+
+		registry.addResourceHandler("/imagenes/**").addResourceLocations("file:" + linuxPath) // For Linux
+				.addResourceLocations("file:" + windowsPath + "/") // For Windows
+				.setCachePeriod(3600); // Optionally cache resources for one hour
+	}
 }
