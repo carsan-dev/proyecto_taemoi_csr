@@ -148,6 +148,77 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return convertirADTO(productoAlumno);
 	}
 
+	@Override
+	public void cargarMensualidadesGenerales(String mesAno) {
+		String nombreMensualidad = formatearNombreMensualidad(mesAno);
+		List<Alumno> alumnos = alumnoRepository.findAll();
+		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+		for (Alumno alumno : alumnos) {
+			boolean yaExiste = alumno.getProductosAlumno().stream()
+					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+
+			if (!yaExiste) {
+				ProductoAlumno productoAlumno = new ProductoAlumno();
+				productoAlumno.setAlumno(alumno);
+				productoAlumno.setProducto(productoMensualidad);
+				productoAlumno.setConcepto(nombreMensualidad);
+				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setCantidad(1);
+				productoAlumno.setPagado(false);
+
+				productoAlumnoRepository.save(productoAlumno);
+			}
+		}
+	}
+
+	@Override
+	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar) {
+		String nombreMensualidad = formatearNombreMensualidad(mesAno);
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+		boolean yaExiste = alumno.getProductosAlumno().stream()
+				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+
+		if (yaExiste && !forzar) {
+			throw new IllegalStateException("El alumno ya tiene asignada la " + nombreMensualidad);
+		}
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(productoMensualidad);
+		productoAlumno.setConcepto(nombreMensualidad);
+		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPagado(false);
+
+		productoAlumnoRepository.save(productoAlumno);
+	}
+
+	private String formatearNombreMensualidad(String mesAno) {
+	    if (mesAno == null || !mesAno.matches("\\d{4}-\\d{2}")) {
+	        throw new IllegalArgumentException("El formato de mes y año debe ser 'YYYY-MM'. Valor recibido: " + mesAno);
+	    }
+
+	    String[] partes = mesAno.split("-");
+	    int mes = Integer.parseInt(partes[1]);
+	    String anio = partes[0];
+
+	    String[] meses = {
+	        "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
+	        "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+	    };
+
+	    return "MENSUALIDAD " + meses[mes - 1] + " " + anio;
+	}
+
+
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
 		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
 		dto.setId(productoAlumno.getId());

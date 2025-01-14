@@ -15,4 +15,8 @@ public interface ProductoAlumnoService {
 	void eliminarProductoAlumno(Long id);
 
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
+
+	void cargarMensualidadesGenerales(String mesAno);
+
+	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar);
 }
