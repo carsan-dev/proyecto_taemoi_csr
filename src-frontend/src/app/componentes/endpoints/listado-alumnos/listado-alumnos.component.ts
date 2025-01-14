@@ -16,19 +16,24 @@ import { RouterLink } from '@angular/router';
 })
 export class ListadoAlumnosComponent implements OnInit {
   alumnos: any[] = [];
+  alumnosSeleccionables: any[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 9;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  mesAnoSeleccionado: string = '';
+  alumnoSeleccionado: number | null = null;
+  mesAnoSeleccionadoIndividual: string = '';
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerAlumnos();
+    this.cargarTodosLosAlumnos();
   }
 
-  obtenerAlumnos() {
+  obtenerAlumnos(): void {
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -41,12 +46,29 @@ export class ListadoAlumnosComponent implements OnInit {
           this.alumnos = response.content;
           this.totalPaginas = response.totalPages;
         },
-        error: (error) => {
+        error: () => {
           Swal.fire({
             title: 'Error en la petición',
             text: 'No hemos podido conectar con el servidor',
             icon: 'error',
           });
+        },
+      });
+  }
+
+  cargarTodosLosAlumnos(): void {
+    this.endpointsService
+      .obtenerAlumnosSinPaginar(this.mostrarInactivos)
+      .subscribe({
+        next: (response) => {
+          this.alumnosSeleccionables = response;
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo cargar la lista completa de alumnos.',
+            'error'
+          );
         },
       });
   }
@@ -68,6 +90,7 @@ export class ListadoAlumnosComponent implements OnInit {
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
     this.obtenerAlumnos();
+    this.cargarTodosLosAlumnos();
   }
 
   darDeAlta(alumnoId: number) {
@@ -136,5 +159,118 @@ export class ListadoAlumnosComponent implements OnInit {
         });
       }
     });
+  }
+
+  cargarMensualidadesGenerales(): void {
+    if (!this.mesAnoSeleccionado) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un mes y año.',
+        icon: 'error',
+      });
+      return;
+    }
+
+  
+    this.endpointsService
+      .cargarMensualidadesGenerales(this.mesAnoSeleccionado)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Las mensualidades se han asignado correctamente.',
+            icon: 'success',
+            timer: 2000,
+          });
+          this.obtenerAlumnos();
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error',
+            text: 'Ocurrió un error al asignar las mensualidades.',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  cargarMensualidadIndividual(): void {
+    if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un alumno y un mes/año.',
+        icon: 'error',
+      });
+      return;
+    }
+  
+    this.endpointsService
+      .cargarMensualidadIndividual(
+        this.alumnoSeleccionado,
+        this.mesAnoSeleccionadoIndividual
+      )
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Mensualidad cargada correctamente.',
+            icon: 'success',
+            timer: 2000,
+          });
+        },
+        error: (error) => {
+          if (error.status === 409 && error.error.accion === 'confirmar') {
+            Swal.fire({
+              title: 'Atención',
+              text: error.error.mensaje,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, cargar',
+              cancelButtonText: 'No, cancelar',
+            }).then((result) => {
+              if (result.isConfirmed) {
+                this.forzarCargarMensualidad();
+              }
+            });
+          } else {
+            Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
+          }
+        },
+      });
+  }  
+
+  forzarCargarMensualidad(): void {
+    if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un alumno y un mes/año.',
+        icon: 'error',
+      });
+      return;
+    }
+  
+    this.endpointsService
+      .cargarMensualidadIndividual(
+        this.alumnoSeleccionado,
+        this.mesAnoSeleccionadoIndividual,
+        true
+      )
+      .subscribe({
+        next: () => {
+          Swal.fire('Éxito', 'Mensualidad cargada correctamente.', 'success');
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
+        },
+      });
+  } 
+
+  private formatearNombreMensualidad(mesAno: string): string {
+    const [anio, mes] = mesAno.split('-');
+    const meses = [
+      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ];
+    return `${meses[parseInt(mes, 10) - 1]} ${anio}`;
   }
 }
