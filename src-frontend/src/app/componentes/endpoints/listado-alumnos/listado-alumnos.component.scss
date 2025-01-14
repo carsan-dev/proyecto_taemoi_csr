@@ -1,17 +1,32 @@
+.card {
+  border-radius: 8px;
+  border: none;
+  &.p-4 {
+    padding: 1.5rem !important;
+  }
+  &.shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.card p {
+  margin-bottom: 0.3rem;
+}
+
 .alumno-card {
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 
   .card-body {
-    display: flex; /* Hace que las dos secciones estén alineadas horizontalmente */
+    display: flex;
     padding: 20px;
 
     .left-section {
@@ -60,9 +75,11 @@
   }
 }
 
-input[type='text'] {
-  border-radius: 30px;
-  padding: 10px 20px;
+input[type='text'],
+select,
+input[type='month'] {
+  border-radius: 6px;
+  padding: 10px 12px;
   border: 1px solid #ced4da;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s ease;
