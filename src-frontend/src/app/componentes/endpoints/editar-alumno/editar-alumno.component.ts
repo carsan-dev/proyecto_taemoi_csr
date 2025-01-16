@@ -107,6 +107,7 @@ export class EditarAlumnoComponent implements OnInit {
         numeroLicencia: [''],
         fechaLicencia: [''],
         aptoParaExamen: [false],
+        tieneDiscapacidad: [false],
       },
       {
         validators: [
@@ -244,6 +245,7 @@ export class EditarAlumnoComponent implements OnInit {
       tieneLicencia: alumno.tieneLicencia,
       grado: grado,
       aptoParaExamen: aptoParaExamen,
+      tieneDiscapacidad: alumno.tieneDiscapacidad,
     });
 
     this.onDeporteChange(alumno.deporte);
@@ -673,6 +675,32 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  renovarLicencia(alumnoId: number): void {
+    this.endpointsService.renovarLicencia(alumnoId).subscribe({
+      next: (response) => {
+        Swal.fire({
+          title: '¡Licencia renovada!',
+          text: 'Se ha añadido la licencia al perfil del alumno.',
+          icon: 'success',
+        });
+        this.obtenerAlumnos();
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo renovar la licencia.',
+          icon: 'error',
+        });
+      }
+    });
+  }
+  
+  licenciaEnVigor(fechaLicencia: Date): boolean {
+    const fechaActual = new Date();
+    const fechaLicenciaDate = new Date(fechaLicencia);
+    return fechaLicenciaDate.getFullYear() >= fechaActual.getFullYear();
+  }
+  
   alternarFormulario(alumno: any): void {
     this.mostrarFormulario = !this.mostrarFormulario;
 
@@ -769,16 +797,6 @@ export class EditarAlumnoComponent implements OnInit {
     return fechaAltaDate > fechaNacimientoDate
       ? null
       : { fechaAltaAnteriorAFechaNacimiento: true };
-  }
-
-  licenciaEnVigor(fechaLicencia: string): boolean {
-    const fechaActual = new Date();
-    const fechaLic = new Date(fechaLicencia);
-
-    const diferenciaAnios = fechaActual.getFullYear() - fechaLic.getFullYear();
-
-    // Si la diferencia es menor a 1 año, la licencia está en vigor
-    return diferenciaAnios < 1;
   }
 
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
