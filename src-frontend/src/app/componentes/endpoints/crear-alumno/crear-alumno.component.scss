@@ -3,21 +3,31 @@ $border-radius: 10px;
 $input-padding: 15px;
 $label-font-size: 1rem;
 
+/* Contenedor principal */
 .container {
   margin: auto;
 }
 
+/* Card que envuelve el formulario */
 .card {
-  border-radius: 10px;
+  border-radius: $border-radius;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
+
+  .card-body {
+    /* Podemos ajustar aún más el padding interno si lo deseamos */
+    padding: 20px;
+  }
 }
 
-h3 {
+/* Titulos dentro de la card */
+h2 {
   font-size: 1.75rem;
   margin-bottom: 20px;
+  font-weight: 700;
 }
 
+/* Botón de eliminación (rojo) */
 .btn-danger {
   background-color: #dc3545;
   border-color: #dc3545;
@@ -28,15 +38,17 @@ h3 {
   }
 }
 
+/* Imagen */
 img {
   border-radius: 5px;
   margin-top: 10px;
 }
 
+/* Input custom file */
 .custom-file-input-container {
   position: relative;
   display: inline-block;
-  width: auto; // Cambiar de 100% a auto para que no ocupe todo el ancho del contenedor
+  width: auto;
 
   .custom-file-input {
     position: absolute;
@@ -58,19 +70,21 @@ img {
     max-width: 250px;
     margin: 0 auto;
     cursor: pointer;
-  }
-
-  &:hover .custom-file-label{
-    background-color: darken(#8c8f92, 10%);
     transition: background-color 0.3s ease;
   }
+
+  &:hover .custom-file-label {
+    background-color: darken(#8c8f92, 10%);
+  }
 }
 
+/* Botón para eliminar imagen */
 .btn-image {
-  width: 100%; // Ancho total del contenedor
-  max-width: 200px; // Limitar el ancho máximo del botón
+  width: 100%;
+  max-width: 200px;
 }
 
+/* Estilos generales de los form-group y form-floating */
 .form-group {
   position: relative;
   margin-bottom: 1.5rem !important;
@@ -123,6 +137,7 @@ img {
   }
 }
 
+/* Botón de Submit */
 button[type="submit"] {
   border-radius: $border-radius;
   padding: 10px 20px;

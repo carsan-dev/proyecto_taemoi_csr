@@ -1,224 +1,304 @@
-<div class="container mb-5">
-  <div class="row">
-    <div class="mt-3 p-0">
-      <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" class="my-5 p-4" method="post">
-        <h2 class="text-center mb-5 fw-bold">Crear Alumno</h2>
-        <div class="form-group mb-3 form-floating">
-          <select class="form-control form-select" id="deporte" name="deporte" formControlName="deporte" required
-            (change)="onDeporteChange($event)">
-            <option value="" disabled selected>Selecciona un deporte</option>
-            <option value="TAEKWONDO">Taekwondo</option>
-            <option value="KICKBOXING">Kickboxing</option>
-            <option value="PILATES">Pilates</option>
-            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
-          </select>
-          <label for="deporte">Selecciona el deporte</label>
-          <div *ngIf="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('deporte')?.errors?.['required']">El deporte es obligatorio.</small>
-          </div>
-        </div>
-        <div class="row">
-          <!-- Campo Nombre -->
-          <div class="form-group col-md-6 mb-3 form-floating">
-            <input type="text" class="form-control form-control-little" id="nombre" name="nombre"
-              formControlName="nombre" required placeholder="Nombre">
-            <label for="nombre">Nombre</label>
-            <div *ngIf="alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched" class="text-danger">
-              <small *ngIf="alumnoData.get('nombre')?.errors?.['required']">Nombre del alumno es obligatorio.</small>
-            </div>
-          </div>
-          <!-- Campo Apellidos -->
-          <div class="form-group col-md-6 mb-3 form-floating">
-            <input type="text" class="form-control form-control-little" id="apellidos" name="apellidos"
-              formControlName="apellidos" required placeholder="Apellidos">
-            <label for="apellidos">Apellidos</label>
-            <div *ngIf="alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched"
-              class="text-danger">
-              <small *ngIf="alumnoData.get('apellidos')?.errors?.['required']">Apellido/os del alumno es/son
-                obligatorio/os.</small>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="form-group col-md-6 mb-3 form-floating">
-            <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
-              formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
-            <label for="fechaNacimiento">Fecha de nacimiento</label>
-            <div *ngIf="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched"
-              class="text-danger">
-              <small *ngIf="alumnoData.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento del alumno es
-                obligatoria.</small>
-            </div>
-          </div>
-          <!-- Campo NIF -->
-          <div class="form-group col-md-6 mb-3 form-floating">
-            <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required
-              placeholder="NIF">
-            <label for="nif">NIF</label>
-            <div *ngIf="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" class="text-danger">
-              <small *ngIf="alumnoData.get('nif')?.errors?.['required']">DNI del alumno es obligatorio.</small>
-              <small *ngIf="alumnoData.get('nif')?.errors?.['pattern']" class="text-danger">
-                DNI del alumno debe tener un formato válido (8 números y una letra)
+<div class="container my-5">
+  <!-- Tarjeta que encapsula el formulario -->
+  <div class="card">
+    <div class="card-body">
+      <h2 class="text-center mb-4 fw-bold">Crear Alumno</h2>
+      <form (ngSubmit)="onSubmit()" [formGroup]="alumnoData" method="post">
+
+        <!-- Selección de deporte -->
+        <div class="row mb-3">
+          <div class="col-12 col-md-6 form-group form-floating">
+            <select class="form-control form-select" id="deporte" name="deporte" formControlName="deporte" required
+              (change)="onDeporteChange($event)">
+              <option value="" disabled selected>Selecciona un deporte</option>
+              <option value="TAEKWONDO">Taekwondo</option>
+              <option value="KICKBOXING">Kickboxing</option>
+              <option value="PILATES">Pilates</option>
+              <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+            </select>
+            <label for="deporte">Selecciona el deporte</label>
+            <div *ngIf="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('deporte')?.errors?.['required']">
+                El deporte es obligatorio.
               </small>
             </div>
           </div>
         </div>
-        <!-- Campo Dirección -->
-        <div class="form-group mb-3 form-floating">
-          <input type="text" class="form-control" id="direccion" name="direccion" formControlName="direccion" required
-            placeholder="Dirección">
-          <label for="direccion">Dirección</label>
-          <div *ngIf="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('direccion')?.errors?.['required']">Dirección del alumno es
-              obligatoria.</small>
-          </div>
-        </div>
-        <!-- Campo Teléfono -->
-        <div class="form-group mb-3 form-floating">
-          <input type="tel" class="form-control" id="telefono" name="telefono" formControlName="telefono" required
-            placeholder="Teléfono">
-          <label for="telefono">Teléfono</label>
-          <div *ngIf="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched"
-            class="text-danger d-flex flex-column">
-            <small *ngIf="alumnoData.get('telefono')?.errors?.['required']">Teléfono del alumno es obligatorio.</small>
-            <small *ngIf="alumnoData.get('telefono')?.errors?.['pattern']" class="text-danger">
-              Teléfono del alumno sólo puede contener números.
-            </small>
-            <small *ngIf="alumnoData.get('telefono')?.errors?.['maxlength']" class="text-danger">
-              Teléfono del alumno no puede contener más de 9 caracteres.
-            </small>
-          </div>
-        </div>
-        <!-- Campo Email -->
-        <div class="form-group mb-3 form-floating">
-          <input type="email" class="form-control" id="email" name="email" formControlName="email" required
-            placeholder="Email">
-          <label for="email">Email</label>
-          <div *ngIf="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('email')?.errors?.['required']">Email del alumno es obligatorio.</small>
-            <small *ngIf="alumnoData.get('email')?.errors?.['email']">El email debe ser válido.</small>
-          </div>
-        </div>
-        <!-- Campo Selección de Tarifa -->
-        <div class="form-group mb-3 form-floating"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa"
-            required>
-            <option value="" disabled selected>Selecciona un descuento</option>
-            <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
-          </select>
-          <label for="tipoTarifa">Selecciona el tipo de descuento</label>
-          <div *ngIf="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched"
-            class="text-danger">
-            <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">Tipo de descuento del alumno es
-              obligatorio.
-            </small>
-          </div>
-        </div>
-        <!-- Campo Fecha de Alta -->
-        <div class="form-group mb-3 form-floating">
-          <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" formControlName="fechaAlta" required
-            placeholder="Fecha de alta">
-          <label for="fechaAlta">Fecha de alta</label>
-          <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('fechaAlta')?.errors?.['required']">Fecha de alta del alumno es obligatorio.
-            </small>
-          </div>
-        </div>
-        <!-- Campo Selección de Grado -->
-        <div class="form-group mb-3 form-floating"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <select class="form-control form-select" id="grado" name="grado" formControlName="grado" required>
-            <option value="" disabled selected>Selecciona un grado</option>
-            <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
-              {{ getGradoNombre(grado) }}
-            </option>
-          </select>
-          <label for="grado">Selecciona el grado</label>
-          <div *ngIf="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched" class="text-danger">
-            <small *ngIf="alumnoData.get('grado')?.errors?.['required']">
-              El grado del alumno es obligatorio.
-            </small>
-          </div>
-        </div>
-        <!-- Campo Imagen del Alumno -->
-        <div class="form-group mb-3 form-floating d-flex flex-column"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <div class="custom-file-input-container">
-            <input type="file" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*"
-              class="custom-file-input">
-            <label for="fotoAlumno" class="custom-file-label form-control">Subir imagen del alumno</label>
-          </div>
-          <!-- Botón para eliminar la imagen seleccionada -->
-          <button *ngIf="imagen" type="button" class="btn btn-danger btn-image mt-2" (click)="removeImage()">Eliminar
-            Imagen</button>
-          <!-- Vista previa de la imagen seleccionada (opcional) -->
-          <div *ngIf="imagen" class="mt-2">
-            <p>Imagen seleccionada:</p>
-            <img [src]="imagenPreview" alt="Vista previa del alumno" width="100">
-          </div>
-        </div>
-        <!-- Campo Autorización Web -->
-        <div class="form-group col-md-6 mb-3 autorizacion-web"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <label for="autorizacionWeb" class="text-black">Autorización Web</label>
-          <div class="d-flex flex-column">
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
-                [value]="true">
-              <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+
+        <!-- Nombre y Apellidos -->
+        <div class="row mb-3">
+          <div class="col-md-6 form-group form-floating">
+            <input type="text" class="form-control" id="nombre" name="nombre" formControlName="nombre" required
+              placeholder="Nombre" />
+            <label for="nombre">Nombre</label>
+            <div *ngIf="alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('nombre')?.errors?.['required']">
+                Nombre del alumno es obligatorio.
+              </small>
             </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
-                [value]="false">
-              <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+          </div>
+
+          <div class="col-md-6 form-group form-floating mt-3 mt-md-0">
+            <input type="text" class="form-control" id="apellidos" name="apellidos" formControlName="apellidos" required
+              placeholder="Apellidos" />
+            <label for="apellidos">Apellidos</label>
+            <div *ngIf="alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('apellidos')?.errors?.['required']">
+                Apellido/s del alumno es/son obligatorio/s.
+              </small>
             </div>
           </div>
         </div>
-        <!-- Campo Competidor -->
-        <div class="form-group col-md-6 mb-3"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
-          <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
-            (change)="onCompetidorChange($event)">
+
+        <!-- Fecha Nacimiento y NIF -->
+        <div class="row mb-3">
+          <div class="col-md-6 form-group form-floating">
+            <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
+              formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento" />
+            <label for="fechaNacimiento">Fecha de nacimiento</label>
+            <div *ngIf="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('fechaNacimiento')?.errors?.['required']">
+                Fecha de nacimiento del alumno es obligatoria.
+              </small>
+            </div>
+          </div>
+
+          <div class="col-md-6 form-group form-floating mt-3 mt-md-0">
+            <input type="text" class="form-control" id="nif" name="nif" formControlName="nif" required
+              placeholder="NIF" />
+            <label for="nif">NIF</label>
+            <div *ngIf="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('nif')?.errors?.['required']">
+                DNI del alumno es obligatorio.
+              </small>
+              <small *ngIf="alumnoData.get('nif')?.errors?.['pattern']">
+                DNI del alumno debe tener un formato válido (8 números y una letra).
+              </small>
+            </div>
+          </div>
         </div>
-        <!-- Campo Peso (debajo del checkbox de Competidor) -->
-        <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('competidor')?.value">
-          <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso">
-          <label for="peso">Peso (kg)</label>
+
+        <!-- Dirección -->
+        <div class="row mb-3">
+          <div class="col-12 form-group form-floating">
+            <input type="text" class="form-control" id="direccion" name="direccion" formControlName="direccion" required
+              placeholder="Dirección" />
+            <label for="direccion">Dirección</label>
+            <div *ngIf="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('direccion')?.errors?.['required']">
+                La dirección del alumno es obligatoria.
+              </small>
+            </div>
+          </div>
         </div>
-        <div class="form-group col-md-6 mb-3"
-          *ngIf="alumnoData.get('deporte')?.value !== 'PILATES' && alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'">
-          <label for="tieneLicencia" class="form-check-label me-3 text-black">¿Tiene licencia federativa?</label>
-          <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia" formControlName="tieneLicencia"
-            (change)="onLicenciaChange($event)">
+
+        <!-- Teléfono y Email -->
+        <div class="row mb-3">
+          <div class="col-md-6 form-group form-floating">
+            <input type="tel" class="form-control" id="telefono" name="telefono" formControlName="telefono" required
+              placeholder="Teléfono" />
+            <label for="telefono">Teléfono</label>
+            <div *ngIf="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched"
+              class="text-danger d-flex flex-column">
+              <small *ngIf="alumnoData.get('telefono')?.errors?.['required']">
+                Teléfono del alumno es obligatorio.
+              </small>
+              <small *ngIf="alumnoData.get('telefono')?.errors?.['pattern']">
+                Teléfono del alumno sólo puede contener números.
+              </small>
+              <small *ngIf="alumnoData.get('telefono')?.errors?.['maxlength']">
+                Teléfono del alumno no puede contener más de 9 caracteres.
+              </small>
+            </div>
+          </div>
+
+          <div class="col-md-6 form-group form-floating mt-3 mt-md-0">
+            <input type="email" class="form-control" id="email" name="email" formControlName="email" required
+              placeholder="Email" />
+            <label for="email">Email</label>
+            <div *ngIf="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('email')?.errors?.['required']">
+                Email del alumno es obligatorio.
+              </small>
+              <small *ngIf="alumnoData.get('email')?.errors?.['email']">
+                El email debe ser válido.
+              </small>
+            </div>
+          </div>
         </div>
-        <div class="row">
-          <!-- Campo Número de Licencia -->
-          <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('tieneLicencia')?.value">
+
+        <!-- Selección de Tarifa (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+          ">
+          <div class="col-12 form-group form-floating">
+            <select class="form-control form-select" id="tipoTarifa" name="tipoTarifa" formControlName="tipoTarifa"
+              required>
+              <option value="" disabled selected>Selecciona un descuento</option>
+              <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
+            </select>
+            <label for="tipoTarifa">Selecciona el tipo de descuento</label>
+            <div *ngIf="
+                alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched
+              " class="text-danger">
+              <small *ngIf="alumnoData.get('tipoTarifa')?.errors?.['required']">
+                El tipo de descuento es obligatorio.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fecha de Alta -->
+        <div class="row mb-3">
+          <div class="col-12 form-group form-floating">
+            <input type="date" class="form-control" id="fechaAlta" name="fechaAlta" formControlName="fechaAlta" required
+              placeholder="Fecha de alta" />
+            <label for="fechaAlta">Fecha de alta</label>
+            <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
+              class="text-danger">
+              <small *ngIf="alumnoData.get('fechaAlta')?.errors?.['required']">
+                La fecha de alta del alumno es obligatoria.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selección de Grado (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+          ">
+          <div class="col-12 form-group form-floating">
+            <select class="form-control form-select" id="grado" name="grado" formControlName="grado" required>
+              <option value="" disabled selected>Selecciona un grado</option>
+              <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
+                {{ getGradoNombre(grado) }}
+              </option>
+            </select>
+            <label for="grado">Selecciona el grado</label>
+            <div *ngIf="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched" class="text-danger">
+              <small *ngIf="alumnoData.get('grado')?.errors?.['required']">
+                El grado del alumno es obligatorio.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Imagen del Alumno (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+          ">
+          <div class="col-12 form-group form-floating d-flex flex-column">
+            <div class="custom-file-input-container">
+              <input type="file" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*"
+                class="custom-file-input" />
+              <label for="fotoAlumno" class="custom-file-label form-control">Subir imagen del alumno</label>
+            </div>
+            <!-- Botón para eliminar la imagen -->
+            <button *ngIf="imagen" type="button" class="btn btn-danger btn-image mt-2" (click)="removeImage()">
+              Eliminar Imagen
+            </button>
+            <!-- Vista previa de la imagen -->
+            <div *ngIf="imagen" class="mt-2">
+              <p>Imagen seleccionada:</p>
+              <img [src]="imagenPreview" alt="Vista previa del alumno" width="100" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Autorización Web (solo si no es PILATES o DEFENSA_PERSONAL_FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+        ">
+          <div class="col-12 form-group autorizacion-web">
+            <label for="autorizacionWeb" class="text-black mb-2">Autorización Web</label>
+            <!-- Agrupamos los radio buttons en un contenedor extra para que aparezcan uno debajo del otro -->
+            <div class="ms-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
+                  [value]="true" />
+                <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
+                  [value]="false" />
+                <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competidor (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+          ">
+          <div class="col-md-6 form-group">
+            <label for="competidor" class="form-check-label me-3 text-black">¿Es Competidor?</label>
+            <input type="checkbox" class="form-check-input form-switch" id="competidor" formControlName="competidor"
+              (change)="onCompetidorChange($event)" />
+          </div>
+
+          <!-- Peso (solo se muestra si es competidor) -->
+          <div class="col-md-6 form-group form-floating mt-3 mt-md-0" *ngIf="alumnoData.get('competidor')?.value">
+            <input type="number" class="form-control" id="peso" formControlName="peso" placeholder="Peso" />
+            <label for="peso">Peso (kg)</label>
+          </div>
+        </div>
+
+        <!-- Licencia Federativa (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
+        <div class="row mb-3" *ngIf="
+            alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
+          ">
+          <div class="col-md-6 form-group">
+            <label for="tieneLicencia" class="form-check-label me-3 text-black">¿Tiene licencia federativa?</label>
+            <input type="checkbox" class="form-check-input form-switch" id="tieneLicencia"
+              formControlName="tieneLicencia" (change)="onLicenciaChange($event)" />
+          </div>
+        </div>
+
+        <!-- Número y Fecha de Licencia (solo si la tiene) -->
+        <div class="row mb-3" *ngIf="alumnoData.get('tieneLicencia')?.value">
+          <div class="col-md-6 form-group form-floating">
             <input type="text" class="form-control" id="numeroLicencia" name="numeroLicencia"
-              formControlName="numeroLicencia" placeholder="Número de Licencia">
+              formControlName="numeroLicencia" placeholder="Número de Licencia" />
             <label for="numeroLicencia">Número de Licencia</label>
-            <div *ngIf="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched"
-              class="text-danger">
-              <small *ngIf="alumnoData.get('numeroLicencia')?.errors?.['required']">El número de licencia es
-                obligatorio.</small>
+            <div *ngIf="
+                alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched
+              " class="text-danger">
+              <small *ngIf="alumnoData.get('numeroLicencia')?.errors?.['required']">
+                El número de licencia es obligatorio.
+              </small>
             </div>
           </div>
-          <!-- Campo Fecha de Licencia -->
-          <div class="form-group col-md-6 mb-3 form-floating" *ngIf="alumnoData.get('tieneLicencia')?.value">
+
+          <div class="col-md-6 form-group form-floating mt-3 mt-md-0">
             <input type="date" class="form-control" id="fechaLicencia" name="fechaLicencia"
-              formControlName="fechaLicencia" placeholder="Fecha de Licencia">
+              formControlName="fechaLicencia" placeholder="Fecha de Licencia" />
             <label for="fechaLicencia">Fecha de Licencia</label>
-            <div *ngIf="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched"
-              class="text-danger">
-              <small *ngIf="alumnoData.get('fechaLicencia')?.errors?.['required']">La fecha de licencia es
-                obligatoria.</small>
+            <div *ngIf="
+                alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched
+              " class="text-danger">
+              <small *ngIf="alumnoData.get('fechaLicencia')?.errors?.['required']">
+                La fecha de licencia es obligatoria.
+              </small>
             </div>
           </div>
         </div>
+
+        <!-- Botón de Submit -->
         <div class="text-center">
-          <button type="submit" class="btn btn-primary mt-3" [disabled]="alumnoData.invalid">Crear Alumno</button>
+          <button type="submit" class="btn btn-primary mt-4" [disabled]="alumnoData.invalid">
+            Crear Alumno
+          </button>
         </div>
       </form>
     </div>

@@ -38,11 +38,11 @@
     </div>
   </div>
   <div class="row my-4">
-    <div class="col-md-6 col-lg-4 mb-3">
+    <div class="col-6 mb-3">
       <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
         (ngModelChange)="filtrarPorNombre()" />
     </div>
-    <div class="col-md-6 col-lg-4 text-end mb-3">
+    <div class="col-6 text-end mb-3">
       <button class="btn btn-secondary" (click)="alternarInactivos()">
         {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
       </button>
