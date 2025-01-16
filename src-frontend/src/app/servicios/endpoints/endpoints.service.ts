@@ -452,6 +452,17 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  renovarLicencia(alumnoId: number): Observable<ProductoAlumnoDTO> {
+    return this.http
+      .post<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${alumnoId}/renovar-licencia`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+  
+
   obtenerGrados(): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/grados`, { withCredentials: true })
