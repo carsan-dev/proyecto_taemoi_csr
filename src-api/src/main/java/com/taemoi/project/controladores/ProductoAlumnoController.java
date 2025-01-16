@@ -102,4 +102,11 @@ public class ProductoAlumnoController {
 					.body(Map.of("mensaje", "Ocurrió un error al crear la mensualidad.", "detalle", ex.getMessage()));
 		}
 	}
+	
+	@PostMapping("{alumnoId}/renovar-licencia")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ProductoAlumnoDTO> renovarLicencia(@PathVariable Long alumnoId) {
+        ProductoAlumnoDTO productoAlumnoDTO = productoAlumnoService.renovarLicencia(alumnoId);
+        return ResponseEntity.ok(productoAlumnoDTO);
+    }
 }

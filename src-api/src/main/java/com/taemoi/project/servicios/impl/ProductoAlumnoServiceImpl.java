@@ -1,7 +1,11 @@
 package com.taemoi.project.servicios.impl;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.TextStyle;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.ProductoAlumnoRepository;
 import com.taemoi.project.repositorios.ProductoRepository;
+import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ProductoAlumnoService;
 
 @Service
@@ -33,6 +38,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Autowired
 	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
+	
+	@Autowired
+	private AlumnoService alumnoService;
 
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
@@ -200,6 +208,49 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		productoAlumnoRepository.save(productoAlumno);
 	}
+	
+	@Override
+	public ProductoAlumnoDTO renovarLicencia(Long alumnoId) {
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+	    Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
+	            .orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
+
+	    LocalDate fechaActual = LocalDate.now();
+	    boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= 9;
+	    
+	    String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase();
+
+	    double precio;
+	    if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+	        precio = esSegundaMitadDelAno ? 20.0 : 30.0;
+	    } else {
+	        int edad = alumnoService.calcularEdad(alumno.getFechaNacimiento());
+	        if (edad < 14) {
+	            precio = esSegundaMitadDelAno ? 20.0 : 35.0;
+	        } else {
+	            precio = esSegundaMitadDelAno ? 35.0 : 46.0;
+	        }
+	    }
+
+	    ProductoAlumno productoAlumno = new ProductoAlumno();
+	    productoAlumno.setAlumno(alumno);
+	    productoAlumno.setProducto(productoLicencia);
+	    productoAlumno.setConcepto(productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
+	    productoAlumno.setCantidad(1);
+	    productoAlumno.setPrecio(precio);
+	    productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+	    productoAlumno.setPagado(false);
+
+	    ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+
+	    alumno.setFechaLicencia(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+	    alumnoRepository.save(alumno);
+
+	    return convertirADTO(savedProductoAlumno);
+	}
+
 
 	private String formatearNombreMensualidad(String mesAno) {
 	    if (mesAno == null || !mesAno.matches("\\d{4}-\\d{2}")) {
@@ -217,7 +268,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	    return "MENSUALIDAD " + meses[mes - 1] + " " + anio;
 	}
-
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
 		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
