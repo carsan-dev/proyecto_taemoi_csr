@@ -102,6 +102,8 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaLicencia;
 
+	private Boolean tieneDiscapacidad = false;
+
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "foto_alumno_id")
 	private Imagen fotoAlumno;
@@ -340,6 +342,14 @@ public class Alumno {
 
 	public void setFechaLicencia(Date fechaLicencia) {
 		this.fechaLicencia = fechaLicencia;
+	}
+
+	public Boolean getTieneDiscapacidad() {
+		return tieneDiscapacidad;
+	}
+
+	public void setTieneDiscapacidad(Boolean tieneDiscapacidad) {
+		this.tieneDiscapacidad = tieneDiscapacidad;
 	}
 
 	public Imagen getFotoAlumno() {

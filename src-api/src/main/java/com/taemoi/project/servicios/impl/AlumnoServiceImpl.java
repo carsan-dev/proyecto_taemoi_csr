@@ -506,6 +506,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumnoExistente.setNumeroLicencia(alumnoActualizado.getNumeroLicencia());
 				alumnoExistente.setFechaLicencia(alumnoActualizado.getFechaLicencia());
 			}
+			
+			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
 
 			// Actualizar los campos relacionados con "competidor"
 			alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));

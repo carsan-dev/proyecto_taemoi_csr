@@ -34,13 +34,14 @@ public class AlumnoDTO {
 	private Boolean tieneLicencia;
 	private Integer numeroLicencia;
 	private Date fechaLicencia;
+	private Boolean tieneDiscapacidad;
 	private Boolean aptoParaExamen;
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso,
 			Date fechaPeso, Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno,
-			Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia, Boolean aptoParaExamen) {
+			Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -67,6 +68,7 @@ public class AlumnoDTO {
 		this.tieneLicencia = tieneLicencia;
 		this.numeroLicencia = numeroLicencia;
 		this.fechaLicencia = fechaLicencia;
+		this.tieneDiscapacidad = tieneDiscapacidad;
 		this.aptoParaExamen = aptoParaExamen;
 	}
 
@@ -278,6 +280,14 @@ public class AlumnoDTO {
 		this.fechaLicencia = fechaLicencia;
 	}
 
+	public Boolean getTieneDiscapacidad() {
+		return tieneDiscapacidad;
+	}
+
+	public void setTieneDiscapacidad(Boolean tieneDiscapacidad) {
+		this.tieneDiscapacidad = tieneDiscapacidad;
+	}
+
 	public Boolean getAptoParaExamen() {
 		return aptoParaExamen;
 	}
@@ -314,6 +324,6 @@ public class AlumnoDTO {
 				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
 				alumno.getFechaPeso(), alumno.getDeporte(), categoriaNombre, gradoTipo, alumno.getFechaGrado(),
 				alumno.getFotoAlumno(), alumno.getTieneLicencia(), alumno.getNumeroLicencia(),
-				alumno.getFechaLicencia(), alumno.getAptoParaExamen());
+				alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(), alumno.getAptoParaExamen());
 	}
 }

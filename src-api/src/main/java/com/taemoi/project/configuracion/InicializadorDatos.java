@@ -379,6 +379,7 @@ public class InicializadorDatos implements CommandLineRunner {
 			productos.add(new Producto("MIT DOBLE DAEDO PARA NIÑOS", 17.0, ""));
 			productos.add(new Producto("RESERVA DE PLAZA", 15.0, ""));
 			productos.add(new Producto("MENSUALIDAD", 0, ""));
+			productos.add(new Producto("LICENCIA FEDERATIVA", 0, ""));
 
 			productoRepository.saveAll(productos);
 		}
@@ -490,21 +491,16 @@ public class InicializadorDatos implements CommandLineRunner {
 		alumno.setFechaAlta(Date.from(fechaAlta.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 		alumno.setFechaBaja(null);
 
-		// Asignar tipo de tarifa aleatoria
 		TipoTarifa tipoTarifa = TipoTarifa.values()[faker.number().numberBetween(0, TipoTarifa.values().length)];
 		alumno.setTipoTarifa(tipoTarifa);
 
-		// Asignar cuantía de la tarifa según el tipo
 		double cuantiaTarifa = asignarCuantiaTarifa(tipoTarifa);
 		alumno.setCuantiaTarifa(cuantiaTarifa);
 
-		// Convertir la fecha de nacimiento de alumno a LocalDate
 		LocalDate fechaNacimiento = alumno.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
 				.toLocalDate();
 		int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
 
-		// Llamar al método asignarGradoSegunEdad que requiere la edad y la fecha de
-		// nacimiento
 		alumno.setGrado(asignarGradoSegunEdad(edad, fechaNacimiento));
 
 		alumno.setFechaGrado(new Date());
