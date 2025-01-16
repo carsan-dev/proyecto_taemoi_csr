@@ -237,7 +237,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	    ProductoAlumno productoAlumno = new ProductoAlumno();
 	    productoAlumno.setAlumno(alumno);
 	    productoAlumno.setProducto(productoLicencia);
-	    productoAlumno.setConcepto(productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
+	    productoAlumno.setConcepto("RENOVACION " + productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
 	    productoAlumno.setCantidad(1);
 	    productoAlumno.setPrecio(precio);
 	    productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
