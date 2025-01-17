@@ -60,6 +60,9 @@ import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ImagenService;
+import com.taemoi.project.servicios.ProductoAlumnoService;
+import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.MensualidadUtils;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -114,6 +117,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
+	
+	@Autowired
+	private ProductoAlumnoService productoAlumnoService;
 
 	@Autowired
 	private ImagenService imagenService;
@@ -350,6 +356,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
 		nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
+		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
 		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
 		if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
@@ -363,18 +370,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 				nuevoAlumnoDTO.getAutorizacionWeb() != null ? nuevoAlumnoDTO.getAutorizacionWeb() : true);
 
 		// Asignar Competidor, Peso y FechaPeso si es aplicable
-		nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
-		if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
-			nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
-			nuevoAlumno.setFechaPeso(new Date());
-		}
+	    nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
+	    if (Boolean.TRUE.equals(nuevoAlumno.getCompetidor())) {
+	        nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
+	        nuevoAlumno.setFechaPeso(new Date());
+	        nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
+	    }
 
-		// Asignar categoría si es competidor el Alumno
-		if (nuevoAlumnoDTO.getCompetidor() != null && nuevoAlumnoDTO.getCompetidor()) {
-			int edad = calcularEdad(nuevoAlumnoDTO.getFechaNacimiento());
-			Categoria categoria = asignarCategoriaSegunEdad(edad);
-			nuevoAlumno.setCategoria(categoria);
-		}
+	    // Configurar Licencia
+	    nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
+	    if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
+	        nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
+	        nuevoAlumno.setFechaLicencia(new Date());
+	    }
 
 		if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
 			// Buscar y asignar el grado seleccionado
@@ -422,6 +430,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
+		
+	    if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
+	        productoAlumnoService.crearAltaLicenciaFederativa(alumnoGuardado);
+	    }
+	    
+	    asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
 
 		// Verificar si el Usuario ya existe o crear uno nuevo
 		Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
@@ -517,7 +531,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
 
 				// Actualizar la categoría en función de la edad
-				int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+				int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
 				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
 				alumnoExistente.setCategoria(nuevaCategoria);
 			} else {
@@ -526,7 +540,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-				int nuevaEdad = calcularEdad(nuevaFechaNacimiento);
+				int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
 				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
 				alumnoExistente.setCategoria(nuevaCategoria);
 			}
@@ -888,34 +902,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoRepository.save(nuevoGrado);
 	}
 
-	/**
-	 * Calcula la edad a partir de la fecha de nacimiento.
-	 *
-	 * @param fechaNacimiento La fecha de nacimiento del alumno.
-	 * @return La edad calculada.
-	 */
-	@Override
-	public int calcularEdad(Date fechaNacimiento) {
-		LocalDate fechaNacimientoLocal;
-
-		if (fechaNacimiento instanceof java.sql.Date) {
-			// Convertir java.sql.Date a LocalDate
-			fechaNacimientoLocal = ((java.sql.Date) fechaNacimiento).toLocalDate();
-		} else {
-			// Convertir java.util.Date a LocalDate
-			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		}
-
-		LocalDate fechaActual = LocalDate.now();
-		return Period.between(fechaNacimientoLocal, fechaActual).getYears();
-	}
-
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
 		TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
 		Deporte deporte = alumno.getDeporte();
 
-		int edad = calcularEdad(alumno.getFechaNacimiento());
+		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 
 		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
 
@@ -1191,7 +1183,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		try {
 			LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-			int edad = calcularEdad(alumno.getFechaNacimiento());
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 
 			long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
 
@@ -1272,6 +1264,31 @@ public class AlumnoServiceImpl implements AlumnoService {
 				return Long.MAX_VALUE; // No apto si no coincide
 			}
 		}
+	}
+	
+	private void asignarMensualidadGeneralSiCorresponde(Alumno alumno) {
+	    LocalDate fechaActual = LocalDate.now();
+	    String mesAno = fechaActual.getYear() + "-" + String.format("%02d", fechaActual.getMonthValue());
+
+	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+
+	    boolean mensualidadCargada = productoAlumnoRepository.existsByConcepto(nombreMensualidad);
+
+	    if (mensualidadCargada) {
+	        Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+	                .orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+	        ProductoAlumno productoAlumno = new ProductoAlumno();
+	        productoAlumno.setAlumno(alumno);
+	        productoAlumno.setProducto(productoMensualidad);
+	        productoAlumno.setConcepto(nombreMensualidad);
+	        productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+	        productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+	        productoAlumno.setCantidad(1);
+	        productoAlumno.setPagado(false);
+
+	        productoAlumnoRepository.save(productoAlumno);
+	    }
 	}
 
 	private AlumnoConvocatoriaDTO convertirAAlumnoConvocatoriaDTO(AlumnoConvocatoria alumnoConvocatoria) {
