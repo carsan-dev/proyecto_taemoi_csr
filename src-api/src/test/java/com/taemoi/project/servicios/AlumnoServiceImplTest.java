@@ -33,6 +33,7 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.impl.AlumnoServiceImpl;
+import com.taemoi.project.utils.FechaUtils;
 
 @SpringBootTest
 public class AlumnoServiceImplTest {
@@ -153,7 +154,7 @@ public class AlumnoServiceImplTest {
 
 	@Test
 	public void testCalcularEdad() {
-		int result = alumnoService.calcularEdad(new Date());
+		int result = FechaUtils.calcularEdad(new Date());
 
 		assertTrue(result >= 0);
 	}
