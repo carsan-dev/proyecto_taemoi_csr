@@ -58,8 +58,6 @@ public interface AlumnoService {
 
 	Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO);
 
-	int calcularEdad(Date fechaNacimiento);
-
 	TipoGrado calcularSiguienteGrado(Alumno alumno);
 
 	boolean fechaNacimientoValida(Date fechaNacimiento);
