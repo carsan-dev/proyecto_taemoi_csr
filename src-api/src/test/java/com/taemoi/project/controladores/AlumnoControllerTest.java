@@ -15,6 +15,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
+// import com.taemoi.project.utils.FechaUtils;
 
 @SpringBootTest
 class AlumnoControllerTest {
@@ -74,7 +75,7 @@ class AlumnoControllerTest {
 	 * when(alumnoService.fechaNacimientoValida(any())).thenReturn(true);
 	 * when(alumnoService.datosAlumnoValidos(any())).thenReturn(true);
 	 * when(alumnoService.asignarCuantiaTarifa(any())).thenReturn(100.0);
-	 * when(alumnoService.calcularEdad(any())).thenReturn(20);
+	 * when(FechaUtils.calcularEdad(any())).thenReturn(20);
 	 * when(alumnoService.asignarCategoriaSegunEdad(anyInt())).thenReturn(new
 	 * Categoria()); when(alumnoService.asignarGradoSegunEdad(any())).thenReturn(new
 	 * Grado());
