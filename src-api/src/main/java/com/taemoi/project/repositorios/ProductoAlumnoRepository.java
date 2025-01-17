@@ -11,4 +11,6 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	List<ProductoAlumno> findByAlumnoId(Long alumnoId);
 
 	Optional<ProductoAlumno> findByAlumnoIdAndProductoId(Long id, Long id2);
+	
+	boolean existsByConcepto(String concepto);
 }

@@ -21,8 +21,9 @@ import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.ProductoAlumnoRepository;
 import com.taemoi.project.repositorios.ProductoRepository;
-import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.ProductoAlumnoService;
+import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.MensualidadUtils;
 
 @Service
 public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
@@ -38,9 +39,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Autowired
 	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
-	
-	@Autowired
-	private AlumnoService alumnoService;
 
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
@@ -158,7 +156,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void cargarMensualidadesGenerales(String mesAno) {
-		String nombreMensualidad = formatearNombreMensualidad(mesAno);
+		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		List<Alumno> alumnos = alumnoRepository.findAll();
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
@@ -184,7 +182,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar) {
-		String nombreMensualidad = formatearNombreMensualidad(mesAno);
+		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
@@ -210,6 +208,45 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 	
 	@Override
+	public void crearAltaLicenciaFederativa(Alumno alumno) {
+	    Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
+	            .orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
+
+	    Date fechaLicencia = alumno.getFechaLicencia();
+	    if (fechaLicencia == null) {
+	        throw new IllegalArgumentException("La fecha de licencia del alumno no puede ser nula.");
+	    }
+	    LocalDate fechaLicenciaLocal = fechaLicencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+	    String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase();
+	    String mesAnio = mesEnEspanol + " " + fechaLicenciaLocal.getYear();
+
+	    boolean esSegundaMitadDelAno = fechaLicenciaLocal.getMonthValue() >= 9;
+
+	    double precio;
+	    if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+	        precio = esSegundaMitadDelAno ? 20.0 : 30.0;
+	    } else {
+	        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+	        if (edad < 14) {
+	            precio = esSegundaMitadDelAno ? 20.0 : 35.0;
+	        } else {
+	            precio = esSegundaMitadDelAno ? 35.0 : 46.0;
+	        }
+	    }
+
+	    ProductoAlumno productoAlumno = new ProductoAlumno();
+	    productoAlumno.setAlumno(alumno);
+	    productoAlumno.setProducto(productoLicencia);
+	    productoAlumno.setConcepto("ALTA LICENCIA FEDERATIVA " + mesAnio);
+	    productoAlumno.setCantidad(1);
+	    productoAlumno.setPrecio(precio);
+	    productoAlumno.setFechaAsignacion(fechaLicencia);
+	    productoAlumno.setPagado(true);
+
+	    productoAlumnoRepository.save(productoAlumno);
+	}
+
+	@Override
 	public ProductoAlumnoDTO renovarLicencia(Long alumnoId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId)
 	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
@@ -226,7 +263,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	    if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
 	        precio = esSegundaMitadDelAno ? 20.0 : 30.0;
 	    } else {
-	        int edad = alumnoService.calcularEdad(alumno.getFechaNacimiento());
+	        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 	        if (edad < 14) {
 	            precio = esSegundaMitadDelAno ? 20.0 : 35.0;
 	        } else {
@@ -241,7 +278,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	    productoAlumno.setCantidad(1);
 	    productoAlumno.setPrecio(precio);
 	    productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-	    productoAlumno.setPagado(false);
+	    productoAlumno.setPagado(true);
 
 	    ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
@@ -249,24 +286,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	    alumnoRepository.save(alumno);
 
 	    return convertirADTO(savedProductoAlumno);
-	}
-
-
-	private String formatearNombreMensualidad(String mesAno) {
-	    if (mesAno == null || !mesAno.matches("\\d{4}-\\d{2}")) {
-	        throw new IllegalArgumentException("El formato de mes y año debe ser 'YYYY-MM'. Valor recibido: " + mesAno);
-	    }
-
-	    String[] partes = mesAno.split("-");
-	    int mes = Integer.parseInt(partes[1]);
-	    String anio = partes[0];
-
-	    String[] meses = {
-	        "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
-	        "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
-	    };
-
-	    return "MENSUALIDAD " + meses[mes - 1] + " " + anio;
 	}
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
