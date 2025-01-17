@@ -67,6 +67,7 @@ export class CrearAlumnoComponent implements OnInit {
       numeroLicencia: [{ value: '', disabled: true }, Validators.required],
       fechaLicencia: [{ value: '', disabled: true }, Validators.required],
       deporte: ['', Validators.required],
+      tieneDiscapacidad: [false],
     });
   }
 
