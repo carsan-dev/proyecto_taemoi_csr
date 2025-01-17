@@ -3,6 +3,7 @@ package com.taemoi.project.servicios;
 import java.util.List;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
+import com.taemoi.project.entidades.Alumno;
 
 public interface ProductoAlumnoService {
 
@@ -19,6 +20,8 @@ public interface ProductoAlumnoService {
 	void cargarMensualidadesGenerales(String mesAno);
 
 	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar);
+	
+	void crearAltaLicenciaFederativa(Alumno alumno);
 
 	ProductoAlumnoDTO renovarLicencia(Long alumnoId);
 }
