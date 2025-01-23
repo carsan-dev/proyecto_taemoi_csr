@@ -137,10 +137,17 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
-		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoDTOPorId(id);
+		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
+	
+    @GetMapping("/count")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Long> countAlumnos() {
+        long total = alumnoService.countAlumnos();
+        return ResponseEntity.ok(total);
+    }
 
 	/**
 	 * Obtiene los grupos a los que pertenece un alumno especificado por su ID.

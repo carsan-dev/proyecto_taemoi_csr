@@ -79,7 +79,7 @@ public class AlumnoServiceImplTest {
 	public void testObtenerAlumnoDTOPorId() {
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.empty());
 
-		Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoDTOPorId(1L);
+		Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoPorIdDTO(1L);
 
 		assertFalse(result.isPresent());
 	}

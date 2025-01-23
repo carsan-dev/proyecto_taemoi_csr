@@ -172,7 +172,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 *         contrario, un Optional vacío.
 	 */
 	@Override
-	public Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id) {
+	public Optional<AlumnoDTO> obtenerAlumnoPorIdDTO(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = obtenerAlumnoPorId(id);
 		return optionalAlumno.map(AlumnoDTO::deAlumno);
 	}
@@ -1301,5 +1301,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
 		dto.setPagado(alumnoConvocatoria.getPagado());
 		return dto;
+	}
+
+	@Override
+	public long countAlumnos() {
+        return alumnoRepository.count();
 	}
 }

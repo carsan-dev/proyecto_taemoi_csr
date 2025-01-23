@@ -28,7 +28,7 @@ public interface AlumnoService {
 
 	Optional<Alumno> obtenerAlumnoPorId(@NonNull Long id);
 
-	Optional<AlumnoDTO> obtenerAlumnoDTOPorId(@NonNull Long id);
+	Optional<AlumnoDTO> obtenerAlumnoPorIdDTO(@NonNull Long id);
 
 	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			@NonNull Pageable pageable);
@@ -81,4 +81,6 @@ public interface AlumnoService {
 	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
 
 	boolean esAptoParaExamen(Alumno alumno);
+	
+	long countAlumnos();
 }
