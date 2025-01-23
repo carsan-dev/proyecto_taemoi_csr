@@ -1,22 +1,21 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
-import Swal from 'sweetalert2';
 import {
-  AbstractControl,
-  FormBuilder,
-  FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
   Validators,
+  AbstractControl,
 } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
-import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Producto } from '../../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { formatDate } from '../../../utilities/formatear-fecha';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-editar-alumno',
@@ -24,48 +23,62 @@ import { formatDate } from '../../../utilities/formatear-fecha';
   imports: [
     CommonModule,
     FormsModule,
-    PaginacionComponent,
     ReactiveFormsModule,
+    PaginacionComponent,
   ],
   templateUrl: './editar-alumno.component.html',
-  styleUrl: './editar-alumno.component.scss',
+  styleUrls: ['./editar-alumno.component.scss'],
 })
 export class EditarAlumnoComponent implements OnInit {
-  alumnos: any[] = [];
-  alumnoId: number | null = null;
+  alumno: any = null;
+
   paginaActual: number = 1;
-  tamanoPagina: number = 1;
   totalPaginas: number = 0;
-  mostrarPaginas: number[] = [];
+  tamanoPagina: number = 1; 
+
+  // Control de formulario
   mostrarFormulario: boolean = false;
+  alumnoForm: FormGroup;
+  imagenPreview: string | null = null;
+
+  // Filtros
   nombreFiltro: string = '';
-  alumnoEditado: any = {
-    tipoTarifa: null,
-    tipoGrado: null,
-  };
+
+  // Otras propiedades
+  mostrarInactivos: boolean = false;
+  alumnoId: number | null = null;
+  tipoTarifaEditado: boolean = false;
+
+  // Opciones de dropdown
   tiposTarifa = Object.values(TipoTarifa);
   tiposGrado = Object.values(TipoGrado);
-  @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
-  imagenPreview: string | null = null;
-  alumnoForm: FormGroup;
-  mostrarInactivos: boolean = false;
-  tipoTarifaEditado: boolean = false;
   deportes = [
     'TAEKWONDO',
     'KICKBOXING',
     'PILATES',
     'DEFENSA_PERSONAL_FEMENINA',
   ];
-  grados: any[] = [];
   todosLosGrados: any[] = [];
-  products: Producto[] = [];
-  selectedProductoId: number | null = null;
+  grados: any[] = [];
+
+  // Productos del alumno
   productosAlumno: ProductoAlumnoDTO[] = [];
+
+  // Convocatorias
+  convocatoriasDisponibles: any[] = [];
+  convocatoriasDelAlumno: any[] = [];
+  convocatoriaActual: any | null = null;
   mostrarModalConvocatorias = false;
   mostrarModalEliminarConvocatorias = false;
-  convocatoriasDisponibles: any[] = [];
-  convocatoriaActual: any | null = null;
-  convocatoriasDelAlumno: any[] = [];
+
+  // Para manipular el input file
+  @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
+
+  // Alumno a editar (cuando abrimos el formulario)
+  alumnoEditado: any = {
+    tipoTarifa: null,
+    tipoGrado: null,
+  };
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -119,105 +132,133 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe((params) => {
-      const nombre = params['nombre'];
-      if (nombre) {
-        this.nombreFiltro = nombre;
-        this.filtrarPorNombre();
-      }
-    });
-
-    // Obtener la lista de alumnos
     this.route.params.subscribe((params) => {
-      const idParam = params['id'];
-      if (idParam) {
-        this.alumnoId = +idParam;
-        this.mostrarFormulario = true;
-        this.obtenerAlumnoPorId(this.alumnoId);
-      }
-      this.obtenerAlumnos();
+      const idParam = +params['id'] || 1;
+      this.paginaActual = idParam;
+
+      this.endpointsService.countAlumnos().subscribe({
+        next: (total: any) => {
+          this.totalPaginas = total;
+          this.cargarAlumno(idParam);
+        },
+        error: (err) => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo obtener la cuenta total de alumnos.',
+            icon: 'error',
+          });
+        },
+      });
     });
-
-    if (this.alumnoId) {
-      this.cargarConvocatoriasDelAlumno(this.alumnoId);
-    }
-
-    this.alumnoForm.get('deporte')?.valueChanges.subscribe((event: Event) => {
-      this.onDeporteChange(event);
-    });
-
-    // Asegúrate de que el formulario escuche los cambios en la fecha de nacimiento
-    this.alumnoForm
-      .get('fechaNacimiento')
-      ?.valueChanges.subscribe((fechaNacimiento: string) => {
-        if (fechaNacimiento) {
-          this.obtenerGradosDisponibles(fechaNacimiento);
-        }
-      });
-
-    // Escucha cambios en el tipo de descuento para actualizar la cuantía
-    this.alumnoForm
-      .get('tipoTarifa')
-      ?.valueChanges.subscribe((tipoTarifa: TipoTarifa) => {
-        if (this.tipoTarifaEditado) {
-          // Solo se actualiza si el usuario cambió el tipo de descuento
-          const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
-          this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
-        }
-        this.tipoTarifaEditado = true;
-      });
-
-    // Observador para cambios en el campo competidor
-    this.alumnoForm
-      .get('competidor')
-      ?.valueChanges.subscribe((isCompetidor: boolean) => {
-        this.handleCompetidorFields(isCompetidor);
-      });
-
-    this.alumnoForm
-      .get('tieneLicencia')
-      ?.valueChanges.subscribe((tieneLicencia: boolean) => {
-        this.handleLicenciaFields(tieneLicencia);
-      });
-
-    // Validaciones adicionales para fechas: fechaBaja debe ser posterior a fechaAlta y la fecha de nacimiento debe ser anterior a la fechaAlta
-    this.alumnoForm.setValidators([
-      this.fechaBajaPosteriorAFechaAltaValidator,
-      this.fechaNacimientoPosteriorAFechaAltaValidator,
-    ]);
 
     this.cargarGrados();
+
+    this.alumnoForm.get('deporte')?.valueChanges.subscribe((valor) => {
+      this.onDeporteChange(valor);
+    });
+    this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
+      if (valor) {
+        this.obtenerGradosDisponibles(valor);
+      }
+    });
+    this.alumnoForm.get('tipoTarifa')?.valueChanges.subscribe((tipoTarifa) => {
+      if (this.tipoTarifaEditado) {
+        const nuevaCuantia = this.asignarCuantiaTarifa(tipoTarifa);
+        this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
+      }
+      this.tipoTarifaEditado = true;
+    });
+    this.alumnoForm.get('competidor')?.valueChanges.subscribe((isCompetidor) => {
+      this.handleCompetidorFields(isCompetidor);
+    });
+    this.alumnoForm.get('tieneLicencia')?.valueChanges.subscribe((valor) => {
+      this.handleLicenciaFields(valor);
+    });
   }
 
-  obtenerAlumnoPorId(id: number) {
+  cargarAlumno(id: number): void {
     this.endpointsService.obtenerAlumnoPorId(id).subscribe({
-      next: (alumno) => {
-        this.alumnoEditado = alumno;
-        this.imagenPreview = alumno.fotoAlumno?.url
-          ? alumno.fotoAlumno.url
-          : '../../../../assets/media/default.webp';
-        this.alumnoId = alumno.id;
+      next: (alumnoResponse: any) => {
+        this.alumno = alumnoResponse;
+        this.alumnoId = this.alumno.id;
 
-        this.configurarFormulario(alumno);
+        // Obtener productos del alumno, convocatorias, etc.
+        if (this.alumnoId) {
+        this.obtenerProductosAlumno(this.alumnoId);
+        this.cargarConvocatoriasDelAlumno(this.alumnoId);
+        }
       },
       error: (error) => {
-        // Manejar el error si el alumno no se encuentra
         Swal.fire({
           title: 'Error',
-          text: 'No se pudo obtener el alumno con el ID especificado.',
+          text: `No se pudo cargar el alumno con ID ${id}`,
           icon: 'error',
         });
-        this.router.navigate(['/alumnosEditar']);
       },
     });
   }
 
+  cambiarPagina(pageNumber: number): void {
+    this.router.navigate(['/alumnosEditar', pageNumber]);
+  }
+
+  obtenerProductosAlumno(alumnoId: number) {
+    this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
+      next: (productos) => {
+        this.productosAlumno = productos;
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron obtener los productos del alumno.',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Carga la lista de convocatorias a las que pertenece el alumno.
+   */
+  cargarConvocatoriasDelAlumno(alumnoId: number): void {
+    this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
+      next: (convocatorias) => {
+        this.convocatoriasDelAlumno = convocatorias;
+      },
+      error: () => {
+        this.convocatoriasDelAlumno = [];
+      },
+    });
+  }
+
+  /**
+   * Abre el formulario de edición o lo cierra, en base a `this.mostrarFormulario`.
+   */
+  alternarFormulario(alumno: any): void {
+    this.mostrarFormulario = !this.mostrarFormulario;
+
+    if (this.mostrarFormulario) {
+      // Copiamos el objeto actual del alumno en alumnoEditado
+      this.alumnoEditado = { ...alumno };
+      this.imagenPreview = alumno.fotoAlumno?.url
+        ? alumno.fotoAlumno.url
+        : '../../../../assets/media/default.webp';
+      this.tipoTarifaEditado = false;
+      this.configurarFormulario(alumno);
+
+      // Navegar a la ruta con el ID del alumno
+      this.router.navigate(['/alumnosEditar', alumno.id]);
+    } else {
+      // Navegar a la ruta sin ID cuando se cierra el formulario
+      this.router.navigate(['/alumnosEditar']);
+    }
+  }
+
+  /**
+   * Rellena el formulario reactivo con los datos del alumno a editar.
+   */
   configurarFormulario(alumno: any): void {
     const fechaNacimiento = formatDate(alumno.fechaNacimiento);
-    if (fechaNacimiento) {
-      this.obtenerGradosDisponibles(fechaNacimiento);
-    }
-
     const fechaAlta = formatDate(alumno.fechaAlta);
     const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
     const peso = alumno.peso || '';
@@ -229,161 +270,36 @@ export class EditarAlumnoComponent implements OnInit {
     const grado = alumno.grado || '';
     const aptoParaExamen = alumno.aptoParaExamen ?? false;
 
+    // Cargar grados disponibles en base a la fecha de nacimiento
+    if (fechaNacimiento) {
+      this.obtenerGradosDisponibles(fechaNacimiento);
+    }
+
     this.alumnoForm.patchValue({
       ...alumno,
-      fechaNacimiento: fechaNacimiento,
+      fechaNacimiento,
       deporte: alumno.deporte,
-      fechaAlta: fechaAlta,
-      fechaBaja: fechaBaja,
+      fechaAlta,
+      fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
       cuantiaTarifa: alumno.cuantiaTarifa,
-      peso: peso,
-      fechaPeso: fechaPeso,
+      peso,
+      fechaPeso,
       competidor: alumno.competidor,
-      numeroLicencia: numeroLicencia,
-      fechaLicencia: fechaLicencia,
+      numeroLicencia,
+      fechaLicencia,
       tieneLicencia: alumno.tieneLicencia,
-      grado: grado,
-      aptoParaExamen: aptoParaExamen,
+      grado,
+      aptoParaExamen,
       tieneDiscapacidad: alumno.tieneDiscapacidad,
     });
-
     this.onDeporteChange(alumno.deporte);
   }
 
-  obtenerProductosAlumno(alumnoId: number, alumno: any) {
-    this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
-      next: (productos) => {
-        this.productosAlumno = productos;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron obtener los productos del alumno.',
-          icon: 'error',
-        });
-        alumno.productos = [];
-      },
-    });
-  }
-
-  handleLicenciaFields(tieneLicencia: boolean) {
-    const numeroLicenciaControl = this.alumnoForm.get('numeroLicencia');
-    const fechaLicenciaControl = this.alumnoForm.get('fechaLicencia');
-
-    if (tieneLicencia) {
-      numeroLicenciaControl?.setValidators([Validators.required]);
-      fechaLicenciaControl?.setValidators([Validators.required]);
-
-      numeroLicenciaControl?.enable();
-      fechaLicenciaControl?.enable();
-    } else {
-      numeroLicenciaControl?.clearValidators();
-      fechaLicenciaControl?.clearValidators();
-
-      numeroLicenciaControl?.disable();
-      fechaLicenciaControl?.disable();
-    }
-
-    numeroLicenciaControl?.updateValueAndValidity();
-    fechaLicenciaControl?.updateValueAndValidity();
-  }
   /**
-   * Controla la habilitación y validación de los campos relacionados con el competidor.
+   * Al enviar el formulario, se confirma con SweetAlert y después
+   * se llama a actualizarAlumno().
    */
-  handleCompetidorFields(isCompetidor: boolean) {
-    const pesoControl = this.alumnoForm.get('peso');
-    const fechaPesoControl = this.alumnoForm.get('fechaPeso');
-    const categoriaControl = this.alumnoForm.get('categoria');
-
-    if (isCompetidor) {
-      pesoControl?.setValidators([Validators.required]);
-      fechaPesoControl?.setValidators([Validators.required]);
-
-      pesoControl?.enable();
-      fechaPesoControl?.enable();
-
-      // Si no hay fecha de peso asignada, establecer la fecha actual
-      if (!fechaPesoControl?.value) {
-        fechaPesoControl?.setValue(this.getFechaActual());
-      }
-    } else {
-      // Limpiar y deshabilitar los campos si no es competidor
-      pesoControl?.clearValidators();
-      fechaPesoControl?.clearValidators();
-
-      pesoControl?.disable();
-      fechaPesoControl?.disable();
-      categoriaControl?.setValue(null); // Eliminar la categoría del formulario
-      this.alumnoEditado.categoria = null; // Eliminar la categoría del alumno editado
-    }
-
-    pesoControl?.updateValueAndValidity();
-    fechaPesoControl?.updateValueAndValidity();
-  }
-
-  obtenerGradosDisponibles(fechaNacimiento: string) {
-    this.endpointsService
-      .obtenerGradosPorFechaNacimiento(fechaNacimiento)
-      .subscribe({
-        next: (grados: TipoGrado[]) => {
-          this.tiposGrado = grados; // Asigna la lista de grados recibidos
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron cargar los grados disponibles.',
-            icon: 'error',
-          });
-        },
-      });
-  }
-
-  cargarGrados(): void {
-    this.endpointsService.obtenerGrados().subscribe({
-      next: (grados) => {
-        this.todosLosGrados = grados; // Almacena todos los grados
-        this.grados = grados; // Inicialmente, muestra todos los grados
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los grados',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  obtenerAlumnos() {
-    this.endpointsService
-      .obtenerAlumnos(
-        this.paginaActual,
-        this.tamanoPagina,
-        this.nombreFiltro,
-        this.mostrarInactivos
-      )
-      .subscribe({
-        next: (response) => {
-          this.alumnos = response.content;
-
-          this.alumnos.forEach((alumno) => {
-            this.obtenerProductosAlumno(alumno.id, alumno);
-            this.cargarConvocatoriasDelAlumno(alumno.id);
-          });
-
-          this.totalPaginas = response.totalPages;
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido conectar con el servidor',
-            icon: 'error',
-          });
-        },
-      });
-  }
-
   confirmarYActualizarAlumno(id: number, alumno: any) {
     if (this.alumnoForm.invalid) {
       Swal.fire({
@@ -410,17 +326,23 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  /**
+   * Llamada final al servicio para actualizar en el backend.
+   */
   actualizarAlumno(id: number) {
     const formData = new FormData();
     formData.append('alumnoEditado', JSON.stringify(this.alumnoForm.value));
 
+    // Si el usuario ha eliminado la imagen (o nunca la tuvo), gestionamos el file 'null'
     if (this.alumnoEditado.fotoAlumno === null) {
       formData.append('file', 'null');
     } else if (this.alumnoEditado.fotoAlumno) {
+      // Guardar el nuevo fichero
       formData.append('file', this.alumnoEditado.fotoAlumno);
     }
+
     this.endpointsService.actualizarAlumno(id, formData).subscribe({
-      next: (response) => {
+      next: () => {
         Swal.fire({
           title: '¡Bien!',
           text: '¡Alumno actualizado correctamente!',
@@ -428,10 +350,10 @@ export class EditarAlumnoComponent implements OnInit {
           timer: 2000,
         });
         this.mostrarFormulario = false;
-        this.obtenerAlumnos();
-        this.router.navigate(['/alumnosEditar']);
+        // Volvemos a recargar este mismo alumno
+        this.cargarAlumno(id);
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error al actualizar',
           text: 'Error al actualizar al alumno',
@@ -441,16 +363,18 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  /**
+   * Elimina la foto del alumno actual.
+   */
   eliminarFoto(id: number) {
     this.endpointsService.eliminarImagenAlumno(id).subscribe({
-      next: (response) => {
+      next: () => {
         this.inputFile.nativeElement.value = '';
         this.alumnoEditado.fotoAlumno = null;
         this.imagenPreview = '../../../../assets/media/default.webp';
-        this.obtenerAlumnos();
+        this.cargarAlumno(id);
       },
-
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error al actualizar',
           text: 'Error al actualizar al alumno',
@@ -460,272 +384,125 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
-  cargarConvocatoriasDelAlumno(alumnoId: number): void {
-    this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
-      next: (convocatorias) => {
-        this.convocatoriasDelAlumno = convocatorias;
+  /**
+   * Para cargar los diferentes grados disponibles (según tu lógica de backend).
+   */
+  cargarGrados(): void {
+    this.endpointsService.obtenerGrados().subscribe({
+      next: (grados) => {
+        this.todosLosGrados = grados;
+        this.grados = grados;
       },
-      error: (error) => {
-        console.error('Error al obtener convocatorias del alumno:', error);
-        this.convocatoriasDelAlumno = [];
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los grados',
+          icon: 'error',
+        });
       },
     });
   }
 
-  seleccionarTipoConvocatoria(alumno: any): void {
-    Swal.fire({
-      title: 'Selecciona el tipo de convocatoria',
-      text: '¿Asignar el precio por antigüedad o por recompensa?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Por Recompensa',
-      cancelButtonText: 'Por Antigüedad',
-      confirmButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      const porRecompensa = result.isConfirmed;
-      this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
-    });
-  }
-
-  abrirModalConvocatoriasConTipo(alumno: any, porRecompensa: boolean): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDisponibles(alumno);
-    this.mostrarModalConvocatorias = true;
-
-    this.alumnoEditado.porRecompensa = porRecompensa;
-  }
-
-  agregarAConvocatoriaEspecifica(convocatoria: any): void {
-    if (!this.alumnoId) return;
-
-    const porRecompensa = this.alumnoEditado.porRecompensa;
-
+  /**
+   * Obtiene desde el backend los grados disponibles para la fecha de nacimiento dada.
+   */
+  obtenerGradosDisponibles(fechaNacimiento: string) {
     this.endpointsService
-      .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
+      .obtenerGradosPorFechaNacimiento(fechaNacimiento)
       .subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Alumno agregado',
-            text: 'El alumno ha sido agregado correctamente a la convocatoria.',
-            icon: 'success',
-            timer: 2000,
-          });
-          this.cerrarModalConvocatorias();
-          this.cargarConvocatoriasDelAlumno(this.alumnoId!);
-          this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
+        next: (grados: TipoGrado[]) => {
+          this.tiposGrado = grados;
         },
-        error: (error) => {
+        error: () => {
           Swal.fire({
             title: 'Error',
-            text: error.error,
+            text: 'No se pudieron cargar los grados disponibles.',
             icon: 'error',
           });
         },
       });
   }
 
-  eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
-    if (!this.alumnoId) return;
-
-    this.cerrarModalEliminarConvocatorias();
-
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: `Eliminarás al alumno de la convocatoria de ${
-        convocatoria.deporte
-      } del ${formatDate(convocatoria.fechaConvocatoria)}`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.endpointsService
-          .eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id)
-          .subscribe({
-            next: () => {
-              Swal.fire({
-                title: 'Eliminado',
-                text: 'El alumno ha sido eliminado de la convocatoria.',
-                icon: 'success',
-                timer: 2000,
-              });
-              this.cargarConvocatoriasDelAlumno(this.alumnoId!);
-              this.obtenerProductosAlumno(this.alumnoId!, this.alumnoEditado);
-            },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error',
-                text: 'No se pudo eliminar al alumno de la convocatoria.',
-                icon: 'error',
-              });
-            },
-          });
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        this.abrirModalEliminarConvocatorias({ id: this.alumnoId });
-      }
-    });
-  }
-
-  abrirModalConvocatorias(alumno: any): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDisponibles(alumno);
-    this.mostrarModalConvocatorias = true;
-  }
-
-  cerrarModalConvocatorias(): void {
-    this.mostrarModalConvocatorias = false;
-  }
-
-  abrirModalEliminarConvocatorias(alumno: any): void {
-    this.alumnoId = alumno.id;
-    this.cargarConvocatoriasDelAlumno(alumno.id);
-    this.mostrarModalEliminarConvocatorias = true;
-  }
-
-  cerrarModalEliminarConvocatorias(): void {
-    this.mostrarModalEliminarConvocatorias = false;
-  }
-
-  cambiarPagina(pageNumber: number): void {
-    this.paginaActual = pageNumber;
-    this.obtenerAlumnos();
-  }
-
-  reservarPlaza(alumnoId: number) {
-    const anoActual = new Date().getFullYear();
-    const proximoAno = anoActual + 1;
-    Swal.fire({
-      title: '¿Quiere añadir una reserva de plaza?',
-      text: `Temporada: ${anoActual}/${proximoAno}`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí',
-      cancelButtonText: 'No',
-    }).then((resultado) => {
-      if (resultado.isConfirmed) {
-        Swal.fire({
-          title: '¿Ha sido abonada la reserva?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, pagada',
-          cancelButtonText: 'No',
-        }).then((resultadoPago) => {
-          const pagado = resultadoPago.isConfirmed;
-          this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
-            next: () => {
-              Swal.fire({
-                title: 'Reserva creada',
-                text: 'La reserva de plaza ha sido añadida correctamente.',
-                icon: 'success',
-                timer: 2000,
-              });
-              this.obtenerProductosAlumno(alumnoId, this.alumnoEditado);
-            },
-            error: (err) => {
-              if (err.status === 409) {
-                Swal.fire({
-                  title: 'Reserva existente',
-                  text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
-                  icon: 'warning',
-                  showCancelButton: true,
-                  confirmButtonText: 'Sí, proceder',
-                  cancelButtonText: 'No',
-                }).then((respuesta) => {
-                  if (respuesta.isConfirmed) {
-                    this.endpointsService
-                      .reservarPlaza(alumnoId, pagado, true)
-                      .subscribe({
-                        next: () => {
-                          Swal.fire({
-                            title: 'Reserva creada',
-                            text: 'La reserva de plaza ha sido añadida correctamente.',
-                            icon: 'success',
-                            timer: 2000,
-                          });
-                          this.obtenerProductosAlumno(
-                            alumnoId,
-                            this.alumnoEditado
-                          );
-                        },
-                        error: () => {
-                          Swal.fire({
-                            title: 'Error',
-                            text: 'No se pudo crear la reserva.',
-                            icon: 'error',
-                          });
-                        },
-                      });
-                  }
-                });
-              } else {
-                Swal.fire({
-                  title: 'Error',
-                  text: 'No se pudo crear la reserva.',
-                  icon: 'error',
-                });
-              }
-            },
-          });
-        });
-      }
-    });
-  }
-
+  /**
+   * Renueva la licencia del alumno.
+   */
   renovarLicencia(alumnoId: number): void {
     this.endpointsService.renovarLicencia(alumnoId).subscribe({
-      next: (response) => {
+      next: () => {
         Swal.fire({
           title: '¡Licencia renovada!',
           text: 'Se ha añadido la licencia al perfil del alumno.',
           icon: 'success',
         });
-        this.obtenerAlumnos();
+        this.cargarAlumno(alumnoId);
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error',
           text: 'No se pudo renovar la licencia.',
           icon: 'error',
         });
-      }
+      },
     });
   }
-  
-  licenciaEnVigor(fechaLicencia: Date): boolean {
-    const fechaActual = new Date();
-    const fechaLicenciaDate = new Date(fechaLicencia);
-    return fechaLicenciaDate.getFullYear() >= fechaActual.getFullYear();
-  }
-  
-  alternarFormulario(alumno: any): void {
-    this.mostrarFormulario = !this.mostrarFormulario;
 
-    if (this.mostrarFormulario) {
-      this.alumnoEditado = { ...alumno };
-      this.imagenPreview = alumno.fotoAlumno?.url
-        ? alumno.fotoAlumno.url
-        : '../../../../assets/media/default.webp';
-      this.tipoTarifaEditado = false;
-      this.configurarFormulario(alumno);
+  /**
+   * Controla el check «competidor». Habilita/deshabilita campos del formulario.
+   */
+  handleCompetidorFields(isCompetidor: boolean) {
+    const pesoControl = this.alumnoForm.get('peso');
+    const fechaPesoControl = this.alumnoForm.get('fechaPeso');
 
-      // Navegar a la ruta con el ID del alumno
-      this.router.navigate(['/alumnosEditar', alumno.id]);
+    if (isCompetidor) {
+      pesoControl?.setValidators([Validators.required]);
+      fechaPesoControl?.setValidators([Validators.required]);
+      pesoControl?.enable();
+      fechaPesoControl?.enable();
+
+      if (!fechaPesoControl?.value) {
+        fechaPesoControl?.setValue(this.getFechaActual());
+      }
     } else {
-      // Navegar a la ruta sin ID cuando se cierra el formulario
-      this.router.navigate(['/alumnosEditar']);
+      pesoControl?.clearValidators();
+      fechaPesoControl?.clearValidators();
+      pesoControl?.disable();
+      fechaPesoControl?.disable();
+      pesoControl?.setValue(null);
+      fechaPesoControl?.setValue(null);
     }
+
+    pesoControl?.updateValueAndValidity();
+    fechaPesoControl?.updateValueAndValidity();
   }
 
-  // Método actualizado para recibir el evento y obtener el valor como string
-  onDeporteChange(event: Event | string): void {
-    const deporteSeleccionado =
-      typeof event === 'string'
-        ? event
-        : (event.target as HTMLSelectElement).value;
+  /**
+   * Controla el check «tieneLicencia». Habilita/deshabilita campos del formulario.
+   */
+  handleLicenciaFields(tieneLicencia: boolean) {
+    const numeroLicenciaControl = this.alumnoForm.get('numeroLicencia');
+    const fechaLicenciaControl = this.alumnoForm.get('fechaLicencia');
+
+    if (tieneLicencia) {
+      numeroLicenciaControl?.setValidators([Validators.required]);
+      fechaLicenciaControl?.setValidators([Validators.required]);
+      numeroLicenciaControl?.enable();
+      fechaLicenciaControl?.enable();
+    } else {
+      numeroLicenciaControl?.clearValidators();
+      fechaLicenciaControl?.clearValidators();
+      numeroLicenciaControl?.disable();
+      fechaLicenciaControl?.disable();
+      numeroLicenciaControl?.setValue(null);
+      fechaLicenciaControl?.setValue(null);
+    }
+    numeroLicenciaControl?.updateValueAndValidity();
+    fechaLicenciaControl?.updateValueAndValidity();
+  }
+
+  /**
+   * Al elegir un deporte, se adaptan validaciones y campos (licencia, competidor, etc.)
+   */
+  onDeporteChange(deporteSeleccionado: string): void {
     this.resetFormControls();
 
     if (deporteSeleccionado === 'TAEKWONDO') {
@@ -751,6 +528,9 @@ export class EditarAlumnoComponent implements OnInit {
     }
   }
 
+  /**
+   * Cuando el usuario selecciona un nuevo archivo de imagen.
+   */
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
     this.alumnoEditado.fotoAlumno = file;
@@ -762,85 +542,9 @@ export class EditarAlumnoComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
-  filtrarPorNombre(): void {
-    this.paginaActual = 1;
-    this.obtenerAlumnos();
-  }
-
-  fechaBajaPosteriorAFechaAltaValidator(formGroup: AbstractControl) {
-    const fechaAlta = formGroup.get('fechaAlta')!.value;
-    const fechaBaja = formGroup.get('fechaBaja')!.value;
-
-    if (!fechaAlta || !fechaBaja) {
-      return null;
-    }
-
-    const fechaAltaDate = new Date(fechaAlta);
-    const fechaBajaDate = new Date(fechaBaja);
-
-    return fechaBajaDate > fechaAltaDate
-      ? null
-      : { fechaBajaAnteriorAFechaAlta: true };
-  }
-
-  fechaNacimientoPosteriorAFechaAltaValidator(formGroup: AbstractControl) {
-    const fechaAlta = formGroup.get('fechaAlta')!.value;
-    const fechaNacimiento = formGroup.get('fechaNacimiento')!.value;
-
-    if (!fechaAlta || !fechaNacimiento) {
-      return null;
-    }
-
-    const fechaAltaDate = new Date(fechaAlta);
-    const fechaNacimientoDate = new Date(fechaNacimiento);
-
-    return fechaAltaDate > fechaNacimientoDate
-      ? null
-      : { fechaAltaAnteriorAFechaNacimiento: true };
-  }
-
-  asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
-    switch (tipoTarifa) {
-      case TipoTarifa.PILATES:
-        return 30.0;
-      case TipoTarifa.DEFENSA_PERSONAL_FEMENINA:
-        return 30.0;
-      case TipoTarifa.ADULTO:
-        return 30.0;
-      case TipoTarifa.ADULTO_GRUPO:
-        return 20.0;
-      case TipoTarifa.FAMILIAR:
-        return 0.0;
-      case TipoTarifa.INFANTIL:
-        return 25.0;
-      case TipoTarifa.INFANTIL_GRUPO:
-        return 20.0;
-      case TipoTarifa.HERMANOS:
-        return 23.0;
-      case TipoTarifa.PADRES_HIJOS:
-        return 0.0;
-      default:
-        throw new Error('Tipo de descuento no válido');
-    }
-  }
-
-  alternarInactivos(): void {
-    this.mostrarInactivos = !this.mostrarInactivos;
-    this.obtenerAlumnos();
-  }
-
-  onCompetidorChange(event: any) {
-    const isCompetidor = event.target.checked;
-    if (!isCompetidor) {
-      this.alumnoForm.patchValue({ peso: '', fechaPeso: '' });
-    }
-  }
-
-  private getFechaActual(): string {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  }
-
+  /**
+   * Abre el modal con la imagen ampliada (si hay URL disponible).
+   */
   abrirModal(imagenUrl: string | null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
@@ -850,9 +554,9 @@ export class EditarAlumnoComponent implements OnInit {
         icon: 'error',
         title: 'Imagen no disponible',
         text: 'No hay imagen disponible para mostrar.',
-        timer: 2000
+        timer: 2000,
       });
-      return; // Detenemos la ejecución si no hay imagen
+      return;
     }
 
     if (modal && modalImg) {
@@ -868,36 +572,10 @@ export class EditarAlumnoComponent implements OnInit {
     }
   }
 
-  cargarConvocatoriasDisponibles(alumno: any): void {
-    const deporte = alumno.deporte; // Obtenemos el deporte del alumno
-
-    this.endpointsService.obtenerConvocatorias(deporte).subscribe({
-      next: (convocatorias) => {
-        const hoy = new Date();
-
-        // Encuentra la convocatoria actual basándote en la fecha de hoy
-        this.convocatoriaActual = convocatorias.find((convocatoria) => {
-          const fechaConvocatoria = new Date(convocatoria.fechaConvocatoria);
-          return (
-            fechaConvocatoria.getFullYear() === hoy.getFullYear() &&
-            fechaConvocatoria.getMonth() === hoy.getMonth() &&
-            fechaConvocatoria.getDate() === hoy.getDate()
-          );
-        });
-
-        // Filtra convocatorias excluyendo la actual
-        this.convocatoriasDisponibles = convocatorias.filter(
-          (convocatoria) => convocatoria.id !== this.convocatoriaActual?.id
-        );
-      },
-      error: (error) => {
-        console.error('Error al obtener convocatorias disponibles:', error);
-      },
-    });
-  }
-
+  /**
+   * Resetea validaciones y habilita campos.
+   */
   resetFormControls(): void {
-    // Remover validaciones de campos que podrían cambiar
     this.alumnoForm.get('tipoTarifa')?.clearValidators();
     this.alumnoForm.get('grado')?.clearValidators();
     this.alumnoForm.get('competidor')?.clearValidators();
@@ -905,7 +583,6 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoForm.get('numeroLicencia')?.clearValidators();
     this.alumnoForm.get('fechaLicencia')?.clearValidators();
 
-    // Actualizar validez de los campos
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
     this.alumnoForm.get('competidor')?.updateValueAndValidity();
@@ -913,7 +590,7 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
     this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
 
-    // Habilitar todos los campos
+    // Habilita todos
     this.alumnoForm.get('tipoTarifa')?.enable();
     this.alumnoForm.get('grado')?.enable();
     this.alumnoForm.get('competidor')?.enable();
@@ -923,11 +600,9 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   showAllFields(): void {
-    // Añadir validaciones necesarias
     this.alumnoForm.get('tipoTarifa')?.setValidators(Validators.required);
     this.alumnoForm.get('grado')?.setValidators(Validators.required);
 
-    // Actualizar validez de los campos
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
   }
@@ -961,7 +636,6 @@ export class EditarAlumnoComponent implements OnInit {
     this.alumnoForm.get('fechaLicencia')?.clearValidators();
     this.alumnoForm.get('fechaLicencia')?.setValue(null);
 
-    // Actualizar validez de los campos
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
     this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
@@ -989,23 +663,338 @@ export class EditarAlumnoComponent implements OnInit {
 
   getGradoNombre(grado: any): string {
     const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
-
     if (deporteSeleccionado === 'KICKBOXING' && grado.tipoGrado === 'ROJO') {
       return 'MARRON';
     }
-
     return grado.tipoGrado;
   }
 
+  /**
+   * Utilidad: calcular el total = precio * cantidad
+   */
   calcularTotal(precio: number, cantidad: number): number {
     return precio * cantidad;
+  }
+
+  /**
+   * Lógica de reserva de plaza, igual que antes.
+   */
+  reservarPlaza(alumnoId: number) {
+    const anoActual = new Date().getFullYear();
+    const proximoAno = anoActual + 1;
+    Swal.fire({
+      title: '¿Quiere añadir una reserva de plaza?',
+      text: `Temporada: ${anoActual}/${proximoAno}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí',
+      cancelButtonText: 'No',
+    }).then((resultado) => {
+      if (resultado.isConfirmed) {
+        Swal.fire({
+          title: '¿Ha sido abonada la reserva?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, pagada',
+          cancelButtonText: 'No',
+        }).then((resultadoPago) => {
+          const pagado = resultadoPago.isConfirmed;
+          this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Reserva creada',
+                text: 'La reserva de plaza ha sido añadida correctamente.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.obtenerProductosAlumno(alumnoId);
+            },
+            error: (err) => {
+              if (err.status === 409) {
+                Swal.fire({
+                  title: 'Reserva existente',
+                  text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonText: 'Sí, proceder',
+                  cancelButtonText: 'No',
+                }).then((respuesta) => {
+                  if (respuesta.isConfirmed) {
+                    this.endpointsService
+                      .reservarPlaza(alumnoId, pagado, true)
+                      .subscribe({
+                        next: () => {
+                          Swal.fire({
+                            title: 'Reserva creada',
+                            text: 'La reserva de plaza ha sido añadida correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                          });
+                          this.obtenerProductosAlumno(alumnoId);
+                        },
+                        error: () => {
+                          Swal.fire({
+                            title: 'Error',
+                            text: 'No se pudo crear la reserva.',
+                            icon: 'error',
+                          });
+                        },
+                      });
+                  }
+                });
+              } else {
+                Swal.fire({
+                  title: 'Error',
+                  text: 'No se pudo crear la reserva.',
+                  icon: 'error',
+                });
+              }
+            },
+          });
+        });
+      }
+    });
+  }
+
+  /**
+   * Valida si la licencia está en vigor comparando años.
+   */
+  licenciaEnVigor(fechaLicencia: Date): boolean {
+    const fechaActual = new Date();
+    const fechaLicenciaDate = new Date(fechaLicencia);
+    return fechaLicenciaDate.getFullYear() >= fechaActual.getFullYear();
+  }
+
+  /**
+   * Abre el modal para seleccionar el tipo de convocatoria (examen normal o por recompensa).
+   */
+  seleccionarTipoConvocatoria(alumno: any): void {
+    Swal.fire({
+      title: 'Selecciona el tipo de convocatoria',
+      text: '¿Asignar el precio por antigüedad o por recompensa?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Por Recompensa',
+      cancelButtonText: 'Por Antigüedad',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      const porRecompensa = result.isConfirmed;
+      this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
+    });
+  }
+
+  abrirModalConvocatoriasConTipo(alumno: any, porRecompensa: boolean): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    this.mostrarModalConvocatorias = true;
+    this.alumnoEditado.porRecompensa = porRecompensa;
+  }
+
+  cargarConvocatoriasDisponibles(alumno: any): void {
+    const deporte = alumno.deporte;
+    this.endpointsService.obtenerConvocatorias(deporte).subscribe({
+      next: (convocatorias) => {
+        const hoy = new Date();
+        this.convocatoriaActual = convocatorias.find((conv: any) => {
+          const fechaConvocatoria = new Date(conv.fechaConvocatoria);
+          return (
+            fechaConvocatoria.getFullYear() === hoy.getFullYear() &&
+            fechaConvocatoria.getMonth() === hoy.getMonth() &&
+            fechaConvocatoria.getDate() === hoy.getDate()
+          );
+        });
+        this.convocatoriasDisponibles = convocatorias.filter(
+          (convocatoria: any) => convocatoria.id !== this.convocatoriaActual?.id
+        );
+      },
+      error: () => {
+        console.error('Error al obtener convocatorias disponibles');
+      },
+    });
+  }
+
+  agregarAConvocatoriaEspecifica(convocatoria: any): void {
+    if (!this.alumnoId) return;
+
+    const porRecompensa = this.alumnoEditado.porRecompensa;
+    this.endpointsService
+      .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Alumno agregado',
+            text: 'El alumno ha sido agregado correctamente a la convocatoria.',
+            icon: 'success',
+            timer: 2000,
+          });
+          this.cerrarModalConvocatorias();
+          if (this.alumnoId) {
+            this.cargarConvocatoriasDelAlumno(this.alumnoId);
+            this.obtenerProductosAlumno(this.alumnoId);
+          }
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error,
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  eliminarDeConvocatoriaSeleccionada(convocatoria: any): void {
+    if (!this.alumnoId) return;
+
+    this.cerrarModalEliminarConvocatorias();
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte}
+             del ${formatDate(convocatoria.fechaConvocatoria)}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id)
+          .subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Eliminado',
+                text: 'El alumno ha sido eliminado de la convocatoria.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+              this.obtenerProductosAlumno(this.alumnoId!);
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo eliminar al alumno de la convocatoria.',
+                icon: 'error',
+              });
+            },
+          });
+      }
+    });
+  }
+
+  abrirModalConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDisponibles(alumno);
+    this.mostrarModalConvocatorias = true;
+  }
+
+  cerrarModalConvocatorias(): void {
+    this.mostrarModalConvocatorias = false;
+  }
+
+  abrirModalEliminarConvocatorias(alumno: any): void {
+    this.alumnoId = alumno.id;
+    this.cargarConvocatoriasDelAlumno(alumno.id);
+    this.mostrarModalEliminarConvocatorias = true;
+  }
+
+  cerrarModalEliminarConvocatorias(): void {
+    this.mostrarModalEliminarConvocatorias = false;
+  }
+
+  /**
+   * Asigna el valor de la cuantía de la tarifa según el tipoTarifa.
+   */
+  asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
+    switch (tipoTarifa) {
+      case TipoTarifa.PILATES:
+        return 30.0;
+      case TipoTarifa.DEFENSA_PERSONAL_FEMENINA:
+        return 30.0;
+      case TipoTarifa.ADULTO:
+        return 30.0;
+      case TipoTarifa.ADULTO_GRUPO:
+        return 20.0;
+      case TipoTarifa.FAMILIAR:
+        return 0.0;
+      case TipoTarifa.INFANTIL:
+        return 25.0;
+      case TipoTarifa.INFANTIL_GRUPO:
+        return 20.0;
+      case TipoTarifa.HERMANOS:
+        return 23.0;
+      case TipoTarifa.PADRES_HIJOS:
+        return 0.0;
+      default:
+        throw new Error('Tipo de descuento no válido');
+    }
+  }
+
+  /**
+   * Valida que la fecha de baja sea posterior a la fecha de alta.
+   */
+  fechaBajaPosteriorAFechaAltaValidator(formGroup: AbstractControl) {
+    const fechaAlta = formGroup.get('fechaAlta')!.value;
+    const fechaBaja = formGroup.get('fechaBaja')!.value;
+
+    if (!fechaAlta || !fechaBaja) {
+      return null;
+    }
+
+    const fechaAltaDate = new Date(fechaAlta);
+    const fechaBajaDate = new Date(fechaBaja);
+
+    return fechaBajaDate > fechaAltaDate
+      ? null
+      : { fechaBajaAnteriorAFechaAlta: true };
+  }
+
+  /**
+   * Valida que la fecha de nacimiento sea anterior a la fecha de alta.
+   */
+  fechaNacimientoPosteriorAFechaAltaValidator(formGroup: AbstractControl) {
+    const fechaAlta = formGroup.get('fechaAlta')!.value;
+    const fechaNacimiento = formGroup.get('fechaNacimiento')!.value;
+
+    if (!fechaAlta || !fechaNacimiento) {
+      return null;
+    }
+
+    const fechaAltaDate = new Date(fechaAlta);
+    const fechaNacimientoDate = new Date(fechaNacimiento);
+
+    return fechaAltaDate > fechaNacimientoDate
+      ? null
+      : { fechaAltaAnteriorAFechaNacimiento: true };
+  }
+
+  private getFechaActual(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   }
 
   navegarAGestionProductos(alumnoId: number) {
     this.router.navigate(['/alumnos', alumnoId, 'productos']);
   }
 
+  /**
+   * Botón «Volver» que simplemente navega hacia atrás en el historial.
+   */
   volver() {
     this.location.back();
+  }
+
+  /**
+   * (Opcional) alternar «mostrar inactivos» en caso de que se quiera
+   * pero ahora que solo cargamos 1 alumno por ID, esta lógica puede
+   * no tener uso real.
+   */
+  alternarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    // Podríamos cambiar la ID que estamos mostrando, pero en esta lógica
+    // no es estrictamente útil.
   }
 }
