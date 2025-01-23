@@ -100,11 +100,17 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerAlumnoPorId(alumnoId: number): Observable<any> {
+  obtenerAlumnoPorId(id: number): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/alumnos/${alumnoId}`, {
+      .get<any>(`${this.urlBase}/alumnos/${id}`, {
         withCredentials: true,
       })
+      .pipe(catchError(this.manejarError));
+  }
+
+  countAlumnos(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/count`, { withCredentials: true })
       .pipe(catchError(this.manejarError));
   }
 
@@ -806,5 +812,19 @@ export class EndpointsService {
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
+  }
+
+  obtenerDocumentos(alumnoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.urlBase}/documentos/${alumnoId}`);
+  }
+
+  subirDocumento(alumnoId: number, archivo: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    return this.http.post(`${this.urlBase}/documentos/${alumnoId}`, formData);
+  }
+
+  eliminarDocumento(documentoId: number): Observable<void> {
+    return this.http.delete<void>(`${this.urlBase}/documentos/${documentoId}`);
   }
 }
