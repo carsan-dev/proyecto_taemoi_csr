@@ -51,7 +51,7 @@ class AlumnoControllerTest {
 	void obtenerAlumnoPorIdDTO_Test() {
 		Long id = 1L;
 		AlumnoDTO alumnoDTO = new AlumnoDTO();
-		when(alumnoService.obtenerAlumnoDTOPorId(id)).thenReturn(Optional.of(alumnoDTO));
+		when(alumnoService.obtenerAlumnoPorIdDTO(id)).thenReturn(Optional.of(alumnoDTO));
 
 		ResponseEntity<AlumnoDTO> result = alumnoController.obtenerAlumnoPorIdDTO(id);
 
