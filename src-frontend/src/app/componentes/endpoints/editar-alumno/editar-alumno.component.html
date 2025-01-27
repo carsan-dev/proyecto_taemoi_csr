@@ -50,7 +50,8 @@
               Mostrar menú de edición
             </button>
           </div>
-          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" (pageChange)="cambiarPagina($event)">
+          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas"
+            (pageChange)="cambiarPagina($event)">
           </app-paginacion>
         </div>
 
@@ -311,7 +312,50 @@
                     </div>
                   </div>
                 </div>
-                <!-- Fin convocatorias -->
+              </div>
+            </div>
+          </div>
+          <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title mb-3">Documentos</h5>
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let doc of documentosAlumno">
+                        <td>{{ doc.nombre }}</td>
+                        <td>{{ doc.tipo }}</td>
+                        <td>
+                          <button class="btn btn-sm btn-primary me-2" (click)="abrirDocumento(doc)">
+                            Abrir
+                          </button>
+                          <button class="btn btn-sm btn-danger" (click)="eliminarDocumento(doc.id)">
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                      <tr *ngIf="!documentosAlumno?.length">
+                        <td colspan="3" class="text-center">No hay documentos</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Botón para subir un nuevo documento -->
+                <div class="mt-4 text-center text-md-start">
+                  <label for="docFile" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Subir documento
+                  </label>
+                  <input type="file" id="docFile" (change)="onDocumentoSelected($event)" style="display: none;"
+                    accept=".pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document/*" />
+                </div>
               </div>
             </div>
           </div>

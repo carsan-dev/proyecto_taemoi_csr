@@ -70,6 +70,7 @@ export class EditarAlumnoComponent implements OnInit {
   convocatoriaActual: any | null = null;
   mostrarModalConvocatorias = false;
   mostrarModalEliminarConvocatorias = false;
+  documentosAlumno: any[] = [];
 
   // Para manipular el input file
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
@@ -184,8 +185,9 @@ export class EditarAlumnoComponent implements OnInit {
 
         // Obtener productos del alumno, convocatorias, etc.
         if (this.alumnoId) {
-        this.obtenerProductosAlumno(this.alumnoId);
-        this.cargarConvocatoriasDelAlumno(this.alumnoId);
+          this.cargarDocumentosAlumno(this.alumnoId);
+          this.obtenerProductosAlumno(this.alumnoId);
+          this.cargarConvocatoriasDelAlumno(this.alumnoId);
         }
       },
       error: (error) => {
@@ -196,6 +198,18 @@ export class EditarAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  private cargarDocumentosAlumno(alumnoId: number): void {
+    this.endpointsService.obtenerDocumentosDeAlumno(alumnoId)
+      .subscribe({
+        next: (docs) => {
+          this.documentosAlumno = docs;
+        },
+        error: () => {
+          this.documentosAlumno = [];
+        },
+      });
   }
 
   cambiarPagina(pageNumber: number): void {
@@ -363,6 +377,31 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+  onDocumentoSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (!file) return;
+  
+    // Llamamos al servicio
+    this.endpointsService.subirDocumentoAlumno(this.alumnoId!, file).subscribe({
+      next: (doc) => {
+        Swal.fire({
+          title: 'Documento subido',
+          text: 'El documento se ha subido correctamente.',
+          icon: 'success',
+          timer: 2000,
+        });
+        this.cargarDocumentosAlumno(this.alumnoId!);
+      },
+      error: (err) => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo subir el documento',
+          icon: 'error',
+        });
+      },
+    });
+  }
+  
   /**
    * Elimina la foto del alumno actual.
    */
@@ -383,6 +422,58 @@ export class EditarAlumnoComponent implements OnInit {
       },
     });
   }
+
+  eliminarDocumento(documentoId: number) {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Eliminarás este documento permanentemente',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .eliminarDocumentoAlumno(this.alumnoId!, documentoId)
+          .subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Eliminado',
+                text: 'Documento eliminado correctamente.',
+                icon: 'success',
+                timer: 2000,
+              });
+              // Quitar el doc de la lista actual
+              this.documentosAlumno = this.documentosAlumno.filter(
+                (d) => d.id !== documentoId
+              );
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo eliminar el documento.',
+                icon: 'error',
+              });
+            },
+          });
+      }
+    });
+  }
+
+  abrirDocumento(doc: any) {
+    if (!doc.url) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Documento no disponible',
+        text: 'No se encontró una URL para el documento.',
+      });
+      return;
+    }
+    // Abrir en una nueva pestaña
+    window.open(doc.url, '_blank');
+  }  
 
   /**
    * Para cargar los diferentes grados disponibles (según tu lógica de backend).
