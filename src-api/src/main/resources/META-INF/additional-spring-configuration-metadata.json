@@ -28,5 +28,15 @@
     "name": "app.base.url",
     "type": "java.lang.String",
     "description": "Url base de la aplicación"
+  },
+  {
+    "name": "app.documentos.directorio.linux",
+    "type": "java.lang.String",
+    "description": "Directorio de documentos estáticos en Linux"
+  },
+  {
+    "name": "app.documentos.directorio.windows",
+    "type": "java.lang.String",
+    "description": "Directorio de documentos estáticos en Windows"
   }
 ]}
