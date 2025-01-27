@@ -11,6 +11,7 @@ import { tap } from 'rxjs/internal/operators/tap';
 import { Producto } from '../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
+import { Documento } from '../../interfaces/documento';
 
 @Injectable({
   providedIn: 'root',
@@ -467,7 +468,6 @@ export class EndpointsService {
       )
       .pipe(catchError(this.manejarError));
   }
-  
 
   obtenerGrados(): Observable<any> {
     return this.http
@@ -814,17 +814,35 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerDocumentos(alumnoId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.urlBase}/documentos/${alumnoId}`);
+  obtenerDocumentosDeAlumno(alumnoId: number): Observable<Documento[]> {
+    return this.http
+      .get<Documento[]>(`${this.urlBase}/alumnos/${alumnoId}/documentos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
   }
 
-  subirDocumento(alumnoId: number, archivo: File): Observable<any> {
+  subirDocumentoAlumno(alumnoId: number, archivo: File): Observable<Documento> {
     const formData = new FormData();
     formData.append('archivo', archivo);
-    return this.http.post(`${this.urlBase}/documentos/${alumnoId}`, formData);
+    return this.http
+      .post<Documento>(
+        `${this.urlBase}/alumnos/${alumnoId}/documentos`,
+        formData,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
   }
 
-  eliminarDocumento(documentoId: number): Observable<void> {
-    return this.http.delete<void>(`${this.urlBase}/documentos/${documentoId}`);
+  eliminarDocumentoAlumno(
+    alumnoId: number,
+    documentoId: number
+  ): Observable<void> {
+    return this.http
+      .delete<void>(
+        `${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}`,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
   }
 }
