@@ -15,6 +15,7 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Categoria;
+import com.taemoi.project.entidades.Documento;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.entidades.TipoTarifa;
@@ -83,4 +84,10 @@ public interface AlumnoService {
 	boolean esAptoParaExamen(Alumno alumno);
 	
 	long countAlumnos();
+
+	Documento agregarDocumentoAAlumno(Long alumnoId, MultipartFile archivo);
+
+	List<Documento> obtenerDocumentosAlumno(Long alumnoId);
+
+	void eliminarDocumentoDeAlumno(Long alumnoId, Long documentoId);
 }

@@ -34,6 +34,7 @@ import com.taemoi.project.entidades.AlumnoConvocatoria;
 import com.taemoi.project.entidades.Categoria;
 import com.taemoi.project.entidades.Convocatoria;
 import com.taemoi.project.entidades.Deporte;
+import com.taemoi.project.entidades.Documento;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.Grupo;
 import com.taemoi.project.entidades.Imagen;
@@ -51,6 +52,7 @@ import com.taemoi.project.repositorios.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.CategoriaRepository;
 import com.taemoi.project.repositorios.ConvocatoriaRepository;
+import com.taemoi.project.repositorios.DocumentoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.repositorios.GrupoRepository;
 import com.taemoi.project.repositorios.ImagenRepository;
@@ -59,6 +61,7 @@ import com.taemoi.project.repositorios.ProductoRepository;
 import com.taemoi.project.repositorios.TurnoRepository;
 import com.taemoi.project.repositorios.UsuarioRepository;
 import com.taemoi.project.servicios.AlumnoService;
+import com.taemoi.project.servicios.DocumentoService;
 import com.taemoi.project.servicios.ImagenService;
 import com.taemoi.project.servicios.ProductoAlumnoService;
 import com.taemoi.project.utils.FechaUtils;
@@ -123,11 +126,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private ImagenService imagenService;
+	
+	@Autowired
+	private DocumentoRepository documentoRepository;
+	
+	@Autowired
+	private DocumentoService documentoService;
 
-	/**
-	 * Inyección del PasswordEncoder para codificar la contraseña del usuario
-	 * creado.
-	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
@@ -175,6 +180,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public Optional<AlumnoDTO> obtenerAlumnoPorIdDTO(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = obtenerAlumnoPorId(id);
 		return optionalAlumno.map(AlumnoDTO::deAlumno);
+	}
+	
+	@Override
+	public List<Documento> obtenerDocumentosAlumno(Long alumnoId) {
+	    Alumno alumno = alumnoRepository.findById(alumnoId)
+	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+	    return alumno.getDocumentos();
 	}
 
 	/**
@@ -468,6 +480,21 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Finalmente, retornar el Alumno guardado
 		return alumnoGuardado;
 	}
+	
+    @Override
+    public Documento agregarDocumentoAAlumno(Long alumnoId, MultipartFile archivo) {
+        Alumno alumno = alumnoRepository.findById(alumnoId)
+                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+        try {
+            Documento documento = documentoService.guardarDocumento(alumno, archivo);
+            alumno.getDocumentos().add(documento);
+            alumnoRepository.save(alumno);
+            return documento;
+        } catch (IOException e) {
+            throw new RuntimeException("Error al guardar el documento: " + e.getMessage(), e);
+        }
+    }
 
 	/**
 	 * Actualiza un alumno existente.
@@ -609,11 +636,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			Alumno alumno = optionalAlumno.get();
 			Imagen imagen = alumno.getFotoAlumno();
 			if (imagen != null) {
-				// Eliminar la imagen del sistema de archivos antes de eliminar la referencia en
-				// la base de datos
+
 				imagenService.eliminarImagenDeSistema(imagen);
 
-				// Ahora eliminar la referencia en la base de datos
 				alumno.setFotoAlumno(null);
 				alumnoRepository.save(alumno);
 				imagenRepository.delete(imagen);
@@ -624,6 +649,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new RuntimeException("No se encontró el alumno con ID: " + id);
 		}
 	}
+	
+    @Override
+    public void eliminarDocumentoDeAlumno(Long alumnoId, Long documentoId) {
+        Alumno alumno = alumnoRepository.findById(alumnoId)
+                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+        Documento documento = documentoRepository.findById(documentoId)
+                .orElseThrow(() -> new RuntimeException("Documento no encontrado con ID: " + documentoId));
+
+        if (!documento.getAlumno().getId().equals(alumnoId)) {
+            throw new RuntimeException("El documento no pertenece a este alumno.");
+        }
+
+        documentoService.eliminarDocumento(documento);
+
+        alumno.getDocumentos().remove(documento);
+        alumnoRepository.save(alumno);
+    }
 
 	/**
 	 * Elimina un alumno por su ID y elimina su imagen.
