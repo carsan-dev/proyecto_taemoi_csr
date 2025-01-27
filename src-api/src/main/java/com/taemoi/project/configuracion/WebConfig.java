@@ -32,15 +32,22 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
-		// Linux path
-		String linuxPath = "/var/www/app/imagenes/";
-
-		// Windows path using %USERPROFILE%
+		String linuxPathImagenes = "/var/www/app/imagenes/";
 		String userProfile = System.getenv("USERPROFILE");
-		String windowsPath = Paths.get(userProfile, "static_resources", "imagenes").toString().replace("\\", "/");
+		String windowsPathImagenes = Paths.get(userProfile, "static_resources", "imagenes").toString().replace("\\",
+				"/");
 
-		registry.addResourceHandler("/imagenes/**").addResourceLocations("file:" + linuxPath) // For Linux
-				.addResourceLocations("file:" + windowsPath + "/") // For Windows
-				.setCachePeriod(3600); // Optionally cache resources for one hour
+		registry.addResourceHandler("/imagenes/**")
+				.addResourceLocations("file:" + linuxPathImagenes, "file:" + windowsPathImagenes + "/")
+				.setCachePeriod(3600);
+
+		String linuxPathDocumentos = "/var/www/app/documentos/";
+		String windowsPathDocumentos = Paths.get(userProfile, "static_resources", "documentos").toString().replace("\\",
+				"/");
+
+		registry.addResourceHandler("/documentos/**")
+				.addResourceLocations("file:" + linuxPathDocumentos, "file:" + windowsPathDocumentos + "/")
+				.setCachePeriod(3600);
 	}
+
 }
