@@ -38,6 +38,7 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Documento;
 import com.taemoi.project.entidades.Imagen;
 import com.taemoi.project.errores.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.errores.alumno.AlumnoNoEncontradoException;
@@ -142,6 +143,13 @@ public class AlumnoController {
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 	
+    @GetMapping("/{alumnoId}/documentos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<Documento>> obtenerDocumentosDelAlumno(@PathVariable Long alumnoId) {
+        List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
+        return ResponseEntity.ok(documentos);
+    }
+	
     @GetMapping("/count")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
     public ResponseEntity<Long> countAlumnos() {
@@ -216,6 +224,21 @@ public class AlumnoController {
 			return new ResponseEntity<>("Error inesperado al crear el alumno", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+	
+    @PostMapping("/{alumnoId}/documentos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> subirDocumento(
+            @PathVariable Long alumnoId,
+            @RequestParam("archivo") MultipartFile archivo
+    ) {
+        try {
+            Documento documento = alumnoService.agregarDocumentoAAlumno(alumnoId, archivo);
+            return ResponseEntity.ok(documento);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Error al subir el documento: " + e.getMessage());
+        }
+    }
 
 	@PutMapping("/{id}/baja")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -292,6 +315,20 @@ public class AlumnoController {
 					.body("Error al eliminar la imagen del alumno.");
 		}
 	}
+	
+    @DeleteMapping("/{alumnoId}/documentos/{documentoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> eliminarDocumento(
+            @PathVariable Long alumnoId,
+            @PathVariable Long documentoId
+    ) {
+        try {
+            alumnoService.eliminarDocumentoDeAlumno(alumnoId, documentoId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
 	/**
 	 * Elimina un alumno existente y su imagen asociada.

@@ -107,6 +107,10 @@ public class Alumno {
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "foto_alumno_id")
 	private Imagen fotoAlumno;
+	
+	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<Documento> documentos = new ArrayList<>();
 
 	@Enumerated(EnumType.STRING)
 	private Deporte deporte;
@@ -358,6 +362,14 @@ public class Alumno {
 
 	public void setFotoAlumno(Imagen fotoAlumno) {
 		this.fotoAlumno = fotoAlumno;
+	}
+
+	public List<Documento> getDocumentos() {
+		return documentos;
+	}
+
+	public void setDocumentos(List<Documento> documentos) {
+		this.documentos = documentos;
 	}
 
 	public Deporte getDeporte() {
