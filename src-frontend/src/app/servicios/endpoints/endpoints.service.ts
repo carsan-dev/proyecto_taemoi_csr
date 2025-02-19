@@ -845,4 +845,27 @@ export class EndpointsService {
       )
       .pipe(catchError(this.manejarError));
   }
+
+  generarInformeAlumnosPorGrado(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/alumnosPorGrado`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeTaekwondoPorGrado(): Observable<Blob> {
+    return this.http.get(`${this.urlBase}/informes/taekwondoPorGrado`, {
+      withCredentials: true,
+      responseType: 'blob',
+    }).pipe(catchError(this.manejarError));
+  }
+
+  generarInformeKickboxingPorGrado(): Observable<Blob> {
+    return this.http.get(`${this.urlBase}/informes/kickboxingPorGrado`, {
+      withCredentials: true,
+      responseType: 'blob',
+    }).pipe(catchError(this.manejarError));
+  }
 }
