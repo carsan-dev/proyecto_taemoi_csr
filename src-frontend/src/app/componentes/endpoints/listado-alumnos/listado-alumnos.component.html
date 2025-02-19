@@ -2,6 +2,13 @@
   <div class="text-center mb-5">
     <h2 class="fw-bold">Listado de Alumnos</h2>
   </div>
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <button class="btn btn-info" (click)="abrirModalInforme()">
+        Generar Informe de Alumnos por Grado
+      </button>
+    </div>
+  </div>
   <div class="row g-4">
     <div class="col-md-6">
       <div class="card p-4 shadow-sm">
@@ -95,4 +102,7 @@
   </div>
   <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
     (pageChange)="cambiarPagina($event)" class="mt-4"></app-paginacion>
+  <app-informe-modal *ngIf="mostrarModalInforme" (cerrar)="cerrarModalInforme()"
+    (informeSeleccionado)="generarInformeSeleccionado($event)">
+  </app-informe-modal>
 </div>
