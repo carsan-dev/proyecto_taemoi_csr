@@ -1,5 +1,6 @@
 package com.taemoi.project.repositorios;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entidades.Deporte;
 
 /**
  * Repositorio para la entidad Alumno. Proporciona métodos para realizar
@@ -214,4 +216,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	// Método para obtener un alumno apto para examen por su ID
 	@Query("SELECT a FROM Alumno a WHERE a.aptoParaExamen = true AND a.id = :id")
 	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
+
+	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
 }
