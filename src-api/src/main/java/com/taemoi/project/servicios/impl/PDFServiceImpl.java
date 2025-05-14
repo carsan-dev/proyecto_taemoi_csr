@@ -1,24 +1,44 @@
 package com.taemoi.project.servicios.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entidades.Alumno;
 import com.taemoi.project.entidades.Deporte;
 import com.taemoi.project.entidades.Grado;
 import com.taemoi.project.entidades.TipoGrado;
 import com.taemoi.project.repositorios.AlumnoRepository;
+import com.taemoi.project.repositorios.GradoRepository;
+import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.PDFService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayOutputStream;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.taemoi.project.utils.FechaUtils;
 
 @Service
 public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+
+	@Autowired
+	private AlumnoService alumnoService;
+
+	@Autowired
+	private GradoRepository gradoRepository;
 
 	@Override
 	public byte[] generarInformeAlumnosPorGrado() {
@@ -42,30 +62,59 @@ public class PDFServiceImpl implements PDFService {
 	private byte[] generarInformePorGrado(List<Deporte> deportes) {
 		List<Alumno> alumnos = alumnoRepository.findByGradoNotNullAndDeporteIn(deportes);
 
+		LocalDate now = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				new Locale("es", "ES"));
+		String fechaGeneracion = now.format(formatter);
+
 		StringBuilder html = new StringBuilder();
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
-		html.append("<title>Listado de Alumnos por Grado</title>");
 		html.append("<style>");
-		html.append("body { font-family: Arial, sans-serif; margin: 30px; }");
-		html.append("h1, h2 { text-align: center; color: #333; }");
-		html.append(".grupo { margin-top: 20px; margin-bottom: 20px; }");
+		html.append("@page {");
+		html.append("  margin: 30mm 10mm 30mm 10mm;");
+		html.append("  @top-center {");
+		html.append("    content: 'Listado de Alumnos por Grado';");
+		html.append("    font-size: 24px;");
+		html.append("    font-weight: bold;");
+		html.append("  	 font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-left {");
+		html.append("    content: '" + fechaGeneracion + "';");
+		html.append("    font-size: 12px;");
+		html.append("  	 font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-right {");
+		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
+		html.append("    font-size: 12px;");
+		html.append("  	 font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("}");
+		html.append("body { font-family: Arial, sans-serif; }");
+		html.append(".grupo { margin-top: 20px; margin-bottom: 20px; page-break-inside: avoid; }");
 		html.append(
-				".encabezado-grupo { display: flex; align-items: center; background: #f0f0f0; padding: 10px; border: 1px solid #ccc; }");
+				".encabezado-grupo { display: table; table-layout: fixed; background: #f0f0f0; padding: 10px 5px; border: 1px solid #ccc; width: 100%; }");
+		html.append(".celda { display: table-cell; vertical-align: middle; }");
+		html.append(".izquierda { padding-left: 10px; width: 100%; }");
+		html.append(".derecha { padding-right: 10px; text-align: right; width: 50%; }");
 		html.append(
-				".cinturon { width: 80px; height: 20px; margin-right: 10px; border: 1px solid #000; position: relative; }");
-		html.append(".raya { position: absolute; top: 0; height: 100%; background-color: #FFD700; }");
-		html.append("table { width: 100%; border-collapse: collapse; margin-top: 5px; }");
+				".cinturon { display: inline-block; vertical-align: middle; width: 100px; height: 20px; margin-right: 10px; border: 1px solid #000; position: relative; }");
+		html.append(".cinturon.doble .superior, .cinturon.doble .inferior { width: 100%; height: 50%; }");
+		html.append(".cinturon.doble .superior { position: absolute; top: 0; }");
+		html.append(".cinturon.doble .inferior { position: absolute; bottom: 0; }");
+		html.append(".grado-nombre { display: inline-block; vertical-align: middle; margin-left: 10px;}");
+		html.append(
+				".raya { position: absolute; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; }");
+		html.append("table { width: 100%; border-collapse: collapse; }");
 		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
 		html.append("th { background-color: #666; color: #fff; }");
+		html.append(".kickboxing { padding-top: 30px; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
 		if (deportes.size() == 2 && deportes.contains(Deporte.TAEKWONDO) && deportes.contains(Deporte.KICKBOXING)) {
-
-			html.append("<h1>Informe General de Alumnos por Grado</h1>");
 
 			List<Alumno> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
 					.collect(Collectors.toList());
@@ -74,7 +123,7 @@ public class PDFServiceImpl implements PDFService {
 
 			List<Alumno> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
 					.collect(Collectors.toList());
-			html.append("<h2>Kickboxing</h2>");
+			html.append("<h2 class='kickboxing'>Kickboxing</h2>");
 			html.append(generarSeccion(alumnosKickboxing));
 
 		} else {
@@ -119,32 +168,74 @@ public class PDFServiceImpl implements PDFService {
 			alumnosGrado.sort(Comparator.comparing(a -> (a.getNombre() + " " + a.getApellidos()).toLowerCase()));
 			TipoGrado tipo = grado.getTipoGrado();
 
-			String baseColor = obtenerColorCinturon(tipo);
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
 
-			if (tipo.name().contains("DAN")) {
-				html.append("<div class='cinturon' style='background-color: " + baseColor + ";'>");
+			html.append("<div class='celda izquierda'>");
+			if (tipo.name().contains("ROJO_NEGRO")) {
+				String[] parts = tipo.name().split("_");
+				String colorInferior = obtenerColorPorNombre(parts[0]);
+				String colorSuperior = obtenerColorPorNombre(parts[1]);
+				int stripeCount = 0;
 				try {
-					String[] parts = tipo.name().split("_");
-					int danCount = Integer.parseInt(parts[1]);
-					int stripeWidth = 8;
+					stripeCount = Integer.parseInt(parts[2]);
+				} catch (Exception e) {
+				}
+				html.append("<div class='cinturon doble' style='position: relative;'>");
+				html.append(
+						"<div class='superior' style='background-color: " + colorSuperior + "; z-index: 1;'></div>");
+				html.append(
+						"<div class='inferior' style='background-color: " + colorInferior + "; z-index: 1;'></div>");
+				int stripeWidth = 6;
+				int gap = 2;
+				int initialMargin = 6;
+				for (int i = 0; i < stripeCount; i++) {
+					int rightOffset = initialMargin + i * (stripeWidth + gap);
+					html.append("<div class='raya' style='right:" + rightOffset + "px; width:" + stripeWidth
+							+ "px; z-index: 2;'></div>");
+				}
+				html.append("</div>");
+			} else if (tipo.name().contains("DAN")
+					|| (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+				html.append("<div class='cinturon' style='background-color: " + obtenerColorCinturon(tipo) + ";'>");
+				try {
+					int stripeCount = 0;
+					if (tipo.name().contains("DAN")) {
+						String[] parts = tipo.name().split("_");
+						stripeCount = Integer.parseInt(parts[1]);
+					}
+					int stripeWidth = 6;
 					int gap = 2;
-					for (int i = 0; i < danCount; i++) {
-						int rightOffset = i * (stripeWidth + gap);
-						html.append("<div class='raya' style='right: " + rightOffset + "px; width: " + stripeWidth
+					int initialMargin = 6;
+					for (int i = 0; i < stripeCount; i++) {
+						int rightOffset = initialMargin + i * (stripeWidth + gap);
+						html.append("<div class='raya' style='right:" + rightOffset + "px; width:" + stripeWidth
 								+ "px;'></div>");
 					}
 				} catch (Exception e) {
 				}
+				html.append("</div>");
+			} else if (tipo.name().contains("_")) {
+				String[] parts = tipo.name().split("_");
+				String colorSuperior = obtenerColorPorNombre(parts[1]);
+				String colorInferior = obtenerColorPorNombre(parts[0]);
+				html.append("<div class='cinturon doble'>");
+				html.append("<div class='superior' style='background-color: " + colorSuperior + ";'></div>");
+				html.append("<div class='inferior' style='background-color: " + colorInferior + ";'></div>");
 				html.append("</div>");
 			} else {
 				String cinturonStyle = obtenerEstiloCinturon(tipo);
 				html.append("<div class='cinturon' style='" + cinturonStyle + "'></div>");
 			}
 
-			html.append("<div>Grado: ").append(tipo.getNombre()).append(" (Total: ").append(alumnosGrado.size())
-					.append(")</div>");
+			html.append("<span class='grado-nombre'><strong>").append(tipo.getNombre()).append("</strong></span>");
+			html.append("</div>");
+			html.append("<div class='celda derecha'>");
+			html.append("<span class='total'>Alumnos: ").append(alumnosGrado.size()).append("</span>");
+			html.append("</div>");
+
+			html.append("<div style='clear: both;'></div>");
+
 			html.append("</div>");
 
 			html.append("<table>");
@@ -226,5 +317,262 @@ public class PDFServiceImpl implements PDFService {
 		default:
 			return "#CCCCCC";
 		}
+	}
+
+	private String obtenerColorPorNombre(String nombre) {
+		switch (nombre) {
+		case "BLANCO":
+			return "#FFFFFF";
+		case "BLANCO_AMARILLO":
+			return "#FFFACD";
+		case "AMARILLO":
+			return "#FFFF00";
+		case "AMARILLO_NARANJA":
+			return "#FFD700";
+		case "NARANJA":
+			return "#FFA500";
+		case "NARANJA_VERDE":
+			return "#ADFF2F";
+		case "VERDE":
+			return "#008000";
+		case "VERDE_AZUL":
+			return "#20B2AA";
+		case "AZUL":
+			return "#0000FF";
+		case "AZUL_ROJO":
+			return "#8A2BE2";
+		case "ROJO":
+			return "#FF0000";
+		case "NEGRO":
+			return "#000000";
+		default:
+			return "#CCCCCC";
+		}
+	}
+
+	@Override
+	public byte[] generarInformeLicencias() {
+		List<Alumno> alumnos = alumnoRepository.findAll();
+
+		LocalDate today = LocalDate.now();
+		List<Alumno> licenciasVigor = new ArrayList<>();
+		List<Alumno> licenciasCaducadas = new ArrayList<>();
+		List<Alumno> sinLicencia = new ArrayList<>();
+
+		for (Alumno alumno : alumnos) {
+			if (alumno.getTieneLicencia() != null && alumno.getTieneLicencia() && alumno.getFechaLicencia() != null) {
+				LocalDate fechaLicencia = Instant.ofEpochMilli(alumno.getFechaLicencia().getTime())
+						.atZone(ZoneId.systemDefault()).toLocalDate();
+				if (fechaLicencia.plusYears(1).isAfter(today)) {
+					licenciasVigor.add(alumno);
+				} else {
+					licenciasCaducadas.add(alumno);
+				}
+			} else {
+				sinLicencia.add(alumno);
+			}
+		}
+
+		StringBuilder html = new StringBuilder();
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append("@page {");
+		html.append("  margin: 30mm 10mm 30mm 10mm;");
+		html.append("  @top-center {");
+		html.append("    content: 'Informe de Licencias de Alumnos';");
+		html.append("    font-size: 24px;");
+		html.append("    font-weight: bold;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-left {");
+		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-right {");
+		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("}");
+		html.append("body { font-family: Arial, sans-serif; }");
+		html.append("h2 { margin-top: 20px; }");
+		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
+		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
+		html.append("th { background-color: #666; color: #fff; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		html.append("<h2>Licencias en Vigor</h2>");
+		html.append(generarTablaAlumnos(licenciasVigor));
+
+		html.append("<h2>Licencias Caducadas</h2>");
+		html.append(generarTablaAlumnos(licenciasCaducadas));
+
+		html.append("<h2>Sin Licencia</h2>");
+		html.append(generarTablaAlumnos(sinLicencia));
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return outputStream.toByteArray();
+	}
+
+	/**
+	 * Método auxiliar que genera una tabla HTML con la información del alumno.
+	 */
+	private String generarTablaAlumnos(List<Alumno> alumnos) {
+		StringBuilder html = new StringBuilder();
+		html.append("<table>");
+		html.append("<thead><tr>");
+		html.append("<th>Nombre y Apellidos</th>");
+		html.append("<th>Nº Expediente</th>");
+		html.append("<th>Nº Licencia</th>");
+		html.append("<th>Fecha de Licencia</th>");
+		html.append("<th>Grado</th>");
+		html.append("</tr></thead>");
+		html.append("<tbody>");
+		for (Alumno alumno : alumnos) {
+			html.append("<tr>");
+			html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+			html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+			String numLicencia = (alumno.getNumeroLicencia() != null) ? alumno.getNumeroLicencia().toString() : "N/A";
+			html.append("<td>").append(numLicencia).append("</td>");
+			String fechaLic = (alumno.getFechaLicencia() != null) ? alumno.getFechaLicencia().toString() : "N/A";
+			html.append("<td>").append(fechaLic).append("</td>");
+			String nombreGrado = (alumno.getGrado() != null && alumno.getGrado().getTipoGrado().getNombre() != null)
+					? alumno.getGrado().getTipoGrado().getNombre()
+					: "N/A";
+			html.append("<td>").append(nombreGrado).append("</td>");
+			html.append("</tr>");
+		}
+		html.append("</tbody>");
+		html.append("</table>");
+		return html.toString();
+	}
+
+	@Override
+	public byte[] generarInformeInfantilesAPromocionar() {
+		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+		LocalDate today = LocalDate.now();
+
+		List<Alumno> alumnosInfantiles = new ArrayList<>();
+		for (Alumno alumno : todosAlumnos) {
+			if (alumno.getFechaNacimiento() != null && Boolean.TRUE.equals(alumno.getAptoParaExamen())) {
+				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+				if (edad < 15) {
+					alumnosInfantiles.add(alumno);
+				}
+			}
+		}
+
+		Map<String, List<Alumno>> alumnosAgrupados = alumnosInfantiles.stream()
+				.collect(Collectors.groupingBy(alumno -> getPromotionGrade(alumno)));
+
+		StringBuilder html = new StringBuilder();
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append("@page {");
+		html.append("  margin: 30mm 10mm 30mm 10mm;");
+		html.append("  @top-center {");
+		html.append("    content: 'Listado de Alumnos Infantiles a Promocionar';");
+		html.append("    font-size: 24px;");
+		html.append("    font-weight: bold;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-left {");
+		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-right {");
+		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("}");
+		html.append("body { font-family: Arial, sans-serif; }");
+		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
+		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
+		html.append("th { background-color: #666; color: #fff; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		for (Map.Entry<String, List<Alumno>> entry : alumnosAgrupados.entrySet()) {
+			String promotionGrade = entry.getKey();
+			html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
+			html.append("<table>");
+			html.append("<thead><tr>");
+			html.append("<th>Nombre y Apellidos</th>");
+			html.append("<th>Nº Expediente</th>");
+			html.append("<th>Licencia Federativa</th>");
+			html.append("<th>Fecha Licencia</th>");
+			html.append("<th>Edad</th>");
+			html.append("<th>Derecho a Examen</th>");
+			html.append("</tr></thead>");
+			html.append("<tbody>");
+			for (Alumno alumno : entry.getValue()) {
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
+						.append("</td>");
+				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+				String licencia = alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia().toString() : "N/A";
+				html.append("<td>").append(licencia).append("</td>");
+				String fechaLic = alumno.getFechaLicencia() != null ? alumno.getFechaLicencia().toString() : "N/A";
+				html.append("<td>").append(fechaLic).append("</td>");
+			    int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			    html.append("<td>").append(edad).append("</td>");
+			    html.append("<td>")
+			        .append(alumno.getTieneDerechoExamen() ? "Sí" : "No")
+			        .append("</td>");
+				html.append("</tr>");
+			}
+			html.append("</tbody>");
+			html.append("</table>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return outputStream.toByteArray();
+	}
+
+	private String getPromotionGrade(Alumno alumno) {
+		if (alumno == null) {
+			return "N/A";
+		}
+
+		var nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
+		if (nuevoTipo == null) {
+			return "N/A";
+		}
+		var nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
+		return (nuevoGrado != null && nuevoGrado.getTipoGrado().getNombre() != null)
+				? nuevoGrado.getTipoGrado().getNombre()
+				: "N/A";
 	}
 }

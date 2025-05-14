@@ -63,6 +63,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		if (Boolean.TRUE.equals(savedProductoAlumno.getPagado())
+				&& (savedProductoAlumno.getConcepto().contains("DERECHO A EXAMEN")
+						|| savedProductoAlumno.getConcepto().contains("PASE DE GRADO POR RECOMPENSA"))) {
+			Alumno a = savedProductoAlumno.getAlumno();
+			a.setTieneDerechoExamen(true);
+			alumnoRepository.save(a);
+		}
 
 		// Convertir a DTO antes de retornar
 		return convertirADTO(savedProductoAlumno);
@@ -76,49 +83,64 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
-		ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
-				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+	    ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
+	            .orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
 
-		if (detallesDTO.getCantidad() != null) {
-			productoAlumno.setCantidad(detallesDTO.getCantidad());
-		}
-		if (detallesDTO.getPrecio() != null) {
-			productoAlumno.setPrecio(detallesDTO.getPrecio());
-		}
-		if (detallesDTO.getConcepto() != null) {
-			productoAlumno.setConcepto(detallesDTO.getConcepto());
-		}
-		if (detallesDTO.getNotas() != null) {
-			productoAlumno.setNotas(detallesDTO.getNotas());
-		}
+	    if (detallesDTO.getCantidad() != null) {
+	        productoAlumno.setCantidad(detallesDTO.getCantidad());
+	    }
+	    if (detallesDTO.getPrecio() != null) {
+	        productoAlumno.setPrecio(detallesDTO.getPrecio());
+	    }
+	    if (detallesDTO.getConcepto() != null) {
+	        productoAlumno.setConcepto(detallesDTO.getConcepto());
+	    }
+	    if (detallesDTO.getNotas() != null) {
+	        productoAlumno.setNotas(detallesDTO.getNotas());
+	    }
 
-		Boolean pagadoAntes = productoAlumno.getPagado();
-		Boolean pagadoAhora = detallesDTO.getPagado();
+	    Boolean pagadoAntes = productoAlumno.getPagado();
+	    Boolean pagadoAhora = detallesDTO.getPagado();
+	    if (pagadoAhora != null && !pagadoAhora.equals(pagadoAntes)) {
+	        productoAlumno.setPagado(pagadoAhora);
+	        productoAlumno.setFechaPago(pagadoAhora ? new Date() : null);
+	    }
 
-		if (pagadoAhora != null && !pagadoAhora.equals(pagadoAntes)) {
-			productoAlumno.setPagado(pagadoAhora);
-			if (pagadoAhora) {
-				productoAlumno.setFechaPago(new Date());
-			} else {
-				productoAlumno.setFechaPago(null);
-			}
-		}
+	    ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-		ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+	    alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
+	        .ifPresent(ac -> {
+	            ac.setCuantiaExamen(updatedProductoAlumno.getPrecio());
+	            ac.setPagado(updatedProductoAlumno.getPagado());
+	            alumnoConvocatoriaRepository.save(ac);
+	        });
 
-		alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
-				.ifPresent(alumnoConvocatoria -> {
-					alumnoConvocatoria.setCuantiaExamen(updatedProductoAlumno.getPrecio());
-					alumnoConvocatoria.setPagado(updatedProductoAlumno.getPagado());
-					alumnoConvocatoriaRepository.save(alumnoConvocatoria);
-				});
+	    Alumno alumno = updatedProductoAlumno.getAlumno();
+	    String concepto = updatedProductoAlumno.getConcepto() != null 
+	            ? updatedProductoAlumno.getConcepto() 
+	            : "";
+	    boolean esProductoExamen = concepto.contains("DERECHO A EXAMEN")
+	                             || concepto.contains("PASE DE GRADO POR RECOMPENSA");
+	    alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
+	    alumnoRepository.save(alumno);
 
-		return convertirADTO(updatedProductoAlumno);
+	    return convertirADTO(updatedProductoAlumno);
 	}
+
 
 	@Override
 	public void eliminarProductoAlumno(Long id) {
+		ProductoAlumno pa = productoAlumnoRepository.findById(id)
+				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+
 		productoAlumnoRepository.deleteById(id);
+
+		String concepto = pa.getConcepto() != null ? pa.getConcepto() : "";
+		if (concepto.contains("DERECHO A EXAMEN") || concepto.contains("PASE DE GRADO POR RECOMPENSA")) {
+			Alumno alumno = pa.getAlumno();
+			alumno.setTieneDerechoExamen(false);
+			alumnoRepository.save(alumno);
+		}
 	}
 
 	@Override
@@ -206,86 +228,89 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		productoAlumnoRepository.save(productoAlumno);
 	}
-	
+
 	@Override
 	public void crearAltaLicenciaFederativa(Alumno alumno) {
-	    Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
-	            .orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
+		Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
+				.orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
 
-	    Date fechaLicencia = alumno.getFechaLicencia();
-	    if (fechaLicencia == null) {
-	        throw new IllegalArgumentException("La fecha de licencia del alumno no puede ser nula.");
-	    }
-	    LocalDate fechaLicenciaLocal = fechaLicencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	    String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase();
-	    String mesAnio = mesEnEspanol + " " + fechaLicenciaLocal.getYear();
+		Date fechaLicencia = alumno.getFechaLicencia();
+		if (fechaLicencia == null) {
+			throw new IllegalArgumentException("La fecha de licencia del alumno no puede ser nula.");
+		}
+		LocalDate fechaLicenciaLocal = fechaLicencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES"))
+				.toUpperCase();
+		String mesAnio = mesEnEspanol + " " + fechaLicenciaLocal.getYear();
 
-	    boolean esSegundaMitadDelAno = fechaLicenciaLocal.getMonthValue() >= 9;
+		boolean esSegundaMitadDelAno = fechaLicenciaLocal.getMonthValue() >= 9;
 
-	    double precio;
-	    if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
-	        precio = esSegundaMitadDelAno ? 20.0 : 30.0;
-	    } else {
-	        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-	        if (edad < 14) {
-	            precio = esSegundaMitadDelAno ? 20.0 : 35.0;
-	        } else {
-	            precio = esSegundaMitadDelAno ? 35.0 : 46.0;
-	        }
-	    }
+		double precio;
+		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+			precio = esSegundaMitadDelAno ? 20.0 : 30.0;
+		} else {
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			if (edad < 14) {
+				precio = esSegundaMitadDelAno ? 20.0 : 35.0;
+			} else {
+				precio = esSegundaMitadDelAno ? 35.0 : 46.0;
+			}
+		}
 
-	    ProductoAlumno productoAlumno = new ProductoAlumno();
-	    productoAlumno.setAlumno(alumno);
-	    productoAlumno.setProducto(productoLicencia);
-	    productoAlumno.setConcepto("ALTA LICENCIA FEDERATIVA " + mesAnio);
-	    productoAlumno.setCantidad(1);
-	    productoAlumno.setPrecio(precio);
-	    productoAlumno.setFechaAsignacion(fechaLicencia);
-	    productoAlumno.setPagado(true);
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(productoLicencia);
+		productoAlumno.setConcepto("ALTA LICENCIA FEDERATIVA " + mesAnio);
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(precio);
+		productoAlumno.setFechaAsignacion(fechaLicencia);
+		productoAlumno.setPagado(true);
 
-	    productoAlumnoRepository.save(productoAlumno);
+		productoAlumnoRepository.save(productoAlumno);
 	}
 
 	@Override
 	public ProductoAlumnoDTO renovarLicencia(Long alumnoId) {
-	    Alumno alumno = alumnoRepository.findById(alumnoId)
-	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-	    Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
-	            .orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
+		Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
+				.orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
 
-	    LocalDate fechaActual = LocalDate.now();
-	    boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= 9;
-	    
-	    String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase();
+		LocalDate fechaActual = LocalDate.now();
+		boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= 9;
 
-	    double precio;
-	    if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
-	        precio = esSegundaMitadDelAno ? 20.0 : 30.0;
-	    } else {
-	        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-	        if (edad < 14) {
-	            precio = esSegundaMitadDelAno ? 20.0 : 35.0;
-	        } else {
-	            precio = esSegundaMitadDelAno ? 35.0 : 46.0;
-	        }
-	    }
+		String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES"))
+				.toUpperCase();
 
-	    ProductoAlumno productoAlumno = new ProductoAlumno();
-	    productoAlumno.setAlumno(alumno);
-	    productoAlumno.setProducto(productoLicencia);
-	    productoAlumno.setConcepto("RENOVACION " + productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
-	    productoAlumno.setCantidad(1);
-	    productoAlumno.setPrecio(precio);
-	    productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-	    productoAlumno.setPagado(true);
+		double precio;
+		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+			precio = esSegundaMitadDelAno ? 20.0 : 30.0;
+		} else {
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			if (edad < 14) {
+				precio = esSegundaMitadDelAno ? 20.0 : 35.0;
+			} else {
+				precio = esSegundaMitadDelAno ? 35.0 : 46.0;
+			}
+		}
 
-	    ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(productoLicencia);
+		productoAlumno.setConcepto(
+				"RENOVACION " + productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(precio);
+		productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+		productoAlumno.setPagado(true);
 
-	    alumno.setFechaLicencia(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-	    alumnoRepository.save(alumno);
+		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-	    return convertirADTO(savedProductoAlumno);
+		alumno.setFechaLicencia(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+		alumnoRepository.save(alumno);
+
+		return convertirADTO(savedProductoAlumno);
 	}
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
