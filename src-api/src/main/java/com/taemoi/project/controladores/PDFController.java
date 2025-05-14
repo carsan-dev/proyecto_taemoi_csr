@@ -31,32 +31,54 @@ public class PDFController {
 
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
-	
-    @GetMapping("/taekwondoPorGrado")
+
+	@GetMapping("/taekwondoPorGrado")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<byte[]> generarInformeTaekwondoPorGrado() {
-        byte[] pdfBytes = pdfService.generarInformeTaekwondoPorGrado();
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(ContentDisposition
-                .builder("inline")
-                .filename("informe_alumnos_taekwondo_por_grado.pdf")
-                .build());
+	public ResponseEntity<byte[]> generarInformeTaekwondoPorGrado() {
+		byte[] pdfBytes = pdfService.generarInformeTaekwondoPorGrado();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_alumnos_taekwondo_por_grado.pdf").build());
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
-    }
-    
-    @GetMapping("/kickboxingPorGrado")
+	}
+
+	@GetMapping("/kickboxingPorGrado")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-    public ResponseEntity<byte[]> generarInformeKickboxingPorGrado() {
-        byte[] pdfBytes = pdfService.generarInformeKickboxingPorGrado();
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(ContentDisposition
-                .builder("inline")
-                .filename("informe_alumnos_kickboxing_por_grado.pdf")
-                .build());
+	public ResponseEntity<byte[]> generarInformeKickboxingPorGrado() {
+		byte[] pdfBytes = pdfService.generarInformeKickboxingPorGrado();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_alumnos_kickboxing_por_grado.pdf").build());
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
-    }
+	}
+
+	@GetMapping("/licencias")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeLicencias() {
+		byte[] pdfBytes = pdfService.generarInformeLicencias();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_licencias_alumnos.pdf").build());
+
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/infantilesAPromocionar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeInfantilesAPromocionar() {
+		byte[] pdfBytes = pdfService.generarInformeInfantilesAPromocionar();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_alumnos_infantiles_promocion.pdf").build());
+
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
 }

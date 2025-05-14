@@ -118,6 +118,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			}
 			if (alumno != null) {
 				alumno.getConvocatorias().remove(alumnoConvocatoria);
+				alumno.setTieneDerechoExamen(false);
 				alumnoRepository.save(alumno);
 			}
 			alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
@@ -127,24 +128,23 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Override
 	public void actualizarGradosDeConvocatoria(Long convocatoriaId) {
-		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
-				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
+	    Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
-		List<AlumnoConvocatoria> alumnosConvocatoria = convocatoria.getAlumnosConvocatoria();
+	    for (AlumnoConvocatoria ac : convocatoria.getAlumnosConvocatoria()) {
+	        Alumno alumno = ac.getAlumno();
+	        TipoGrado nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
+	        if (nuevoTipo != null) {
+	            Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
+	            alumno.setGrado(nuevoGrado);
+	            alumno.setFechaGrado(new Date());
+	            alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
 
-		for (AlumnoConvocatoria alumnoConvocatoria : alumnosConvocatoria) {
-			Alumno alumno = alumnoConvocatoria.getAlumno();
+	            alumno.setTieneDerechoExamen(false);
 
-			TipoGrado nuevoGrado = alumnoService.calcularSiguienteGrado(alumno);
-			if (nuevoGrado != null) {
-				Grado nuevoGradoEntidad = gradoRepository.findByTipoGrado(nuevoGrado);
-
-				alumno.setGrado(nuevoGradoEntidad);
-				alumno.setFechaGrado(new Date());
-				alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
-				alumnoRepository.save(alumno);
-			}
-		}
+	            alumnoRepository.save(alumno);
+	        }
+	    }
 	}
 
 	@Override
@@ -176,6 +176,8 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
 					productoAlumnoRepository.save(productoAlumno);
 				});
+	    alumno.setTieneDerechoExamen(alumnoConvocatoriaDTO.getPagado());
+	    alumnoRepository.save(alumno);
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {

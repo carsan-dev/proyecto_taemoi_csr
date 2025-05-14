@@ -129,6 +129,9 @@ public class Alumno {
 	private Date fechaGrado;
 
 	private Boolean aptoParaExamen;
+	
+	@Column(nullable = false)
+	private Boolean tieneDerechoExamen = false;
 
 	@ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
 	private List<Grupo> grupos = new ArrayList<>();;
@@ -266,6 +269,14 @@ public class Alumno {
 
 	public void setAptoParaExamen(Boolean aptoParaExamen) {
 		this.aptoParaExamen = aptoParaExamen;
+	}
+	
+	public Boolean getTieneDerechoExamen() {
+		return tieneDerechoExamen;
+	}
+
+	public void setTieneDerechoExamen(Boolean tieneDerechoExamen) {
+		this.tieneDerechoExamen = tieneDerechoExamen;
 	}
 
 	public Date getFechaAlta() {
