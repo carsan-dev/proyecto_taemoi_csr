@@ -11,7 +11,13 @@ import { InformeModalComponent } from '../../generales/informe-modal/informe-mod
 @Component({
   selector: 'app-listado-alumnos',
   standalone: true,
-  imports: [CommonModule, PaginacionComponent, FormsModule, RouterLink, InformeModalComponent],
+  imports: [
+    CommonModule,
+    PaginacionComponent,
+    FormsModule,
+    RouterLink,
+    InformeModalComponent,
+  ],
   templateUrl: './listado-alumnos.component.html',
   styleUrl: './listado-alumnos.component.scss',
 })
@@ -27,6 +33,8 @@ export class ListadoAlumnosComponent implements OnInit {
   alumnoSeleccionado: number | null = null;
   mesAnoSeleccionadoIndividual: string = '';
   mostrarModalInforme: boolean = false;
+  modalTitle: string = '';
+  opcionesInforme: Array<{ value: string; label: string }> = [];
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
@@ -36,6 +44,23 @@ export class ListadoAlumnosComponent implements OnInit {
   }
 
   abrirModalInforme(): void {
+    this.modalTitle = 'Generar Informe';
+    this.opcionesInforme = [
+      { value: 'general', label: 'Informe de Alumnos por Grado General' },
+      {
+        value: 'taekwondo',
+        label: 'Informe de Alumnos de Taekwondo por Grado',
+      },
+      {
+        value: 'kickboxing',
+        label: 'Informe de Alumnos de Kickboxing por Grado',
+      },
+      { value: 'licencias', label: 'Informe de Estado de Licencias' },
+      {
+        value: 'infantiles',
+        label: 'Informe de Alumnos Infantiles a Promocionar',
+      },
+    ];
     this.mostrarModalInforme = true;
   }
 
@@ -92,7 +117,7 @@ export class ListadoAlumnosComponent implements OnInit {
         },
         error: () => {
           Swal.fire('Error', 'No se pudo generar el informe general', 'error');
-        }
+        },
       });
     } else if (tipo === 'taekwondo') {
       this.endpointsService.generarInformeTaekwondoPorGrado().subscribe({
@@ -101,8 +126,12 @@ export class ListadoAlumnosComponent implements OnInit {
           window.open(fileURL, '_blank');
         },
         error: () => {
-          Swal.fire('Error', 'No se pudo generar el informe de Taekwondo', 'error');
-        }
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de Taekwondo',
+            'error'
+          );
+        },
       });
     } else if (tipo === 'kickboxing') {
       this.endpointsService.generarInformeKickboxingPorGrado().subscribe({
@@ -111,9 +140,25 @@ export class ListadoAlumnosComponent implements OnInit {
           window.open(fileURL, '_blank');
         },
         error: () => {
-          Swal.fire('Error', 'No se pudo generar el informe de Kickboxing', 'error');
-        }
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de Kickboxing',
+            'error'
+          );
+        },
       });
+    } else if (tipo === 'licencias') {
+      this.endpointsService.generarInformeLicencias().subscribe((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url);
+      });
+    } else if (tipo === 'infantiles') {
+      this.endpointsService
+        .generarInformeInfantilesAPromocionar()
+        .subscribe((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          window.open(url);
+        });
     }
   }
 
@@ -215,7 +260,6 @@ export class ListadoAlumnosComponent implements OnInit {
       return;
     }
 
-
     this.endpointsService
       .cargarMensualidadesGenerales(this.mesAnoSeleccionado)
       .subscribe({
@@ -312,8 +356,18 @@ export class ListadoAlumnosComponent implements OnInit {
   private formatearNombreMensualidad(mesAno: string): string {
     const [anio, mes] = mesAno.split('-');
     const meses = [
-      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+      'ENERO',
+      'FEBRERO',
+      'MARZO',
+      'ABRIL',
+      'MAYO',
+      'JUNIO',
+      'JULIO',
+      'AGOSTO',
+      'SEPTIEMBRE',
+      'OCTUBRE',
+      'NOVIEMBRE',
+      'DICIEMBRE',
     ];
     return `${meses[parseInt(mes, 10) - 1]} ${anio}`;
   }

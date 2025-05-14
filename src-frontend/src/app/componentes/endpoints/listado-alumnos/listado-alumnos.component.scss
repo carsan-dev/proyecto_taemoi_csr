@@ -1,3 +1,45 @@
+.action-bar {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .dropdown {
+    .btn {
+      border: none;
+      font-weight: 500;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+    .dropdown-menu {
+      border: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      animation: fadeIn 0.3s ease-in-out;
+
+      .dropdown-item {
+        transition: background-color 0.3s ease;
+        &:hover {
+          background-color: #f0f0f0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Se mantienen los estilos existentes para el resto de componentes */
 .card {
   border-radius: 8px;
   border: none;
@@ -75,9 +117,9 @@
   }
 }
 
-input[type='text'],
+input[type="text"],
 select,
-input[type='month'] {
+input[type="month"] {
   border-radius: 6px;
   padding: 10px 12px;
   border: 1px solid #ced4da;

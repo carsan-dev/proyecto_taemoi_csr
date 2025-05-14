@@ -856,16 +856,38 @@ export class EndpointsService {
   }
 
   generarInformeTaekwondoPorGrado(): Observable<Blob> {
-    return this.http.get(`${this.urlBase}/informes/taekwondoPorGrado`, {
-      withCredentials: true,
-      responseType: 'blob',
-    }).pipe(catchError(this.manejarError));
+    return this.http
+      .get(`${this.urlBase}/informes/taekwondoPorGrado`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
   }
 
   generarInformeKickboxingPorGrado(): Observable<Blob> {
-    return this.http.get(`${this.urlBase}/informes/kickboxingPorGrado`, {
-      withCredentials: true,
-      responseType: 'blob',
-    }).pipe(catchError(this.manejarError));
+    return this.http
+      .get(`${this.urlBase}/informes/kickboxingPorGrado`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeLicencias(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/licencias`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeInfantilesAPromocionar(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/infantilesAPromocionar`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
   }
 }
