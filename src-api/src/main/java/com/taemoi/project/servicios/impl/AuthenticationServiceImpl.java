@@ -20,22 +20,30 @@ import com.taemoi.project.servicios.AuthenticationService;
 import com.taemoi.project.servicios.JwtService;
 import com.taemoi.project.servicios.LoginAttemptService;
 
-import lombok.RequiredArgsConstructor;
-
 /**
  * Implementación del servicio de autenticación que proporciona funcionalidades
  * para registro (signup) e inicio de sesión (signin) de usuarios.
  */
-@RequiredArgsConstructor
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
-	private final UsuarioRepository usuarioRepository = null;
+	private final UsuarioRepository usuarioRepository;
+	private final LoginAttemptService loginAttemptService;
+	private final PasswordEncoder passwordEncoder;
+	private final JwtService jwtService;
+	private final AuthenticationManager authenticationManager;
 
-	private final LoginAttemptService loginAttemptService = null;
-
-	private final PasswordEncoder passwordEncoder = null;
-	private final JwtService jwtService = null;
-	private final AuthenticationManager authenticationManager = null;
+	@Autowired
+	public AuthenticationServiceImpl(UsuarioRepository usuarioRepository,
+									 LoginAttemptService loginAttemptService,
+									 PasswordEncoder passwordEncoder,
+									 JwtService jwtService,
+									 AuthenticationManager authenticationManager) {
+		this.usuarioRepository = usuarioRepository;
+		this.loginAttemptService = loginAttemptService;
+		this.passwordEncoder = passwordEncoder;
+		this.jwtService = jwtService;
+		this.authenticationManager = authenticationManager;
+	}
 
 	/**
 	 * Registra a un nuevo usuario en el sistema.
