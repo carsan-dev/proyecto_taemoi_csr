@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $primary-color: #007bff;
 $border-radius: 10px;
 $button-padding: 10px 20px;
@@ -48,6 +50,6 @@ button.btn-secondary {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: darken(#6c757d, 10%);
+    background-color: color.adjust(#6c757d, $lightness: -10%);
   }
 }

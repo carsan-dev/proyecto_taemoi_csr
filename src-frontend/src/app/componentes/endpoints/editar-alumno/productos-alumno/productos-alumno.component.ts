@@ -7,7 +7,6 @@ import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ProductosAlumnoNotasComponent } from '../../../generales/productos-alumno-notas/productos-alumno-notas.component';
 
 @Component({
@@ -29,8 +28,7 @@ export class ProductosAlumnoComponent implements OnInit {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly endpointsService: EndpointsService,
-    private readonly location: Location,
-    private readonly modalService: NgbModal
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {

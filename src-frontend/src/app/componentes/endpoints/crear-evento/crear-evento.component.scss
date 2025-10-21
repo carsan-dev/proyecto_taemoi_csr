@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $primary-color: #007bff;
 $border-radius: 10px;
 $input-padding: 15px;
@@ -41,7 +43,7 @@ h2 {
   }
 
   &:hover .custom-file-label{
-    background-color: darken(#8c8f92, 10%);
+    background-color: color.adjust(#8c8f92, $lightness: -10%);
     transition: background-color 0.3s ease;
   }
 }
@@ -98,7 +100,7 @@ button[type="submit"] {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: darken($primary-color, 10%);
+    background-color: color.adjust($primary-color, $lightness: -10%);
   }
 }
 
@@ -114,6 +116,6 @@ button.btn-primary {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: darken($primary-color, 10%);
+    background-color: color.adjust($primary-color, $lightness: -10%);
   }
 }

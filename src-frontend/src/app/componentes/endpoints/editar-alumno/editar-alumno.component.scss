@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $primary-color: #007bff;
 $border-radius: 10px;
 $input-padding: 15px;
@@ -206,8 +208,8 @@ h3 {
   border-color: #dc3545;
 
   &:hover {
-    background-color: darken(#dc3545, 10%);
-    border-color: darken(#dc3545, 10%);
+    background-color: color.adjust(#dc3545, $lightness: -10%);
+    border-color: color.adjust(#dc3545, $lightness: -10%);
   }
 }
 
@@ -284,9 +286,9 @@ button[type="submit"] {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: darken(
+    background-color: color.adjust(
       $primary-color,
-      10%
+      $lightness: -10%
     ); // Cambiar color de hover para que sea igual al segundo componente
   }
 }

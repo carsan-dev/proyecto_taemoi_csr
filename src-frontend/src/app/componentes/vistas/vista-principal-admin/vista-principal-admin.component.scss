@@ -1,3 +1,5 @@
+@use "sass:color";
+
 @font-face {
   font-family: 'Osaka-Sans Serif';
   src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
@@ -69,7 +71,7 @@ $font-color: #343a40;
           border: none;
 
           &:hover {
-            background-color: darken($primary-color, 10%);
+            background-color: color.adjust($primary-color, $lightness: -10%);
             box-shadow: 0 0 8px rgba(0,123,255,0.5);
           }
         }
