@@ -11,6 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { Router } from '@angular/router';
+import { ScrollService } from '../../../servicios/generales/scroll.service';
 
 @Component({
   selector: 'app-crear-alumno',
@@ -30,7 +31,8 @@ export class CrearAlumnoComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly scrollService: ScrollService
   ) {}
 
   ngOnInit(): void {
@@ -98,6 +100,9 @@ export class CrearAlumnoComponent implements OnInit {
           text: 'Has creado un nuevo alumno',
           icon: 'success',
           timer: 2000,
+        }).then(() => {
+          // Scroll to top after success message
+          this.scrollService.scrollToTop();
         });
         this.router.navigate(['/alumnosListar']);
       },
@@ -106,6 +111,9 @@ export class CrearAlumnoComponent implements OnInit {
           title: 'Error en la petición',
           text: 'No has completado todos los campos requeridos',
           icon: 'error',
+        }).then(() => {
+          // Scroll to top to show form errors
+          this.scrollService.scrollToTop();
         });
       },
       complete: () => {},
