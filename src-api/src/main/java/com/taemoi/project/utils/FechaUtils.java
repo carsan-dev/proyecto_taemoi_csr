@@ -10,8 +10,8 @@ public class FechaUtils {
 	public static int calcularEdad(Date fechaNacimiento) {
 		LocalDate fechaNacimientoLocal;
 
-		if (fechaNacimiento instanceof java.sql.Date) {
-			fechaNacimientoLocal = ((java.sql.Date) fechaNacimiento).toLocalDate();
+		if (fechaNacimiento instanceof java.sql.Date date) {
+			fechaNacimientoLocal = date.toLocalDate();
 		} else {
 			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		}

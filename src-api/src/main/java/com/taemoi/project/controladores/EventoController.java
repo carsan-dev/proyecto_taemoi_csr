@@ -57,7 +57,7 @@ public class EventoController {
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearEvento(@RequestParam("nuevo") String eventoJson,
-			@RequestParam(value = "file", required = false) MultipartFile file) {
+			@RequestParam(required = false) MultipartFile file) {
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			Evento nuevoEvento = objectMapper.readValue(eventoJson, Evento.class);
@@ -74,7 +74,7 @@ public class EventoController {
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarEvento(@PathVariable @NonNull Long id,
-			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(required = false) MultipartFile file,
 			@RequestParam("eventoEditado") String eventoJson) {
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();

@@ -227,7 +227,7 @@ public class GrupoController {
 			@PathVariable @NonNull Long alumnoId) {
 		Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
 
-		if (!grupoOptional.isPresent()) {
+		if (grupoOptional.isEmpty()) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 

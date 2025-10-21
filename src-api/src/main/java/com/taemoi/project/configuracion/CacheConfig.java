@@ -18,14 +18,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 @EnableCaching
 public class CacheConfig {
 
-	/**
-	 * Configura el CacheManager con Caffeine.
-	 * Define diferentes caches con configuraciones específicas.
-	 *
-	 * @return CacheManager configurado
-	 */
-	@Bean
-	public CacheManager cacheManager() {
+    /**
+     * Configura el CacheManager con Caffeine.
+     * Define diferentes caches con configuraciones específicas.
+     *
+     * @return CacheManager configurado
+     */
+    @Bean
+    CacheManager cacheManager() {
 		CaffeineCacheManager cacheManager = new CaffeineCacheManager(
 			"alumnos",
 			"grupos",

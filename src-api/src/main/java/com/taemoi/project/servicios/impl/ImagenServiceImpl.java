@@ -3,7 +3,6 @@ package com.taemoi.project.servicios.impl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
@@ -44,7 +43,7 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		// Obtener la ruta correcta del directorio
-		Path rutaImagenes = Paths.get(directorioImagenes);
+		Path rutaImagenes = Path.of(directorioImagenes);
 
 		// Verificar si el directorio de imágenes existe, si no, crearlo
 		if (!Files.exists(rutaImagenes)) {
@@ -71,7 +70,7 @@ public class ImagenServiceImpl implements ImagenService {
 
 	public void eliminarImagenDeSistema(Imagen imagen) {
 		if (imagen != null && imagen.getRuta() != null) {
-			Path rutaArchivo = Paths.get(imagen.getRuta()); // Usar la ruta física
+			Path rutaArchivo = Path.of(imagen.getRuta()); // Usar la ruta física
 
 			try {
 				// Comprobar si el archivo existe antes de intentar eliminarlo

@@ -522,7 +522,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
 	private static String generarNif(Faker faker) {
-		String numbers = String.format("%08d", faker.number().numberBetween(0, 100000000));
+		String numbers = "%08d".formatted(faker.number().numberBetween(0, 100000000));
 		int index = Integer.parseInt(numbers) % 23;
 		char letter = LETTERS.charAt(index);
 		return numbers + letter;

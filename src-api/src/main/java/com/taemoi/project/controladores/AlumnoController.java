@@ -192,7 +192,7 @@ public class AlumnoController {
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
-			@RequestParam(value = "file", required = false) MultipartFile file) {
+			@RequestParam(required = false) MultipartFile file) {
 		try {
 			// Convertir el JSON recibido en AlumnoDTO
 			ObjectMapper objectMapper = new ObjectMapper();
@@ -229,7 +229,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> subirDocumento(
             @PathVariable Long alumnoId,
-            @RequestParam("archivo") MultipartFile archivo
+            @RequestParam MultipartFile archivo
     ) {
         try {
             Documento documento = alumnoService.agregarDocumentoAAlumno(alumnoId, archivo);
@@ -269,7 +269,7 @@ public class AlumnoController {
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable @NonNull Long id,
-			@Valid @RequestParam(value = "file", required = false) MultipartFile file,
+			@Valid @RequestParam(required = false) MultipartFile file,
 			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
 		logger.info("## AlumnoController :: modificarAlumno");
 		try {

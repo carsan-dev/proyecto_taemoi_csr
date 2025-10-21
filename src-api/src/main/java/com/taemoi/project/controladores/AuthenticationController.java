@@ -146,12 +146,11 @@ public class AuthenticationController {
 
 		Object principal = authentication.getPrincipal();
 
-		if (principal instanceof Usuario) {
-			Usuario usuario = (Usuario) principal;
+		if (principal instanceof Usuario usuario) {
 			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
 			return ResponseEntity.ok(roles);
-		} else if (principal instanceof UserDetails) {
-			String email = ((UserDetails) principal).getUsername();
+		} else if (principal instanceof UserDetails details) {
+			String email = details.getUsername();
 			Usuario usuario = usuarioService.encontrarPorEmail(email)
 					.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
 			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());

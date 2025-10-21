@@ -1,13 +1,13 @@
 package com.taemoi.project.configuracion;
 
-import java.nio.file.Paths;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Path;
 
 /**
  * Clase de configuración para la configuración de la aplicación web.
@@ -34,7 +34,7 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 		String linuxPathImagenes = "/var/www/app/imagenes/";
 		String userProfile = System.getenv("USERPROFILE");
-		String windowsPathImagenes = Paths.get(userProfile, "static_resources", "imagenes").toString().replace("\\",
+		String windowsPathImagenes = Path.of(userProfile, "static_resources", "imagenes").toString().replace("\\",
 				"/");
 
 		registry.addResourceHandler("/imagenes/**")
@@ -42,7 +42,7 @@ public class WebConfig implements WebMvcConfigurer {
 				.setCachePeriod(3600);
 
 		String linuxPathDocumentos = "/var/www/app/documentos/";
-		String windowsPathDocumentos = Paths.get(userProfile, "static_resources", "documentos").toString().replace("\\",
+		String windowsPathDocumentos = Path.of(userProfile, "static_resources", "documentos").toString().replace("\\",
 				"/");
 
 		registry.addResourceHandler("/documentos/**")

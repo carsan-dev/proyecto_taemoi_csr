@@ -1319,7 +1319,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	
 	private void asignarMensualidadGeneralSiCorresponde(Alumno alumno) {
 	    LocalDate fechaActual = LocalDate.now();
-	    String mesAno = fechaActual.getYear() + "-" + String.format("%02d", fechaActual.getMonthValue());
+	    String mesAno = fechaActual.getYear() + "-" + "%02d".formatted(fechaActual.getMonthValue());
 
 	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 
