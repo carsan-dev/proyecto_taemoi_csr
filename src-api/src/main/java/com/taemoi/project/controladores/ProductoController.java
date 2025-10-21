@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.entidades.Producto;
 import com.taemoi.project.servicios.ProductoService;
 
@@ -73,14 +75,14 @@ public class ProductoController {
 
 	@PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Producto> guardarProducto(@RequestBody Producto producto) {
+	public ResponseEntity<Producto> guardarProducto(@Valid @RequestBody Producto producto) {
 		Producto nuevoProducto = productoService.guardarProducto(producto);
 		return ResponseEntity.ok(nuevoProducto);
 	}
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto productoDetalles) {
+	public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @Valid @RequestBody Producto productoDetalles) {
 		try {
 			Producto productoActualizado = productoService.actualizarProducto(id, productoDetalles);
 			return ResponseEntity.ok(productoActualizado);

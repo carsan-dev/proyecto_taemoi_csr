@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.servicios.ProductoAlumnoService;
 
@@ -31,7 +33,7 @@ public class ProductoAlumnoController {
 	@PostMapping("/alumno/{alumnoId}/producto/{productoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<ProductoAlumnoDTO> asignarProductoAAlumno(@PathVariable Long alumnoId,
-			@PathVariable Long productoId, @RequestBody ProductoAlumnoDTO detallesDTO) {
+			@PathVariable Long productoId, @Valid @RequestBody ProductoAlumnoDTO detallesDTO) {
 
 		ProductoAlumnoDTO productoAlumnoDTO = productoAlumnoService.asignarProductoAAlumno(alumnoId, productoId,
 				detallesDTO);
@@ -48,7 +50,7 @@ public class ProductoAlumnoController {
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<ProductoAlumnoDTO> actualizarProductoAlumno(@PathVariable Long id,
-			@RequestBody ProductoAlumnoDTO detallesDTO) {
+			@Valid @RequestBody ProductoAlumnoDTO detallesDTO) {
 
 		ProductoAlumnoDTO actualizado = productoAlumnoService.actualizarProductoAlumno(id, detallesDTO);
 		return ResponseEntity.ok(actualizado);

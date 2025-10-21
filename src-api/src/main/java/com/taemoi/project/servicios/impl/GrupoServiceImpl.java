@@ -89,6 +89,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @return El objeto GrupoConAlumnosDTO que representa el grupo creado.
 	 */
 	@Override
+	@Transactional
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
 		grupo = grupoRepository.save(grupo);
@@ -105,6 +106,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 *         null si no se encuentra el grupo.
 	 */
 	@Override
+	@Transactional
 	public GrupoConAlumnosDTO actualizarGrupo(@NonNull Long id, GrupoConAlumnosDTO grupoDTO) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(id);
 		if (grupoOptional.isPresent()) {
@@ -124,6 +126,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @param id El ID del grupo a eliminar.
 	 */
 	@Override
+	@Transactional
 	public void eliminarGrupo(@NonNull Long id) {
 		grupoRepository.findById(id).ifPresent(grupo -> {
 			for (Turno turno : grupo.getTurnos()) {
@@ -182,6 +185,7 @@ public class GrupoServiceImpl implements GrupoService {
 	}
 
 	@Override
+	@Transactional
 	public void agregarAlumnosAGrupo(@NonNull Long grupoId, @NonNull List<Long> alumnosIds) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 
@@ -255,6 +259,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
 	 */
 	@Override
+	@Transactional
 	public void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
@@ -295,6 +300,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws GrupoNoEncontradoException Si el grupo o el turno no existen.
 	 */
 	@Override
+	@Transactional
 	public void agregarTurnoAGrupo(@NonNull Long grupoId, @NonNull Long turnoId) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 		Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
@@ -320,6 +326,7 @@ public class GrupoServiceImpl implements GrupoService {
 	 * @throws TurnoNoEncontradoException Si el turno no está asignado al grupo.
 	 */
 	@Override
+	@Transactional
 	public void eliminarTurnoDeGrupo(@NonNull Long grupoId, @NonNull Long turnoId) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 

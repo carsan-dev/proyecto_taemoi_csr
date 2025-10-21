@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -350,6 +351,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	@Override
+	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
 		// Verificar si el Alumno ya existe
 		Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
@@ -480,8 +482,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Finalmente, retornar el Alumno guardado
 		return alumnoGuardado;
 	}
-	
+
     @Override
+    @Transactional
     public Documento agregarDocumentoAAlumno(Long alumnoId, MultipartFile archivo) {
         Alumno alumno = alumnoRepository.findById(alumnoId)
                 .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
@@ -507,6 +510,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @throws RuntimeException Si no se encuentra el alumno con el ID especificado.
 	 */
 	@Override
+	@Transactional
 	public Alumno actualizarAlumno(@NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
 			MultipartFile nuevaImagen) {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
@@ -675,6 +679,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @return true si se elimina con éxito, false si el alumno no existe.
 	 */
 	@Override
+	@Transactional
 	public boolean eliminarAlumno(@NonNull Long id) {
 		return alumnoRepository.findById(id).map(alumno -> {
 			Imagen imagen = alumno.getFotoAlumno();
@@ -752,6 +757,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	@Override
+	@Transactional
 	public void asignarAlumnoATurno(Long alumnoId, Long turnoId) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
@@ -1023,6 +1029,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	@Override
+	@Transactional
 	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
@@ -1063,6 +1070,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	@Override
+	@Transactional
 	public void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId) {
 		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository
 				.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)

@@ -640,32 +640,43 @@ public class PDFServiceImpl implements PDFService {
 		try {
 			builder.run();
 		} catch (Exception e) {
+			System.err.println("Error generando PDF de adultos a promocionar: " + e.getMessage());
 			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe PDF de adultos a promocionar", e);
 		}
 		return os.toByteArray();
 	}
 
 	private String getPromotionGrade(Alumno alumno) {
-		if (alumno == null) {
-			return "N/A";
+		if (alumno == null || alumno.getGrado() == null) {
+			return "Sin Grado Asignado";
 		}
 
 		var nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
 		if (nuevoTipo == null) {
-			return "N/A";
+			return "Grado Máximo Alcanzado";
 		}
 		var nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-		return (nuevoGrado != null && nuevoGrado.getTipoGrado().getNombre() != null)
+		if (nuevoGrado == null) {
+			return "Grado No Encontrado";
+		}
+		return (nuevoGrado.getTipoGrado() != null && nuevoGrado.getTipoGrado().getNombre() != null)
 				? nuevoGrado.getTipoGrado().getNombre()
 				: "N/A";
 	}
 
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, String grupo, String turno) throws IOException {
+		// Normalize the turno string to handle different dash characters
+		String normalizedTurno = turno.replace('–', '-').replace('—', '-');
+
 		List<Alumno> alumnos = alumnoRepository.findAll().stream()
+				.filter(a -> a.getFechaNacimiento() != null && a.getTurnos() != null && !a.getTurnos().isEmpty())
 				.filter(a -> a.getTurnos().stream()
-						.anyMatch(t -> t.getDiaSemana().equalsIgnoreCase(grupo)
-								&& (t.getHoraInicio().toString() + "–" + t.getHoraFin().toString()).equals(turno)))
+						.anyMatch(t -> t.getDiaSemana() != null && t.getHoraInicio() != null && t.getHoraFin() != null
+								&& t.getDiaSemana().equalsIgnoreCase(grupo)
+								&& normalizedTurno.contains(t.getHoraInicio().toString())
+								&& normalizedTurno.contains(t.getHoraFin().toString())))
 				.collect(Collectors.toList());
 		int totalAlumnos = alumnos.size();
 
@@ -713,7 +724,7 @@ public class PDFServiceImpl implements PDFService {
 			boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
 			String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
 			String licClass = licOk ? "" : "licencia-no";
-			String cintClass = "cinturon-" + a.getGrado().getTipoGrado().name().toLowerCase();
+			String cintClass = "cinturon-" + extractPrimaryBeltColor(a.getGrado().getTipoGrado());
 
 			html.append("<tr>").append("<td class='").append(cintClass).append("'></td>").append("<td class='")
 					.append(licClass).append("'>").append(lic).append("</td>").append("<td>").append(edad)
@@ -748,8 +759,39 @@ public class PDFServiceImpl implements PDFService {
 		builder.toStream(os);
 		try {
 			builder.run();
-		} catch (Throwable ignored) {
+		} catch (Throwable e) {
+			System.err.println("Error generando PDF de asistencia: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el listado de asistencia PDF", e);
 		}
 		return os.toByteArray();
+	}
+
+	/**
+	 * Extracts the primary color from a TipoGrado for CSS class naming.
+	 * For combined grades like BLANCO_AMARILLO, returns the first color.
+	 * For black belt grades (NEGRO_X_DAN or ROJO_NEGRO_X_PUM), returns "negro".
+	 */
+	private String extractPrimaryBeltColor(TipoGrado tipoGrado) {
+		if (tipoGrado == null) {
+			return "blanco";
+		}
+
+		String enumName = tipoGrado.name();
+
+		// Handle black belt grades (NEGRO_X_DAN)
+		if (enumName.startsWith("NEGRO_")) {
+			return "negro";
+		}
+
+		// Handle ROJO_NEGRO grades (pre-black belt)
+		if (enumName.startsWith("ROJO_NEGRO_")) {
+			return "negro";
+		}
+
+		// Extract first color from combined grades (e.g., BLANCO_AMARILLO -> blanco)
+		String firstPart = enumName.split("_")[0].toLowerCase();
+
+		return firstPart;
 	}
 }

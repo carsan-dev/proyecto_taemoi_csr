@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entidades.Turno;
@@ -91,7 +93,7 @@ public class TurnoController {
 	 */
 	@PostMapping("/crear")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> crearTurnoSinGrupo(@RequestBody TurnoDTO turnoDTO) {
+	public ResponseEntity<?> crearTurnoSinGrupo(@Valid @RequestBody TurnoDTO turnoDTO) {
 		turnoService.crearTurnoSinGrupo(turnoDTO);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
@@ -105,7 +107,7 @@ public class TurnoController {
 	 */
 	@PostMapping("/crear-asignando-grupo")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> crearTurnoConGrupo(@RequestBody TurnoDTO turnoDTO) {
+	public ResponseEntity<?> crearTurnoConGrupo(@Valid @RequestBody TurnoDTO turnoDTO) {
 		turnoService.crearTurnoYAsignarAGrupo(turnoDTO);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
@@ -121,7 +123,7 @@ public class TurnoController {
 	@PutMapping("/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<TurnoDTO> actualizarTurno(@PathVariable @NonNull Long turnoId,
-			@RequestBody TurnoDTO turnoDTO) {
+			@Valid @RequestBody TurnoDTO turnoDTO) {
 		TurnoDTO turnoActualizadoDTO = turnoService.actualizarTurno(turnoId, turnoDTO);
 		if (turnoActualizadoDTO != null) {
 			return ResponseEntity.ok(turnoActualizadoDTO);

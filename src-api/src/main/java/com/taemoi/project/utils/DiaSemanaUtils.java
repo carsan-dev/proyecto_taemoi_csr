@@ -10,6 +10,9 @@ public class DiaSemanaUtils {
 		case "martes" -> DayOfWeek.TUESDAY;
 		case "miercoles", "miércoles" -> DayOfWeek.WEDNESDAY;
 		case "jueves" -> DayOfWeek.THURSDAY;
+		case "viernes" -> DayOfWeek.FRIDAY;
+		case "sabado", "sábado" -> DayOfWeek.SATURDAY;
+		case "domingo" -> DayOfWeek.SUNDAY;
 		default -> throw new IllegalArgumentException("Grupo desconocido: " + grupo);
 		};
 	}
