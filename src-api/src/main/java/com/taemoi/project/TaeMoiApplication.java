@@ -2,7 +2,6 @@ package com.taemoi.project;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.springframework.boot.SpringApplication;
@@ -16,7 +15,7 @@ public class TaeMoiApplication {
 	public static void main(String[] args) {
 		if (System.getenv("AWS_EXECUTION_ENV") == null) {
 			int maxDepth = 5;
-			Optional<Path> envPathOptional = findEnvFile(Paths.get("").toAbsolutePath(), maxDepth);
+			Optional<Path> envPathOptional = findEnvFile(Path.of("").toAbsolutePath(), maxDepth);
 			if (envPathOptional.isPresent()) {
 				Path envPath = envPathOptional.get();
 				Dotenv dotenv = Dotenv.configure().directory(envPath.getParent().toString()).load();

@@ -106,7 +106,7 @@ public class PDFController {
 
 		String safeTurno = turno.replace('–', '-');
 
-		String filename = String.format("Asistencia-%s-%s-%d-%02d.pdf", grupo, safeTurno, year, month);
+		String filename = "Asistencia-%s-%s-%d-%02d.pdf".formatted(grupo, safeTurno, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");

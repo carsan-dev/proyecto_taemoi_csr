@@ -1,5 +1,6 @@
 package com.taemoi.project.entidades;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,8 @@ import jakarta.validation.constraints.Size;
 @Entity
 public class Usuario implements UserDetails {
 
-	private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

@@ -3,7 +3,6 @@ package com.taemoi.project.servicios.impl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
@@ -49,7 +48,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 			throw new IllegalStateException("Sistema operativo no soportado: " + os);
 		}
 
-		Path rutaBaseDocumentos = Paths.get(directorioDocumentos, "Documentos_Alumnos_Moiskimdo");
+		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Alumnos_Moiskimdo");
 		if (!Files.exists(rutaBaseDocumentos)) {
 			Files.createDirectories(rutaBaseDocumentos);
 		}
@@ -70,8 +69,8 @@ public class DocumentoServiceImpl implements DocumentoService {
 		Path rutaArchivoFinal = rutaCarpetaAlumno.resolve(nombreArchivoFinal);
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
 
-		String urlAcceso = String.format("%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s", baseUrl, carpetaAlumno,
-				nombreArchivoFinal);
+		String urlAcceso = "%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s".formatted(baseUrl, carpetaAlumno,
+                nombreArchivoFinal);
 
 		Documento documento = new Documento();
 		documento.setNombre(nombreArchivoFinal);
@@ -86,7 +85,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public void eliminarDocumento(Documento documento) {
 		if (documento != null && documento.getRuta() != null) {
-			Path rutaArchivo = Paths.get(documento.getRuta());
+			Path rutaArchivo = Path.of(documento.getRuta());
 			try {
 				if (Files.exists(rutaArchivo)) {
 					Files.delete(rutaArchivo);
@@ -105,7 +104,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 					try {
 						if (Files.isDirectory(carpetaAlumno)) {
 							try (Stream<Path> filesInDir = Files.list(carpetaAlumno)) {
-								boolean estaVacia = !filesInDir.findAny().isPresent();
+								boolean estaVacia = filesInDir.findAny().isEmpty();
 								if (estaVacia) {
 									Files.delete(carpetaAlumno);
 								}
