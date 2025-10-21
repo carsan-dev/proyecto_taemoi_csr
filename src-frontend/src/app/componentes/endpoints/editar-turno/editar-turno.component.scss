@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $primary-color: #007bff;
 $border-radius: 10px;
 $input-padding: 15px;
@@ -73,7 +75,7 @@ button[type="submit"] {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: darken($primary-color, 10%);
+    background-color: color.adjust($primary-color, $lightness: -10%);
   }
 }
 
