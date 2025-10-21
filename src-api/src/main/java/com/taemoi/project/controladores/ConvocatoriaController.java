@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entidades.Deporte;
@@ -57,7 +59,7 @@ public class ConvocatoriaController {
 
 	@PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<ConvocatoriaDTO> crearConvocatoria(@RequestBody ConvocatoriaDTO convocatoriaDTO) {
+	public ResponseEntity<ConvocatoriaDTO> crearConvocatoria(@Valid @RequestBody ConvocatoriaDTO convocatoriaDTO) {
 		ConvocatoriaDTO nuevaConvocatoria = convocatoriaService.crearConvocatoria(convocatoriaDTO);
 		return ResponseEntity.status(HttpStatus.CREATED).body(nuevaConvocatoria);
 	}
@@ -86,7 +88,7 @@ public class ConvocatoriaController {
 	@PutMapping("/alumno/{alumnoConvocatoriaId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<Void> actualizarAlumnoConvocatoria(@PathVariable Long alumnoConvocatoriaId,
-			@RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
+			@Valid @RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);
 		return ResponseEntity.ok().build();
 	}

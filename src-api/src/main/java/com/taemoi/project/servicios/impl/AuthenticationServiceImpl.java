@@ -20,47 +20,22 @@ import com.taemoi.project.servicios.AuthenticationService;
 import com.taemoi.project.servicios.JwtService;
 import com.taemoi.project.servicios.LoginAttemptService;
 
-import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Implementación del servicio de autenticación que proporciona funcionalidades
  * para registro (signup) e inicio de sesión (signin) de usuarios.
  */
-@Builder
+@RequiredArgsConstructor
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
-	/**
-	 * Inyección del repositorio de usuario.
-	 */
-	@Autowired
-	private UsuarioRepository usuarioRepository;
+	private final UsuarioRepository usuarioRepository = null;
 
-	@Autowired
-	private LoginAttemptService loginAttemptService;
+	private final LoginAttemptService loginAttemptService = null;
 
-	private final PasswordEncoder passwordEncoder;
-	private final JwtService jwtService;
-	private final AuthenticationManager authenticationManager;
-
-	/**
-	 * Constructor de la clase AuthenticationServiceImpl.
-	 *
-	 * @param usuarioRepository     Repositorio de usuarios para acceder a los datos
-	 *                              de los usuarios.
-	 * @param passwordEncoder       Codificador de contraseñas para codificar las
-	 *                              contraseñas de los usuarios.
-	 * @param jwtService            Servicio JWT para generar tokens de
-	 *                              autenticación.
-	 * @param authenticationManager Administrador de autenticación para autenticar a
-	 *                              los usuarios.
-	 */
-	public AuthenticationServiceImpl(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
-			JwtService jwtService, AuthenticationManager authenticationManager) {
-		this.usuarioRepository = usuarioRepository;
-		this.passwordEncoder = passwordEncoder;
-		this.jwtService = jwtService;
-		this.authenticationManager = authenticationManager;
-	}
+	private final PasswordEncoder passwordEncoder = null;
+	private final JwtService jwtService = null;
+	private final AuthenticationManager authenticationManager = null;
 
 	/**
 	 * Registra a un nuevo usuario en el sistema.

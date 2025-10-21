@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.dtos.request.EmailRequest;
 import com.taemoi.project.servicios.EmailService;
 
@@ -17,7 +19,7 @@ public class EmailController {
 	private EmailService emailService;
 
 	@PostMapping("/enviar")
-	public void sendEmail(@RequestBody EmailRequest emailRequest) {
+	public void sendEmail(@Valid @RequestBody EmailRequest emailRequest) {
 		String htmlMsg = "<!DOCTYPE html>" + "<html>" + "<head>" + "<style>"
 				+ "body {font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 20px;}"
 				+ ".container {max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 20px;}"

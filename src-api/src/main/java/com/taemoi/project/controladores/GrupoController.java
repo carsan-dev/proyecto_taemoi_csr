@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
@@ -128,7 +130,7 @@ public class GrupoController {
 	 */
 	@PostMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<GrupoConAlumnosDTO> crearGrupo(@RequestBody GrupoConAlumnosDTO grupoDTO) {
+	public ResponseEntity<GrupoConAlumnosDTO> crearGrupo(@Valid @RequestBody GrupoConAlumnosDTO grupoDTO) {
 		grupoDTO.setAlumnos(null);
 		GrupoConAlumnosDTO nuevoGrupoDTO = grupoService.crearGrupo(grupoDTO);
 		return new ResponseEntity<>(nuevoGrupoDTO, HttpStatus.CREATED);
@@ -147,7 +149,7 @@ public class GrupoController {
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<GrupoConAlumnosDTO> actualizarGrupo(@PathVariable @NonNull Long id,
-			@RequestBody GrupoConAlumnosDTO grupoDTO) {
+			@Valid @RequestBody GrupoConAlumnosDTO grupoDTO) {
 		GrupoConAlumnosDTO grupoActualizadoDTO = grupoService.actualizarGrupo(id, grupoDTO);
 		if (grupoActualizadoDTO != null) {
 			return new ResponseEntity<>(grupoActualizadoDTO, HttpStatus.OK);
