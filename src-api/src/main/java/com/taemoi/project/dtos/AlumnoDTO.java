@@ -2,10 +2,10 @@ package com.taemoi.project.dtos;
 
 import java.util.Date;
 
-import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Deporte;
-import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.TipoTarifa;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.entities.TipoTarifa;
 
 public class AlumnoDTO {
 	private final Long id;

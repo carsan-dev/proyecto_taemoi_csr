@@ -2,7 +2,7 @@ package com.taemoi.project.dtos;
 
 import java.util.Date;
 
-import com.taemoi.project.entidades.Deporte;
+import com.taemoi.project.entities.Deporte;
 
 public class ConvocatoriaDTO {
 

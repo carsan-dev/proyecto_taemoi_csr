@@ -1,0 +1,5 @@
+package com.taemoi.project.entities;
+
+public enum TipoTarifa {
+	ADULTO, ADULTO_GRUPO, FAMILIAR, INFANTIL, INFANTIL_GRUPO, HERMANOS, PADRES_HIJOS, PILATES, DEFENSA_PERSONAL_FEMENINA
+}

@@ -19,8 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
-import com.taemoi.project.repositorios.UsuarioRepository;
-import com.taemoi.project.servicios.impl.AuthenticationServiceImpl;
+import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 
 @SpringBootTest
 public class AuthenticationServiceImplTest {

@@ -23,16 +23,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Categoria;
-import com.taemoi.project.entidades.Grado;
-//import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.TipoGrado;
-import com.taemoi.project.entidades.TipoTarifa;
-import com.taemoi.project.repositorios.AlumnoRepository;
-import com.taemoi.project.repositorios.CategoriaRepository;
-import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.servicios.impl.AlumnoServiceImpl;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Categoria;
+import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.CategoriaRepository;
+import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.services.impl.AlumnoServiceImpl;
 import com.taemoi.project.utils.FechaUtils;
 
 @SpringBootTest

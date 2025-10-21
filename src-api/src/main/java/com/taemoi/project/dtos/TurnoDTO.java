@@ -3,7 +3,7 @@ package com.taemoi.project.dtos;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.taemoi.project.entidades.Turno;
+import com.taemoi.project.entities.Turno;
 
 public class TurnoDTO {
 

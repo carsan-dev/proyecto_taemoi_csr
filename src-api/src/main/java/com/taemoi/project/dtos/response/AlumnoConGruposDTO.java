@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entities.Alumno;
 
 public class AlumnoConGruposDTO {
 	private Long id;

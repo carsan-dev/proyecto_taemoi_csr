@@ -6,11 +6,12 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { loadingInterceptor } from './interceptors/loading.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([loadingInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([errorInterceptor, loadingInterceptor])),
     provideAnimationsAsync(),
     importProvidersFrom(NgxSpinnerModule.forRoot()),
   ],
