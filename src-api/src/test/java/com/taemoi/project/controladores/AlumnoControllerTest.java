@@ -11,10 +11,12 @@ import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.repositorios.AlumnoRepository;
-import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.servicios.AlumnoService;
+import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.services.AlumnoService;
 // import com.taemoi.project.utils.FechaUtils;
 
 @SpringBootTest

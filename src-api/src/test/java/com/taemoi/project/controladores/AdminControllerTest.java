@@ -15,9 +15,10 @@ import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 
+import com.taemoi.project.controllers.AdminController;
 import com.taemoi.project.dtos.UsuarioDTO;
-import com.taemoi.project.errores.usuario.ListaUsuariosVaciaException;
-import com.taemoi.project.servicios.UsuarioService;
+import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
+import com.taemoi.project.services.UsuarioService;
 
 @SpringBootTest
 class AdminControllerTest {

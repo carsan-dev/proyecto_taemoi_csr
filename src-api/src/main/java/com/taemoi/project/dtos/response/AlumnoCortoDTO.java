@@ -1,7 +1,7 @@
 package com.taemoi.project.dtos.response;
 
-import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Imagen;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Imagen;
 
 public class AlumnoCortoDTO {
 	private Long id;

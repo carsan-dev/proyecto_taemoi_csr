@@ -1,6 +1,6 @@
 package com.taemoi.project.dtos.response;
 
-import com.taemoi.project.entidades.Turno;
+import com.taemoi.project.entities.Turno;
 
 public class TurnoCortoDTO {
 	private String diaSemana;

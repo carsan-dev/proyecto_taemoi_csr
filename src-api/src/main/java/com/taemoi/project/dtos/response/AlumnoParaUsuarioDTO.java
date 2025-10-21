@@ -1,6 +1,6 @@
 package com.taemoi.project.dtos.response;
 
-import com.taemoi.project.entidades.Alumno;
+import com.taemoi.project.entities.Alumno;
 
 public class AlumnoParaUsuarioDTO {
 	private Long id;

@@ -9,8 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.taemoi.project.entidades.CustomUserDetails;
-import com.taemoi.project.servicios.impl.JwtServiceImpl;
+import com.taemoi.project.entities.CustomUserDetails;
+import com.taemoi.project.services.impl.JwtServiceImpl;
+
 
 @SpringBootTest
 public class JwtServiceImplTest {
