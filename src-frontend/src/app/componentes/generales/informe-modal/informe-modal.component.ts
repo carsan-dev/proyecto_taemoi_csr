@@ -16,7 +16,8 @@ export class InformeModalComponent {
     { value: 'taekwondo', label: 'Informe Taekwondo por Grado' },
     { value: 'kickboxing', label: 'Informe Kickboxing por Grado' },
     { value: 'licencias', label: 'Informe Estado de Licencias' },
-    { value: 'infantiles', label: 'Informe Alumnos Infantiles Promoción' }
+    { value: 'infantiles', label: 'Informe Alumnos Infantiles Promoción' },
+    { value: 'adultos', label: 'Informe Alumnos Adultos Promoción' }
   ];
 
   modalVisible = false;
