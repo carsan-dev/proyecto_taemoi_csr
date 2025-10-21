@@ -1,5 +1,7 @@
 package com.taemoi.project.controladores;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -8,9 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.servicios.PDFService;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/informes")
@@ -81,4 +86,33 @@ public class PDFController {
 
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
+
+	@GetMapping("/adultosAPromocionar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeAdultosAPromocionar() {
+		byte[] pdfBytes = pdfService.generarInformeAdultosAPromocionar();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_alumnos_adultos_promocion.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/asistencia")
+	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
+			@RequestParam String turno, HttpServletResponse response) throws IOException {
+
+		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo, turno);
+
+		String safeTurno = turno.replace('–', '-');
+
+		String filename = String.format("Asistencia-%s-%s-%d-%02d.pdf", grupo, safeTurno, year, month);
+
+		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+		response.getOutputStream().write(pdfBytes);
+		response.getOutputStream().flush();
+	}
+
 }

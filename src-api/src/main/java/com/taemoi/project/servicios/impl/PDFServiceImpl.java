@@ -1,10 +1,16 @@
 package com.taemoi.project.servicios.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
+import java.time.Period;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +32,7 @@ import com.taemoi.project.repositorios.AlumnoRepository;
 import com.taemoi.project.repositorios.GradoRepository;
 import com.taemoi.project.servicios.AlumnoService;
 import com.taemoi.project.servicios.PDFService;
+import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
 
 @Service
@@ -535,11 +542,9 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>").append(licencia).append("</td>");
 				String fechaLic = alumno.getFechaLicencia() != null ? alumno.getFechaLicencia().toString() : "N/A";
 				html.append("<td>").append(fechaLic).append("</td>");
-			    int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			    html.append("<td>").append(edad).append("</td>");
-			    html.append("<td>")
-			        .append(alumno.getTieneDerechoExamen() ? "Sí" : "No")
-			        .append("</td>");
+				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+				html.append("<td>").append(edad).append("</td>");
+				html.append("<td>").append(alumno.getTieneDerechoExamen() ? "Sí" : "No").append("</td>");
 				html.append("</tr>");
 			}
 			html.append("</tbody>");
@@ -561,6 +566,85 @@ public class PDFServiceImpl implements PDFService {
 		return outputStream.toByteArray();
 	}
 
+	@Override
+	public byte[] generarInformeAdultosAPromocionar() {
+		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+		LocalDate today = LocalDate.now();
+
+		// Filtramos los adultos aptos
+		List<Alumno> alumnosAdultos = todosAlumnos.stream()
+				.filter(a -> a.getFechaNacimiento() != null && Boolean.TRUE.equals(a.getAptoParaExamen()))
+				.filter(a -> FechaUtils.calcularEdad(a.getFechaNacimiento()) >= 15).collect(Collectors.toList());
+
+		// Agrupamos por grado de promoción
+		Map<String, List<Alumno>> alumnosAgrupados = alumnosAdultos.stream()
+				.collect(Collectors.groupingBy(this::getPromotionGrade));
+
+		StringBuilder html = new StringBuilder();
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append("@page {");
+		html.append("  margin: 30mm 10mm 30mm 10mm;");
+		html.append("  @top-center {");
+		html.append("    content: 'Listado de Alumnos Adultos a Promocionar';");
+		html.append("    font-size: 24px;");
+		html.append("    font-weight: bold;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-left {");
+		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("  @bottom-right {");
+		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
+		html.append("    font-size: 12px;");
+		html.append("    font-family: Arial, sans-serif;");
+		html.append("  }");
+		html.append("}");
+		html.append("body { font-family: Arial, sans-serif; }");
+		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
+		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
+		html.append("th { background-color: #666; color: #fff; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		for (Map.Entry<String, List<Alumno>> entry : alumnosAgrupados.entrySet()) {
+			String promotionGrade = entry.getKey();
+			html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>").append("<table>")
+					.append("<thead><tr>").append("<th>Nombre y Apellidos</th>").append("<th>Nº Expediente</th>")
+					.append("<th>Licencia Federativa</th>").append("<th>Fecha Licencia</th>").append("<th>Edad</th>")
+					.append("<th>Derecho a Examen</th>").append("</tr></thead>").append("<tbody>");
+			for (Alumno alumno : entry.getValue()) {
+				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+				html.append("<tr>").append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
+						.append("</td>").append("<td>").append(alumno.getNumeroExpediente()).append("</td>")
+						.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "N/A")
+						.append("</td>").append("<td>")
+						.append(alumno.getFechaLicencia() != null ? alumno.getFechaLicencia().toString() : "N/A")
+						.append("</td>").append("<td>").append(edad).append("</td>").append("<td>")
+						.append(alumno.getTieneDerechoExamen() ? "Sí" : "No").append("</td>").append("</tr>");
+			}
+			html.append("</tbody></table>");
+		}
+
+		html.append("</body></html>");
+
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(os);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return os.toByteArray();
+	}
+
 	private String getPromotionGrade(Alumno alumno) {
 		if (alumno == null) {
 			return "N/A";
@@ -574,5 +658,98 @@ public class PDFServiceImpl implements PDFService {
 		return (nuevoGrado != null && nuevoGrado.getTipoGrado().getNombre() != null)
 				? nuevoGrado.getTipoGrado().getNombre()
 				: "N/A";
+	}
+
+	@Override
+	public byte[] generarListadoAsistencia(int year, int month, String grupo, String turno) throws IOException {
+		List<Alumno> alumnos = alumnoRepository.findAll().stream()
+				.filter(a -> a.getTurnos().stream()
+						.anyMatch(t -> t.getDiaSemana().equalsIgnoreCase(grupo)
+								&& (t.getHoraInicio().toString() + "–" + t.getHoraFin().toString()).equals(turno)))
+				.collect(Collectors.toList());
+		int totalAlumnos = alumnos.size();
+
+		DayOfWeek dow = DiaSemanaUtils.mapGrupoToDayOfWeek(grupo);
+		LocalDate inicio = LocalDate.of(year, month, 1);
+		LocalDate finMes = inicio.with(TemporalAdjusters.lastDayOfMonth());
+		List<LocalDate> fechas = new ArrayList<>();
+		LocalDate actual = inicio.with(TemporalAdjusters.nextOrSame(dow));
+		while (!actual.isAfter(finMes)) {
+			fechas.add(actual);
+			actual = actual.plusWeeks(1);
+		}
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>").append("@page{margin:15mm;}")
+				.append(".header-titles{margin:8mm 0;text-align:center;font-family:Arial,sans-serif;}")
+				.append(".header-titles .main{font-size:24pt;color:red;font-weight:bold;margin:0;}")
+				.append(".header-titles .sub{font-size:18pt;color:teal;margin:0 0 4mm;}")
+				.append("h2{font-family:Arial,sans-serif;text-align:center;font-size:16pt;margin:4mm 0;font-weight:bold;}")
+				.append("p.total{font-family:Arial,sans-serif;text-align:center;font-size:12pt;margin:2mm 0;font-weight:bold;}")
+				.append(".main-table, .side-table{border-collapse:collapse;font-family:Arial,sans-serif;}")
+				.append(".main-table th, .main-table td{border:1px solid #000;padding:4px;text-align:center;}")
+				.append(".main-table th{background:#ffd080;font-weight:bold;}")
+				.append(".main-table th:first-child, .main-table td:first-child{width:20mm;}")
+				.append(".cinturon-blanco{background:#fff;}").append(".cinturon-amarillo{background:yellow;}")
+				.append(".cinturon-verde{background:green;}").append(".cinturon-azul{background:blue;}")
+				.append(".cinturon-rojo{background:red;}").append(".cinturon-negro{background:black;}")
+				.append(".licencia-no{color:red;font-weight:bold;}").append(".side-table{table-layout:fixed;}")
+				.append(".side-table th, .side-table td{border:1px solid #000;width:14mm;height:12mm;padding:2px;text-align:center;}")
+				.append("</style></head><body>").append("<div class='header-titles'>")
+				.append("<p class='main'>CLUB MOI'S KIM DO</p>").append("<p class='sub'>Tae Kwon Do</p>")
+				.append("</div>").append("<h2>LISTADO ASISTENCIA ")
+				.append(Month.of(month).getDisplayName(TextStyle.FULL, new Locale("es")).toUpperCase()).append(" - ")
+				.append(year).append("</h2>").append("<p class='total'>TOTAL : ").append(totalAlumnos)
+				.append(" ALUMNOS</p>").append("<p class='total' style='font-size:12pt;'>").append(grupo.toUpperCase())
+				.append(" - TURNO DE ").append(turno.replace("–", " a ")).append("</p>")
+				.append("<table style='width:100%;'><tr>").append("<td style='vertical-align:top;'>")
+				.append("<table class='main-table' style='width:100%;'>").append("<thead><tr>")
+				.append("<th></th><th>LIC. FED</th><th>EDAD</th><th>NOMBRE</th><th>Nº EXP.</th>")
+				.append("</tr></thead><tbody>");
+		for (Alumno a : alumnos) {
+			LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime()).atZone(ZoneId.systemDefault())
+					.toLocalDate();
+			int edad = Period.between(nac, LocalDate.now()).getYears();
+			boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
+			String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
+			String licClass = licOk ? "" : "licencia-no";
+			String cintClass = "cinturon-" + a.getGrado().getTipoGrado().name().toLowerCase();
+
+			html.append("<tr>").append("<td class='").append(cintClass).append("'></td>").append("<td class='")
+					.append(licClass).append("'>").append(lic).append("</td>").append("<td>").append(edad)
+					.append("</td>").append("<td style='text-align:left;'>").append(a.getNombre()).append(" ")
+					.append(a.getApellidos()).append("</td>").append("<td>").append(a.getNumeroExpediente())
+					.append("</td>").append("</tr>");
+		}
+		html.append("</tbody></table></td>").append("<td style='vertical-align:top;'>")
+				.append("<table class='side-table'><thead><tr>");
+		for (LocalDate f : fechas) {
+			html.append("<th>").append(f.getDayOfMonth()).append("</th>");
+		}
+		html.append("</tr></thead><tbody>");
+		for (int i = 0; i < totalAlumnos; i++) {
+			html.append("<tr>");
+			for (@SuppressWarnings("unused")
+			LocalDate f : fechas) {
+				html.append("<td></td>");
+			}
+			html.append("</tr>");
+		}
+		html.append("</tbody><tfoot><tr>");
+		for (LocalDate f : fechas) {
+			html.append("<td>").append(f.getDayOfMonth()).append("</td>");
+		}
+		html.append("</tr></tfoot></table></td>").append("</tr></table>").append("</body></html>");
+
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.useFastMode();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(os);
+		try {
+			builder.run();
+		} catch (Throwable ignored) {
+		}
+		return os.toByteArray();
 	}
 }

@@ -100,6 +100,36 @@
     (pageChange)="cambiarPagina($event)" class="mt-4">
   </app-paginacion>
 
+  <div class="col-md-6">
+    <div class="card p-4 shadow-sm">
+      <h4 class="fw-bold mb-3">Listado de Asistencia</h4>
+      <div class="mb-3">
+        <label for="mesAnoAsis" class="form-label fw-semibold">Mes y Año:</label>
+        <input id="mesAnoAsis" type="month" class="form-control" [(ngModel)]="mesAnoAsistencia" />
+      </div>
+
+      <div class="mb-3">
+        <label for="grupoAsis" class="form-label fw-semibold">Grupo:</label>
+        <select id="grupoAsis" class="form-select" [(ngModel)]="grupoSeleccionado" (ngModelChange)="onGrupoChange()">
+          <option *ngFor="let g of grupos" [value]="g">{{ g | titlecase }}</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="turnoAsis" class="form-label fw-semibold">Turno:</label>
+        <select id="turnoAsis" class="form-select" [(ngModel)]="turnoSeleccionado"
+          [disabled]="!turnosDisponibles.length">
+          <option *ngFor="let t of turnosDisponibles" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary w-100" [disabled]="!mesAnoAsistencia || !grupoSeleccionado || !turnoSeleccionado"
+        (click)="generarListadoAsistencia()">
+        Generar PDF de Asistencia
+      </button>
+    </div>
+  </div>
+
   <app-informe-modal *ngIf="mostrarModalInforme" [title]="modalTitle" [opcionesInforme]="opcionesInforme"
     (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
   </app-informe-modal>

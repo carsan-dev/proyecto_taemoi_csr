@@ -35,12 +35,28 @@ export class ListadoAlumnosComponent implements OnInit {
   mostrarModalInforme: boolean = false;
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
+  mesAnoAsistencia!: string;
+  grupos = ['lunes', 'martes', 'miércoles', 'jueves'];
+  turnosMap: Record<string, string[]> = {
+    lunes: ['17:00–18:00', '18:00–19:00'],
+    martes: ['17:30–18:30', '18:30–19:30'],
+    miércoles: ['16:00–17:00', '17:00–18:00'],
+    jueves: ['19:00–20:00', '20:00–21:00'],
+  };
+  turnosDisponibles: string[] = [];
+  grupoSeleccionado!: string;
+  turnoSeleccionado: string | null = null;
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerAlumnos();
     this.cargarTodosLosAlumnos();
+  }
+
+  onGrupoChange() {
+    this.turnosDisponibles = this.turnosMap[this.grupoSeleccionado] || [];
+    this.turnoSeleccionado = null;
   }
 
   abrirModalInforme(): void {
@@ -59,6 +75,10 @@ export class ListadoAlumnosComponent implements OnInit {
       {
         value: 'infantiles',
         label: 'Informe de Alumnos Infantiles a Promocionar',
+      },
+      {
+        value: 'adultos',
+        label: 'Informe de Alumnos Adultos a Promocionar',
       },
     ];
     this.mostrarModalInforme = true;
@@ -159,11 +179,18 @@ export class ListadoAlumnosComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           window.open(url);
         });
+    } else if (tipo === 'adultos') {
+      this.endpointsService
+        .generarInformeAdultosAPromocionar()
+        .subscribe((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          window.open(url);
+        });
     }
   }
 
   calcularEdad(fechaNacimiento: string): number {
-    return calcularEdad(fechaNacimiento); // Llama a una función utilitaria que calcule la edad
+    return calcularEdad(fechaNacimiento);
   }
 
   cambiarPagina(pageNumber: number): void {
@@ -202,7 +229,7 @@ export class ListadoAlumnosComponent implements OnInit {
               icon: 'success',
               timer: 2000,
             });
-            this.obtenerAlumnos(); // Vuelve a cargar la lista de alumnos
+            this.obtenerAlumnos();
           },
           error: () => {
             Swal.fire({
@@ -236,7 +263,7 @@ export class ListadoAlumnosComponent implements OnInit {
               icon: 'success',
               timer: 2000,
             });
-            this.obtenerAlumnos(); // Vuelve a cargar la lista de alumnos
+            this.obtenerAlumnos();
           },
           error: () => {
             Swal.fire({
@@ -350,6 +377,25 @@ export class ListadoAlumnosComponent implements OnInit {
         error: () => {
           Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
         },
+      });
+  }
+
+  generarListadoAsistencia() {
+    const [year, month] = this.mesAnoAsistencia.split('-').map((v) => +v);
+    this.endpointsService
+      .descargarAsistencia(
+        year,
+        month,
+        this.grupoSeleccionado,
+        this.turnoSeleccionado!
+      )
+      .subscribe((blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Asistencia-${this.grupoSeleccionado}-${this.turnoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
       });
   }
 
