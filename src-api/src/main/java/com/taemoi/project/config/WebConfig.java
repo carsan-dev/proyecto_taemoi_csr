@@ -1,5 +1,6 @@
 package com.taemoi.project.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -16,6 +17,9 @@ import java.nio.file.Path;
 @EnableWebMvc
 public class WebConfig implements WebMvcConfigurer {
 
+	@Value("${cors.allowed.origin}")
+	private String allowedOrigin;
+
 	/**
 	 * Agrega la configuración de CORS (Cross-Origin Resource Sharing) para permitir
 	 * solicitudes desde el origen especificado.
@@ -25,7 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
 	@Override
 	public void addCorsMappings(@NonNull CorsRegistry registry) {
 		registry.addMapping("/api/**")
-				.allowedOrigins("http://localhost:4200", "http://localhost:80", "http://localhost")
+				.allowedOrigins(allowedOrigin)
 				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS").allowedHeaders("*")
 				.allowCredentials(true);
 	}

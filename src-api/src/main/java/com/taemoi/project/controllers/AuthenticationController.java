@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -48,6 +49,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationController {
 	private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
+
+	@Value("${spring.profiles.active:default}")
+	private String activeProfile;
 
 	/**
 	 * Inyección del servicio de autenticación.
@@ -90,12 +94,18 @@ public class AuthenticationController {
 			HttpServletResponse response) {
 		JwtAuthenticationResponse jwtResponse = authenticationService.signin(request);
 
+		// Determinar si usar Secure basado en el perfil activo
+		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
+
 		// Crear la cookie HTTP-Only
 		Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
 		jwtCookie.setHttpOnly(true); // No accesible desde JavaScript
-		jwtCookie.setSecure(false); // Solo se envía en conexiones HTTPS
+		jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
 		jwtCookie.setPath("/"); // Disponible para todo el dominio
 		jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas de validez
+		if (isProduction) {
+			jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
+		}
 
 		// Agregar la cookie a la respuesta HTTP
 		response.addCookie(jwtCookie);
@@ -106,11 +116,17 @@ public class AuthenticationController {
 
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout(HttpServletResponse response) {
+		// Determinar si usar Secure basado en el perfil activo
+		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
+
 		Cookie jwtCookie = new Cookie("jwt", null);
 		jwtCookie.setHttpOnly(true);
-		jwtCookie.setSecure(false); // Cambiar a true en producción
+		jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
 		jwtCookie.setPath("/");
 		jwtCookie.setMaxAge(0); // Eliminar la cookie
+		if (isProduction) {
+			jwtCookie.setAttribute("SameSite", "Strict");
+		}
 
 		response.addCookie(jwtCookie);
 		return ResponseEntity.ok().build();
