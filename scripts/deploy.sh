@@ -103,16 +103,42 @@ docker-compose -f docker-compose.production.yml down 2>/dev/null || true
 if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
     log_warn "SSL certificates not found. Obtaining Let's Encrypt certificates..."
 
+    # Check DNS resolution
+    log_info "Checking DNS resolution for $DOMAIN..."
+    if host $DOMAIN > /dev/null 2>&1; then
+        RESOLVED_IP=$(host $DOMAIN | grep "has address" | head -1 | awk '{print $4}')
+        log_info "Domain $DOMAIN resolves to: $RESOLVED_IP"
+    else
+        log_warn "Could not resolve $DOMAIN. Please check your DNS settings."
+    fi
+
+    # Get server's public IP
+    SERVER_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "unknown")
+    log_info "Server's public IP: $SERVER_IP"
+
+    if [ "$RESOLVED_IP" != "$SERVER_IP" ] && [ "$RESOLVED_IP" != "" ] && [ "$SERVER_IP" != "unknown" ]; then
+        log_warn "DNS IP ($RESOLVED_IP) does not match server IP ($SERVER_IP)"
+        log_warn "SSL certificate generation may fail. Please update your DNS records."
+    fi
+
     # Clean up any existing nginx-certbot container
     docker stop nginx-certbot 2>/dev/null || true
     docker rm nginx-certbot 2>/dev/null || true
 
-    # Start nginx temporarily for certificate challenge
+    # Start nginx temporarily for certificate challenge with proper configuration
     docker run --rm -d \
         --name nginx-certbot \
         -p 80:80 \
-        -v $(pwd)/certbot/www:/var/www/certbot \
+        -v $(pwd)/certbot/www:/var/www/certbot:ro \
+        -v $(pwd)/nginx/nginx-certbot.conf:/etc/nginx/nginx.conf:ro \
         nginx:alpine
+
+    # Wait for nginx to start
+    sleep 3
+
+    # Test if nginx is responding
+    log_info "Testing nginx accessibility..."
+    docker exec nginx-certbot wget -O- http://localhost/ 2>/dev/null || log_warn "Nginx test failed"
 
     # Obtain certificate
     docker run --rm \
