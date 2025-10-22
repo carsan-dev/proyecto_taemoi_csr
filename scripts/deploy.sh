@@ -99,7 +99,7 @@ sed -i "s/your-domain.com/$DOMAIN/g" nginx/nginx-production.conf
 
 # Stop any existing containers
 log_info "Stopping existing containers..."
-docker-compose -f docker-compose.production.yml down 2>/dev/null || true
+docker-compose -f docker-compose.production.yml --env-file .env.production down 2>/dev/null || true
 
 # Check if SSL certificates exist
 if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
@@ -166,8 +166,8 @@ fi
 
 # Build and start containers
 log_info "Building and starting Docker containers..."
-docker-compose -f docker-compose.production.yml build --no-cache
-docker-compose -f docker-compose.production.yml up -d
+docker-compose -f docker-compose.production.yml --env-file .env.production build --no-cache
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 
 # Wait for services to be healthy
 log_info "Waiting for services to be ready..."
@@ -175,7 +175,7 @@ sleep 10
 
 # Check service health
 log_info "Checking service health..."
-docker-compose -f docker-compose.production.yml ps
+docker-compose -f docker-compose.production.yml --env-file .env.production ps
 
 # Display status
 log_info ""
@@ -188,10 +188,10 @@ log_info "  - https://$DOMAIN"
 log_info "  - https://www.$DOMAIN"
 log_info ""
 log_info "To view logs:"
-log_info "  docker-compose -f docker-compose.production.yml logs -f"
+log_info "  docker-compose -f docker-compose.production.yml --env-file .env.production logs -f"
 log_info ""
 log_info "To stop the application:"
-log_info "  docker-compose -f docker-compose.production.yml down"
+log_info "  docker-compose -f docker-compose.production.yml --env-file .env.production down"
 log_info ""
 log_info "SSL certificates will auto-renew via certbot"
 log_info ""
