@@ -40,7 +40,9 @@ if [ ! -f ".env.production" ]; then
 fi
 
 # Load environment variables
+set -a  # Automatically export all variables
 source .env.production
+set +a  # Stop auto-exporting
 
 # Validate required environment variables
 required_vars=("DOMAIN" "EMAIL" "MYSQL_ROOT_PASSWORD" "MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD" "JWT_SECRET")
