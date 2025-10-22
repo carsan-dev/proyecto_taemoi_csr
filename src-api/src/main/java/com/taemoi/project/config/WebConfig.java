@@ -38,20 +38,35 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 		String linuxPathImagenes = "/var/www/app/imagenes/";
 		String userProfile = System.getenv("USERPROFILE");
-		String windowsPathImagenes = Path.of(userProfile, "static_resources", "imagenes").toString().replace("\\",
-				"/");
 
-		registry.addResourceHandler("/imagenes/**")
-				.addResourceLocations("file:" + linuxPathImagenes, "file:" + windowsPathImagenes + "/")
-				.setCachePeriod(3600);
+		// Add Linux path
+		if (userProfile != null) {
+			// Windows environment - add both Linux and Windows paths
+			String windowsPathImagenes = Path.of(userProfile, "static_resources", "imagenes").toString().replace("\\", "/");
+			registry.addResourceHandler("/imagenes/**")
+					.addResourceLocations("file:" + linuxPathImagenes, "file:" + windowsPathImagenes + "/")
+					.setCachePeriod(3600);
+		} else {
+			// Linux/Docker environment - only Linux path
+			registry.addResourceHandler("/imagenes/**")
+					.addResourceLocations("file:" + linuxPathImagenes)
+					.setCachePeriod(3600);
+		}
 
 		String linuxPathDocumentos = "/var/www/app/documentos/";
-		String windowsPathDocumentos = Path.of(userProfile, "static_resources", "documentos").toString().replace("\\",
-				"/");
 
-		registry.addResourceHandler("/documentos/**")
-				.addResourceLocations("file:" + linuxPathDocumentos, "file:" + windowsPathDocumentos + "/")
-				.setCachePeriod(3600);
+		if (userProfile != null) {
+			// Windows environment - add both Linux and Windows paths
+			String windowsPathDocumentos = Path.of(userProfile, "static_resources", "documentos").toString().replace("\\", "/");
+			registry.addResourceHandler("/documentos/**")
+					.addResourceLocations("file:" + linuxPathDocumentos, "file:" + windowsPathDocumentos + "/")
+					.setCachePeriod(3600);
+		} else {
+			// Linux/Docker environment - only Linux path
+			registry.addResourceHandler("/documentos/**")
+					.addResourceLocations("file:" + linuxPathDocumentos)
+					.setCachePeriod(3600);
+		}
 	}
 
 }
