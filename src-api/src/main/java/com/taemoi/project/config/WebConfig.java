@@ -28,10 +28,8 @@ public class WebConfig implements WebMvcConfigurer {
 	 */
 	@Override
 	public void addCorsMappings(@NonNull CorsRegistry registry) {
-		// Split the allowed origins by comma to support multiple origins
-		String[] allowedOrigins = allowedOrigin.split(",");
 		registry.addMapping("/api/**")
-				.allowedOrigins(allowedOrigins)
+				.allowedOrigins(allowedOrigin)
 				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS").allowedHeaders("*")
 				.allowCredentials(true);
 	}
