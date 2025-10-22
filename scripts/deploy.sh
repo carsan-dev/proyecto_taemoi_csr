@@ -103,6 +103,10 @@ docker-compose -f docker-compose.production.yml down 2>/dev/null || true
 if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
     log_warn "SSL certificates not found. Obtaining Let's Encrypt certificates..."
 
+    # Clean up any existing nginx-certbot container
+    docker stop nginx-certbot 2>/dev/null || true
+    docker rm nginx-certbot 2>/dev/null || true
+
     # Start nginx temporarily for certificate challenge
     docker run --rm -d \
         --name nginx-certbot \
@@ -123,8 +127,9 @@ if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
         -d $DOMAIN \
         -d www.$DOMAIN
 
-    # Stop temporary nginx
-    docker stop nginx-certbot
+    # Stop and remove temporary nginx
+    docker stop nginx-certbot 2>/dev/null || true
+    docker rm nginx-certbot 2>/dev/null || true
 
     log_info "SSL certificates obtained successfully!"
 else
