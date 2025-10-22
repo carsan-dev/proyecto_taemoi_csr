@@ -675,10 +675,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError))
       .subscribe({
         next: (eventos) => {
-          this.eventosSubject.next(eventos);
+          // Ensure eventos is always an array
+          this.eventosSubject.next(Array.isArray(eventos) ? eventos : []);
         },
         error: (error) => {
           console.error('Error al obtener los eventos:', error);
+          // Emit empty array on error to prevent .map() errors
+          this.eventosSubject.next([]);
         },
       });
   }
