@@ -56,21 +56,21 @@
         <div class="navbar-der d-flex align-items-center justify-content-center">
           <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
             <li class="nav-item me-4">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
-            </li>
-            <li class="nav-item me-4">
               <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
-                target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
+                target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <i class="bi bi-facebook fs-4"></i>
+              </a>
             </li>
             <li class="nav-item me-4">
               <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"
-                rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
+                rel="noopener noreferrer" aria-label="Instagram">
+                <i class="bi bi-instagram fs-4"></i>
+              </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link p-0 text-black" [routerLink]="['/login']"><i class="bi bi-person-fill fs-3"></i></a>
+              <a class="nav-link p-0 text-black" [routerLink]="['/login']" aria-label="Iniciar sesión">
+                <i class="bi bi-person-fill fs-3"></i>
+              </a>
             </li>
           </ul>
         </div>
@@ -81,45 +81,45 @@
 
 <!-- Header para administradores -->
 <header class="admin-header" *ngIf="isAdmin">
-  <button class="admin-toggle-button" (click)="toggleAdminMenu()">
+  <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú">
     <i class="bi bi-list"></i>
   </button>
-  <nav class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }">
+  <nav class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }" #adminMenu>
     <div class="admin-menu-top">
       <span class="admin-menu-title h2">Cabecera Principal</span>
-      <button class="admin-close-button" (click)="toggleAdminMenu()">
+      <button class="admin-close-button" (click)="toggleAdminMenu()" aria-label="Cerrar menú">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
     <ul class="admin-menu-list">
       <li>
-        <a class="nav-link" [routerLink]="['/inicio']">Inicio</a>
+        <a class="nav-link" [routerLink]="['/inicio']" (click)="closeAdminMenu(); $event.stopPropagation()">Inicio</a>
       </li>
       <li class="nav-item dropdown">
         <div class="dropdown-toggle nav-link">¿Qué hacemos?</div>
         <ul class="dropdown-menu">
           <li>
-            <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">Taekwondo</a>
+            <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">Taekwondo</a>
           </li>
           <li>
-            <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">Kickboxing</a>
+            <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">Kickboxing</a>
           </li>
           <li>
-            <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">Pilates</a>
+            <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">Pilates</a>
           </li>
           <li>
-            <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link">Defensa Personal Femenina</a>
+            <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">Defensa Personal Femenina</a>
           </li>
         </ul>
       </li>
       <li>
-        <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active">Eventos</a>
+        <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">Eventos</a>
       </li>
       <li>
-        <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active">Horarios</a>
+        <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">Horarios</a>
       </li>
       <li>
-        <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">Contacto</a>
+        <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">Contacto</a>
       </li>
       <li>
         <a class="nav-link logout-link" (click)="cerrarSesion()">Cerrar Sesión</a>
@@ -142,8 +142,7 @@
           </a>
           <ul class="navbar-nav list-links">
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                [routerLink]="['/inicio']">Inicio</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active">Inicio</a>
             </li>
             <li class="nav-item dropdown me-3" [routerLinkActive]="['active']"
               [routerLinkActiveOptions]="{ exact: false }">
@@ -152,67 +151,60 @@
               </div>
               <ul class="dropdown-menu" aria-labelledby="deportesDropdown">
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link"
-                    [routerLink]="['/eltaekwondo']">
+                  <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link">
                     Taekwondo
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link"
-                    [routerLink]="['/kickboxing']">
+                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
                     Kickboxing
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link"
-                    [routerLink]="['/pilates']">
+                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
                     Pilates
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link"
-                    [routerLink]="['/defensapersonalfemenina']">
+                  <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link">
                     Defensa Personal Femenina
                   </a>
                 </li>
               </ul>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active"
-                [routerLink]="['/eventos']">Eventos</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/eventos']" routerLinkActive="active">Eventos</a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                [routerLink]="['/horarios']">Horarios</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active">Horarios</a>
             </li>
             <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                [routerLink]="['/contacto']">Contacto</a>
+              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active">Contacto</a>
             </li>
             <li class="nav-item m-3">
               <button type="button" class="btn btn-ver-clases text-white fw-bold" [routerLink]="['/userpage']"
-                routerLinkActive="active" [routerLink]="['/userpage']">Ver mis clases</button>
+                routerLinkActive="active">Ver mis clases</button>
             </li>
           </ul>
         </div>
         <div class="navbar-der d-flex align-items-center justify-content-center">
           <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
             <li class="nav-item me-4">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
-            </li>
-            <li class="nav-item me-4">
               <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
-                target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
+                target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <i class="bi bi-facebook fs-4"></i>
+              </a>
             </li>
             <li class="nav-item me-4">
               <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"
-                rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
+                rel="noopener noreferrer" aria-label="Instagram">
+                <i class="bi bi-instagram fs-4"></i>
+              </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
+              <a class="nav-link p-0 text-black" (click)="cerrarSesion()" role="button" aria-label="Cerrar sesión">
+                <i class="bi bi-person-circle fs-3"></i>
+              </a>
             </li>
           </ul>
         </div>
