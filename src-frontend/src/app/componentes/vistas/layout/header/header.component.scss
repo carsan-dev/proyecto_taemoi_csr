@@ -43,8 +43,10 @@ header.fixed-header {
       }
     }
 
-    img {
-      width: 180px;
+    .header-logo {
+      max-height: 80px;
+      width: auto;
+      max-width: 180px;
     }
 
     .nav-item {
@@ -192,8 +194,9 @@ header.fixed-header {
       flex-direction: column;
       justify-content: center;
 
-      img {
-        width: 180px !important;
+      .header-logo {
+        max-height: 70px !important;
+        max-width: 150px !important;
       }
 
       .list-links {
@@ -209,8 +212,9 @@ header.fixed-header {
       font-size: 14px;
       text-wrap: nowrap;
 
-      img {
-        width: 140px;
+      .header-logo {
+        max-height: 65px;
+        max-width: 140px;
       }
 
       .mx-5 {
