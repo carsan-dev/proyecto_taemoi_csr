@@ -192,35 +192,143 @@
     <li class="menu-section">
       <span class="section-title">Gestión</span>
     </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+
+    <!-- Alumnos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('alumnos'); $event.stopPropagation()" [class.expanded]="expandedSections['alumnos']">
         <i class="bi bi-people"></i>
         <span>Alumnos</span>
-      </a>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['alumnos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Listar Alumnos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-person-plus"></i>
+            <span>Crear Alumno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-pencil-square"></i>
+            <span>Editar Alumno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-trash"></i>
+            <span>Eliminar Alumno</span>
+          </a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+
+    <!-- Grupos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()" [class.expanded]="expandedSections['grupos']">
         <i class="bi bi-collection"></i>
         <span>Grupos</span>
-      </a>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['grupos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Grupos</span>
+          </a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/turnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+
+    <!-- Turnos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('turnos'); $event.stopPropagation()" [class.expanded]="expandedSections['turnos']">
         <i class="bi bi-calendar3"></i>
         <span>Turnos</span>
-      </a>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['turnos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/turnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Turnos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/turnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-calendar-plus"></i>
+            <span>Crear Turno</span>
+          </a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/eventosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+
+    <!-- Eventos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('eventos'); $event.stopPropagation()" [class.expanded]="expandedSections['eventos']">
         <i class="bi bi-calendar-check"></i>
         <span>Eventos</span>
-      </a>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['eventos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/eventosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Eventos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/eventosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-calendar-plus-fill"></i>
+            <span>Crear Evento</span>
+          </a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/productosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+
+    <!-- Productos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('productos'); $event.stopPropagation()" [class.expanded]="expandedSections['productos']">
         <i class="bi bi-cart3"></i>
         <span>Productos</span>
-      </a>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['productos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/productosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Productos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/productosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-plus-square-fill"></i>
+            <span>Crear Producto</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Convocatorias Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()" [class.expanded]="expandedSections['convocatorias']">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Convocatorias</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['convocatorias']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/convocatoriasListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Convocatorias</span>
+          </a>
+        </li>
+      </ul>
     </li>
   </ul>
 </nav>
