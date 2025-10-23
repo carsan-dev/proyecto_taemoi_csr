@@ -247,4 +247,11 @@ export class AuthenticationService {
       )
       .subscribe();
   }
+
+  // Obtener todos los alumnos asociados al email del usuario
+  obtenerTodosLosAlumnos(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/user/alumnos`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
 }

@@ -14,6 +14,8 @@ import { Subscription } from 'rxjs/internal/Subscription';
   styleUrl: './vista-principal-user.component.scss',
 })
 export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
+  alumnos: any[] = [];
+  selectedAlumno: any = null;
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
 
@@ -23,15 +25,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.authService.obtenerUsuarioAutenticado().subscribe({
-      next: (usuario) => {
-        if (usuario && usuario.alumnoDTO) {
-          const alumnoId = usuario.alumnoDTO.id;
-          this.cargarGruposDelAlumno(alumnoId);
+    // Cargar todos los alumnos asociados al email del usuario
+    this.authService.obtenerTodosLosAlumnos().subscribe({
+      next: (alumnos) => {
+        if (alumnos && alumnos.length > 0) {
+          this.alumnos = alumnos;
+          // Seleccionar el primer alumno por defecto
+          this.selectedAlumno = alumnos[0];
+          this.cargarGruposDelAlumno(this.selectedAlumno.id);
         } else {
           Swal.fire({
             title: 'Error',
-            text: 'El usuario no tiene alumno asociado.',
+            text: 'No se encontraron alumnos asociados a este usuario.',
             icon: 'error',
           });
         }
@@ -39,11 +44,17 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       error: (error) => {
         Swal.fire({
           title: 'Error en la petición',
-          text: 'Error al obtener el usuario.',
+          text: 'Error al obtener los alumnos.',
           icon: 'error',
         });
       },
     });
+  }
+
+  // Método para cambiar el alumno seleccionado
+  seleccionarAlumno(alumno: any): void {
+    this.selectedAlumno = alumno;
+    this.cargarGruposDelAlumno(alumno.id);
   }
 
   ngOnDestroy(): void {

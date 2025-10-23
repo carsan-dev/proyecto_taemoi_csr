@@ -1,7 +1,25 @@
 <div class="container">
-  <div class="card shadow-lg mb-5 animated-card">
+  <!-- Selector de alumnos (solo se muestra si hay más de un alumno) -->
+  <div *ngIf="alumnos.length > 1" class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Seleccionar alumno:</h5>
+      <div class="btn-group" role="group">
+        <button
+          *ngFor="let alumno of alumnos"
+          type="button"
+          class="btn"
+          [ngClass]="{'btn-primary': selectedAlumno?.id === alumno.id, 'btn-outline-primary': selectedAlumno?.id !== alumno.id}"
+          (click)="seleccionarAlumno(alumno)">
+          {{ alumno.nombre }} {{ alumno.apellidos }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información del alumno seleccionado -->
+  <div *ngIf="selectedAlumno" class="card shadow-lg mb-5 animated-card">
     <div class="card-header text-center bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-      <h1 class="card-title m-0">Tus grupos asociados</h1>
+      <h1 class="card-title m-0">Grupos de {{ selectedAlumno.nombre }}</h1>
       <!-- Botón general para ver los turnos -->
       <button
         type="button"
