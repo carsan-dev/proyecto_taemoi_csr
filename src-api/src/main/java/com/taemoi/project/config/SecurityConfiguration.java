@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -46,6 +45,12 @@ public class SecurityConfiguration {
 	private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
 
 	/**
+	 * Inyección del codificador de contraseñas.
+	 */
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+
+	/**
 	 * Configuración del filtro de seguridad para las solicitudes HTTP.
 	 *
 	 * @param http El objeto HttpSecurity que se configura.
@@ -55,9 +60,12 @@ public class SecurityConfiguration {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-				.ignoringRequestMatchers("/api/**")).authorizeHttpRequests(request -> request
-						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll().requestMatchers("/api/auth/**")
-						.permitAll().requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
+				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**")).authorizeHttpRequests(request -> request
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/login/oauth2/**").permitAll()
+						.requestMatchers("/oauth2/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -165,16 +173,6 @@ public class SecurityConfiguration {
 	}
 
 	/**
-	 * Crea un codificador de contraseñas.
-	 *
-	 * @return Un objeto PasswordEncoder.
-	 */
-	@Bean
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
-
-	/**
 	 * Crea un proveedor de autenticación.
 	 *
 	 * @return Un objeto AuthenticationProvider.
@@ -182,8 +180,8 @@ public class SecurityConfiguration {
 	@Bean
 	AuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-		authProvider.setUserDetailsService(usuarioService); // Ahora es válido
-		authProvider.setPasswordEncoder(passwordEncoder());
+		authProvider.setUserDetailsService(usuarioService);
+		authProvider.setPasswordEncoder(passwordEncoder);
 		return authProvider;
 	}
 
