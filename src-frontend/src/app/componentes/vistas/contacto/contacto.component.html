@@ -1,79 +1,159 @@
-<div class="contact-container container-fluid d-flex align-items-center justify-content-center py-5 mt-5">
-  <div class="row w-100 mx-2 mx-lg-5 rounded overflow-hidden">
-    <div class="left-section col-lg-6 d-flex flex-column align-items-center justify-content-center p-5 text-white">
-      <div class="text-center mb-4">
-        <h1 class="display-4 fw-bold">MOI'S KIM DO</h1>
-        <h2 class="h1 fw-light">Taekwondo</h2>
+<div class="contact-page">
+  <div class="contact-container">
+    <div class="contact-card">
+      <!-- Left Section - Branding -->
+      <div class="contact-left">
+        <div class="branding-content">
+          <div class="brand-icon">
+            <i class="bi bi-envelope-heart"></i>
+          </div>
+          <h1 class="brand-title">¿Necesitas ayuda?</h1>
+          <p class="brand-subtitle">Estamos aquí para ti</p>
+          <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
+          <div class="contact-info">
+            <div class="info-item">
+              <i class="bi bi-geo-alt-fill"></i>
+              <span>Umbrete, Sevilla</span>
+            </div>
+            <div class="info-item">
+              <i class="bi bi-telephone-fill"></i>
+              <span>+34 695 568 455</span>
+            </div>
+            <div class="info-item">
+              <i class="bi bi-envelope-fill"></i>
+              <span>info@moiskimdo.es</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="img-fluid logo mb-4">
-    </div>
 
-    <div class="right-section col-lg-6 bg-white p-4 p-lg-5">
-      <h3 class="mb-4 text-center fw-bold">Contáctanos</h3>
-      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
-        <div class="form-floating mb-3">
-          <input type="text" class="form-control" id="nombre" formControlName="nombre" placeholder="Nombre" required>
-          <label for="nombre">Nombre</label>
-          <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched"
-            class="text-danger mt-1">
-            El campo nombre es obligatorio.
+      <!-- Right Section - Form -->
+      <div class="contact-right">
+        <div class="form-header">
+          <h2 class="form-title">Contáctanos</h2>
+          <p class="form-description">Completa el formulario y nos pondremos en contacto contigo lo antes posible</p>
+        </div>
+
+        <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
+          <!-- Name Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-person-fill input-icon"></i>
+              <input
+                type="text"
+                class="form-input"
+                id="nombre"
+                formControlName="nombre"
+                placeholder=" "
+                [class.invalid]="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched">
+              <label for="nombre" class="form-label">Nombre</label>
+            </div>
+            <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched" class="error-message">
+              <i class="bi bi-exclamation-circle"></i>
+              El campo nombre es obligatorio
+            </div>
           </div>
-        </div>
 
-        <div class="form-floating mb-3">
-          <input type="text" class="form-control" id="apellidos" formControlName="apellidos" placeholder="Apellidos"
-            required>
-          <label for="apellidos">Apellidos</label>
-          <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched"
-            class="text-danger mt-1">
-            El campo apellidos es obligatorio.
+          <!-- Surname Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-person-badge-fill input-icon"></i>
+              <input
+                type="text"
+                class="form-input"
+                id="apellidos"
+                formControlName="apellidos"
+                placeholder=" "
+                [class.invalid]="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched">
+              <label for="apellidos" class="form-label">Apellidos</label>
+            </div>
+            <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched" class="error-message">
+              <i class="bi bi-exclamation-circle"></i>
+              El campo apellidos es obligatorio
+            </div>
           </div>
-        </div>
 
-        <div class="form-floating mb-3">
-          <input type="email" class="form-control" id="email" formControlName="email" placeholder="Correo electrónico"
-            required>
-          <label for="email">Correo electrónico</label>
-          <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="text-danger mt-1">
-            Debes proporcionar un email válido.
+          <!-- Email Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-envelope-fill input-icon"></i>
+              <input
+                type="email"
+                class="form-input"
+                id="email"
+                formControlName="email"
+                placeholder=" "
+                [class.invalid]="contactForm.get('email')?.invalid && contactForm.get('email')?.touched">
+              <label for="email" class="form-label">Correo electrónico</label>
+            </div>
+            <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="error-message">
+              <i class="bi bi-exclamation-circle"></i>
+              Debes proporcionar un email válido
+            </div>
           </div>
-        </div>
 
-        <div class="form-floating mb-3">
-          <select class="form-select" id="asunto" formControlName="asunto" required>
-            <option value="" disabled selected>Selecciona un asunto</option>
-            <option value="Inscripción">Inscripción</option>
-            <option value="Consulta de horarios">Consulta de horarios</option>
-            <option value="Información sobre clases">Información sobre clases</option>
-            <option value="Otros">Otros motivos</option>
-          </select>
-          <label for="asunto">Asunto</label>
-          <div *ngIf="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched"
-            class="text-danger mt-1">
-            El campo asunto es obligatorio.
+          <!-- Subject Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-tags-fill input-icon"></i>
+              <select
+                class="form-select"
+                id="asunto"
+                formControlName="asunto"
+                [class.invalid]="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched">
+                <option value="" disabled selected>Selecciona un asunto</option>
+                <option value="Inscripción">Inscripción</option>
+                <option value="Consulta de horarios">Consulta de horarios</option>
+                <option value="Información sobre clases">Información sobre clases</option>
+                <option value="Otros">Otros motivos</option>
+              </select>
+              <label for="asunto" class="form-label select-label">Asunto</label>
+            </div>
+            <div *ngIf="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched" class="error-message">
+              <i class="bi bi-exclamation-circle"></i>
+              El campo asunto es obligatorio
+            </div>
           </div>
-        </div>
 
-        <div class="form-floating mb-3">
-          <textarea class="form-control" placeholder="Mensaje" id="mensaje" formControlName="mensaje"
-            style="height: 150px;" required></textarea>
-          <label for="mensaje">Cuerpo del mensaje</label>
-          <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched"
-            class="text-danger mt-1">
-            El campo mensaje es obligatorio.
+          <!-- Message Field -->
+          <div class="form-group">
+            <div class="input-wrapper textarea-wrapper">
+              <i class="bi bi-chat-left-text-fill input-icon"></i>
+              <textarea
+                class="form-textarea"
+                id="mensaje"
+                formControlName="mensaje"
+                placeholder=" "
+                rows="5"
+                [class.invalid]="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched"></textarea>
+              <label for="mensaje" class="form-label">Mensaje</label>
+            </div>
+            <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched" class="error-message">
+              <i class="bi bi-exclamation-circle"></i>
+              El campo mensaje es obligatorio
+            </div>
           </div>
-        </div>
 
-        <div class="d-flex flex-column flex-md-row gap-3 justify-content-center mt-4">
-          <button type="button" class="btn btn-success btn-lg w-100 w-md-auto px-4" (click)="enviarWhatsApp()"
-            [disabled]="contactForm.invalid">
-            <i class="bi bi-whatsapp me-2"></i>WhatsApp
-          </button>
-          <button type="submit" class="btn btn-primary btn-lg w-100 w-md-auto px-4" [disabled]="contactForm.invalid">
-            <i class="bi bi-envelope me-2"></i>Enviar
-          </button>
-        </div>
-      </form>
+          <!-- Action Buttons -->
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-whatsapp"
+              (click)="enviarWhatsApp()"
+              [disabled]="contactForm.invalid">
+              <i class="bi bi-whatsapp"></i>
+              <span>WhatsApp</span>
+            </button>
+            <button
+              type="submit"
+              class="btn btn-submit"
+              [disabled]="contactForm.invalid">
+              <i class="bi bi-send-fill"></i>
+              <span>Enviar Mensaje</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

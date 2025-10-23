@@ -3,243 +3,538 @@
   src: url("../../../../../assets/fonts/osaka-re.ttf") format("truetype");
 }
 
+// ========================================
+// VARIABLES
+// ========================================
+$primary-color: #007bff;
+$primary-hover: #0056b3;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$danger-color: #dc3545;
+$dark-bg: #1a1a1a;
+$darker-bg: #0f0f0f;
+$admin-bg: #000000;
+$admin-accent: #192d2b;
+$admin-accent-hover: #3a6864;
+$text-light: #ffffff;
+$text-dark: #212529;
+$border-radius: 8px;
+$transition-speed: 0.3s;
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.16);
+
+// ========================================
+// FIXED HEADER (PUBLIC & USER)
+// ========================================
 header.fixed-header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 9999;
-  transition: top 0.3s ease-in-out;
+  z-index: 1000;
+  transition: top $transition-speed ease, box-shadow $transition-speed ease;
 
   &.is-hidden {
-    top: -100px; // Mueve el header hacia arriba cuando se oculta
+    top: -120px;
   }
 
   nav {
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-bottom-left-radius: $border-radius;
+    border-bottom-right-radius: $border-radius;
+    box-shadow: $shadow-md;
+    padding: 0.5rem 0;
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
 
-    .navbar-toggler {
-      box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
-      margin: 5px 5px 10px;
-      margin: 10px auto;
+    .container-fluid {
+      padding: 0 2rem;
     }
 
-    .navbar-izq {
+    // Logo Styling
+    .header-logo {
+      max-height: 90px;
+      width: auto;
+      max-width: 225px;
+      padding: 0.75rem 0;
+      transition: transform $transition-speed ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+
+    .header-logo-mobile {
+      max-height: 70px;
+      width: auto;
+      max-width: 200px;
+      padding: 0.5rem 0;
+    }
+
+    // Header Title (Mobile/Tablet)
+    .header-title-mobile {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 0 0.5rem;
+      text-align: center;
 
-      .list-links {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
+      .title-main {
+        font-size: 1rem;
+        font-weight: 700;
+        color: $primary-color;
+        letter-spacing: 1px;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
 
-        .nav-item {
-          * {
-            font-size: 18px;
+      .title-sub {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: $secondary-color;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+        text-transform: uppercase;
+        margin-top: 0.15rem;
+      }
+    }
+
+    // Navbar Toggle
+    .navbar-toggler {
+      border: none;
+      box-shadow: $shadow-sm;
+      border-radius: $border-radius;
+      padding: 0.5rem;
+      background: $text-light;
+
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+      }
+    }
+
+    // Navigation Links
+    .navbar-nav {
+      .nav-item {
+        margin: 0 0.25rem;
+
+        .nav-link {
+          color: $text-dark;
+          font-weight: 600;
+          font-size: 0.95rem;
+          padding: 0.5rem 1rem;
+          border-radius: $border-radius;
+          transition: all $transition-speed ease;
+          display: flex;
+          align-items: center;
+          position: relative;
+
+          i {
+            font-size: 1rem;
+            transition: transform $transition-speed ease;
+          }
+
+          &:hover {
+            background-color: rgba($primary-color, 0.08);
+            color: $primary-color;
+
+            i {
+              transform: translateY(-2px);
+            }
+          }
+
+          &.active {
+            color: $primary-color;
+            background-color: rgba($primary-color, 0.12);
+
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 40%;
+              height: 3px;
+              background: $primary-color;
+              border-radius: 2px;
+            }
+          }
+        }
+      }
+
+      // Dropdown Menu
+      .dropdown {
+        position: relative;
+
+        // Desktop hover behavior
+        @media (min-width: 992px) {
+          &:hover .dropdown-menu {
+            display: block;
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .dropdown-toggle::after {
+          margin-left: 0.4rem;
+          vertical-align: middle;
+          font-size: 0.7rem;
+        }
+      }
+
+      .dropdown-menu {
+        display: none;
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all $transition-speed ease;
+        position: absolute;
+        background-color: $text-light;
+        margin-top: 0;
+        border: none;
+        box-shadow: $shadow-lg;
+        border-radius: $border-radius;
+        padding: 0.5rem 0;
+        min-width: 220px;
+        top: 100%;
+        left: 0;
+
+        // Bootstrap show class for mobile/tablet
+        &.show {
+          display: block;
+          visibility: visible;
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .dropdown-item {
+          padding: 0.6rem 1.2rem;
+          color: $text-dark;
+          font-weight: 500;
+          transition: all $transition-speed ease;
+          display: flex;
+          align-items: center;
+          border-radius: 0;
+
+          i {
+            font-size: 1rem;
+            transition: transform $transition-speed ease;
+          }
+
+          &:hover {
+            background-color: rgba($primary-color, 0.08);
+            color: $primary-color;
+            padding-left: 1.5rem;
+
+            i {
+              transform: translateX(4px);
+            }
+          }
+
+          &.active-link {
+            background-color: rgba($primary-color, 0.15);
+            color: $primary-color;
+            font-weight: 700;
+          }
+
+          &:first-child:hover {
+            border-top-left-radius: $border-radius;
+            border-top-right-radius: $border-radius;
+          }
+
+          &:last-child:hover {
+            border-bottom-left-radius: $border-radius;
+            border-bottom-right-radius: $border-radius;
           }
         }
       }
     }
 
-    .header-logo {
-      max-height: 80px;
-      width: auto;
-      max-width: 180px;
-    }
-
-    .nav-item {
-      cursor: pointer;
-
-      .btn-ver-clases {
-        background-color: #007bff; // Azul primario ya definido
-        border: none;
-        border-radius: 50px; // Botones redondeados como en los turnos
-        padding: 6px 15px;
-        font-size: 1rem !important;
-        text-transform: uppercase;
-        box-shadow: 0 0 7px rgba(0, 123, 255, 0.6); // Sombra similar
-
-        &:hover {
-          background-color: #0056b3; // Azul más oscuro en hover
-          box-shadow: 0 0 17px rgba(0, 123, 255, 0.7);
-        }
-      }
-
-      .nav-link {
-        &.active {
-          text-decoration: underline;
-          text-underline-offset: 4px;
-        }
-      }
-    }
-  }
-
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-
-    input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgb(0, 0, 0);
-      transition: 0.4s;
-      border-radius: 34px;
-
-      &:before {
-        position: absolute;
-        content: "";
-        height: 16px;
-        width: 16px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-      }
-    }
-
-    input:checked + .slider {
-      background-color: #2196f3;
-    }
-
-    input:focus + .slider {
-      box-shadow: 0 0 1px #2196f3;
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-  }
-
-  .navbar-nav {
-    .dropdown {
-      position: relative;
-
-      &:hover > .dropdown-menu {
-        visibility: visible;
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .dropdown-toggle::after {
-        display: none;
-      }
-    }
-
-    .dropdown-menu {
-      display: block;
-      visibility: hidden;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      position: absolute;
-      background-color: white;
-      margin-top: 0;
-      border: none;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      padding: 0;
-      list-style: none;
-      min-width: 150px;
-    }
-
-    .dropdown-item {
-      padding: 10px 20px;
-      color: black;
-      text-decoration: none;
-      display: block;
+    // Social Links
+    .social-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: transparent;
+      color: $text-dark;
+      transition: all $transition-speed ease;
+      font-size: 1.3rem;
 
       &:hover {
-        background-color: #f8f9fa;
+        background-color: $primary-color;
+        color: $text-light;
+        transform: translateY(-3px);
+        box-shadow: $shadow-md;
+      }
+    }
+
+    // Login Button
+    .btn-login {
+      background: linear-gradient(135deg, $primary-color, $primary-hover);
+      color: $text-light;
+      border: none;
+      border-radius: 50px;
+      padding: 0.5rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      box-shadow: $shadow-sm;
+      transition: all $transition-speed ease;
+
+      i {
+        font-size: 1.1rem;
       }
 
-      &.active-link {
-        background-color: #e9ecef;
-        font-weight: bold;
+      &:hover {
+        background: linear-gradient(135deg, $primary-hover, #003d82);
+        box-shadow: $shadow-md;
+        transform: translateY(-2px);
       }
 
-      &:last-child:hover {
-        border-bottom-left-radius: 7px;
-        border-bottom-right-radius: 7px;
+      &:active {
+        transform: translateY(0);
+      }
+    }
 
-        .dropdown-menu {
-          border-bottom-left-radius: 7px;
-          border-bottom-right-radius: 7px;
+    // My Classes Button (User Header)
+    .btn-my-classes {
+      background: linear-gradient(135deg, $success-color, #1e7e34);
+      color: $text-light;
+      border: none;
+      border-radius: 50px;
+      padding: 0.5rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      box-shadow: $shadow-sm;
+      transition: all $transition-speed ease;
+
+      i {
+        font-size: 1.1rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #1e7e34, #145523);
+        box-shadow: $shadow-md;
+        transform: translateY(-2px);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #145523, #0d3d1a);
+      }
+    }
+
+    // User Menu Toggle
+    .user-menu-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 50px;
+      background-color: rgba($primary-color, 0.08);
+      color: $text-dark;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all $transition-speed ease;
+      text-decoration: none;
+
+      i {
+        font-size: 1.5rem;
+        color: $primary-color;
+      }
+
+      .user-name {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &:hover {
+        background-color: rgba($primary-color, 0.15);
+        transform: translateY(-2px);
+        box-shadow: $shadow-sm;
+      }
+    }
+
+    // User Dropdown Menu
+    .dropdown-menu-end {
+      .dropdown-divider {
+        margin: 0.5rem 0;
+      }
+
+      .logout-item {
+        color: $danger-color;
+        font-weight: 600;
+
+        &:hover {
+          background-color: rgba($danger-color, 0.08);
+          color: #bd2130;
         }
       }
     }
   }
 
-  .nav-link.active,
-  .nav-item.active > .nav-link {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-
+  // Responsive Design
   @media (max-width: 991px) {
-    .navbar-izq {
-      flex-direction: column;
-      justify-content: center;
+    nav {
+      .navbar-left {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
 
-      .header-logo {
-        max-height: 70px !important;
-        max-width: 150px !important;
+        .navbar-brand-desktop {
+          display: none !important;
+        }
       }
 
-      .list-links {
-        flex-direction: column !important;
+      .navbar-nav {
+        margin-top: 1rem;
+        width: 100%;
         align-items: center;
+
+        .nav-item {
+          margin: 0.25rem 0;
+          width: 100%;
+          text-align: center;
+
+          .nav-link {
+            padding: 0.75rem 1rem;
+            justify-content: center;
+          }
+        }
+
+        .dropdown {
+          &:hover > .dropdown-menu,
+          .dropdown-menu.show {
+            display: block;
+            position: static;
+            float: none;
+            width: 100%;
+            text-align: center;
+            visibility: visible;
+            opacity: 1;
+            transform: none;
+            margin-top: 0.5rem;
+            box-shadow: none;
+            background-color: rgba($primary-color, 0.05);
+            border-radius: $border-radius;
+          }
+        }
+
+        .dropdown-menu {
+          display: none;
+        }
+      }
+
+      .navbar-right {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba($text-dark, 0.1);
+        justify-content: center !important;
+        width: 100%;
+      }
+
+      .btn-login,
+      .btn-my-classes {
+        width: 80%;
+        max-width: 300px;
+        justify-content: center;
+        margin-bottom: 1rem;
+      }
+
+      .social-link {
+        margin: 0 0.5rem;
+      }
+
+      .user-menu-toggle {
+        width: 80%;
+        max-width: 300px;
         justify-content: center;
       }
     }
   }
 
-  @media (max-width: 1350px) {
-    .navbar-izq {
-      font-size: 14px;
-      text-wrap: nowrap;
-
+  @media (max-width: 1200px) {
+    nav {
       .header-logo {
-        max-height: 65px;
-        max-width: 140px;
+        max-height: 85px;
+        max-width: 210px;
       }
 
-      .mx-5 {
-        margin: 0 !important;
-        margin-right: 15px !important;
-      }
-
-      .me-3 {
-        margin: 0 !important;
+      .navbar-nav .nav-item .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
       }
     }
+  }
 
-    .navbar-der {
-      .me-4 {
-        margin-right: 14px !important;
+  @media (max-width: 576px) {
+    nav {
+      .header-title-mobile {
+        .title-main {
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+        }
+
+        .title-sub {
+          font-size: 0.55rem;
+          letter-spacing: 0.3px;
+        }
+      }
+
+      .header-logo-mobile {
+        max-height: 60px;
+        max-width: 170px;
+      }
+    }
+  }
+
+  @media (max-width: 400px) {
+    nav {
+      .container-fluid {
+        padding: 0 0.75rem;
+      }
+
+      .header-title-mobile {
+        padding: 0 0.25rem;
+
+        .title-main {
+          font-size: 0.75rem;
+          letter-spacing: 0.3px;
+        }
+
+        .title-sub {
+          font-size: 0.5rem;
+          letter-spacing: 0.2px;
+        }
+      }
+
+      .header-logo-mobile {
+        max-height: 50px;
+        max-width: 140px;
       }
     }
   }
 }
 
+// ========================================
+// ADMIN HEADER
+// ========================================
 .admin-header {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1051;
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -247,28 +542,56 @@ header.fixed-header {
 
 .admin-toggle-button {
   border: none;
-  background: linear-gradient(135deg, #444, #222);
+  background: linear-gradient(135deg, #2c3e50, #34495e);
   border-radius: 50%;
   width: 60px;
   height: 60px;
   cursor: pointer;
-  color: white;
-  font-size: 2rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: $text-light;
+  font-size: 1.8rem;
+  box-shadow: $shadow-lg;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all $transition-speed ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width $transition-speed ease, height $transition-speed ease;
+  }
 
   &:hover {
-    background: linear-gradient(135deg, #222, #444);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-    transform: translateY(-4px);
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px) rotate(90deg);
+
+    &::before {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &.active {
+    background: linear-gradient(135deg, $danger-color, #bd2130);
+    transform: rotate(180deg);
   }
 
   &:active {
-    transform: translateY(2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+
+  i {
+    transition: transform $transition-speed ease;
   }
 }
 
@@ -277,51 +600,66 @@ header.fixed-header {
   top: 0;
   right: 0;
   height: 100vh;
-  width: 300px;
-  background-color: #000000;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+  width: 320px;
+  background: linear-gradient(180deg, $admin-bg 0%, $darker-bg 100%);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   transform: translateX(110%);
-  transition: transform 0.4s ease, opacity 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity $transition-speed ease;
   opacity: 0;
-  z-index: 9999;
+  z-index: 1050;
   font-family: "Osaka-Sans Serif", sans-serif;
+  overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #ffffff #0f1a1a;
+  scrollbar-color: $admin-accent-hover $darker-bg;
 
   &.show {
     transform: translateX(0);
     opacity: 1;
   }
 
-  .admin-menu-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #192d2b;
-    padding: 1rem;
-    border-bottom: 1px solid #192d2b;
+  // Header Section
+  .admin-menu-header {
+    background: linear-gradient(135deg, $admin-accent, #0f1c1b);
+    padding: 1.5rem;
+    border-bottom: 2px solid $admin-accent-hover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-    .admin-menu-title {
-      color: #ffffff;
-      font-family: "Osaka-Sans Serif", sans-serif;
-    }
+    .admin-branding {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
 
-    .admin-close-button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.2rem;
-      color: #ffffff;
-      transition: color 0.3s ease;
+      > i {
+        font-size: 2.5rem;
+        color: $primary-color;
+        animation: pulse 2s infinite;
+      }
 
-      &:hover {
-        color: #cccccc;
+      .admin-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        .admin-label {
+          color: $text-light;
+          font-size: 0.95rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .admin-username {
+          color: rgba($text-light, 0.7);
+          font-size: 0.85rem;
+          font-weight: 400;
+        }
       }
     }
   }
 
+  // Menu List
   .admin-menu-list {
     list-style: none;
     padding: 0;
@@ -330,140 +668,268 @@ header.fixed-header {
     display: flex;
     flex-direction: column;
 
+    // Section Titles
+    .menu-section-title {
+      color: rgba($text-light, 0.5);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 1rem 1.5rem 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    // Menu Divider
+    .menu-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, $admin-accent, transparent);
+      margin: 1rem 0;
+    }
+
     li {
-      border-bottom: 1px solid #192d2b;
-
-      .nav-link {
-        display: block;
-        padding: 0.8rem 1.5rem;
-        text-decoration: none;
-        color: #ffffff;
-        font-weight: 500;
-        transition: background-color 0.3s ease, color 0.3s ease;
-
-        &:hover {
-          background: #192d2b;
-        }
-
-        &.active-link {
-          background: #3a6864;
-          font-weight: bold;
-        }
+      &:not(.menu-section-title):not(.menu-divider) {
+        border-bottom: 1px solid rgba($admin-accent, 0.3);
       }
 
-      &.dropdown {
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        text-decoration: none;
+        color: $text-light;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: all $transition-speed ease;
         position: relative;
         overflow: hidden;
 
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          width: 4px;
+          background: $primary-color;
+          transform: scaleY(0);
+          transition: transform $transition-speed ease;
+        }
+
+        i {
+          font-size: 1.2rem;
+          min-width: 24px;
+          transition: transform $transition-speed ease;
+        }
+
+        span {
+          flex: 1;
+        }
+
+        &:hover {
+          background: linear-gradient(90deg, $admin-accent 0%, transparent 100%);
+          padding-left: 2rem;
+          color: $text-light;
+
+          &::before {
+            transform: scaleY(1);
+          }
+
+          i {
+            transform: scale(1.2);
+            color: $primary-color;
+          }
+        }
+
+        &.active {
+          background: linear-gradient(90deg, $admin-accent-hover 0%, transparent 100%);
+          color: $text-light;
+          font-weight: 700;
+
+          &::before {
+            transform: scaleY(1);
+          }
+
+          i {
+            color: $primary-color;
+          }
+        }
+      }
+
+      // Dropdown in Admin Menu
+      &.dropdown {
+        position: relative;
+
         .dropdown-toggle {
           cursor: pointer;
-          display: block;
-          padding: 0.8rem 1.5rem;
-          text-decoration: none;
-          color: #ffffff;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem 1.5rem;
+          color: $text-light;
           font-weight: 500;
-          transition: background-color 0.3s ease, color 0.3s ease;
-          position: relative;
+          font-size: 0.95rem;
+          transition: all $transition-speed ease;
 
-          &:hover {
-            background: #192d2b;
+          i {
+            font-size: 1.2rem;
+            min-width: 24px;
+          }
+
+          span {
+            flex: 1;
           }
 
           &::after {
             content: "▼";
             font-size: 0.7rem;
-            margin-left: 5px;
-            transition: transform 0.3s ease;
-            display: inline-block;
-            vertical-align: middle;
-            line-height: 1;
-            position: relative;
-            top: 1px;
+            transition: transform $transition-speed ease;
+          }
+
+          &:hover {
+            background: linear-gradient(90deg, $admin-accent 0%, transparent 100%);
+            padding-left: 2rem;
+
+            i {
+              transform: scale(1.2);
+              color: $primary-color;
+            }
           }
         }
 
-        &:hover .dropdown-toggle::after {
-          transform: rotate(180deg);
+        &:hover {
+          .dropdown-toggle::after {
+            transform: rotate(180deg);
+          }
+
+          .dropdown-menu {
+            max-height: 500px;
+            opacity: 1;
+          }
         }
 
         .dropdown-menu {
           display: block;
-          background-color: #000000;
-          border: 1px solid #192d2b;
-          // Importante: Sin posicionamiento absoluto, parte del flujo normal
+          background-color: rgba($admin-accent, 0.5);
+          border: none;
           position: static;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+          box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
           list-style: none;
           padding: 0;
           margin: 0;
-          transition: max-height 0.3s ease, opacity 0.3s ease;
-          max-height: 0; // Oculto por defecto
-          opacity: 0; // Transparente por defecto
-          overflow: hidden; // Oculta los ítems hasta que se expanda
+          transition: max-height $transition-speed ease, opacity $transition-speed ease;
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
 
           .dropdown-item {
-            padding: 0.8rem 1.5rem;
-            color: #ffffff;
+            padding: 0.8rem 1.5rem 0.8rem 3.5rem;
+            color: rgba($text-light, 0.9);
             text-decoration: none;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             font-weight: 500;
-            transition: background 0.3s ease;
+            font-size: 0.9rem;
+            transition: all $transition-speed ease;
+
+            i {
+              font-size: 1rem;
+            }
 
             &:hover {
-              background: #192d2b;
+              background: rgba($admin-accent-hover, 0.5);
+              padding-left: 4rem;
+              color: $text-light;
+
+              i {
+                color: $primary-color;
+              }
             }
 
             &.active-link {
-              background-color: #3a6864;
-              font-weight: bold;
+              background-color: rgba($admin-accent-hover, 0.7);
+              color: $text-light;
+              font-weight: 700;
             }
           }
         }
+      }
 
-        // Al hacer hover sobre todo el li.dropdown, expandimos el menú
+      // Logout Link
+      .logout-link {
+        color: $danger-color !important;
+        font-weight: 700;
+
         &:hover {
-          .dropdown-menu {
-            max-height: 500px; // Un tamaño suficiente para todos los subítems
-            opacity: 1; // Ahora visible
+          background: linear-gradient(90deg, rgba($danger-color, 0.2) 0%, transparent 100%);
+          color: #e4606d !important;
+
+          &::before {
+            background: $danger-color;
+          }
+
+          i {
+            color: $danger-color !important;
           }
         }
       }
     }
+  }
 
-    .logout-link {
-      color: #e74c3c !important;
-      font-weight: bold;
-      cursor: pointer;
+  // Scrollbar Styling
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
 
-      &:hover {
-        background: #192d2b;
-      }
+  &::-webkit-scrollbar-track {
+    background: $darker-bg;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $admin-accent-hover;
+    border-radius: 10px;
+    border: 2px solid $darker-bg;
+
+    &:hover {
+      background-color: #4a847f;
     }
   }
 }
 
-.admin-menu::-webkit-scrollbar {
-  width: 8px;
+// Pulse Animation
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
 }
 
-.admin-menu::-webkit-scrollbar-track {
-  background: #0f1a1a;
-}
-
-.admin-menu::-webkit-scrollbar-thumb {
-  background-color: #192d2b;
-  border-radius: 10px;
-  border: 2px solid #0f1a1a;
-}
-
-/* Responsivo */
+// Responsive Design for Admin Menu
 @media (max-width: 768px) {
   .admin-menu {
-    width: 80%;
+    width: 85%;
+    max-width: 320px;
   }
 
   .admin-header {
     top: 10px;
     right: 10px;
+  }
+
+  .admin-toggle-button {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-menu {
+    width: 100%;
   }
 }
