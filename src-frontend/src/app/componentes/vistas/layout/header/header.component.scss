@@ -113,20 +113,28 @@ header.fixed-header {
       }
     }
 
-    // Smooth collapse transition
+    // Smooth collapse transition (mobile only)
     .navbar-collapse {
-      transition: height 0.35s ease, opacity 0.25s ease;
-
-      &.collapsing {
-        transition: height 0.35s ease;
+      // On desktop (lg and up), always show with full opacity
+      @media (min-width: 992px) {
+        opacity: 1 !important;
       }
 
-      &.show {
-        opacity: 1;
-      }
+      // On mobile/tablet, apply smooth transitions
+      @media (max-width: 991px) {
+        transition: height 0.35s ease, opacity 0.25s ease;
 
-      &:not(.show) {
-        opacity: 0;
+        &.collapsing {
+          transition: height 0.35s ease;
+        }
+
+        &.show {
+          opacity: 1;
+        }
+
+        &:not(.show) {
+          opacity: 0;
+        }
       }
     }
 
