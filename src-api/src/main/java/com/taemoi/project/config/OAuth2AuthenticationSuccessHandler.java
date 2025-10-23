@@ -67,12 +67,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 		} catch (IllegalArgumentException e) {
 			// No se encontró alumno con ese email
-			String errorUrl = frontendUrl + "/inicio?error=no_alumno_found&message=" +
+			String errorUrl = frontendUrl + "/login?error=no_alumno_found&message=" +
 							  java.net.URLEncoder.encode(e.getMessage(), "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		} catch (Exception e) {
 			// Error general
-			String errorUrl = frontendUrl + "/inicio?error=oauth_error&message=" +
+			String errorUrl = frontendUrl + "/login?error=oauth_error&message=" +
 							  java.net.URLEncoder.encode("Error en la autenticación OAuth2", "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		}
