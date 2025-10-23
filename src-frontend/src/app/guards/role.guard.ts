@@ -10,18 +10,28 @@ export const roleGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthenticationService);
   const router = inject(Router);
 
+  // Determine if this is a user-only route
+  const isUserRoute = state.url.startsWith('/userpage');
+
   // Verificamos si los roles ya están cargados para evitar una llamada innecesaria
   if (authService.rolesEstanCargados()) {
     // Si ya están cargados, verificamos directamente
     return authService.rolesCambio.pipe(
       take(1),
       map((roles) => {
-        if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
-          return true; // Permitimos acceso
+        // For user routes, allow ROLE_USER, ROLE_ADMIN, and ROLE_MANAGER
+        if (isUserRoute) {
+          if (roles.includes('ROLE_USER') || roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+            return true; // Permitimos acceso
+          }
         } else {
-          router.navigate(['/inicio']);
-          return false; // Redirigimos al inicio si no tiene permisos
+          // For admin routes, only allow ROLE_ADMIN and ROLE_MANAGER
+          if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+            return true; // Permitimos acceso
+          }
         }
+        router.navigate(['/inicio']);
+        return false; // Redirigimos al inicio si no tiene permisos
       }),
       catchError(() => {
         router.navigate(['/inicio']);
@@ -32,12 +42,19 @@ export const roleGuard: CanActivateFn = (route, state) => {
     // Si los roles no están cargados, los obtenemos primero
     return authService.obtenerRoles().pipe(
       map((roles) => {
-        if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
-          return true; // Permitimos acceso si tiene el rol adecuado
+        // For user routes, allow ROLE_USER, ROLE_ADMIN, and ROLE_MANAGER
+        if (isUserRoute) {
+          if (roles.includes('ROLE_USER') || roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+            return true; // Permitimos acceso si tiene el rol adecuado
+          }
         } else {
-          router.navigate(['/inicio']);
-          return false; // Redirigimos si no tiene permisos
+          // For admin routes, only allow ROLE_ADMIN and ROLE_MANAGER
+          if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+            return true; // Permitimos acceso si tiene el rol adecuado
+          }
         }
+        router.navigate(['/inicio']);
+        return false; // Redirigimos si no tiene permisos
       }),
       catchError(() => {
         router.navigate(['/inicio']);

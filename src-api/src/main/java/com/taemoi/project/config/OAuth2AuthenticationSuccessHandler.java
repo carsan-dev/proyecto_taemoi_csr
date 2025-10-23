@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -52,16 +51,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			// Generar JWT token
 			String jwt = jwtService.generateToken(usuario);
 
-			// Crear cookie segura con el JWT
-			ResponseCookie cookie = ResponseCookie.from("jwt", jwt)
-					.httpOnly(true)
-					.secure(false) // Cambiar a true en producción con HTTPS
-					.path("/")
-					.maxAge(36000) // 10 horas
-					.sameSite("Strict")
-					.build();
+			// Crear cookie HTTP-Only con el JWT (usando Cookie estándar como en AuthenticationController)
+			jakarta.servlet.http.Cookie jwtCookie = new jakarta.servlet.http.Cookie("jwt", jwt);
+			jwtCookie.setHttpOnly(true);
+			jwtCookie.setSecure(false); // Cambiar a true en producción con HTTPS
+			jwtCookie.setPath("/");
+			jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas
 
-			response.addHeader("Set-Cookie", cookie.toString());
+			// Agregar la cookie a la respuesta HTTP
+			response.addCookie(jwtCookie);
 
 			// Redirigir al frontend
 			String redirectUrl = frontendUrl + "/userpage";

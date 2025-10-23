@@ -55,8 +55,16 @@ export const routes: Routes = [
     component: VistaPrincipalAdminComponent,
     canActivate: [roleGuard],
   },
-  { path: 'userpage', component: VistaPrincipalUserComponent },
-  { path: 'userpage/turnos', component: TurnosUsuarioComponent },
+  {
+    path: 'userpage',
+    component: VistaPrincipalUserComponent,
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'userpage/turnos',
+    component: TurnosUsuarioComponent,
+    canActivate: [roleGuard],
+  },
   {
     path: 'alumnosListar',
     component: ListadoAlumnosComponent,
