@@ -445,6 +445,28 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	private void generarAlumnos() {
 		Faker faker = new Faker(new Locale("es"));
+
+		// Crear alumno específico: Lola Roman Ruiz
+		if (!alumnoRepository.existsByEmail("molocamosa@gmail.com")) {
+			Alumno lola = new Alumno();
+			lola.setNombre("Lola");
+			lola.setApellidos("Roman Ruiz");
+			lola.setEmail("molocamosa@gmail.com");
+			lola.setNif("12345678Z");
+			lola.setDireccion("Calle Ejemplo, 123");
+			lola.setTelefono(600123456);
+			lola.setFechaNacimiento(Date.from(LocalDate.of(1995, 5, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+			lola.setFechaAlta(Date.from(LocalDate.of(2024, 1, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+			lola.setFechaBaja(null);
+			lola.setTipoTarifa(TipoTarifa.ADULTO);
+			lola.setCuantiaTarifa(40.0);
+			lola.setGrado(gradoRepository.findByTipoGrado(TipoGrado.BLANCO));
+			lola.setDeporte(Deporte.TAEKWONDO);
+
+			lola = alumnoService.crearAlumno(lola);
+			// No creamos usuario automáticamente porque se creará con OAuth2
+		}
+
 		for (int i = 0; i < 20; i++) {
 			Alumno alumno = generarAlumno(faker);
 			if (!alumnoRepository.existsByEmail(alumno.getEmail())) {
