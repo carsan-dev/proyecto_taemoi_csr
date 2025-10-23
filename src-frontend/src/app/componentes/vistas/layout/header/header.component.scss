@@ -113,6 +113,23 @@ header.fixed-header {
       }
     }
 
+    // Smooth collapse transition
+    .navbar-collapse {
+      transition: height 0.35s ease, opacity 0.25s ease;
+
+      &.collapsing {
+        transition: height 0.35s ease;
+      }
+
+      &.show {
+        opacity: 1;
+      }
+
+      &:not(.show) {
+        opacity: 0;
+      }
+    }
+
     // Navigation Links
     .navbar-nav {
       .nav-item {
