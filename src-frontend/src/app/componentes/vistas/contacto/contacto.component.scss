@@ -202,6 +202,11 @@ $transition-speed: 0.3s;
             transform: none;
           }
 
+          &.textarea-wrapper .form-label {
+            top: 1.5rem;
+            transform: none;
+          }
+
           .form-input,
           .form-select,
           .form-textarea {
