@@ -1,57 +1,96 @@
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4 animated-card">
-    <h2 class="mb-0">Tus grupos</h2>
-    <button class="btn btn-secondary btn-back" (click)="volver()">
-      <i class="bi bi-arrow-left-circle"></i> Volver
-    </button>
-  </div>
-
-  <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
-    <!-- Acordeón para mostrar los grupos con sus turnos -->
-    <div class="accordion" id="gruposAccordion">
-      <div *ngFor="let grupo of grupos; let i = index" class="card shadow-lg mb-3">
-        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">{{ grupo.nombre }}</h5>
-          <button class="btn btn-sm btn-outline-light" (click)="toggleVerTurnos(grupo.id, i)">
-            {{ grupo.id === grupoSeleccionadoId ? 'Ocultar Turnos' : 'Ver Turnos' }}
-          </button>
-        </div>
-
-        <!-- Control de visibilidad con animación -->
-        <div *ngIf="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i" 
-             class="card-body" 
-             [ngClass]="{ 'open': grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i }">
-          <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate">
-            <!-- Listado de turnos -->
-            <div *ngFor="let diaSemana of diasSemana" class="dia-container mb-4 animated-turnos">
-              <h6 class="dia-header p-2 rounded">{{ diaSemana }}</h6>
-              <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0">
-                <ul class="list-group">
-                  <li *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)" 
-                      class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                  </li>
-                </ul>
-              </div>
-              <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length === 0" class="no-turnos p-2 mt-2 text-muted">
-                No hay turnos disponibles
-              </div>
-            </div>
-          </div>
-
-          <ng-template #noTurnosTemplate>
-            <div class="alert alert-warning text-center mt-4 animated-fade-in" role="alert">
-              No se encontraron turnos para este grupo.
-            </div>
-          </ng-template>
-        </div>
+<div class="turnos-page">
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <button class="btn-back" (click)="volver()">
+        <i class="bi bi-arrow-left-circle-fill"></i>
+        <span>Volver</span>
+      </button>
+      <div class="page-title-section">
+        <i class="bi bi-calendar3"></i>
+        <h1>Mis Horarios</h1>
       </div>
     </div>
   </div>
 
-  <ng-template #noGruposTemplate>
-    <div class="alert alert-warning text-center mt-4" role="alert">
-      No se encontraron grupos para este alumno.
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="content-wrapper">
+      <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
+        <!-- Groups Grid -->
+        <div class="groups-container">
+          <div *ngFor="let grupo of grupos; let i = index" class="group-card"
+               [class.expanded]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
+
+            <!-- Group Header -->
+            <div class="group-header" (click)="toggleVerTurnos(grupo.id, i)">
+              <div class="group-info">
+                <div class="group-icon">
+                  <i class="bi bi-collection-fill"></i>
+                </div>
+                <div class="group-details">
+                  <h3 class="group-name">{{ grupo.nombre }}</h3>
+                  <p class="group-subtitle">Haz clic para ver los horarios</p>
+                </div>
+              </div>
+              <div class="toggle-icon">
+                <i class="bi"
+                   [ngClass]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <!-- Schedule Content (Expandable) -->
+            <div class="schedule-content"
+                 [class.open]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
+              <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate"
+                   class="schedule-grid">
+                <!-- Days of the week -->
+                <div *ngFor="let diaSemana of diasSemana" class="day-card">
+                  <div class="day-header">
+                    <i class="bi bi-calendar-day"></i>
+                    <span>{{ diaSemana }}</span>
+                  </div>
+                  <div class="day-content">
+                    <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0; else noTimeslotsTemplate">
+                      <div *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)"
+                           class="time-slot">
+                        <i class="bi bi-clock-fill"></i>
+                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                      </div>
+                    </div>
+                    <ng-template #noTimeslotsTemplate>
+                      <div class="no-timeslots">
+                        <i class="bi bi-x-circle"></i>
+                        <span>Sin horarios</span>
+                      </div>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- No schedules template -->
+              <ng-template #noTurnosTemplate>
+                <div class="no-schedules-message">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  <p>No se encontraron horarios para este grupo</p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No groups template -->
+      <ng-template #noGruposTemplate>
+        <div class="no-groups-container">
+          <div class="no-groups-icon">
+            <i class="bi bi-inbox"></i>
+          </div>
+          <h3 class="no-groups-title">No tienes grupos asignados</h3>
+          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios</p>
+        </div>
+      </ng-template>
     </div>
-  </ng-template>
+  </div>
 </div>

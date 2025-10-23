@@ -138,4 +138,26 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         return '❓';
     }
   }
+
+  obtenerNombreDeporte(grupoId: number): string {
+    switch (grupoId) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+        return 'Taekwondo';
+      case 7:
+        return 'Competición';
+      case 8:
+        return 'Pilates';
+      case 9:
+        return 'Kickboxing';
+      case 10:
+        return 'Defensa Personal';
+      default:
+        return 'Otro';
+    }
+  }
 }
