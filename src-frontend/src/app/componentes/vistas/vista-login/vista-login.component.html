@@ -1,24 +1,98 @@
-<div class="login-container d-flex justify-content-center vh-100 align-items-center">
-  <div class="col-md-9 col-12">
-    <div class="card shadow row">
-      <div class="text-center d-flex flex-md-row flex-column justify-content-between align-items-center card-header p-5">
-        <h1 class="h2 fw-bold text-white m-0">INICIAR SESIÓN</h1>
-        <img src="../../../../assets/media/Logo_escuela.svg" alt="Club Moi's Kim Do Logo" class="logo img-fluid">
+<div class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <!-- Left Section - Branding -->
+      <div class="login-left">
+        <div class="branding-content">
+          <div class="brand-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+          <h1 class="brand-title">BIENVENIDO</h1>
+          <p class="brand-subtitle">Inicia sesión en tu cuenta</p>
+          <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
+          <div class="brand-features">
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Acceso seguro</span>
+            </div>
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Gestión completa</span>
+            </div>
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Actualizaciones en tiempo real</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <form (ngSubmit)="login()" class="p-5" method="post">
-        <div class="mb-5">
-          <input type="email" id="email" name="email" [(ngModel)]="credenciales.email" required class="form-control" placeholder="Email">
+
+      <!-- Right Section - Login Form -->
+      <div class="login-right">
+        <div class="form-header">
+          <h2 class="form-title">Iniciar Sesión</h2>
+          <p class="form-description">Introduce tus credenciales para acceder</p>
         </div>
-        <div class="mb-5 position-relative">
-          <input [type]="passwordFieldType" id="contrasena" name="contrasena" [(ngModel)]="credenciales.contrasena" required class="form-control" placeholder="Contraseña">
-          <span class="password-toggle position-absolute end-0 top-50 translate-middle-y me-3" (click)="togglePasswordVisibility()">
-            <i [ngClass]="passwordToggleIcon" aria-hidden="true"></i>
-          </span>
-        </div>
-        <div class="button-container d-flex justify-content-center align-items-center">
-          <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
-        </div>
-      </form>
+
+        <form (ngSubmit)="login()" class="login-form">
+          <!-- Email Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-envelope-fill input-icon"></i>
+              <input
+                type="email"
+                class="form-input"
+                id="email"
+                name="email"
+                [(ngModel)]="credenciales.email"
+                placeholder=" "
+                required
+                autocomplete="email">
+              <label for="email" class="form-label">Correo electrónico</label>
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="form-group">
+            <div class="input-wrapper">
+              <i class="bi bi-lock-fill input-icon"></i>
+              <input
+                [type]="passwordFieldType"
+                class="form-input"
+                id="contrasena"
+                name="contrasena"
+                [(ngModel)]="credenciales.contrasena"
+                placeholder=" "
+                required
+                autocomplete="current-password">
+              <label for="contrasena" class="form-label">Contraseña</label>
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="togglePasswordVisibility()"
+                aria-label="Toggle password visibility">
+                <i [ngClass]="passwordToggleIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-login">
+              <i class="bi bi-box-arrow-in-right"></i>
+              <span>Iniciar Sesión</span>
+            </button>
+          </div>
+
+          <!-- Additional Links -->
+          <div class="form-footer">
+            <a href="/inicio" class="footer-link">
+              <i class="bi bi-arrow-left-circle"></i>
+              Volver al inicio
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>
