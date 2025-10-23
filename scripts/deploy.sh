@@ -32,23 +32,23 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Check if .env.production exists
-if [ ! -f ".env.production" ]; then
-    log_error ".env.production file not found!"
-    log_info "Please copy .env.production.example to .env.production and configure it"
+# Check if .env exists
+if [ ! -f ".env" ]; then
+    log_error ".env file not found!"
+    log_info "Please copy .env.production.template to .env and configure it"
     exit 1
 fi
 
 # Load environment variables
 set -a  # Automatically export all variables
-source .env.production
+source .env
 set +a  # Stop auto-exporting
 
 # Validate required environment variables
 required_vars=("DOMAIN" "EMAIL" "MYSQL_ROOT_PASSWORD" "MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD" "JWT_SECRET")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
-        log_error "Required environment variable $var is not set in .env.production"
+        log_error "Required environment variable $var is not set in .env"
         exit 1
     fi
 done
@@ -99,7 +99,7 @@ sed -i "s/your-domain.com/$DOMAIN/g" nginx/nginx-production.conf
 
 # Stop any existing containers
 log_info "Stopping existing containers..."
-docker-compose -f docker-compose.production.yml --env-file .env.production down 2>/dev/null || true
+docker-compose -f docker-compose.production.yml --env-file .env down 2>/dev/null || true
 
 # Check if SSL certificates exist
 if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
@@ -166,8 +166,8 @@ fi
 
 # Build and start containers
 log_info "Building and starting Docker containers..."
-docker-compose -f docker-compose.production.yml --env-file .env.production build --no-cache
-docker-compose -f docker-compose.production.yml --env-file .env.production up -d
+docker-compose -f docker-compose.production.yml --env-file .env build --no-cache
+docker-compose -f docker-compose.production.yml --env-file .env up -d
 
 # Wait for services to be healthy
 log_info "Waiting for services to be ready..."
@@ -175,7 +175,7 @@ sleep 10
 
 # Check service health
 log_info "Checking service health..."
-docker-compose -f docker-compose.production.yml --env-file .env.production ps
+docker-compose -f docker-compose.production.yml --env-file .env ps
 
 # Display status
 log_info ""
@@ -188,10 +188,10 @@ log_info "  - https://$DOMAIN"
 log_info "  - https://www.$DOMAIN"
 log_info ""
 log_info "To view logs:"
-log_info "  docker-compose -f docker-compose.production.yml --env-file .env.production logs -f"
+log_info "  docker-compose -f docker-compose.production.yml --env-file .env logs -f"
 log_info ""
 log_info "To stop the application:"
-log_info "  docker-compose -f docker-compose.production.yml --env-file .env.production down"
+log_info "  docker-compose -f docker-compose.production.yml --env-file .env down"
 log_info ""
 log_info "SSL certificates will auto-renew via certbot"
 log_info ""
