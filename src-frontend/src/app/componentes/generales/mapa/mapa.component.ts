@@ -26,7 +26,8 @@ export class MapaComponent implements AfterViewInit {
   private async initializeMap(): Promise<void> {
     try {
       // Import Leaflet
-      this.L = await import('leaflet');
+      const leafletModule = await import('leaflet');
+      this.L = leafletModule.default || leafletModule;
 
       // Import plugins
       await Promise.all([
