@@ -534,10 +534,16 @@ header.fixed-header {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1100;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  width: auto;
+  pointer-events: none;
+
+  .admin-toggle-button {
+    pointer-events: auto;
+  }
 }
 
 .admin-toggle-button {
@@ -608,7 +614,7 @@ header.fixed-header {
   transform: translateX(110%);
   transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity $transition-speed ease;
   opacity: 0;
-  z-index: 1050;
+  z-index: 9998;
   font-family: "Osaka-Sans Serif", sans-serif;
   overflow-y: auto;
   scrollbar-width: thin;
