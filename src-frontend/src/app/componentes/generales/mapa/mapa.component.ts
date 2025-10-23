@@ -18,8 +18,14 @@ export class MapaComponent implements AfterViewInit {
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
-  async ngAfterViewInit() {
+  ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
+      this.initializeMap();
+    }
+  }
+
+  private async initializeMap(): Promise<void> {
+    try {
       const L = await import('leaflet');
 
       // Importar los complementos de manera dinámica
@@ -105,6 +111,8 @@ export class MapaComponent implements AfterViewInit {
       `
         )
         .openPopup();
+    } catch (error) {
+      console.error('Error initializing map:', error);
     }
   }
 
@@ -183,13 +191,13 @@ ADR;TYPE=work:;;C. Parada de la Cigüeña 36;Umbrete;Sevilla;41806;España
 END:VCARD`;
 
       const blob = new Blob([data], { type: 'text/vcard' });
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
 
       const a = document.createElement('a');
       a.href = url;
       a.download = 'ubicacion.vcf';
       a.click();
-      window.URL.revokeObjectURL(url);
+      globalThis.URL.revokeObjectURL(url);
     }
   }
 }
