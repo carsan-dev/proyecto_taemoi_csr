@@ -6,7 +6,7 @@ services:
     container_name: taemoi-mysql-prod
     restart: unless-stopped
     env_file:
-      - .env.production
+      - .env
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d
