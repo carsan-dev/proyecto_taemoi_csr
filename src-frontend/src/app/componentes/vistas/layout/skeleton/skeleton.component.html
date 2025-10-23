@@ -1,11 +1,7 @@
 <!-- skeleton.component.html -->
 <div class="p-0 d-flex flex-column container-fluid">
   <div class="row flex-grow-1">
-    <app-sidebar (colapsoCambiado)="onColapsoCambiado($event)" *ngIf="tieneRolAdminOManager"></app-sidebar>
-    <div [ngClass]="{
-      'col': tieneRolAdminOManager,
-      'sidebar-colapsado': sidebarColapsado
-    }" class="content-container p-0 d-flex flex-column">
+    <div class="content-container p-0 d-flex flex-column w-100">
       <app-header class="row justify-content-center"></app-header>
       <main class="row g-0" id="content">
         <ng-content></ng-content>
