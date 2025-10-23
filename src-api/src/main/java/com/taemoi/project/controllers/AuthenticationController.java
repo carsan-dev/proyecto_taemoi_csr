@@ -198,4 +198,16 @@ public class AuthenticationController {
 		}
 	}
 
+	/**
+	 * Endpoint para obtener la URL de inicio de sesión con Google OAuth2.
+	 *
+	 * @return Mapa con la URL de redirección para iniciar sesión con Google.
+	 */
+	@GetMapping("/oauth2/google-login-url")
+	public ResponseEntity<Map<String, String>> getGoogleLoginUrl() {
+		Map<String, String> response = new HashMap<>();
+		response.put("url", "/oauth2/authorization/google");
+		return ResponseEntity.ok(response);
+	}
+
 }
