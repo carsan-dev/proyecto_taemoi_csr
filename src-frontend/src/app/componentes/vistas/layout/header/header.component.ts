@@ -115,33 +115,63 @@ export class HeaderComponent implements OnInit, OnDestroy {
   onWindowScroll(): void {
     const currentScrollTop = window.scrollY || document.documentElement.scrollTop;
     this.scrollSubject.next(currentScrollTop);
+
+    // Collapse navbar when scrolling
+    this.collapseNavbar();
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    // Close admin menu when clicking outside
-    if (!this.adminMenuVisible) {
-      return; // Menu is closed, nothing to do
-    }
-
     const target = event.target as HTMLElement;
-    console.log('Document clicked, target:', target.className);
 
-    // Check if clicked on toggle button or its children
-    const clickedToggleButton = target.closest('.admin-toggle-button');
-    if (clickedToggleButton) {
-      console.log('Clicked toggle button, ignoring');
-      return; // Let the toggle button handle it
+    // Close admin menu when clicking outside (for admin sidebar)
+    if (this.adminMenuVisible) {
+      // Check if clicked on toggle button or its children
+      const clickedToggleButton = target.closest('.admin-toggle-button');
+      if (clickedToggleButton) {
+        return; // Let the toggle button handle it
+      }
+
+      // Check if clicked inside the menu or its children
+      const clickedInsideMenu = target.closest('.admin-menu');
+      if (!clickedInsideMenu) {
+        // Clicked outside the menu, close it
+        this.adminMenuVisible = false;
+      }
     }
 
-    // Check if clicked inside the menu or its children
-    const clickedInsideMenu = target.closest('.admin-menu');
-    if (!clickedInsideMenu) {
-      // Clicked outside the menu, close it
-      console.log('Clicked outside menu, closing');
-      this.adminMenuVisible = false;
-    } else {
-      console.log('Clicked inside menu, keeping open');
+    // Close Bootstrap navbar when clicking outside (for anonymous/user navbars)
+    const navbarCollapse = document.querySelector('.navbar-collapse.show');
+    if (navbarCollapse) {
+      const clickedToggler = target.closest('.navbar-toggler');
+
+      // Don't close if clicking the toggler button (let Bootstrap handle it)
+      if (clickedToggler) {
+        return;
+      }
+
+      const clickedInsideNavbar = target.closest('.navbar');
+      const clickedNavLink = target.closest('.nav-link') || target.closest('.dropdown-item');
+      const clickedButton = target.closest('.btn-login') || target.closest('.btn-my-classes') || target.closest('.social-link');
+
+      // Close if clicked on a nav-link/dropdown-item/button OR clicked outside the navbar
+      if (clickedNavLink || clickedButton || !clickedInsideNavbar) {
+        this.collapseNavbar();
+      }
+    }
+  }
+
+  private collapseNavbar(): void {
+    const navbarCollapse = document.querySelector('.navbar-collapse.show') as HTMLElement;
+    if (navbarCollapse) {
+      // Use Bootstrap's Collapse API for smooth animation
+      const bsCollapse = (window as any).bootstrap?.Collapse?.getInstance(navbarCollapse);
+      if (bsCollapse) {
+        bsCollapse.hide();
+      } else {
+        // Fallback: manually remove class with transition
+        navbarCollapse.classList.remove('show');
+      }
     }
   }
 
