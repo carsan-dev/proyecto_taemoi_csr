@@ -25,6 +25,19 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    // Show welcome message if this is a fresh OAuth2 login
+    this.authService.obtenerNombreUsuario().subscribe((nombre) => {
+      if (nombre && !sessionStorage.getItem('welcomeShown')) {
+        Swal.fire({
+          title: 'Inicio de sesión exitoso',
+          text: `¡Bienvenido/a, ${nombre}!`,
+          icon: 'success',
+          timer: 2000,
+        });
+        sessionStorage.setItem('welcomeShown', 'true');
+      }
+    });
+
     // Cargar todos los alumnos asociados al email del usuario
     this.authService.obtenerTodosLosAlumnos().subscribe({
       next: (alumnos) => {

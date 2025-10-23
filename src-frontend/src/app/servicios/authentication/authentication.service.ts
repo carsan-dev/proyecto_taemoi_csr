@@ -101,6 +101,11 @@ export class AuthenticationService {
           this.usernameSubject.next(null); // Limpiar nombre de usuario
           this.emailSubject.next(null); // Limpiar email
           this.rolesCargados = false; // Reiniciar roles cargados
+
+          // Limpiar la bandera de mensaje de bienvenida
+          if (typeof window !== 'undefined' && window.sessionStorage) {
+            sessionStorage.removeItem('welcomeShown');
+          }
         },
         error: (error) => {
           console.error('Error al cerrar sesión', error);

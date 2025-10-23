@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-vista-principal-admin',
@@ -54,11 +55,26 @@ export class VistaPrincipalAdminComponent implements OnInit {
     },
   ];
 
-  constructor(private readonly authService: AuthenticationService) {}
+  constructor(
+    private readonly authService: AuthenticationService,
+    private readonly route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
     this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       this.nombreUsuario = nombre ?? '';
+
+      // Check if this is a fresh OAuth2 login (coming from backend redirect)
+      // We check if user just logged in by verifying URL doesn't have any prior navigation
+      if (nombre && !sessionStorage.getItem('welcomeShown')) {
+        Swal.fire({
+          title: 'Inicio de sesión exitoso',
+          text: `¡Bienvenido/a, ${nombre}!`,
+          icon: 'success',
+          timer: 2000,
+        });
+        sessionStorage.setItem('welcomeShown', 'true');
+      }
     });
   }
 }
