@@ -443,6 +443,37 @@ $transition-speed: 0.3s;
         }
       }
 
+      .info-message {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-left: 4px solid #2196f3;
+        border-radius: 8px;
+        padding: 1rem 1.2rem;
+        margin: 1.5rem 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.8rem;
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+
+        i {
+          color: #2196f3;
+          font-size: 1.3rem;
+          flex-shrink: 0;
+          margin-top: 0.1rem;
+        }
+
+        p {
+          margin: 0;
+          color: #1565c0;
+          font-size: 0.9rem;
+          line-height: 1.5;
+
+          strong {
+            font-weight: 600;
+            color: #0d47a1;
+          }
+        }
+      }
+
       .form-footer {
         margin-top: 2rem;
         text-align: center;
