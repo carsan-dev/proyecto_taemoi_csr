@@ -31,7 +31,7 @@
       <div class="login-right">
         <div class="form-header">
           <h2 class="form-title">Iniciar Sesión</h2>
-          <p class="form-description">Introduce tus credenciales para acceder</p>
+          <p class="form-description">Introduce tus credenciales de admin para acceder</p>
         </div>
 
         <form (ngSubmit)="login()" class="login-form">
@@ -95,6 +95,12 @@
               <i class="bi bi-google"></i>
               <span>Continuar con Google</span>
             </button>
+          </div>
+
+          <!-- Info Message for Students -->
+          <div class="info-message">
+            <i class="bi bi-info-circle-fill"></i>
+            <p><strong>Alumnos:</strong> Utiliza el botón "Continuar con Google" para acceder a tu cuenta y consultar tus turnos.</p>
           </div>
 
           <!-- Additional Links -->
