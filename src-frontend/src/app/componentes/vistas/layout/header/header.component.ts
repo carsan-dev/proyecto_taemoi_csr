@@ -22,6 +22,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private lastScrollTop: number = 0;
   username: string | null = null;
 
+  // Expandable menu sections
+  expandedSections: { [key: string]: boolean } = {
+    alumnos: false,
+    grupos: false,
+    turnos: false,
+    eventos: false,
+    productos: false,
+    convocatorias: false
+  };
+
   // Scroll optimization
   private scrollSubject = new Subject<number>();
   private subscriptions = new Subscription();
@@ -91,6 +101,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   closeAdminMenu(): void {
     console.log('closeAdminMenu called');
     this.adminMenuVisible = false;
+    // Collapse all sections when closing the menu
+    Object.keys(this.expandedSections).forEach(key => {
+      this.expandedSections[key] = false;
+    });
+  }
+
+  toggleSection(section: string): void {
+    this.expandedSections[section] = !this.expandedSections[section];
   }
 
   @HostListener('window:scroll', [])
