@@ -94,121 +94,136 @@
 </header>
 
 <!-- Header para administradores -->
-<header class="admin-header" *ngIf="isAdmin">
-  <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú" [class.active]="adminMenuVisible">
-    <i class="bi" [ngClass]="adminMenuVisible ? 'bi-x-lg' : 'bi-list'"></i>
-  </button>
-  <nav class="admin-menu" [ngClass]="{ 'show': adminMenuVisible }" #adminMenu>
-    <div class="admin-menu-header">
-      <div class="admin-branding">
-        <i class="bi bi-shield-fill-check"></i>
-        <div class="admin-info">
-          <span class="admin-label">Panel de Administración</span>
-          <span class="admin-username" *ngIf="username">{{ username }}</span>
-        </div>
+<header class="admin-top-navbar" *ngIf="isAdmin">
+  <div class="navbar-container">
+    <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú">
+      <i class="bi bi-list"></i>
+    </button>
+    <a class="navbar-brand" [routerLink]="['/adminpage']">
+      <img class="admin-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo">
+      <div class="brand-text">
+        <span class="brand-title">MOI'S KIM DO</span>
+        <span class="brand-subtitle">Panel de Administración</span>
       </div>
+    </a>
+    <div class="navbar-actions">
+      <div class="admin-user-info">
+        <i class="bi bi-person-circle"></i>
+        <span class="username" *ngIf="username">{{ username }}</span>
+      </div>
+      <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
     </div>
-    <ul class="admin-menu-list">
-      <li class="menu-section-title">Navegación Principal</li>
-      <li>
-        <a class="nav-link" [routerLink]="['/adminpage']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-speedometer2"></i>
-          <span>Dashboard</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-house-door"></i>
-          <span>Inicio</span>
-        </a>
-      </li>
-      <li class="nav-item dropdown">
-        <div class="dropdown-toggle nav-link">
-          <i class="bi bi-trophy"></i>
-          <span>¿Qué hacemos?</span>
-        </div>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="dropdown-item" [routerLink]="['/eltaekwondo']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">
-              <i class="bi bi-lightning-fill"></i>Taekwondo
-            </a>
-          </li>
-          <li>
-            <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">
-              <i class="bi bi-gem"></i>Kickboxing
-            </a>
-          </li>
-          <li>
-            <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">
-              <i class="bi bi-heart-pulse"></i>Pilates
-            </a>
-          </li>
-          <li>
-            <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link" (click)="closeAdminMenu(); $event.stopPropagation()">
-              <i class="bi bi-shield-fill-check"></i>Defensa Personal Femenina
-            </a>
-          </li>
-        </ul>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-calendar-event"></i>
-          <span>Eventos</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-clock"></i>
-          <span>Horarios</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-envelope"></i>
-          <span>Contacto</span>
-        </a>
-      </li>
-      <li class="menu-section-title">Gestión</li>
-      <li>
-        <a class="nav-link" [routerLink]="['/alumnosListar']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-people"></i>
-          <span>Alumnos</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-collection"></i>
-          <span>Grupos</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/turnosListar']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-calendar3"></i>
-          <span>Turnos</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/eventosListar']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-calendar-check"></i>
-          <span>Eventos</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" [routerLink]="['/productosListar']" routerLinkActive="active" (click)="closeAdminMenu(); $event.stopPropagation()">
-          <i class="bi bi-cart3"></i>
-          <span>Productos</span>
-        </a>
-      </li>
-      <li class="menu-divider"></li>
-      <li>
-        <a class="nav-link logout-link" (click)="cerrarSesion()">
-          <i class="bi bi-box-arrow-right"></i>
-          <span>Cerrar Sesión</span>
-        </a>
-      </li>
-    </ul>
-  </nav>
+  </div>
 </header>
+
+<nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }" *ngIf="isAdmin">
+  <div class="sidebar-header">
+    <h3>Navegación</h3>
+    <button class="close-sidebar" (click)="closeAdminMenu()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <ul class="sidebar-menu">
+    <li class="menu-section">
+      <span class="section-title">Principal</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/adminpage']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-speedometer2"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/inicio']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
+        <i class="bi bi-house-door"></i>
+        <span>Inicio</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/eventos']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-calendar-event"></i>
+        <span>Eventos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-clock"></i>
+        <span>Horarios</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/contacto']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-envelope"></i>
+        <span>Contacto</span>
+      </a>
+    </li>
+
+    <li class="menu-section">
+      <span class="section-title">Deportes</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/eltaekwondo']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-lightning-fill"></i>
+        <span>Taekwondo</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/kickboxing']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-gem"></i>
+        <span>Kickboxing</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/pilates']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-heart-pulse"></i>
+        <span>Pilates</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-shield-fill-check"></i>
+        <span>Defensa Personal</span>
+      </a>
+    </li>
+
+    <li class="menu-section">
+      <span class="section-title">Gestión</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-people"></i>
+        <span>Alumnos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-collection"></i>
+        <span>Grupos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/turnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-calendar3"></i>
+        <span>Turnos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/eventosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-calendar-check"></i>
+        <span>Eventos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/productosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-cart3"></i>
+        <span>Productos</span>
+      </a>
+    </li>
+  </ul>
+</nav>
 
 <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}" *ngIf="usuarioLogueado && isUser && !isAdmin">
   <nav class="navbar navbar-expand-lg bg-white p-0">
