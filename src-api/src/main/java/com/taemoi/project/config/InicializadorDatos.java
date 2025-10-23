@@ -446,12 +446,14 @@ public class InicializadorDatos implements CommandLineRunner {
 	private void generarAlumnos() {
 		Faker faker = new Faker(new Locale("es"));
 
-		// Crear alumno específico: Lola Roman Ruiz
-		if (!alumnoRepository.existsByEmail("molocamosa@gmail.com")) {
+		String sharedEmail = "noreplymoiskimdo@gmail.com";
+
+		// Crear primer alumno: Lola Roman Ruiz
+		if (alumnoRepository.findByNif("12345678Z").isEmpty()) {
 			Alumno lola = new Alumno();
 			lola.setNombre("Lola");
 			lola.setApellidos("Roman Ruiz");
-			lola.setEmail("molocamosa@gmail.com");
+			lola.setEmail(sharedEmail);
 			lola.setNif("12345678Z");
 			lola.setDireccion("Calle Ejemplo, 123");
 			lola.setTelefono(600123456);
@@ -464,6 +466,27 @@ public class InicializadorDatos implements CommandLineRunner {
 			lola.setDeporte(Deporte.TAEKWONDO);
 
 			lola = alumnoService.crearAlumno(lola);
+			// No creamos usuario automáticamente porque se creará con OAuth2
+		}
+
+		// Crear segundo alumno con el mismo email: Carlos Roman Ruiz
+		if (alumnoRepository.findByNif("87654321A").isEmpty()) {
+			Alumno carlos = new Alumno();
+			carlos.setNombre("Carlos");
+			carlos.setApellidos("Roman Ruiz");
+			carlos.setEmail(sharedEmail); // Mismo email que Lola
+			carlos.setNif("87654321A");
+			carlos.setDireccion("Calle Ejemplo, 123");
+			carlos.setTelefono(600123456);
+			carlos.setFechaNacimiento(Date.from(LocalDate.of(2010, 8, 20).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+			carlos.setFechaAlta(Date.from(LocalDate.of(2024, 1, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+			carlos.setFechaBaja(null);
+			carlos.setTipoTarifa(TipoTarifa.INFANTIL);
+			carlos.setCuantiaTarifa(35.0);
+			carlos.setGrado(gradoRepository.findByTipoGrado(TipoGrado.AMARILLO));
+			carlos.setDeporte(Deporte.TAEKWONDO);
+
+			carlos = alumnoService.crearAlumno(carlos);
 			// No creamos usuario automáticamente porque se creará con OAuth2
 		}
 

@@ -198,6 +198,15 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	Optional<Alumno> findByEmail(String email);
 
+	/**
+	 * Busca todos los alumnos con un email específico.
+	 * Útil para casos donde múltiples alumnos (ej. familia) comparten el mismo email.
+	 *
+	 * @param email El email a buscar.
+	 * @return Lista de alumnos con ese email.
+	 */
+	List<Alumno> findAllByEmail(String email);
+
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
 	List<Alumno> findAlumnosSinGrupo();
 
