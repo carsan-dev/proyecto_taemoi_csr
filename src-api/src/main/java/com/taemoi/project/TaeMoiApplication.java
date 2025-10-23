@@ -19,15 +19,21 @@ public class TaeMoiApplication {
 			if (envPathOptional.isPresent()) {
 				Path envPath = envPathOptional.get();
 				Dotenv dotenv = Dotenv.configure().directory(envPath.getParent().toString()).load();
-				dotenv.entries().forEach(entry -> {
-					System.setProperty(entry.getKey(), entry.getValue());
-				});
+
+				SpringApplication app = new SpringApplication(TaeMoiApplication.class);
+				app.setDefaultProperties(dotenv.entries().stream()
+					.collect(java.util.stream.Collectors.toMap(
+						e -> e.getKey(),
+						e -> e.getValue()
+					)));
+				app.run(args);
 			} else {
 				System.out.println(".env file not found!");
+				SpringApplication.run(TaeMoiApplication.class, args);
 			}
+		} else {
+			SpringApplication.run(TaeMoiApplication.class, args);
 		}
-
-		SpringApplication.run(TaeMoiApplication.class, args);
 	}
 
 	private static Optional<Path> findEnvFile(Path startPath, int maxDepth) {
