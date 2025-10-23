@@ -1,109 +1,496 @@
-.container-fluid {
-  margin: 125px auto 0 auto;
-  padding: 0 15px;
+// ========================================
+// VARIABLES
+// ========================================
+@use 'sass:color';
+
+$primary-color: #007bff;
+$primary-dark: #0056b3;
+$dark-bg: #1b2b2e;
+$dark-accent: #284747;
+$text-light: #ffffff;
+$text-dark: #212529;
+$text-muted: #6c757d;
+$success-color: #28a745;
+$warning-color: #ffc107;
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ========================================
+// TURNOS PAGE
+// ========================================
+.turnos-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding-top: 120px; // Increased to prevent content hiding behind header
 }
 
-.card {
-  border-radius: 10px;
-  border: none;
-  transition: all 0.3s ease-in-out;
-  background-color: #f7f9fc; /* Fondo claro */
+// ========================================
+// HERO HEADER
+// ========================================
+.hero-header {
+  position: relative;
+  background: linear-gradient(135deg, $dark-bg 0%, $dark-accent 100%);
+  padding: 2.5rem 2rem;
+  margin-bottom: 3rem;
+  overflow: hidden;
 
-  &-header {
-    background: linear-gradient(90deg, #007bff, #00aaff);
-    color: #fff;
-    padding: 15px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    border-bottom: 4px solid #00aaff; /* Azul más suave */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    animation: pulse 15s infinite;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('../../../../../assets/media/Logo_escuela.svg') center/contain no-repeat;
+    opacity: 0.03;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
-  &-body {
-    padding: 0;
-    max-height: 0; /* Inicialmente cerrado */
-    overflow: hidden; /* Para evitar desbordes cuando esté cerrado */
-    transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; /* Transición suave */
-    background-color: #ffffff; /* Fondo claro para mayor legibilidad */
+  .btn-back {
+    align-self: flex-start;
+    padding: 0.8rem 1.5rem;
+    background: rgba($text-light, 0.1);
+    color: $text-light;
+    border: 2px solid rgba($text-light, 0.3);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: $transition;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+
+    i {
+      font-size: 1.2rem;
+    }
+
+    &:hover {
+      background: rgba($text-light, 0.2);
+      border-color: rgba($text-light, 0.5);
+      transform: translateY(-2px);
+    }
   }
 
-  &-body.open {
-    padding: 20px;
-    max-height: 1000px; /* Una altura máxima grande para asegurar que se expanda completamente */
-    transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; /* Transición suave al abrir */
-  }
-}
+  .page-title-section {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInDown 0.6s ease;
 
-.dia-header {
-  background-color: #3399ff; /* Azul más suave */
-  color: #fff;
-  text-align: center;
-  font-weight: bold;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra suave */
-}
+    i {
+      font-size: 3rem;
+      color: $text-light;
+      opacity: 0.9;
+    }
 
-.no-turnos {
-  color: #6c757d; /* Gris más claro */
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-.list-group-item {
-  background-color: #f7f9fc; /* Fondo claro */
-  font-size: 1rem;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  padding: 10px;
-  color: #007bff; /* Azul consistente */
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Sombra ligera */
-  
-  &:hover {
-    background-color: #e0f2ff; /* Fondo claro al hacer hover */
-  }
-}
-
-.btn-primary {
-  background-color: #007bff;
-  border: none;
-  border-radius: 50px;
-  padding: 10px 20px;
-  font-size: 1rem;
-  text-transform: uppercase;
-  transition: background-color 0.3s ease-in-out;
-
-  &:hover {
-    background-color: #0056b3;
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: $text-light;
+      margin: 0;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
   }
 }
 
-.btn-outline-light {
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+// ========================================
+// MAIN CONTENT
+// ========================================
+.main-content {
+  padding: 0 2rem 3rem;
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.7);
+  .content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  // Groups Container
+  .groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeInUp 0.6s ease 0.3s backwards;
+  }
+
+  // Group Card
+  .group-card {
+    background: $text-light;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: $shadow-md;
+    transition: $transition;
+
+    &:hover {
+      box-shadow: $shadow-lg;
+    }
+
+    &.expanded {
+      .group-header {
+        background: linear-gradient(135deg, $primary-color, $primary-dark);
+
+        .toggle-icon i {
+          transform: rotate(180deg);
+        }
+      }
+    }
+
+    // Group Header
+    .group-header {
+      background: linear-gradient(135deg, $dark-bg, $dark-accent);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: $transition;
+
+      &:hover {
+        background: linear-gradient(135deg, color.adjust($dark-bg, $lightness: 5%), color.adjust($dark-accent, $lightness: 5%));
+      }
+
+      .group-info {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+
+        .group-icon {
+          width: 60px;
+          height: 60px;
+          background: rgba($text-light, 0.1);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+
+          i {
+            font-size: 1.8rem;
+            color: $text-light;
+          }
+        }
+
+        .group-details {
+          .group-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: $text-light;
+            margin: 0 0 0.3rem 0;
+          }
+
+          .group-subtitle {
+            font-size: 0.9rem;
+            color: rgba($text-light, 0.7);
+            margin: 0;
+          }
+        }
+      }
+
+      .toggle-icon {
+        i {
+          font-size: 1.5rem;
+          color: $text-light;
+          transition: transform 0.3s ease;
+        }
+      }
+    }
+
+    // Schedule Content (Expandable)
+    .schedule-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.open {
+        max-height: 3000px;
+        padding: 2rem;
+      }
+
+      // Schedule Grid
+      .schedule-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        animation: fadeIn 0.5s ease;
+      }
+
+      // Day Card
+      .day-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: $shadow-sm;
+        transition: $transition;
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: $shadow-md;
+        }
+
+        .day-header {
+          background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 10%));
+          color: $text-light;
+          padding: 0.8rem 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-weight: 600;
+          font-size: 1rem;
+
+          i {
+            font-size: 1.1rem;
+          }
+        }
+
+        .day-content {
+          padding: 1rem;
+
+          // Time Slot
+          .time-slot {
+            background: $text-light;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: $shadow-sm;
+            transition: $transition;
+            border-left: 3px solid $success-color;
+
+            i {
+              color: $success-color;
+              font-size: 1rem;
+            }
+
+            span {
+              font-size: 0.95rem;
+              font-weight: 500;
+              color: $text-dark;
+            }
+
+            &:hover {
+              transform: translateX(5px);
+              box-shadow: $shadow-md;
+            }
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+          }
+
+          // No Timeslots
+          .no-timeslots {
+            padding: 1rem;
+            text-align: center;
+            color: $text-muted;
+            font-style: italic;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+
+            i {
+              font-size: 1.5rem;
+              opacity: 0.5;
+            }
+
+            span {
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+
+      // No Schedules Message
+      .no-schedules-message {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: $warning-color;
+
+        i {
+          font-size: 3rem;
+          margin-bottom: 1rem;
+          opacity: 0.7;
+        }
+
+        p {
+          font-size: 1.1rem;
+          font-weight: 500;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // No Groups State
+  .no-groups-container {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: $text-light;
+    border-radius: 20px;
+    box-shadow: $shadow-md;
+    animation: fadeInUp 0.6s ease 0.3s backwards;
+
+    .no-groups-icon {
+      font-size: 5rem;
+      color: $text-muted;
+      margin-bottom: 1.5rem;
+      opacity: 0.5;
+    }
+
+    .no-groups-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin-bottom: 0.5rem;
+    }
+
+    .no-groups-text {
+      font-size: 1rem;
+      color: $text-muted;
+      margin: 0;
+    }
   }
 }
 
-.animated-card {
-  animation: slideInUp 0.5s ease-out;
+// ========================================
+// ANIMATIONS
+// ========================================
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animated-turnos {
-  animation: fadeIn 0.5s ease-in-out; /* Animación de fade-in */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  0% {
+  from {
     opacity: 0;
   }
-  100% {
+  to {
     opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// ========================================
+// RESPONSIVE
+// ========================================
+@media (max-width: 768px) {
+  .turnos-page {
+    padding-top: 90px; // Adjusted for mobile header
+  }
+
+  .hero-header {
+    padding: 2rem 1rem;
+
+    .page-title-section {
+      i {
+        font-size: 2.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    .btn-back {
+      padding: 0.7rem 1.2rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  .main-content {
+    padding: 0 1rem 2rem;
+
+    .group-card {
+      .group-header {
+        padding: 1.2rem 1.5rem;
+
+        .group-info {
+          gap: 1rem;
+
+          .group-icon {
+            width: 50px;
+            height: 50px;
+
+            i {
+              font-size: 1.5rem;
+            }
+          }
+
+          .group-details {
+            .group-name {
+              font-size: 1.2rem;
+            }
+
+            .group-subtitle {
+              font-size: 0.85rem;
+            }
+          }
+        }
+      }
+
+      .schedule-content {
+        &.open {
+          padding: 1.5rem;
+        }
+
+        .schedule-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+      }
+    }
   }
 }

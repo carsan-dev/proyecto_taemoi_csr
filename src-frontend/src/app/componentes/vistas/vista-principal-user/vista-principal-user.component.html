@@ -1,53 +1,88 @@
-<div class="container">
-  <!-- Selector de alumnos (solo se muestra si hay más de un alumno) -->
-  <div *ngIf="alumnos.length > 1" class="card shadow-sm mb-3">
-    <div class="card-body">
-      <h5 class="card-title">Seleccionar alumno:</h5>
-      <div class="btn-group" role="group">
+<div class="user-page">
+  <!-- Hero Header Section -->
+  <div class="hero-header">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="welcome-section">
+        <h1 class="welcome-title">¡Bienvenido!</h1>
+        <p class="welcome-subtitle" *ngIf="selectedAlumno">
+          <i class="bi bi-person-circle"></i> {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+        </p>
+      </div>
+
+      <!-- Student Selector (if multiple students) -->
+      <div *ngIf="alumnos.length > 1" class="student-selector">
+        <label class="selector-label">
+          <i class="bi bi-people-fill"></i> Seleccionar alumno
+        </label>
+        <div class="student-buttons">
+          <button
+            *ngFor="let alumno of alumnos"
+            type="button"
+            class="student-btn"
+            [class.active]="selectedAlumno?.id === alumno.id"
+            (click)="seleccionarAlumno(alumno)">
+            <i class="bi bi-person-badge"></i>
+            {{ alumno.nombre }} {{ alumno.apellidos }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Action Button -->
+      <div class="quick-action">
         <button
-          *ngFor="let alumno of alumnos"
           type="button"
-          class="btn"
-          [ngClass]="{'btn-primary': selectedAlumno?.id === alumno.id, 'btn-outline-primary': selectedAlumno?.id !== alumno.id}"
-          (click)="seleccionarAlumno(alumno)">
-          {{ alumno.nombre }} {{ alumno.apellidos }}
+          class="btn-schedule"
+          [routerLink]="['/userpage/turnos']">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Ver horarios</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Información del alumno seleccionado -->
-  <div *ngIf="selectedAlumno" class="card shadow-lg mb-5 animated-card">
-    <div class="card-header text-center bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-      <h1 class="card-title m-0">Grupos de {{ selectedAlumno.nombre }}</h1>
-      <!-- Botón general para ver los turnos -->
-      <button
-        type="button"
-        class="btn btn-primary btn-glow"
-        [routerLink]="['/userpage/turnos']"
-      >
-        <i class="bi bi-calendar-check"></i> Ver todos los turnos
-      </button>
-    </div>
-    <div class="card-body">
-      <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
-        <!-- Grid para mostrar los grupos en forma compacta -->
-        <div class="row d-flex justify-content-center align-items-center">
-          <div *ngFor="let grupo of grupos" class="col-6 col-md-4 col-lg-3 mb-4">
-            <div [ngClass]="obtenerClaseGrupo(grupo.id)" class="group-badge d-flex flex-column align-items-center justify-content-center">
-              <span class="emoji fs-1">{{ obtenerEmoticonoCategoria(grupo.id) }}</span>
-              <span class="group-name mt-2">{{ grupo.nombre }}</span>
+  <!-- Main Content - Groups Section -->
+  <div class="main-content">
+    <div class="content-wrapper">
+      <!-- Section Title -->
+      <div class="section-header">
+        <div class="section-title-box">
+          <i class="bi bi-collection-fill"></i>
+          <h2>Mis Grupos</h2>
+        </div>
+        <div class="section-divider"></div>
+      </div>
+
+      <!-- Groups Grid -->
+      <div *ngIf="selectedAlumno && (endpointsService.gruposDelAlumno$ | async) as grupos; else noGruposTemplate">
+        <div *ngIf="grupos.length > 0; else noGruposTemplate" class="groups-grid">
+          <div *ngFor="let grupo of grupos" class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
+            <div class="card-shine"></div>
+            <div class="group-card-inner">
+              <div class="group-icon">
+                <span class="emoji">{{ obtenerEmoticonoCategoria(grupo.id) }}</span>
+              </div>
+              <div class="group-info">
+                <h3 class="group-name">{{ grupo.nombre }}</h3>
+                <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
+                  {{ obtenerNombreDeporte(grupo.id) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- No Groups Template -->
+      <ng-template #noGruposTemplate>
+        <div class="no-groups-container">
+          <div class="no-groups-icon">
+            <i class="bi bi-inbox"></i>
+          </div>
+          <h3 class="no-groups-title">No tienes grupos asignados</h3>
+          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
+        </div>
+      </ng-template>
     </div>
   </div>
-
-  <ng-template #noGruposTemplate>
-    <div class="alert alert-info text-center animated-fade-in" role="alert">
-      <h3>No se encontraron grupos para este alumno.</h3>
-      <p>¡Únete a un grupo para comenzar!</p>
-    </div>
-  </ng-template>
 </div>
