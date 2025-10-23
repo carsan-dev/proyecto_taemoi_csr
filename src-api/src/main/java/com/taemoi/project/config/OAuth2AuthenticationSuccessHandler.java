@@ -61,8 +61,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			// Agregar la cookie a la respuesta HTTP
 			response.addCookie(jwtCookie);
 
-			// Redirigir al frontend
-			String redirectUrl = frontendUrl + "/userpage";
+			// Redirigir al frontend basado en el rol del usuario
+			String redirectPath;
+			if (usuario.getRoles().contains(com.taemoi.project.entities.Roles.ROLE_ADMIN) ||
+				usuario.getRoles().contains(com.taemoi.project.entities.Roles.ROLE_MANAGER)) {
+				redirectPath = "/adminpage";
+			} else {
+				redirectPath = "/userpage";
+			}
+			String redirectUrl = frontendUrl + redirectPath;
 			getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
 		} catch (IllegalArgumentException e) {
