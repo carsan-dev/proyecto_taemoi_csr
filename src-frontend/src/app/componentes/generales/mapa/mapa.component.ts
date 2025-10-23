@@ -9,12 +9,11 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
   styleUrls: ['./mapa.component.scss'],
 })
 export class MapaComponent implements AfterViewInit {
-  localizacionConcreta: [number, number] = [
-    37.368258873076506, -6.160836430640318,
-  ];
-  map!: any;
+  localizacionConcreta: [number, number] = [37.368258873076506, -6.160836430640318];
+  map: any;
   routingControl?: any;
   pulsatingIcon: any;
+  L: any;
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
@@ -26,162 +25,183 @@ export class MapaComponent implements AfterViewInit {
 
   private async initializeMap(): Promise<void> {
     try {
-      const L = await import('leaflet');
+      // Import Leaflet
+      this.L = await import('leaflet');
 
-      // Importar los complementos de manera dinámica
+      // Import plugins
       await Promise.all([
         import('leaflet-routing-machine'),
         import('leaflet-control-geocoder'),
         import('leaflet-minimap'),
       ]);
 
-      // Inicializar el mapa
-      this.map = L.map('map').setView(this.localizacionConcreta, 13);
+      // Initialize map
+      this.map = this.L.map('map').setView(this.localizacionConcreta, 13);
 
-      // Capas base
+      // Add base layers
+      const mapaLayer = this.L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }
+      );
+
+      const sateliteLayer = this.L.tileLayer(
+        'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        {
+          maxZoom: 17,
+          attribution: '© OpenTopoMap contributors'
+        }
+      );
+
       const baseMaps = {
-        Mapa: L.tileLayer(
-          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          { maxZoom: 19 }
-        ),
-        Satélite: L.tileLayer(
-          'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-          { maxZoom: 17 }
-        ),
+        'Mapa': mapaLayer,
+        'Satélite': sateliteLayer
       };
 
-      baseMaps['Mapa'].addTo(this.map);
+      // Add default layer
+      mapaLayer.addTo(this.map);
 
-      // Control de capas
-      L.control.layers(baseMaps).addTo(this.map);
+      // Add layer control
+      this.L.control.layers(baseMaps).addTo(this.map);
 
-      // Geocodificador
-      const geocoder = (L.Control as any)
-        .geocoder({
+      // Add geocoder with safe error handling
+      try {
+        const geocoder = (this.L.Control as any).geocoder({
           defaultMarkGeocode: false,
-        })
-        .on('markgeocode', (e: any) => {
-          const bbox = e.geocode?.bbox;
-          if (bbox && typeof bbox.getSouthEast === 'function') {
-            const poly = L.polygon([
-              bbox.getSouthEast(),
-              bbox.getNorthEast(),
-              bbox.getNorthWest(),
-              bbox.getSouthWest(),
-            ]);
-            this.map.fitBounds(poly.getBounds());
+        });
+
+        geocoder.on('markgeocode', (e: any) => {
+          try {
+            if (e && e.geocode && e.geocode.bbox) {
+              const bbox = e.geocode.bbox;
+              const poly = this.L.polygon([
+                bbox.getSouthEast(),
+                bbox.getNorthEast(),
+                bbox.getNorthWest(),
+                bbox.getSouthWest(),
+              ]);
+              this.map.fitBounds(poly.getBounds());
+            }
+          } catch (err) {
+            console.error('Error handling geocode result:', err);
           }
-        })
-        .addTo(this.map);
+        });
 
-      const screenWidth =
-        window.innerWidth ||
-        document.documentElement.clientWidth ||
-        document.body.clientWidth;
-
-      // Solo agregar el minimapa si el ancho es mayor a 576px
-      if (screenWidth > 576) {
-        const miniMapLayer = L.tileLayer(
-          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-        );
-        const miniMap = new (L.Control as any).MiniMap(miniMapLayer, {
-          toggleDisplay: true,
-          position: 'topleft',
-        }).addTo(this.map);
+        geocoder.addTo(this.map);
+      } catch (err) {
+        console.warn('Geocoder plugin not available:', err);
       }
 
-      // Icono personalizado con animación
-      this.pulsatingIcon = L.divIcon({
+      // Add minimap on larger screens
+      const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+      if (screenWidth > 576) {
+        try {
+          const miniMapLayer = this.L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          );
+          const miniMap = new (this.L.Control as any).MiniMap(miniMapLayer, {
+            toggleDisplay: true,
+            position: 'topleft',
+          });
+          miniMap.addTo(this.map);
+        } catch (err) {
+          console.warn('Minimap plugin not available:', err);
+        }
+      }
+
+      // Create custom pulsating icon
+      this.pulsatingIcon = this.L.divIcon({
         className: 'pulsating-icon',
         html: '<i class="bi-geo-alt-fill text-danger fs-1"></i>',
         iconSize: [30, 30],
       });
 
-      const marker = L.marker(this.localizacionConcreta, {
+      // Add marker
+      const marker = this.L.marker(this.localizacionConcreta, {
         icon: this.pulsatingIcon,
       }).addTo(this.map);
-      marker
-        .bindPopup(
-          `
+
+      // Add popup
+      const lat = this.localizacionConcreta[0];
+      const lng = this.localizacionConcreta[1];
+
+      marker.bindPopup(`
         <b>Ubicación:</b><br>
         C. Parada de la Cigüeña 36, 41806 Umbrete, Sevilla<br>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${this.localizacionConcreta.join(
-          ','
-        )}" target="_blank">Abrir en Google Maps</a>
-      `
-        )
-        .openPopup();
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">Abrir en Google Maps</a>
+      `).openPopup();
+
     } catch (error) {
       console.error('Error initializing map:', error);
     }
   }
 
-  calculateRoute() {
-    if (isPlatformBrowser(this.platformId)) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const L = await import('leaflet');
-            await import('leaflet-routing-machine');
+  calculateRoute(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.map || !this.L) {
+      return;
+    }
 
-            const userLocation = [
-              position.coords.latitude,
-              position.coords.longitude,
-            ];
+    if (!navigator.geolocation) {
+      alert('La geolocalización no está soportada por este navegador.');
+      return;
+    }
 
-            if (this.routingControl) {
-              this.map.removeControl(this.routingControl);
-            }
-            this.routingControl = L.Routing.control({
-              waypoints: [
-                L.latLng(userLocation[0], userLocation[1]),
-                L.latLng(
-                  this.localizacionConcreta[0],
-                  this.localizacionConcreta[1]
-                ),
-              ],
-              routeWhileDragging: true,
-              createMarker: (i: number, waypoint: any, n: number) => {
-                return L.marker(waypoint.latLng, { icon: this.pulsatingIcon });
-              },
-            }).addTo(this.map);
-          },
-          (error) => {
-            alert('Error al obtener la ubicación: ' + error.message);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        try {
+          const userLocation = [position.coords.latitude, position.coords.longitude];
+
+          // Remove existing routing control
+          if (this.routingControl) {
+            this.map.removeControl(this.routingControl);
           }
-        );
-      } else {
-        alert('La geolocalización no está soportada por este navegador.');
+
+          // Create new routing control
+          this.routingControl = (this.L as any).Routing.control({
+            waypoints: [
+              this.L.latLng(userLocation[0], userLocation[1]),
+              this.L.latLng(this.localizacionConcreta[0], this.localizacionConcreta[1]),
+            ],
+            routeWhileDragging: true,
+            createMarker: (i: number, waypoint: any, n: number) => {
+              return this.L.marker(waypoint.latLng, { icon: this.pulsatingIcon });
+            },
+          }).addTo(this.map);
+        } catch (error) {
+          console.error('Error creating route:', error);
+          alert('Error al calcular la ruta. Por favor, inténtalo de nuevo.');
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('Error al obtener tu ubicación: ' + error.message);
       }
+    );
+  }
+
+  shareOnFacebook(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      const lat = this.localizacionConcreta[0];
+      const lng = this.localizacionConcreta[1];
+      const url = encodeURIComponent(`https://www.google.com/maps?q=${lat},${lng}`);
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
     }
   }
 
-  shareOnFacebook() {
+  shareOnTwitter(): void {
     if (isPlatformBrowser(this.platformId)) {
-      const url = encodeURIComponent(
-        'https://www.google.com/maps?q=' + this.localizacionConcreta.join(',')
-      );
-      window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-        '_blank'
-      );
-    }
-  }
-
-  shareOnTwitter() {
-    if (isPlatformBrowser(this.platformId)) {
-      const url = encodeURIComponent(
-        'https://www.google.com/maps?q=' + this.localizacionConcreta.join(',')
-      );
+      const lat = this.localizacionConcreta[0];
+      const lng = this.localizacionConcreta[1];
+      const url = encodeURIComponent(`https://www.google.com/maps?q=${lat},${lng}`);
       const text = encodeURIComponent('¡Mira esta ubicación interesante!');
-      window.open(
-        `https://twitter.com/intent/tweet?url=${url}&text=${text}`,
-        '_blank'
-      );
+      window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
     }
   }
 
-  downloadLocation() {
+  downloadLocation(): void {
     if (isPlatformBrowser(this.platformId)) {
       const data = `BEGIN:VCARD
 VERSION:3.0
