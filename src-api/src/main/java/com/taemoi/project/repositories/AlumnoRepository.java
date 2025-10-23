@@ -196,6 +196,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	boolean existsByEmail(String email);
 
+	Optional<Alumno> findByEmail(String email);
+
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
 	List<Alumno> findAlumnosSinGrupo();
 
