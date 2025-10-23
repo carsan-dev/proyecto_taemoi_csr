@@ -1,6 +1,7 @@
 package com.taemoi.project.controllers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +65,9 @@ public class AuthenticationController {
 
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+
+	@Autowired
+	private com.taemoi.project.repositories.AlumnoRepository alumnoRepository;
 
 	/**
 	 * Registra un nuevo usuario en el sistema.
@@ -196,6 +200,29 @@ public class AuthenticationController {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Obtiene todos los alumnos asociados al email del usuario autenticado.
+	 * Útil cuando múltiples alumnos (ej. familia) comparten el mismo email.
+	 *
+	 * @return Lista de DTOs con información de todos los alumnos.
+	 */
+	@GetMapping("/user/alumnos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<List<AlumnoParaUsuarioDTO>> obtenerTodosLosAlumnosDelUsuario() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		// Buscar todos los alumnos con el email del usuario
+		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository.findAllByEmail(email);
+
+		// Convertir a DTOs
+		List<AlumnoParaUsuarioDTO> alumnosDTO = alumnos.stream()
+				.map(AlumnoParaUsuarioDTO::deAlumno)
+				.collect(java.util.stream.Collectors.toList());
+
+		return ResponseEntity.ok(alumnosDTO);
 	}
 
 	/**
