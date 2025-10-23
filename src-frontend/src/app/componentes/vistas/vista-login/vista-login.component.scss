@@ -3,6 +3,8 @@
 // ========================================
 $primary-color: #007bff;
 $primary-hover: #0056b3;
+$google-red: #db4437;
+$google-red-hover: #c23321;
 $dark-bg: #1b2b2e;
 $dark-accent: #284747;
 $text-dark: #212529;
@@ -358,6 +360,86 @@ $transition-speed: 0.3s;
           &:active {
             transform: translateY(-1px);
           }
+        }
+
+        .btn-google {
+          width: 100%;
+          padding: 1.2rem 1.5rem;
+          border: none;
+          border-radius: 12px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all $transition-speed ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          box-shadow: $shadow-sm;
+          background: $google-red;
+          color: $text-light;
+          position: relative;
+          overflow: hidden;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+          }
+
+          &:hover::before {
+            width: 400px;
+            height: 400px;
+          }
+
+          i {
+            font-size: 1.4rem;
+            position: relative;
+            z-index: 1;
+          }
+
+          span {
+            position: relative;
+            z-index: 1;
+          }
+
+          &:hover {
+            transform: translateY(-3px);
+            box-shadow: $shadow-md;
+            background: $google-red-hover;
+          }
+
+          &:active {
+            transform: translateY(-1px);
+          }
+        }
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+        color: $text-muted;
+
+        &::before,
+        &::after {
+          content: '';
+          flex: 1;
+          border-bottom: 1px solid $border-color;
+        }
+
+        span {
+          padding: 0 1rem;
+          font-size: 0.9rem;
+          font-weight: 500;
         }
       }
 

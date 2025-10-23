@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LoginInterface } from '../../../interfaces/login-interface';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-vista-login',
@@ -21,10 +22,35 @@ export class VistaLoginComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthenticationService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    // Check for OAuth2 error parameters
+    this.route.queryParams.subscribe(params => {
+      if (params['error']) {
+        const errorType = params['error'];
+        const errorMessage = params['message'] || 'Error desconocido';
+
+        if (errorType === 'no_alumno_found') {
+          Swal.fire({
+            title: 'No se pudo iniciar sesión',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+          });
+        } else {
+          Swal.fire({
+            title: 'Error de autenticación',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+          });
+        }
+      }
+    });
+
     // Verificar si el usuario ya está autenticado
     if (this.authService.comprobarLogueado()) {
       if (this.authService.rolesEstanCargados()) {
@@ -92,6 +118,12 @@ export class VistaLoginComponent implements OnInit {
         });
       },
     });
+  }
+
+  loginWithGoogle() {
+    // Redirect to Google OAuth2 authorization endpoint
+    const baseUrl = environment.apiUrl.replace('/api', '');
+    window.location.href = `${baseUrl}/oauth2/authorization/google`;
   }
 
   private redirigirSegunRol(roles: string[]) {
