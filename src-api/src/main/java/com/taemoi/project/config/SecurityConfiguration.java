@@ -40,6 +40,12 @@ public class SecurityConfiguration {
 	private UsuarioService usuarioService;
 
 	/**
+	 * Inyección del manejador de éxito de OAuth2.
+	 */
+	@Autowired
+	private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+
+	/**
 	 * Configuración del filtro de seguridad para las solicitudes HTTP.
 	 *
 	 * @param http El objeto HttpSecurity que se configura.
@@ -151,7 +157,9 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						.requestMatchers(HttpMethod.POST, "/api/mail/**").permitAll().anyRequest().authenticated())
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authenticationProvider(authenticationProvider());
+				.authenticationProvider(authenticationProvider())
+				.oauth2Login(oauth2 -> oauth2
+						.successHandler(oauth2SuccessHandler));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
