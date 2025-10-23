@@ -40,8 +40,8 @@ body {
 body {
   margin: 0;
   font-family: Montserrat, sans-serif;
-  background-color: #ffffff;
-  background-image: url("https://www.transparenttextures.com/patterns/dark-stripes-light.png");
+  background: #f8f9fa; // Clean, light background matching the main site
+  min-height: 100vh;
 }
 
 // Add padding to main content when admin navbar is present
