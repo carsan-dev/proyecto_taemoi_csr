@@ -45,6 +45,9 @@ services:
       SPRING_MAIL_FROM: ${SPRING_MAIL_FROM}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
       APP_BASE_URL: ${APP_BASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
       - app_imagenes:/var/www/app/imagenes
       - app_documentos:/var/www/app/documentos
