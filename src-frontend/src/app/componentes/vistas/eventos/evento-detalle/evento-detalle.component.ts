@@ -16,6 +16,7 @@ import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
 export class EventoDetalleComponent implements OnInit {
   evento: Evento | null = null; // Ahora usamos la interfaz Evento
   eventoId!: number;
+  modalImagenAbierto: boolean = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -45,5 +46,15 @@ export class EventoDetalleComponent implements OnInit {
         });
       },
     });
+  }
+
+  abrirModalImagen(): void {
+    this.modalImagenAbierto = true;
+    document.body.style.overflow = 'hidden'; // Deshabilitar scroll del body
+  }
+
+  cerrarModalImagen(): void {
+    this.modalImagenAbierto = false;
+    document.body.style.overflow = ''; // Restaurar scroll del body
   }
 }
