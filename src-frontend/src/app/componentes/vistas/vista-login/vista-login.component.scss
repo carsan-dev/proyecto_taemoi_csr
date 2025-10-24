@@ -3,8 +3,10 @@
 // ========================================
 $primary-color: #007bff;
 $primary-hover: #0056b3;
-$google-red: #db4437;
-$google-red-hover: #c23321;
+$google-blue: #4285F4;
+$google-red: #EA4335;
+$google-yellow: #FBBC05;
+$google-green: #34A853;
 $dark-bg: #1b2b2e;
 $dark-accent: #284747;
 $text-dark: #212529;
@@ -354,7 +356,7 @@ $transition-speed: 0.3s;
         .btn-google {
           width: 100%;
           padding: 1.2rem 1.5rem;
-          border: none;
+          border: 3px solid transparent;
           border-radius: 12px;
           font-size: 1.1rem;
           font-weight: 600;
@@ -365,33 +367,43 @@ $transition-speed: 0.3s;
           justify-content: center;
           gap: 0.75rem;
           box-shadow: $shadow-sm;
-          background: $google-red;
-          color: $text-light;
+          background: $text-light;
+          color: #5f6368; // Google gray text
           position: relative;
           overflow: hidden;
+
+          // Rainbow gradient border effect
+          background-image:
+            linear-gradient(white, white),
+            linear-gradient(to right, $google-blue, $google-red, $google-yellow, $google-green);
+          background-origin: border-box;
+          background-clip: padding-box, border-box;
 
           &::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-          }
-
-          &:hover::before {
-            width: 400px;
-            height: 400px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg,
+              rgba($google-blue, 0.05) 0%,
+              rgba($google-red, 0.05) 25%,
+              rgba($google-yellow, 0.05) 50%,
+              rgba($google-green, 0.05) 100%);
+            opacity: 0;
+            transition: opacity $transition-speed ease;
+            border-radius: 9px;
           }
 
           i {
             font-size: 1.4rem;
             position: relative;
             z-index: 1;
+            background: linear-gradient(to bottom right, $google-blue, $google-red, $google-yellow, $google-green);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
           }
 
           span {
@@ -401,12 +413,29 @@ $transition-speed: 0.3s;
 
           &:hover {
             transform: translateY(-3px);
-            box-shadow: $shadow-md;
-            background: $google-red-hover;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            border-width: 3px;
+
+            &::before {
+              opacity: 1;
+            }
+
+            i {
+              animation: colorShift 2s ease infinite;
+            }
           }
 
           &:active {
             transform: translateY(-1px);
+          }
+        }
+
+        @keyframes colorShift {
+          0% {
+            filter: hue-rotate(0deg);
+          }
+          100% {
+            filter: hue-rotate(360deg);
           }
         }
       }
@@ -667,7 +696,8 @@ $transition-speed: 0.3s;
         }
 
         .form-actions {
-          .btn-login {
+          .btn-login,
+          .btn-google {
             padding: 1.1rem 1.3rem;
             font-size: 1rem;
 
@@ -721,7 +751,8 @@ $transition-speed: 0.3s;
         }
 
         .form-actions {
-          .btn-login {
+          .btn-login,
+          .btn-google {
             padding: 1rem 1.2rem;
             font-size: 0.95rem;
           }
