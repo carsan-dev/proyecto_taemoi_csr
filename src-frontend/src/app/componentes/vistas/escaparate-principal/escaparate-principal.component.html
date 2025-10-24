@@ -1,110 +1,285 @@
 <div class="main-content">
+  <!-- Hero Section with Video -->
   <div class="video-container vh-100">
     <video autoplay loop muted aria-label="Video de presentación" #videoPresentacion>
       <source src="../../../../assets/media/video_portada.mp4" type="video/mp4">
       Tu navegador no soporta la etiqueta de video.
     </video>
-    <div class="video-text text-white text-center d-flex flex-column">
-      <p class="m-0">MOIS KIM DO</p>
-      <p class="m-0">TAEKWONDO</p>
+    <div class="video-overlay"></div>
+    <div class="video-content">
+      <div class="hero-badge">
+        <i class="bi bi-award-fill"></i>
+        <span>Más de 15 años de experiencia</span>
+      </div>
+      <div class="video-text">
+        <h1 class="hero-title">MOIS KIM DO</h1>
+        <h2 class="hero-subtitle">TAEKWONDO</h2>
+        <p class="hero-description">Transforma tu vida a través de las artes marciales</p>
+        <div class="hero-buttons">
+          <button class="hero-btn primary" routerLink="/horarios">
+            <i class="bi bi-calendar3"></i>
+            <span>Ver Horarios</span>
+          </button>
+          <button class="hero-btn secondary" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Contactar</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="video-image d-flex flex-row justify-content-between">
-      <img class="img-fluid video-image-item-1" src="../../../../assets/media/pilatera.svg" alt="Pilatera dibujada">
-      <img class="img-fluid video-image-item-2" src="../../../../assets/media/taekwondista.svg"
-        alt="Taekwondista cinturón negro dibujado">
-      <img class="img-fluid video-image-item-3" src="../../../../assets/media/kickboxer.svg" alt="Kickboxer dibujado">
+    <div class="scroll-indicator">
+      <i class="bi bi-chevron-down"></i>
     </div>
   </div>
-  <section class="p-0 info-divs-section">
-    <div class="info-div mt-5 d-flex flex-column flex-md-row align-items-center">
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">QUIÉNES SOMOS</h1>
-        <p class="mt-5">Somos una escuela de artes marciales ubicada en el corazón del Aljarafe Sevillano que lleva en
-          activo más de
-          15 años, con una gran pasión por los deportes que ejercemos y un carisma sin igual.</p>
-        <p class="mt-4">Únete a nuestra comunidad hoy mismo y descubre cómo el entrenamiento físico, la
-          disciplina mental
-          y la camaradería pueden transformar tu vida. ¡Te esperamos en Moiskimdo!</p>
-        <button type="button" class="btn taekwondo-button mt-5" routerLink="/horarios">Consulta
-          horarios</button>
-      </div>
-      <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/rafa_competicion.webp"
-          alt="Se muestran dos competidores en una competición oficial">
-      </div>
-    </div>
-    <div class="info-div info-div-reverse d-flex flex-column flex-md-row align-items-center">
-      <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/doble_puño.webp"
-          alt="Se muestran dos competidores en una competición oficial" class="left-image">
-      </div>
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">QUÉ HACEMOS</h1>
-        <p class="mt-5">Ofrecemos clases dinámicas y emocionantes para niños y adultos de todas las edades. Desde los
-          más
-          pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo, el kickboxing
-          y el pilates en un ambiente
-          divertido y seguro.</p>
-        <p class="mt-4">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de
-          experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
-        <p class="mt-4">Contáctanos para más información pulsando abajo:</p>
-        <button type="button" class="btn kickboxing-button mt-5" routerLink="/contacto">Contáctanos</button>
-      </div>
-    </div>
-    <div class="info-div d-flex flex-column flex-md-row align-items-center">
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">POR QUÉ ELEGIRNOS</h1>
-        <p class="mt-5">En Moiskimdo, no solo te ofrecemos entrenamiento de alta calidad, sino también una comunidad que
-          te apoyará en cada paso de tu viaje. Nuestros instructores están dedicados a ayudarte a alcanzar tus metas
-          personales, ya sea mejorar tu forma física, aprender autodefensa o simplemente divertirte.</p>
-        <p class="mt-4">Creemos en el poder transformador de las artes marciales y el fitness para mejorar la confianza,
-          la disciplina y el bienestar general.</p>
-        <button type="button" class="btn pilates-button mt-5" (click)="scrollToMap()">¿Dónde estamos?</button>
-      </div>
-      <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/placeholder.webp"
-          alt="Representando los beneficios de entrenar con nosotros">
+  <!-- Info Sections -->
+  <section class="info-divs-section">
+    <!-- Who We Are Section -->
+    <div class="info-div">
+      <div class="info-card">
+        <div class="card-content">
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-people-fill section-icon"></i>
+              <h2 class="section-title">QUIÉNES SOMOS</h2>
+            </div>
+            <p class="section-description">Somos una escuela de artes marciales ubicada en el corazón del Aljarafe Sevillano que lleva en
+              activo más de 15 años, con una gran pasión por los deportes que ejercemos y un carisma sin igual.</p>
+            <p class="section-description">Únete a nuestra comunidad hoy mismo y descubre cómo el entrenamiento físico, la
+              disciplina mental y la camaradería pueden transformar tu vida. ¡Te esperamos en Moiskimdo!</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Más de 15 años de experiencia</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Instructores certificados</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Comunidad familiar</span>
+              </div>
+            </div>
+            <button class="modern-btn taekwondo-btn" routerLink="/horarios">
+              <i class="bi bi-calendar3"></i>
+              <span>Consulta Horarios</span>
+            </button>
+          </div>
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img #animatedImage src="../../../../assets/media/rafa_competicion.webp"
+                alt="Se muestran dos competidores en una competición oficial">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="info-div mb-5 info-div-reverse d-flex flex-column flex-md-row align-items-center">
-      <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
-        <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Instructores impartiendo una clase"
-          class="left-image">
-      </div>
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center">NUESTROS INSTRUCTORES</h1>
-        <p class="mt-5">Detrás de cada clase inspiradora están nuestros instructores, profesionales altamente
-          capacitados y apasionados. Cada uno de ellos combina su experiencia en artes marciales con habilidades
-          pedagógicas para guiarte y motivarte durante tu entrenamiento.</p>
-        <p class="mt-4">Nuestros instructores valoran el progreso individual y trabajan codo a codo contigo, brindando
-          la atención personalizada y el apoyo necesarios para que puedas superar tus límites, independientemente de tu
-          nivel inicial.</p>
-        <button type="button" class="btn defensa-personal-button mt-5" routerLink="/instructores">Conoce a nuestro
-          equipo</button>
+    <!-- What We Do Section -->
+    <div class="info-div reverse">
+      <div class="info-card">
+        <div class="card-content reverse">
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img #animatedImage src="../../../../assets/media/doble_puño.webp"
+                alt="Se muestran dos competidores en una competición oficial">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-lightning-charge-fill section-icon"></i>
+              <h2 class="section-title">QUÉ HACEMOS</h2>
+            </div>
+            <p class="section-description">Ofrecemos clases dinámicas y emocionantes para niños y adultos de todas las edades. Desde los
+              más pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo, el kickboxing
+              y el pilates en un ambiente divertido y seguro.</p>
+            <p class="section-description">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de
+              experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Taekwondo para todas las edades</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Kickboxing profesional</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Pilates y bienestar</span>
+              </div>
+            </div>
+            <button class="modern-btn kickboxing-btn" routerLink="/contacto">
+              <i class="bi bi-envelope-fill"></i>
+              <span>Contáctanos</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </section>
-  <section class="slider-section p-0 d-flex flex-column">
-    <app-slider-tocable></app-slider-tocable>
-    <button type="button" class="btn btn-primary mt-5 align-self-center" routerLink="/eventos">Ver todos los
-      eventos</button>
+    <!-- Why Choose Us Section -->
+    <div class="info-div">
+      <div class="info-card">
+        <div class="card-content">
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-trophy-fill section-icon"></i>
+              <h2 class="section-title">POR QUÉ ELEGIRNOS</h2>
+            </div>
+            <p class="section-description">En Moiskimdo, no solo te ofrecemos entrenamiento de alta calidad, sino también una comunidad que
+              te apoyará en cada paso de tu viaje. Nuestros instructores están dedicados a ayudarte a alcanzar tus metas
+              personales, ya sea mejorar tu forma física, aprender autodefensa o simplemente divertirte.</p>
+            <p class="section-description">Creemos en el poder transformador de las artes marciales y el fitness para mejorar la confianza,
+              la disciplina y el bienestar general.</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Entrenamiento personalizado</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Ambiente familiar y seguro</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Resultados comprobados</span>
+              </div>
+            </div>
+            <button class="modern-btn pilates-btn" (click)="scrollToMap()">
+              <i class="bi bi-geo-alt-fill"></i>
+              <span>¿Dónde estamos?</span>
+            </button>
+          </div>
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img #animatedImage src="../../../../assets/media/placeholder.webp"
+                alt="Representando los beneficios de entrenar con nosotros">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Our Instructors Section -->
+    <div class="info-div reverse">
+      <div class="info-card">
+        <div class="card-content reverse">
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Instructores impartiendo una clase">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-person-badge-fill section-icon"></i>
+              <h2 class="section-title">NUESTROS INSTRUCTORES</h2>
+            </div>
+            <p class="section-description">Detrás de cada clase inspiradora están nuestros instructores, profesionales altamente
+              capacitados y apasionados. Cada uno de ellos combina su experiencia en artes marciales con habilidades
+              pedagógicas para guiarte y motivarte durante tu entrenamiento.</p>
+            <p class="section-description">Nuestros instructores valoran el progreso individual y trabajan codo a codo contigo, brindando
+              la atención personalizada y el apoyo necesarios para que puedas superar tus límites, independientemente de tu
+              nivel inicial.</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Certificados internacionales</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Atención personalizada</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Pasión por enseñar</span>
+              </div>
+            </div>
+            <button class="modern-btn defensa-personal-btn" routerLink="/instructores">
+              <i class="bi bi-people-fill"></i>
+              <span>Conoce a nuestro equipo</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="map-section d-flex flex-column align-items-center justify-content-center">
-    <div class="card mt-4 img-content location-container" id="map-section">
-      <app-mapa class="card-img-top"></app-mapa>
-      <div class="card-body text-center">
-        <h2 class="h5 my-4 fw-bold">Calle Parada de la Cigüeña 36, 41806 Umbrete, Sevilla</h2>
-        <p>Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles de habilidad, estamos
+  <!-- Events Slider Section -->
+  <section class="slider-section">
+    <div class="section-header-centered">
+      <i class="bi bi-calendar-event section-icon"></i>
+      <h2 class="section-title">PRÓXIMOS EVENTOS</h2>
+      <p class="section-subtitle">Descubre nuestras competiciones y actividades especiales</p>
+    </div>
+    <app-slider-tocable></app-slider-tocable>
+    <div class="events-button-container">
+      <button class="modern-btn events-btn" routerLink="/eventos">
+        <i class="bi bi-arrow-right-circle-fill"></i>
+        <span>Ver Todos los Eventos</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Location Section -->
+  <section class="map-section">
+    <div class="location-card" id="map-section">
+      <div class="location-header">
+        <i class="bi bi-geo-alt-fill location-icon"></i>
+        <h2 class="location-title">NUESTRA UBICACIÓN</h2>
+        <p class="location-subtitle">Visítanos en el corazón del Aljarafe Sevillano</p>
+      </div>
+
+      <div class="map-wrapper">
+        <app-mapa></app-mapa>
+      </div>
+
+      <div class="location-info">
+        <div class="address-section">
+          <i class="bi bi-pin-map-fill"></i>
+          <h3>Calle Parada de la Cigüeña 36, 41806 Umbrete, Sevilla</h3>
+        </div>
+
+        <p class="location-description">Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles de habilidad, estamos
           comprometidos a ayudarte a alcanzar tus metas, ya sea que busques mejorar tu condición física, aumentar tu
           confianza o pasártelo bien aprendiendo.</p>
-        <p class="additional-info mt-4">
-          <i class="bi bi-phone-fill"></i> Teléfono: +34 625 753 952<br>
-          <i class="bi bi-envelope-at-fill"></i> Email: moiskimdotaekwondo&#64;gmail.com<br>
-          <i class="bi bi-calendar-date-fill"></i> Horario: Lun - Jue: 17:00 - 21:30. Para ver el horario completo,
-          pulse <a routerLink="/contacto" class="link-info">aquí</a>.
-        </p>
-        <button type="button" class="btn btn-primary mt-4" routerLink="/eventos">Más información</button>
+
+        <div class="contact-grid">
+          <div class="contact-item">
+            <i class="bi bi-phone-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Teléfono</span>
+              <span class="contact-value">+34 625 753 952</span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="bi bi-envelope-at-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Email</span>
+              <span class="contact-value">moiskimdotaekwondo@gmail.com</span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="bi bi-calendar-date-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Horario</span>
+              <span class="contact-value">Lun - Jue: 17:00 - 21:30</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="location-actions">
+          <button class="modern-btn contact-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Contáctanos</span>
+          </button>
+          <button class="modern-btn schedule-btn" routerLink="/horarios">
+            <i class="bi bi-calendar3"></i>
+            <span>Ver Horario Completo</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
