@@ -49,8 +49,13 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
+      # Option 1: Named volumes (data persists, populate manually after first run)
       - app_imagenes:/var/www/app/imagenes
       - app_documentos:/var/www/app/documentos
+
+      # Option 2: Bind mounts (uncomment to use host directories directly)
+      # - ./static_resources/imagenes:/var/www/app/imagenes:ro
+      # - ./static_resources/documentos:/var/www/app/documentos:ro
     networks:
       - taemoi-network
     healthcheck:
