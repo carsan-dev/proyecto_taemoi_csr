@@ -10,7 +10,6 @@
 certbot/conf/
 certbot/www/
 backups/
-*.sql
 *.tar.gz
 
 # IDE
