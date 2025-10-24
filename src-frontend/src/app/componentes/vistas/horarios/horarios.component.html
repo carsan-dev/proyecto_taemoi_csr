@@ -1,52 +1,65 @@
-<div class="planner-container container-fluid mb-5">
-  <h2 class="title fs-1 fs-md-1 fw-bold text-center">Horarios disponibles</h2>
-  <p class="subtitle text-center">¡Ven con nosotros y disfruta de nuestras clases!</p>
+<div class="horarios-page">
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="page-title-section">
+        <i class="bi bi-clock-history"></i>
+        <h1>Horarios Disponibles</h1>
+        <p class="hero-subtitle">¡Encuentra el horario perfecto para ti y únete a nuestras clases!</p>
+      </div>
+    </div>
+  </div>
 
-  <!-- Table for larger screens -->
-  <div class="table-responsive">
-    <table class="table table-hover table-bordered table-striped mt-4 d-none d-md-table">
-      <thead class="table-dark">
-        <tr>
-          <th>Día de la Semana</th>
-          <th>Turnos</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let dia of diasSemana">
-          <td class="align-middle fs-5">{{ dia }}</td>
-          <td>
-            <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item p-2 my-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
-              <span class="turno-hora fw-bold">{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-              <span class="categoria-deporte ms-2 d-flex align-items-center">
-                <span>{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
-                <span class="ms-2">{{ obtenerCategoria(turno.grupoId) }}</span>
-              </span>
-            </div>
-            <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos">
-              No hay turnos disponibles
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="content-wrapper">
 
-    <!-- Version for small screens -->
-    <div class="d-md-none">
-      <div *ngFor="let dia of diasSemana" class="dia-container mb-4">
-        <div class="dia-header bg-dark text-white p-2 rounded">{{ dia }}</div>
-        <div *ngIf="obtenerTurnosPorDia(dia).length > 0">
-          <div *ngFor="let turno of obtenerTurnosPorDia(dia)" class="turno-item p-3 mt-2" [ngStyle]="{'background-color': obtenerColorDeporte(obtenerCategoria(turno.grupoId))}">
-            <div class="turno-hora fw-bold">{{ turno.horaInicio }} - {{ turno.horaFin }}</div>
-            <div class="categoria-deporte text-muted d-flex align-items-center">
-              <span>{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
-              <span class="ms-2">{{ obtenerCategoria(turno.grupoId) }}</span>
+      <!-- Weekly Schedule Grid -->
+      <div class="schedule-grid">
+        <div class="day-card" *ngFor="let dia of diasSemana">
+          <div class="day-header">
+            <i class="bi bi-calendar-week"></i>
+            <span>{{ dia }}</span>
+          </div>
+
+          <div class="day-content">
+            <!-- Time Slots -->
+            <div *ngIf="obtenerTurnosPorDia(dia).length > 0">
+              <div class="time-slot"
+                   *ngFor="let turno of obtenerTurnosPorDia(dia)"
+                   [attr.data-sport]="obtenerCategoria(turno.grupoId)">
+                <div class="slot-time">
+                  <i class="bi bi-clock"></i>
+                  <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                </div>
+                <div class="slot-category">
+                  <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
+                  <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Slots Available -->
+            <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-slots">
+              <i class="bi bi-calendar-x"></i>
+              <span>No hay turnos disponibles</span>
             </div>
           </div>
         </div>
-        <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-turnos p-2 mt-2 text-muted">
-          No hay turnos disponibles
+      </div>
+
+      <!-- Info Section -->
+      <div class="info-section">
+        <div class="info-card">
+          <i class="bi bi-info-circle"></i>
+          <div class="info-content">
+            <h3>¿Cómo apuntarte?</h3>
+            <p>Contacta con nosotros para reservar tu plaza en el horario que prefieras. ¡Te esperamos!</p>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
