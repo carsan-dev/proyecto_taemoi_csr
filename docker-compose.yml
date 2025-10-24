@@ -40,6 +40,11 @@ services:
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
     volumes:
       - .env:/app/.env:ro
+
+      # Bind mounts para archivos estáticos (desarrollo)
+      # Descomentar y crear los directorios static_resources/imagenes y static_resources/documentos
+      # - ./static_resources/imagenes:/var/www/app/imagenes:ro
+      # - ./static_resources/documentos:/var/www/app/documentos:ro
     links:
       - database
 
