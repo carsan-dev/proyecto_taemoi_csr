@@ -288,12 +288,50 @@ header.fixed-header {
       color: $text-dark;
       transition: all $transition-speed ease;
       font-size: 1.3rem;
+      text-decoration: none;
 
       &:hover {
         background-color: $primary-color;
         color: $text-light;
         transform: translateY(-3px);
         box-shadow: $shadow-md;
+      }
+    }
+
+    // Mobile My Classes Button
+    .btn-my-classes-mobile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1e7e34, #145523);
+      color: $text-light;
+      border: none;
+      border-radius: 50px;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+      box-shadow: $shadow-sm;
+      transition: all $transition-speed ease;
+      white-space: nowrap;
+
+      i {
+        font-size: 1rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #145523, #0d3d1a);
+        box-shadow: $shadow-md;
+        transform: translateY(-2px);
+        color: $text-light;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &.active {
+        box-shadow: 0 0 0 3px rgba($success-color, 0.3);
       }
     }
 
@@ -329,7 +367,7 @@ header.fixed-header {
 
     // My Classes Button (User Header)
     .btn-my-classes {
-      background: linear-gradient(135deg, $success-color, #1e7e34);
+      background: linear-gradient(135deg, #1e7e34, #145523);
       color: $text-light;
       border: none;
       border-radius: 50px;
@@ -347,7 +385,7 @@ header.fixed-header {
       }
 
       &:hover {
-        background: linear-gradient(135deg, #1e7e34, #145523);
+        background: linear-gradient(135deg, #145523, #0d3d1a);
         box-shadow: $shadow-md;
         transform: translateY(-2px);
       }
@@ -462,29 +500,107 @@ header.fixed-header {
       }
 
       .navbar-right {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba($text-dark, 0.1);
-        justify-content: center !important;
         width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+        border-top: 1px solid rgba($text-dark, 0.15);
+
+        .navbar-nav {
+          display: flex !important;
+          flex-direction: row !important;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          width: auto !important;
+          margin-top: 0;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          width: auto !important;
+          margin: 0 !important;
+        }
       }
 
       .btn-login,
-      .btn-my-classes {
-        width: 80%;
-        max-width: 300px;
+      .btn-my-classes,
+      .btn-my-classes-mobile {
+        width: auto;
+        height: 40px;
         justify-content: center;
-        margin-bottom: 1rem;
+        display: inline-flex;
+        align-items: center;
       }
 
       .social-link {
-        margin: 0 0.5rem;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
       }
 
       .user-menu-toggle {
-        width: 80%;
-        max-width: 300px;
+        width: auto;
+        height: 40px;
         justify-content: center;
+        display: inline-flex;
+        align-items: center;
+      }
+    }
+  }
+
+  @media (max-width: 1309px) and (min-width: 992px) {
+    nav {
+      .container-fluid {
+        padding: 0 0.5rem;
+      }
+
+      .navbar-nav .nav-item {
+        margin: 0;
+
+        .nav-link {
+          padding: 0.5rem 0.5rem;
+          font-size: 0.8rem;
+        }
+      }
+
+      .btn-my-classes {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
+
+        i {
+          font-size: 0.9rem;
+          margin-right: 0.25rem;
+        }
+      }
+
+      .user-menu-toggle {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.85rem;
+
+        .user-name {
+          display: none;
+        }
+
+        i {
+          font-size: 1.3rem;
+        }
+      }
+
+      .social-link {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+        margin: 0 0.2rem;
+      }
+
+      .header-logo {
+        max-height: 80px;
+        max-width: 200px;
       }
     }
   }

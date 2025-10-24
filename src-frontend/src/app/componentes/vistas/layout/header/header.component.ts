@@ -152,7 +152,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
       const clickedInsideNavbar = target.closest('.navbar');
       const clickedNavLink = target.closest('.nav-link') || target.closest('.dropdown-item');
-      const clickedButton = target.closest('.btn-login') || target.closest('.btn-my-classes') || target.closest('.social-link');
+      const clickedButton = target.closest('.btn-login') || target.closest('.btn-my-classes') || target.closest('.btn-my-classes-mobile') || target.closest('.social-link');
 
       // Close if clicked on a nav-link/dropdown-item/button OR clicked outside the navbar
       if (clickedNavLink || clickedButton || !clickedInsideNavbar) {
