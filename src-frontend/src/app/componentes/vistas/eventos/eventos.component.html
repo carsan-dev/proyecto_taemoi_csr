@@ -1,19 +1,44 @@
-<div class="main-container">
-  <h2 class="text-center h1">METAS Y PRÓXIMOS EVENTOS</h2>
-  <div class="container-fluid my-5">
-    <div
-      class="box"
-      *ngFor="let evento of (endpointsService.eventos$ | async)"
-      (click)="verDetalle(evento.id)"
-    >
-      <img
-        [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-        class="img-fluid event-img"
-        alt="{{ evento.titulo }}"
-      />
-      <div class="event-info">
-        <p class="event-title">{{ evento.titulo }}</p>
-        <p class="event-description">{{ evento.descripcion }}</p>
+<div class="eventos-page">
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="page-title-section">
+        <i class="bi bi-calendar-event"></i>
+        <h1>Metas y Próximos Eventos</h1>
+        <p class="hero-subtitle">Descubre todos nuestros eventos, competiciones y actividades especiales</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="content-wrapper">
+      <!-- Masonry Grid -->
+      <div class="masonry-grid">
+        <div
+          class="event-card"
+          *ngFor="let evento of (endpointsService.eventos$ | async)"
+          (click)="verDetalle(evento.id)"
+        >
+          <div class="event-image-container">
+            <img
+              [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+              class="event-img"
+              alt="{{ evento.titulo }}"
+            />
+            <div class="event-overlay">
+              <i class="bi bi-zoom-in"></i>
+            </div>
+          </div>
+          <div class="event-info">
+            <h3 class="event-title">{{ evento.titulo }}</h3>
+            <p class="event-description">{{ evento.descripcion }}</p>
+            <div class="event-footer">
+              <span class="view-more">Ver detalles <i class="bi bi-arrow-right"></i></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
