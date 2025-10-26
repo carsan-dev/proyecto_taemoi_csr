@@ -28,28 +28,34 @@ errors = []
 # DATABASE CONNECTION
 # =============================================================================
 
+
 def connect_to_mdb(mdb_path):
     """Connect to Access database"""
     try:
-        conn_str = r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};' + f'DBQ={mdb_path};'
+        conn_str = (
+            r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};" + f"DBQ={mdb_path};"
+        )
         return pyodbc.connect(conn_str)
     except Exception as e:
         print(f"Error connecting to database: {e}")
         sys.exit(1)
 
+
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
+
 
 def fix_encoding(text):
     """Fix encoding issues in Spanish text"""
     if not text:
         return text
     try:
-        text = unicodedata.normalize('NFC', text)
+        text = unicodedata.normalize("NFC", text)
     except:
         pass
     return text
+
 
 def escape_sql_string(value):
     """Escape string for SQL"""
@@ -58,11 +64,12 @@ def escape_sql_string(value):
     value = str(value)
     value = fix_encoding(value)
     value = value.replace("'", "''")
-    value = value.replace('\\', '\\\\')
-    value = value.replace('\n', '\\n')
-    value = value.replace('\r', '\\r')
-    value = value.replace('\t', '\\t')
+    value = value.replace("\\", "\\\\")
+    value = value.replace("\n", "\\n")
+    value = value.replace("\r", "\\r")
+    value = value.replace("\t", "\\t")
     return f"'{value}'"
+
 
 def format_date(date_value):
     """Format date for MySQL"""
@@ -72,6 +79,7 @@ def format_date(date_value):
         return f"'{date_value.strftime('%Y-%m-%d')}'"
     return "NULL"
 
+
 def format_time_string(time_value):
     """Format time as HH:mm string"""
     if time_value is None:
@@ -80,10 +88,11 @@ def format_time_string(time_value):
         return f"'{time_value.strftime('%H:%M')}'"
     if isinstance(time_value, str):
         # Parse and reformat
-        match = re.search(r'(\d{1,2}):(\d{2})', time_value)
+        match = re.search(r"(\d{1,2}):(\d{2})", time_value)
         if match:
             return f"'{match.group(1).zfill(2)}:{match.group(2)}'"
     return "NULL"
+
 
 def format_boolean(value):
     """Format boolean for MySQL"""
@@ -99,6 +108,7 @@ def format_boolean(value):
             return "0"
     return "1" if value else "0"
 
+
 def format_decimal(value):
     """Format decimal for MySQL"""
     if value is None:
@@ -107,6 +117,7 @@ def format_decimal(value):
         return str(Decimal(value))
     except:
         return "NULL"
+
 
 def format_integer(value):
     """Format integer for MySQL"""
@@ -117,6 +128,7 @@ def format_integer(value):
     except:
         return "NULL"
 
+
 def parse_telefono(telefono_movil, telefono_fijo):
     """Parse telefono - prefer movil, fallback to fijo"""
     telefono = telefono_movil if telefono_movil else telefono_fijo
@@ -125,7 +137,7 @@ def parse_telefono(telefono_movil, telefono_fijo):
         return "600000000"
 
     # Remove non-digits
-    telefono_str = re.sub(r'\D', '', str(telefono))
+    telefono_str = re.sub(r"\D", "", str(telefono))
 
     # Take first 9 digits
     if len(telefono_str) >= 9:
@@ -138,15 +150,16 @@ def parse_telefono(telefono_movil, telefono_fijo):
     # Return default phone number if parsing failed
     return "600000000"
 
+
 def fix_nif(nif_str):
     """Fix NIF - remove hyphens and ensure 9 characters"""
-    if not nif_str or str(nif_str).strip() == '':
+    if not nif_str or str(nif_str).strip() == "":
         # Return placeholder NIF for students without one
         # This is required since NIF is NOT NULL in database
         return "000000000"
 
     # Remove hyphens and spaces
-    nif_clean = str(nif_str).replace('-', '').replace(' ', '').strip()
+    nif_clean = str(nif_str).replace("-", "").replace(" ", "").strip()
 
     # If after cleaning it's empty, return placeholder
     if not nif_clean:
@@ -162,6 +175,7 @@ def fix_nif(nif_str):
         # Take first 9 characters
         return nif_clean[:9]
 
+
 def fix_email(email_str):
     """Fix malformed emails"""
     if not email_str:
@@ -171,27 +185,29 @@ def fix_email(email_str):
 
     # Fix common issues
     # Case 1: "name@gmail" -> "name@gmail.com"
-    if email.endswith('@gmail') and not email.endswith('@gmail.com'):
-        email = email + '.com'
+    if email.endswith("@gmail") and not email.endswith("@gmail.com"):
+        email = email + ".com"
         print(f"      Fixed email: {email_str} -> {email}")
 
     # Case 2: "name@.com." or similar malformed -> "name@gmail.com"
-    elif '@.' in email or email.endswith('.'):
+    elif "@." in email or email.endswith("."):
         # Extract the part before @
-        if '@' in email:
-            username = email.split('@')[0]
+        if "@" in email:
+            username = email.split("@")[0]
             email = f"{username}@gmail.com"
             print(f"      Fixed email: {email_str} -> {email}")
 
     # Case 3: Multiple emails separated by space or slash - take first one
-    if ' ' in email or '/' in email:
-        email = email.split()[0].split('/')[0]
+    if " " in email or "/" in email:
+        email = email.split()[0].split("/")[0]
 
     return email
+
 
 # =============================================================================
 # ENUM MAPPING FUNCTIONS
 # =============================================================================
+
 
 def map_grado_to_tipo_grado(grado_str):
     """Map grade string to TipoGrado enum"""
@@ -229,7 +245,7 @@ def map_grado_to_tipo_grado(grado_str):
 
     # Handle black belts (DAN)
     if "NEGRO" in grado_str or "DAN" in grado_str:
-        match = re.search(r'(\d+)', grado_str)
+        match = re.search(r"(\d+)", grado_str)
         if match:
             dan_num = match.group(1)
             return f"NEGRO_{dan_num}_DAN"
@@ -241,6 +257,7 @@ def map_grado_to_tipo_grado(grado_str):
     print(f"Warning: Unknown grade '{grado_str}', defaulting to BLANCO")
     errors.append(f"Unknown grade: {grado_str}")
     return "BLANCO"
+
 
 def map_tarifa_to_tipo_tarifa(tarifa_str):
     """Map tariff string to TipoTarifa enum"""
@@ -265,6 +282,7 @@ def map_tarifa_to_tipo_tarifa(tarifa_str):
 
     return tarifa_map.get(tarifa_str, "INFANTIL")
 
+
 def get_cuantia_tarifa(tipo_tarifa):
     """Get default cuantía for tarifa type"""
     cuantias = {
@@ -280,34 +298,45 @@ def get_cuantia_tarifa(tipo_tarifa):
     }
     return cuantias.get(tipo_tarifa, 30.0)
 
+
 def map_dia_semana(dia_str, dia_num):
     """Map day to string"""
     if dia_num is not None:
         day_map = {
-            1: "LUNES", 2: "MARTES", 3: "MIERCOLES",
-            4: "JUEVES", 5: "VIERNES", 6: "SABADO", 7: "DOMINGO"
+            1: "LUNES",
+            2: "MARTES",
+            3: "MIERCOLES",
+            4: "JUEVES",
+            5: "VIERNES",
+            6: "SABADO",
+            7: "DOMINGO",
         }
         return day_map.get(dia_num, "LUNES")
 
     if dia_str:
         dia_upper = dia_str.strip().upper()
         day_map = {
-            "LUNES": "LUNES", "MARTES": "MARTES",
-            "MIERCOLES": "MIERCOLES", "MIÉRCOLES": "MIERCOLES",
-            "JUEVES": "JUEVES", "VIERNES": "VIERNES",
-            "SABADO": "SABADO", "SÁBADO": "SABADO",
-            "DOMINGO": "DOMINGO"
+            "LUNES": "LUNES",
+            "MARTES": "MARTES",
+            "MIERCOLES": "MIERCOLES",
+            "MIÉRCOLES": "MIERCOLES",
+            "JUEVES": "JUEVES",
+            "VIERNES": "VIERNES",
+            "SABADO": "SABADO",
+            "SÁBADO": "SABADO",
+            "DOMINGO": "DOMINGO",
         }
         return day_map.get(dia_upper, "LUNES")
 
     return "LUNES"
+
 
 def parse_time_from_turno(turno_str):
     """Extract start and end time from turno string"""
     if not turno_str:
         return None, None
 
-    match = re.search(r'(\d{1,2}):(\d{2})\s*A\s*(\d{1,2}):(\d{2})', turno_str)
+    match = re.search(r"(\d{1,2}):(\d{2})\s*A\s*(\d{1,2}):(\d{2})", turno_str)
     if match:
         h1, m1, h2, m2 = match.groups()
         start_time = f"{h1.zfill(2)}:{m1}"
@@ -316,30 +345,44 @@ def parse_time_from_turno(turno_str):
 
     return None, None
 
+
 # =============================================================================
 # DATA EXTRACTION FUNCTIONS
 # =============================================================================
+
 
 def extract_grados_reference():
     """Create Grado reference table data"""
     # All possible TipoGrado values from the enum
     tipo_grados = [
-        "BLANCO", "BLANCO_AMARILLO", "AMARILLO", "AMARILLO_NARANJA",
-        "NARANJA", "NARANJA_VERDE", "VERDE", "VERDE_AZUL",
-        "AZUL", "AZUL_ROJO", "ROJO",
-        "ROJO_NEGRO_1_PUM", "ROJO_NEGRO_2_PUM", "ROJO_NEGRO_3_PUM",
-        "NEGRO_1_DAN", "NEGRO_2_DAN", "NEGRO_3_DAN", "NEGRO_4_DAN", "NEGRO_5_DAN"
+        "BLANCO",
+        "BLANCO_AMARILLO",
+        "AMARILLO",
+        "AMARILLO_NARANJA",
+        "NARANJA",
+        "NARANJA_VERDE",
+        "VERDE",
+        "VERDE_AZUL",
+        "AZUL",
+        "AZUL_ROJO",
+        "ROJO",
+        "ROJO_NEGRO_1_PUM",
+        "ROJO_NEGRO_2_PUM",
+        "ROJO_NEGRO_3_PUM",
+        "NEGRO_1_DAN",
+        "NEGRO_2_DAN",
+        "NEGRO_3_DAN",
+        "NEGRO_4_DAN",
+        "NEGRO_5_DAN",
     ]
 
     grados = []
     for idx, tipo_grado in enumerate(tipo_grados, 1):
-        grados.append({
-            'id': idx,
-            'tipo_grado': tipo_grado
-        })
-        stats['grados_created'] += 1
+        grados.append({"id": idx, "tipo_grado": tipo_grado})
+        stats["grados_created"] += 1
 
     return grados
+
 
 def extract_alumnos(conn, grado_map):
     """Extract ALL students from ALUMNOS table (active and inactive)"""
@@ -348,17 +391,22 @@ def extract_alumnos(conn, grado_map):
 
     alumnos = []
     for row in cursor.fetchall():
-        tipo_grado = map_grado_to_tipo_grado(row.Grado)
-        if not tipo_grado:
-            continue
 
-        grado_id = grado_map.get(tipo_grado)
-        if not grado_id:
-            print(f"Warning: Could not find grado_id for {tipo_grado}")
-            continue
+        tipo_grado = map_grado_to_tipo_grado(row.Grado)
+        if tipo_grado:
+            grado_id = grado_map.get(tipo_grado)
+            if not grado_id:
+                print(f"Warning: Could not find grado_id for {tipo_grado}, setting NULL")
+                grado_id = None
+        else:
+            grado_id = None
 
         tipo_tarifa = map_tarifa_to_tipo_tarifa(row.Tarifa)
-        cuantia_tarifa = row.Cuota if row.Cuota and row.Cuota > 0 else get_cuantia_tarifa(tipo_tarifa)
+        cuantia_tarifa = (
+            row.Cuota
+            if row.Cuota and row.Cuota > 0
+            else get_cuantia_tarifa(tipo_tarifa)
+        )
 
         telefono = parse_telefono(row.Telefono_movil, row.Telefono_fijo)
 
@@ -373,44 +421,74 @@ def extract_alumnos(conn, grado_map):
         email_fixed = fix_email(row.Email)
 
         # Map Baja field (invert logic: Baja=True means activo=False)
-        is_activo = not row.Baja if hasattr(row, 'Baja') and row.Baja is not None else True
-        fecha_baja_value = row.Fecha_Baja if hasattr(row, 'Fecha_Baja') else None
+        is_activo = (
+            not row.Baja if hasattr(row, "Baja") and row.Baja is not None else True
+        )
+        fecha_baja_value = row.Fecha_Baja if hasattr(row, "Fecha_Baja") else None
 
         alumno = {
-            'id': row.Exp,  # Use numeroExpediente as ID
-            'numero_expediente': row.Exp,
-            'nombre': fix_encoding(row.Nombre) if row.Nombre and str(row.Nombre).strip() else "Sin nombre",
-            'apellidos': fix_encoding(row.Apellidos) if row.Apellidos and str(row.Apellidos).strip() else "Sin apellidos",
-            'nif': nif_fixed,
-            'fecha_nacimiento': row.Fnac if row.Fnac else date(1900, 1, 1),
-            'direccion': fix_encoding(row.Direccion) if row.Direccion and str(row.Direccion).strip() else "Sin dirección",
-            'telefono': telefono,
-            'email': email_fixed,
-            'tipo_tarifa': tipo_tarifa,
-            'cuantia_tarifa': cuantia_tarifa,
-            'fecha_alta': row.Fecha_Alta,
-            'activo': is_activo,
-            'fecha_baja': fecha_baja_value,
-            'autorizacion_web': row.Autorizacion_foto_web,
-            'competidor': False,  # Default, can be updated later
-            'peso': float(row.Peso) if row.Peso else None,
-            'fecha_peso': row.Fecha_Peso,
-            'tiene_licencia': tiene_licencia,
-            'numero_licencia': row.N_licencia,
-            'fecha_licencia': row.Fecha_licencia,
-            'tiene_discapacidad': False,  # Default
-            'foto_alumno_id': None,  # Will be updated when photos are extracted
-            'deporte': 'TAEKWONDO',  # Default
-            'categoria_id': None,  # Will be set if competidor
-            'grado_id': grado_id,
-            'fecha_grado': row.Fgrado,
-            'apto_para_examen': False,  # Will be calculated by app
-            'tiene_derecho_examen': False,  # Default
+            "id": row.Exp,  # Use numeroExpediente as ID
+            "numero_expediente": row.Exp,
+            "nombre": (
+                fix_encoding(row.Nombre)
+                if row.Nombre and str(row.Nombre).strip()
+                else "Sin nombre"
+            ),
+            "apellidos": (
+                fix_encoding(row.Apellidos)
+                if row.Apellidos and str(row.Apellidos).strip()
+                else "Sin apellidos"
+            ),
+            "nif": nif_fixed,
+            "fecha_nacimiento": row.Fnac if row.Fnac else date(1900, 1, 1),
+            "direccion": (
+                fix_encoding(row.Direccion)
+                if row.Direccion and str(row.Direccion).strip()
+                else "Sin dirección"
+            ),
+            "telefono": telefono,
+            "email": email_fixed,
+            "tipo_tarifa": tipo_tarifa,
+            "cuantia_tarifa": cuantia_tarifa,
+            "fecha_alta": row.Fecha_Alta,
+            "activo": is_activo,
+            "fecha_baja": fecha_baja_value,
+            "autorizacion_web": row.Autorizacion_foto_web,
+            "competidor": False,  # Default, can be updated later
+            "peso": float(row.Peso) if row.Peso else None,
+            "fecha_peso": row.Fecha_Peso,
+            "tiene_licencia": tiene_licencia,
+            "numero_licencia": row.N_licencia,
+            "fecha_licencia": row.Fecha_licencia,
+            "tiene_discapacidad": False,  # Default
+            "foto_alumno_id": None,  # Will be updated when photos are extracted
+            "deporte": "TAEKWONDO",  # Default
+            "categoria_id": None,  # Will be set if competidor
+            "grado_id": grado_id,
+            "fecha_grado": row.Fgrado,
+            "apto_para_examen": False,  # Will be calculated by app
+            "tiene_derecho_examen": False,  # Default
         }
         alumnos.append(alumno)
-        stats['alumnos_extracted'] += 1
+        stats["alumnos_extracted"] += 1
+
+        # justo antes del return de extract_alumnos
+
+    exp_counts = defaultdict(int)
+    for a in alumnos:
+        exp_counts[a["id"]] += 1
+    dups = [exp for exp, c in exp_counts.items() if c > 1]
+    if dups:
+        print(
+            f"WARNING: Duplicated expediente IDs in Access: {dups[:20]} ... total={len(dups)}"
+        )
+        errors.append(f"Duplicated expediente IDs: {dups[:50]}")
+
+        # al final de extract_alumnos(), antes de 'return alumnos'
+    print(f"[DEBUG] Total alumnos generados: {len(alumnos)}")
 
     return alumnos
+
 
 def extract_grupos_and_relationships(conn, valid_alumno_ids, active_alumno_ids):
     """Extract grupos and relationships (only for active students)"""
@@ -429,7 +507,7 @@ def extract_grupos_and_relationships(conn, valid_alumno_ids, active_alumno_ids):
         alumno_exp = row.Exp
         dia = map_dia_semana(row.DIA, row.DiaSemana)
         turno_name = fix_encoding(row.Turno) if row.Turno else "TURNO DESCONOCIDO"
-        is_ptdk = row.PTDK if hasattr(row, 'PTDK') else False
+        is_ptdk = row.PTDK if hasattr(row, "PTDK") else False
 
         start_time, end_time = parse_time_from_turno(turno_name)
         if not start_time:
@@ -451,31 +529,31 @@ def extract_grupos_and_relationships(conn, valid_alumno_ids, active_alumno_ids):
 
         if grupo_key not in grupos_dict:
             grupos_dict[grupo_key] = {
-                'id': grupo_id_counter,
-                'nombre': tipo,
-                'tipo': tipo
+                "id": grupo_id_counter,
+                "nombre": tipo,
+                "tipo": tipo,
             }
             grupo_id_counter += 1
-            stats['grupos_created'] += 1
+            stats["grupos_created"] += 1
 
-        grupo_id = grupos_dict[grupo_key]['id']
+        grupo_id = grupos_dict[grupo_key]["id"]
 
         # Create unique turno key
         turno_key = f"{grupo_id}_{dia}_{start_time}_{end_time}"
 
         if turno_key not in turnos_dict:
             turnos_dict[turno_key] = {
-                'id': turno_id_counter,
-                'dia_semana': dia,
-                'hora_inicio': start_time,
-                'hora_fin': end_time,
-                'tipo': tipo,
-                'grupo_id': grupo_id
+                "id": turno_id_counter,
+                "dia_semana": dia,
+                "hora_inicio": start_time,
+                "hora_fin": end_time,
+                "tipo": tipo,
+                "grupo_id": grupo_id,
             }
             turno_id_counter += 1
-            stats['turnos_created'] += 1
+            stats["turnos_created"] += 1
 
-        turno_id = turnos_dict[turno_key]['id']
+        turno_id = turnos_dict[turno_key]["id"]
 
         # Add relationships only for active students (inactive students shouldn't have current grupo/turno assignments)
         if alumno_exp not in active_alumno_ids:
@@ -483,16 +561,17 @@ def extract_grupos_and_relationships(conn, valid_alumno_ids, active_alumno_ids):
 
         if (alumno_exp, grupo_id) not in alumno_grupo_relationships:
             alumno_grupo_relationships.append((alumno_exp, grupo_id))
-            stats['alumno_grupo_relationships'] += 1
+            stats["alumno_grupo_relationships"] += 1
 
         if (alumno_exp, turno_id) not in alumno_turno_relationships:
             alumno_turno_relationships.append((alumno_exp, turno_id))
-            stats['alumno_turno_relationships'] += 1
+            stats["alumno_turno_relationships"] += 1
 
     grupos = list(grupos_dict.values())
     turnos = list(turnos_dict.values())
 
     return grupos, turnos, alumno_grupo_relationships, alumno_turno_relationships
+
 
 def extract_productos(conn):
     """Extract products from AUX_ADMON and xxx AUX_MARTERIALES"""
@@ -507,14 +586,10 @@ def extract_productos(conn):
         concepto = fix_encoding(row.CONCEPTO) if row.CONCEPTO else "PRODUCTO"
         precio = float(row.CUANTIA) if row.CUANTIA else 0.0
 
-        productos.append({
-            'id': producto_id,
-            'concepto': concepto,
-            'precio': precio
-        })
+        productos.append({"id": producto_id, "concepto": concepto, "precio": precio})
         producto_map[concepto] = producto_id
         producto_id += 1
-        stats['productos_extracted'] += 1
+        stats["productos_extracted"] += 1
 
     # Extract from xxx AUX_MARTERIALES
     try:
@@ -523,18 +598,17 @@ def extract_productos(conn):
             concepto = fix_encoding(row.CONCEPTO) if row.CONCEPTO else "MATERIAL"
             precio = float(row.PRECIO) if row.PRECIO else 0.0
 
-            productos.append({
-                'id': producto_id,
-                'concepto': concepto,
-                'precio': precio
-            })
+            productos.append(
+                {"id": producto_id, "concepto": concepto, "precio": precio}
+            )
             producto_map[concepto] = producto_id
             producto_id += 1
-            stats['productos_extracted'] += 1
+            stats["productos_extracted"] += 1
     except:
         print("Warning: Could not extract from xxx AUX_MARTERIALES")
 
     return productos, producto_map
+
 
 def extract_convocatorias(conn):
     """Extract exam calls from EXAMENES_CONVOCATORIAS"""
@@ -546,15 +620,16 @@ def extract_convocatorias(conn):
 
     for idx, row in enumerate(cursor.fetchall(), 1):
         convocatoria = {
-            'id': idx,
-            'fecha_convocatoria': row.FECHA_CONVOCATORIA,
-            'deporte': 'TAEKWONDO'
+            "id": idx,
+            "fecha_convocatoria": row.FECHA_CONVOCATORIA,
+            "deporte": "TAEKWONDO",
         }
         convocatorias.append(convocatoria)
         convocatoria_map[row.ID_CONVEXAM] = idx
-        stats['convocatorias_extracted'] += 1
+        stats["convocatorias_extracted"] += 1
 
     return convocatorias, convocatoria_map
+
 
 def extract_examenes(conn, convocatoria_map, valid_alumno_ids):
     """Extract exam records from EXAMENES"""
@@ -583,19 +658,20 @@ def extract_examenes(conn, convocatoria_map, valid_alumno_ids):
         fecha_pago = row.xxFechaPago if row.xxFechaPago else None
 
         examen = {
-            'alumno_id': row.Exp,
-            'convocatoria_id': convocatoria_id,
-            'producto_alumno_id': None,  # Will be linked later if needed
-            'cuantia_examen': cuantia,
-            'pagado': pagado,
-            'fecha_pago': fecha_pago,
-            'grado_actual': grado_actual,
-            'grado_siguiente': grado_siguiente
+            "alumno_id": row.Exp,
+            "convocatoria_id": convocatoria_id,
+            "producto_alumno_id": None,  # Will be linked later if needed
+            "cuantia_examen": cuantia,
+            "pagado": pagado,
+            "fecha_pago": fecha_pago,
+            "grado_actual": grado_actual,
+            "grado_siguiente": grado_siguiente,
         }
         examenes.append(examen)
-        stats['examenes_extracted'] += 1
+        stats["examenes_extracted"] += 1
 
     return examenes
+
 
 def extract_pagos(conn, producto_map, valid_alumno_ids):
     """Extract payments from PAGOS"""
@@ -615,7 +691,10 @@ def extract_pagos(conn, producto_map, valid_alumno_ids):
         if not producto_id:
             concepto_upper = concepto.upper()
             for prod_concepto, prod_id in producto_map.items():
-                if prod_concepto.upper() in concepto_upper or concepto_upper in prod_concepto.upper():
+                if (
+                    prod_concepto.upper() in concepto_upper
+                    or concepto_upper in prod_concepto.upper()
+                ):
                     producto_id = prod_id
                     break
 
@@ -627,24 +706,26 @@ def extract_pagos(conn, producto_map, valid_alumno_ids):
         pagado = bool(row.Pagado) if row.Pagado is not None else False
 
         pago = {
-            'alumno_id': row.Exp,
-            'producto_id': producto_id,
-            'concepto': concepto,
-            'fecha_asignacion': row.Fecha,
-            'cantidad': 1,  # Default
-            'precio': precio,
-            'pagado': pagado,
-            'fecha_pago': row.FechaPago,
-            'notas': fix_encoding(row.Notas) if row.Notas else None
+            "alumno_id": row.Exp,
+            "producto_id": producto_id,
+            "concepto": concepto,
+            "fecha_asignacion": row.Fecha,
+            "cantidad": 1,  # Default
+            "precio": precio,
+            "pagado": pagado,
+            "fecha_pago": row.FechaPago,
+            "notas": fix_encoding(row.Notas) if row.Notas else None,
         }
         pagos.append(pago)
-        stats['pagos_extracted'] += 1
+        stats["pagos_extracted"] += 1
 
     return pagos
+
 
 # =============================================================================
 # SQL GENERATION FUNCTIONS
 # =============================================================================
+
 
 def generate_grado_inserts(grados):
     """Generate SQL INSERT statements for Grado reference table"""
@@ -658,6 +739,7 @@ def generate_grado_inserts(grados):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_grupo_inserts(grupos):
     """Generate SQL INSERT statements for Grupo"""
@@ -675,6 +757,7 @@ def generate_grupo_inserts(grupos):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_turno_inserts(turnos):
     """Generate SQL INSERT statements for Turno"""
@@ -696,6 +779,7 @@ def generate_turno_inserts(turnos):
 
     return "\n".join(sql_lines)
 
+
 def generate_producto_inserts(productos):
     """Generate SQL INSERT statements for Producto"""
     sql_lines = []
@@ -713,6 +797,7 @@ def generate_producto_inserts(productos):
 
     return "\n".join(sql_lines)
 
+
 def generate_convocatoria_inserts(convocatorias):
     """Generate SQL INSERT statements for Convocatoria"""
     sql_lines = []
@@ -729,6 +814,7 @@ def generate_convocatoria_inserts(convocatorias):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_alumno_inserts(alumnos):
     """Generate SQL INSERT statements for Alumno"""
@@ -768,7 +854,7 @@ def generate_alumno_inserts(alumnos):
     {alumno['foto_alumno_id'] if alumno['foto_alumno_id'] else 'NULL'},
     {escape_sql_string(alumno['deporte'])},
     {alumno['categoria_id'] if alumno['categoria_id'] else 'NULL'},
-    {alumno['grado_id']},
+    {alumno['grado_id'] if alumno['grado_id'] is not None else 'NULL'},
     {format_date(alumno['fecha_grado'])},
     {format_boolean(alumno['apto_para_examen'])},
     {format_boolean(alumno['tiene_derecho_examen'])}
@@ -776,6 +862,7 @@ def generate_alumno_inserts(alumnos):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_alumno_grupo_inserts(alumno_grupos):
     """Generate SQL INSERT statements for alumno_grupo join table"""
@@ -790,6 +877,7 @@ def generate_alumno_grupo_inserts(alumno_grupos):
 
     return "\n".join(sql_lines)
 
+
 def generate_alumno_turno_inserts(alumno_turnos):
     """Generate SQL INSERT statements for alumno_turno join table"""
     sql_lines = []
@@ -802,6 +890,7 @@ def generate_alumno_turno_inserts(alumno_turnos):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_alumno_convocatoria_inserts(examenes):
     """Generate SQL INSERT statements for AlumnoConvocatoria"""
@@ -825,6 +914,7 @@ def generate_alumno_convocatoria_inserts(examenes):
         sql_lines.append(sql)
 
     return "\n".join(sql_lines)
+
 
 def generate_producto_alumno_inserts(pagos):
     """Generate SQL INSERT statements for ProductoAlumno"""
@@ -850,35 +940,41 @@ def generate_producto_alumno_inserts(pagos):
 
     return "\n".join(sql_lines)
 
+
 # =============================================================================
 # MAIN MIGRATION FUNCTION
 # =============================================================================
 
+
 def run_migration():
     """Main migration function"""
-    print("="*80)
+    print("=" * 80)
     print("TaeMoi Data Migration V2: Access -> MySQL")
     print("CORRECTED VERSION - Matches actual TaeMoi schema")
-    print("="*80)
+    print("=" * 80)
     print(f"\nConnecting to: {MDB_PATH}")
 
     conn = connect_to_mdb(MDB_PATH)
 
     print("\n[1/10] Creating Grado reference table...")
     grados = extract_grados_reference()
-    grado_map = {g['tipo_grado']: g['id'] for g in grados}
+    grado_map = {g["tipo_grado"]: g["id"] for g in grados}
     print(f"      [OK] Created {len(grados)} grado entries")
 
     print("\n[2/10] Extracting Alumnos (students)...")
     alumnos = extract_alumnos(conn, grado_map)
-    valid_alumno_ids = {a['id'] for a in alumnos}
-    active_alumno_ids = {a['id'] for a in alumnos if a['activo']}
+    valid_alumno_ids = {a["id"] for a in alumnos}
+    active_alumno_ids = {a["id"] for a in alumnos if a["activo"]}
     active_count = len(active_alumno_ids)
     inactive_count = len(alumnos) - active_count
-    print(f"      [OK] Extracted {len(alumnos)} students ({active_count} active, {inactive_count} inactive)")
+    print(
+        f"      [OK] Extracted {len(alumnos)} students ({active_count} active, {inactive_count} inactive)"
+    )
 
     print("\n[3/10] Extracting Grupos, Turnos and relationships...")
-    grupos, turnos, alumno_grupos, alumno_turnos = extract_grupos_and_relationships(conn, valid_alumno_ids, active_alumno_ids)
+    grupos, turnos, alumno_grupos, alumno_turnos = extract_grupos_and_relationships(
+        conn, valid_alumno_ids, active_alumno_ids
+    )
     print(f"      [OK] Created {len(grupos)} grupos")
     print(f"      [OK] Created {len(turnos)} turnos")
     print(f"      [OK] Created {len(alumno_grupos)} alumno-grupo relationships")
@@ -909,7 +1005,14 @@ def run_migration():
     sql_output.append("-- Source: CLUBMOISKIMDO_AUX.mdb")
     sql_output.append("-- CORRECTED VERSION - Matches actual TaeMoi entity schema")
     sql_output.append("-- ============================================")
-    sql_output.append("\nSET FOREIGN_KEY_CHECKS = 0;")
+    sql_output.append("\nSET FOREIGN_KEY_CHECKS = 0;\n")
+    sql_output.append(
+        "SET NAMES utf8mb4;\n"
+        "SET character_set_client = utf8mb4;\n"
+        "SET character_set_connection = utf8mb4;\n"
+        "SET character_set_results = utf8mb4;\n"
+        "SET collation_connection = utf8mb4_spanish_ci;\n"
+    )
     sql_output.append("\n-- Clean existing data (CAUTION!)")
     sql_output.append("-- TRUNCATE TABLE producto_alumno;")
     sql_output.append("-- TRUNCATE TABLE alumno_convocatoria;")
@@ -934,34 +1037,34 @@ def run_migration():
     sql_output.append(generate_alumno_convocatoria_inserts(examenes))
     sql_output.append(generate_producto_alumno_inserts(pagos))
 
-    with open(OUTPUT_SQL_FILE, 'w', encoding='utf-8') as f:
+    with open(OUTPUT_SQL_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(sql_output))
 
     print(f"      [OK] SQL written to: {OUTPUT_SQL_FILE}")
 
     print("\n[9/10] Generating migration report...")
     report_lines = []
-    report_lines.append("="*80)
+    report_lines.append("=" * 80)
     report_lines.append("MIGRATION REPORT V2 (CORRECTED)")
-    report_lines.append("="*80)
+    report_lines.append("=" * 80)
     report_lines.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     report_lines.append(f"Source Database: {MDB_PATH}")
     report_lines.append(f"Output SQL File: {OUTPUT_SQL_FILE}\n")
     report_lines.append("\nMIGRATION STATISTICS:")
-    report_lines.append("-"*80)
+    report_lines.append("-" * 80)
     for key, value in sorted(stats.items()):
         report_lines.append(f"  {key}: {value}")
 
     if errors:
         report_lines.append("\n\nERRORS/WARNINGS:")
-        report_lines.append("-"*80)
+        report_lines.append("-" * 80)
         for error in errors[:50]:
             report_lines.append(f"  - {error}")
         if len(errors) > 50:
             report_lines.append(f"\n  ... and {len(errors) - 50} more errors")
 
     report_lines.append("\n\nKEY SCHEMA FIXES APPLIED:")
-    report_lines.append("-"*80)
+    report_lines.append("-" * 80)
     report_lines.append("  - Created Grado reference table with FK relationship")
     report_lines.append("  - Alumno uses id as PK (set to numeroExpediente value)")
     report_lines.append("  - Fixed telefono (single field instead of movil/fijo)")
@@ -970,14 +1073,18 @@ def run_migration():
     report_lines.append("  - Fixed Turno -> Grupo relationship (many-to-one)")
     report_lines.append("  - Added alumno_turno join table for many-to-many")
     report_lines.append("  - Fixed Producto (concepto/precio only)")
-    report_lines.append("  - Fixed ProductoAlumno (alumno_id FK, not numero_expediente)")
+    report_lines.append(
+        "  - Fixed ProductoAlumno (alumno_id FK, not numero_expediente)"
+    )
     report_lines.append("  - Fixed AlumnoConvocatoria schema completely")
     report_lines.append("\n\nDATA QUALITY FIXES APPLIED:")
-    report_lines.append("-"*80)
-    report_lines.append("  - Removed hyphens from NIFs (104 students: '12345678-A' -> '12345678A')")
+    report_lines.append("-" * 80)
+    report_lines.append(
+        "  - Removed hyphens from NIFs (104 students: '12345678-A' -> '12345678A')"
+    )
     report_lines.append("  - Fixed malformed emails to use @gmail.com (2 students)")
     report_lines.append("\n\nNEXT STEPS:")
-    report_lines.append("-"*80)
+    report_lines.append("-" * 80)
     report_lines.append("1. Review the generated SQL file: " + OUTPUT_SQL_FILE)
     report_lines.append("2. Test on a development database first")
     report_lines.append("3. Execute the SQL script in MySQL:")
@@ -985,11 +1092,11 @@ def run_migration():
     report_lines.append("4. Verify data integrity and counts")
     report_lines.append("5. Extract and migrate student photos from FOTOS_ALUMNOS")
     report_lines.append("6. Copy documents from D:\\DOCUMENTOS\\")
-    report_lines.append("\n" + "="*80)
+    report_lines.append("\n" + "=" * 80)
 
     report_text = "\n".join(report_lines)
 
-    with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+    with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write(report_text)
 
     print(report_text)
@@ -997,6 +1104,7 @@ def run_migration():
 
     conn.close()
     print("\n[SUCCESS] Migration V2 complete!")
+
 
 # =============================================================================
 # ENTRY POINT
@@ -1008,5 +1116,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n[ERROR] Migration failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
