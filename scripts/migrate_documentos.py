@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Document Migration Script: Files containing AL{id} -> Organized per-student folders
+Document Migration Script: Files containing AL{numero_expediente} -> Organized per-student folders
 Migrates documents from flat structure to organized per-student folders
 
-This script finds ANY file containing "AL{id}" (where id is a student ID) and
-associates it with that student, moving it to their folder.
+This script finds ANY file containing "AL{numero_expediente}" pattern and
+associates it with that student (by numero_expediente), moving it to their folder.
+
+IMPORTANT: The AL{number} in filenames refers to numero_expediente, not the current database ID.
+This handles cases where IDs changed during database migration but numero_expediente stayed stable.
 
 Examples of files it will find:
-  AL7_certificado.pdf -> moves to folder 7_Juan_Perez/
-  documento_AL15.pdf -> moves to folder 15_Maria_Garcia/
-  foto_AL22_carnet.jpg -> moves to folder 22_Pedro_Lopez/
+  AL7_certificado.pdf -> moves to student with numero_expediente=7
+  documento_AL15.pdf -> moves to student with numero_expediente=15
+  foto_AL22_carnet.jpg -> moves to student with numero_expediente=22
 
 Author: TaeMoi Team
 Date: 2025-10-25
-Version: 2.0 (Flexible Pattern Matching)
+Version: 2.1 (Lookup by numero_expediente)
 """
 import mysql.connector
 import os
@@ -440,10 +443,20 @@ def connect_to_db():
 
 
 def get_alumno_info(conn, alumno_id: int) -> Optional[Dict]:
-    """Fetch alumno information from database"""
+    """Fetch alumno information from database by id"""
     cursor = conn.cursor(dictionary=True)
     query = "SELECT id, numero_expediente, nombre, apellidos FROM alumno WHERE id = %s"
     cursor.execute(query, (alumno_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    return result
+
+
+def get_alumno_info_by_numero_expediente(conn, numero_expediente: int) -> Optional[Dict]:
+    """Fetch alumno information from database by numero_expediente"""
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT id, numero_expediente, nombre, apellidos FROM alumno WHERE numero_expediente = %s"
+    cursor.execute(query, (numero_expediente,))
     result = cursor.fetchone()
     cursor.close()
     return result
@@ -591,7 +604,7 @@ def migrate_documents(docs_path: str, dry_run: bool = False, database: str = Non
         database: Database name to use (overrides .env)
     """
     print("\n" + "=" * 80)
-    print("DOCUMENT MIGRATION: Files containing AL{id} -> Student Folders")
+    print("DOCUMENT MIGRATION: Files containing AL{numero_expediente} -> Student Folders")
     print("=" * 80 + "\n")
 
     if dry_run:
@@ -616,15 +629,15 @@ def migrate_documents(docs_path: str, dry_run: bool = False, database: str = Non
 
     # Scan for files with alumno IDs
     print(f"\n[SCAN] Scanning directory: {docs_path}")
-    print("   Looking for files containing AL{id} pattern...\n")
+    print("   Looking for files containing AL{numero_expediente} pattern...\n")
     files_with_ids = scan_files_with_alumno_id(docs_path)
 
     if not files_with_ids:
-        print("[OK] No files containing AL{id} pattern found. Migration not needed.")
+        print("[OK] No files containing AL{numero_expediente} pattern found. Migration not needed.")
         conn.close()
         return
 
-    print(f"[OK] Found {len(files_with_ids)} files containing AL{{id}} pattern\n")
+    print(f"[OK] Found {len(files_with_ids)} files containing AL{{numero_expediente}} pattern\n")
     stats["files_found"] = len(files_with_ids)
 
     # Group files by alumno_id
@@ -635,16 +648,16 @@ def migrate_documents(docs_path: str, dry_run: bool = False, database: str = Non
     print(f"[INFO] Files belong to {len(files_by_alumno)} different students\n")
 
     # Process each alumno
-    for alumno_id, files in sorted(files_by_alumno.items()):
+    for numero_expediente, files in sorted(files_by_alumno.items()):
         print(
-            f"\n[ALUMNO] Processing Alumno ID: {alumno_id} ({len(files)} file{'s' if len(files) > 1 else ''})"
+            f"\n[ALUMNO] Processing numero_expediente: {numero_expediente} ({len(files)} file{'s' if len(files) > 1 else ''})"
         )
 
-        # Get alumno info from database
-        alumno_info = get_alumno_info(conn, alumno_id)
+        # Get alumno info from database by numero_expediente (old ID from filename)
+        alumno_info = get_alumno_info_by_numero_expediente(conn, numero_expediente)
 
         if not alumno_info:
-            error_msg = f"Alumno ID {alumno_id} not found in database"
+            error_msg = f"Alumno with numero_expediente {numero_expediente} not found in database"
             print(f"  [ERROR] {error_msg}")
             errors.append(error_msg)
             stats["errors"] += len(files)
@@ -751,17 +764,20 @@ def print_help():
     """Print usage instructions"""
     print(
         """
-Document Migration Script - Usage (v2.0)
+Document Migration Script - Usage (v2.1)
 =========================================
 
-This script finds ANY file containing "AL{id}" pattern and associates it with
-that student, moving it to their organized folder.
+This script finds ANY file containing "AL{numero_expediente}" pattern and associates
+it with that student (by numero_expediente), moving it to their organized folder.
+
+IMPORTANT: The AL{number} in filenames is matched to numero_expediente, NOT database ID.
+This handles cases where database IDs changed during migration but numero_expediente stayed stable.
 
 Pattern Detection:
-    The script looks for AL{id} ANYWHERE in the filename:
-    - AL7_certificado.pdf -> Alumno 7
-    - documento_AL15.pdf -> Alumno 15
-    - foto_AL22_carnet.jpg -> Alumno 22
+    The script looks for AL{numero_expediente} ANYWHERE in the filename:
+    - AL7_certificado.pdf -> Student with numero_expediente=7
+    - documento_AL15.pdf -> Student with numero_expediente=15
+    - foto_AL22_carnet.jpg -> Student with numero_expediente=22
 
 Usage:
     python migrate_documentos.py [OPTIONS]
