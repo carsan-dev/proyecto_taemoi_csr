@@ -6,6 +6,9 @@ migrate_to_mysql_v7.py
 Complete migration script based on comprehensive field mappings.
 Handles all tables with proper field transformations.
 
+IMPORTANT: URLs are now properly URL-encoded to handle spaces and special characters.
+This ensures documento and imagen URLs work correctly in browsers without issues.
+
 Tables migrated:
   - grado (pre-populated)
   - categoria (pre-populated)
@@ -58,6 +61,7 @@ import re
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 from collections import OrderedDict
+from urllib.parse import quote
 
 try:
     import pyodbc
@@ -100,6 +104,7 @@ def get_image_path(env: str, numero_expediente: int) -> str:
 def get_image_url(env: str, numero_expediente: int) -> str:
     """Generate image URL based on environment and expediente number"""
     base_url = ENVIRONMENT_BASE_URLS.get(env, ENVIRONMENT_BASE_URLS["local"])
+    # Images are named by numero_expediente (number only, no encoding needed)
     # URLs always use forward slashes
     return f"{base_url}/imagenes/{numero_expediente}.jpg"
 
@@ -113,12 +118,16 @@ def get_documento_folder(env: str, numero_expediente: int, nombre: str, apellido
     return f"{base_path}{sep}{folder_name}"
 
 def get_documento_url(env: str, numero_expediente: int, nombre: str, apellidos: str, filename: str) -> str:
-    """Generate documento URL based on environment and student info"""
+    """Generate documento URL based on environment and student info with proper URL encoding"""
     base_url = ENVIRONMENT_BASE_URLS.get(env, ENVIRONMENT_BASE_URLS["local"])
     # Folder format: {numero_expediente}_{Nombre}_{Apellidos}
     folder_name = f"{numero_expediente}_{nombre}_{apellidos}"
+    # URL-encode folder name and filename to handle spaces and special characters
+    # safe='' means encode everything except unreserved characters
+    encoded_folder = quote(folder_name, safe='')
+    encoded_filename = quote(filename, safe='')
     # URLs always use forward slashes
-    return f"{base_url}/documentos/Documentos_Alumnos_Moiskimdo/{folder_name}/{filename}"
+    return f"{base_url}/documentos/Documentos_Alumnos_Moiskimdo/{encoded_folder}/{encoded_filename}"
 
 def get_mime_type_from_filename(filename: str) -> str:
     """Get MIME type from file extension"""
