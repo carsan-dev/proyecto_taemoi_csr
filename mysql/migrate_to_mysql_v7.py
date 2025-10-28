@@ -970,7 +970,7 @@ def write_convocatorias_examenes(f, schema: str, examenes: List[Dict[str, Any]],
         grado_siguiente = map_grado_to_tipo(r.get("GRADO_PROMO"))
         derecho_examen = sql_bool(r.get("DERECHO_EXAMEN"))
         fecha_pago = sql_date_or_null(r.get("FECHA_CONVOCATORIA"))
-        cuantia_examen = "NULL"  # Can be derived from producto_alumno
+        cuantia_examen = "0.0"  # Default value, can be updated later from producto_alumno
         pagado = derecho_examen
         producto_alumno_id = "NULL"
 
@@ -1024,6 +1024,9 @@ def migrate(access_path: str, out_sql: str, schema: str, env: str, base_url: Opt
         f.write(f"-- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("-- =====================================================\n\n")
 
+        f.write("SET NAMES utf8mb4;\n")
+        f.write("SET CHARACTER SET utf8mb4;\n")
+        f.write("SET character_set_connection = utf8mb4;\n")
         f.write("SET FOREIGN_KEY_CHECKS = 0;\n")
         f.write("SET UNIQUE_CHECKS = 0;\n")
         f.write("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n\n")
