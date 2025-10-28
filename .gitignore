@@ -11,6 +11,8 @@ certbot/conf/
 certbot/www/
 backups/
 *.tar.gz
+static_resources/documentos/Documentos_Alumnos_Moiskimdo/*
+static_resources/imagenes/alumnos/*
 
 # IDE
 .vscode/
