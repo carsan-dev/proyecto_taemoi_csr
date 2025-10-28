@@ -1,0 +1,32 @@
+Comandos arrancar server
+
+  # 3. Stop the containers
+  sudo docker-compose -f docker-compose.production.yml down
+
+  # 4. Rebuild the backend with the fix (no cache to ensere fresh build)
+  sudo docker-compose -f docker-compose.production.yml build --no-cache backend
+
+  # 5. Start all containers
+  sudo docker-compose -f docker-compose.production.yml up -d
+
+  # 6. Monitor the backend logs to ensure it starts successfully
+  sudo docker-compose -f docker-compose.production.yml logs -f backend
+
+  # 7. Eliminate the old images of containers
+  sudo docker system prune -af
+
+Migrar data para local: 
+
+python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_local.sql" --env local --schema taemoidb
+
+Migrar data para server: 
+
+python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_server.sql" --env server --schema taemoi_db
+
+Migrar data para docker: 
+
+python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_docker.sql" --env docker --schema taemoi_db
+
+TODO:
+
+Mejorar vista usuario para mostrar sección por deportes por separado o todos los deportes juntos
