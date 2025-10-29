@@ -106,7 +106,8 @@ def get_image_url(env: str, numero_expediente: int) -> str:
     base_url = ENVIRONMENT_BASE_URLS.get(env, ENVIRONMENT_BASE_URLS["local"])
     # Images are named by numero_expediente (number only, no encoding needed)
     # URLs always use forward slashes
-    return f"{base_url}/imagenes/{numero_expediente}.jpg"
+    # Images are stored in alumnos subdirectory
+    return f"{base_url}/imagenes/alumnos/{numero_expediente}.jpg"
 
 def get_documento_folder(env: str, numero_expediente: int, nombre: str, apellidos: str) -> str:
     """Generate documento folder path based on environment"""
