@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton.component';
-import { AuthenticationService } from './servicios/authentication/authentication.service';
 import { LoadingSpinnerComponent } from './componentes/generales/loading-spinner/loading-spinner.component';
 import { ScrollService } from './servicios/generales/scroll.service';
 
@@ -9,7 +8,6 @@ import { ScrollService } from './servicios/generales/scroll.service';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, SkeletonComponent, LoadingSpinnerComponent],
-  providers: [AuthenticationService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
