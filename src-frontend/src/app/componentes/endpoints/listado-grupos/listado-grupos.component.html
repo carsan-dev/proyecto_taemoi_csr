@@ -1,32 +1,45 @@
-<div class="container py-5">
-  <div class="row justify-content-center mb-5">
-    <div class="col-md-8 text-center">
-      <h2 class="fw-bold mb-4">Listado de Grupos</h2>
-      <button class="btn btn-success" routerLink="/gruposCrear">
-        Crear Nuevo Grupo
-      </button>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-people-fill"></i>
+        Gestión de Grupos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" routerLink="/gruposCrear">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear Nuevo Grupo</span>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div class="row">
-    <div
-      *ngFor="let grupo of grupos"
-      class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center"
-    >
-      <div class="card grupo-card my-3">
-        <div class="card-body d-flex flex-column justify-content-between">
-          <!-- Información del grupo -->
-          <div>
-            <p class="text-center card-title fw-bold">{{ grupo.nombre }}</p>
+    <!-- Grupos Grid -->
+    <div class="admin-cards-grid">
+      <div *ngFor="let grupo of grupos" class="admin-item-card">
+        <div class="item-header">
+          <div class="item-title">
+            <h4>{{ grupo.nombre }}</h4>
           </div>
-          
-          <!-- Botones de acciones del grupo -->
-          <div class="d-flex flex-wrap justify-content-center mt-4">
-            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/turnosGrupo', grupo.id]">Gestionar Turnos</button>
-            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/gestionarAlumnos', grupo.id]">Gestionar Alumnos</button>
-            <button class="btn btn-primary btn-sm m-1" [routerLink]="['/gruposEditar', grupo.id]">Editar</button>
-            <button class="btn btn-danger btn-sm m-1" (click)="eliminarGrupo(grupo.id)">Eliminar</button>
-          </div>
+        </div>
+
+        <div class="item-footer">
+          <button class="admin-btn admin-btn-info admin-btn-sm" [routerLink]="['/turnosGrupo', grupo.id]">
+            <i class="bi bi-clock"></i>
+            <span>Turnos</span>
+          </button>
+          <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/gestionarAlumnos', grupo.id]">
+            <i class="bi bi-person-lines-fill"></i>
+            <span>Alumnos</span>
+          </button>
+          <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/gruposEditar', grupo.id]">
+            <i class="bi bi-pencil-square"></i>
+            <span>Editar</span>
+          </button>
+          <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarGrupo(grupo.id)">
+            <i class="bi bi-trash"></i>
+            <span>Eliminar</span>
+          </button>
         </div>
       </div>
     </div>

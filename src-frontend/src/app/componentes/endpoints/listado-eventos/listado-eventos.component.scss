@@ -1,10 +1,7 @@
-@use "sass:color";
+// Import shared admin styles
+@import '../../../componentes/admin-shared-styles.scss';
 
-$primary-color: #007bff;
-$border-radius: 10px;
-$input-padding: 15px;
-$label-font-size: 1rem;
-
+// Component-specific styles for modal
 .modal {
   display: none;
   position: fixed;
@@ -22,6 +19,7 @@ $label-font-size: 1rem;
   display: block;
   width: 80%;
   max-width: 700px;
+  animation: zoom 0.6s;
 }
 
 #caption {
@@ -32,9 +30,6 @@ $label-font-size: 1rem;
   text-align: center;
   color: #ccc;
   padding: 10px 0;
-}
-
-.modal-content, #caption {
   animation: zoom 0.6s;
 }
 
@@ -46,103 +41,13 @@ $label-font-size: 1rem;
   font-size: 40px;
   font-weight: bold;
   transition: 0.3s;
-}
 
-.close:hover, .close:focus {
-  color: #bbb;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.evento-card {
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .card-body {
-    padding: 20px;
-    text-align: center;
-
-    .card-title {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #333;
-    }
-
-    p {
-      font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 15px;
-    }
-
-    .imagen-evento {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #ccc;
-      cursor: pointer;
-      transition: box-shadow 0.3s ease, transform 0.3s ease;
-
-      &:hover {
-        transform: scale(1.1);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      }
-    }
-
-    .btn {
-      font-size: 0.85rem;
-      padding: 5px 10px;
-    }
+  &:hover, &:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
   }
 }
-
-.no-eventos-container {
-  text-align: center;
-  padding: 2rem;
-  border-radius: $border-radius;
-  background-color: rgba(0, 123, 255, 0.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.02);
-  }
-
-  .no-eventos-imagen {
-    width: 150px;
-    height: auto;
-    margin: auto;
-  }
-
-  h3 {
-    font-size: 1.75rem;
-    color: $primary-color;
-  }
-
-  p {
-    font-size: 1rem;
-    color: #666;
-  }
-
-  .btn {
-    border-radius: $border-radius;
-    padding: 10px 20px;
-    font-size: 1rem;
-
-    &:hover {
-      background-color: color.adjust($primary-color, $lightness: -10%);
-    }
-  }
-}
-
 
 @keyframes zoom {
   from {
