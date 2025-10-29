@@ -51,11 +51,15 @@ public class WebConfig implements WebMvcConfigurer {
 		// Determine which paths to use based on OS
 		if (userProfile != null) {
 			// Windows environment - use Windows paths from environment variables
+			// Replace %USERPROFILE% placeholder with actual user profile path
+			String imagenesPath = directorioImagenesWindows.replace("%USERPROFILE%", userProfile);
+			String documentosPath = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+
 			registry.addResourceHandler("/imagenes/**")
-					.addResourceLocations("file:" + directorioImagenesWindows)
+					.addResourceLocations("file:" + imagenesPath)
 					.setCachePeriod(3600);
 			registry.addResourceHandler("/documentos/**")
-					.addResourceLocations("file:" + directorioDocumentosWindows)
+					.addResourceLocations("file:" + documentosPath)
 					.setCachePeriod(3600);
 		} else {
 			// Linux/Docker environment - use Linux paths from environment variables
