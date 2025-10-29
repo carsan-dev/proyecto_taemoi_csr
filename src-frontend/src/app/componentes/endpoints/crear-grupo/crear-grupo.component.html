@@ -15,25 +15,58 @@
         <div class="admin-card admin-card-large">
           <form [formGroup]="grupoForm" (ngSubmit)="crearGrupo()" method="post">
 
-            <!-- Form Field -->
-            <div class="row g-3 mb-4">
-              <div class="col-12">
-                <label for="nombre" class="form-label fw-semibold">Nombre del Grupo</label>
-                <input type="text" formControlName="nombre" id="nombre" class="admin-form-control" placeholder="Nombre del grupo">
-                <div *ngIf="grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched" class="text-danger mt-1">
-                  <small *ngIf="grupoForm.get('nombre')?.errors?.['required']">Nombre del grupo es obligatorio.</small>
-                  <small *ngIf="grupoForm.get('nombre')?.errors?.['maxlength']">Nombre del grupo no puede superar los 50 caracteres.</small>
+            <!-- Información del Grupo -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-info-circle"></i>
+                <h4>Información del Grupo</h4>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched" [class.is-valid]="grupoForm.get('nombre')?.valid && grupoForm.get('nombre')?.touched">
+                    <label for="nombre">
+                      <i class="bi bi-people-fill"></i>
+                      Nombre del Grupo
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="nombre"
+                      id="nombre"
+                      class="admin-form-control"
+                      placeholder="Ej: Infantiles Cinturón Blanco"
+                      aria-label="Nombre del grupo"
+                      aria-required="true">
+                    <div *ngIf="grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched" class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      <span *ngIf="grupoForm.get('nombre')?.errors?.['required']">El nombre del grupo es obligatorio</span>
+                      <span *ngIf="grupoForm.get('nombre')?.errors?.['maxlength']">Máximo 50 caracteres</span>
+                    </div>
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Elige un nombre descriptivo para identificar el grupo fácilmente</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Submit Buttons -->
-            <div class="d-flex gap-3 justify-content-end mt-4">
-              <button type="button" class="admin-btn admin-btn-outline" (click)="volver()">
+            <div class="admin-form-button-group">
+              <button
+                type="button"
+                class="admin-btn admin-btn-outline"
+                (click)="volver()"
+                aria-label="Cancelar y volver al listado">
                 <i class="bi bi-x-circle"></i>
                 <span>Cancelar</span>
               </button>
-              <button type="submit" class="admin-btn admin-btn-primary" [disabled]="grupoForm.invalid">
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary"
+                [disabled]="grupoForm.invalid"
+                aria-label="Crear nuevo grupo">
                 <i class="bi bi-check-circle"></i>
                 <span>Crear Grupo</span>
               </button>

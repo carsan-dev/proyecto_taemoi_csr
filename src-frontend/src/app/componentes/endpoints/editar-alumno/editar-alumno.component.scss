@@ -1,5 +1,5 @@
 // Import shared admin styles
-@import '../../../componentes/admin-shared-styles.scss';
+@use '../../../componentes/admin-shared-styles.scss' as *;
 
 // ========================================
 // COMPONENT-SPECIFIC STYLES FOR EDITAR-ALUMNO

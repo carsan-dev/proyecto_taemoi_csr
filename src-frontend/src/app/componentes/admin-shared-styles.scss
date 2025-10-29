@@ -4,6 +4,9 @@
 // This file contains shared styles for all admin components
 // to ensure consistency with the main website design
 
+// Import modern SASS color module
+@use "sass:color";
+
 // ========================================
 // VARIABLES (matching main website)
 // ========================================
@@ -255,14 +258,49 @@ $info-hover: #0b7dda;
   }
 
   &.admin-btn-outline {
-    background: transparent;
+    background: $text-light;
+    border: 2px solid #e0e0e0;
+    color: $text-dark;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: $background-light;
+      border-color: $text-muted;
+      color: $text-dark;
+      box-shadow: $shadow-md;
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  &.admin-btn-outline-danger {
+    background: $text-light;
+    border: 2px solid $danger-color;
+    color: $danger-color;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: $danger-color;
+      border-color: $danger-color;
+      color: $text-light;
+      box-shadow: $shadow-md;
+    }
+  }
+
+  &.admin-btn-outline-primary {
+    background: $text-light;
     border: 2px solid $primary-color;
     color: $primary-color;
-    box-shadow: none;
+    box-shadow: $shadow-sm;
 
     &:hover {
       background: $primary-color;
+      border-color: $primary-color;
       color: $text-light;
+      box-shadow: $shadow-md;
     }
   }
 
@@ -749,6 +787,607 @@ $info-hover: #0b7dda;
   }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+// ========================================
+// MODERN FORM ENHANCEMENTS
+// ========================================
+
+// Form field wrapper for enhanced styling
+.admin-form-field {
+  position: relative;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.4s ease;
+  animation-fill-mode: both;
+
+  // Stagger animation for multiple fields
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: $text-dark;
+    transition: $transition-fast;
+
+    .required {
+      color: $danger-color;
+      margin-left: 0.25rem;
+    }
+
+    i {
+      margin-right: 0.5rem;
+      color: $primary-color;
+      font-size: 1rem;
+    }
+  }
+
+  // Enhanced input styling
+  input, select, textarea {
+    &.admin-form-control {
+      width: 100%;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:focus {
+        transform: translateY(-2px);
+        border-color: $primary-color;
+        box-shadow: 0 4px 12px rgba($primary-color, 0.15), 0 0 0 0.2rem rgba($primary-color, 0.1);
+      }
+
+      &:disabled {
+        background-color: $background-light;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+  }
+
+  textarea.admin-form-control {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  // Input with icon
+  &.admin-form-field-icon {
+    position: relative;
+
+    .field-icon {
+      position: absolute;
+      left: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: $text-muted;
+      font-size: 1.125rem;
+      pointer-events: none;
+      transition: $transition-fast;
+    }
+
+    input, select {
+      padding-left: 3rem;
+
+      &:focus ~ .field-icon {
+        color: $primary-color;
+      }
+    }
+  }
+
+  // Validation states
+  &.is-valid {
+    .admin-form-control {
+      border-color: $success-color;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234caf50' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 8.5l3.5 3.5 6.5-7'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1.25rem;
+      padding-right: 3rem;
+
+      &:focus {
+        border-color: $success-color;
+        box-shadow: 0 4px 12px rgba($success-color, 0.15), 0 0 0 0.2rem rgba($success-color, 0.1);
+      }
+    }
+
+    .valid-feedback {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: $success-color;
+      animation: slideDown 0.3s ease;
+
+      i {
+        margin-right: 0.25rem;
+      }
+    }
+  }
+
+  &.is-invalid {
+    .admin-form-control {
+      border-color: $danger-color;
+      animation: shake 0.5s ease;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f44336' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 4l8 8m0-8l-8 8'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1.25rem;
+      padding-right: 3rem;
+
+      &:focus {
+        border-color: $danger-color;
+        box-shadow: 0 4px 12px rgba($danger-color, 0.15), 0 0 0 0.2rem rgba($danger-color, 0.1);
+      }
+    }
+
+    .invalid-feedback {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: $danger-color;
+      animation: slideDown 0.3s ease;
+
+      i {
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+
+// Enhanced floating label form field
+.admin-form-floating-enhanced {
+  position: relative;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.4s ease;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 1.25rem 1.25rem 0.625rem 1.25rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    background: $text-light;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 4px 12px rgba($primary-color, 0.15), 0 0 0 0.2rem rgba($primary-color, 0.1);
+      transform: translateY(-2px);
+
+      ~ label {
+        color: $primary-color;
+        transform: translateY(-0.75rem) scale(0.85);
+      }
+    }
+
+    &:not(:placeholder-shown) ~ label,
+    &:focus ~ label {
+      transform: translateY(-0.75rem) scale(0.85);
+      color: $primary-color;
+    }
+  }
+
+  label {
+    position: absolute;
+    top: 1rem;
+    left: 1.25rem;
+    color: $text-muted;
+    font-size: 1rem;
+    font-weight: 500;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: left top;
+    background: $text-light;
+    padding: 0 0.25rem;
+  }
+
+  textarea {
+    min-height: 120px;
+    padding-top: 1.5rem;
+    resize: vertical;
+  }
+}
+
+// Form section with background
+.admin-form-section {
+  background: linear-gradient(135deg, rgba($primary-color, 0.02), rgba($primary-color, 0.01));
+  border: 1px solid rgba($primary-color, 0.08);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.5s ease;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba($primary-color, 0.1);
+
+    i {
+      font-size: 1.5rem;
+      color: $primary-color;
+      background: rgba($primary-color, 0.1);
+      padding: 0.75rem;
+      border-radius: 12px;
+    }
+
+    h4 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin: 0;
+    }
+  }
+}
+
+// Enhanced file upload
+.admin-file-upload {
+  position: relative;
+  margin-bottom: 1.5rem;
+
+  .file-upload-area {
+    border: 3px dashed #c0c0c0;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: rgba($primary-color, 0.02);
+    cursor: pointer;
+    transition: $transition;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.05);
+      transform: translateY(-2px);
+
+      .upload-icon {
+        transform: scale(1.1);
+        color: $primary-color;
+      }
+    }
+
+    &.drag-over {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.1);
+      box-shadow: 0 8px 24px rgba($primary-color, 0.15);
+
+      .upload-icon {
+        animation: pulse 0.6s ease infinite;
+      }
+    }
+
+    input[type="file"] {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .upload-icon {
+      font-size: 3.5rem;
+      color: $primary-color;
+      margin-bottom: 1rem;
+      display: block;
+      transition: $transition;
+    }
+
+    .upload-text {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+      font-size: 0.9375rem;
+      color: $text-muted;
+      margin: 0;
+    }
+  }
+
+  .file-preview {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: $text-light;
+    border-radius: 12px;
+    box-shadow: $shadow-sm;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    animation: slideDown 0.3s ease;
+
+    img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: $shadow-sm;
+    }
+
+    .file-info {
+      flex: 1;
+
+      .file-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: $text-dark;
+        margin-bottom: 0.5rem;
+      }
+
+      .file-size {
+        font-size: 0.875rem;
+        color: $text-muted;
+      }
+    }
+
+    .file-remove {
+      @include modern-button($danger-color, $danger-hover);
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Enhanced checkbox and radio
+.admin-form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: $transition;
+  margin-bottom: 1rem;
+
+  &:hover {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.02);
+    transform: translateX(4px);
+  }
+
+  &.checked {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.05);
+    box-shadow: 0 4px 12px rgba($primary-color, 0.1);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    accent-color: $primary-color;
+  }
+
+  label {
+    flex: 1;
+    cursor: pointer;
+    margin: 0;
+    font-weight: 500;
+    color: $text-dark;
+    user-select: none;
+  }
+
+  .check-icon {
+    font-size: 1.25rem;
+    color: $primary-color;
+    transition: $transition-fast;
+  }
+}
+
+// Switch toggle
+.admin-form-switch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: $transition;
+  margin-bottom: 1rem;
+
+  &:hover {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.02);
+  }
+
+  &.checked {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.05);
+  }
+
+  label {
+    flex: 1;
+    cursor: pointer;
+    margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+    color: $text-dark;
+    user-select: none;
+  }
+
+  .switch {
+    position: relative;
+    width: 56px;
+    height: 28px;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+
+      &:checked + .slider {
+        background: $primary-color;
+
+        &:before {
+          transform: translateX(28px);
+        }
+      }
+
+      &:focus + .slider {
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+      }
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: $transition;
+      border-radius: 28px;
+
+      &:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: $transition;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+}
+
+// Form button group
+.admin-form-button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding-top: 2rem;
+  margin-top: 2rem;
+  border-top: 2px solid $background-light;
+  animation: fadeInUp 0.5s ease;
+}
+
+// Input group with addons
+.admin-input-group {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+
+  .input-group-prepend,
+  .input-group-append {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    background: $background-light;
+    border: 2px solid #e0e0e0;
+    color: $text-muted;
+    font-weight: 600;
+    white-space: nowrap;
+
+    i {
+      font-size: 1.125rem;
+      color: $primary-color;
+    }
+  }
+
+  .input-group-prepend {
+    border-radius: 12px 0 0 12px;
+    border-right: none;
+  }
+
+  .input-group-append {
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+  }
+
+  input {
+    flex: 1;
+    border-radius: 0 12px 12px 0;
+
+    &:first-child {
+      border-radius: 12px 0 0 12px;
+    }
+
+    &:only-child {
+      border-radius: 12px;
+    }
+  }
+
+  &:focus-within {
+    .input-group-prepend,
+    .input-group-append {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.05);
+      color: $primary-color;
+    }
+  }
+}
+
+// Help text
+.admin-form-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: $text-muted;
+  line-height: 1.4;
+
+  i {
+    font-size: 1rem;
+    color: $info-color;
+    margin-top: 0.125rem;
+  }
+}
+
 // ========================================
 // RESPONSIVE DESIGN
 // ========================================
@@ -946,7 +1585,7 @@ $info-hover: #0b7dda;
   box-shadow: $shadow-sm;
 
   &:hover {
-    background: linear-gradient(135deg, $primary-dark, darken($primary-dark, 10%));
+    background: linear-gradient(135deg, $primary-dark, color.adjust($primary-dark, $lightness: -10%));
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }
@@ -973,7 +1612,7 @@ $info-hover: #0b7dda;
   box-shadow: $shadow-sm;
 
   &:hover {
-    background: linear-gradient(135deg, $danger-hover, darken($danger-hover, 10%));
+    background: linear-gradient(135deg, $danger-hover, color.adjust($danger-hover, $lightness: -10%));
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }
@@ -1035,5 +1674,901 @@ label {
 
   &.table-hover tbody tr:hover {
     background-color: rgba($primary-color, 0.03);
+  }
+}
+
+// ========================================
+// MODAL ALUMNO LIST
+// ========================================
+.alumno-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0.5rem;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $background-light;
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $primary-color;
+    border-radius: 10px;
+
+    &:hover {
+      background: $primary-dark;
+    }
+  }
+}
+
+.alumno-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  text-decoration: none;
+  color: $text-dark;
+  transition: $transition;
+  cursor: pointer;
+  animation: fadeInUp 0.3s ease;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.03}s;
+    }
+  }
+
+  &:hover {
+    background: rgba($primary-color, 0.05);
+    border-color: $primary-color;
+    transform: translateX(8px);
+    box-shadow: $shadow-md;
+
+    .alumno-icon i {
+      color: $primary-color;
+      transform: scale(1.1);
+    }
+
+    .alumno-arrow i {
+      transform: translateX(4px);
+      color: $primary-color;
+    }
+  }
+
+  &:active {
+    transform: translateX(4px);
+  }
+
+  .alumno-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba($primary-color, 0.1);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: $transition;
+
+    i {
+      font-size: 1.75rem;
+      color: $primary-dark;
+      transition: $transition;
+    }
+  }
+
+  .alumno-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .alumno-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: $text-dark;
+    }
+
+    .alumno-action {
+      font-size: 0.85rem;
+      color: $text-muted;
+    }
+  }
+
+  .alumno-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    i {
+      font-size: 1.25rem;
+      color: $text-muted;
+      transition: $transition;
+    }
+  }
+}
+
+// Modal improvements
+.modal-content {
+  border: none;
+  box-shadow: $shadow-lg;
+
+  .modal-header {
+    border-bottom: 2px solid rgba($primary-color, 0.1);
+    padding: 1.5rem;
+
+    .modal-title {
+      font-weight: 700;
+      color: $text-dark;
+      display: flex;
+      align-items: center;
+
+      i {
+        color: $primary-color;
+      }
+    }
+
+    .btn-close {
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    border-top: 2px solid rgba($primary-color, 0.1);
+    padding: 1.5rem;
+  }
+}
+
+// ========================================
+// ALUMNO PROFILE VIEW MODE
+// ========================================
+
+// Action Bar
+.admin-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .action-bar-start,
+  .action-bar-end {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .action-bar-start,
+    .action-bar-end {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// Profile Card
+.alumno-profile-card {
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease;
+}
+
+.deporte-banner {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $primary-color, $primary-dark);
+  position: relative;
+  overflow: hidden;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  &.taekwondo {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  }
+
+  &.kickboxing {
+    background: linear-gradient(135deg, #b91c1c, #dc2626);
+  }
+
+  &.pilates {
+    background: linear-gradient(135deg, #be123c, #e11d48);
+  }
+
+  &.defensa-personal-femenina {
+    background: linear-gradient(135deg, #6b21a8, #7c3aed);
+  }
+
+  .deporte-badge {
+    position: relative;
+    z-index: 1;
+    color: $text-light;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.profile-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.profile-image-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid $text-light;
+  box-shadow: $shadow-lg;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+
+    .profile-image-overlay {
+      opacity: 1;
+    }
+  }
+
+  .profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: $transition;
+
+    i {
+      font-size: 2rem;
+      color: $text-light;
+    }
+  }
+}
+
+.profile-header {
+  text-align: center;
+}
+
+.profile-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-dark;
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: $text-muted;
+
+    i {
+      color: $primary-color;
+    }
+  }
+}
+
+// Status Badges
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: $transition;
+
+  &.status-active {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.status-inactive {
+    background: rgba($text-muted, 0.1);
+    color: $text-muted;
+  }
+
+  &.status-valid {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.status-expired {
+    background: rgba($danger-color, 0.1);
+    color: $danger-color;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  &.status-paid {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.status-unpaid {
+    background: rgba($warning-color, 0.1);
+    color: $warning-color;
+  }
+}
+
+// Info Cards
+.info-card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid rgba($primary-color, 0.1);
+  background: linear-gradient(135deg, rgba($primary-color, 0.03), transparent);
+}
+
+.info-card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: $text-dark;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  i {
+    color: $primary-color;
+    font-size: 1.25rem;
+  }
+}
+
+.info-card-body {
+  padding: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 1rem;
+  animation: fadeInUp 0.3s ease;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.03}s;
+    }
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: $text-dark;
+    flex-shrink: 0;
+    min-width: 140px;
+
+    i {
+      color: $primary-color;
+      font-size: 1rem;
+    }
+  }
+
+  .info-value {
+    color: $text-dark;
+    text-align: right;
+    word-break: break-word;
+
+    &.info-value-highlight {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: $primary-color;
+    }
+  }
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .info-label {
+      min-width: auto;
+    }
+
+    .info-value {
+      text-align: left;
+      width: 100%;
+    }
+  }
+}
+
+// Info Subsections
+.info-subsection {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba($primary-color, 0.03);
+  border-left: 4px solid $primary-color;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: $primary-dark;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba($primary-color, 0.2);
+
+  i {
+    color: $primary-color;
+    font-size: 1.1rem;
+  }
+}
+
+// Yes/No Badges
+.badge-yes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: rgba($success-color, 0.1);
+  color: $success-color;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.badge-no {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: rgba($text-muted, 0.1);
+  color: $text-muted;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+// Admin Table
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  animation: fadeInUp 0.4s ease;
+
+  thead {
+    background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.03));
+
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 700;
+      color: $primary-dark;
+      border-bottom: 2px solid rgba($primary-color, 0.2);
+      white-space: nowrap;
+
+      &:first-child {
+        border-top-left-radius: 8px;
+      }
+
+      &:last-child {
+        border-top-right-radius: 8px;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: $transition;
+
+      &:hover {
+        background: rgba($primary-color, 0.03);
+      }
+
+      td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        color: $text-dark;
+      }
+
+      &:last-child td {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+.productos-table-wrapper {
+  margin-top: 1rem;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+// Button Group
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .admin-btn {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+
+    .admin-btn {
+      width: 100%;
+    }
+  }
+}
+
+// Contact Links
+.contact-link {
+  color: $primary-color;
+  text-decoration: none;
+  font-weight: 600;
+  transition: $transition;
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: $primary-color;
+    transition: $transition;
+  }
+
+  &:hover {
+    color: $primary-dark;
+
+    &:after {
+      width: 100%;
+    }
+  }
+}
+
+// Button Variants
+.admin-btn-success {
+  background: linear-gradient(135deg, $success-color, #059669);
+  border: none;
+  color: $text-light;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: $transition;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.admin-btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+// Convocatoria List
+.convocatoria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.convocatoria-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: $transition;
+  animation: fadeInUp 0.3s ease;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+
+  &:hover {
+    background: rgba($primary-color, 0.05);
+    border-color: $primary-color;
+    transform: translateX(8px);
+    box-shadow: $shadow-md;
+
+    i.bi-chevron-right {
+      transform: translateX(4px);
+      color: $primary-color;
+    }
+  }
+
+  &.convocatoria-item-current {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.05);
+
+    .convocatoria-icon {
+      background: $primary-color;
+
+      i {
+        color: $text-light;
+      }
+    }
+  }
+
+  &.convocatoria-item-delete {
+    &:hover {
+      border-color: $danger-color;
+      background: rgba($danger-color, 0.05);
+
+      .convocatoria-icon {
+        background: $danger-color;
+
+        i {
+          color: $text-light;
+        }
+      }
+
+      i.bi-chevron-right {
+        color: $danger-color;
+      }
+    }
+  }
+
+  .convocatoria-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba($primary-color, 0.1);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: $transition;
+
+    i {
+      font-size: 1.5rem;
+      color: $primary-color;
+      transition: $transition;
+    }
+  }
+
+  .convocatoria-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .convocatoria-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: $text-dark;
+    }
+
+    .convocatoria-date {
+      font-size: 0.85rem;
+      color: $text-muted;
+    }
+  }
+
+  > i.bi-chevron-right {
+    font-size: 1.25rem;
+    color: $text-muted;
+    transition: $transition;
+    flex-shrink: 0;
+  }
+}
+
+// Documentos Grid
+.documentos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.documento-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  transition: $transition;
+  animation: fadeInUp 0.3s ease;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 12 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+
+  &:hover {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.03);
+    box-shadow: $shadow-sm;
+  }
+
+  .documento-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba($danger-color, 0.1);
+    border-radius: 12px;
+    flex-shrink: 0;
+
+    i {
+      font-size: 1.75rem;
+      color: $danger-color;
+    }
+  }
+
+  .documento-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+
+    .documento-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: $text-dark;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .documento-type {
+      font-size: 0.85rem;
+      color: $text-muted;
+    }
+  }
+
+  .documento-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: $transition;
+  background: transparent;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  &.action-btn-primary {
+    color: $primary-color;
+
+    &:hover {
+      background: rgba($primary-color, 0.1);
+      transform: scale(1.1);
+    }
+  }
+
+  &.action-btn-danger {
+    color: $danger-color;
+
+    &:hover {
+      background: rgba($danger-color, 0.1);
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  color: $text-muted;
+  text-align: center;
+
+  i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
   }
 }
