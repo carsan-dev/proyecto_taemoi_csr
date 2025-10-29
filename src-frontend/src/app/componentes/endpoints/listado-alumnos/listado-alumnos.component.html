@@ -1,136 +1,204 @@
-<div class="container py-5">
-  <!-- Barra de acciones moderna con menú desplegable -->
-  <div class="action-bar d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold">Listado de Alumnos</h2>
-    <button class="btn btn-primary" (click)="abrirModalInforme()">
-      Generar Informe
-    </button>
-  </div>
-
-  <!-- Resto del contenido (tarjetas, filtros, listado, etc.) se mantiene igual -->
-  <div class="row g-4 mb-4">
-    <div class="col-md-6">
-      <div class="card p-4 shadow-sm">
-        <h4 class="fw-bold mb-3">Cargar Mensualidades Generales</h4>
-        <div class="mb-3">
-          <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
-          <input id="mesAno" type="month" class="form-control" [(ngModel)]="mesAnoSeleccionado" />
-        </div>
-        <button class="btn btn-primary" (click)="cargarMensualidadesGenerales()">
-          Cargar Mensualidades Generales
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-people-fill"></i>
+        Gestión de Alumnos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-primary" (click)="abrirModalInforme()">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>Generar Informe</span>
         </button>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="card p-4 shadow-sm">
-        <h4 class="fw-bold mb-3">Cargar Mensualidad Individual</h4>
-        <div class="mb-3">
-          <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
-          <select id="alumnoSeleccionado" class="form-select" [(ngModel)]="alumnoSeleccionado">
-            <option *ngFor="let alumno of alumnosSeleccionables" [value]="alumno.id">
-              {{ alumno.nombre }} {{ alumno.apellidos }}
-            </option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label for="mesAnoIndividual" class="form-label fw-semibold">Mes y Año:</label>
-          <input id="mesAnoIndividual" type="month" class="form-control" [(ngModel)]="mesAnoSeleccionadoIndividual" />
-        </div>
-        <button class="btn btn-primary" (click)="cargarMensualidadIndividual()"
-          [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
-          Cargar Mensualidad
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <div class="row my-4">
-    <div class="col-6 mb-3">
-      <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
-        (ngModelChange)="filtrarPorNombre()" />
-    </div>
-    <div class="col-6 text-end mb-3">
-      <button class="btn btn-secondary" (click)="alternarInactivos()">
-        {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
-      </button>
-    </div>
-  </div>
 
-  <div class="row g-3">
-    <div *ngFor="let alumno of alumnos" class="col-md-6 col-lg-4 d-flex align-items-stretch">
-      <div class="card alumno-card w-100">
-        <div class="card-body d-flex p-3">
-          <div class="left-section text-center">
-            <div class="imagen-perfil-container mx-auto">
-              <a [routerLink]="['/alumnosEditar', alumno.id]">
-                <img class="imagen-perfil"
-                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                  alt="Perfil del alumno" />
-              </a>
-            </div>
-            <h4 class="mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
-            <p class="mt-1">Nº Exp: {{ alumno.numeroExpediente }}</p>
+    <!-- Mensualidades Cards -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-6">
+        <div class="admin-card">
+          <div class="admin-section-header">
+            <i class="bi bi-calendar-check"></i>
+            <h4>Cargar Mensualidades Generales</h4>
           </div>
-          <div class="right-section ms-4">
-            <p>Edad: {{ calcularEdad(alumno.fechaNacimiento) }}</p>
-            <p>Teléfono: {{ alumno.telefono }}</p>
-            <p>Tarifa: {{ alumno.tipoTarifa }}</p>
-            <p>Alta: {{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</p>
-            <p>Categoría: {{ alumno.categoria }}</p>
-            <p>Grado: {{ alumno.grado }}</p>
-            <p *ngIf="mostrarInactivos">
-              Baja:
-              {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yyyy') : 'N/A' }}
-            </p>
-            <div class="d-flex justify-content-start mt-2">
-              <button *ngIf="alumno.fechaBaja" class="btn btn-success btn-sm mx-1" (click)="darDeAlta(alumno.id)">
-                Dar de Alta
-              </button>
-              <button *ngIf="!alumno.fechaBaja" class="btn btn-danger btn-sm mx-1" (click)="darDeBaja(alumno.id)">
-                Dar de Baja
-              </button>
-            </div>
+          <div class="mb-3">
+            <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
+            <input id="mesAno" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionado" />
           </div>
+          <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
+            <i class="bi bi-cash-stack"></i>
+            <span>Cargar Mensualidades Generales</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="admin-card">
+          <div class="admin-section-header">
+            <i class="bi bi-person-check"></i>
+            <h4>Cargar Mensualidad Individual</h4>
+          </div>
+          <div class="mb-3">
+            <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
+            <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+              <option *ngFor="let alumno of alumnosSeleccionables" [value]="alumno.id">
+                {{ alumno.nombre }} {{ alumno.apellidos }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="mesAnoIndividual" class="form-label fw-semibold">Mes y Año:</label>
+            <input id="mesAnoIndividual" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+          </div>
+          <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
+            [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
+            <i class="bi bi-cash"></i>
+            <span>Cargar Mensualidad</span>
+          </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-    (pageChange)="cambiarPagina($event)" class="mt-4">
-  </app-paginacion>
 
-  <div class="col-md-6">
-    <div class="card p-4 shadow-sm">
-      <h4 class="fw-bold mb-3">Listado de Asistencia</h4>
-      <div class="mb-3">
-        <label for="mesAnoAsis" class="form-label fw-semibold">Mes y Año:</label>
-        <input id="mesAnoAsis" type="month" class="form-control" [(ngModel)]="mesAnoAsistencia" />
+    <!-- Filter Bar -->
+    <div class="admin-filter-bar">
+      <div class="filter-row">
+        <div class="filter-item">
+          <input type="text" class="admin-form-control" placeholder="🔍 Filtrar por nombre..." [(ngModel)]="nombreFiltro"
+            (ngModelChange)="filtrarPorNombre()" />
+        </div>
+        <div class="filter-item" style="flex: 0 0 auto;">
+          <button class="admin-btn admin-btn-info" (click)="alternarInactivos()">
+            <i class="bi bi-filter"></i>
+            <span>{{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}</span>
+          </button>
+        </div>
       </div>
-
-      <div class="mb-3">
-        <label for="grupoAsis" class="form-label fw-semibold">Grupo:</label>
-        <select id="grupoAsis" class="form-select" [(ngModel)]="grupoSeleccionado" (ngModelChange)="onGrupoChange()">
-          <option *ngFor="let g of grupos" [value]="g">{{ g | titlecase }}</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label for="turnoAsis" class="form-label fw-semibold">Turno:</label>
-        <select id="turnoAsis" class="form-select" [(ngModel)]="turnoSeleccionado"
-          [disabled]="!turnosDisponibles.length">
-          <option *ngFor="let t of turnosDisponibles" [value]="t">{{ t }}</option>
-        </select>
-      </div>
-
-      <button class="btn btn-primary w-100" [disabled]="!mesAnoAsistencia || !grupoSeleccionado || !turnoSeleccionado"
-        (click)="generarListadoAsistencia()">
-        Generar PDF de Asistencia
-      </button>
     </div>
-  </div>
 
-  <app-informe-modal *ngIf="mostrarModalInforme" [title]="modalTitle" [opcionesInforme]="opcionesInforme"
-    (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
-  </app-informe-modal>
+
+    <!-- Alumnos Grid -->
+    <div class="admin-cards-grid mb-4">
+      <div *ngFor="let alumno of alumnos" class="admin-item-card">
+        <div class="item-header">
+          <a [routerLink]="['/alumnosEditar', alumno.id]">
+            <img class="item-image"
+              [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+              [alt]="'Perfil de ' + alumno.nombre" />
+          </a>
+          <div class="item-title">
+            <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
+            <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
+          </div>
+        </div>
+
+        <div class="item-body">
+          <div class="item-field">
+            <i class="bi bi-cake2"></i>
+            <strong>Edad:</strong>
+            <span>{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
+          </div>
+          <div class="item-field">
+            <i class="bi bi-telephone"></i>
+            <strong>Teléfono:</strong>
+            <span>{{ alumno.telefono }}</span>
+          </div>
+          <div class="item-field">
+            <i class="bi bi-cash-coin"></i>
+            <strong>Tarifa:</strong>
+            <span>{{ alumno.tipoTarifa }}</span>
+          </div>
+          <div class="item-field">
+            <i class="bi bi-calendar-plus"></i>
+            <strong>Alta:</strong>
+            <span>{{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="item-field">
+            <i class="bi bi-trophy"></i>
+            <strong>Categoría:</strong>
+            <span>{{ alumno.categoria || 'N/A' }}</span>
+          </div>
+          <div class="item-field">
+            <i class="bi bi-award"></i>
+            <strong>Grado:</strong>
+            <span>{{ alumno.grado }}</span>
+          </div>
+          <div class="item-field" *ngIf="mostrarInactivos && alumno.fechaBaja">
+            <i class="bi bi-calendar-x"></i>
+            <strong>Baja:</strong>
+            <span>{{ alumno.fechaBaja | date: 'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="item-footer">
+          <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
+            <i class="bi bi-pencil-square"></i>
+            <span>Editar</span>
+          </button>
+          <button *ngIf="alumno.fechaBaja" class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
+            <i class="bi bi-check-circle"></i>
+            <span>Dar de Alta</span>
+          </button>
+          <button *ngIf="!alumno.fechaBaja" class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)">
+            <i class="bi bi-x-circle"></i>
+            <span>Dar de Baja</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Pagination -->
+    <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+      (pageChange)="cambiarPagina($event)" class="mt-4">
+    </app-paginacion>
+
+    <!-- Listado de Asistencia Card -->
+    <div class="row mt-4">
+      <div class="col-12 col-lg-8 mx-auto">
+        <div class="admin-card">
+          <div class="admin-section-header">
+            <i class="bi bi-clipboard-check"></i>
+            <h4>Listado de Asistencia</h4>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label for="mesAnoAsis" class="form-label fw-semibold">Mes y Año:</label>
+              <input id="mesAnoAsis" type="month" class="admin-form-control" [(ngModel)]="mesAnoAsistencia" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label for="grupoAsis" class="form-label fw-semibold">Grupo:</label>
+              <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado" (ngModelChange)="onGrupoChange()">
+                <option *ngFor="let g of grupos" [value]="g">{{ g | titlecase }}</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label for="turnoAsis" class="form-label fw-semibold">Turno:</label>
+              <select id="turnoAsis" class="admin-form-control form-select" [(ngModel)]="turnoSeleccionado"
+                [disabled]="!turnosDisponibles.length">
+                <option *ngFor="let t of turnosDisponibles" [value]="t">{{ t }}</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="admin-btn admin-btn-primary w-100 mt-4"
+            [disabled]="!mesAnoAsistencia || !grupoSeleccionado || !turnoSeleccionado"
+            (click)="generarListadoAsistencia()">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>Generar PDF de Asistencia</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informe Modal -->
+    <app-informe-modal *ngIf="mostrarModalInforme" [title]="modalTitle" [opcionesInforme]="opcionesInforme"
+      (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
+    </app-informe-modal>
+  </div>
 </div>

@@ -1,52 +1,88 @@
-<div class="container mb-5">
-  <div class="row">
-    <div class="col-12">
-      <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="my-5 p-4" method="post">
-        <h2 class="text-center mb-4 fw-bold">Crear Evento</h2>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-calendar-plus"></i>
+        Crear Nuevo Evento
+      </h2>
+      <p>Crea un evento para mostrar en la página web pública</p>
+    </div>
 
-        <div class="row">
-          <div class="form-group col-md-12 mb-3 form-floating">
-            <input type="text" class="form-control form-control-little" id="titulo" name="titulo" formControlName="titulo" required placeholder="Título">
-            <label for="titulo">Título</label>
-            <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched" class="text-danger">
-              <small *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no puede estar en blanco.</small>
-              <small *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no puede contener más de 100 caracteres.</small>
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="admin-card admin-card-large">
+          <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" method="post">
+
+            <!-- Section Header -->
+            <div class="admin-section-header">
+              <i class="bi bi-info-circle"></i>
+              <h4>Información del Evento</h4>
             </div>
-          </div>
-        </div>
 
-        <div class="row">
-          <div class="form-group col-md-12 mb-3 form-floating">
-            <textarea class="form-control form-control-little" id="descripcion" name="descripcion" formControlName="descripcion" rows="3" required (input)="adjustTextareaHeight($event)" placeholder="Descripción"></textarea>
-            <label for="descripcion">Descripción</label>
-            <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched" class="text-danger">
-              <small *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no puede estar en blanco.</small>
-              <small *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no puede contener más de 500 caracteres.</small>
+            <!-- Título -->
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label for="titulo" class="form-label fw-semibold">Título</label>
+                <input type="text" class="admin-form-control" id="titulo" name="titulo" formControlName="titulo" required placeholder="Título del evento">
+                <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched" class="text-danger mt-1">
+                  <small *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no puede estar en blanco.</small>
+                  <small *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no puede contener más de 100 caracteres.</small>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Campo Imagen del Alumno -->
-        <div class="form-group mb-3 form-floating d-flex flex-column">
-          <div class="custom-file-input-container">
-            <input type="file" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)" accept="image/*"
-              class="custom-file-input">
-            <label for="fotoEvento" class="custom-file-label form-control">Subir imagen del evento</label>
-          </div>
-          <!-- Botón para eliminar la imagen seleccionada -->
-          <button *ngIf="imagen" type="button" class="btn btn-danger btn-image mt-2" (click)="removeImage()">Eliminar
-            Imagen</button>
-          <!-- Vista previa de la imagen seleccionada (opcional) -->
-          <div *ngIf="imagen" class="mt-2">
-            <p>Imagen seleccionada:</p>
-            <img [src]="imagePreview" alt="Vista previa del evento" width="100">
-          </div>
-        </div>
+            <!-- Descripción -->
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label for="descripcion" class="form-label fw-semibold">Descripción</label>
+                <textarea class="admin-form-control" id="descripcion" name="descripcion" formControlName="descripcion" rows="4" required (input)="adjustTextareaHeight($event)" placeholder="Descripción del evento" style="resize: vertical;"></textarea>
+                <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched" class="text-danger mt-1">
+                  <small *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no puede estar en blanco.</small>
+                  <small *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no puede contener más de 500 caracteres.</small>
+                </div>
+              </div>
+            </div>
 
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary mt-3" [disabled]="eventoForm.invalid">Crear Evento</button>
+            <!-- Imagen del Evento -->
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Imagen del Evento</label>
+                <div class="custom-file-input-container">
+                  <input type="file" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)" accept="image/*"
+                    class="custom-file-input">
+                  <label for="fotoEvento" class="custom-file-label admin-form-control text-center" style="cursor: pointer;">
+                    <i class="bi bi-cloud-upload me-2"></i>Subir imagen del evento
+                  </label>
+                </div>
+                <!-- Botón para eliminar la imagen seleccionada -->
+                <button *ngIf="imagen" type="button" class="admin-btn admin-btn-danger admin-btn-sm mt-2" (click)="removeImage()">
+                  <i class="bi bi-trash"></i>
+                  <span>Eliminar Imagen</span>
+                </button>
+                <!-- Vista previa de la imagen seleccionada -->
+                <div *ngIf="imagen" class="mt-3 text-center">
+                  <p class="mb-2 fw-semibold">Imagen seleccionada:</p>
+                  <img [src]="imagePreview" alt="Vista previa del evento" style="width: 200px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="d-flex gap-3 justify-content-end mt-4">
+              <button type="button" class="admin-btn admin-btn-outline" routerLink="/eventosListar">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancelar</span>
+              </button>
+              <button type="submit" class="admin-btn admin-btn-primary" [disabled]="eventoForm.invalid">
+                <i class="bi bi-check-circle"></i>
+                <span>Crear Evento</span>
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>

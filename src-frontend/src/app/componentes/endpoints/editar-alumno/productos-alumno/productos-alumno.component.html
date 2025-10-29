@@ -1,90 +1,106 @@
-<div class="container vh-100">
-  <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">Productos asignados al alumno</h4>
-      <button class="btn btn-sm btn-secondary" (click)="volver()">Volver</button>
-    </div>
-    <div class="card-body">
-      <div class="table-responsive mb-3">
-        <table class="table table-striped table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="text-center">Concepto</th>
-              <th class="text-center">Fecha Asignación</th>
-              <th class="text-center">Cantidad</th>
-              <th class="text-center">Precio</th>
-              <th class="text-center">Total</th>
-              <th class="text-center">Pagado</th>
-              <th class="text-center">Fecha de Pago</th>
-              <th class="text-center">Notas</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let productoAlumno of productosAlumno">
-              <td class="text-center">{{ productoAlumno.concepto }}</td>
-              <td class="text-center">{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
-              <td style="max-width:100px;" class="text-center">
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.cantidad"
-                  (change)="actualizarProducto(alumnoId, productoAlumno)" min="1" />
-              </td>
-              <td class="text-center">
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.precio"
-                  (change)="actualizarProducto(alumnoId, productoAlumno)" min="0" step="0.01" title="Editar precio" />
-              </td>
-              <td class="text-center">
-                <span [ngClass]="{
-                  'total-no-pagado': !productoAlumno.pagado,
-                  'total-animacion': !productoAlumno.pagado
-                }" [title]="!productoAlumno.pagado ? 'Este producto aún no está pagado' : ''">
-                  {{ calcularTotal(productoAlumno.precio, productoAlumno.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
-                </span>
-              </td>
-              <td class="text-center">
-                <input type="checkbox" [(ngModel)]="productoAlumno.pagado"
-                  (change)="actualizarProducto(alumnoId, productoAlumno)" />
-              </td>
-              <td class="text-center">{{ productoAlumno.fechaPago | date: 'dd/MM/yyyy' }}</td>
-              <td class="text-center">
-                <span class="nota-truncada" [title]="productoAlumno.notas">{{ productoAlumno.notas }}</span>
-                <button type="button" class="btn btn-sm btn-link ms-1" (click)="abrirModalNotas(productoAlumno)"
-                  title="Editar notas">
-                  <i class="bi bi-pencil-square"></i>
-                </button>
-              </td>
-              <td class="text-center">
-                <button type="button" class="btn btn-sm btn-danger"
-                  (click)="eliminarProducto(alumnoId, productoAlumno.id)" title="Eliminar producto">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="!productosAlumno || productosAlumno.length === 0">
-              <td colspan="9" class="text-center text-muted py-3">
-                No hay productos asignados
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Sección para asignar un nuevo producto -->
-      <div class="d-flex align-items-center">
-        <div class="me-2" style="min-width: 250px;">
-          <select class="form-control" [(ngModel)]="selectedProductoId" required>
-            <option [ngValue]="null">Seleccione un producto</option>
-            <option *ngFor="let producto of products" [ngValue]="producto.id">
-              {{ producto.concepto }} - {{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}
-            </option>
-          </select>
-        </div>
-        <button type="button" class="btn btn-sm btn-primary" (click)="asignarProducto(alumnoId)">
-          Asignar Producto
+<div class="admin-page-container">
+  <div class="container vh-100">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">
+          <i class="bi bi-box-seam"></i>
+          Productos asignados al alumno
+        </h4>
+        <button class="btn btn-sm btn-secondary" (click)="volver()">
+          <i class="bi bi-arrow-left"></i>
+          Volver
         </button>
       </div>
-    </div>
-  </div>
+      <div class="card-body">
+        <div class="table-responsive mb-3">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="text-center">Concepto</th>
+                <th class="text-center">Fecha Asignación</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-center">Precio</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Pagado</th>
+                <th class="text-center">Fecha de Pago</th>
+                <th class="text-center">Notas</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let productoAlumno of productosPaginados">
+                <td class="text-center">{{ productoAlumno.concepto }}</td>
+                <td class="text-center">{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
+                <td style="max-width:100px;" class="text-center">
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.cantidad"
+                    (change)="actualizarProducto(alumnoId, productoAlumno)" min="1" />
+                </td>
+                <td class="text-center">
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="productoAlumno.precio"
+                    (change)="actualizarProducto(alumnoId, productoAlumno)" min="0" step="0.01" title="Editar precio" />
+                </td>
+                <td class="text-center">
+                  <span [ngClass]="{
+                    'total-no-pagado': !productoAlumno.pagado,
+                    'total-animacion': !productoAlumno.pagado
+                  }" [title]="!productoAlumno.pagado ? 'Este producto aún no está pagado' : ''">
+                    {{ calcularTotal(productoAlumno.precio, productoAlumno.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <input type="checkbox" [(ngModel)]="productoAlumno.pagado"
+                    (change)="actualizarProducto(alumnoId, productoAlumno)" />
+                </td>
+                <td class="text-center">{{ productoAlumno.fechaPago | date: 'dd/MM/yyyy' }}</td>
+                <td class="text-center">
+                  <span class="nota-truncada" [title]="productoAlumno.notas">{{ productoAlumno.notas }}</span>
+                  <button type="button" class="btn btn-sm btn-link ms-1" (click)="abrirModalNotas(productoAlumno)"
+                    title="Editar notas">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-danger"
+                    (click)="eliminarProducto(alumnoId, productoAlumno.id)" title="Eliminar producto">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!productosPaginados || productosPaginados.length === 0">
+                <td colspan="9" class="text-center text-muted py-3">
+                  No hay productos asignados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-  <app-productos-alumno-notas *ngIf="mostrarModalNotas" [productoAlumno]="productoSeleccionado"
-    (cerrar)="cerrarModalNotas()" (guardar)="guardarNotas($event)"></app-productos-alumno-notas>
+        <app-paginacion
+          *ngIf="totalPaginas > 1"
+          [paginaActual]="paginaActual"
+          [totalPaginas]="totalPaginas"
+          (pageChange)="cambiarPagina($event)">
+        </app-paginacion>
+
+        <!-- Sección para asignar un nuevo producto -->
+        <div class="d-flex align-items-center mt-3">
+          <div class="me-2" style="min-width: 250px;">
+            <select class="form-control" [(ngModel)]="selectedProductoId" required>
+              <option [ngValue]="null">Seleccione un producto</option>
+              <option *ngFor="let producto of products" [ngValue]="producto.id">
+                {{ producto.concepto }} - {{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}
+              </option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" (click)="asignarProducto(alumnoId)">
+            <i class="bi bi-plus-circle"></i>
+            Asignar Producto
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <app-productos-alumno-notas *ngIf="mostrarModalNotas" [productoAlumno]="productoSeleccionado"
+      (cerrar)="cerrarModalNotas()" (guardar)="guardarNotas($event)"></app-productos-alumno-notas>
+  </div>
 </div>

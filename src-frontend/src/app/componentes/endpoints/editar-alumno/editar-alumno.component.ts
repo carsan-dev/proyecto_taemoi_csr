@@ -34,7 +34,8 @@ export class EditarAlumnoComponent implements OnInit {
 
   paginaActual: number = 1;
   totalPaginas: number = 0;
-  tamanoPagina: number = 1; 
+  tamanoPagina: number = 1;
+  alumnosIds: number[] = []; // Array to store all student IDs for proper pagination
 
   // Control de formulario
   mostrarFormulario: boolean = false;
@@ -133,24 +134,8 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe((params) => {
-      const idParam = +params['id'] || 1;
-      this.paginaActual = idParam;
-
-      this.endpointsService.countAlumnos().subscribe({
-        next: (total: any) => {
-          this.totalPaginas = total;
-          this.cargarAlumno(idParam);
-        },
-        error: (err) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo obtener la cuenta total de alumnos.',
-            icon: 'error',
-          });
-        },
-      });
-    });
+    // First, load all student IDs
+    this.cargarTodosLosAlumnosIds();
 
     this.cargarGrados();
 
@@ -174,6 +159,44 @@ export class EditarAlumnoComponent implements OnInit {
     });
     this.alumnoForm.get('tieneLicencia')?.valueChanges.subscribe((valor) => {
       this.handleLicenciaFields(valor);
+    });
+  }
+
+  /**
+   * Loads all student IDs and sets up pagination based on route params
+   */
+  cargarTodosLosAlumnosIds(): void {
+    this.endpointsService.obtenerAlumnosSinPaginar(this.mostrarInactivos).subscribe({
+      next: (alumnos: any[]) => {
+        // Extract IDs from the alumnos array
+        this.alumnosIds = alumnos.map(alumno => alumno.id);
+        this.totalPaginas = this.alumnosIds.length;
+
+        // Now process route params
+        this.route.params.subscribe((params) => {
+          const pageParam = +params['id'];
+
+          if (pageParam && pageParam > 0 && pageParam <= this.totalPaginas) {
+            // Valid page number
+            this.paginaActual = pageParam;
+            const alumnoId = this.alumnosIds[pageParam - 1]; // Arrays are 0-indexed
+            this.cargarAlumno(alumnoId);
+          } else {
+            // Invalid or no page number, go to first student
+            this.paginaActual = 1;
+            if (this.alumnosIds.length > 0) {
+              this.cargarAlumno(this.alumnosIds[0]);
+            }
+          }
+        });
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo obtener la lista de alumnos.',
+          icon: 'error',
+        });
+      },
     });
   }
 
@@ -213,7 +236,17 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   cambiarPagina(pageNumber: number): void {
-    this.router.navigate(['/alumnosEditar', pageNumber]);
+    if (pageNumber < 1 || pageNumber > this.totalPaginas) {
+      return; // Invalid page number
+    }
+
+    this.paginaActual = pageNumber;
+    const alumnoId = this.alumnosIds[pageNumber - 1]; // Arrays are 0-indexed
+
+    // Navigate to the page number (not the ID)
+    this.router.navigate(['/alumnosEditar', pageNumber]).then(() => {
+      this.cargarAlumno(alumnoId);
+    });
   }
 
   obtenerProductosAlumno(alumnoId: number) {
@@ -380,7 +413,7 @@ export class EditarAlumnoComponent implements OnInit {
   onDocumentoSelected(event: any) {
     const file: File = event.target.files[0];
     if (!file) return;
-  
+
     // Llamamos al servicio
     this.endpointsService.subirDocumentoAlumno(this.alumnoId!, file).subscribe({
       next: (doc) => {
@@ -401,7 +434,7 @@ export class EditarAlumnoComponent implements OnInit {
       },
     });
   }
-  
+
   /**
    * Elimina la foto del alumno actual.
    */
@@ -473,7 +506,7 @@ export class EditarAlumnoComponent implements OnInit {
     }
     // Abrir en una nueva pestaña
     window.open(doc.url, '_blank');
-  }  
+  }
 
   /**
    * Para cargar los diferentes grados disponibles (según tu lógica de backend).
@@ -1085,7 +1118,7 @@ export class EditarAlumnoComponent implements OnInit {
    */
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
-    // Podríamos cambiar la ID que estamos mostrando, pero en esta lógica
-    // no es estrictamente útil.
+    // Reload the IDs list with new filter
+    this.cargarTodosLosAlumnosIds();
   }
 }
