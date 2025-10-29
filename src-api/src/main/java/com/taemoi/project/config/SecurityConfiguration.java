@@ -168,7 +168,9 @@ public class SecurityConfiguration {
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.oauth2Login(oauth2 -> oauth2
-						.successHandler(oauth2SuccessHandler));
+						.successHandler(oauth2SuccessHandler)
+						.authorizationEndpoint(authorization -> authorization
+								.baseUri("/oauth2/authorize")));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
