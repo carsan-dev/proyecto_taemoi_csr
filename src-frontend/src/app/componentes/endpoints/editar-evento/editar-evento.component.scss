@@ -1,5 +1,5 @@
 // Import shared admin styles
-@import '../../../componentes/admin-shared-styles.scss';
+@use '../../../componentes/admin-shared-styles.scss' as *;
 
 // Component-specific styles for file upload
 .custom-file-input-container {

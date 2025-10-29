@@ -1,58 +1,114 @@
-<div class="container mb-5">
-  <div class="row">
-    <div class="col-12">
-      <form [formGroup]="productoForm" (ngSubmit)="onSubmit()" method="post" class="my-5 p-4">
-        <div class="d-flex justify-content-between align-items-start mb-4">
-          <h2 class="text-center mb-4 fw-bold">Editar Producto</h2>
-          <button type="button" class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
-        </div>
-        <div class="row">
-          <!-- Campo Concepto -->
-          <div class="form-group col-md-12 mb-3 form-floating">
-            <input
-              type="text"
-              id="concepto"
-              formControlName="concepto"
-              class="form-control form-control-little"
-              placeholder="Concepto"
-            />
-            <label for="concepto">Concepto</label>
-            <div
-              *ngIf="productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched"
-              class="text-danger"
-            >
-              <small *ngIf="productoForm.get('concepto')?.errors?.['required']">El concepto es requerido.</small>
-            </div>
-          </div>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-pencil-square"></i>
+        Editar Producto
+      </h2>
+      <p>Modifica la información del producto o servicio</p>
+    </div>
 
-          <!-- Campo Precio -->
-          <div class="form-group col-md-12 mb-3 form-floating">
-            <input
-              type="number"
-              id="precio"
-              formControlName="precio"
-              class="form-control form-control-little"
-              placeholder="Precio"
-            />
-            <label for="precio">Precio</label>
-            <div
-              *ngIf="productoForm.get('precio')?.errors && productoForm.get('precio')?.touched"
-              class="text-danger"
-            >
-              <small *ngIf="productoForm.get('precio')?.errors?.['required']">
-                El precio es requerido y debe ser mayor o igual a 0.
-              </small>
-            </div>
-          </div>
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-8 col-xl-6">
+        <div class="admin-card admin-card-large">
+          <form [formGroup]="productoForm" (ngSubmit)="onSubmit()" method="post">
 
-          <!-- Agrega otros campos si es necesario siguiendo el mismo patrón -->
+            <!-- Información del Producto -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-tag"></i>
+                <h4>Información del Producto</h4>
+              </div>
+
+              <div class="row g-3">
+                <!-- Campo Concepto -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched" [class.is-valid]="productoForm.get('concepto')?.valid && productoForm.get('concepto')?.touched">
+                    <label for="concepto">
+                      <i class="bi bi-box-seam"></i>
+                      Concepto / Nombre del Producto
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="concepto"
+                      formControlName="concepto"
+                      class="admin-form-control"
+                      placeholder="Ej: Mensualidad Enero, Derechos de Examen, Licencia Federativa"
+                      aria-label="Concepto del producto"
+                      aria-required="true">
+                    <div *ngIf="productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched" class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El concepto es obligatorio
+                    </div>
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Nombre descriptivo del producto o servicio</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Campo Precio -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="productoForm.get('precio')?.errors && productoForm.get('precio')?.touched" [class.is-valid]="productoForm.get('precio')?.valid && productoForm.get('precio')?.touched">
+                    <label for="precio">
+                      <i class="bi bi-currency-euro"></i>
+                      Precio (€)
+                      <span class="required">*</span>
+                    </label>
+                    <div class="admin-input-group">
+                      <div class="input-group-prepend">
+                        <i class="bi bi-cash"></i>
+                      </div>
+                      <input
+                        type="number"
+                        id="precio"
+                        formControlName="precio"
+                        class="admin-form-control"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        aria-label="Precio del producto"
+                        aria-required="true">
+                      <div class="input-group-append">€</div>
+                    </div>
+                    <div *ngIf="productoForm.get('precio')?.errors && productoForm.get('precio')?.touched" class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El precio es obligatorio y debe ser mayor o igual a 0
+                    </div>
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Precio en euros (puede incluir decimales)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="admin-form-button-group">
+              <button
+                type="button"
+                class="admin-btn admin-btn-outline"
+                (click)="volver()"
+                aria-label="Cancelar y volver al listado">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancelar</span>
+              </button>
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary"
+                [disabled]="productoForm.invalid"
+                aria-label="Actualizar producto">
+                <i class="bi bi-check-circle"></i>
+                <span>Actualizar Producto</span>
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary mt-3" [disabled]="productoForm.invalid">
-            Actualizar Producto
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>
