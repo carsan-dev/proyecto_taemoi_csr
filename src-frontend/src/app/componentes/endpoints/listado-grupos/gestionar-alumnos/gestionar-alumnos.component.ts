@@ -6,11 +6,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
+import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
 
 @Component({
   selector: 'app-gestionar-alumnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginacionComponent],
   templateUrl: './gestionar-alumnos.component.html',
   styleUrl: './gestionar-alumnos.component.scss',
 })
@@ -18,6 +19,10 @@ export class GestionarAlumnosComponent implements OnInit {
   grupo!: GrupoDTO;
   grupoId!: number;
   alumnos: AlumnoDTO[] = [];
+  alumnosPaginados: AlumnoDTO[] = [];
+  paginaActual: number = 1;
+  tamanoPagina: number = 10;
+  totalPaginas: number = 0;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -38,6 +43,8 @@ export class GestionarAlumnosComponent implements OnInit {
       next: (grupo: GrupoDTO) => {
         this.grupo = grupo;
         this.alumnos = grupo.alumnos;
+        this.totalPaginas = Math.ceil(this.alumnos.length / this.tamanoPagina);
+        this.cambiarPagina(1);
       },
       error: () => {
         Swal.fire({
@@ -47,6 +54,13 @@ export class GestionarAlumnosComponent implements OnInit {
         });
       },
     });
+  }
+
+  cambiarPagina(pageNumber: number): void {
+    this.paginaActual = pageNumber;
+    const startIndex = (pageNumber - 1) * this.tamanoPagina;
+    const endIndex = startIndex + this.tamanoPagina;
+    this.alumnosPaginados = this.alumnos.slice(startIndex, endIndex);
   }
 
   redirigirSeleccionarAlumnos(): void {

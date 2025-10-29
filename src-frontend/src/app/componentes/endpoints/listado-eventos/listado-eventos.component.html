@@ -4,50 +4,64 @@
   <div id="caption"></div>
 </div>
 
-<div class="container py-5">
-  <div class="row mb-5">
-    <div class="col-md-12 text-center">
-      <h2 class="fw-bold">Listado de Eventos</h2>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-calendar-event"></i>
+        Gestión de Eventos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" [routerLink]="['/eventosCrear']">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear Nuevo Evento</span>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Listado de eventos -->
-  <div class="row">
+    <!-- Eventos Grid -->
     <ng-container *ngIf="eventos && eventos.length > 0; else noEventos">
-      <div class="col-md-6 col-lg-4 d-flex align-items-stretch justify-content-center" *ngFor="let evento of eventos">
-        <div class="card evento-card my-3">
-          <div class="card-body">
-            <div class="d-flex justify-content-center mb-3">
-              <img [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                alt="Eventos disponibles" class="imagen-evento" (click)="abrirModal(evento.fotoEvento?.url)" />
+      <div class="admin-cards-grid">
+        <div *ngFor="let evento of eventos" class="admin-item-card">
+          <div class="item-header">
+            <img class="item-image"
+              [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+              [alt]="'Imagen de ' + evento.titulo"
+              (click)="abrirModal(evento.fotoEvento?.url)"
+              style="cursor: zoom-in;" />
+            <div class="item-title">
+              <h4>{{ evento.titulo }}</h4>
             </div>
-            <h4 class="card-title text-center">{{ evento.titulo }}</h4>
-            <p class="text-center">{{ evento.descripcion }}</p>
-            <div class="d-flex justify-content-center mt-3">
-              <button class="btn btn-primary btn-sm mx-1" [routerLink]="['/eventosEditar', evento.id]">
-                Editar
-              </button>
-              <button class="btn btn-danger btn-sm mx-1" (click)="eliminarEvento(evento.id)">Eliminar</button>
+          </div>
+
+          <div class="item-body">
+            <div class="item-field" style="display: block;">
+              <span>{{ evento.descripcion }}</span>
             </div>
+          </div>
+
+          <div class="item-footer">
+            <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
+              <i class="bi bi-pencil-square"></i>
+              <span>Editar</span>
+            </button>
+            <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarEvento(evento.id)">
+              <i class="bi bi-trash"></i>
+              <span>Eliminar</span>
+            </button>
           </div>
         </div>
       </div>
     </ng-container>
-  </div>
 
-  <!-- Plantilla para cuando no haya eventos -->
-  <ng-template #noEventos>
-    <div class="container-fluid d-flex justify-content-center align-items-center mt-5">
-      <div class="row w-100">
-        <div class="col-md-12 text-center">
-          <div class="no-eventos-container">
-            <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" class="no-eventos-imagen" />
-            <h3 class="mt-4">¡No hay eventos disponibles!</h3>
-            <p class="text-muted">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de abajo!</p>
-            <button class="btn btn-primary mt-3" [routerLink]="['/eventosCrear']">Crear Evento</button>
-          </div>
-        </div>
+    <!-- Plantilla para cuando no haya eventos -->
+    <ng-template #noEventos>
+      <div class="admin-card text-center">
+        <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
+        <h3 class="mb-3">¡No hay eventos disponibles!</h3>
+        <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!</p>
       </div>
-    </div>
-  </ng-template>
+    </ng-template>
+  </div>
 </div>

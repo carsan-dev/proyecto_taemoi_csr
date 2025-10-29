@@ -1,20 +1,28 @@
-<div class="admin-dashboard-container">
-  <div class="dashboard-content container mt-5">
-    <div class="intro text-center mb-5">
-      <h1 class="mb-3">Panel Principal</h1>
-      <p class="lead">Elige una sección para gestionar y mantener el sistema al día</p>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header text-center">
+      <h1>
+        <i class="bi bi-speedometer2"></i>
+        Panel Principal de Administración
+      </h1>
+      <p>Gestiona todos los aspectos de tu escuela desde un solo lugar</p>
     </div>
 
-    <div class="row">
-      <div class="col-md-4 mb-4" *ngFor="let seccion of seccionesAdmin">
-        <div class="card admin-option h-100 shadow-sm">
-          <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-            <i class="{{ seccion.icono }} icono-admin"></i>
-            <h5 class="card-title mt-3">{{ seccion.titulo }}</h5>
-            <p class="card-text">{{ seccion.descripcion }}</p>
-            <button class="btn btn-primary mt-3" [routerLink]="[seccion.ruta]">Ir a {{ seccion.titulo }}</button>
+    <!-- Navigation Cards Grid -->
+    <div class="row g-4">
+      <div class="col-12 col-md-6 col-lg-4" *ngFor="let seccion of seccionesAdmin">
+        <a [routerLink]="[seccion.ruta]" class="admin-nav-card">
+          <div class="nav-icon">
+            <i [class]="seccion.icono"></i>
           </div>
-        </div>
+          <h3>{{ seccion.titulo }}</h3>
+          <p>{{ seccion.descripcion }}</p>
+          <button class="admin-btn admin-btn-primary">
+            <span>Gestionar {{ seccion.titulo }}</span>
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </a>
       </div>
     </div>
   </div>
