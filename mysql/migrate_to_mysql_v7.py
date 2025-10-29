@@ -6,8 +6,9 @@ migrate_to_mysql_v7.py
 Complete migration script based on comprehensive field mappings.
 Handles all tables with proper field transformations.
 
-IMPORTANT: URLs are now properly URL-encoded to handle spaces and special characters.
-This ensures documento and imagen URLs work correctly in browsers without issues.
+IMPORTANT: Accented characters are transliterated to their ASCII equivalents (á->a, é->e, ñ->n, etc.)
+and spaces are replaced with underscores. No URL encoding is used.
+This ensures documento and imagen URLs work correctly without percent-encoding.
 
 Tables migrated:
   - grado (pre-populated)
@@ -61,7 +62,6 @@ import re
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 from collections import OrderedDict
-from urllib.parse import quote
 
 try:
     import pyodbc
@@ -113,21 +113,23 @@ def get_documento_folder(env: str, numero_expediente: int, nombre: str, apellido
     base_path = ENVIRONMENT_PATHS.get(env, ENVIRONMENT_PATHS["local"])["documentos"]
     # Use appropriate path separator for each environment
     sep = "\\" if env == "local" else "/"
-    # Folder format: {numero_expediente}_{Nombre}_{Apellidos}
-    folder_name = f"{numero_expediente}_{nombre}_{apellidos}"
+    # Folder format: {numero_expediente}_{UPPERCASE_NOMBRE}_{UPPERCASE_APELLIDOS}
+    nombre_limpio = clean_filename(nombre)
+    apellidos_limpio = clean_filename(apellidos)
+    folder_name = f"{numero_expediente}_{nombre_limpio}_{apellidos_limpio}"
     return f"{base_path}{sep}{folder_name}"
 
 def get_documento_url(env: str, numero_expediente: int, nombre: str, apellidos: str, filename: str) -> str:
-    """Generate documento URL based on environment and student info with proper URL encoding"""
+    """Generate documento URL based on environment and student info (accents removed, no URL encoding)"""
     base_url = ENVIRONMENT_BASE_URLS.get(env, ENVIRONMENT_BASE_URLS["local"])
-    # Folder format: {numero_expediente}_{Nombre}_{Apellidos}
-    folder_name = f"{numero_expediente}_{nombre}_{apellidos}"
-    # URL-encode folder name and filename to handle spaces and special characters
-    # safe='' means encode everything except unreserved characters
-    encoded_folder = quote(folder_name, safe='')
-    encoded_filename = quote(filename, safe='')
+    # Folder format: {numero_expediente}_{UPPERCASE_NOMBRE}_{UPPERCASE_APELLIDOS}
+    # clean_filename removes accents and spaces, so no URL encoding needed
+    nombre_limpio = clean_filename(nombre)
+    apellidos_limpio = clean_filename(apellidos)
+    folder_name = f"{numero_expediente}_{nombre_limpio}_{apellidos_limpio}"
+    # Keep filename mostly as-is (just basic cleanup, preserve extension and structure)
     # URLs always use forward slashes
-    return f"{base_url}/documentos/Documentos_Alumnos_Moiskimdo/{encoded_folder}/{encoded_filename}"
+    return f"{base_url}/documentos/Documentos_Alumnos_Moiskimdo/{folder_name}/{filename}"
 
 def get_mime_type_from_filename(filename: str) -> str:
     """Get MIME type from file extension"""
@@ -157,6 +159,44 @@ def get_mime_type_from_filename(filename: str) -> str:
 
 def sql_escape(s: str) -> str:
     return s.replace("'", "''").replace("\\", "\\\\")
+
+def clean_filename(text: str) -> str:
+    """Return folder name in ALL UPPERCASE with underscores and accents removed."""
+    if not text:
+        return ""
+
+    # Normalize Unicode and remove combining marks (accents)
+    import unicodedata
+    text = unicodedata.normalize('NFD', text)
+    text = ''.join(ch for ch in text if unicodedata.category(ch) != 'Mn')
+
+    # Additional explicit accent replacement map for any remaining precomposed characters
+    accent_map = str.maketrans({
+        'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ñ': 'n',
+        'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U', 'Ñ': 'N',
+        'à': 'a', 'è': 'e', 'ì': 'i', 'ò': 'o', 'ù': 'u',
+        'À': 'A', 'È': 'E', 'Ì': 'I', 'Ò': 'O', 'Ù': 'U',
+        'ä': 'a', 'ë': 'e', 'ï': 'i', 'ö': 'o', 'ü': 'u',
+        'Ä': 'A', 'Ë': 'E', 'Ï': 'I', 'Ö': 'O', 'Ü': 'U',
+        'â': 'a', 'ê': 'e', 'î': 'i', 'ô': 'o', 'û': 'u',
+        'Â': 'A', 'Ê': 'E', 'Î': 'I', 'Ô': 'O', 'Û': 'U',
+        'ç': 'c', 'Ç': 'C'
+    })
+    text = text.translate(accent_map)
+
+    # Remove extra spaces and split by spaces
+    words = text.strip().split()
+
+    # Join with underscores
+    result = "_".join(words)
+
+    # Remove invalid characters for folder names
+    result = re.sub(r'[<>:"/\|?*]', "", result)
+
+    # Collapse duplicate underscores
+    result = re.sub(r"_+", "_", result).strip("_")
+
+    return result.upper()
 
 def sql_str_or_null(v: Optional[Any]) -> str:
     if v is None:
@@ -690,9 +730,6 @@ def write_documentos(f, schema: str, rows: List[Dict[str, Any]], alumnos: List[D
             orphans += 1
             continue
 
-        # Get document name from Access database
-        doc_nombre = r.get("NUM_REGISTRO") or f"documento_{r.get('ID_VINCULOS', 'x')}"
-
         # Get original document path/filename from Access
         original_ruta = r.get("DOC_VINCULADO") or r.get("VINCULO_DOC") or ""
 
@@ -701,7 +738,23 @@ def write_documentos(f, schema: str, rows: List[Dict[str, Any]], alumnos: List[D
             # Handle both Windows and Unix paths
             filename = os.path.basename(original_ruta.replace("\\", "/"))
         else:
-            filename = f"{doc_nombre}.pdf"  # Default extension
+            # Fallback: use NUM_REGISTRO or generate a default name
+            doc_registro = r.get("NUM_REGISTRO") or f"documento_{r.get('ID_VINCULOS', 'x')}"
+            filename = f"{doc_registro}.pdf"  # Default extension
+
+        # Clean filename to remove accents and special characters (preserve extension)
+        if filename:
+            # Split filename into name and extension
+            name_part, ext_part = os.path.splitext(filename)
+            # Clean the name part (remove accents, spaces, etc.)
+            name_clean = clean_filename(name_part)
+            # Reconstruct filename with cleaned name and original extension
+            filename_clean = f"{name_clean}{ext_part.lower()}"
+        else:
+            filename_clean = filename
+
+        # Use the cleaned filename (without extension) as the document name
+        doc_nombre = os.path.splitext(filename_clean)[0]
 
         # Construct folder path and URL based on environment and student info
         if exp_int in alumno_lookup:
@@ -709,16 +762,16 @@ def write_documentos(f, schema: str, rows: List[Dict[str, Any]], alumnos: List[D
             folder_path = get_documento_folder(env, exp_int, nombre, apellidos)
             # Use appropriate path separator for each environment
             sep = "\\" if env == "local" else "/"
-            ruta = f"{folder_path}{sep}{filename}"
+            ruta = f"{folder_path}{sep}{filename_clean}"
             # Generate URL
-            url = get_documento_url(env, exp_int, nombre, apellidos, filename)
+            url = get_documento_url(env, exp_int, nombre, apellidos, filename_clean)
         else:
             # Fallback if student not found
             ruta = original_ruta
             url = None
 
-        # Get MIME type from filename
-        tipo = get_mime_type_from_filename(filename)
+        # Get MIME type from cleaned filename
+        tipo = get_mime_type_from_filename(filename_clean)
 
         cols = ["nombre", "ruta", "tipo", "url", "alumno_id"]
         vals = [sql_str_or_null(doc_nombre), sql_str_or_null(ruta), sql_str_or_null(tipo), sql_str_or_null(url) if url else "NULL", fk_sql]
