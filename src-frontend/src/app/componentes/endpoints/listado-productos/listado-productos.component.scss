@@ -1,56 +1,5 @@
-$primary-color: #007bff;
-$border-radius: 10px;
-$input-padding: 15px;
-$label-font-size: 1rem;
+// Import shared admin styles
+@import '../../../componentes/admin-shared-styles.scss';
 
-.container {
-    margin-top: 2rem;
-    border-radius: $border-radius;
-  }
-  
-  h1 {
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  
-  .table {
-    border-radius: $border-radius;
-    overflow: hidden;
-  
-    thead {
-      background-color: $primary-color;
-      color: #fff;
-    }
-  
-    tr {
-      transition: background-color 0.3s ease;
-  
-      &:hover {
-        background-color: rgba(0, 123, 255, 0.1);
-      }
-    }
-  
-    th {
-      cursor: pointer;
-      user-select: none;
-    }
-  
-    .pointer {
-      cursor: pointer;
-    }
-  }
-  
-  .btn {
-    border-radius: $border-radius;
-    transition: transform 0.2s ease;
-  
-    &:hover {
-      transform: scale(1.05);
-    }
-  }
-  
-  .text-muted {
-    font-size: 0.9rem;
-    color: #6c757d !important;
-  }
+// Component-specific styles (if any additional customization needed)
   

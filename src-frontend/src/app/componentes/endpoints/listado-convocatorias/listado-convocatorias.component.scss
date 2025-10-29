@@ -1,76 +1,14 @@
-.convocatorias-container {
-  padding: 20px;
-  border-radius: 5px;
+// Import shared admin styles
+@import '../../../componentes/admin-shared-styles.scss';
 
-  h1 {
-    font-size: 2rem;
-    font-weight: bold;
-  }
+// Component-specific styles
+.list-group-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 12px !important;
+  margin-bottom: 0.5rem;
 
-  .selected-convocatoria {
-    background-color: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-    .card-title {
-      border-bottom: 1px solid #eee;
-      padding-bottom: 5px;
-      margin-bottom: 15px;
-    }
-
-    p {
-      margin-bottom: 5px;
-      strong {
-        color: #333;
-      }
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-
-      th,
-      td {
-        vertical-align: middle;
-      }
-    }
-  }
-
-  .no-convocatorias-container {
-    text-align: center;
-    padding: 2rem;
-    border-radius: 10px;
-    background-color: rgba(0, 123, 255, 0.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-
-    &:hover {
-      transform: scale(1.02);
-    }
-
-    .no-convocatorias-imagen {
-      width: 150px;
-      height: auto;
-      margin: auto;
-    }
-
-    h3 {
-      font-size: 1.75rem;
-      color: #007bff;
-    }
-
-    p {
-      font-size: 1rem;
-      color: #666;
-    }
-  }
-
-  .list-group-item {
-    cursor: pointer;
-    transition: background-color 0.2s;
-    &:hover {
-      background-color: #e9ecef;
-    }
+  &:hover {
+    background-color: #e9ecef;
   }
 }
