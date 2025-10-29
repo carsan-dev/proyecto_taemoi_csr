@@ -55,7 +55,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
 		String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
-		String carpetaAlumno = alumno.getId() + "_" + nombreLimpio + "_" + apellidosLimpio;
+		String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
 
 		Path rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno);
 		if (!Files.exists(rutaCarpetaAlumno)) {
@@ -64,7 +64,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		String nombreOriginalArchivo = archivo.getOriginalFilename();
 		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
-		String nombreArchivoFinal = UUID.randomUUID().toString() + "_" + nombreOriginalLimpio;
+		String nombreArchivoFinal = nombreOriginalLimpio;
 
 		Path rutaArchivoFinal = rutaCarpetaAlumno.resolve(nombreArchivoFinal);
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
