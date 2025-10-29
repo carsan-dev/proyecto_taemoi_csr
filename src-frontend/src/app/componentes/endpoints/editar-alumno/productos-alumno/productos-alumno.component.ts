@@ -8,17 +8,22 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
 import { ProductosAlumnoNotasComponent } from '../../../generales/productos-alumno-notas/productos-alumno-notas.component';
+import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
 
 @Component({
   selector: 'app-productos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent],
+  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent, PaginacionComponent],
   templateUrl: './productos-alumno.component.html',
   styleUrl: './productos-alumno.component.scss',
 })
 export class ProductosAlumnoComponent implements OnInit {
   alumnoId!: number;
   productosAlumno: ProductoAlumnoDTO[] = [];
+  productosPaginados: ProductoAlumnoDTO[] = [];
+  paginaActual: number = 1;
+  tamanoPagina: number = 10;
+  totalPaginas: number = 0;
   products: Producto[] = [];
   selectedProductoId: number | null = null;
 
@@ -41,6 +46,8 @@ export class ProductosAlumnoComponent implements OnInit {
     this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
       next: (productos) => {
         this.productosAlumno = productos;
+        this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
+        this.cambiarPagina(1);
       },
       error: (error) => {
         Swal.fire({
@@ -50,6 +57,13 @@ export class ProductosAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  cambiarPagina(pageNumber: number): void {
+    this.paginaActual = pageNumber;
+    const startIndex = (pageNumber - 1) * this.tamanoPagina;
+    const endIndex = startIndex + this.tamanoPagina;
+    this.productosPaginados = this.productosAlumno.slice(startIndex, endIndex);
   }
 
   obtenerProductos() {

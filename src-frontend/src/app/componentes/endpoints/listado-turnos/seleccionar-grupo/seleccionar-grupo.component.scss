@@ -1,55 +1,28 @@
-@use "sass:color";
+// Import shared admin styles
+@import '../../../../componentes/admin-shared-styles.scss';
 
-$primary-color: #007bff;
-$border-radius: 10px;
-$button-padding: 10px 20px;
-$font-size-base: 1rem;
-
-.container {
-  margin: auto;
-}
-
-.card {
-  border-radius: $border-radius;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-}
-
-h2 {
-  font-size: 1.75rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
+// Component-specific list group styles
 .list-group {
   border: 0;
+  
   .list-group-item {
     border: none;
-    border-bottom: 1px solid #dee2e6;
-    padding: 15px 20px;
-    font-size: $font-size-base;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    margin-bottom: 10px;
+    border-bottom: 1px solid $background-light;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    transition: $transition;
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
 
     &:hover {
       background-color: $primary-color;
-      color: #fff;
+      color: $text-light;
+      transform: translateX(5px);
+      box-shadow: $shadow-md;
     }
 
     &:last-child {
       border-bottom: none;
     }
-  }
-}
-
-button.btn-secondary {
-  border-radius: $border-radius;
-  padding: 5px 10px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: color.adjust(#6c757d, $lightness: -10%);
   }
 }

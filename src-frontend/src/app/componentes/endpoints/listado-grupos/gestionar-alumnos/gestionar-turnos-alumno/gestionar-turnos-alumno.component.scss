@@ -1,41 +1,14 @@
-@use "sass:color";
+// Import shared admin styles
+@import '../../../../../componentes/admin-shared-styles.scss';
 
-$primary-color: #007bff;
-$border-radius: 10px;
-$input-padding: 15px;
-$label-font-size: 1rem;
-
-.container {
-  max-width: 800px;
-  margin: auto;
-}
-
-.card {
-  border-radius: $border-radius;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-}
-
-h2 {
-  font-size: 1.75rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-h5 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-top: 20px;
-  margin-bottom: 10px;
-}
-
+// Component-specific list group styles
 .list-group-item {
-  border-bottom: 1px solid #dee2e6;
-  padding: 15px 20px;
-  transition: background-color 0.3s ease;
+  border-bottom: 1px solid $background-light;
+  padding: 1rem 1.25rem;
+  transition: $transition-fast;
 
   &:hover {
-    background-color: #f8f9fa;
+    background-color: rgba($primary-color, 0.03);
   }
 
   span {
@@ -44,45 +17,5 @@ h5 {
 
   button {
     border-radius: 30px;
-    padding: 5px 10px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
-
-    &.btn-danger {
-      background-color: #dc3545;
-      border-color: #dc3545;
-
-      &:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-      }
-    }
-  }
-}
-
-button.btn-secondary {
-  border-radius: $border-radius;
-  padding: 5px 10px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-  }
-}
-
-button.btn-primary {
-  border-radius: $border-radius;
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: color.adjust($primary-color, $lightness: -10%);
-    border-color: color.adjust($primary-color, $lightness: -15%);
   }
 }
