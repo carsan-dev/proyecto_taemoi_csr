@@ -42,12 +42,15 @@ public class ImagenServiceImpl implements ImagenService {
 			throw new IllegalStateException("Sistema operativo no soportado: " + os);
 		}
 
-		// Obtener la ruta correcta del directorio
-		Path rutaImagenes = Path.of(directorioImagenes);
+		// Obtener la ruta correcta del directorio base
+		Path rutaImagenesBase = Path.of(directorioImagenes);
+
+		// Crear subdirectorio alumnos
+		Path rutaImagenesAlumnos = rutaImagenesBase.resolve("alumnos");
 
 		// Verificar si el directorio de imágenes existe, si no, crearlo
-		if (!Files.exists(rutaImagenes)) {
-			Files.createDirectories(rutaImagenes);
+		if (!Files.exists(rutaImagenesAlumnos)) {
+			Files.createDirectories(rutaImagenesAlumnos);
 		}
 
 		// Obtener el nombre original del archivo y formatearlo
@@ -56,13 +59,13 @@ public class ImagenServiceImpl implements ImagenService {
 
 		// Crear un nombre único para la imagen con UUID
 		String nombreArchivoFinal = UUID.randomUUID().toString() + "_" + nombreLimpioArchivo;
-		Path rutaArchivo = rutaImagenes.resolve(nombreArchivoFinal);
+		Path rutaArchivo = rutaImagenesAlumnos.resolve(nombreArchivoFinal);
 
 		// Guardar el archivo en el sistema de archivos
 		Files.copy(archivo.getInputStream(), rutaArchivo, StandardCopyOption.REPLACE_EXISTING);
 
-		// Construir la URL pública para acceder a la imagen
-		String urlAcceso = baseUrl + "/imagenes/" + nombreArchivoFinal;
+		// Construir la URL pública para acceder a la imagen (incluye alumnos/ en la ruta)
+		String urlAcceso = baseUrl + "/imagenes/alumnos/" + nombreArchivoFinal;
 
 		// Crear la entidad `Imagen` con la ruta del archivo y la URL de acceso
 		return new Imagen(nombreArchivoFinal, archivo.getContentType(), urlAcceso, rutaArchivo.toString());
