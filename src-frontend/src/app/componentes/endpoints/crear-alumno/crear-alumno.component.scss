@@ -1,56 +1,11 @@
-@use "sass:color";
+// Import shared admin styles
+@import '../../../componentes/admin-shared-styles.scss';
 
-$primary-color: #007bff;
-$border-radius: 10px;
-$input-padding: 15px;
-$label-font-size: 1rem;
-
-/* Contenedor principal */
-.container {
-  margin: auto;
-}
-
-/* Card que envuelve el formulario */
-.card {
-  border-radius: $border-radius;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-
-  .card-body {
-    /* Podemos ajustar aún más el padding interno si lo deseamos */
-    padding: 20px;
-  }
-}
-
-/* Titulos dentro de la card */
-h2 {
-  font-size: 1.75rem;
-  margin-bottom: 20px;
-  font-weight: 700;
-}
-
-/* Botón de eliminación (rojo) */
-.btn-danger {
-  background-color: #dc3545;
-  border-color: #dc3545;
-
-  &:hover {
-    background-color: color.adjust(#dc3545, $lightness: -10%);
-    border-color: color.adjust(#dc3545, $lightness: -10%);
-  }
-}
-
-/* Imagen */
-img {
-  border-radius: 5px;
-  margin-top: 10px;
-}
-
-/* Input custom file */
+// Component-specific styles for file upload
 .custom-file-input-container {
   position: relative;
-  display: inline-block;
-  width: auto;
+  display: block;
+  width: 100%;
 
   .custom-file-input {
     position: absolute;
@@ -62,92 +17,13 @@ img {
   }
 
   .custom-file-label {
-    display: inline-block;
-    background-color: #8c8f92;
-    color: white;
-    padding: 10px 20px;
-    border-radius: $border-radius;
-    text-align: center;
+    display: block;
     width: 100%;
-    max-width: 250px;
-    margin: 0 auto;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
+    transition: $transition;
 
-  &:hover .custom-file-label {
-    background-color: color.adjust(#8c8f92, $lightness: -10%);
-  }
-}
-
-/* Botón para eliminar imagen */
-.btn-image {
-  width: 100%;
-  max-width: 200px;
-}
-
-/* Estilos generales de los form-group y form-floating */
-.form-group {
-  position: relative;
-  margin-bottom: 1.5rem !important;
-
-  label {
-    font-size: $label-font-size;
-    font-weight: 500;
-    color: #8c8f92;
-    margin-left: 15px;
-    transition: all 0.2s ease;
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: $border-radius;
-    border: 1px solid #ced4da;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-    transition: border-color 0.2s ease;
-    width: 100%;
-
-    &:focus {
+    &:hover {
       border-color: $primary-color;
-      outline: none;
+      background-color: rgba($primary-color, 0.02);
     }
-
-    &:focus ~ label,
-    &:not(:placeholder-shown) ~ label {
-      top: -5px;
-      left: 0px;
-      font-size: 0.85rem !important;
-      color: $primary-color;
-      background-color: #fff;
-      height: 30px;
-      padding: 0 5px;
-      transition: all 0.2s ease;
-    }
-  }
-
-  .form-floating {
-    position: relative;
-
-    label {
-      position: absolute;
-      top: 0;
-      left: 15px;
-      padding: 0 5px;
-      font-size: $label-font-size;
-      transition: all 0.2s ease;
-    }
-  }
-}
-
-/* Botón de Submit */
-button[type="submit"] {
-  border-radius: $border-radius;
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: color.adjust($primary-color, $lightness: -10%);
   }
 }

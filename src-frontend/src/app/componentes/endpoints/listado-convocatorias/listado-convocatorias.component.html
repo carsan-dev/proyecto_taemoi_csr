@@ -1,121 +1,168 @@
-<div class="convocatorias-container container my-4">
-  <h1 class="mb-4 text-center">Convocatorias</h1>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-clipboard-check"></i>
+        Gestión de Convocatorias
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" (click)="crearConvocatoria()">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear Convocatoria</span>
+        </button>
+      </div>
+    </div>
 
-  <!-- Filtro de deporte -->
-  <div class="d-flex align-items-center mb-3">
-    <label for="deporte" class="me-2 fw-bold">Deporte:</label>
-    <select id="deporte" class="form-select w-auto me-3" [(ngModel)]="deporteSeleccionado"
-      (change)="obtenerConvocatorias()">
-      <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
-    </select>
-    <button class="btn btn-success ms-auto" (click)="crearConvocatoria()">Crear Convocatoria</button>
-  </div>
-
-  <!-- Lista de convocatorias o mensaje de vacío -->
-  <ng-container *ngIf="convocatorias && convocatorias.length > 0; else noConvocatorias">
-    <ul class="list-group mb-4">
-      <li *ngFor="let convocatoria of convocatorias"
-        class="list-group-item d-flex justify-content-between align-items-center">
-        <span (click)="seleccionarConvocatoria(convocatoria)" class="flex-grow-1">
-          <span class="fw-bold">{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span> -
-          {{ convocatoria.deporte }}
-        </span>
-        <div>
-          <button class="btn btn-danger btn-sm" (click)="eliminarConvocatoria(convocatoria)">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </li>
-    </ul>
-  </ng-container>
-
-  <!-- Plantilla para cuando no haya convocatorias -->
-  <ng-template #noConvocatorias>
-    <div class="container-fluid d-flex justify-content-center align-items-center mt-5">
-      <div class="row w-100">
-        <div class="col-md-12 text-center">
-          <div class="no-convocatorias-container">
-            <img src="../../../../assets/media/placeholder_roto.svg" alt="No convocatorias"
-              class="no-convocatorias-imagen" />
-            <h3 class="mt-4">¡No hay convocatorias disponibles!</h3>
-            <p class="text-muted">Parece que no hay convocatorias registradas. ¡Crea una nueva pulsando el botón de
-              arriba!</p>
-          </div>
+    <!-- Filter Bar -->
+    <div class="admin-filter-bar">
+      <div class="filter-row">
+        <div class="filter-item" style="flex: 0 0 auto;">
+          <label for="deporte" class="form-label fw-semibold">Filtrar por Deporte:</label>
+          <select id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
+            (change)="obtenerConvocatorias()">
+            <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
+          </select>
         </div>
       </div>
     </div>
-  </ng-template>
 
-  <!-- Detalles de la convocatoria seleccionada -->
-  <div *ngIf="convocatoriaSeleccionada" class="selected-convocatoria card p-3">
-    <h2 class="card-title mb-3 text-secondary">Convocatoria Seleccionada</h2>
-    <p><strong>Fecha:</strong> {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}</p>
-    <p><strong>Deporte:</strong> {{ convocatoriaSeleccionada.deporte }}</p>
-
-    <div class="d-flex justify-content-between align-items-center">
-      <h3 class="mt-4 mb-3 text-secondary">Alumnos Inscritos</h3>
-      <button class="btn btn-primary btn-sm" (click)="actualizarGrados(convocatoriaSeleccionada)"
-        [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
-        Actualizar Grados
-      </button>
-    </div>
-    <table class="table table-striped align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>Nombre</th>
-          <th>Apellidos</th>
-          <th>Grado Actual</th>
-          <th>Grado Siguiente</th>
-          <th>Cuantía</th>
-          <th>Pagado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let alumno of alumnosInscritos">
-          <td>{{ alumno.nombre }}</td>
-          <td>{{ alumno.apellidos }}</td>
-          <td>{{ alumno.gradoActual }}</td>
-          <td>{{ alumno.gradoSiguiente }}</td>
-          <td>
-            <input type="number" class="form-control form-control-sm" [(ngModel)]="alumno.cuantiaExamen"
-              (change)="actualizarAlumnoConvocatoria(alumno)"
-              [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'" />
-          </td>
-          <td>
-            <select class="form-select form-select-sm" [(ngModel)]="alumno.pagado"
-              (change)="actualizarAlumnoConvocatoria(alumno)"
-              [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'">
-              <option [value]="true" class="text-black">Sí</option>
-              <option [value]="false" class="text-black">No</option>
-            </select>
-          </td>
-
-          <td>
-            <button class="btn btn-danger btn-sm" (click)="eliminarAlumnoDeConvocatoria(alumno)">
-              Eliminar
+    <!-- Lista de convocatorias o mensaje de vacío -->
+    <ng-container *ngIf="convocatorias && convocatorias.length > 0; else noConvocatorias">
+      <div class="admin-card mb-4">
+        <div class="admin-section-header">
+          <i class="bi bi-list-check"></i>
+          <h4>Convocatorias Disponibles</h4>
+        </div>
+        <div class="list-group">
+          <button *ngFor="let convocatoria of convocatorias" type="button"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+            (click)="seleccionarConvocatoria(convocatoria)">
+            <span>
+              <i class="bi bi-calendar-event me-2"></i>
+              <strong>{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</strong> -
+              {{ convocatoria.deporte }}
+            </span>
+            <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarConvocatoria(convocatoria); $event.stopPropagation()">
+              <i class="bi bi-trash"></i>
             </button>
-          </td>
-        </tr>
-      </tbody>
+          </button>
+        </div>
+      </div>
+    </ng-container>
 
-    </table>
+    <!-- Plantilla para cuando no haya convocatorias -->
+    <ng-template #noConvocatorias>
+      <div class="admin-card text-center">
+        <img src="../../../../assets/media/placeholder_roto.svg" alt="No convocatorias" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
+        <h3 class="mb-3">¡No hay convocatorias disponibles!</h3>
+        <p class="text-muted mb-4">Parece que no hay convocatorias registradas. ¡Crea una nueva pulsando el botón de arriba!</p>
+      </div>
+    </ng-template>
 
-    <h3 class="mt-4 mb-3 text-secondary">Agregar Alumno</h3>
-    <div class="d-flex align-items-center mb-3">
-      <select id="alumnoSeleccionado" class="form-select w-auto me-3" [(ngModel)]="alumnoSeleccionado">
-        <option value="" disabled>Seleccione un alumno</option>
-        <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
-          {{ alumno.nombre }} {{ alumno.apellidos }}
-        </option>
-      </select>
-      <button class="btn btn-success" [disabled]="!alumnoSeleccionado" (click)="agregarAlumnoAConvocatoria()">
-        Agregar Alumno
+    <!-- Detalles de la convocatoria seleccionada -->
+    <div *ngIf="convocatoriaSeleccionada" class="admin-card">
+      <div class="admin-section-header">
+        <i class="bi bi-info-circle"></i>
+        <h4>Convocatoria Seleccionada</h4>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <p class="mb-2">
+            <i class="bi bi-calendar3 me-2" style="color: #007bff;"></i>
+            <strong>Fecha:</strong> {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-2">
+            <i class="bi bi-trophy me-2" style="color: #007bff;"></i>
+            <strong>Deporte:</strong> {{ convocatoriaSeleccionada.deporte }}
+          </p>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+          <i class="bi bi-people-fill me-2"></i>
+          Alumnos Inscritos
+        </h4>
+        <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="actualizarGrados(convocatoriaSeleccionada)"
+          [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
+          <i class="bi bi-arrow-repeat"></i>
+          <span>Actualizar Grados</span>
+        </button>
+      </div>
+
+      <div class="admin-table mb-4">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>Grado Actual</th>
+              <th>Grado Siguiente</th>
+              <th>Cuantía</th>
+              <th>Pagado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alumno of alumnosInscritos">
+              <td>{{ alumno.nombre }}</td>
+              <td>{{ alumno.apellidos }}</td>
+              <td>{{ alumno.gradoActual }}</td>
+              <td>{{ alumno.gradoSiguiente }}</td>
+              <td>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="alumno.cuantiaExamen"
+                  (change)="actualizarAlumnoConvocatoria(alumno)"
+                  [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'" />
+              </td>
+              <td>
+                <select class="form-select form-select-sm" [(ngModel)]="alumno.pagado"
+                  (change)="actualizarAlumnoConvocatoria(alumno)"
+                  [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'">
+                  <option [value]="true" class="text-black">Sí</option>
+                  <option [value]="false" class="text-black">No</option>
+                </select>
+              </td>
+              <td>
+                <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarAlumnoDeConvocatoria(alumno)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin-section-header">
+        <i class="bi bi-person-plus"></i>
+        <h4>Agregar Alumno</h4>
+      </div>
+
+      <div class="row g-3 align-items-end">
+        <div class="col-md-8">
+          <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
+          <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+            <option value="" disabled>Seleccione un alumno</option>
+            <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
+              {{ alumno.nombre }} {{ alumno.apellidos }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <button class="admin-btn admin-btn-success w-100" [disabled]="!alumnoSeleccionado" (click)="agregarAlumnoAConvocatoria()">
+            <i class="bi bi-plus-circle"></i>
+            <span>Agregar Alumno</span>
+          </button>
+        </div>
+      </div>
+
+      <button *ngIf="!alumnosCargadosCompletamente" class="admin-btn admin-btn-info mt-3" (click)="cargarAlumnosPaginados()">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Cargar Más Alumnos</span>
       </button>
     </div>
-
-    <button *ngIf="!alumnosCargadosCompletamente" class="btn btn-primary mt-3" (click)="cargarAlumnosPaginados()">
-      Cargar Más Alumnos
-    </button>
   </div>
 </div>
