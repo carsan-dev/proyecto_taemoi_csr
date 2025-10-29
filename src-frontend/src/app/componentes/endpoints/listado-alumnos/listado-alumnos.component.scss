@@ -1,5 +1,5 @@
 // Import shared admin styles
-@import '../../../componentes/admin-shared-styles.scss';
+@use '../../../componentes/admin-shared-styles.scss' as *;
 
 // Component-specific styles
 // All main styles inherited from admin-shared-styles.scss
