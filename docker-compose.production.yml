@@ -48,6 +48,8 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
+      APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
       # Option 1: Named volumes (data persists, populate manually after first run)
       - app_imagenes:/var/www/app/imagenes
