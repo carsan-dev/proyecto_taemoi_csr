@@ -8,8 +8,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.nio.file.Path;
-
 /**
  * Clase de configuración para la configuración de la aplicación web.
  */
@@ -19,6 +17,18 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Value("${cors.allowed.origin}")
 	private String allowedOrigin;
+
+	@Value("${app.imagenes.directorio.linux}")
+	private String directorioImagenesLinux;
+
+	@Value("${app.imagenes.directorio.windows}")
+	private String directorioImagenesWindows;
+
+	@Value("${app.documentos.directorio.linux}")
+	private String directorioDocumentosLinux;
+
+	@Value("${app.documentos.directorio.windows}")
+	private String directorioDocumentosWindows;
 
 	/**
 	 * Agrega la configuración de CORS (Cross-Origin Resource Sharing) para permitir
@@ -36,35 +46,24 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
-		String linuxPathImagenes = "/var/www/app/imagenes/";
 		String userProfile = System.getenv("USERPROFILE");
 
-		// Add Linux path
+		// Determine which paths to use based on OS
 		if (userProfile != null) {
-			// Windows environment - add both Linux and Windows paths
-			String windowsPathImagenes = Path.of(userProfile, "static_resources", "imagenes").toString().replace("\\", "/");
+			// Windows environment - use Windows paths from environment variables
 			registry.addResourceHandler("/imagenes/**")
-					.addResourceLocations("file:" + linuxPathImagenes, "file:" + windowsPathImagenes + "/")
+					.addResourceLocations("file:" + directorioImagenesWindows)
+					.setCachePeriod(3600);
+			registry.addResourceHandler("/documentos/**")
+					.addResourceLocations("file:" + directorioDocumentosWindows)
 					.setCachePeriod(3600);
 		} else {
-			// Linux/Docker environment - only Linux path
+			// Linux/Docker environment - use Linux paths from environment variables
 			registry.addResourceHandler("/imagenes/**")
-					.addResourceLocations("file:" + linuxPathImagenes)
+					.addResourceLocations("file:" + directorioImagenesLinux)
 					.setCachePeriod(3600);
-		}
-
-		String linuxPathDocumentos = "/var/www/app/documentos/";
-
-		if (userProfile != null) {
-			// Windows environment - add both Linux and Windows paths
-			String windowsPathDocumentos = Path.of(userProfile, "static_resources", "documentos").toString().replace("\\", "/");
 			registry.addResourceHandler("/documentos/**")
-					.addResourceLocations("file:" + linuxPathDocumentos, "file:" + windowsPathDocumentos + "/")
-					.setCachePeriod(3600);
-		} else {
-			// Linux/Docker environment - only Linux path
-			registry.addResourceHandler("/documentos/**")
-					.addResourceLocations("file:" + linuxPathDocumentos)
+					.addResourceLocations("file:" + directorioDocumentosLinux)
 					.setCachePeriod(3600);
 		}
 	}
