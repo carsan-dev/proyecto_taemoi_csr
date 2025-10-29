@@ -669,7 +669,7 @@ def migrate_documents(docs_path: str, dry_run: bool = False, database: str = Non
 
         # Create new folder for alumno
         try:
-            alumno_folder = create_alumno_folder(docs_path, alumno_info)
+            alumno_folder = create_alumno_folder(docs_path, alumno_info, use_num_expediente=True)
             print(f"  [OK] Folder: {alumno_folder.name}")
         except Exception as e:
             error_msg = f"Error creating folder for Alumno {alumno_id}: {e}"
