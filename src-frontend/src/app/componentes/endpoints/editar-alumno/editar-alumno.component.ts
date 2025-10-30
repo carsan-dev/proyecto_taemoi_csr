@@ -1,5 +1,6 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { Subscription } from 'rxjs';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -29,26 +30,27 @@ import Swal from 'sweetalert2';
   templateUrl: './editar-alumno.component.html',
   styleUrls: ['./editar-alumno.component.scss'],
 })
-export class EditarAlumnoComponent implements OnInit {
+export class EditarAlumnoComponent implements OnInit, OnDestroy {
   alumno: any = null;
 
+  // Pagination - each page represents one alumno
   paginaActual: number = 1;
   totalPaginas: number = 0;
   tamanoPagina: number = 1;
-  alumnosIds: number[] = []; // Array to store all student IDs for proper pagination
+  alumnosIds: number[] = []; // List of all alumno IDs for navigation
+
+  // Subscriptions management
+  private routeSubscription?: Subscription;
 
   // Control de formulario
   mostrarFormulario: boolean = false;
   alumnoForm: FormGroup;
   imagenPreview: string | null = null;
 
-  // Filtros
-  nombreFiltro: string = '';
-
   // Otras propiedades
-  mostrarInactivos: boolean = false;
   alumnoId: number | null = null;
   tipoTarifaEditado: boolean = false;
+  mostrarInactivos: boolean = false;
 
   // Opciones de dropdown
   tiposTarifa = Object.values(TipoTarifa);
@@ -64,6 +66,10 @@ export class EditarAlumnoComponent implements OnInit {
 
   // Productos del alumno
   productosAlumno: ProductoAlumnoDTO[] = [];
+  productosPaginados: ProductoAlumnoDTO[] = [];
+  paginaActualProductos = 1;
+  tamanoPaginaProductos = 4;
+  totalPaginasProductos = 0;
 
   // Convocatorias
   convocatoriasDisponibles: any[] = [];
@@ -134,10 +140,10 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // First, load all student IDs
-    this.cargarTodosLosAlumnosIds();
-
     this.cargarGrados();
+
+    // Load the list of IDs first, then handle route changes
+    this.cargarTodosLosAlumnosIds();
 
     this.alumnoForm.get('deporte')?.valueChanges.subscribe((valor) => {
       this.onDeporteChange(valor);
@@ -162,8 +168,10 @@ export class EditarAlumnoComponent implements OnInit {
     });
   }
 
+
   /**
-   * Loads all student IDs and sets up pagination based on route params
+   * Loads all alumno IDs to know the total count and which alumno corresponds to each page
+   * Page 1 = first alumno, Page 2 = second alumno, etc.
    */
   cargarTodosLosAlumnosIds(): void {
     this.endpointsService.obtenerAlumnosSinPaginar(this.mostrarInactivos).subscribe({
@@ -172,23 +180,8 @@ export class EditarAlumnoComponent implements OnInit {
         this.alumnosIds = alumnos.map(alumno => alumno.id);
         this.totalPaginas = this.alumnosIds.length;
 
-        // Now process route params
-        this.route.params.subscribe((params) => {
-          const pageParam = +params['id'];
-
-          if (pageParam && pageParam > 0 && pageParam <= this.totalPaginas) {
-            // Valid page number
-            this.paginaActual = pageParam;
-            const alumnoId = this.alumnosIds[pageParam - 1]; // Arrays are 0-indexed
-            this.cargarAlumno(alumnoId);
-          } else {
-            // Invalid or no page number, go to first student
-            this.paginaActual = 1;
-            if (this.alumnosIds.length > 0) {
-              this.cargarAlumno(this.alumnosIds[0]);
-            }
-          }
-        });
+        // Set up route parameter subscription (only once)
+        this.setupRouteSubscription();
       },
       error: () => {
         Swal.fire({
@@ -198,6 +191,62 @@ export class EditarAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Sets up subscription to route parameters to handle navigation
+   */
+  private setupRouteSubscription(): void {
+    // Unsubscribe from previous subscription if it exists
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+
+    // Create new subscription
+    this.routeSubscription = this.route.params.subscribe((params) => {
+      const idParam = +params['id'];
+
+      if (idParam) {
+        this.procesarParametroRuta(idParam);
+      } else if (this.alumnosIds.length > 0) {
+        // No ID in URL, navigate to first alumno
+        this.router.navigate(['/alumnosEditar', 1], { replaceUrl: true });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Clean up subscription
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+  }
+
+  /**
+   * Process the route parameter - could be an alumno ID or a page number
+   */
+  private procesarParametroRuta(idParam: number): void {
+    // Check if this is an alumno ID (from listado-alumnos) or a page number
+    const pageIndex = this.alumnosIds.indexOf(idParam);
+
+    if (pageIndex !== -1) {
+      // It's an alumno ID that exists in our list
+      // Calculate the page number (1-indexed)
+      const pageNumber = pageIndex + 1;
+      this.paginaActual = pageNumber;
+
+      // Navigate to the correct page number URL (don't reload, just replace)
+      this.router.navigate(['/alumnosEditar', pageNumber], { replaceUrl: true });
+      this.cargarAlumno(idParam);
+    } else if (idParam > 0 && idParam <= this.totalPaginas) {
+      // It's a valid page number - load the corresponding alumno
+      this.paginaActual = idParam;
+      const alumnoId = this.alumnosIds[idParam - 1]; // Arrays are 0-indexed
+      this.cargarAlumno(alumnoId);
+    } else {
+      // Invalid ID/page, navigate to first page
+      this.router.navigate(['/alumnosEditar', 1], { replaceUrl: true });
+    }
   }
 
   cargarAlumno(id: number): void {
@@ -235,24 +284,26 @@ export class EditarAlumnoComponent implements OnInit {
       });
   }
 
+
+  /**
+   * Changes to a different page (alumno) in the pagination
+   * @param pageNumber The page number (1-indexed)
+   */
   cambiarPagina(pageNumber: number): void {
     if (pageNumber < 1 || pageNumber > this.totalPaginas) {
       return; // Invalid page number
     }
 
-    this.paginaActual = pageNumber;
-    const alumnoId = this.alumnosIds[pageNumber - 1]; // Arrays are 0-indexed
-
-    // Navigate to the page number (not the ID)
-    this.router.navigate(['/alumnosEditar', pageNumber]).then(() => {
-      this.cargarAlumno(alumnoId);
-    });
+    // Just navigate - the route subscription will handle loading the alumno
+    this.router.navigate(['/alumnosEditar', pageNumber]);
   }
 
   obtenerProductosAlumno(alumnoId: number) {
     this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
       next: (productos) => {
         this.productosAlumno = productos;
+        this.totalPaginasProductos = Math.ceil(this.productosAlumno.length / this.tamanoPaginaProductos);
+        this.cambiarPaginaProductos(1);
       },
       error: () => {
         Swal.fire({
@@ -262,6 +313,15 @@ export class EditarAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  cambiarPaginaProductos(pageNumber: number): void {
+    if (pageNumber >= 1 && pageNumber <= this.totalPaginasProductos) {
+      this.paginaActualProductos = pageNumber;
+      const start = (pageNumber - 1) * this.tamanoPaginaProductos;
+      const end = start + this.tamanoPaginaProductos;
+      this.productosPaginados = this.productosAlumno.slice(start, end);
+    }
   }
 
   /**
@@ -293,11 +353,10 @@ export class EditarAlumnoComponent implements OnInit {
       this.tipoTarifaEditado = false;
       this.configurarFormulario(alumno);
 
-      // Navegar a la ruta con el ID del alumno
-      this.router.navigate(['/alumnosEditar', alumno.id]);
+      // No need to navigate - we're already on the correct page
+      // The URL already shows the page number (e.g., /alumnosEditar/5)
     } else {
-      // Navegar a la ruta sin ID cuando se cierra el formulario
-      this.router.navigate(['/alumnosEditar']);
+      // No need to navigate - stay on the same page when closing the form
     }
   }
 
@@ -1112,9 +1171,7 @@ export class EditarAlumnoComponent implements OnInit {
   }
 
   /**
-   * (Opcional) alternar «mostrar inactivos» en caso de que se quiera
-   * pero ahora que solo cargamos 1 alumno por ID, esta lógica puede
-   * no tener uso real.
+   * Toggle showing inactive alumnos and reload the list
    */
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;

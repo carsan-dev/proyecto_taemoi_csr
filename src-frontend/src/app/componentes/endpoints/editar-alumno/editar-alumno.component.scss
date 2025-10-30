@@ -400,3 +400,33 @@
     height: 120px;
   }
 }
+
+// ========================================
+// RESPONSIVE PRODUCTOS TABLE
+// ========================================
+.productos-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+
+  @media (max-width: 992px) {
+    // Enable horizontal scroll on tablets and below
+    .admin-table {
+      min-width: 600px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    // More aggressive min-width on mobile
+    .admin-table {
+      min-width: 650px;
+    }
+  }
+
+  .admin-table {
+    margin-bottom: 0;
+    background: white;
+  }
+}

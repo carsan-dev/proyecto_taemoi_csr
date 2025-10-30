@@ -248,4 +248,17 @@ export class EliminarAlumnoComponent implements OnInit {
     this.mostrarInactivos = !this.mostrarInactivos;
     this.obtenerAlumnos();
   }
+
+  toggleSelectAll(event: any): void {
+    const checked = event.target.checked;
+    this.alumnos.forEach(alumno => alumno.selected = checked);
+  }
+
+  get hasSelectedAlumnos(): boolean {
+    return this.alumnos.some(alumno => alumno.selected);
+  }
+
+  get allAlumnosSelected(): boolean {
+    return this.alumnos.length > 0 && this.alumnos.every(alumno => alumno.selected);
+  }
 }

@@ -1,22 +1,77 @@
-<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;"> 
-  <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
-    <div class="modal-content rounded-4 shadow-lg">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold">Alumnos de {{ grupoNombre }}</h5>
-        <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="header-content">
+          <i class="bi bi-people-fill header-icon"></i>
+          <div>
+            <h5 class="modal-title">Alumnos del Grupo</h5>
+            <p class="group-name">{{ grupoNombre }}</p>
+          </div>
+        </div>
+        <button type="button" class="close-button" (click)="cerrarModal()" aria-label="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
+
+      <!-- Modal Body -->
       <div class="modal-body">
-        <ul class="list-group">
-          <li class="list-group-item list-group-item-action d-flex align-items-center" *ngFor="let alumno of alumnos">
-            <a [routerLink]="['/alumnosEditar', alumno.id]" class="text-decoration-none text-dark w-100">
-              <i class="bi bi-person-circle me-2 text-primary"></i>
-              {{ alumno.nombre }} {{ alumno.apellidos }}
+        <div class="alumnos-info mb-3">
+          <i class="bi bi-info-circle me-2"></i>
+          <span>Total de alumnos: <strong>{{ alumnos.length || 0 }}</strong></span>
+        </div>
+
+        <!-- Alumnos Grid -->
+        <div class="alumnos-grid" *ngIf="alumnosPaginados && alumnosPaginados.length > 0; else noAlumnos">
+          <div class="alumno-card" *ngFor="let alumno of alumnosPaginados">
+            <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-link" (click)="cerrarModal()">
+              <div class="alumno-avatar">
+                <img *ngIf="alumno.fotoAlumno?.url"
+                     [src]="alumno.fotoAlumno.url"
+                     [alt]="alumno.nombre + ' ' + alumno.apellidos"
+                     class="avatar-image">
+                <i *ngIf="!alumno.fotoAlumno?.url" class="bi bi-person-circle avatar-placeholder"></i>
+              </div>
+              <div class="alumno-info">
+                <h6 class="alumno-nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</h6>
+                <span class="alumno-expediente" *ngIf="alumno.numeroExpediente">
+                  <i class="bi bi-card-text me-1"></i>
+                  Exp. {{ alumno.numeroExpediente }}
+                </span>
+                <span class="alumno-grado" *ngIf="alumno.grado">
+                  <i class="bi bi-award me-1"></i>
+                  {{ alumno.grado }}
+                </span>
+              </div>
+              <i class="bi bi-chevron-right arrow-icon"></i>
             </a>
-          </li>
-        </ul>
+          </div>
+        </div>
+
+        <!-- No alumnos message -->
+        <ng-template #noAlumnos>
+          <div class="no-alumnos">
+            <i class="bi bi-inbox no-alumnos-icon"></i>
+            <p class="no-alumnos-text">No hay alumnos en este grupo</p>
+          </div>
+        </ng-template>
+
+        <!-- Pagination -->
+        <app-paginacion
+          *ngIf="totalPaginas > 1"
+          [paginaActual]="paginaActual"
+          [totalPaginas]="totalPaginas"
+          [tamanoPagina]="tamanoPagina"
+          (pageChange)="cambiarPagina($event)"
+          class="mt-4">
+        </app-paginacion>
       </div>
+
+      <!-- Modal Footer -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+        <button type="button" class="admin-btn admin-btn-secondary" (click)="cerrarModal()">
+          <i class="bi bi-x-circle me-2"></i>
           Cerrar
         </button>
       </div>

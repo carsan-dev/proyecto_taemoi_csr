@@ -1260,8 +1260,12 @@ $info-hover: #0b7dda;
 
     input {
       opacity: 0;
-      width: 0;
-      height: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      z-index: 2;
+      margin: 0;
 
       &:checked + .slider {
         background: $primary-color;

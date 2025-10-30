@@ -87,6 +87,7 @@
             </div>
           </div>
 
+          <!-- Pagination Component -->
           <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas"
             (pageChange)="cambiarPagina($event)">
           </app-paginacion>
@@ -266,6 +267,7 @@
                 <div class="subsection-header mt-4">
                   <i class="bi bi-box-seam"></i>
                   <span>Productos Asignados</span>
+                  <span class="badge bg-primary ms-2" *ngIf="productosAlumno.length > 0">{{ productosAlumno.length }}</span>
                 </div>
 
                 <div class="productos-table-wrapper">
@@ -280,7 +282,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let producto of productosAlumno">
+                      <tr *ngFor="let producto of productosPaginados">
                         <td>{{ producto.concepto }}</td>
                         <td>{{ producto.fechaAsignacion | date:'dd/MM/yyyy' }}</td>
                         <td>{{ producto.cantidad }}</td>
@@ -296,14 +298,24 @@
                           </span>
                         </td>
                       </tr>
-                      <tr *ngIf="!productosAlumno || productosAlumno.length === 0">
-                        <td colspan="5" class="text-center text-muted">
+                      <tr *ngIf="!productosPaginados || productosPaginados.length === 0">
+                        <td colspan="5" class="text-center text-muted py-3">
                           <i class="bi bi-inbox"></i> No hay productos asignados
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <!-- Pagination for productos -->
+                <app-paginacion
+                  *ngIf="totalPaginasProductos > 1"
+                  [paginaActual]="paginaActualProductos"
+                  [totalPaginas]="totalPaginasProductos"
+                  [tamanoPagina]="tamanoPaginaProductos"
+                  (pageChange)="cambiarPaginaProductos($event)"
+                  class="mt-3">
+                </app-paginacion>
 
                 <div class="button-group mt-4">
                   <button type="button" class="admin-btn admin-btn-primary" (click)="navegarAGestionProductos(alumno.id)">
