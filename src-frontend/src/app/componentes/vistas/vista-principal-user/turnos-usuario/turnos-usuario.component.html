@@ -18,10 +18,82 @@
   <div class="main-content">
     <div class="content-wrapper">
       <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
-        <!-- Groups Grid -->
-        <div class="groups-container">
-          <div *ngFor="let grupo of grupos; let i = index" class="group-card"
-               [class.expanded]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
+
+        <!-- Sports Summary Section -->
+        <div class="sports-summary-section" *ngIf="allTurnos.length > 0">
+          <h2 class="section-title">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            Horarios por Deporte
+          </h2>
+          <div class="sports-grid">
+            <div *ngFor="let deporte of getDeportesUnicos()" class="sport-card">
+              <div class="sport-header" [style.background]="getDeporteInfo(deporte).color">
+                <span class="sport-emoji">{{ getDeporteInfo(deporte).emoji }}</span>
+                <h3 class="sport-name">{{ getDeporteInfo(deporte).nombre }}</h3>
+              </div>
+              <div class="sport-schedule">
+                <div *ngFor="let turno of getTurnosPorDeporte(deporte)" class="sport-turn-item">
+                  <div class="turn-day">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>{{ turno.diaSemana }}</span>
+                  </div>
+                  <div class="turn-time">
+                    <i class="bi bi-clock"></i>
+                    <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Turns Calendar Section -->
+        <div class="all-turns-section" *ngIf="allTurnos.length > 0">
+          <h2 class="section-title">
+            <i class="bi bi-calendar-week"></i>
+            Todos Mis Horarios
+          </h2>
+          <div class="calendar-grid">
+            <div *ngFor="let dia of diasSemana" class="calendar-day-card">
+              <div class="calendar-day-header">
+                <i class="bi bi-calendar3"></i>
+                <span>{{ dia }}</span>
+              </div>
+              <div class="calendar-day-content">
+                <div *ngIf="obtenerTurnosPorDia(allTurnos, dia).length > 0; else noDayTurns">
+                  <div *ngFor="let turno of obtenerTurnosPorDia(allTurnos, dia)"
+                       class="calendar-turn-slot"
+                       [style.border-left-color]="getDeporteInfo(turno.tipoGrupo).color">
+                    <div class="turn-sport-badge" [style.background]="getDeporteInfo(turno.tipoGrupo).color">
+                      <span>{{ getDeporteInfo(turno.tipoGrupo).emoji }}</span>
+                      <span class="sport-label">{{ getDeporteInfo(turno.tipoGrupo).nombre }}</span>
+                    </div>
+                    <div class="turn-time-info">
+                      <i class="bi bi-clock-fill"></i>
+                      <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noDayTurns>
+                  <div class="no-turns-day">
+                    <i class="bi bi-dash-circle"></i>
+                    <span>Sin clases</span>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Groups Grid (Original section) -->
+        <div class="groups-section">
+          <h2 class="section-title">
+            <i class="bi bi-people-fill"></i>
+            Horarios por Grupo
+          </h2>
+          <div class="groups-container">
+            <div *ngFor="let grupo of grupos; let i = index" class="group-card"
+                 [class.expanded]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
 
             <!-- Group Header -->
             <div class="group-header" (click)="toggleVerTurnos(grupo.id, i)">
@@ -78,6 +150,7 @@
               </ng-template>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
