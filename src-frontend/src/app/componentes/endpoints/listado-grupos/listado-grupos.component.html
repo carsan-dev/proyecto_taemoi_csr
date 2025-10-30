@@ -14,6 +14,19 @@
       </div>
     </div>
 
+    <!-- Stats Cards - Conteo de Alumnos -->
+    <div class="admin-stats-grid mb-4">
+      <ng-container *ngFor="let tipo of gruposMostrar">
+        <div class="admin-stat-card" (click)="abrirModalAlumnos(tipo)" style="cursor: pointer;">
+          <div class="stat-icon stat-icon-primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo) }}</h3>
+          <p class="stat-label">{{ tipo }}</p>
+        </div>
+      </ng-container>
+    </div>
+
     <!-- Grupos Grid -->
     <div class="admin-cards-grid">
       <div *ngFor="let grupo of grupos" class="admin-item-card">
@@ -45,3 +58,8 @@
     </div>
   </div>
 </div>
+
+<!-- Modal de alumnos en un grupo -->
+<app-grupo-alumnos-modal *ngIf="mostrarModalAlumnos" [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
+  (cerrar)="cerrarModalAlumnos()">
+</app-grupo-alumnos-modal>
