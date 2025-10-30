@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
+import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginacionComponent],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
 })
@@ -20,6 +21,13 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosFiltrados: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
+
+  // Pagination for convocatorias list
+  paginaActualConvocatorias = 1;
+  tamanoPaginaConvocatorias = 5;
+  totalPaginasConvocatorias = 0;
+
+  // Pagination for alumnos
   paginaActual = 1;
   tamanoPagina = 10;
   alumnosCargadosCompletamente = false;
@@ -41,7 +49,9 @@ export class ListadoConvocatoriasComponent implements OnInit {
       .obtenerConvocatorias(this.deporteSeleccionado)
       .subscribe({
         next: (data) => {
-          this.convocatorias = data;
+          this.convocatorias = data.map((conv: any) => ({ ...conv, expanded: false }));
+          this.totalPaginasConvocatorias = Math.ceil(this.convocatorias.length / this.tamanoPaginaConvocatorias);
+          this.paginaActualConvocatorias = 1;
         },
         error: () => {
           Swal.fire({
@@ -51,6 +61,16 @@ export class ListadoConvocatoriasComponent implements OnInit {
           });
         },
       });
+  }
+
+  get convocatoriasPaginadas(): any[] {
+    const start = (this.paginaActualConvocatorias - 1) * this.tamanoPaginaConvocatorias;
+    const end = start + this.tamanoPaginaConvocatorias;
+    return this.convocatorias.slice(start, end);
+  }
+
+  cambiarPaginaConvocatorias(pageNumber: number): void {
+    this.paginaActualConvocatorias = pageNumber;
   }
 
   crearConvocatoria(): void {
@@ -73,26 +93,39 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   seleccionarConvocatoria(convocatoria: any): void {
-    this.convocatoriaSeleccionada = convocatoria;
+    // Toggle expansion
+    convocatoria.expanded = !convocatoria.expanded;
 
-    this.endpointsService
-      .obtenerAlumnosDeConvocatoria(convocatoria.id)
-      .subscribe({
-        next: (data) => {
-          this.alumnosInscritos = data.map((alumno) => ({
-            ...alumno,
-            id: alumno.id,
-          }));
-          this.filtrarAlumnos();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron obtener los alumnos de la convocatoria.',
-            icon: 'error',
-          });
-        },
-      });
+    // If expanding, load the data
+    if (convocatoria.expanded) {
+      this.convocatoriaSeleccionada = convocatoria;
+
+      this.endpointsService
+        .obtenerAlumnosDeConvocatoria(convocatoria.id)
+        .subscribe({
+          next: (data) => {
+            this.alumnosInscritos = data.map((alumno) => ({
+              ...alumno,
+              id: alumno.id,
+            }));
+            this.filtrarAlumnos();
+          },
+          error: () => {
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudieron obtener los alumnos de la convocatoria.',
+              icon: 'error',
+            });
+            convocatoria.expanded = false;
+          },
+        });
+    } else {
+      // If collapsing, clear the selection if it's the current one
+      if (this.convocatoriaSeleccionada?.id === convocatoria.id) {
+        this.convocatoriaSeleccionada = null;
+        this.alumnosInscritos = [];
+      }
+    }
   }
 
   eliminarConvocatoria(convocatoria: any): void {

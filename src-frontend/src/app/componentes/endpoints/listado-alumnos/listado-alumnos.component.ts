@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
@@ -7,6 +7,8 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -21,7 +23,7 @@ import { InformeModalComponent } from '../../generales/informe-modal/informe-mod
   templateUrl: './listado-alumnos.component.html',
   styleUrl: './listado-alumnos.component.scss',
 })
-export class ListadoAlumnosComponent implements OnInit {
+export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   alumnos: any[] = [];
   alumnosSeleccionables: any[] = [];
   paginaActual: number = 1;
@@ -29,6 +31,7 @@ export class ListadoAlumnosComponent implements OnInit {
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  private searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   alumnoSeleccionado: number | null = null;
   mesAnoSeleccionadoIndividual: string = '';
@@ -52,6 +55,19 @@ export class ListadoAlumnosComponent implements OnInit {
   ngOnInit(): void {
     this.obtenerAlumnos();
     this.cargarTodosLosAlumnos();
+
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(500), // Wait 500ms after user stops typing
+      distinctUntilChanged() // Only trigger if value actually changed
+    ).subscribe(() => {
+      this.paginaActual = 1;
+      this.obtenerAlumnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject.complete();
   }
 
   onGrupoChange() {
@@ -199,8 +215,7 @@ export class ListadoAlumnosComponent implements OnInit {
   }
 
   filtrarPorNombre(): void {
-    this.paginaActual = 1;
-    this.obtenerAlumnos();
+    this.searchSubject.next(this.nombreFiltro);
   }
 
   alternarInactivos(): void {

@@ -1,63 +1,75 @@
 // Import shared admin styles
 @use '../../../componentes/admin-shared-styles.scss' as *;
 
-// Component-specific table styles
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: $text-light;
+// Component-specific styles
+
+// Responsive table wrapper for horizontal scroll on small screens
+.admin-table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+
+  @media (max-width: 992px) {
+    // Enable horizontal scroll on tablets and below
+    .admin-table {
+      min-width: 800px; // Prevent table from shrinking too much
+
+      // Add padding to prevent buttons from being cut off when scrolling
+      table {
+        padding-right: 1rem;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    // More aggressive min-width on mobile
+    .admin-table {
+      min-width: 900px; // Ensure all 8 columns are visible with scroll
+
+      // Add more padding on mobile
+      table {
+        padding-right: 1.5rem;
+      }
+    }
+  }
+}
+.table-profile-image {
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  box-shadow: $shadow-sm;
+  transition: $transition;
+  border: 2px solid $background-light;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $primary-color;
+    transform: scale(1.1);
+  }
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
   border-radius: 20px;
-  box-shadow: $shadow-md;
-  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
 
-  thead {
-    tr {
-      background: linear-gradient(135deg, $dark-bg, $dark-accent);
-      color: $text-light;
-      text-align: left;
-
-      th {
-        padding: 1.25rem;
-        font-size: 1rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-    }
+  &.status-active {
+    background-color: rgba(#28a745, 0.1);
+    color: #28a745;
   }
 
-  tbody {
-    tr {
-      transition: $transition-fast;
-
-      &:hover {
-        background-color: rgba($primary-color, 0.03);
-      }
-
-      td {
-        padding: 1rem;
-        border-bottom: 1px solid $background-light;
-        vertical-align: middle;
-
-        .imagen-perfil {
-          border-radius: 50%;
-          width: 60px;
-          height: 60px;
-          object-fit: cover;
-          box-shadow: $shadow-sm;
-          transition: $transition;
-          border: 2px solid $background-light;
-
-          &:hover {
-            box-shadow: $shadow-md;
-            border-color: $primary-color;
-          }
-        }
-      }
-
-      &:last-child td {
-        border-bottom: none;
-      }
-    }
+  &.status-inactive {
+    background-color: rgba(#dc3545, 0.1);
+    color: #dc3545;
   }
+}
+
+.alert {
+  border-radius: 12px;
+  border: none;
+  box-shadow: $shadow-sm;
 }
