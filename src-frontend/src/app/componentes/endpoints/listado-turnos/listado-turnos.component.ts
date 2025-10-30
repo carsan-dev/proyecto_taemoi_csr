@@ -4,12 +4,11 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 
 @Component({
   selector: 'app-listado-turnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, GrupoAlumnosModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './listado-turnos.component.html',
   styleUrls: ['./listado-turnos.component.scss'],
 })
@@ -23,24 +22,11 @@ export class ListadoTurnosComponent implements OnInit {
     'Sábado',
     'Domingo',
   ];
-  gruposMostrar: string[] = [
-    'Taekwondo',
-    'Taekwondo Competición',
-    'Pilates',
-    'Kickboxing',
-    'Defensa Personal Femenina',
-  ];
-
-  // Variables para controlar el modal
-  mostrarModalAlumnos = false;
-  grupoNombreModal = '';
-  alumnosGrupoModal: any[] = [];
 
   constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.endpointsService.obtenerTurnos();
-    this.endpointsService.obtenerConteoAlumnosPorGrupo();
   }
 
   obtenerTurnosPorDia(turnos: any[], diaSemana: string): any[] {
@@ -49,10 +35,6 @@ export class ListadoTurnosComponent implements OnInit {
 
   obtenerTotalAlumnos(turno: any): number {
     return turno.alumnos ? turno.alumnos.length : 0;
-  }
-
-  obtenerConteoAlumnos(grupoNombre: string): number {
-    return this.endpointsService.conteoAlumnosPorGrupo[grupoNombre] || 0;
   }
 
   eliminarTurno(turnoId: number): void {
@@ -87,27 +69,5 @@ export class ListadoTurnosComponent implements OnInit {
         });
       }
     });
-  }
-
-  abrirModalAlumnos(tipo: string) {
-    this.endpointsService.obtenerAlumnosPorTipo(tipo).subscribe({
-      next: (alumnos) => {
-        this.grupoNombreModal = tipo;
-        this.alumnosGrupoModal = alumnos;
-        this.mostrarModalAlumnos = true;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la obtención',
-          text: 'No hemos podido obtener los alumnos del grupo',
-          icon: 'error',
-        });
-      }
-    });
-  }
-  
-
-  cerrarModalAlumnos() {
-    this.mostrarModalAlumnos = false;
   }
 }

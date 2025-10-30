@@ -9,19 +9,6 @@
     </div>
 
     <div *ngIf="endpointsService.turnos$ | async as turnos">
-      <!-- Stats Cards - Conteo de Alumnos -->
-      <div class="admin-stats-grid mb-4">
-        <ng-container *ngFor="let tipo of gruposMostrar">
-          <div class="admin-stat-card" (click)="abrirModalAlumnos(tipo)" style="cursor: pointer;">
-            <div class="stat-icon stat-icon-primary">
-              <i class="bi bi-people-fill"></i>
-            </div>
-            <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo) }}</h3>
-            <p class="stat-label">{{ tipo }}</p>
-          </div>
-        </ng-container>
-      </div>
-
       <!-- Días de la Semana -->
       <div class="row g-4">
         <div class="col-12" *ngFor="let diaSemana of diasSemana">
@@ -84,8 +71,3 @@
     </div>
   </div>
 </div>
-
-<!-- Modal de alumnos en un grupo -->
-<app-grupo-alumnos-modal *ngIf="mostrarModalAlumnos" [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
-  (cerrar)="cerrarModalAlumnos()">
-</app-grupo-alumnos-modal>

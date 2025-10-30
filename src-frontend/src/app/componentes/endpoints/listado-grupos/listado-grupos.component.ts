@@ -3,21 +3,35 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 
 @Component({
   selector: 'app-listado-grupos',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, GrupoAlumnosModalComponent],
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss',
 })
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
+  gruposMostrar: string[] = [
+    'Taekwondo',
+    'Taekwondo Competición',
+    'Pilates',
+    'Kickboxing',
+    'Defensa Personal Femenina',
+  ];
+
+  // Variables para controlar el modal
+  mostrarModalAlumnos = false;
+  grupoNombreModal = '';
+  alumnosGrupoModal: any[] = [];
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerGrupos();
+    this.endpointsService.obtenerConteoAlumnosPorGrupo();
   }
 
   obtenerGrupos(): void {
@@ -67,5 +81,30 @@ export class ListadoGruposComponent implements OnInit {
         });
       }
     });
+  }
+
+  obtenerConteoAlumnos(grupoNombre: string): number {
+    return this.endpointsService.conteoAlumnosPorGrupo[grupoNombre] || 0;
+  }
+
+  abrirModalAlumnos(tipo: string) {
+    this.endpointsService.obtenerAlumnosPorTipo(tipo).subscribe({
+      next: (alumnos) => {
+        this.grupoNombreModal = tipo;
+        this.alumnosGrupoModal = alumnos;
+        this.mostrarModalAlumnos = true;
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error en la obtención',
+          text: 'No hemos podido obtener los alumnos del grupo',
+          icon: 'error',
+        });
+      }
+    });
+  }
+
+  cerrarModalAlumnos() {
+    this.mostrarModalAlumnos = false;
   }
 }
