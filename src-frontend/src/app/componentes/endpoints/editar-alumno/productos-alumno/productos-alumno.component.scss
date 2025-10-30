@@ -1,47 +1,109 @@
 // Import shared admin styles
 @use '../../../../componentes/admin-shared-styles.scss' as *;
+@use 'sass:color';
 
 // Component-specific styles
-.container {
-  margin-top: 150px;
-}
 
-.total-no-pagado {
-  color: $danger-color;
-  font-weight: bold;
-}
+// Responsive table wrapper for horizontal scroll on small screens
+.admin-table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
 
-.total-animacion {
-  animation: bounce 1s infinite;
-}
-
-@keyframes bounce {
-  0%, 20%, 60%, 100% {
-    transform: translateY(0);
+  @media (max-width: 1200px) {
+    // Enable horizontal scroll on large tablets and below
+    .admin-table {
+      min-width: 900px; // 9 columns need space
+    }
   }
-  40% {
-    transform: translateY(-5px);
+
+  @media (max-width: 992px) {
+    // Enable horizontal scroll on tablets and below
+    .admin-table {
+      min-width: 1000px;
+
+      table {
+        padding-right: 1rem;
+      }
+    }
   }
-  80% {
-    transform: translateY(-2px);
+
+  @media (max-width: 768px) {
+    // More aggressive min-width on mobile
+    .admin-table {
+      min-width: 1100px;
+
+      table {
+        padding-right: 1.5rem;
+      }
+    }
   }
 }
 
-.btn-link {
-  text-decoration: none;
-  padding: 0;
-  line-height: 1;
+// Total badge styling
+.total-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: $transition;
 
-  &:hover {
-    text-decoration: underline;
+  &.total-no-pagado {
+    background-color: rgba(#dc3545, 0.1);
+    color: #dc3545;
+    animation: pulse 2s infinite;
+  }
+
+  &.total-pagado {
+    background-color: rgba(#28a745, 0.1);
+    color: #28a745;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(#dc3545, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(#dc3545, 0);
   }
 }
 
 .nota-truncada {
   display: inline-block;
-  max-width: 100px;
+  max-width: 120px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
+  font-size: 0.9rem;
+  color: $text-muted;
+
+  @media (max-width: 768px) {
+    max-width: 80px;
+  }
+}
+
+// Small form controls in table
+.admin-form-control-sm {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 8px;
+}
+
+// Link button styling
+.admin-btn-link {
+  background: transparent;
+  border: none;
+  color: $primary-color;
+  padding: 0.25rem 0.5rem;
+  transition: $transition;
+
+  &:hover {
+    color: color.adjust($primary-color, $lightness: -10%);
+    background: rgba($primary-color, 0.1);
+  }
 }
