@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // ========================================
 // VARIABLES
 // ========================================
@@ -299,7 +301,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 // ========================================
 .cta-section {
   padding: 5rem 2rem;
-  background: linear-gradient(135deg, $kickboxing-color 0%, darken($kickboxing-color, 10%) 100%);
+  background: linear-gradient(135deg, $kickboxing-color 0%, color.adjust($kickboxing-color, $lightness: -10%) 100%);
   position: relative;
   overflow: hidden;
 
