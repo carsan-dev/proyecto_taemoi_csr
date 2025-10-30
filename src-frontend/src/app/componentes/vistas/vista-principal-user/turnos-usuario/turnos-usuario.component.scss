@@ -130,12 +130,244 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 0 auto;
   }
 
+  // Section Title (Shared)
+  .section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: $text-dark;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    animation: fadeInUp 0.6s ease 0.3s backwards;
+
+    i {
+      font-size: 2rem;
+      color: $primary-color;
+    }
+  }
+
+  // Sports Summary Section
+  .sports-summary-section {
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.6s ease 0.3s backwards;
+
+    .sports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+
+      .sport-card {
+        background: $text-light;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: $shadow-md;
+        transition: $transition;
+
+        &:hover {
+          transform: translateY(-5px);
+          box-shadow: $shadow-lg;
+        }
+
+        .sport-header {
+          padding: 1.5rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.8rem;
+
+          .sport-emoji {
+            font-size: 3rem;
+            line-height: 1;
+          }
+
+          .sport-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: $text-light;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+        }
+
+        .sport-schedule {
+          padding: 1.5rem;
+          background: #f8f9fa;
+
+          .sport-turn-item {
+            background: $text-light;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: $shadow-sm;
+            transition: $transition;
+
+            &:hover {
+              transform: translateX(5px);
+              box-shadow: $shadow-md;
+            }
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .turn-day {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              font-weight: 600;
+              color: $text-dark;
+
+              i {
+                color: $primary-color;
+                font-size: 1rem;
+              }
+            }
+
+            .turn-time {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              color: $text-muted;
+              font-size: 0.95rem;
+
+              i {
+                color: $success-color;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // All Turns Calendar Section
+  .all-turns-section {
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.6s ease 0.4s backwards;
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+
+      .calendar-day-card {
+        background: $text-light;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: $shadow-md;
+        transition: $transition;
+
+        &:hover {
+          box-shadow: $shadow-lg;
+        }
+
+        .calendar-day-header {
+          background: linear-gradient(135deg, $dark-bg, $dark-accent);
+          color: $text-light;
+          padding: 1rem 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.6rem;
+          font-weight: 600;
+          font-size: 1.1rem;
+
+          i {
+            font-size: 1.2rem;
+          }
+        }
+
+        .calendar-day-content {
+          padding: 1rem;
+          min-height: 100px;
+
+          .calendar-turn-slot {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid;
+            transition: $transition;
+
+            &:hover {
+              transform: translateX(5px);
+              box-shadow: $shadow-md;
+            }
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .turn-sport-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.4rem 0.8rem;
+              border-radius: 20px;
+              margin-bottom: 0.6rem;
+              font-size: 0.85rem;
+              font-weight: 600;
+              color: $text-light;
+
+              .sport-label {
+                font-size: 0.8rem;
+              }
+            }
+
+            .turn-time-info {
+              display: flex;
+              align-items: center;
+              gap: 0.6rem;
+              color: $text-dark;
+              font-weight: 500;
+
+              i {
+                color: $success-color;
+                font-size: 0.95rem;
+              }
+            }
+          }
+
+          .no-turns-day {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            color: $text-muted;
+            font-style: italic;
+
+            i {
+              font-size: 2rem;
+              opacity: 0.4;
+              margin-bottom: 0.5rem;
+            }
+
+            span {
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Groups Section
+  .groups-section {
+    margin-bottom: 3rem;
+    animation: fadeInUp 0.6s ease 0.5s backwards;
+  }
+
   // Groups Container
   .groups-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    animation: fadeInUp 0.6s ease 0.3s backwards;
   }
 
   // Group Card
@@ -452,6 +684,56 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   .main-content {
     padding: 0 1rem 2rem;
+
+    .section-title {
+      font-size: 1.5rem;
+
+      i {
+        font-size: 1.7rem;
+      }
+    }
+
+    .sports-summary-section {
+      margin-bottom: 3rem;
+
+      .sports-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .all-turns-section {
+      margin-bottom: 3rem;
+
+      .calendar-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+
+        .calendar-day-card {
+          .calendar-day-header {
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+          }
+
+          .calendar-day-content {
+            padding: 0.8rem;
+            min-height: 80px;
+
+            .calendar-turn-slot {
+              padding: 0.8rem;
+
+              .turn-sport-badge {
+                font-size: 0.8rem;
+
+                .sport-label {
+                  font-size: 0.75rem;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     .group-card {
       .group-header {
