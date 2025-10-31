@@ -205,42 +205,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			@NonNull Pageable pageable) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
-
-			if (nombre != null && !nombre.isEmpty()) {
-				String nombreLower = nombre.toLowerCase();
-
-				// Crear expresión para el nombre completo (nombre + ' ' + apellidos)
-				Expression<String> fullNameExpression = criteriaBuilder
-						.concat(criteriaBuilder.lower(root.get("nombre")), criteriaBuilder.literal(" "));
-				fullNameExpression = criteriaBuilder.concat(fullNameExpression,
-						criteriaBuilder.lower(root.get("apellidos")));
-
-				// Crear predicado que compara el nombre completo con el valor buscado
-				Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
-
-				// También comparar individualmente el nombre y los apellidos
-				Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombreLower + "%");
-				Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")),
-						"%" + nombreLower + "%");
-
-				// Combinar los predicados con OR
-				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
-			}
-			if (!incluirInactivos) {
-				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-			}
-
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		}, pageable);
+		return alumnoRepository.findAll(
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos),
+				pageable);
 	}
 
 	/**
@@ -257,42 +224,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos) {
-		return alumnoRepository.findAll((root, query, criteriaBuilder) -> {
-			List<Predicate> predicates = new ArrayList<>();
-
-			if (nombre != null && !nombre.isEmpty()) {
-				String nombreLower = nombre.toLowerCase();
-
-				// Crear expresión para el nombre completo (nombre + ' ' + apellidos)
-				Expression<String> fullNameExpression = criteriaBuilder
-						.concat(criteriaBuilder.lower(root.get("nombre")), criteriaBuilder.literal(" "));
-				fullNameExpression = criteriaBuilder.concat(fullNameExpression,
-						criteriaBuilder.lower(root.get("apellidos")));
-
-				// Crear predicado que compara el nombre completo con el valor buscado
-				Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
-
-				// También comparar individualmente el nombre y los apellidos
-				Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
-						"%" + nombreLower + "%");
-				Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")),
-						"%" + nombreLower + "%");
-
-				// Combinar los predicados con OR
-				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
-			}
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("gradoId"), gradoId));
-			}
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoriaId"), categoriaId));
-			}
-			if (!incluirInactivos) {
-				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
-			}
-
-			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-		});
+		return alumnoRepository.findAll(
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos));
 	}
 
 	/**
@@ -431,11 +364,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Asignar fecha de alta
 		nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta() != null ? nuevoAlumnoDTO.getFechaAlta() : new Date());
 
-		nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
-		if (nuevoAlumnoDTO.getTieneLicencia() != null && nuevoAlumnoDTO.getTieneLicencia()) {
-			nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
-			nuevoAlumno.setFechaLicencia(nuevoAlumnoDTO.getFechaLicencia());
-		}
+		// Note: License handling already done above (lines 394-399), duplicate code removed
 
 		// Generar y asignar el número de expediente
 		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente(); // Asegúrate de tener este método en
@@ -570,11 +499,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumnoExistente.setCategoria(null);
 			}
 
-			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-				int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
-				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-				alumnoExistente.setCategoria(nuevaCategoria);
-			}
+			// Duplicate code removed - categoria assignment already handled above
 
 			if (alumnoActualizado.getAptoParaExamen() != null) {
 				alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
@@ -1326,8 +1251,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    boolean mensualidadCargada = productoAlumnoRepository.existsByConcepto(nombreMensualidad);
 
 	    if (mensualidadCargada) {
-	        Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
-	                .orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+	        // Check if MENSUALIDAD product exists before trying to use it
+	        var optionalProductoMensualidad = productoRepository.findByConcepto("MENSUALIDAD");
+	        if (optionalProductoMensualidad.isEmpty()) {
+	            System.out.println("ADVERTENCIA: Producto 'MENSUALIDAD' no encontrado. " +
+	                    "Se omitirá la asignación automática de mensualidad para el alumno " + alumno.getId());
+	            return;
+	        }
+
+	        Producto productoMensualidad = optionalProductoMensualidad.get();
 
 	        ProductoAlumno productoAlumno = new ProductoAlumno();
 	        productoAlumno.setAlumno(alumno);
@@ -1357,5 +1289,58 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public long countAlumnos() {
         return alumnoRepository.count();
+	}
+
+	/**
+	 * Builds a JPA Specification for filtering Alumno entities.
+	 * Extracted to avoid code duplication between paginated and non-paginated filter methods.
+	 *
+	 * @param nombre          Name filter (searches in nombre, apellidos, and full name)
+	 * @param gradoId         Grado ID filter
+	 * @param categoriaId     Categoria ID filter
+	 * @param incluirInactivos Whether to include inactive students
+	 * @return Specification for filtering Alumno
+	 */
+	private org.springframework.data.jpa.domain.Specification<Alumno> buildAlumnoSpecification(
+			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos) {
+		return (root, query, criteriaBuilder) -> {
+			List<Predicate> predicates = new ArrayList<>();
+
+			if (nombre != null && !nombre.isEmpty()) {
+				String nombreLower = nombre.toLowerCase();
+
+				// Build full name expression (nombre + ' ' + apellidos)
+				Expression<String> fullNameExpression = criteriaBuilder
+						.concat(criteriaBuilder.lower(root.get("nombre")), criteriaBuilder.literal(" "));
+				fullNameExpression = criteriaBuilder.concat(fullNameExpression,
+						criteriaBuilder.lower(root.get("apellidos")));
+
+				// Create predicate comparing full name with search value
+				Predicate fullNamePredicate = criteriaBuilder.like(fullNameExpression, "%" + nombreLower + "%");
+
+				// Also compare nombre and apellidos individually
+				Predicate nombrePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")),
+						"%" + nombreLower + "%");
+				Predicate apellidosPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("apellidos")),
+						"%" + nombreLower + "%");
+
+				// Combine predicates with OR
+				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
+			}
+
+			if (gradoId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
+			}
+
+			if (categoriaId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
+			}
+
+			if (!incluirInactivos) {
+				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+			}
+
+			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+		};
 	}
 }
