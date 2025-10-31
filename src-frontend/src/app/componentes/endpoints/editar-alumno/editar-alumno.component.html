@@ -458,95 +458,6 @@
                       <span>Eliminar de Convocatoria</span>
                     </button>
                   </div>
-
-                  <!-- Modal de convocatoria -->
-                  <div id="convocatoriaModal" class="modal" [class.show]="mostrarModalConvocatorias"
-                    (click)="cerrarModalConvocatorias()">
-                    <div class="modal-content" (click)="$event.stopPropagation()">
-                      <div class="modal-header">
-                        <h5 class="modal-title">
-                          <i class="bi bi-calendar-event me-2"></i>
-                          Seleccionar Convocatoria
-                        </h5>
-                        <button type="button" class="btn-close" (click)="cerrarModalConvocatorias()" aria-label="Cerrar modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p class="mb-3">Convocatorias disponibles para <strong>{{ alumno.deporte }}</strong>:</p>
-                        <div class="convocatoria-list">
-                          <div *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
-                            class="convocatoria-item convocatoria-item-current">
-                            <div class="convocatoria-icon">
-                              <i class="bi bi-star-fill"></i>
-                            </div>
-                            <div class="convocatoria-info">
-                              <span class="convocatoria-title">Convocatoria Actual</span>
-                              <span class="convocatoria-date">
-                                {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoriaActual.deporte }}
-                              </span>
-                            </div>
-                            <i class="bi bi-chevron-right"></i>
-                          </div>
-                          <div *ngFor="let convocatoria of convocatoriasDisponibles"
-                            (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
-                            <div class="convocatoria-icon">
-                              <i class="bi bi-calendar-event"></i>
-                            </div>
-                            <div class="convocatoria-info">
-                              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
-                              <span class="convocatoria-date">
-                                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
-                              </span>
-                            </div>
-                            <i class="bi bi-chevron-right"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalConvocatorias()">
-                          <i class="bi bi-x-circle"></i>
-                          <span>Cerrar</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Modal de eliminar de convocatoria -->
-                  <div id="eliminarConvocatoriaModal" class="modal" [class.show]="mostrarModalEliminarConvocatorias"
-                    (click)="cerrarModalEliminarConvocatorias()">
-                    <div class="modal-content" (click)="$event.stopPropagation()">
-                      <div class="modal-header">
-                        <h5 class="modal-title">
-                          <i class="bi bi-trash me-2"></i>
-                          Eliminar de Convocatoria
-                        </h5>
-                        <button type="button" class="btn-close" (click)="cerrarModalEliminarConvocatorias()" aria-label="Cerrar modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p class="mb-3">Elige la convocatoria de la que deseas eliminar al alumno:</p>
-                        <div class="convocatoria-list">
-                          <div *ngFor="let convocatoria of convocatoriasDelAlumno"
-                            (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)" class="convocatoria-item convocatoria-item-delete">
-                            <div class="convocatoria-icon">
-                              <i class="bi bi-calendar-x"></i>
-                            </div>
-                            <div class="convocatoria-info">
-                              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
-                              <span class="convocatoria-date">
-                                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
-                              </span>
-                            </div>
-                            <i class="bi bi-chevron-right"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalEliminarConvocatorias()">
-                          <i class="bi bi-x-circle"></i>
-                          <span>Cerrar</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1095,6 +1006,95 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Modal de convocatoria (root level for proper overlay) -->
+  <div *ngIf="alumno" id="convocatoriaModal" class="modal" [class.show]="mostrarModalConvocatorias"
+    (click)="cerrarModalConvocatorias()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-calendar-event me-2"></i>
+          Seleccionar Convocatoria
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalConvocatorias()" aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Convocatorias disponibles para <strong>{{ alumno.deporte }}</strong>:</p>
+        <div class="convocatoria-list">
+          <div *ngIf="convocatoriaActual" (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
+            class="convocatoria-item convocatoria-item-current">
+            <div class="convocatoria-icon">
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">Convocatoria Actual</span>
+              <span class="convocatoria-date">
+                {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoriaActual.deporte }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+          <div *ngFor="let convocatoria of convocatoriasDisponibles"
+            (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
+            <div class="convocatoria-icon">
+              <i class="bi bi-calendar-event"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
+              <span class="convocatoria-date">
+                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalConvocatorias()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de eliminar de convocatoria (root level for proper overlay) -->
+  <div *ngIf="alumno" id="eliminarConvocatoriaModal" class="modal" [class.show]="mostrarModalEliminarConvocatorias"
+    (click)="cerrarModalEliminarConvocatorias()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-trash me-2"></i>
+          Eliminar de Convocatoria
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEliminarConvocatorias()" aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Elige la convocatoria de la que deseas eliminar al alumno:</p>
+        <div class="convocatoria-list">
+          <div *ngFor="let convocatoria of convocatoriasDelAlumno"
+            (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)" class="convocatoria-item convocatoria-item-delete">
+            <div class="convocatoria-icon">
+              <i class="bi bi-calendar-x"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
+              <span class="convocatoria-date">
+                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalEliminarConvocatorias()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cerrar</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
