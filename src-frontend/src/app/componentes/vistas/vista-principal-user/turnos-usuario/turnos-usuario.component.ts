@@ -16,7 +16,6 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
-  turnos: Turno[] = [];
   allTurnos: Turno[] = []; // Store all turns from all groups
   diasSemana: string[] = [
     'Lunes',
@@ -28,8 +27,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     'Domingo',
   ];
   alumnoId!: number;
-  grupoSeleccionadoId: number | null = null;
-  expandedGrupoIndex: number | null = null; // Variable para manejar el acordeón
 
   // Sport utilities
   deportes = {
@@ -77,44 +74,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(gruposSubscription);
     this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
-  }
-
-  toggleVerTurnos(grupoId: number, index: number): void {
-    // Si el grupo ya está expandido y seleccionado, lo colapsamos
-    if (this.grupoSeleccionadoId === grupoId && this.expandedGrupoIndex === index) {
-      this.grupoSeleccionadoId = null;
-      this.expandedGrupoIndex = -1;
-      this.turnos = [];
-    } else {
-      // De lo contrario, expandimos el grupo y cargamos los turnos
-      this.grupoSeleccionadoId = grupoId;
-      this.expandedGrupoIndex = index;
-
-      const alumnoId = this.authService.getAlumnoId();
-      if (alumnoId) {
-        const turnosSubscription =
-          this.endpointsService.turnosDelGrupo$.subscribe({
-            next: (response) => {
-              this.turnos = response;
-            },
-            error: () => {
-              Swal.fire({
-                title: 'Error en la petición',
-                text: 'Error al obtener los turnos del alumno en el grupo.',
-                icon: 'error',
-              });
-            },
-          });
-        this.subscriptions.add(turnosSubscription);
-        this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
-      } else {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo obtener el ID del alumno autenticado.',
-          icon: 'error',
-        });
-      }
-    }
   }
 
   obtenerTurnosPorDia(turnos: Turno[], diaSemana: string): Turno[] {
