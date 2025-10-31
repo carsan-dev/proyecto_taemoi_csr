@@ -1,12 +1,14 @@
 import { RouterModule, Routes } from '@angular/router';
 import { NgModule } from '@angular/core';
 import { roleGuard } from './guards/role.guard';
+import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
+import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/inicio', pathMatch: 'full' },
   {
     path: 'inicio',
-    loadComponent: () => import('./componentes/vistas/escaparate-principal/escaparate-principal.component').then(m => m.EscaparatePrincipalComponent)
+    component: EscaparatePrincipalComponent // Eager-load main page to prevent white screen
   },
   {
     path: 'eltaekwondo',
@@ -42,7 +44,7 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    loadComponent: () => import('./componentes/vistas/vista-login/vista-login.component').then(m => m.VistaLoginComponent)
+    component: VistaLoginComponent // Eager-load login page for better UX
   },
   {
     path: 'adminpage',
