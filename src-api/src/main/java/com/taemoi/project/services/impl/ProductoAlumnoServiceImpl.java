@@ -231,8 +231,16 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void crearAltaLicenciaFederativa(Alumno alumno) {
-		Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
-				.orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
+		// Check if product exists - if not, skip license creation instead of failing
+		var optionalProducto = productoRepository.findByConcepto("LICENCIA FEDERATIVA");
+		if (optionalProducto.isEmpty()) {
+			// Log warning but don't fail - allows system to work without this product configured
+			System.out.println("ADVERTENCIA: Producto 'LICENCIA FEDERATIVA' no encontrado. " +
+					"Se omitirá la creación automática de licencia para el alumno " + alumno.getId());
+			return;
+		}
+
+		Producto productoLicencia = optionalProducto.get();
 
 		Date fechaLicencia = alumno.getFechaLicencia();
 		if (fechaLicencia == null) {
