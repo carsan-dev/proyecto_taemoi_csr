@@ -19,27 +19,42 @@
     <div class="content-wrapper">
       <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
 
-        <!-- Sports Summary Section -->
-        <div class="sports-summary-section" *ngIf="allTurnos.length > 0">
+        <!-- Sports Timetable Section -->
+        <div class="sports-timetable-section" *ngIf="allTurnos.length > 0">
           <h2 class="section-title">
             <i class="bi bi-grid-3x3-gap-fill"></i>
             Horarios por Deporte
           </h2>
-          <div class="sports-grid">
-            <div *ngFor="let deporte of getDeportesUnicos()" class="sport-card">
-              <div class="sport-header" [style.background]="getDeporteInfo(deporte).color">
+
+          <!-- Sport Timetables -->
+          <div class="sport-timetables-container">
+            <div *ngFor="let deporte of getDeportesUnicos()" class="sport-timetable-wrapper">
+              <div class="sport-timetable-header" [style.background]="getDeporteInfo(deporte).color">
                 <span class="sport-emoji">{{ getDeporteInfo(deporte).emoji }}</span>
-                <h3 class="sport-name">{{ getDeporteInfo(deporte).nombre }}</h3>
+                <h3 class="sport-timetable-name">{{ getDeporteInfo(deporte).nombre }}</h3>
               </div>
-              <div class="sport-schedule">
-                <div *ngFor="let turno of getTurnosPorDeporte(deporte)" class="sport-turn-item">
-                  <div class="turn-day">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>{{ turno.diaSemana }}</span>
+
+              <div class="sport-week-grid">
+                <div *ngFor="let dia of diasSemana" class="sport-day-card">
+                  <div class="sport-day-header">
+                    <i class="bi bi-calendar-day"></i>
+                    <span>{{ dia }}</span>
                   </div>
-                  <div class="turn-time">
-                    <i class="bi bi-clock"></i>
-                    <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                  <div class="sport-day-content">
+                    <div *ngIf="obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia).length > 0; else noSportDayTurns">
+                      <div *ngFor="let turno of obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia)"
+                           class="sport-time-slot"
+                           [style.border-left-color]="getDeporteInfo(deporte).color">
+                        <i class="bi bi-clock-fill"></i>
+                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                      </div>
+                    </div>
+                    <ng-template #noSportDayTurns>
+                      <div class="no-sport-turns">
+                        <i class="bi bi-dash-circle"></i>
+                        <span>Sin clases</span>
+                      </div>
+                    </ng-template>
                   </div>
                 </div>
               </div>
@@ -85,72 +100,27 @@
           </div>
         </div>
 
-        <!-- Groups Grid (Original section) -->
-        <div class="groups-section">
+        <!-- Groups Summary Section (Compact) -->
+        <div class="groups-summary-section" *ngIf="grupos.length > 0">
           <h2 class="section-title">
             <i class="bi bi-people-fill"></i>
-            Horarios por Grupo
+            Mis Grupos
           </h2>
-          <div class="groups-container">
-            <div *ngFor="let grupo of grupos; let i = index" class="group-card"
-                 [class.expanded]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
-
-            <!-- Group Header -->
-            <div class="group-header" (click)="toggleVerTurnos(grupo.id, i)">
-              <div class="group-info">
-                <div class="group-icon">
-                  <i class="bi bi-collection-fill"></i>
-                </div>
-                <div class="group-details">
-                  <h3 class="group-name">{{ grupo.nombre }}</h3>
-                  <p class="group-subtitle">Haz clic para ver los horarios</p>
-                </div>
+          <div class="groups-compact-grid">
+            <div *ngFor="let grupo of grupos" class="group-compact-card">
+              <div class="group-compact-icon">
+                <i class="bi bi-collection-fill"></i>
               </div>
-              <div class="toggle-icon">
-                <i class="bi"
-                   [ngClass]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              <div class="group-compact-info">
+                <h3 class="group-compact-name">{{ grupo.nombre }}</h3>
+                <p class="group-compact-meta" *ngIf="grupo.deporte">
+                  <span class="sport-badge" [style.background]="getDeporteInfo(grupo.deporte).color">
+                    {{ getDeporteInfo(grupo.deporte).emoji }} {{ getDeporteInfo(grupo.deporte).nombre }}
+                  </span>
+                </p>
               </div>
-            </div>
-
-            <!-- Schedule Content (Expandable) -->
-            <div class="schedule-content"
-                 [class.open]="grupo.id === grupoSeleccionadoId && expandedGrupoIndex === i">
-              <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate"
-                   class="schedule-grid">
-                <!-- Days of the week -->
-                <div *ngFor="let diaSemana of diasSemana" class="day-card">
-                  <div class="day-header">
-                    <i class="bi bi-calendar-day"></i>
-                    <span>{{ diaSemana }}</span>
-                  </div>
-                  <div class="day-content">
-                    <div *ngIf="obtenerTurnosPorDia(turnos, diaSemana).length > 0; else noTimeslotsTemplate">
-                      <div *ngFor="let turno of obtenerTurnosPorDia(turnos, diaSemana)"
-                           class="time-slot">
-                        <i class="bi bi-clock-fill"></i>
-                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                      </div>
-                    </div>
-                    <ng-template #noTimeslotsTemplate>
-                      <div class="no-timeslots">
-                        <i class="bi bi-x-circle"></i>
-                        <span>Sin horarios</span>
-                      </div>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-
-              <!-- No schedules template -->
-              <ng-template #noTurnosTemplate>
-                <div class="no-schedules-message">
-                  <i class="bi bi-exclamation-triangle"></i>
-                  <p>No se encontraron horarios para este grupo</p>
-                </div>
-              </ng-template>
             </div>
           </div>
-        </div>
         </div>
       </div>
 

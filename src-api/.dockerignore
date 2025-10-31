@@ -1,0 +1,33 @@
+# Maven build output
+target/
+!target/*.jar
+
+# IDE files
+.vscode
+.idea
+*.iml
+.settings
+.project
+.classpath
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Test resources
+src/test/
