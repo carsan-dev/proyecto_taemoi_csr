@@ -9,9 +9,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -136,6 +134,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+
+	@Autowired
+	private com.taemoi.project.config.ExamEligibilityConfig examEligibilityConfig;
+
+	@Autowired
+	private com.taemoi.project.config.TarifaConfig tarifaConfig;
 
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
@@ -772,34 +779,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
+	 * Delegado a TarifaConfig para centralizar la configuración de precios.
 	 *
 	 * @param tipoTarifa El tipo de tarifa del alumno.
 	 * @return La cuantía asignada.
 	 */
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
-		switch (tipoTarifa) {
-		case PILATES:
-			return 30.0;
-		case DEFENSA_PERSONAL_FEMENINA:
-			return 30.0;
-		case ADULTO:
-			return 30.0;
-		case ADULTO_GRUPO:
-			return 20.0;
-		case FAMILIAR:
-			return 0.0;
-		case INFANTIL:
-			return 25.0;
-		case INFANTIL_GRUPO:
-			return 20.0;
-		case HERMANOS:
-			return 23.0;
-		case PADRES_HIJOS:
-			return 0.0;
-		default:
-			throw new IllegalArgumentException("Tipo de tarifa no válido: " + tipoTarifa);
-		}
+		return tarifaConfig.obtenerCuantia(tipoTarifa);
 	}
 
 	/**
@@ -876,74 +863,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoRepository.save(nuevoGrado);
 	}
 
+	/**
+	 * Calcula el siguiente grado para un alumno según su deporte, edad y grado actual.
+	 * Delegado a GradeProgressionConfig para centralizar la lógica de progresión.
+	 */
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
 		TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
 		Deporte deporte = alumno.getDeporte();
-
 		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-
 		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
 
-		Map<TipoGrado, TipoGrado> nextGradeMap;
-
-		if (deporte == Deporte.TAEKWONDO) {
-			nextGradeMap = esMenor ? mapaGradosMenoresTaekwondo() : mapaGradosMayoresTaekwondo();
-		} else if (deporte == Deporte.KICKBOXING) {
-			nextGradeMap = mapaGradosKickboxing();
-		} else {
-			throw new IllegalArgumentException("Deporte no soportado: " + deporte);
-		}
-
-		return nextGradeMap.getOrDefault(gradoActual, null);
-	}
-
-	private Map<TipoGrado, TipoGrado> mapaGradosMenoresTaekwondo() {
-		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-		mapa.put(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO);
-		mapa.put(TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO);
-		mapa.put(TipoGrado.AMARILLO, TipoGrado.AMARILLO_NARANJA);
-		mapa.put(TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA);
-		mapa.put(TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE);
-		mapa.put(TipoGrado.NARANJA_VERDE, TipoGrado.VERDE);
-		mapa.put(TipoGrado.VERDE, TipoGrado.VERDE_AZUL);
-		mapa.put(TipoGrado.VERDE_AZUL, TipoGrado.AZUL);
-		mapa.put(TipoGrado.AZUL, TipoGrado.AZUL_ROJO);
-		mapa.put(TipoGrado.AZUL_ROJO, TipoGrado.ROJO);
-		mapa.put(TipoGrado.ROJO, TipoGrado.ROJO_NEGRO_1_PUM);
-		mapa.put(TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM);
-		mapa.put(TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
-		return mapa;
-	}
-
-	private Map<TipoGrado, TipoGrado> mapaGradosMayoresTaekwondo() {
-		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-		mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
-		mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
-		mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
-		mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
-		mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
-		mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
-		mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
-		mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
-		mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
-		mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
-		return mapa;
-	}
-
-	private Map<TipoGrado, TipoGrado> mapaGradosKickboxing() {
-		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
-		mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
-		mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
-		mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
-		mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
-		mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
-		mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
-		mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
-		mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
-		mapa.put(TipoGrado.NEGRO_3_DAN, TipoGrado.NEGRO_4_DAN);
-		mapa.put(TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
-		return mapa;
+		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
 	}
 
 	private boolean cumple14EsteAnio(Date fechaNacimiento) {
@@ -967,8 +898,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno");
 		}
 
-		String conceptoProducto = porRecompensa ? obtenerNombreProductoPorGradoRecompensa(gradoSiguiente)
-				: obtenerNombreProductoPorGrado(gradoSiguiente);
+		// Usar el método del enum TipoGrado para obtener el nombre del producto
+		String conceptoProducto = gradoSiguiente.obtenerNombreProducto(porRecompensa);
 
 		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
 				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
@@ -1011,75 +942,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
 	}
 
-	private String obtenerNombreProductoPorGrado(TipoGrado grado) {
-		switch (grado) {
-		case BLANCO_AMARILLO:
-			return "DERECHO DE EXAMEN BLANCO/AMARILLO";
-		case AMARILLO:
-			return "DERECHO DE EXAMEN AMARILLO";
-		case AMARILLO_NARANJA:
-			return "DERECHO DE EXAMEN AMARILLO/NARANJA";
-		case NARANJA:
-			return "DERECHO DE EXAMEN NARANJA";
-		case NARANJA_VERDE:
-			return "DERECHO DE EXAMEN NARANJA/VERDE";
-		case VERDE:
-			return "DERECHO DE EXAMEN VERDE";
-		case VERDE_AZUL:
-			return "DERECHO DE EXAMEN VERDE/AZUL";
-		case AZUL:
-			return "DERECHO DE EXAMEN AZUL";
-		case AZUL_ROJO:
-			return "DERECHO DE EXAMEN AZUL/ROJO";
-		case ROJO:
-			return "DERECHO DE EXAMEN ROJO BORDADO";
-		case NEGRO_1_DAN:
-			return "DERECHO DE EXAMEN 1º DAN";
-		case ROJO_NEGRO_1_PUM:
-			return "DERECHO DE EXAMEN 1º PUM";
-		case NEGRO_2_DAN:
-			return "DERECHO DE EXAMEN 2º DAN";
-		case ROJO_NEGRO_2_PUM:
-			return "DERECHO DE EXAMEN 2º PUM";
-		case NEGRO_3_DAN:
-			return "DERECHO DE EXAMEN 3º DAN";
-		case ROJO_NEGRO_3_PUM:
-			return "DERECHO DE EXAMEN 3º PUM";
-		case NEGRO_4_DAN:
-			return "DERECHO DE EXAMEN 4º DAN";
-		case NEGRO_5_DAN:
-			return "DERECHO DE EXAMEN 5º DAN";
-		default:
-			throw new IllegalArgumentException("Grado no soportado: " + grado);
-		}
-	}
-
-	private String obtenerNombreProductoPorGradoRecompensa(TipoGrado grado) {
-		switch (grado) {
-		case BLANCO_AMARILLO:
-			return "PASE DE GRADO POR RECOMPENSA BLANCO/AMARILLO";
-		case AMARILLO:
-			return "PASE DE GRADO POR RECOMPENSA AMARILLO";
-		case AMARILLO_NARANJA:
-			return "PASE DE GRADO POR RECOMPENSA AMARILLO/NARANJA";
-		case NARANJA:
-			return "PASE DE GRADO POR RECOMPENSA NARANJA";
-		case NARANJA_VERDE:
-			return "PASE DE GRADO POR RECOMPENSA NARANJA/VERDE";
-		case VERDE:
-			return "PASE DE GRADO POR RECOMPENSA VERDE";
-		case VERDE_AZUL:
-			return "PASE DE GRADO POR RECOMPENSA VERDE/AZUL";
-		case AZUL:
-			return "PASE DE GRADO POR RECOMPENSA AZUL";
-		case AZUL_ROJO:
-			return "PASE DE GRADO POR RECOMPENSA AZUL/ROJO";
-		case ROJO:
-			return "PASE DE GRADO POR RECOMPENSA ROJO BORDADO";
-		default:
-			throw new IllegalArgumentException("Grado no soportado: " + grado);
-		}
-	}
 
 	/**
 	 * Verifica si la fecha de nacimiento es válida.
@@ -1175,71 +1037,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Calcula los meses requeridos para ser apto para examen según la edad y el
-	 * grado.
-	 * 
+	 * Calcula los meses requeridos para ser apto para examen según la edad y el grado.
+	 * Delegado a ExamEligibilityConfig para centralizar las reglas de elegibilidad.
+	 *
 	 * @param edad      La edad del alumno.
 	 * @param tipoGrado El grado actual del alumno.
 	 * @return Los meses requeridos para ser apto para examen.
 	 */
 	private long obtenerMesesRequeridosParaExamen(int edad, TipoGrado tipoGrado) {
-		if (edad < 13) {
-			switch (tipoGrado) {
-			case BLANCO:
-				return 2;
-			case BLANCO_AMARILLO:
-				return 2;
-			case AMARILLO:
-				return 3;
-			case AMARILLO_NARANJA:
-				return 3;
-			case NARANJA:
-				return 4;
-			case NARANJA_VERDE:
-				return 4;
-			case VERDE:
-				return 6;
-			case VERDE_AZUL:
-				return 6;
-			case AZUL:
-				return 8;
-			case AZUL_ROJO:
-				return 10;
-			case ROJO:
-				return 12;
-			case ROJO_NEGRO_1_PUM:
-				return 24;
-			case ROJO_NEGRO_2_PUM:
-				return 36;
-			default:
-				return Long.MAX_VALUE; // No apto si no coincide
-			}
-		} else {
-			switch (tipoGrado) {
-			case BLANCO:
-				return 3;
-			case AMARILLO:
-				return 5;
-			case NARANJA:
-				return 6;
-			case VERDE:
-				return 8;
-			case AZUL:
-				return 10;
-			case ROJO:
-				return 12;
-			case NEGRO_1_DAN:
-				return 24;
-			case NEGRO_2_DAN:
-				return 36;
-			case NEGRO_3_DAN:
-				return 48;
-			case NEGRO_4_DAN:
-				return 60;
-			default:
-				return Long.MAX_VALUE; // No apto si no coincide
-			}
-		}
+		return examEligibilityConfig.obtenerMesesRequeridos(edad, tipoGrado);
 	}
 	
 	private void asignarMensualidadGeneralSiCorresponde(Alumno alumno) {

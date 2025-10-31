@@ -1,20 +1,92 @@
 package com.taemoi.project.entities;
 
+/**
+ * Enumeración que representa los diferentes tipos de grado en artes marciales.
+ * Incluye información sobre el nombre del grado, productos de examen asociados,
+ * y productos de recompensa.
+ */
 public enum TipoGrado {
-	BLANCO("Blanco"), BLANCO_AMARILLO("Blanco-Amarillo"), AMARILLO("Amarillo"), AMARILLO_NARANJA("Amarillo-Naranja"),
-	NARANJA("Naranja"), NARANJA_VERDE("Naranja-Verde"), VERDE("Verde"), VERDE_AZUL("Verde-Azul"), AZUL("Azul"),
-	AZUL_ROJO("Azul-Rojo"), ROJO("Rojo"), ROJO_NEGRO_1_PUM("Rojo-Negro-1-Pum"), ROJO_NEGRO_2_PUM("Rojo-Negro-2-Pum"),
-	ROJO_NEGRO_3_PUM("Rojo-Negro-3-Pum"), NEGRO_1_DAN("Negro-1-Dan"), NEGRO_2_DAN("Negro-2-Dan"),
-	NEGRO_3_DAN("Negro-3-Dan"), NEGRO_4_DAN("Negro-4-Dan"), NEGRO_5_DAN("Negro-5-Dan"),;
+	BLANCO("Blanco", null, null),
+	BLANCO_AMARILLO("Blanco-Amarillo", "DERECHO A EXAMEN BLANCO/AMARILLO", "DERECHO CAMBIO A BLANCO-AMARILLO RECOMPENSA"),
+	AMARILLO("Amarillo", "DERECHO A EXAMEN AMARILLO", "DERECHO DE CAMBIO A AMARILLO POR RECOMPENSA"),
+	AMARILLO_NARANJA("Amarillo-Naranja", "DERECHO A EXAMEN AMARILLO/NARANJA", "DERECHO DE CAMBIO A AMAR-NARANJA POR RECOMPENSA"),
+	NARANJA("Naranja", "DERECHO A EXAMEN NARANJA", "DERECHO DE CAMBIO A NARANJA POR RECOMPENSA"),
+	NARANJA_VERDE("Naranja-Verde", "DERECHO A EXAMEN NARANJA/VERDE", "DERECHO DE CAMBIO A NARANJA-VERDE POR RECOMPENSA"),
+	VERDE("Verde", "DERECHO A EXAMEN VERDE", "DERECHO DE CAMBIO A VERDE RECOMPENSA"),
+	VERDE_AZUL("Verde-Azul", "DERECHO A EXAMEN VERDE/AZUL", "DERECHO DE CAMBIO A VERDE-AZUL POR RECOMPENSA"),
+	AZUL("Azul", "DERECHO A EXAMEN AZUL", "DERECHO DE CAMBIO A AZUL POR RECOMPENSA"),
+	AZUL_ROJO("Azul-Rojo", "DERECHO A EXAMEN AZUL/ROJO", "DERECHO DE CAMBIO A AZUL-ROJO POR RECOMPENSA"),
+	ROJO("Rojo", "DERECHO A EXAMEN CINTURÓN ROJO  BORDADO", "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA"),
+	ROJO_NEGRO_1_PUM("Rojo-Negro-1-Pum", "DERECHO A EXAMEN ROJO/NEGRO 1º PUM", null),
+	ROJO_NEGRO_2_PUM("Rojo-Negro-2-Pum", "DERECHO A EXAMEN ROJO/NEGRO 2º PUM", null),
+	ROJO_NEGRO_3_PUM("Rojo-Negro-3-Pum", null, null),
+	NEGRO_1_DAN("Negro-1-Dan", "DERECHO A EXAMEN NEGRO 1º DAN", null),
+	NEGRO_2_DAN("Negro-2-Dan", "DERECHO A EXAMEN NEGRO 2º DAN", null),
+	NEGRO_3_DAN("Negro-3-Dan", "DERECHO A EXAMEN NEGRO 3º DAN", null),
+	NEGRO_4_DAN("Negro-4-Dan", null, null),
+	NEGRO_5_DAN("Negro-5-Dan", null, null);
 
 	private final String nombre;
+	private final String productoExamen;
+	private final String productoRecompensa;
 
-	private TipoGrado(String nombre) {
+	/**
+	 * Constructor del enum TipoGrado.
+	 *
+	 * @param nombre El nombre del grado.
+	 * @param productoExamen El nombre del producto asociado al derecho de examen.
+	 * @param productoRecompensa El nombre del producto asociado al pase de grado por recompensa.
+	 */
+	private TipoGrado(String nombre, String productoExamen, String productoRecompensa) {
 		this.nombre = nombre;
+		this.productoExamen = productoExamen;
+		this.productoRecompensa = productoRecompensa;
 	}
 
 	public String getNombre() {
 		return nombre;
+	}
+
+	/**
+	 * Obtiene el nombre del producto asociado a este grado.
+	 *
+	 * @param porRecompensa true si se requiere el producto de recompensa, false para el producto de examen normal.
+	 * @return El nombre del producto correspondiente.
+	 * @throws IllegalArgumentException si se solicita un producto de recompensa para un grado que no lo tiene,
+	 *                                  o si se solicita un producto de examen para un grado que no lo tiene.
+	 */
+	public String obtenerNombreProducto(boolean porRecompensa) {
+		if (porRecompensa) {
+			if (productoRecompensa == null) {
+				throw new IllegalArgumentException(
+					"El grado " + nombre + " no tiene producto de recompensa asociado");
+			}
+			return productoRecompensa;
+		} else {
+			if (productoExamen == null) {
+				throw new IllegalArgumentException(
+					"El grado " + nombre + " no tiene producto de examen asociado");
+			}
+			return productoExamen;
+		}
+	}
+
+	/**
+	 * Verifica si este grado tiene un producto de examen asociado.
+	 *
+	 * @return true si tiene producto de examen, false en caso contrario.
+	 */
+	public boolean tieneProductoExamen() {
+		return productoExamen != null;
+	}
+
+	/**
+	 * Verifica si este grado tiene un producto de recompensa asociado.
+	 *
+	 * @return true si tiene producto de recompensa, false en caso contrario.
+	 */
+	public boolean tieneProductoRecompensa() {
+		return productoRecompensa != null;
 	}
 
 	/**
