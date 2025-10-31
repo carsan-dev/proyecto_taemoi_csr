@@ -11,19 +11,33 @@ and spaces are replaced with underscores. No URL encoding is used.
 This ensures documento and imagen URLs work correctly without percent-encoding.
 
 Tables migrated:
-  - grado (pre-populated)
-  - categoria (pre-populated)
+  - grado (generated to match InicializadorDatos.java logic)
+  - categoria (generated to match InicializadorDatos.java logic)
   - alumno (with all fields)
   - imagen (from FOTOS_ALUMNOS)
   - documento (from DOCUMENTOS_VINCULADOS)
-  - grupo (from AUX_GT_GRUPOS)
-  - turno (from AUX_GRUPOS unique combinations)
-  - alumno_grupo (student-group assignments)
-  - alumno_turno (student-schedule assignments)
+  - grupo (generated to match InicializadorDatos.java logic)
+  - turno (generated to match InicializadorDatos.java logic)
+  - alumno_grupo (student-group assignments mapped to predefined grupos)
+  - alumno_turno (student-schedule assignments mapped to predefined turnos)
   - producto (from PAGOS unique concepts)
   - producto_alumno (from PAGOS)
   - convocatoria (from EXAMENES unique ID_CONVEXAM)
   - alumno_convocatoria (from EXAMENES)
+
+Important: Grupos and Turnos Generation
+----------------------------------------
+This script generates SQL INSERT statements for grupos and turnos that match exactly
+what InicializadorDatos.java creates. The predefined schedules are:
+  - Taekwondo Lunes y Miércoles (3 turnos: 17:00-18:00, 18:00-19:00, 19:00-20:30)
+  - Taekwondo Martes y Jueves (3 turnos: 17:00-18:00, 18:00-19:00, 19:00-20:00)
+  - Taekwondo Competición (Jueves 20:00-21:30)
+  - Pilates Martes y Jueves (10:00-11:15)
+  - Kickboxing Lunes y Miércoles (20:30-21:30)
+  - Defensa Personal Femenina Lunes y Miércoles (09:30-10:30)
+
+Access database schedules from AUX_GRUPOS are mapped to these predefined schedules
+based on day of week, time slots, and activity type.
 
 Important: foto_alumno_id Linking
 ----------------------------------
@@ -37,6 +51,17 @@ Process:
 3. UPDATE alumnos: SET foto_alumno_id = imagen.id WHERE matching numero_expediente
 
 Verification queries are included at the end of the generated SQL file.
+
+Important: SQL File Self-Contained
+-----------------------------------
+The generated SQL file is completely self-contained and includes all necessary data:
+  - Grados, categorias, grupos, and turnos (matching InicializadorDatos.java logic)
+  - Alumnos, images, documents from Access database
+  - Products and payments from Access database
+  - Exam calls and assignments from Access database
+
+You can run the generated SQL file directly without needing to start the backend first.
+Note: InicializadorDatos.java uses INSERT IGNORE, so it won't conflict with the migration data.
 
 Usage:
   python migrate_to_mysql_v7.py --access "path/to/database.mdb" --out "output.sql" --schema taemoi_test --env [local|server|docker] --base-url "https://yourdomain.com"
@@ -484,8 +509,8 @@ def fetch_all(conn, table: str) -> List[Dict[str, Any]]:
 # ========== MIGRATION LOGIC ==========
 
 def write_grados(f, schema: str):
-    """Pre-populate grado table with all TipoGrado enum values"""
-    f.write("-- ===== GRADO (pre-populated) =====\n")
+    """Generate grado INSERT statements (matching InicializadorDatos logic)"""
+    f.write("-- ===== GRADO (generated to match InicializadorDatos.java) =====\n")
 
     grados = [
         "BLANCO", "BLANCO_AMARILLO", "AMARILLO", "AMARILLO_NARANJA",
@@ -496,13 +521,13 @@ def write_grados(f, schema: str):
     ]
 
     for grado in grados:
-        f.write(f"INSERT INTO `{schema}`.`grado` (`tipo_grado`) VALUES ('{grado}');\n")
+        f.write(f"INSERT IGNORE INTO `{schema}`.`grado` (`tipo_grado`) VALUES ('{grado}');\n")
 
     f.write("\n")
 
 def write_categorias(f, schema: str):
-    """Pre-populate categoria table"""
-    f.write("-- ===== CATEGORIA (pre-populated) =====\n")
+    """Generate categoria INSERT statements (matching InicializadorDatos logic)"""
+    f.write("-- ===== CATEGORIA (generated to match InicializadorDatos.java) =====\n")
 
     categorias = [
         ("Precadete", "PRECADETE"),
@@ -513,7 +538,7 @@ def write_categorias(f, schema: str):
     ]
 
     for nombre, tipo in categorias:
-        f.write(f"INSERT INTO `{schema}`.`categoria` (`nombre`, `tipo_categoria`) VALUES ('{nombre}', '{tipo}');\n")
+        f.write(f"INSERT IGNORE INTO `{schema}`.`categoria` (`nombre`, `tipo_categoria`) VALUES ('{nombre}', '{tipo}');\n")
 
     f.write("\n")
 
@@ -783,127 +808,241 @@ def write_documentos(f, schema: str, rows: List[Dict[str, Any]], alumnos: List[D
     stats["documento"] = {"processed": processed, "orphans": orphans}
     f.write(f"\n-- Processed: {processed}, Orphans: {orphans}\n\n")
 
+def map_to_predefined_grupo(dia: Optional[str], hora_inicio: Optional[str], hora_fin: Optional[str],
+                             old_grupo: Optional[str]) -> Optional[str]:
+    """
+    Map Access database schedule data to predefined grupo names from InicializadorDatos.
+
+    Predefined grupos and their schedules:
+    - Taekwondo Lunes y Miércoles Primer Turno: Lunes/Miércoles 17:00-18:00
+    - Taekwondo Lunes y Miércoles Segundo Turno: Lunes/Miércoles 18:00-19:00
+    - Taekwondo Lunes y Miércoles Tercer Turno: Lunes/Miércoles 19:00-20:30
+    - Taekwondo Martes y Jueves Primer Turno: Martes/Jueves 17:00-18:00
+    - Taekwondo Martes y Jueves Segundo Turno: Martes/Jueves 18:00-19:00
+    - Taekwondo Martes y Jueves Tercer Turno: Martes/Jueves 19:00-20:00
+    - Taekwondo Competición: Jueves 20:00-21:30
+    - Pilates Martes y Jueves: Martes/Jueves 10:00-11:15
+    - Kickboxing Lunes y Miércoles: Lunes/Miércoles 20:30-21:30
+    - Defensa Personal Femenina Lunes y Miércoles: Lunes/Miércoles 09:30-10:30
+    """
+    if not dia or not hora_inicio or not hora_fin:
+        return None
+
+    dia = dia.strip()
+    old_grupo_upper = old_grupo.upper() if old_grupo else ""
+
+    # Normalize day names
+    dia_normalized = dia.lower()
+
+    # Defensa Personal Femenina
+    if "DEFENSA" in old_grupo_upper or "FEMENINA" in old_grupo_upper:
+        if dia_normalized in ["lunes", "miércoles", "miercoles"] and hora_inicio == "09:30" and hora_fin == "10:30":
+            return "Defensa Personal Femenina Lunes y Miércoles"
+
+    # Pilates
+    if "PILATES" in old_grupo_upper:
+        if dia_normalized in ["martes", "jueves"] and hora_inicio == "10:00" and hora_fin == "11:15":
+            return "Pilates Martes y Jueves"
+
+    # Kickboxing
+    if "KICK" in old_grupo_upper or "KBX" in old_grupo_upper:
+        if dia_normalized in ["lunes", "miércoles", "miercoles"] and hora_inicio == "20:30" and hora_fin == "21:30":
+            return "Kickboxing Lunes y Miércoles"
+
+    # Taekwondo Competición
+    if "COMPETICION" in old_grupo_upper or "COMPETICIÓN" in old_grupo_upper:
+        if dia_normalized == "jueves" and hora_inicio == "20:00" and hora_fin == "21:30":
+            return "Taekwondo Competición"
+
+    # Taekwondo - Lunes y Miércoles
+    if dia_normalized in ["lunes", "miércoles", "miercoles"]:
+        if hora_inicio == "17:00" and hora_fin == "18:00":
+            return "Taekwondo Lunes y Miércoles Primer Turno"
+        elif hora_inicio == "18:00" and hora_fin == "19:00":
+            return "Taekwondo Lunes y Miércoles Segundo Turno"
+        elif hora_inicio == "19:00" and hora_fin == "20:30":
+            return "Taekwondo Lunes y Miércoles Tercer Turno"
+
+    # Taekwondo - Martes y Jueves
+    if dia_normalized in ["martes", "jueves"]:
+        if hora_inicio == "17:00" and hora_fin == "18:00":
+            return "Taekwondo Martes y Jueves Primer Turno"
+        elif hora_inicio == "18:00" and hora_fin == "19:00":
+            return "Taekwondo Martes y Jueves Segundo Turno"
+        elif hora_inicio == "19:00" and hora_fin == "20:00":
+            return "Taekwondo Martes y Jueves Tercer Turno"
+
+    # Default fallback: try to infer from old grupo name and time
+    # This handles cases where the schedule might not perfectly match
+    if "TAEKWONDO" in old_grupo_upper or old_grupo_upper == "":
+        if dia_normalized in ["lunes", "miércoles", "miercoles"]:
+            # Try to map based on approximate time ranges
+            hora_int = int(hora_inicio.split(":")[0])
+            if 16 <= hora_int < 18:
+                return "Taekwondo Lunes y Miércoles Primer Turno"
+            elif 18 <= hora_int < 19:
+                return "Taekwondo Lunes y Miércoles Segundo Turno"
+            elif 19 <= hora_int < 21:
+                return "Taekwondo Lunes y Miércoles Tercer Turno"
+        elif dia_normalized in ["martes", "jueves"]:
+            hora_int = int(hora_inicio.split(":")[0])
+            if 16 <= hora_int < 18:
+                return "Taekwondo Martes y Jueves Primer Turno"
+            elif 18 <= hora_int < 19:
+                return "Taekwondo Martes y Jueves Segundo Turno"
+            elif 19 <= hora_int < 21:
+                return "Taekwondo Martes y Jueves Tercer Turno"
+
+    return None
+
 def write_grupos_turnos_relations(f, schema: str, aux_grupos: List[Dict[str, Any]], stats: Dict):
-    """Write grupos, turnos, and relationship tables"""
+    """
+    Generate grupos and turnos INSERT statements (matching InicializadorDatos logic),
+    then assign alumnos to them based on Access database data.
+    """
 
-    # Extract unique grupos
-    f.write("-- ===== GRUPO =====\n")
-    grupos_set = set()
+    # ===== GENERATE GRUPOS (matching InicializadorDatos.java) =====
+    f.write("-- ===== GRUPO (generated to match InicializadorDatos.java) =====\n")
+
+    predefined_grupos = [
+        ("Taekwondo Lunes y Miércoles Primer Turno", "Taekwondo"),
+        ("Taekwondo Lunes y Miércoles Segundo Turno", "Taekwondo"),
+        ("Taekwondo Lunes y Miércoles Tercer Turno", "Taekwondo"),
+        ("Taekwondo Martes y Jueves Primer Turno", "Taekwondo"),
+        ("Taekwondo Martes y Jueves Segundo Turno", "Taekwondo"),
+        ("Taekwondo Martes y Jueves Tercer Turno", "Taekwondo"),
+        ("Taekwondo Competición", "Taekwondo Competición"),
+        ("Pilates Martes y Jueves", "Pilates"),
+        ("Kickboxing Lunes y Miércoles", "Kickboxing"),
+        ("Defensa Personal Femenina Lunes y Miércoles", "Defensa Personal Femenina"),
+    ]
+
+    for nombre, tipo in predefined_grupos:
+        f.write(f"INSERT IGNORE INTO `{schema}`.`grupo` (`nombre`, `tipo`) VALUES ('{sql_escape(nombre)}', '{sql_escape(tipo)}');\n")
+
+    f.write(f"\n-- Generated: {len(predefined_grupos)} grupos\n\n")
+
+    # ===== GENERATE TURNOS (matching InicializadorDatos.java) =====
+    f.write("-- ===== TURNO (generated to match InicializadorDatos.java) =====\n")
+
+    # Define turnos exactly as in InicializadorDatos.java
+    predefined_turnos = [
+        # Lunes
+        ("Lunes", "09:30", "10:30", "Defensa Personal Femenina Lunes y Miércoles", "Defensa Personal Femenina Lunes"),
+        ("Lunes", "17:00", "18:00", "Taekwondo Lunes y Miércoles Primer Turno", "Taekwondo Primer Turno Lunes"),
+        ("Lunes", "18:00", "19:00", "Taekwondo Lunes y Miércoles Segundo Turno", "Taekwondo Segundo Turno Lunes"),
+        ("Lunes", "19:00", "20:30", "Taekwondo Lunes y Miércoles Tercer Turno", "Taekwondo Tercer Turno Lunes"),
+        ("Lunes", "20:30", "21:30", "Kickboxing Lunes y Miércoles", "Kickboxing Lunes"),
+        # Martes
+        ("Martes", "10:00", "11:15", "Pilates Martes y Jueves", "Pilates Martes"),
+        ("Martes", "17:00", "18:00", "Taekwondo Martes y Jueves Primer Turno", "Taekwondo Primer Turno Martes"),
+        ("Martes", "18:00", "19:00", "Taekwondo Martes y Jueves Segundo Turno", "Taekwondo Segundo Turno Martes"),
+        ("Martes", "19:00", "20:00", "Taekwondo Martes y Jueves Tercer Turno", "Taekwondo Tercer Turno Martes"),
+        # Miércoles
+        ("Miércoles", "09:30", "10:30", "Defensa Personal Femenina Lunes y Miércoles", "Defensa Personal Femenina Miércoles"),
+        ("Miércoles", "17:00", "18:00", "Taekwondo Lunes y Miércoles Primer Turno", "Taekwondo Primer Turno Miércoles"),
+        ("Miércoles", "18:00", "19:00", "Taekwondo Lunes y Miércoles Segundo Turno", "Taekwondo Segundo Turno Miércoles"),
+        ("Miércoles", "19:00", "20:30", "Taekwondo Lunes y Miércoles Tercer Turno", "Taekwondo Tercer Turno Miércoles"),
+        ("Miércoles", "20:30", "21:30", "Kickboxing Lunes y Miércoles", "Kickboxing Miércoles"),
+        # Jueves
+        ("Jueves", "10:00", "11:15", "Pilates Martes y Jueves", "Pilates Jueves"),
+        ("Jueves", "17:00", "18:00", "Taekwondo Martes y Jueves Primer Turno", "Taekwondo Primer Turno Jueves"),
+        ("Jueves", "18:00", "19:00", "Taekwondo Martes y Jueves Segundo Turno", "Taekwondo Segundo Turno Jueves"),
+        ("Jueves", "19:00", "20:00", "Taekwondo Martes y Jueves Tercer Turno", "Taekwondo Tercer Turno Jueves"),
+        ("Jueves", "20:00", "21:30", "Taekwondo Competición", "Taekwondo Competición"),
+    ]
+
+    for dia, hora_inicio, hora_fin, grupo_nombre, tipo in predefined_turnos:
+        grupo_fk = f"(SELECT id FROM `{schema}`.`grupo` WHERE `nombre` = '{sql_escape(grupo_nombre)}' LIMIT 1)"
+        f.write(f"INSERT IGNORE INTO `{schema}`.`turno` (`dia_semana`, `hora_inicio`, `hora_fin`, `tipo`, `grupo_id`) ")
+        f.write(f"VALUES ('{dia}', '{hora_inicio}', '{hora_fin}', '{sql_escape(tipo)}', {grupo_fk});\n")
+
+    f.write(f"\n-- Generated: {len(predefined_turnos)} turnos\n\n")
+
+    # ===== ASSIGN ALUMNOS TO GRUPOS AND TURNOS =====
+    f.write("-- ===== ALUMNO ASSIGNMENTS TO GRUPOS AND TURNOS =====\n")
+
+    # Map Access data to predefined grupos
+    alumno_grupo_map = {}  # exp -> set of grupo names
+    alumno_turno_map = {}  # exp -> set of (grupo_name, dia, hora_inicio, hora_fin)
+
+    unmapped_count = 0
     for r in aux_grupos:
-        grupo_text = r.get("Turno")  # Actually the group name
-        if grupo_text:
-            grupos_set.add(str(grupo_text).strip())
+        exp = r.get("Exp")
+        if not exp:
+            continue
 
-    grupo_count = 0
-    for grupo in sorted(grupos_set):
-        tipo = "TAEKWONDO"  # Default
-        if "KICK" in grupo.upper() or "KBX" in grupo.upper():
-            tipo = "KICKBOXING"
-        elif "PILATES" in grupo.upper():
-            tipo = "PILATES"
-
-        f.write(f"INSERT INTO `{schema}`.`grupo` (`nombre`, `tipo`) VALUES ('{sql_escape(grupo)}', '{tipo}');\n")
-        grupo_count += 1
-    f.write(f"\n-- Processed: {grupo_count}\n\n")
-
-    # Extract unique turnos
-    f.write("-- ===== TURNO =====\n")
-    turnos_map = {}  # key: (dia, hora_inicio, hora_fin, grupo) -> id
-    turno_id = 1
-
-    for r in aux_grupos:
         dia = map_dia_semana(r.get("DIA") or r.get("DiaSemana"))
         hora_inicio = parse_time(r.get("HoraInicio"))
         hora_fin = parse_time(r.get("HoraFin"))
-        grupo_text = str(r.get("Turno", "")).strip()
+        old_grupo = str(r.get("Turno", "")).strip()
 
-        if not (dia and hora_inicio and hora_fin and grupo_text):
+        # Map to predefined grupo
+        grupo_name = map_to_predefined_grupo(dia, hora_inicio, hora_fin, old_grupo)
+
+        if not grupo_name:
+            unmapped_count += 1
             continue
 
-        key = (dia, hora_inicio, hora_fin, grupo_text)
-        if key not in turnos_map:
-            turnos_map[key] = turno_id
-            turno_id += 1
+        # Track grupo assignments
+        if exp not in alumno_grupo_map:
+            alumno_grupo_map[exp] = set()
+        alumno_grupo_map[exp].add(grupo_name)
 
-    for (dia, hora_inicio, hora_fin, grupo_text), tid in sorted(turnos_map.items(), key=lambda x: x[1]):
-        tipo = "TAEKWONDO"
-        if "KICK" in grupo_text.upper() or "KBX" in grupo_text.upper():
-            tipo = "KICKBOXING"
-        elif "PILATES" in grupo_text.upper():
-            tipo = "PILATES"
+        # Track turno assignments (grupo + specific schedule)
+        if exp not in alumno_turno_map:
+            alumno_turno_map[exp] = set()
+        if dia and hora_inicio and hora_fin:
+            alumno_turno_map[exp].add((grupo_name, dia, hora_inicio, hora_fin))
 
-        grupo_fk = f"(SELECT id FROM `{schema}`.`grupo` WHERE `nombre` = '{sql_escape(grupo_text)}' LIMIT 1)"
-
-        cols = ["dia_semana", "hora_inicio", "hora_fin", "tipo", "grupo_id"]
-        vals = [sql_str_or_null(dia), sql_str_or_null(hora_inicio), sql_str_or_null(hora_fin), sql_str_or_null(tipo), grupo_fk]
-
-        f.write(f"INSERT INTO `{schema}`.`turno` ({', '.join(f'`{c}`' for c in cols)}) VALUES ({', '.join(vals)});\n")
-
-    turno_count = len(turnos_map)
-    f.write(f"\n-- Processed: {turno_count}\n\n")
-
-    # alumno_grupo relationships
+    # Write alumno_grupo relationships
     f.write("-- ===== ALUMNO_GRUPO =====\n")
     ag_count = 0
     ag_orphans = 0
 
-    for r in aux_grupos:
-        exp = r.get("Exp")
-        grupo_text = str(r.get("Turno", "")).strip()
-
-        if not grupo_text:
-            continue
-
+    for exp, grupo_names in alumno_grupo_map.items():
         fk_alumno, is_orphan = fk_alumno_subquery(schema, exp)
         if is_orphan:
-            ag_orphans += 1
+            ag_orphans += len(grupo_names)
             continue
 
-        grupo_fk = f"(SELECT id FROM `{schema}`.`grupo` WHERE `nombre` = '{sql_escape(grupo_text)}' LIMIT 1)"
-
-        f.write(f"INSERT IGNORE INTO `{schema}`.`alumno_grupo` (`alumno_id`, `grupo_id`) VALUES ({fk_alumno}, {grupo_fk});\n")
-        ag_count += 1
+        for grupo_name in grupo_names:
+            grupo_fk = f"(SELECT id FROM `{schema}`.`grupo` WHERE `nombre` = '{sql_escape(grupo_name)}' LIMIT 1)"
+            f.write(f"INSERT IGNORE INTO `{schema}`.`alumno_grupo` (`alumno_id`, `grupo_id`) VALUES ({fk_alumno}, {grupo_fk});\n")
+            ag_count += 1
 
     f.write(f"\n-- Processed: {ag_count}, Orphans: {ag_orphans}\n\n")
 
-    # alumno_turno relationships
+    # Write alumno_turno relationships
     f.write("-- ===== ALUMNO_TURNO =====\n")
     at_count = 0
     at_orphans = 0
 
-    for r in aux_grupos:
-        exp = r.get("Exp")
-        dia = map_dia_semana(r.get("DIA") or r.get("DiaSemana"))
-        hora_inicio = parse_time(r.get("HoraInicio"))
-        hora_fin = parse_time(r.get("HoraFin"))
-        grupo_text = str(r.get("Turno", "")).strip()
-
-        if not (dia and hora_inicio and hora_fin and grupo_text):
-            continue
-
+    for exp, turno_data in alumno_turno_map.items():
         fk_alumno, is_orphan = fk_alumno_subquery(schema, exp)
         if is_orphan:
-            at_orphans += 1
+            at_orphans += len(turno_data)
             continue
 
-        # Find turno by matching dia, horas, and grupo
-        turno_fk = f"""(SELECT t.id FROM `{schema}`.`turno` t
-        JOIN `{schema}`.`grupo` g ON t.`grupo_id` = g.`id`
-        WHERE t.`dia_semana` = '{dia}'
-        AND t.`hora_inicio` = '{hora_inicio}'
-        AND t.`hora_fin` = '{hora_fin}'
-        AND g.`nombre` = '{sql_escape(grupo_text)}'
-        LIMIT 1)"""
+        for grupo_name, dia, hora_inicio, hora_fin in turno_data:
+            # Find turno by matching grupo, dia, and horas
+            turno_fk = f"""(SELECT t.id FROM `{schema}`.`turno` t
+            JOIN `{schema}`.`grupo` g ON t.`grupo_id` = g.`id`
+            WHERE g.`nombre` = '{sql_escape(grupo_name)}'
+            AND t.`dia_semana` = '{dia}'
+            AND t.`hora_inicio` = '{hora_inicio}'
+            AND t.`hora_fin` = '{hora_fin}'
+            LIMIT 1)"""
 
-        f.write(f"INSERT IGNORE INTO `{schema}`.`alumno_turno` (`alumno_id`, `turno_id`) VALUES ({fk_alumno}, {turno_fk});\n")
-        at_count += 1
+            f.write(f"INSERT IGNORE INTO `{schema}`.`alumno_turno` (`alumno_id`, `turno_id`) VALUES ({fk_alumno}, {turno_fk});\n")
+            at_count += 1
 
-    f.write(f"\n-- Processed: {at_count}, Orphans: {at_orphans}\n\n")
+    f.write(f"\n-- Processed: {at_count}, Orphans: {at_orphans}, Unmapped schedules: {unmapped_count}\n\n")
 
-    stats["grupo"] = {"processed": grupo_count}
-    stats["turno"] = {"processed": turno_count}
+    stats["grupo"] = {"generated": len(predefined_grupos)}
+    stats["turno"] = {"generated": len(predefined_turnos)}
     stats["alumno_grupo"] = {"processed": ag_count, "orphans": ag_orphans}
-    stats["alumno_turno"] = {"processed": at_count, "orphans": at_orphans}
+    stats["alumno_turno"] = {"processed": at_count, "orphans": at_orphans, "unmapped": unmapped_count}
 
 def write_productos_pagos(f, schema: str, pagos: List[Dict[str, Any]], stats: Dict):
     """Write producto and producto_alumno tables"""
