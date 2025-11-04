@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 
 import jakarta.annotation.PostConstruct;
@@ -51,10 +52,15 @@ public class TarifaConfig {
 		cuantias.put(TipoTarifa.INFANTIL_GRUPO, 20.0);
 
 		// Tarifa para hermanos
-		cuantias.put(TipoTarifa.HERMANOS, 23.0);
+		cuantias.put(TipoTarifa.HERMANOS, 26.0);
+
+		// Tarifas para Kickboxing
+		cuantias.put(TipoTarifa.KICKBOXING_PADRES_HIJOS, 0.0); // Variable según rol
+		cuantias.put(TipoTarifa.KICKBOXING_HERMANOS, 26.0);
+		cuantias.put(TipoTarifa.KICKBOXING_FAMILIAR, 0.0);
 
 		// Tarifas individuales infantiles
-		cuantias.put(TipoTarifa.INFANTIL, 25.0);
+		cuantias.put(TipoTarifa.INFANTIL, 28.0);
 
 		// Tarifas individuales adultos y actividades
 		cuantias.put(TipoTarifa.ADULTO, 30.0);
@@ -78,6 +84,38 @@ public class TarifaConfig {
 		}
 
 		return cuantias.getOrDefault(tipoTarifa, CUANTIA_DEFAULT);
+	}
+
+	/**
+	 * Obtiene la cuantía asociada a un tipo de tarifa, considerando el rol familiar.
+	 * Este método es especialmente útil para la tarifa PADRES_HIJOS, donde el precio
+	 * varía según si el alumno es el padre (28€) o el hijo (26€).
+	 *
+	 * @param tipoTarifa El tipo de tarifa.
+	 * @param rolFamiliar El rol familiar del alumno (PADRE, HIJO, NINGUNO).
+	 * @return La cuantía correspondiente.
+	 * @throws IllegalArgumentException si tipoTarifa es null.
+	 */
+	public double obtenerCuantiaConRol(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar) {
+		if (tipoTarifa == null) {
+			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
+		}
+
+		// Para PADRES_HIJOS y KICKBOXING_PADRES_HIJOS, el precio depende del rol
+		if ((tipoTarifa == TipoTarifa.PADRES_HIJOS || tipoTarifa == TipoTarifa.KICKBOXING_PADRES_HIJOS) && rolFamiliar != null) {
+			switch (rolFamiliar) {
+				case PADRE:
+					return 28.0; // Precio para el padre
+				case HIJO:
+					return 26.0; // Precio para el hijo
+				case NINGUNO:
+				default:
+					return CUANTIA_DEFAULT;
+			}
+		}
+
+		// Para otros tipos de tarifa, usar la cuantía estándar
+		return obtenerCuantia(tipoTarifa);
 	}
 
 	/**
