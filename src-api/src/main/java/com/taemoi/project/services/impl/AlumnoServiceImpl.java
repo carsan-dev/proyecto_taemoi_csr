@@ -39,6 +39,7 @@ import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
@@ -256,7 +257,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Set a default tarifa amount if it's not set or invalid
 		if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
-			alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa()));
+			RolFamiliar rolFamiliar = alumno.getRolFamiliar() != null ? alumno.getRolFamiliar() : RolFamiliar.NINGUNO;
+			alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa(), rolFamiliar));
 		}
 
 		// Set web authorization default if not set
@@ -309,12 +311,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+		nuevoAlumno.setRolFamiliar(nuevoAlumnoDTO.getRolFamiliar() != null ? nuevoAlumnoDTO.getRolFamiliar() : RolFamiliar.NINGUNO);
+		nuevoAlumno.setGrupoFamiliar(nuevoAlumnoDTO.getGrupoFamiliar());
 		nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
 		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
 		if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
-			nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa()));
+			nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa(), nuevoAlumno.getRolFamiliar()));
 		} else {
 			nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
 		}
@@ -477,6 +481,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setEmail(alumnoActualizado.getEmail());
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
 			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
+			alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null ? alumnoActualizado.getRolFamiliar() : RolFamiliar.NINGUNO);
+			alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
 			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
@@ -546,7 +552,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			// Si no se especifica una cuantía de tarifa o es inválida, se asigna una por
 			// defecto
 			if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
-				alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa()));
+				alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa(), alumnoExistente.getRolFamiliar()));
 			} else {
 				alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
 			}
@@ -787,6 +793,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
 		return tarifaConfig.obtenerCuantia(tipoTarifa);
+	}
+
+	/**
+	 * Asigna la cuantía de la tarifa según el tipo de tarifa y el rol familiar.
+	 * Este método considera el rol familiar para la tarifa PADRES_HIJOS, donde el
+	 * precio varía según si el alumno es el padre (28€) o el hijo (26€).
+	 *
+	 * @param tipoTarifa El tipo de tarifa del alumno.
+	 * @param rolFamiliar El rol familiar del alumno (PADRE, HIJO, NINGUNO).
+	 * @return La cuantía asignada.
+	 */
+	@Override
+	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar) {
+		return tarifaConfig.obtenerCuantiaConRol(tipoTarifa, rolFamiliar);
 	}
 
 	/**
