@@ -179,8 +179,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Loads all alumno IDs to know the total count and which alumno corresponds to each page
    * Page 1 = first alumno, Page 2 = second alumno, etc.
+   * @param callback Optional callback to execute after IDs are loaded
    */
-  cargarTodosLosAlumnosIds(): void {
+  cargarTodosLosAlumnosIds(callback?: () => void): void {
     this.endpointsService.obtenerAlumnosSinPaginar(this.mostrarInactivos).subscribe({
       next: (alumnos: any[]) => {
         // Extract IDs from the alumnos array
@@ -188,7 +189,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.totalPaginas = this.alumnosIds.length;
 
         // Set up route parameter subscription (only once)
-        this.setupRouteSubscription();
+        if (!this.routeSubscription) {
+          this.setupRouteSubscription();
+        }
+
+        // Execute callback if provided
+        if (callback) {
+          callback();
+        }
       },
       error: () => {
         Swal.fire({
@@ -216,8 +224,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       if (idParam) {
         this.procesarParametroRuta(idParam);
       } else if (this.alumnosIds.length > 0) {
-        // No ID in URL, navigate to first alumno
-        this.router.navigate(['/alumnosEditar', 1], { replaceUrl: true });
+        // No ID in URL, navigate to first alumno by its ID
+        const firstAlumnoId = this.alumnosIds[0];
+        this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
       }
     });
   }
@@ -230,29 +239,86 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Process the route parameter - could be an alumno ID or a page number
+   * Process the route parameter - always treated as an alumno ID
    */
   private procesarParametroRuta(idParam: number): void {
-    // Check if this is an alumno ID (from listado-alumnos) or a page number
+    // Check if this alumno ID exists in our current list
     const pageIndex = this.alumnosIds.indexOf(idParam);
 
     if (pageIndex !== -1) {
       // It's an alumno ID that exists in our list
-      // Calculate the page number (1-indexed)
+      // Calculate the page number (1-indexed) for pagination display
       const pageNumber = pageIndex + 1;
       this.paginaActual = pageNumber;
 
-      // Navigate to the correct page number URL (don't reload, just replace)
-      this.router.navigate(['/alumnosEditar', pageNumber], { replaceUrl: true });
+      // Load this alumno
       this.cargarAlumno(idParam);
-    } else if (idParam > 0 && idParam <= this.totalPaginas) {
-      // It's a valid page number - load the corresponding alumno
-      this.paginaActual = idParam;
-      const alumnoId = this.alumnosIds[idParam - 1]; // Arrays are 0-indexed
+    } else {
+      // ID not found in current list - might be a new alumno or inactive alumno
+      // Try to load it directly to see if it exists
+      this.intentarCargarAlumnoNoEncontrado(idParam);
+    }
+  }
+
+  /**
+   * Attempts to load an alumno that wasn't found in the current alumnosIds array.
+   * This handles cases where:
+   * - A newly created alumno is being accessed
+   * - An inactive alumno is being accessed while mostrarInactivos is false
+   */
+  private intentarCargarAlumnoNoEncontrado(alumnoId: number): void {
+    this.endpointsService.obtenerAlumnoPorId(alumnoId).subscribe({
+      next: (alumnoResponse: any) => {
+        // Alumno exists! Check if we need to toggle inactive filter
+        const esInactivo = alumnoResponse.fechaBaja != null;
+
+        if (esInactivo && !this.mostrarInactivos) {
+          // This is an inactive alumno but we're not showing inactive ones
+          // Toggle the filter and reload the list
+          this.mostrarInactivos = true;
+          this.cargarTodosLosAlumnosIds(() => {
+            this.navegarAAlumno(alumnoId);
+          });
+        } else {
+          // Alumno exists and matches our filter, but wasn't in the array
+          // This means the array needs to be refreshed (e.g., newly created alumno)
+          this.cargarTodosLosAlumnosIds(() => {
+            this.navegarAAlumno(alumnoId);
+          });
+        }
+      },
+      error: () => {
+        // Alumno doesn't exist - navigate to first alumno
+        Swal.fire({
+          title: 'Alumno no encontrado',
+          text: 'El alumno solicitado no existe.',
+          icon: 'error',
+          timer: 2000,
+        });
+        if (this.alumnosIds.length > 0) {
+          const firstAlumnoId = this.alumnosIds[0];
+          this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
+        }
+      },
+    });
+  }
+
+  /**
+   * Navigates to a specific alumno by ID, updating the page number accordingly
+   */
+  private navegarAAlumno(alumnoId: number): void {
+    const pageIndex = this.alumnosIds.indexOf(alumnoId);
+    if (pageIndex !== -1) {
+      const pageNumber = pageIndex + 1;
+      this.paginaActual = pageNumber;
+      this.router.navigate(['/alumnosEditar', alumnoId], { replaceUrl: true });
       this.cargarAlumno(alumnoId);
     } else {
-      // Invalid ID/page, navigate to first page
-      this.router.navigate(['/alumnosEditar', 1], { replaceUrl: true });
+      // Still not found after refresh - navigate to first alumno if available
+      if (this.alumnosIds.length > 0) {
+        const firstAlumnoId = this.alumnosIds[0];
+        this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
+      }
     }
   }
 
@@ -301,8 +367,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return; // Invalid page number
     }
 
-    // Just navigate - the route subscription will handle loading the alumno
-    this.router.navigate(['/alumnosEditar', pageNumber]);
+    // Convert page number to alumno ID
+    const alumnoId = this.alumnosIds[pageNumber - 1]; // Arrays are 0-indexed
+
+    // Navigate using the alumno ID, not the page number
+    this.router.navigate(['/alumnosEditar', alumnoId]);
   }
 
   obtenerProductosAlumno(alumnoId: number) {
@@ -1260,8 +1329,27 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Toggle showing inactive alumnos and reload the list
    */
   alternarInactivos(): void {
+    const alumnoIdActual = this.alumno?.id;
     this.mostrarInactivos = !this.mostrarInactivos;
+
     // Reload the IDs list with new filter
-    this.cargarTodosLosAlumnosIds();
+    this.cargarTodosLosAlumnosIds(() => {
+      // If we have a current alumno, try to stay on it
+      if (alumnoIdActual) {
+        const pageIndex = this.alumnosIds.indexOf(alumnoIdActual);
+        if (pageIndex !== -1) {
+          // Alumno still in list, update page number and stay on this alumno
+          const pageNumber = pageIndex + 1;
+          this.paginaActual = pageNumber;
+          this.router.navigate(['/alumnosEditar', alumnoIdActual], { replaceUrl: true });
+        } else {
+          // Alumno not in filtered list, navigate to first alumno
+          if (this.alumnosIds.length > 0) {
+            const firstAlumnoId = this.alumnosIds[0];
+            this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
+          }
+        }
+      }
+    });
   }
 }
