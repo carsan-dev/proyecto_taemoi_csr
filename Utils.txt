@@ -29,20 +29,26 @@ python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi
 
 TODO:
 
-the mensualidad product have to have diferent prices depending on the tipo_tarifa in the alumn. the adults 30, non adults 28, hermanos 26, padre hijo the father 28 and the child 26 (i have to be capable of asociating a father with his child with some logic)
+✔ the mensualidad product have to have diferent prices depending on the tipo_tarifa in the alumn. the adults 30, non adults 28, hermanos 26, padre hijo the father 28 and the child 26 (i have to be capable of asociating a father with his child with some logic)
 
-Change the taekwondo asociated tipo tarifa for removing PILATES and DEFENSA_PERSONAL_FEMENINA, the kickboxing asociated to create tipo tarifa for especifically kickboxing with the actual prices in the asociated kickboxing tipo tarifa and the Pilates and Defensa_Personal_Femenina with the tipo_tarifa with his names
+✔ Change the taekwondo asociated tipo tarifa for removing PILATES and DEFENSA_PERSONAL_FEMENINA, the kickboxing asociated to create tipo tarifa for especifically kickboxing with the actual prices in the asociated kickboxing tipo tarifa and the Pilates and Defensa_Personal_Femenina with the tipo_tarifa with his names
 
-if the age introduced in the crear alumno is infantil (follow the logic in the app to know what alumns are kids or adults. Search for menor de 13 or similar) the grados are showing in the grados selector are all, but if adult, the grados are only the complete grados. If i change the age, change the showing grades respectively
+✔ check the logic in the app that when the alumn esMenor, the selector shows all the grades but if not esMenor shows only the adult grades for when i change the age, the selector have to show me the corrects grades 
 
-change all the filters for search by name to follow the logic in the filter in listado-alumnos for wait a little to search
+✔ change all the filters for search by name to follow the logic in the filter in listado-alumnos for wait a little to search
 
-repair the pagination or redo for correct functioning, because when i create a new alumn, the pagination cant showing it in the editar-alumno page.
+✔ add a filter for searching by name in grupo-alumnos modal and in gestionar alumnos del grupo
 
-remove the closeAdminMenu console log
+✔ repair the pagination or redo for correct functioning, because when i create a new alumn, the pagination cant showing it in the editar-alumno page and when clicking a new alumn or an inactive alumn, the page redirecting me to an active alumn but no the selected alumn
 
-add a filter for searching by name in grupo-alumnos modal
+✔ when clicking crear convocatoria, doesnt appears any swall message and i want a confirmation with the following message (Vas a crear una convocatoria de "Deporte" para "fechaConvocatoria". Estás seguro?) and the option to change the sport. Create to a input for selecting the fechaConvocatoria
 
-when clicking crear convocatoria, doesnt appears any swall message and i want a confirmation with the following message (Vas a crear una convocatoria de "Deporte" para "fechaConvocatoria". Estás seguro?) and the option to change the sport. Create to a input for selecting the fechaConvocatoria 
+✔ fix the listado-convocatorias component to show the convocatoria details more accesible, atractive and modern
 
-fix the listado-convocatorias component to show the convocatoria details more accesible and atractive and modern
+✔ remove the closeAdminMenu console log 
+
+⚙️ the kickboxing alumns only have one tipo_tarifa that costs 30 and the MATRICULA is 20 for kickboxing
+
+❌ add in listado eventos an option to show or occult the events in the events page and add in crear evento the option to create showing or create occult
+
+❌ the image from the alumn in editar-alumno doesnt ampliates when clicking
