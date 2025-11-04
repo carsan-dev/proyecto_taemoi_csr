@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
+import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
 
@@ -25,6 +26,7 @@ export class CrearAlumnoComponent implements OnInit {
   imagen: File | null = null;
   imagenPreview: string | ArrayBuffer | null = null;
   tiposTarifa: TipoTarifa[] = Object.values(TipoTarifa);
+  rolesFamiliares: RolFamiliar[] = Object.values(RolFamiliar);
   grados: any[] = [];
   todosLosGrados: any[] = [];
 
@@ -62,6 +64,8 @@ export class CrearAlumnoComponent implements OnInit {
       fechaAlta: ['', Validators.required],
       autorizacionWeb: [true, Validators.required],
       tipoTarifa: [TipoTarifa.ADULTO, Validators.required],
+      rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
+      grupoFamiliar: [{ value: '', disabled: true }],
       grado: ['', Validators.required],
       competidor: [false],
       peso: [{ value: null, disabled: true }, Validators.required],
@@ -87,6 +91,30 @@ export class CrearAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  onTipoTarifaChange(event: any): void {
+    const tipoTarifa = event.target.value;
+
+    // Reset family fields
+    this.alumnoData.get('rolFamiliar')?.setValue(RolFamiliar.NINGUNO);
+    this.alumnoData.get('grupoFamiliar')?.setValue('');
+    this.alumnoData.get('rolFamiliar')?.disable();
+    this.alumnoData.get('grupoFamiliar')?.disable();
+    this.alumnoData.get('rolFamiliar')?.clearValidators();
+    this.alumnoData.get('grupoFamiliar')?.clearValidators();
+
+    // Enable fields based on tarifa type
+    if (tipoTarifa === TipoTarifa.PADRES_HIJOS || tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+      this.alumnoData.get('rolFamiliar')?.enable();
+      this.alumnoData.get('rolFamiliar')?.setValidators(Validators.required);
+    } else if (tipoTarifa === TipoTarifa.HERMANOS || tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+      this.alumnoData.get('grupoFamiliar')?.enable();
+      this.alumnoData.get('grupoFamiliar')?.setValidators(Validators.required);
+    }
+
+    this.alumnoData.get('rolFamiliar')?.updateValueAndValidity();
+    this.alumnoData.get('grupoFamiliar')?.updateValueAndValidity();
   }
 
   onSubmit(): void {
@@ -170,28 +198,43 @@ export class CrearAlumnoComponent implements OnInit {
 
     if (selectedDeporte === 'TAEKWONDO') {
       this.showAllFields();
-      this.tiposTarifa = Object.values(TipoTarifa);
+      // Tarifas para Taekwondo (excluir Pilates, Defensa Personal y Kickboxing)
+      this.tiposTarifa = [
+        TipoTarifa.ADULTO,
+        TipoTarifa.ADULTO_GRUPO,
+        TipoTarifa.INFANTIL,
+        TipoTarifa.INFANTIL_GRUPO,
+        TipoTarifa.HERMANOS,
+        TipoTarifa.PADRES_HIJOS,
+        TipoTarifa.FAMILIAR,
+      ];
       this.grados = this.todosLosGrados;
     } else if (selectedDeporte === 'KICKBOXING') {
       this.showAllFields();
+      // Tarifas específicas para Kickboxing
       this.tiposTarifa = [
-        TipoTarifa.PADRES_HIJOS,
-        TipoTarifa.HERMANOS,
-        TipoTarifa.FAMILIAR,
+        TipoTarifa.KICKBOXING_PADRES_HIJOS,
+        TipoTarifa.KICKBOXING_HERMANOS,
+        TipoTarifa.KICKBOXING_FAMILIAR,
       ];
       this.filtrarGradosParaKickboxing();
-    } else if (
-      selectedDeporte === 'PILATES' &&
-      selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA'
-    ) {
+    } else if (selectedDeporte === 'PILATES') {
       this.hideFieldsForPilatesOrDefPersFem();
-      this.tiposTarifa = [];
+      // Solo tarifa PILATES
+      this.tiposTarifa = [TipoTarifa.PILATES];
+      this.grados = [];
+    } else if (selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA') {
+      this.hideFieldsForPilatesOrDefPersFem();
+      // Solo tarifa DEFENSA_PERSONAL_FEMENINA
+      this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
       this.grados = [];
     }
   }
 
   resetFormControls(): void {
     this.alumnoData.get('tipoTarifa')?.clearValidators();
+    this.alumnoData.get('rolFamiliar')?.clearValidators();
+    this.alumnoData.get('grupoFamiliar')?.clearValidators();
     this.alumnoData.get('grado')?.clearValidators();
     this.alumnoData.get('competidor')?.clearValidators();
     this.alumnoData.get('tieneLicencia')?.clearValidators();
@@ -199,6 +242,8 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('fechaLicencia')?.clearValidators();
 
     this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
+    this.alumnoData.get('rolFamiliar')?.updateValueAndValidity();
+    this.alumnoData.get('grupoFamiliar')?.updateValueAndValidity();
     this.alumnoData.get('grado')?.updateValueAndValidity();
     this.alumnoData.get('competidor')?.updateValueAndValidity();
     this.alumnoData.get('tieneLicencia')?.updateValueAndValidity();
@@ -206,6 +251,8 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
 
     this.alumnoData.get('tipoTarifa')?.enable();
+    this.alumnoData.get('rolFamiliar')?.disable();
+    this.alumnoData.get('grupoFamiliar')?.disable();
     this.alumnoData.get('grado')?.enable();
     this.alumnoData.get('competidor')?.enable();
     this.alumnoData.get('tieneLicencia')?.enable();
