@@ -193,7 +193,13 @@ export class CrearAlumnoComponent implements OnInit {
           // Scroll to top after success message
           this.scrollService.scrollToTop();
         });
-        this.router.navigate(['/alumnosListar']);
+        // Navigate directly to edit page with the newly created alumno's ID
+        if (response && response.id) {
+          this.router.navigate(['/alumnosEditar', response.id]);
+        } else {
+          // Fallback to list page if ID is not available
+          this.router.navigate(['/alumnosListar']);
+        }
       },
       error: (error) => {
         Swal.fire({
