@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
+import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
@@ -27,6 +28,7 @@ export class CrearAlumnoComponent implements OnInit {
   imagenPreview: string | ArrayBuffer | null = null;
   tiposTarifa: TipoTarifa[] = Object.values(TipoTarifa);
   rolesFamiliares: RolFamiliar[] = Object.values(RolFamiliar);
+  tiposGrado: TipoGrado[] = [];
   grados: any[] = [];
   todosLosGrados: any[] = [];
 
@@ -40,6 +42,13 @@ export class CrearAlumnoComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.cargarGrados();
+
+    // Subscribe to fechaNacimiento changes to update available grades
+    this.alumnoData.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
+      if (valor) {
+        this.obtenerGradosDisponibles(valor);
+      }
+    });
   }
 
   initForm(): void {
@@ -91,6 +100,58 @@ export class CrearAlumnoComponent implements OnInit {
         });
       },
     });
+  }
+
+  obtenerGradosDisponibles(fechaNacimiento: string): void {
+    this.endpointsService.obtenerGradosPorFechaNacimiento(fechaNacimiento).subscribe({
+      next: (tiposGrado: TipoGrado[]) => {
+        this.tiposGrado = tiposGrado;
+        this.aplicarFiltrosGrado();
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los grados disponibles.',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  aplicarFiltrosGrado(): void {
+    const deporteSeleccionado = this.alumnoData.get('deporte')?.value;
+    let gradosFiltrados = this.todosLosGrados;
+
+    // First, filter by sport
+    if (deporteSeleccionado === 'KICKBOXING') {
+      const gradosKickboxing = [
+        'BLANCO',
+        'AMARILLO',
+        'NARANJA',
+        'VERDE',
+        'AZUL',
+        'ROJO',
+        'NEGRO_1_DAN',
+        'NEGRO_2_DAN',
+        'NEGRO_3_DAN',
+        'NEGRO_4_DAN',
+        'NEGRO_5_DAN',
+      ];
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        gradosKickboxing.includes(grado.tipoGrado)
+      );
+    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
+      gradosFiltrados = [];
+    }
+
+    // Then, filter by age if tiposGrado has values
+    if (this.tiposGrado.length > 0) {
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        this.tiposGrado.includes(grado.tipoGrado)
+      );
+    }
+
+    this.grados = gradosFiltrados;
   }
 
   onTipoTarifaChange(event: any): void {
@@ -208,7 +269,7 @@ export class CrearAlumnoComponent implements OnInit {
         TipoTarifa.PADRES_HIJOS,
         TipoTarifa.FAMILIAR,
       ];
-      this.grados = this.todosLosGrados;
+      this.aplicarFiltrosGrado();
     } else if (selectedDeporte === 'KICKBOXING') {
       this.showAllFields();
       // Tarifas específicas para Kickboxing
@@ -217,17 +278,17 @@ export class CrearAlumnoComponent implements OnInit {
         TipoTarifa.KICKBOXING_HERMANOS,
         TipoTarifa.KICKBOXING_FAMILIAR,
       ];
-      this.filtrarGradosParaKickboxing();
+      this.aplicarFiltrosGrado();
     } else if (selectedDeporte === 'PILATES') {
       this.hideFieldsForPilatesOrDefPersFem();
       // Solo tarifa PILATES
       this.tiposTarifa = [TipoTarifa.PILATES];
-      this.grados = [];
+      this.aplicarFiltrosGrado();
     } else if (selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA') {
       this.hideFieldsForPilatesOrDefPersFem();
       // Solo tarifa DEFENSA_PERSONAL_FEMENINA
       this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
-      this.grados = [];
+      this.aplicarFiltrosGrado();
     }
   }
 
@@ -284,25 +345,6 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('grado')?.updateValueAndValidity();
     this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
     this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
-  }
-
-  filtrarGradosParaKickboxing(): void {
-    const gradosCompletos = [
-      'BLANCO',
-      'AMARILLO',
-      'NARANJA',
-      'VERDE',
-      'AZUL',
-      'ROJO',
-      'NEGRO_1_DAN',
-      'NEGRO_2_DAN',
-      'NEGRO_3_DAN',
-      'NEGRO_4_DAN',
-      'NEGRO_5_DAN',
-    ];
-    this.grados = this.todosLosGrados.filter((grado) =>
-      gradosCompletos.includes(grado.tipoGrado)
-    );
   }
 
   getGradoNombre(grado: any): string {
