@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
@@ -6,6 +6,8 @@ import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.s
 import { CommonModule, Location } from '@angular/common';
 import { PaginacionComponent } from '../../../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-seleccionar-alumnos',
@@ -14,7 +16,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './seleccionar-alumnos.component.html',
   styleUrl: './seleccionar-alumnos.component.scss',
 })
-export class SeleccionarAlumnosComponent implements OnInit {
+export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   alumnos: AlumnoDTO[] = [];
   grupoId!: number;
   alumnosSeleccionados: number[] = [];
@@ -24,6 +26,7 @@ export class SeleccionarAlumnosComponent implements OnInit {
   alumnosEnGrupo: AlumnoDTO[] = [];
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  private searchSubject = new Subject<string>();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -37,6 +40,19 @@ export class SeleccionarAlumnosComponent implements OnInit {
       this.grupoId = +params['id'];
       this.cargarGrupoYAlumnos();
     });
+
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(500), // Wait 500ms after user stops typing
+      distinctUntilChanged() // Only trigger if value actually changed
+    ).subscribe(() => {
+      this.paginaActual = 1;
+      this.cargarAlumnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject.complete();
   }
 
   cargarGrupoYAlumnos(): void {
@@ -124,8 +140,7 @@ export class SeleccionarAlumnosComponent implements OnInit {
   }
 
   filtrarPorNombre(): void {
-    this.paginaActual = 1;
-    this.cargarAlumnos();
+    this.searchSubject.next(this.nombreFiltro);
   }
 
   volver() {

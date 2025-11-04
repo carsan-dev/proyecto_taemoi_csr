@@ -12,6 +12,25 @@
         </button>
       </div>
 
+      <!-- Search Filter -->
+      <div class="mb-3">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar alumno por nombre..."
+            [(ngModel)]="nombreFiltro"
+            (ngModelChange)="onSearchChange()"
+            aria-label="Buscar alumno por nombre">
+        </div>
+        <small class="text-muted mt-1 d-block" *ngIf="nombreFiltro">
+          Mostrando {{ alumnosFiltrados.length }} de {{ alumnos.length }} alumnos
+        </small>
+      </div>
+
       <ul class="mt-4 p-0">
         <li *ngFor="let alumno of alumnosPaginados" class="list-group-item d-flex justify-content-between align-items-center">
           <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
@@ -27,7 +46,7 @@
           </div>
         </li>
         <li *ngIf="!alumnosPaginados || alumnosPaginados.length === 0" class="list-group-item text-center text-muted">
-          No hay alumnos en este grupo
+          {{ nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo' }}
         </li>
       </ul>
 

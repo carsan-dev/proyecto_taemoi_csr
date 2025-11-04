@@ -22,10 +22,29 @@
           <span>Total de alumnos: <strong>{{ alumnos.length || 0 }}</strong></span>
         </div>
 
+        <!-- Search Filter -->
+        <div class="search-container mb-3">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar alumno por nombre..."
+              [(ngModel)]="nombreFiltro"
+              (ngModelChange)="onSearchChange()"
+              aria-label="Buscar alumno por nombre">
+          </div>
+          <small class="text-muted" *ngIf="nombreFiltro">
+            Mostrando {{ alumnosFiltrados.length }} de {{ alumnos.length }} alumnos
+          </small>
+        </div>
+
         <!-- Alumnos Grid -->
         <div class="alumnos-grid" *ngIf="alumnosPaginados && alumnosPaginados.length > 0; else noAlumnos">
           <div class="alumno-card" *ngFor="let alumno of alumnosPaginados">
-            <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-link" (click)="cerrarModal()">
+            <a class="alumno-link" (click)="navegarAAlumno(alumno)" style="cursor: pointer;">
               <div class="alumno-avatar">
                 <img *ngIf="alumno.fotoAlumno?.url"
                      [src]="alumno.fotoAlumno.url"
@@ -53,7 +72,9 @@
         <ng-template #noAlumnos>
           <div class="no-alumnos">
             <i class="bi bi-inbox no-alumnos-icon"></i>
-            <p class="no-alumnos-text">No hay alumnos en este grupo</p>
+            <p class="no-alumnos-text">
+              {{ nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo' }}
+            </p>
           </div>
         </ng-template>
 

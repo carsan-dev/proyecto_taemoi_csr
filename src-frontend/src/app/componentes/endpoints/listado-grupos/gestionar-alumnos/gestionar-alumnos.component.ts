@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import Swal from 'sweetalert2';
 import { AlumnoDTO } from '../../../../interfaces/alumno-dto';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -7,6 +7,8 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { CommonModule, Location } from '@angular/common';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
 import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-gestionar-alumnos',
@@ -15,14 +17,17 @@ import { PaginacionComponent } from '../../../generales/paginacion/paginacion.co
   templateUrl: './gestionar-alumnos.component.html',
   styleUrl: './gestionar-alumnos.component.scss',
 })
-export class GestionarAlumnosComponent implements OnInit {
+export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   grupo!: GrupoDTO;
   grupoId!: number;
   alumnos: AlumnoDTO[] = [];
+  alumnosFiltrados: AlumnoDTO[] = [];
   alumnosPaginados: AlumnoDTO[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
+  nombreFiltro: string = '';
+  private searchSubject = new Subject<string>();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -36,6 +41,18 @@ export class GestionarAlumnosComponent implements OnInit {
       this.grupoId = +params['id'];
       this.cargarGrupo();
     });
+
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(300), // Wait 300ms after user stops typing
+      distinctUntilChanged() // Only trigger if value actually changed
+    ).subscribe(() => {
+      this.filtrarAlumnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject.complete();
   }
 
   cargarGrupo(): void {
@@ -43,7 +60,8 @@ export class GestionarAlumnosComponent implements OnInit {
       next: (grupo: GrupoDTO) => {
         this.grupo = grupo;
         this.alumnos = grupo.alumnos;
-        this.totalPaginas = Math.ceil(this.alumnos.length / this.tamanoPagina);
+        this.alumnosFiltrados = grupo.alumnos;
+        this.totalPaginas = Math.ceil(this.alumnosFiltrados.length / this.tamanoPagina);
         this.cambiarPagina(1);
       },
       error: () => {
@@ -60,7 +78,24 @@ export class GestionarAlumnosComponent implements OnInit {
     this.paginaActual = pageNumber;
     const startIndex = (pageNumber - 1) * this.tamanoPagina;
     const endIndex = startIndex + this.tamanoPagina;
-    this.alumnosPaginados = this.alumnos.slice(startIndex, endIndex);
+    this.alumnosPaginados = this.alumnosFiltrados.slice(startIndex, endIndex);
+  }
+
+  filtrarAlumnos(): void {
+    if (!this.nombreFiltro || this.nombreFiltro.trim() === '') {
+      this.alumnosFiltrados = this.alumnos;
+    } else {
+      const filtroLowerCase = this.nombreFiltro.toLowerCase().trim();
+      this.alumnosFiltrados = this.alumnos.filter(alumno =>
+        `${alumno.nombre} ${alumno.apellidos}`.toLowerCase().includes(filtroLowerCase)
+      );
+    }
+    this.totalPaginas = Math.ceil(this.alumnosFiltrados.length / this.tamanoPagina);
+    this.cambiarPagina(1);
+  }
+
+  onSearchChange(): void {
+    this.searchSubject.next(this.nombreFiltro);
   }
 
   redirigirSeleccionarAlumnos(): void {
