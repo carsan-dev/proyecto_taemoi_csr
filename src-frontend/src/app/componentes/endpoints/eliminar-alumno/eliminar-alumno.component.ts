@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-eliminar-alumno',
@@ -12,18 +14,32 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
   templateUrl: './eliminar-alumno.component.html',
   styleUrl: './eliminar-alumno.component.scss',
 })
-export class EliminarAlumnoComponent implements OnInit {
+export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   alumnos: any[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  private searchSubject = new Subject<string>();
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerAlumnos();
+
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(500), // Wait 500ms after user stops typing
+      distinctUntilChanged() // Only trigger if value actually changed
+    ).subscribe(() => {
+      this.paginaActual = 1;
+      this.obtenerAlumnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject.complete();
   }
 
   obtenerAlumnos() {
@@ -240,8 +256,7 @@ export class EliminarAlumnoComponent implements OnInit {
   }
 
   filtrarPorNombre(): void {
-    this.paginaActual = 1;
-    this.obtenerAlumnos();
+    this.searchSubject.next(this.nombreFiltro);
   }
 
   alternarInactivos(): void {
