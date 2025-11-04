@@ -99,9 +99,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   closeAdminMenu(): void {
-    console.log('closeAdminMenu called');
     this.adminMenuVisible = false;
-    // Collapse all sections when closing the menu
     Object.keys(this.expandedSections).forEach(key => {
       this.expandedSections[key] = false;
     });
