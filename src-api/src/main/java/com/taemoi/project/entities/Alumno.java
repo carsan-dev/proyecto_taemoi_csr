@@ -74,6 +74,13 @@ public class Alumno {
 	@PositiveOrZero(message = "La cuantía de la tarifa debe ser un valor positivo o cero")
 	private Double cuantiaTarifa;
 
+	@NotNull(message = "El rol familiar no puede ser nulo")
+	@Enumerated(EnumType.STRING)
+	private RolFamiliar rolFamiliar = RolFamiliar.NINGUNO;
+
+	@Column(length = 50)
+	private String grupoFamiliar;
+
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
 
@@ -189,6 +196,22 @@ public class Alumno {
 
 	public void setCuantiaTarifa(Double cuantiaTarifa) {
 		this.cuantiaTarifa = cuantiaTarifa;
+	}
+
+	public RolFamiliar getRolFamiliar() {
+		return rolFamiliar;
+	}
+
+	public void setRolFamiliar(RolFamiliar rolFamiliar) {
+		this.rolFamiliar = rolFamiliar;
+	}
+
+	public String getGrupoFamiliar() {
+		return grupoFamiliar;
+	}
+
+	public void setGrupoFamiliar(String grupoFamiliar) {
+		this.grupoFamiliar = grupoFamiliar;
 	}
 
 	public Integer getNumeroExpediente() {

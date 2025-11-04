@@ -5,6 +5,7 @@ import java.util.Date;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 
 public class AlumnoDTO {
@@ -19,6 +20,8 @@ public class AlumnoDTO {
 	private Integer telefono;
 	private Double cuantiaTarifa;
 	private TipoTarifa tipoTarifa;
+	private RolFamiliar rolFamiliar;
+	private String grupoFamiliar;
 	private Date fechaAlta;
 	private Date fechaBaja;
 	private Boolean activo;
@@ -39,9 +42,10 @@ public class AlumnoDTO {
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
-			Date fechaAlta, Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso,
-			Date fechaPeso, Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno,
-			Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
+			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaBaja, Boolean activo,
+			Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso, Deporte deporte, String categoria,
+			String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia, Integer numeroLicencia,
+			Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -53,6 +57,8 @@ public class AlumnoDTO {
 		this.telefono = telefono;
 		this.cuantiaTarifa = cuantiaTarifa;
 		this.tipoTarifa = tipoTarifa;
+		this.rolFamiliar = rolFamiliar;
+		this.grupoFamiliar = grupoFamiliar;
 		this.fechaAlta = fechaAlta;
 		this.fechaBaja = fechaBaja;
 		this.activo = activo;
@@ -248,6 +254,22 @@ public class AlumnoDTO {
 		this.cuantiaTarifa = cuantiaTarifa;
 	}
 
+	public RolFamiliar getRolFamiliar() {
+		return rolFamiliar;
+	}
+
+	public void setRolFamiliar(RolFamiliar rolFamiliar) {
+		this.rolFamiliar = rolFamiliar;
+	}
+
+	public String getGrupoFamiliar() {
+		return grupoFamiliar;
+	}
+
+	public void setGrupoFamiliar(String grupoFamiliar) {
+		this.grupoFamiliar = grupoFamiliar;
+	}
+
 	public Imagen getFotoAlumno() {
 		return fotoAlumno;
 	}
@@ -320,10 +342,11 @@ public class AlumnoDTO {
 
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
-				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getFechaAlta(), alumno.getFechaBaja(),
-				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
-				alumno.getFechaPeso(), alumno.getDeporte(), categoriaNombre, gradoTipo, alumno.getFechaGrado(),
-				alumno.getFotoAlumno(), alumno.getTieneLicencia(), alumno.getNumeroLicencia(),
-				alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(), alumno.getAptoParaExamen());
+				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
+				alumno.getFechaAlta(), alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(),
+				alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(), categoriaNombre,
+				gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
+				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
+				alumno.getAptoParaExamen());
 	}
 }
