@@ -609,8 +609,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService
       .obtenerGradosPorFechaNacimiento(fechaNacimiento)
       .subscribe({
-        next: (grados: TipoGrado[]) => {
-          this.tiposGrado = grados;
+        next: (tiposGrado: TipoGrado[]) => {
+          this.tiposGrado = tiposGrado;
+          this.aplicarFiltrosGrado();
         },
         error: () => {
           Swal.fire({
@@ -620,6 +621,45 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           });
         },
       });
+  }
+
+  /**
+   * Aplica filtros de deporte y edad para determinar los grados disponibles.
+   */
+  aplicarFiltrosGrado(): void {
+    const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
+    let gradosFiltrados = this.todosLosGrados;
+
+    // First, filter by sport
+    if (deporteSeleccionado === 'KICKBOXING') {
+      const gradosKickboxing = [
+        'BLANCO',
+        'AMARILLO',
+        'NARANJA',
+        'VERDE',
+        'AZUL',
+        'ROJO',
+        'NEGRO_1_DAN',
+        'NEGRO_2_DAN',
+        'NEGRO_3_DAN',
+        'NEGRO_4_DAN',
+        'NEGRO_5_DAN',
+      ];
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        gradosKickboxing.includes(grado.tipoGrado)
+      );
+    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
+      gradosFiltrados = [];
+    }
+
+    // Then, filter by age if tiposGrado has values
+    if (this.tiposGrado.length > 0) {
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        this.tiposGrado.includes(grado.tipoGrado)
+      );
+    }
+
+    this.grados = gradosFiltrados;
   }
 
   /**
@@ -716,7 +756,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         TipoTarifa.PADRES_HIJOS,
         TipoTarifa.FAMILIAR,
       ];
-      this.grados = this.todosLosGrados;
+      this.aplicarFiltrosGrado();
     } else if (deporteSeleccionado === 'KICKBOXING') {
       this.showAllFields();
       // Tarifas específicas para Kickboxing
@@ -725,17 +765,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         TipoTarifa.KICKBOXING_HERMANOS,
         TipoTarifa.KICKBOXING_FAMILIAR,
       ];
-      this.filtrarGradosParaKickboxing();
+      this.aplicarFiltrosGrado();
     } else if (deporteSeleccionado === 'PILATES') {
       this.hideFieldsForPilatesOrDefPersFem();
       // Solo tarifa PILATES
       this.tiposTarifa = [TipoTarifa.PILATES];
-      this.grados = [];
+      this.aplicarFiltrosGrado();
     } else if (deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
       this.hideFieldsForPilatesOrDefPersFem();
       // Solo tarifa DEFENSA_PERSONAL_FEMENINA
       this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
-      this.grados = [];
+      this.aplicarFiltrosGrado();
     }
   }
 
@@ -851,25 +891,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.alumnoForm.get('grado')?.updateValueAndValidity();
     this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
     this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
-  }
-
-  filtrarGradosParaKickboxing(): void {
-    const gradosCompletos = [
-      'BLANCO',
-      'AMARILLO',
-      'NARANJA',
-      'VERDE',
-      'AZUL',
-      'ROJO',
-      'NEGRO_1_DAN',
-      'NEGRO_2_DAN',
-      'NEGRO_3_DAN',
-      'NEGRO_4_DAN',
-      'NEGRO_5_DAN',
-    ];
-    this.grados = this.todosLosGrados.filter((grado) =>
-      gradosCompletos.includes(grado.tipoGrado)
-    );
   }
 
   getGradoNombre(grado: any): string {
