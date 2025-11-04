@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
+import { RolFamiliar } from '../../../enums/rol-familiar';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { formatDate } from '../../../utilities/formatear-fecha';
@@ -54,6 +55,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   // Opciones de dropdown
   tiposTarifa = Object.values(TipoTarifa);
+  rolesFamiliares = Object.values(RolFamiliar);
   tiposGrado = Object.values(TipoGrado);
   deportes = [
     'TAEKWONDO',
@@ -115,6 +117,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           ],
         ],
         tipoTarifa: ['', Validators.required],
+        rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
+        grupoFamiliar: [{ value: '', disabled: true }],
         deporte: ['', Validators.required],
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
@@ -159,6 +163,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.alumnoForm.get('cuantiaTarifa')?.setValue(nuevaCuantia);
       }
       this.tipoTarifaEditado = true;
+
+      // Handle family fields
+      this.onTipoTarifaChange(tipoTarifa);
     });
     this.alumnoForm.get('competidor')?.valueChanges.subscribe((isCompetidor) => {
       this.handleCompetidorFields(isCompetidor);
@@ -389,6 +396,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
       cuantiaTarifa: alumno.cuantiaTarifa,
+      rolFamiliar: alumno.rolFamiliar || RolFamiliar.NINGUNO,
+      grupoFamiliar: alumno.grupoFamiliar || '',
       peso,
       fechaPeso,
       competidor: alumno.competidor,
@@ -400,6 +409,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       tieneDiscapacidad: alumno.tieneDiscapacidad,
     });
     this.onDeporteChange(alumno.deporte);
+
+    // Enable family fields if needed when loading existing data
+    if (alumno.tipoTarifa === TipoTarifa.PADRES_HIJOS || alumno.tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+      this.alumnoForm.get('rolFamiliar')?.enable();
+    } else if (alumno.tipoTarifa === TipoTarifa.HERMANOS || alumno.tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+      this.alumnoForm.get('grupoFamiliar')?.enable();
+    }
   }
 
   /**
@@ -690,22 +706,34 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     if (deporteSeleccionado === 'TAEKWONDO') {
       this.showAllFields();
-      this.tiposTarifa = Object.values(TipoTarifa);
+      // Tarifas para Taekwondo (excluir Pilates, Defensa Personal y Kickboxing)
+      this.tiposTarifa = [
+        TipoTarifa.ADULTO,
+        TipoTarifa.ADULTO_GRUPO,
+        TipoTarifa.INFANTIL,
+        TipoTarifa.INFANTIL_GRUPO,
+        TipoTarifa.HERMANOS,
+        TipoTarifa.PADRES_HIJOS,
+        TipoTarifa.FAMILIAR,
+      ];
       this.grados = this.todosLosGrados;
     } else if (deporteSeleccionado === 'KICKBOXING') {
       this.showAllFields();
+      // Tarifas específicas para Kickboxing
       this.tiposTarifa = [
-        TipoTarifa.PADRES_HIJOS,
-        TipoTarifa.HERMANOS,
-        TipoTarifa.FAMILIAR,
+        TipoTarifa.KICKBOXING_PADRES_HIJOS,
+        TipoTarifa.KICKBOXING_HERMANOS,
+        TipoTarifa.KICKBOXING_FAMILIAR,
       ];
       this.filtrarGradosParaKickboxing();
     } else if (deporteSeleccionado === 'PILATES') {
       this.hideFieldsForPilatesOrDefPersFem();
+      // Solo tarifa PILATES
       this.tiposTarifa = [TipoTarifa.PILATES];
       this.grados = [];
     } else if (deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
       this.hideFieldsForPilatesOrDefPersFem();
+      // Solo tarifa DEFENSA_PERSONAL_FEMENINA
       this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
       this.grados = [];
     }
@@ -1104,16 +1132,53 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       case TipoTarifa.FAMILIAR:
         return 0.0;
       case TipoTarifa.INFANTIL:
-        return 25.0;
+        return 28.0;
       case TipoTarifa.INFANTIL_GRUPO:
         return 20.0;
       case TipoTarifa.HERMANOS:
-        return 23.0;
+        return 26.0;
       case TipoTarifa.PADRES_HIJOS:
+      case TipoTarifa.KICKBOXING_PADRES_HIJOS:
+        // For PADRES_HIJOS and KICKBOXING_PADRES_HIJOS, the price depends on the rol
+        const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
+        if (rolFamiliar === RolFamiliar.PADRE) {
+          return 28.0;
+        } else if (rolFamiliar === RolFamiliar.HIJO) {
+          return 26.0;
+        }
+        return 0.0;
+      case TipoTarifa.KICKBOXING_HERMANOS:
+        return 26.0;
+      case TipoTarifa.KICKBOXING_FAMILIAR:
         return 0.0;
       default:
         throw new Error('Tipo de descuento no válido');
     }
+  }
+
+  /**
+   * Handles changes to tipo tarifa to show/hide family fields
+   */
+  onTipoTarifaChange(tipoTarifa: string): void {
+    // Reset family fields
+    this.alumnoForm.get('rolFamiliar')?.setValue(RolFamiliar.NINGUNO);
+    this.alumnoForm.get('grupoFamiliar')?.setValue('');
+    this.alumnoForm.get('rolFamiliar')?.disable();
+    this.alumnoForm.get('grupoFamiliar')?.disable();
+    this.alumnoForm.get('rolFamiliar')?.clearValidators();
+    this.alumnoForm.get('grupoFamiliar')?.clearValidators();
+
+    // Enable fields based on tarifa type
+    if (tipoTarifa === TipoTarifa.PADRES_HIJOS || tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+      this.alumnoForm.get('rolFamiliar')?.enable();
+      this.alumnoForm.get('rolFamiliar')?.setValidators(Validators.required);
+    } else if (tipoTarifa === TipoTarifa.HERMANOS || tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+      this.alumnoForm.get('grupoFamiliar')?.enable();
+      this.alumnoForm.get('grupoFamiliar')?.setValidators(Validators.required);
+    }
+
+    this.alumnoForm.get('rolFamiliar')?.updateValueAndValidity();
+    this.alumnoForm.get('grupoFamiliar')?.updateValueAndValidity();
   }
 
   /**

@@ -820,6 +820,61 @@
                   </div>
                 </div>
 
+                <!-- Rol Familiar (solo para PADRES_HIJOS) -->
+                <div class="col-12 col-md-6" *ngIf="alumnoForm.get('rolFamiliar')?.enabled">
+                  <div class="admin-form-field" [class.is-invalid]="alumnoForm.get('rolFamiliar')?.errors && alumnoForm.get('rolFamiliar')?.touched" [class.is-valid]="alumnoForm.get('rolFamiliar')?.valid && alumnoForm.get('rolFamiliar')?.touched">
+                    <label for="rolFamiliar">
+                      <i class="bi bi-people-fill"></i>
+                      Rol Familiar
+                      <span class="required">*</span>
+                    </label>
+                    <select
+                      class="admin-form-control form-select"
+                      id="rolFamiliar"
+                      formControlName="rolFamiliar"
+                      aria-label="Rol familiar"
+                      aria-required="true">
+                      <option value="" disabled>Selecciona un rol</option>
+                      <option *ngFor="let rol of rolesFamiliares" [value]="rol">{{ rol }}</option>
+                    </select>
+                    <div *ngIf="alumnoForm.get('rolFamiliar')?.errors && alumnoForm.get('rolFamiliar')?.touched" class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El rol familiar es obligatorio para tarifa PADRES_HIJOS
+                    </div>
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>PADRE paga 28€, HIJO paga 26€</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Grupo Familiar (solo para HERMANOS) -->
+                <div class="col-12 col-md-6" *ngIf="alumnoForm.get('grupoFamiliar')?.enabled">
+                  <div class="admin-form-field" [class.is-invalid]="alumnoForm.get('grupoFamiliar')?.errors && alumnoForm.get('grupoFamiliar')?.touched" [class.is-valid]="alumnoForm.get('grupoFamiliar')?.valid && alumnoForm.get('grupoFamiliar')?.touched">
+                    <label for="grupoFamiliar">
+                      <i class="bi bi-house-heart-fill"></i>
+                      Grupo Familiar
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="admin-form-control"
+                      id="grupoFamiliar"
+                      formControlName="grupoFamiliar"
+                      placeholder="Ej: FAMILIA_GARCIA"
+                      aria-label="Grupo familiar"
+                      aria-required="true" />
+                    <div *ngIf="alumnoForm.get('grupoFamiliar')?.errors && alumnoForm.get('grupoFamiliar')?.touched" class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El grupo familiar es obligatorio para tarifa HERMANOS
+                    </div>
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Los hermanos deben tener el mismo nombre de grupo familiar</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="col-12 col-md-6">
                   <div class="admin-form-field" [class.is-invalid]="alumnoForm.get('cuantiaTarifa')?.errors && alumnoForm.get('cuantiaTarifa')?.touched" [class.is-valid]="alumnoForm.get('cuantiaTarifa')?.valid && alumnoForm.get('cuantiaTarifa')?.touched">
                     <label for="cuantiaTarifa">
