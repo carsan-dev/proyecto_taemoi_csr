@@ -1,17 +1,42 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { trigger, transition, style, animate } from '@angular/animations';
+
+@Pipe({
+  name: 'filter',
+  standalone: true
+})
+export class FilterPipe implements PipeTransform {
+  transform(items: any[], property: string, value: any): any[] {
+    if (!items || !property) {
+      return items;
+    }
+    return items.filter(item => item[property] === value);
+  }
+}
 
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent],
+  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
+  animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ height: '0', opacity: '0', overflow: 'hidden' }),
+        animate('300ms ease-out', style({ height: '*', opacity: '1' }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-in', style({ height: '0', opacity: '0', overflow: 'hidden' }))
+      ])
+    ])
+  ]
 })
 export class ListadoConvocatoriasComponent implements OnInit {
   convocatorias: any[] = [];
@@ -74,21 +99,96 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   crearConvocatoria(): void {
-    const nuevaConvocatoria = {
-      fechaConvocatoria: new Date(),
-      deporte: this.deporteSeleccionado,
-    };
-    this.endpointsService.crearConvocatoria(nuevaConvocatoria).subscribe({
-      next: (data) => {
-        this.convocatorias.push(data);
+    // Get today's date in YYYY-MM-DD format for the default value
+    const today = new Date().toISOString().split('T')[0];
+
+    Swal.fire({
+      title: 'Crear Convocatoria',
+      html: `
+        <div style="text-align: left; margin-bottom: 20px;">
+          <label for="swal-deporte" style="display: block; margin-bottom: 5px; font-weight: 600;">
+            Deporte:
+          </label>
+          <select id="swal-deporte" class="swal2-input" style="width: 100%; padding: 10px; margin: 0;">
+            <option value="TAEKWONDO" ${this.deporteSeleccionado === 'TAEKWONDO' ? 'selected' : ''}>TAEKWONDO</option>
+            <option value="KICKBOXING" ${this.deporteSeleccionado === 'KICKBOXING' ? 'selected' : ''}>KICKBOXING</option>
+          </select>
+        </div>
+        <div style="text-align: left;">
+          <label for="swal-fecha" style="display: block; margin-bottom: 5px; font-weight: 600;">
+            Fecha de Convocatoria:
+          </label>
+          <input type="date" id="swal-fecha" class="swal2-input" value="${today}" style="width: 100%; padding: 10px; margin: 0;">
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Crear',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      preConfirm: () => {
+        const deporteElement = document.getElementById('swal-deporte') as HTMLSelectElement;
+        const fechaElement = document.getElementById('swal-fecha') as HTMLInputElement;
+
+        const deporte = deporteElement.value;
+        const fecha = fechaElement.value;
+
+        if (!fecha) {
+          Swal.showValidationMessage('Por favor, selecciona una fecha');
+          return false;
+        }
+
+        return { deporte, fecha };
       },
-      error: () => {
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const { deporte, fecha } = result.value;
+
+        // Show confirmation dialog
         Swal.fire({
-          title: 'Error',
-          text: 'No se pudo crear la convocatoria.',
-          icon: 'error',
+          title: '¿Estás seguro?',
+          html: `Vas a crear una convocatoria de <strong>${deporte}</strong> para <strong>${new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })}</strong>.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, crear',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+        }).then((confirmResult) => {
+          if (confirmResult.isConfirmed) {
+            // Create the convocatoria
+            const nuevaConvocatoria = {
+              fechaConvocatoria: new Date(fecha + 'T00:00:00'),
+              deporte: deporte,
+            };
+
+            this.endpointsService.crearConvocatoria(nuevaConvocatoria).subscribe({
+              next: (data) => {
+                Swal.fire({
+                  title: '¡Creada!',
+                  text: 'La convocatoria ha sido creada correctamente.',
+                  icon: 'success',
+                  timer: 2000,
+                });
+                this.convocatorias.push({ ...data, expanded: false });
+                this.totalPaginasConvocatorias = Math.ceil(this.convocatorias.length / this.tamanoPaginaConvocatorias);
+              },
+              error: () => {
+                Swal.fire({
+                  title: 'Error',
+                  text: 'No se pudo crear la convocatoria.',
+                  icon: 'error',
+                });
+              },
+            });
+          }
         });
-      },
+      }
     });
   }
 
