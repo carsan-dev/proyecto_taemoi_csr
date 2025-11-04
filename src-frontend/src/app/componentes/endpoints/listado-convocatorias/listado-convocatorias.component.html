@@ -14,11 +14,13 @@
       </div>
     </div>
 
-    <!-- Filter Bar -->
+    <!-- Filter Bar with Sport Selection -->
     <div class="admin-filter-bar">
       <div class="filter-row">
-        <div class="filter-item" style="flex: 0 0 auto;">
-          <label for="deporte" class="form-label fw-semibold">Filtrar por Deporte:</label>
+        <div class="filter-item sport-filter">
+          <label for="deporte" class="form-label fw-semibold">
+            <i class="bi bi-funnel-fill me-2"></i>Filtrar por Deporte:
+          </label>
           <select id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
             (change)="obtenerConvocatorias()">
             <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
@@ -29,168 +31,245 @@
 
     <!-- Lista de convocatorias o mensaje de vacío -->
     <ng-container *ngIf="convocatorias && convocatorias.length > 0; else noConvocatorias">
-      <div class="admin-card mb-4">
-        <div class="admin-section-header">
-          <i class="bi bi-list-check"></i>
-          <h4>Convocatorias Disponibles</h4>
-        </div>
 
-        <!-- Convocatorias List with Expansion -->
-        <div class="convocatorias-list">
-          <div *ngFor="let convocatoria of convocatoriasPaginadas" class="convocatoria-item">
-            <!-- Convocatoria Header (Clickable) -->
-            <div class="convocatoria-header" (click)="seleccionarConvocatoria(convocatoria)"
-              [class.expanded]="convocatoria.expanded">
-              <div class="convocatoria-info">
-                <i class="bi" [class.bi-chevron-right]="!convocatoria.expanded"
-                  [class.bi-chevron-down]="convocatoria.expanded"></i>
-                <i class="bi bi-calendar-event ms-2 me-2"></i>
-                <strong>{{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}</strong>
-                <span class="ms-2">- {{ convocatoria.deporte }}</span>
+      <!-- Convocatorias Grid -->
+      <div class="convocatorias-grid">
+        <div *ngFor="let convocatoria of convocatoriasPaginadas" class="convocatoria-card"
+             [class.expanded]="convocatoria.expanded">
+
+          <!-- Convocatoria Header (Clickable) -->
+          <div class="convocatoria-card-header" (click)="seleccionarConvocatoria(convocatoria)"
+               role="button" tabindex="0" [attr.aria-expanded]="convocatoria.expanded"
+               (keydown.enter)="seleccionarConvocatoria(convocatoria)"
+               (keydown.space)="seleccionarConvocatoria(convocatoria); $event.preventDefault()">
+
+            <div class="convocatoria-header-content">
+              <!-- Sport Badge -->
+              <div class="sport-badge" [class.taekwondo]="convocatoria.deporte === 'TAEKWONDO'"
+                   [class.kickboxing]="convocatoria.deporte === 'KICKBOXING'">
+                <i class="bi bi-trophy-fill"></i>
+                <span>{{ convocatoria.deporte }}</span>
               </div>
-              <button class="admin-btn admin-btn-danger admin-btn-sm"
-                (click)="eliminarConvocatoria(convocatoria); $event.stopPropagation()" title="Eliminar convocatoria">
-                <i class="bi bi-trash"></i>
-                <span class="d-none d-sm-inline ms-1">Eliminar</span>
+
+              <!-- Date Display -->
+              <div class="date-display">
+                <div class="date-icon">
+                  <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="date-info">
+                  <span class="date-label">Fecha de Examen</span>
+                  <span class="date-value">{{ convocatoria.fechaConvocatoria | date: 'dd MMMM yyyy' }}</span>
+                </div>
+              </div>
+
+              <!-- Expand Indicator -->
+              <div class="expand-indicator">
+                <i class="bi" [class.bi-chevron-down]="!convocatoria.expanded"
+                   [class.bi-chevron-up]="convocatoria.expanded"></i>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="convocatoria-actions">
+              <button class="action-btn delete-btn" (click)="eliminarConvocatoria(convocatoria); $event.stopPropagation()"
+                      title="Eliminar convocatoria" aria-label="Eliminar convocatoria">
+                <i class="bi bi-trash3-fill"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Convocatoria Details (Expandable) -->
+          <div class="convocatoria-card-body" *ngIf="convocatoria.expanded && convocatoriaSeleccionada?.id === convocatoria.id"
+               [@slideDown]>
+
+            <!-- Summary Stats -->
+            <div class="summary-stats">
+              <div class="stat-card">
+                <div class="stat-icon students">
+                  <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ alumnosInscritos.length }}</span>
+                  <span class="stat-label">Alumnos Inscritos</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon paid">
+                  <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ (alumnosInscritos | filter: 'pagado': true).length }}</span>
+                  <span class="stat-label">Pagados</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon pending">
+                  <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ (alumnosInscritos | filter: 'pagado': false).length }}</span>
+                  <span class="stat-label">Pendientes</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Grades Button -->
+            <div class="action-section">
+              <button class="admin-btn admin-btn-primary admin-btn-lg"
+                      (click)="actualizarGrados(convocatoriaSeleccionada)"
+                      [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Actualizar Grados de Todos los Alumnos</span>
               </button>
             </div>
 
-            <!-- Convocatoria Details (Expandable) -->
-            <div class="convocatoria-details" *ngIf="convocatoria.expanded && convocatoriaSeleccionada?.id === convocatoria.id">
-              <div class="details-content">
-                <div class="row mb-4">
-                  <div class="col-sm-6 mb-2 mb-sm-0">
-                    <p class="mb-0">
-                      <i class="bi bi-calendar3 me-2" style="color: #007bff;"></i>
-                      <strong>Fecha:</strong> {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
-                    </p>
-                  </div>
-                  <div class="col-sm-6">
-                    <p class="mb-0">
-                      <i class="bi bi-trophy me-2" style="color: #007bff;"></i>
-                      <strong>Deporte:</strong> {{ convocatoriaSeleccionada.deporte }}
-                    </p>
-                  </div>
+            <!-- Alumnos Table -->
+            <div class="students-section" *ngIf="alumnosInscritos.length > 0; else noAlumnos">
+              <h5 class="section-title">
+                <i class="bi bi-list-check me-2"></i>
+                Detalle de Alumnos
+              </h5>
+
+              <div class="students-table-wrapper">
+                <table class="students-table">
+                  <thead>
+                    <tr>
+                      <th>Alumno</th>
+                      <th>Grado Actual</th>
+                      <th>Grado Siguiente</th>
+                      <th class="text-center">Cuantía (€)</th>
+                      <th class="text-center">Estado</th>
+                      <th class="text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let alumno of alumnosInscritos" [class.paid]="alumno.pagado" [class.unpaid]="!alumno.pagado">
+                      <td class="student-info">
+                        <div class="student-avatar">
+                          {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }}
+                        </div>
+                        <div class="student-name">
+                          <strong>{{ alumno.nombre }} {{ alumno.apellidos }}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge badge-grade current">{{ alumno.gradoActual }}</span>
+                      </td>
+                      <td>
+                        <span class="badge badge-grade next">{{ alumno.gradoSiguiente }}</span>
+                      </td>
+                      <td class="text-center">
+                        <input type="number" class="cuantia-input" step="0.01" min="0"
+                               [(ngModel)]="alumno.cuantiaExamen"
+                               (change)="actualizarAlumnoConvocatoria(alumno)"
+                               [class.paid]="alumno.pagado"
+                               [class.unpaid]="!alumno.pagado"
+                               aria-label="Cuantía del examen" />
+                      </td>
+                      <td class="text-center">
+                        <div class="payment-status-toggle">
+                          <input type="checkbox" class="payment-checkbox" [id]="'payment-' + alumno.id"
+                                 [(ngModel)]="alumno.pagado"
+                                 (change)="actualizarAlumnoConvocatoria(alumno)" />
+                          <label [for]="'payment-' + alumno.id" class="payment-label">
+                            <span class="payment-icon">
+                              <i class="bi" [class.bi-check-circle-fill]="alumno.pagado"
+                                 [class.bi-x-circle-fill]="!alumno.pagado"></i>
+                            </span>
+                            <span class="payment-text">{{ alumno.pagado ? 'Pagado' : 'Pendiente' }}</span>
+                          </label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <button class="action-btn delete-btn-small"
+                                (click)="eliminarAlumnoDeConvocatoria(alumno)"
+                                title="Eliminar alumno de la convocatoria"
+                                aria-label="Eliminar alumno">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <ng-template #noAlumnos>
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <i class="bi bi-inbox"></i>
+                </div>
+                <p class="empty-text">No hay alumnos inscritos en esta convocatoria</p>
+                <p class="empty-subtext">Agrega alumnos usando el formulario de abajo</p>
+              </div>
+            </ng-template>
+
+            <!-- Add Student Section -->
+            <div class="add-student-section">
+              <h5 class="section-title">
+                <i class="bi bi-person-plus-fill me-2"></i>
+                Agregar Alumno a la Convocatoria
+              </h5>
+
+              <div class="add-student-form">
+                <div class="form-group">
+                  <label for="alumnoSeleccionado" class="form-label">
+                    <i class="bi bi-search me-2"></i>Seleccionar Alumno
+                  </label>
+                  <select id="alumnoSeleccionado" class="form-select-custom"
+                          [(ngModel)]="alumnoSeleccionado">
+                    <option [value]="null" disabled>Seleccione un alumno apto para examen</option>
+                    <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
+                      {{ alumno.nombre }} {{ alumno.apellidos }} - {{ alumno.grado }}
+                    </option>
+                  </select>
                 </div>
 
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
-                  <h4 class="mb-0">
-                    <i class="bi bi-people-fill me-2"></i>
-                    Alumnos Inscritos ({{ alumnosInscritos.length }})
-                  </h4>
-                  <button class="admin-btn admin-btn-primary admin-btn-sm"
-                    (click)="actualizarGrados(convocatoriaSeleccionada)"
-                    [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span>Actualizar Grados</span>
-                  </button>
-                </div>
-
-                <div class="admin-table-responsive mb-4" *ngIf="alumnosInscritos.length > 0; else noAlumnos">
-                  <div class="admin-table">
-                    <table>
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Apellidos</th>
-                        <th>Grado Actual</th>
-                        <th>Grado Siguiente</th>
-                        <th>Cuantía</th>
-                        <th>Pagado</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let alumno of alumnosInscritos">
-                        <td>{{ alumno.nombre }}</td>
-                        <td>{{ alumno.apellidos }}</td>
-                        <td>{{ alumno.gradoActual }}</td>
-                        <td>{{ alumno.gradoSiguiente }}</td>
-                        <td>
-                          <input type="number" class="form-control form-control-sm"
-                            [(ngModel)]="alumno.cuantiaExamen" (change)="actualizarAlumnoConvocatoria(alumno)"
-                            [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'" />
-                        </td>
-                        <td>
-                          <select class="form-select form-select-sm" [(ngModel)]="alumno.pagado"
-                            (change)="actualizarAlumnoConvocatoria(alumno)"
-                            [ngClass]="alumno.pagado ? 'text-success fw-bold' : 'text-danger fw-bold'">
-                            <option [value]="true" class="text-black">Sí</option>
-                            <option [value]="false" class="text-black">No</option>
-                          </select>
-                        </td>
-                        <td>
-                          <button class="admin-btn admin-btn-danger admin-btn-sm"
-                            (click)="eliminarAlumnoDeConvocatoria(alumno)" title="Eliminar alumno">
-                            <i class="bi bi-trash"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  </div>
-                </div>
-
-                <ng-template #noAlumnos>
-                  <div class="text-center py-4">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="text-muted mt-2">No hay alumnos inscritos en esta convocatoria.</p>
-                  </div>
-                </ng-template>
-
-                <div class="admin-section-header mt-4">
-                  <i class="bi bi-person-plus"></i>
-                  <h4>Agregar Alumno</h4>
-                </div>
-
-                <div class="row g-3 align-items-end">
-                  <div class="col-sm-12 col-md-8">
-                    <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar
-                      Alumno:</label>
-                    <select id="alumnoSeleccionado" class="admin-form-control form-select"
-                      [(ngModel)]="alumnoSeleccionado">
-                      <option value="" disabled>Seleccione un alumno</option>
-                      <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
-                        {{ alumno.nombre }} {{ alumno.apellidos }}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="col-sm-12 col-md-4">
-                    <button class="admin-btn admin-btn-success w-100" [disabled]="!alumnoSeleccionado"
-                      (click)="agregarAlumnoAConvocatoria()">
-                      <i class="bi bi-plus-circle"></i>
-                      <span>Agregar Alumno</span>
-                    </button>
-                  </div>
-                </div>
-
-                <button *ngIf="!alumnosCargadosCompletamente" class="admin-btn admin-btn-info mt-3"
-                  (click)="cargarAlumnosPaginados()">
-                  <i class="bi bi-arrow-clockwise"></i>
-                  <span>Cargar Más Alumnos</span>
+                <button class="admin-btn admin-btn-success"
+                        [disabled]="!alumnoSeleccionado"
+                        (click)="agregarAlumnoAConvocatoria()">
+                  <i class="bi bi-plus-circle-fill"></i>
+                  <span>Agregar Alumno</span>
                 </button>
               </div>
+
+              <button *ngIf="!alumnosCargadosCompletamente"
+                      class="load-more-btn"
+                      (click)="cargarAlumnosPaginados()">
+                <i class="bi bi-arrow-clockwise me-2"></i>
+                Cargar Más Alumnos
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- Pagination for Convocatorias -->
-        <app-paginacion
-          [paginaActual]="paginaActualConvocatorias"
-          [totalPaginas]="totalPaginasConvocatorias"
-          [tamanoPagina]="tamanoPaginaConvocatorias"
-          (pageChange)="cambiarPaginaConvocatorias($event)"
-          class="mt-4">
-        </app-paginacion>
       </div>
+
+      <!-- Pagination for Convocatorias -->
+      <app-paginacion
+        [paginaActual]="paginaActualConvocatorias"
+        [totalPaginas]="totalPaginasConvocatorias"
+        [tamanoPagina]="tamanoPaginaConvocatorias"
+        (pageChange)="cambiarPaginaConvocatorias($event)"
+        class="mt-4">
+      </app-paginacion>
     </ng-container>
 
     <!-- Plantilla para cuando no haya convocatorias -->
     <ng-template #noConvocatorias>
-      <div class="admin-card text-center">
-        <img src="../../../../assets/media/placeholder_roto.svg" alt="No convocatorias" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
-        <h3 class="mb-3">¡No hay convocatorias disponibles!</h3>
-        <p class="text-muted mb-4">Parece que no hay convocatorias registradas. ¡Crea una nueva pulsando el botón de arriba!</p>
+      <div class="admin-card text-center empty-state-large">
+        <div class="empty-illustration">
+          <i class="bi bi-clipboard2-x"></i>
+        </div>
+        <h3 class="empty-title">No hay convocatorias disponibles</h3>
+        <p class="empty-description">
+          Parece que no hay convocatorias registradas para <strong>{{ deporteSeleccionado }}</strong>.
+        </p>
+        <button class="admin-btn admin-btn-primary admin-btn-lg" (click)="crearConvocatoria()">
+          <i class="bi bi-plus-circle-fill me-2"></i>
+          Crear Primera Convocatoria
+        </button>
       </div>
     </ng-template>
   </div>
