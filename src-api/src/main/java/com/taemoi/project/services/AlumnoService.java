@@ -17,6 +17,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoTarifa;
 
@@ -54,6 +55,8 @@ public interface AlumnoService {
 	void removerAlumnoDeTurno(Long alumnoId, Long turnoId);
 
 	double asignarCuantiaTarifa(TipoTarifa tipoTarifa);
+
+	double asignarCuantiaTarifa(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar);
 
 	Categoria asignarCategoriaSegunEdad(int edad);
 
