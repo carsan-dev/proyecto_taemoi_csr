@@ -9,6 +9,8 @@ import { Component, HostListener} from '@angular/core';
 })
 export class BotonscrollComponent {
 
+  mostrarBoton = false;
+
   constructor() { }
 
   scrollArriba() {
@@ -18,15 +20,8 @@ export class BotonscrollComponent {
   @HostListener('window:scroll', [])
   onWindowScroll() {
     if (typeof window !== 'undefined') {
-    this.estaScrolleado();
+      this.mostrarBoton = window.scrollY > 100;
     }
-  }
-
-  estaScrolleado() {
-    if (typeof window !== 'undefined') {
-    return window.scrollY > 100;
-    }
-    return false;
   }
 
 }
