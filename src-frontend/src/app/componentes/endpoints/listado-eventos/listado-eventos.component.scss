@@ -57,3 +57,31 @@
     transform: scale(1);
   }
 }
+
+// Visibility Badge Styles
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  i {
+    font-size: 0.875rem;
+  }
+
+  &.visible {
+    background: linear-gradient(135deg, #56ab2f, #a8e063);
+    color: white;
+  }
+
+  &.oculto {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+  }
+}

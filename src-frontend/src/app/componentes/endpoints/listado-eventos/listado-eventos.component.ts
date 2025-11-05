@@ -34,8 +34,8 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(eventosSubscription);
 
-    // Iniciar la carga de eventos
-    this.endpointsService.obtenerEventos();
+    // Iniciar la carga de todos los eventos (incluyendo ocultos)
+    this.endpointsService.obtenerTodosLosEventos();
   }
 
   ngOnDestroy(): void {
@@ -87,5 +87,39 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     if (modal) {
       modal.style.display = 'none';
     }
+  }
+
+  toggleVisibilidad(id: number, eventoTitulo: string): void {
+    const evento = this.eventos.find((e) => e.id === id);
+    const accion = evento?.visible ? 'ocultar' : 'mostrar';
+
+    Swal.fire({
+      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} evento?`,
+      text: `¿Deseas ${accion} "${eventoTitulo}" en la página pública?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: `Sí, ${accion}`,
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.toggleVisibilidadEvento(id).subscribe({
+          next: () => {
+            Swal.fire({
+              title: '¡Actualizado!',
+              text: `El evento ahora está ${evento?.visible ? 'oculto' : 'visible'} en la página pública.`,
+              icon: 'success',
+              timer: 2000,
+            });
+          },
+          error: () => {
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo cambiar la visibilidad del evento.',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
   }
 }

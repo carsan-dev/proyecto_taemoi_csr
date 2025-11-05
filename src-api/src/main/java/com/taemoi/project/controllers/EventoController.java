@@ -39,6 +39,12 @@ public class EventoController {
 	private ImagenService imagenService;
 
 	@GetMapping
+	public List<Evento> obtenerEventosVisibles() {
+		return eventoService.obtenerEventosVisibles();
+	}
+
+	@GetMapping("/admin/todos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public List<Evento> obtenerTodosLosEventos() {
 		return eventoService.obtenerTodosLosEventos();
 	}
@@ -119,6 +125,20 @@ public class EventoController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(Map.of("error", "Error al eliminar el evento: " + e.getMessage()));
+		}
+	}
+
+	@PutMapping("/{id}/toggle-visibilidad")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> toggleVisibilidad(@PathVariable @NonNull Long id) {
+		try {
+			eventoService.toggleVisibilidad(id);
+			return ResponseEntity.ok().build();
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "El evento no fue encontrado."));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Error al cambiar la visibilidad del evento: " + e.getMessage()));
 		}
 	}
 

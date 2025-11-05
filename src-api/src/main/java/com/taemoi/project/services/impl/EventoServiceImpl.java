@@ -35,6 +35,11 @@ public class EventoServiceImpl implements EventoService {
 	}
 
 	@Override
+	public List<Evento> obtenerEventosVisibles() {
+		return eventoRepository.findByVisibleTrue();
+	}
+
+	@Override
 	public Evento obtenerEventoPorId(@NonNull Long eventoId) {
 		return eventoRepository.findById(eventoId)
 				.orElseThrow(() -> new EventoNoEncontradoException("El evento con ID " + eventoId + " no existe."));
@@ -135,6 +140,15 @@ public class EventoServiceImpl implements EventoService {
 		} else {
 			throw new EventoNoEncontradoException("No se encontró el evento con ID: " + id);
 		}
+	}
+
+	@Override
+	public void toggleVisibilidad(@NonNull Long id) {
+		Evento evento = eventoRepository.findById(id)
+				.orElseThrow(() -> new EventoNoEncontradoException("No se encontró el evento con ID: " + id));
+
+		evento.setVisible(!Boolean.TRUE.equals(evento.getVisible()));
+		eventoRepository.save(evento);
 	}
 
 }
