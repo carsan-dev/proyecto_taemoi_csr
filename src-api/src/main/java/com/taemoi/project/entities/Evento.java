@@ -28,6 +28,8 @@ public class Evento {
 	@JoinColumn(name = "foto_evento_id")
 	private Imagen fotoEvento;
 
+	private Boolean visible = true;
+
 	public Long getId() {
 		return id;
 	}
@@ -58,5 +60,13 @@ public class Evento {
 
 	public void setFotoEvento(Imagen fotoEvento) {
 		this.fotoEvento = fotoEvento;
+	}
+
+	public Boolean getVisible() {
+		return visible;
+	}
+
+	public void setVisible(Boolean visible) {
+		this.visible = visible;
 	}
 }

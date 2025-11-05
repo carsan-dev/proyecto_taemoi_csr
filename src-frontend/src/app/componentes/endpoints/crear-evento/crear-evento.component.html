@@ -79,6 +79,25 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Visibilidad -->
+                <div class="col-12">
+                  <div class="admin-form-check" [class.checked]="eventoForm.get('visible')?.value">
+                    <input
+                      type="checkbox"
+                      id="visible"
+                      formControlName="visible"
+                      aria-label="Mostrar evento en la página pública">
+                    <label for="visible">
+                      <i class="bi bi-eye check-icon"></i>
+                      Mostrar evento en la página pública
+                    </label>
+                  </div>
+                  <div class="admin-form-help">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Si está desmarcado, el evento se guardará pero no será visible en la página web</span>
+                  </div>
+                </div>
               </div>
             </div>
 
