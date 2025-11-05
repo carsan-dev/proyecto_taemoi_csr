@@ -31,7 +31,17 @@
               (click)="abrirModal(evento.fotoEvento?.url)"
               style="cursor: zoom-in;" />
             <div class="item-title">
-              <h4>{{ evento.titulo }}</h4>
+              <h4>
+                {{ evento.titulo }}
+                <span *ngIf="evento.visible === false" class="visibility-badge oculto" title="Evento oculto en la página pública">
+                  <i class="bi bi-eye-slash"></i>
+                  Oculto
+                </span>
+                <span *ngIf="evento.visible === true" class="visibility-badge visible" title="Evento visible en la página pública">
+                  <i class="bi bi-eye"></i>
+                  Visible
+                </span>
+              </h4>
             </div>
           </div>
 
@@ -42,6 +52,14 @@
           </div>
 
           <div class="item-footer">
+            <button
+              class="admin-btn admin-btn-sm"
+              [ngClass]="evento.visible ? 'admin-btn-warning' : 'admin-btn-success'"
+              (click)="toggleVisibilidad(evento.id, evento.titulo)"
+              [title]="evento.visible ? 'Ocultar evento' : 'Mostrar evento'">
+              <i [class]="evento.visible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              <span>{{ evento.visible ? 'Ocultar' : 'Mostrar' }}</span>
+            </button>
             <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
               <i class="bi bi-pencil-square"></i>
               <span>Editar</span>

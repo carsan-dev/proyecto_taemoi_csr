@@ -686,6 +686,23 @@ export class EndpointsService {
       });
   }
 
+  obtenerTodosLosEventos(): void {
+    this.http
+      .get<any[]>(`${this.urlBase}/eventos/admin/todos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError))
+      .subscribe({
+        next: (eventos) => {
+          this.eventosSubject.next(Array.isArray(eventos) ? eventos : []);
+        },
+        error: (error) => {
+          console.error('Error al obtener todos los eventos:', error);
+          this.eventosSubject.next([]);
+        },
+      });
+  }
+
   obtenerEventoPorId(eventoId: number): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/eventos/${eventoId}`, {
@@ -745,6 +762,23 @@ export class EndpointsService {
           console.error('Error al eliminar el evento:', error);
         },
       });
+  }
+
+  toggleVisibilidadEvento(id: number): Observable<any> {
+    return this.http
+      .put<any>(`${this.urlBase}/eventos/${id}/toggle-visibilidad`, null, {
+        withCredentials: true,
+      })
+      .pipe(
+        tap(() => {
+          const eventosActuales = this.eventosSubject.getValue();
+          const eventosActualizados = eventosActuales.map((evento) =>
+            evento.id === id ? { ...evento, visible: !evento.visible } : evento
+          );
+          this.eventosSubject.next(eventosActualizados);
+        }),
+        catchError(this.manejarError)
+      );
   }
 
   obtenerConvocatorias(deporte?: string): Observable<any[]> {

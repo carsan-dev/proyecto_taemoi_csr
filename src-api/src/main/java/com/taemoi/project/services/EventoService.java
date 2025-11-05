@@ -13,6 +13,8 @@ public interface EventoService {
 
 	List<Evento> obtenerTodosLosEventos();
 
+	List<Evento> obtenerEventosVisibles();
+
 	Evento guardarEvento(@NonNull Evento evento, MultipartFile archivo) throws IOException;
 
 	void eliminarEvento(@NonNull Long id);
@@ -22,4 +24,6 @@ public interface EventoService {
 	Evento obtenerEventoPorId(@NonNull Long eventoId);
 
 	void eliminarImagenEvento(@NonNull Long id);
+
+	void toggleVisibilidad(@NonNull Long id);
 }
