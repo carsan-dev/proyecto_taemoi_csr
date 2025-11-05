@@ -1,5 +1,6 @@
 // Import shared admin styles
 @use '../../../componentes/admin-shared-styles.scss' as *;
+@use 'sass:color';
 
 // ============================================================================
 // MODERN CONVOCATORIAS LAYOUT
@@ -139,7 +140,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+  background: linear-gradient(135deg, $primary-color, color.scale($primary-color, $lightness: -20%));
   border-radius: 10px;
   color: white;
 
@@ -457,7 +458,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+  background: linear-gradient(135deg, $primary-color, color.scale($primary-color, $lightness: -20%));
   color: white;
   font-weight: 600;
   font-size: 0.875rem;
