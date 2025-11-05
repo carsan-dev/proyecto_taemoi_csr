@@ -247,7 +247,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			throw new IllegalArgumentException("La fecha de licencia del alumno no puede ser nula.");
 		}
 		LocalDate fechaLicenciaLocal = fechaLicencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES"))
+		String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, Locale.of("es", "ES"))
 				.toUpperCase();
 		String mesAnio = mesEnEspanol + " " + fechaLicenciaLocal.getYear();
 
@@ -288,7 +288,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		LocalDate fechaActual = LocalDate.now();
 		boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= 9;
 
-		String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES"))
+		String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, Locale.of("es", "ES"))
 				.toUpperCase();
 
 		double precio;

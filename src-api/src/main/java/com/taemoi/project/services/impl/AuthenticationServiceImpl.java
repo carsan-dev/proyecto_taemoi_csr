@@ -1,6 +1,5 @@
 package com.taemoi.project.services.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -32,7 +31,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
 
-	@Autowired
 	public AuthenticationServiceImpl(UsuarioRepository usuarioRepository,
 									 LoginAttemptService loginAttemptService,
 									 PasswordEncoder passwordEncoder,
