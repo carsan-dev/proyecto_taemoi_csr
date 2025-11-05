@@ -71,7 +71,7 @@ public class PDFServiceImpl implements PDFService {
 
 		LocalDate now = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				new Locale("es", "ES"));
+				Locale.of("es", "ES"));
 		String fechaGeneracion = now.format(formatter);
 
 		StringBuilder html = new StringBuilder();
@@ -709,7 +709,7 @@ public class PDFServiceImpl implements PDFService {
 				.append("</style></head><body>").append("<div class='header-titles'>")
 				.append("<p class='main'>CLUB MOI'S KIM DO</p>").append("<p class='sub'>Tae Kwon Do</p>")
 				.append("</div>").append("<h2>LISTADO ASISTENCIA ")
-				.append(Month.of(month).getDisplayName(TextStyle.FULL, new Locale("es")).toUpperCase()).append(" - ")
+				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase()).append(" - ")
 				.append(year).append("</h2>").append("<p class='total'>TOTAL : ").append(totalAlumnos)
 				.append(" ALUMNOS</p>").append("<p class='total' style='font-size:12pt;'>").append(grupo.toUpperCase())
 				.append(" - TURNO DE ").append(turno.replace("–", " a ")).append("</p>")
