@@ -140,8 +140,6 @@ export class CrearAlumnoComponent implements OnInit {
       gradosFiltrados = gradosFiltrados.filter((grado) =>
         gradosKickboxing.includes(grado.tipoGrado)
       );
-    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
-      gradosFiltrados = [];
     }
 
     // Then, filter by age if tiposGrado has values
@@ -265,7 +263,7 @@ export class CrearAlumnoComponent implements OnInit {
 
     if (selectedDeporte === 'TAEKWONDO') {
       this.showAllFields();
-      // Tarifas para Taekwondo (excluir Pilates, Defensa Personal y Kickboxing)
+      // Tarifas para Taekwondo
       this.tiposTarifa = [
         TipoTarifa.ADULTO,
         TipoTarifa.ADULTO_GRUPO,
@@ -282,16 +280,6 @@ export class CrearAlumnoComponent implements OnInit {
       this.tiposTarifa = [
         TipoTarifa.KICKBOXING,
       ];
-      this.aplicarFiltrosGrado();
-    } else if (selectedDeporte === 'PILATES') {
-      this.hideFieldsForPilatesOrDefPersFem();
-      // Solo tarifa PILATES
-      this.tiposTarifa = [TipoTarifa.PILATES];
-      this.aplicarFiltrosGrado();
-    } else if (selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA') {
-      this.hideFieldsForPilatesOrDefPersFem();
-      // Solo tarifa DEFENSA_PERSONAL_FEMENINA
-      this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
       this.aplicarFiltrosGrado();
     }
   }
@@ -331,24 +319,6 @@ export class CrearAlumnoComponent implements OnInit {
 
     this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoData.get('grado')?.updateValueAndValidity();
-  }
-
-  hideFieldsForPilatesOrDefPersFem(): void {
-    this.alumnoData.get('tipoTarifa')?.disable();
-    this.alumnoData.get('tipoTarifa')?.clearValidators();
-    this.alumnoData.get('grado')?.disable();
-    this.alumnoData.get('grado')?.clearValidators();
-    this.alumnoData.get('competidor')?.disable();
-    this.alumnoData.get('tieneLicencia')?.disable();
-    this.alumnoData.get('numeroLicencia')?.disable();
-    this.alumnoData.get('numeroLicencia')?.clearValidators();
-    this.alumnoData.get('fechaLicencia')?.disable();
-    this.alumnoData.get('fechaLicencia')?.clearValidators();
-
-    this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoData.get('grado')?.updateValueAndValidity();
-    this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
-    this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
   }
 
   getGradoNombre(grado: any): string {
