@@ -47,8 +47,10 @@ TODO:
 
 ✔ remove the closeAdminMenu console log 
 
-⚙️ the kickboxing alumns only have one tipo_tarifa that costs 30 and the MATRICULA is 20 for kickboxing
+✔ the kickboxing alumns only have one tipo_tarifa that costs 30 and the MATRICULA is 20 for kickboxing
 
-❌ add in listado eventos an option to show or occult the events in the events page and add in crear evento the option to create showing or create occult
+✔ add in listado eventos an option to show or occult the events in the events page and add in crear evento the option to create showing or create occult
 
-❌ the image from the alumn in editar-alumno doesnt ampliates when clicking
+✔ the image from the alumn in editar-alumno doesnt ampliates when clicking
+
+✔ remove the pilates and defensa_personal_femenina from the admin components. I want to have the pilates groups and turns for the public horario and the info from the sports, but i will dont have any alumns registered
