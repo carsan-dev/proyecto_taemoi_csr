@@ -863,23 +863,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Abre el modal con la imagen ampliada (si hay URL disponible).
    */
-  abrirModal(imagenUrl: string | null) {
+  abrirModal(imagenUrl: string | null | undefined) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
 
-    if (!imagenUrl || imagenUrl.trim() === '') {
-      Swal.fire({
-        icon: 'error',
-        title: 'Imagen no disponible',
-        text: 'No hay imagen disponible para mostrar.',
-        timer: 2000,
-      });
-      return;
-    }
+    // Use default image if no URL is provided
+    const urlToShow = imagenUrl || '../../../../assets/media/default.webp';
 
     if (modal && modalImg) {
       modal.style.display = 'block';
-      modalImg.src = imagenUrl;
+      modalImg.src = urlToShow;
     }
   }
 
