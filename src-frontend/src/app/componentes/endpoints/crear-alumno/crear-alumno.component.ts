@@ -124,7 +124,7 @@ export class CrearAlumnoComponent implements OnInit {
 
     // First, filter by sport
     if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = [
+      const gradosKickboxing = new Set<string>([
         'BLANCO',
         'AMARILLO',
         'NARANJA',
@@ -136,9 +136,9 @@ export class CrearAlumnoComponent implements OnInit {
         'NEGRO_3_DAN',
         'NEGRO_4_DAN',
         'NEGRO_5_DAN',
-      ];
+      ]);
       gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.includes(grado.tipoGrado)
+        gradosKickboxing.has(grado.tipoGrado)
       );
     }
 
