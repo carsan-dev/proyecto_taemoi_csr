@@ -3,7 +3,6 @@ package com.taemoi.project.services.impl;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	private final UsuarioRepository usuarioRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	@Autowired
 	public OAuth2UserServiceImpl(AlumnoRepository alumnoRepository,
 								 UsuarioRepository usuarioRepository,
 								 PasswordEncoder passwordEncoder) {

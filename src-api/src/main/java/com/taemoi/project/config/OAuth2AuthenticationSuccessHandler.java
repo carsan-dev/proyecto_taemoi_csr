@@ -2,7 +2,6 @@ package com.taemoi.project.config;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -31,7 +30,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	@Value("${cors.allowed.origin}")
 	private String frontendUrl;
 
-	@Autowired
 	public OAuth2AuthenticationSuccessHandler(OAuth2UserService oauth2UserService,
 											  JwtService jwtService) {
 		this.oauth2UserService = oauth2UserService;
