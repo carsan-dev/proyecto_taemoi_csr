@@ -54,16 +54,12 @@ public class TarifaConfig {
 		// Tarifa para hermanos
 		cuantias.put(TipoTarifa.HERMANOS, 26.0);
 
-		// Tarifas para Kickboxing
-		cuantias.put(TipoTarifa.KICKBOXING_PADRES_HIJOS, 0.0); // Variable según rol
-		cuantias.put(TipoTarifa.KICKBOXING_HERMANOS, 26.0);
-		cuantias.put(TipoTarifa.KICKBOXING_FAMILIAR, 0.0);
-
 		// Tarifas individuales infantiles
 		cuantias.put(TipoTarifa.INFANTIL, 28.0);
 
 		// Tarifas individuales adultos y actividades
 		cuantias.put(TipoTarifa.ADULTO, 30.0);
+		cuantias.put(TipoTarifa.KICKBOXING, 30.0);
 		cuantias.put(TipoTarifa.PILATES, 30.0);
 		cuantias.put(TipoTarifa.DEFENSA_PERSONAL_FEMENINA, 30.0);
 
@@ -101,8 +97,8 @@ public class TarifaConfig {
 			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
 		}
 
-		// Para PADRES_HIJOS y KICKBOXING_PADRES_HIJOS, el precio depende del rol
-		if ((tipoTarifa == TipoTarifa.PADRES_HIJOS || tipoTarifa == TipoTarifa.KICKBOXING_PADRES_HIJOS) && rolFamiliar != null) {
+		// Para PADRES_HIJOS, el precio depende del rol
+		if (tipoTarifa == TipoTarifa.PADRES_HIJOS && rolFamiliar != null) {
 			switch (rolFamiliar) {
 				case PADRE:
 					return 28.0; // Precio para el padre

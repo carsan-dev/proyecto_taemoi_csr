@@ -480,9 +480,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.onDeporteChange(alumno.deporte);
 
     // Enable family fields if needed when loading existing data
-    if (alumno.tipoTarifa === TipoTarifa.PADRES_HIJOS || alumno.tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+    if (alumno.tipoTarifa === TipoTarifa.PADRES_HIJOS) {
       this.alumnoForm.get('rolFamiliar')?.enable();
-    } else if (alumno.tipoTarifa === TipoTarifa.HERMANOS || alumno.tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+    } else if (alumno.tipoTarifa === TipoTarifa.HERMANOS) {
       this.alumnoForm.get('grupoFamiliar')?.enable();
     }
   }
@@ -830,9 +830,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.showAllFields();
       // Tarifas específicas para Kickboxing
       this.tiposTarifa = [
-        TipoTarifa.KICKBOXING_PADRES_HIJOS,
-        TipoTarifa.KICKBOXING_HERMANOS,
-        TipoTarifa.KICKBOXING_FAMILIAR,
+        TipoTarifa.KICKBOXING,
       ];
       this.aplicarFiltrosGrado();
     } else if (deporteSeleccionado === 'PILATES') {
@@ -1212,35 +1210,32 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
     switch (tipoTarifa) {
       case TipoTarifa.PILATES:
-        return 30.0;
+        return 30;
       case TipoTarifa.DEFENSA_PERSONAL_FEMENINA:
-        return 30.0;
+        return 30;
       case TipoTarifa.ADULTO:
-        return 30.0;
+        return 30;
       case TipoTarifa.ADULTO_GRUPO:
-        return 20.0;
+        return 20;
       case TipoTarifa.FAMILIAR:
-        return 0.0;
+        return 0;
       case TipoTarifa.INFANTIL:
-        return 28.0;
+        return 28;
       case TipoTarifa.INFANTIL_GRUPO:
-        return 20.0;
+        return 20;
       case TipoTarifa.HERMANOS:
-        return 26.0;
+        return 26;
       case TipoTarifa.PADRES_HIJOS:
-      case TipoTarifa.KICKBOXING_PADRES_HIJOS:
-        // For PADRES_HIJOS and KICKBOXING_PADRES_HIJOS, the price depends on the rol
+        // For PADRES_HIJOS, the price depends on the rol
         const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
         if (rolFamiliar === RolFamiliar.PADRE) {
-          return 28.0;
+          return 28;
         } else if (rolFamiliar === RolFamiliar.HIJO) {
-          return 26.0;
+          return 26;
         }
-        return 0.0;
-      case TipoTarifa.KICKBOXING_HERMANOS:
-        return 26.0;
-      case TipoTarifa.KICKBOXING_FAMILIAR:
-        return 0.0;
+        return 0;
+      case TipoTarifa.KICKBOXING:
+        return 30;
       default:
         throw new Error('Tipo de descuento no válido');
     }
@@ -1259,10 +1254,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.alumnoForm.get('grupoFamiliar')?.clearValidators();
 
     // Enable fields based on tarifa type
-    if (tipoTarifa === TipoTarifa.PADRES_HIJOS || tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+    if (tipoTarifa === TipoTarifa.PADRES_HIJOS) {
       this.alumnoForm.get('rolFamiliar')?.enable();
       this.alumnoForm.get('rolFamiliar')?.setValidators(Validators.required);
-    } else if (tipoTarifa === TipoTarifa.HERMANOS || tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+    } else if (tipoTarifa === TipoTarifa.HERMANOS) {
       this.alumnoForm.get('grupoFamiliar')?.enable();
       this.alumnoForm.get('grupoFamiliar')?.setValidators(Validators.required);
     }

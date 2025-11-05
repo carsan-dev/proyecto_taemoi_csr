@@ -166,10 +166,10 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('grupoFamiliar')?.clearValidators();
 
     // Enable fields based on tarifa type
-    if (tipoTarifa === TipoTarifa.PADRES_HIJOS || tipoTarifa === TipoTarifa.KICKBOXING_PADRES_HIJOS) {
+    if (tipoTarifa === TipoTarifa.PADRES_HIJOS) {
       this.alumnoData.get('rolFamiliar')?.enable();
       this.alumnoData.get('rolFamiliar')?.setValidators(Validators.required);
-    } else if (tipoTarifa === TipoTarifa.HERMANOS || tipoTarifa === TipoTarifa.KICKBOXING_HERMANOS) {
+    } else if (tipoTarifa === TipoTarifa.HERMANOS) {
       this.alumnoData.get('grupoFamiliar')?.enable();
       this.alumnoData.get('grupoFamiliar')?.setValidators(Validators.required);
     }
@@ -280,9 +280,7 @@ export class CrearAlumnoComponent implements OnInit {
       this.showAllFields();
       // Tarifas específicas para Kickboxing
       this.tiposTarifa = [
-        TipoTarifa.KICKBOXING_PADRES_HIJOS,
-        TipoTarifa.KICKBOXING_HERMANOS,
-        TipoTarifa.KICKBOXING_FAMILIAR,
+        TipoTarifa.KICKBOXING,
       ];
       this.aplicarFiltrosGrado();
     } else if (selectedDeporte === 'PILATES') {
