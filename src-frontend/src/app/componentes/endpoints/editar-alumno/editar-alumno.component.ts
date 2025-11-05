@@ -243,7 +243,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Check if this alumno ID exists in our current list
     const pageIndex = this.alumnosIds.indexOf(idParam);
 
-    if (pageIndex !== -1) {
+    if (pageIndex === -1) {
+      // ID not found in current list - might be a new alumno or inactive alumno
+      // Try to load it directly to see if it exists
+      this.intentarCargarAlumnoNoEncontrado(idParam);
+    } else {
       // It's an alumno ID that exists in our list
       // Calculate the page number (1-indexed) for pagination display
       const pageNumber = pageIndex + 1;
@@ -251,10 +255,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
       // Load this alumno
       this.cargarAlumno(idParam);
-    } else {
-      // ID not found in current list - might be a new alumno or inactive alumno
-      // Try to load it directly to see if it exists
-      this.intentarCargarAlumnoNoEncontrado(idParam);
     }
   }
 
@@ -306,17 +306,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private navegarAAlumno(alumnoId: number): void {
     const pageIndex = this.alumnosIds.indexOf(alumnoId);
-    if (pageIndex !== -1) {
-      const pageNumber = pageIndex + 1;
-      this.paginaActual = pageNumber;
-      this.router.navigate(['/alumnosEditar', alumnoId], { replaceUrl: true });
-      this.cargarAlumno(alumnoId);
-    } else {
+    if (pageIndex === -1) {
       // Still not found after refresh - navigate to first alumno if available
       if (this.alumnosIds.length > 0) {
         const firstAlumnoId = this.alumnosIds[0];
         this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
       }
+    } else {
+      const pageNumber = pageIndex + 1;
+      this.paginaActual = pageNumber;
+      this.router.navigate(['/alumnosEditar', alumnoId], { replaceUrl: true });
+      this.cargarAlumno(alumnoId);
     }
   }
 
@@ -699,7 +699,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // First, filter by sport
     if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = [
+      const gradosKickboxing = new Set<string> ([
         'BLANCO',
         'AMARILLO',
         'NARANJA',
@@ -711,9 +711,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         'NEGRO_3_DAN',
         'NEGRO_4_DAN',
         'NEGRO_5_DAN',
-      ];
+      ]);
       gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.includes(grado.tipoGrado)
+        gradosKickboxing.has(grado.tipoGrado)
       );
     }
 
@@ -934,68 +934,108 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       cancelButtonText: 'No',
     }).then((resultado) => {
       if (resultado.isConfirmed) {
-        Swal.fire({
-          title: '¿Ha sido abonada la reserva?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, pagada',
-          cancelButtonText: 'No',
-        }).then((resultadoPago) => {
-          const pagado = resultadoPago.isConfirmed;
-          this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
-            next: () => {
-              Swal.fire({
-                title: 'Reserva creada',
-                text: 'La reserva de plaza ha sido añadida correctamente.',
-                icon: 'success',
-                timer: 2000,
-              });
-              this.obtenerProductosAlumno(alumnoId);
-            },
-            error: (err) => {
-              if (err.status === 409) {
-                Swal.fire({
-                  title: 'Reserva existente',
-                  text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
-                  icon: 'warning',
-                  showCancelButton: true,
-                  confirmButtonText: 'Sí, proceder',
-                  cancelButtonText: 'No',
-                }).then((respuesta) => {
-                  if (respuesta.isConfirmed) {
-                    this.endpointsService
-                      .reservarPlaza(alumnoId, pagado, true)
-                      .subscribe({
-                        next: () => {
-                          Swal.fire({
-                            title: 'Reserva creada',
-                            text: 'La reserva de plaza ha sido añadida correctamente.',
-                            icon: 'success',
-                            timer: 2000,
-                          });
-                          this.obtenerProductosAlumno(alumnoId);
-                        },
-                        error: () => {
-                          Swal.fire({
-                            title: 'Error',
-                            text: 'No se pudo crear la reserva.',
-                            icon: 'error',
-                          });
-                        },
-                      });
-                  }
-                });
-              } else {
-                Swal.fire({
-                  title: 'Error',
-                  text: 'No se pudo crear la reserva.',
-                  icon: 'error',
-                });
-              }
-            },
-          });
-        });
+        this.confirmarPagoReserva(alumnoId);
       }
+    });
+  }
+
+  /**
+   * Confirma si la reserva ha sido pagada y procede con la creación
+   */
+  private confirmarPagoReserva(alumnoId: number): void {
+    Swal.fire({
+      title: '¿Ha sido abonada la reserva?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, pagada',
+      cancelButtonText: 'No',
+    }).then((resultadoPago) => {
+      if (resultadoPago.isConfirmed || resultadoPago.isDismissed) {
+        const pagado = resultadoPago.isConfirmed;
+        this.intentarCrearReserva(alumnoId, pagado);
+      }
+    });
+  }
+
+  /**
+   * Intenta crear la reserva y maneja el error de conflicto
+   */
+  private intentarCrearReserva(alumnoId: number, pagado: boolean): void {
+    this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
+      next: () => {
+        this.mostrarReservaExitosa();
+        this.obtenerProductosAlumno(alumnoId);
+      },
+      error: (err) => {
+        this.manejarErrorReserva(err, alumnoId, pagado);
+      },
+    });
+  }
+
+  /**
+   * Maneja errores al crear la reserva
+   */
+  private manejarErrorReserva(err: any, alumnoId: number, pagado: boolean): void {
+    if (err.status === 409) {
+      this.confirmarReservaForzada(alumnoId, pagado);
+    } else {
+      this.mostrarErrorReserva();
+    }
+  }
+
+  /**
+   * Confirma si desea forzar la creación de la reserva cuando ya existe una
+   */
+  private confirmarReservaForzada(alumnoId: number, pagado: boolean): void {
+    Swal.fire({
+      title: 'Reserva existente',
+      text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, proceder',
+      cancelButtonText: 'No',
+    }).then((respuesta) => {
+      if (respuesta.isConfirmed) {
+        this.crearReservaForzada(alumnoId, pagado);
+      }
+    });
+  }
+
+  /**
+   * Crea la reserva forzada ignorando el conflicto
+   */
+  private crearReservaForzada(alumnoId: number, pagado: boolean): void {
+    this.endpointsService.reservarPlaza(alumnoId, pagado, true).subscribe({
+      next: () => {
+        this.mostrarReservaExitosa();
+        this.obtenerProductosAlumno(alumnoId);
+      },
+      error: () => {
+        this.mostrarErrorReserva();
+      },
+    });
+  }
+
+  /**
+   * Muestra mensaje de éxito al crear la reserva
+   */
+  private mostrarReservaExitosa(): void {
+    Swal.fire({
+      title: 'Reserva creada',
+      text: 'La reserva de plaza ha sido añadida correctamente.',
+      icon: 'success',
+      timer: 2000,
+    });
+  }
+
+  /**
+   * Muestra mensaje de error al crear la reserva
+   */
+  private mostrarErrorReserva(): void {
+    Swal.fire({
+      title: 'Error',
+      text: 'No se pudo crear la reserva.',
+      icon: 'error',
     });
   }
 
@@ -1167,13 +1207,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         return 26;
       case TipoTarifa.PADRES_HIJOS:
         // For PADRES_HIJOS, the price depends on the rol
-        const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
+        { const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
         if (rolFamiliar === RolFamiliar.PADRE) {
           return 28;
         } else if (rolFamiliar === RolFamiliar.HIJO) {
           return 26;
         }
-        return 0;
+        return 0; }
       case TipoTarifa.KICKBOXING:
         return 30;
       default:
@@ -1272,17 +1312,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       // If we have a current alumno, try to stay on it
       if (alumnoIdActual) {
         const pageIndex = this.alumnosIds.indexOf(alumnoIdActual);
-        if (pageIndex !== -1) {
-          // Alumno still in list, update page number and stay on this alumno
-          const pageNumber = pageIndex + 1;
-          this.paginaActual = pageNumber;
-          this.router.navigate(['/alumnosEditar', alumnoIdActual], { replaceUrl: true });
-        } else {
+        if (pageIndex === -1) {
           // Alumno not in filtered list, navigate to first alumno
           if (this.alumnosIds.length > 0) {
             const firstAlumnoId = this.alumnosIds[0];
             this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
           }
+        } else {
+          // Alumno still in list, update page number and stay on this alumno
+          const pageNumber = pageIndex + 1;
+          this.paginaActual = pageNumber;
+          this.router.navigate(['/alumnosEditar', alumnoIdActual], { replaceUrl: true });
         }
       }
     });
