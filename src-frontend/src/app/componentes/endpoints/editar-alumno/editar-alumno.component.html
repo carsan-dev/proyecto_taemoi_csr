@@ -2,7 +2,7 @@
   <span class="close" (click)="cerrarModal()">
     <i class="bi bi-x-circle-fill"></i>
   </span>
-  <img class="modal-content" id="imgAmpliada" />
+  <img class="modal-content" id="imgAmpliada" alt="Foto del Alumno" />
   <div id="caption"></div>
 </div>
 
@@ -495,11 +495,11 @@
                 </div>
 
                 <div class="mt-4">
-                  <label for="docFile" class="admin-btn admin-btn-success" role="button" tabindex="0">
+                  <button type="button" class="admin-btn admin-btn-success" (click)="docFileInput.click()" aria-label="Subir Documento">
                     <i class="bi bi-plus-circle"></i>
                     <span>Subir Documento</span>
-                  </label>
-                  <input type="file" id="docFile" (change)="onDocumentoSelected($event)" style="display: none;"
+                  </button>
+                  <input #docFileInput type="file" id="docFile" (change)="onDocumentoSelected($event)" style="display: none;"
                     accept=".pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document/*"
                     aria-label="Seleccionar documento para subir" />
                 </div>
