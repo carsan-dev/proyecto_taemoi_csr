@@ -38,17 +38,16 @@
                 <td><strong>{{ productoAlumno.concepto }}</strong></td>
                 <td>{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
                 <td>
-                  <input type="number" class="admin-form-control admin-form-control-sm"
+                  <input type="number" class="admin-form-control admin-form-control-sm cantidad-input"
                     [(ngModel)]="productoAlumno.cantidad"
                     (change)="actualizarProducto(alumnoId, productoAlumno)" min="1"
-                    style="max-width: 80px;" />
+                    title="Cantidad" />
                 </td>
                 <td>
-                  <input type="number" class="admin-form-control admin-form-control-sm"
+                  <input type="number" class="admin-form-control admin-form-control-sm precio-input"
                     [(ngModel)]="productoAlumno.precio"
                     (change)="actualizarProducto(alumnoId, productoAlumno)"
-                    min="0" step="0.01" title="Editar precio"
-                    style="max-width: 100px;" />
+                    min="0" step="0.01" title="Editar precio" />
                 </td>
                 <td>
                   <span class="total-badge" [ngClass]="{
