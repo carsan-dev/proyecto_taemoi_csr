@@ -17,9 +17,7 @@ export class ListadoGruposComponent implements OnInit {
   gruposMostrar: string[] = [
     'Taekwondo',
     'Taekwondo Competición',
-    'Pilates',
     'Kickboxing',
-    'Defensa Personal Femenina',
   ];
 
   // Variables para controlar el modal

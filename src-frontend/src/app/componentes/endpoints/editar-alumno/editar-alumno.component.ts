@@ -60,8 +60,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   deportes = [
     'TAEKWONDO',
     'KICKBOXING',
-    'PILATES',
-    'DEFENSA_PERSONAL_FEMENINA',
   ];
   todosLosGrados: any[] = [];
   grados: any[] = [];
@@ -717,8 +715,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       gradosFiltrados = gradosFiltrados.filter((grado) =>
         gradosKickboxing.includes(grado.tipoGrado)
       );
-    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
-      gradosFiltrados = [];
     }
 
     // Then, filter by age if tiposGrado has values
@@ -815,7 +811,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     if (deporteSeleccionado === 'TAEKWONDO') {
       this.showAllFields();
-      // Tarifas para Taekwondo (excluir Pilates, Defensa Personal y Kickboxing)
+      // Tarifas para Taekwondo
       this.tiposTarifa = [
         TipoTarifa.ADULTO,
         TipoTarifa.ADULTO_GRUPO,
@@ -832,16 +828,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.tiposTarifa = [
         TipoTarifa.KICKBOXING,
       ];
-      this.aplicarFiltrosGrado();
-    } else if (deporteSeleccionado === 'PILATES') {
-      this.hideFieldsForPilatesOrDefPersFem();
-      // Solo tarifa PILATES
-      this.tiposTarifa = [TipoTarifa.PILATES];
-      this.aplicarFiltrosGrado();
-    } else if (deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
-      this.hideFieldsForPilatesOrDefPersFem();
-      // Solo tarifa DEFENSA_PERSONAL_FEMENINA
-      this.tiposTarifa = [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
       this.aplicarFiltrosGrado();
     }
   }
@@ -916,41 +902,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
     this.alumnoForm.get('grado')?.updateValueAndValidity();
-  }
-
-  hideFieldsForPilatesOrDefPersFem(): void {
-    const deporte = this.alumnoForm.get('deporte')?.value;
-
-    if (deporte === 'PILATES') {
-      this.alumnoForm.get('tipoTarifa')?.setValue(TipoTarifa.PILATES);
-    } else if (deporte === 'DEFENSA_PERSONAL_FEMENINA') {
-      this.alumnoForm
-        .get('tipoTarifa')
-        ?.setValue(TipoTarifa.DEFENSA_PERSONAL_FEMENINA);
-    }
-
-    this.alumnoForm.get('grado')?.disable();
-    this.alumnoForm.get('grado')?.clearValidators();
-    this.alumnoForm.get('grado')?.setValue(null);
-
-    this.alumnoForm.get('competidor')?.disable();
-    this.alumnoForm.get('competidor')?.setValue(false);
-
-    this.alumnoForm.get('tieneLicencia')?.disable();
-    this.alumnoForm.get('tieneLicencia')?.setValue(false);
-
-    this.alumnoForm.get('numeroLicencia')?.disable();
-    this.alumnoForm.get('numeroLicencia')?.clearValidators();
-    this.alumnoForm.get('numeroLicencia')?.setValue(null);
-
-    this.alumnoForm.get('fechaLicencia')?.disable();
-    this.alumnoForm.get('fechaLicencia')?.clearValidators();
-    this.alumnoForm.get('fechaLicencia')?.setValue(null);
-
-    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoForm.get('grado')?.updateValueAndValidity();
-    this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
-    this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
   }
 
   getGradoNombre(grado: any): string {
@@ -1202,10 +1153,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
     switch (tipoTarifa) {
-      case TipoTarifa.PILATES:
-        return 30;
-      case TipoTarifa.DEFENSA_PERSONAL_FEMENINA:
-        return 30;
       case TipoTarifa.ADULTO:
         return 30;
       case TipoTarifa.ADULTO_GRUPO:
