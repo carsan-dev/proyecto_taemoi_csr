@@ -164,33 +164,25 @@
             <h4>Listado de Asistencia</h4>
           </div>
 
-          <div class="row g-3">
-            <div class="col-12 col-md-4">
-              <label for="mesAnoAsis" class="form-label fw-semibold">Mes y Año:</label>
-              <input id="mesAnoAsis" type="month" class="admin-form-control" [(ngModel)]="mesAnoAsistencia" />
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-6">
+              <label for="mesAnoAsis" class="form-label fw-semibold mb-2">Mes y Año:</label>
+              <input id="mesAnoAsis" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoAsistencia" />
             </div>
 
-            <div class="col-12 col-md-4">
-              <label for="grupoAsis" class="form-label fw-semibold">Grupo:</label>
-              <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado" (ngModelChange)="onGrupoChange()">
+            <div class="col-12 col-md-6">
+              <label for="grupoAsis" class="form-label fw-semibold mb-2">Día de la semana:</label>
+              <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
                 <option *ngFor="let g of grupos" [value]="g">{{ g | titlecase }}</option>
-              </select>
-            </div>
-
-            <div class="col-12 col-md-4">
-              <label for="turnoAsis" class="form-label fw-semibold">Turno:</label>
-              <select id="turnoAsis" class="admin-form-control form-select" [(ngModel)]="turnoSeleccionado"
-                [disabled]="!turnosDisponibles.length">
-                <option *ngFor="let t of turnosDisponibles" [value]="t">{{ t }}</option>
               </select>
             </div>
           </div>
 
           <button class="admin-btn admin-btn-primary w-100 mt-4"
-            [disabled]="!mesAnoAsistencia || !grupoSeleccionado || !turnoSeleccionado"
+            [disabled]="!mesAnoAsistencia || !grupoSeleccionado"
             (click)="generarListadoAsistencia()">
             <i class="bi bi-file-earmark-pdf"></i>
-            <span>Generar PDF de Asistencia</span>
+            <span>Generar PDF de Asistencia (Todos los turnos)</span>
           </button>
         </div>
       </div>

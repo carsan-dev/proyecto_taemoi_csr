@@ -940,14 +940,12 @@ export class EndpointsService {
   descargarAsistencia(
     year: number,
     month: number,
-    grupo: string,
-    turno: string
+    grupo: string
   ): Observable<Blob> {
     const params = new HttpParams()
       .set('year', year.toString())
       .set('month', month.toString())
-      .set('grupo', grupo)
-      .set('turno', turno);
+      .set('grupo', grupo);
     return this.http
       .get(`${this.urlBase}/informes/asistencia`, {
         params,

@@ -15,5 +15,5 @@ public interface PDFService {
 
 	byte[] generarInformeAdultosAPromocionar();
 
-	byte[] generarListadoAsistencia(int year, int month, String grupo, String turno) throws IOException;
+	byte[] generarListadoAsistencia(int year, int month, String grupo) throws IOException;
 }
