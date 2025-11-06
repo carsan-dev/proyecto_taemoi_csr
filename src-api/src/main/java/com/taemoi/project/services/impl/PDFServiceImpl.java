@@ -916,20 +916,65 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarListadoAsistencia(int year, int month, String grupo, String turno) throws IOException {
-		// Normalize the turno string to handle different dash characters
-		String normalizedTurno = turno.replace('–', '-').replace('—', '-');
-
-		List<Alumno> alumnos = alumnoRepository.findAll().stream()
+	public byte[] generarListadoAsistencia(int year, int month, String grupo) throws IOException {
+		// Find all alumnos with turnos on the specified day
+		List<Alumno> allAlumnos = alumnoRepository.findAll().stream()
 				.filter(a -> a.getFechaNacimiento() != null && a.getTurnos() != null && !a.getTurnos().isEmpty())
 				.filter(a -> a.getTurnos().stream()
-						.anyMatch(t -> t.getDiaSemana() != null && t.getHoraInicio() != null && t.getHoraFin() != null
-								&& t.getDiaSemana().equalsIgnoreCase(grupo)
-								&& normalizedTurno.contains(t.getHoraInicio().toString())
-								&& normalizedTurno.contains(t.getHoraFin().toString())))
+						.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
 				.collect(Collectors.toList());
-		int totalAlumnos = alumnos.size();
 
+		// Get all unique turnos for this day, grouped by deporte
+		// Create a data structure: Map<Deporte, List<TurnoWithAlumnos>>
+		class TurnoWithAlumnos {
+			com.taemoi.project.entities.Turno turno;
+			List<Alumno> alumnos;
+			Deporte deporte;
+
+			TurnoWithAlumnos(com.taemoi.project.entities.Turno turno, List<Alumno> alumnos, Deporte deporte) {
+				this.turno = turno;
+				this.alumnos = alumnos;
+				this.deporte = deporte;
+			}
+		}
+
+		// Collect all turnos with their alumnos, grouped by deporte
+		Map<Deporte, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
+
+		// Process each alumno to build the turno-alumno-deporte relationships
+		for (Alumno alumno : allAlumnos) {
+			Deporte deporte = alumno.getDeporte();
+			if (deporte == null) continue; // Skip alumnos without a deporte
+
+			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
+				if (turno.getDiaSemana() != null && turno.getDiaSemana().equalsIgnoreCase(grupo)) {
+					turnosByDeporte.computeIfAbsent(deporte, k -> new ArrayList<>());
+
+					// Find or create TurnoWithAlumnos for this turno and deporte
+					TurnoWithAlumnos existing = turnosByDeporte.get(deporte).stream()
+							.filter(twa -> twa.turno.getId().equals(turno.getId()))
+							.findFirst()
+							.orElse(null);
+
+					if (existing == null) {
+						List<Alumno> alumnosForTurno = new ArrayList<>();
+						alumnosForTurno.add(alumno);
+						turnosByDeporte.get(deporte).add(new TurnoWithAlumnos(turno, alumnosForTurno, deporte));
+					} else {
+						if (!existing.alumnos.contains(alumno)) {
+							existing.alumnos.add(alumno);
+						}
+					}
+				}
+			}
+		}
+
+		// Sort turnos within each deporte by time
+		for (List<TurnoWithAlumnos> turnos : turnosByDeporte.values()) {
+			turnos.sort(Comparator.comparing(twa -> twa.turno.getHoraInicio()));
+		}
+
+		// Calculate dates for the month
 		DayOfWeek dow = DiaSemanaUtils.mapGrupoToDayOfWeek(grupo);
 		LocalDate inicio = LocalDate.of(year, month, 1);
 		LocalDate finMes = inicio.with(TemporalAdjusters.lastDayOfMonth());
@@ -942,110 +987,142 @@ public class PDFServiceImpl implements PDFService {
 
 		String logoPng = getLogoPngBase64();
 		StringBuilder html = new StringBuilder();
+
+		// HTML Header with styles
 		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'/>");
 		html.append("<style>");
-		html.append("@page { margin: 12mm; }");
+		html.append("@page { margin: 8.5mm; }");
 		html.append("* { box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }");
 		html.append("body { margin: 0; padding: 0; }");
-		html.append(".header-section { text-align: center; margin-bottom: 6mm; border-bottom: 2px solid #007bff; padding-bottom: 4mm; }");
-		html.append(".logo-container { text-align: center; margin-bottom: 3mm; }");
-		html.append(".logo-container img { width: 30mm; height: auto; max-height: 30mm; }");
-		html.append(".header-titles .main { font-size: 20pt; color: #1b2b2e; font-weight: 700; margin: 2mm 0; }");
-		html.append(".header-titles .sub { font-size: 16pt; color: #007bff; margin: 0 0 3mm; font-weight: 600; }");
-		html.append("h2 { font-size: 14pt; margin: 3mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
-		html.append("p.info { text-align: center; font-size: 10pt; margin: 2mm 0; font-weight: 600; color: #495057; }");
+		html.append(".page-break { page-break-after: always; }");
+		html.append(".header-section { text-align: center; margin-bottom: 3.2mm; border-bottom: 1.5px solid #007bff; padding-bottom: 2.2mm; }");
+		html.append(".logo-container { text-align: center; margin-bottom: 1.6mm; }");
+		html.append(".logo-container img { width: 22mm; height: auto; max-height: 22mm; }");
+		html.append(".header-titles .main { font-size: 14.5pt; color: #1b2b2e; font-weight: 700; margin: 1.1mm 0; }");
+		html.append(".header-titles .sub { font-size: 10.5pt; color: #007bff; margin: 0 0 1.1mm; font-weight: 600; }");
+		html.append("h2 { font-size: 9.5pt; margin: 1.1mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
+		html.append("p.info { text-align: center; font-size: 7.2pt; margin: 0.7mm 0; font-weight: 600; color: #495057; }");
+		html.append(".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
 		html.append(".table-container { width: 100%; }");
 		html.append(".table-wrapper { display: table; width: 100%; }");
 		html.append(".table-cell { display: table-cell; vertical-align: top; }");
 		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; }");
-		html.append(".main-table th, .main-table td { border: 1px solid #dee2e6; padding: 2mm 1mm; text-align: center; font-size: 9pt; }");
-		html.append(".main-table th { background-color: #007bff; color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }");
+		html.append(".main-table th, .main-table td { border: 1px solid #dee2e6; padding: 1.1mm 0.65mm; text-align: center; font-size: 7.2pt; }");
+		html.append(".main-table th { background-color: #007bff; color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
-		html.append(".main-table th:first-child, .main-table td:first-child { width: 15mm; }");
+		html.append(".main-table th:first-child, .main-table td:first-child { width: 10.5mm; padding: 0; }");
 		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
+		html.append(".cinturon-naranja { background: #ff9800; }");
 		html.append(".cinturon-verde { background: #4caf50; }");
 		html.append(".cinturon-azul { background: #2196f3; }");
 		html.append(".cinturon-rojo { background: #f44336; }");
-		html.append(".cinturon-negro { background: #212529; }");
+		html.append(".cinturon-negro { background: #212529; color: #ffffff; font-weight: 700; font-size: 6.5pt; }");
+		html.append(".cinturon-split { display: flex; width: 100%; height: 100%; }");
+		html.append(".cinturon-half-left { flex: 1; }");
+		html.append(".cinturon-half-right { flex: 1; }");
 		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
-		html.append(".side-table { table-layout: fixed; margin-left: 2mm; }");
-		html.append(".side-table th, .side-table td { border: 1px solid #dee2e6; width: 13mm; height: 10mm; padding: 1mm; text-align: center; font-size: 9pt; }");
+		html.append(".side-table { table-layout: fixed; margin-left: 1.6mm; }");
+		html.append(".side-table th, .side-table td { border: 1px solid #dee2e6; width: 9.2mm; height: 6.2mm; padding: 0.65mm; text-align: center; font-size: 7.2pt; }");
 		html.append(".side-table th { background-color: #007bff; color: #ffffff; font-weight: 600; }");
 		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; }");
 		html.append("</style>");
 		html.append("</head><body>");
 
-		// Header
-		html.append("<div class='header-section'>");
-		if (!logoPng.isEmpty()) {
-			html.append("<div class='logo-container'><img src='").append(logoPng).append("' alt='Logo' /></div>");
-		}
-		html.append("<div class='header-titles'>");
-		html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
-		html.append("<p class='sub'>Tae Kwon Do</p>");
-		html.append("</div>");
-		html.append("<h2>LISTADO DE ASISTENCIA - ")
-				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
-				.append(" ").append(year).append("</h2>");
-		html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
-		html.append("<p class='info'>").append(grupo.toUpperCase())
-				.append(" - Turno de ").append(turno.replace("–", " a ")).append("</p>");
-		html.append("</div>");
+		// Generate pages organized by sport, then by turno
+		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES, Deporte.DEFENSA_PERSONAL_FEMENINA);
+		boolean firstPage = true;
 
-		// Tables
-		html.append("<div class='table-wrapper'>");
-		html.append("<div class='table-cell' style='width: 60%;'>");
-		html.append("<table class='main-table'>");
-		html.append("<thead><tr>");
-		html.append("<th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
-		html.append("</tr></thead><tbody>");
+		for (Deporte deporte : deportesOrdenados) {
+			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporte);
+			if (turnosDeporte == null || turnosDeporte.isEmpty()) continue;
 
-		for (Alumno a : alumnos) {
-			LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
-					.atZone(ZoneId.systemDefault()).toLocalDate();
-			int edad = Period.between(nac, LocalDate.now()).getYears();
-			boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
-			String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
-			String licClass = licOk ? "licencia-ok" : "licencia-no";
-			String cintClass = "cinturon-" + extractPrimaryBeltColor(a.getGrado().getTipoGrado());
+			for (TurnoWithAlumnos twa : turnosDeporte) {
+				// Add page break before each page except the first
+				if (!firstPage) {
+					html.append("<div class='page-break'></div>");
+				}
+				firstPage = false;
 
-			html.append("<tr>");
-			html.append("<td class='").append(cintClass).append("'></td>");
-			html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
-			html.append("<td>").append(edad).append("</td>");
-			html.append("<td style='text-align:left; padding-left: 2mm;'>").append(a.getNombre()).append(" ")
-					.append(a.getApellidos()).append("</td>");
-			html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
-			html.append("</tr>");
-		}
+				List<Alumno> alumnos = twa.alumnos;
+				// Sort alumnos by nombre
+				alumnos.sort(Comparator.comparing(Alumno::getNombre));
 
-		html.append("</tbody></table>");
-		html.append("</div>");
+				int totalAlumnos = alumnos.size();
+				String turnoStr = twa.turno.getHoraInicio() + " a " + twa.turno.getHoraFin();
 
-		// Attendance grid
-		html.append("<div class='table-cell' style='width: 40%;'>");
-		html.append("<table class='side-table'><thead><tr>");
-		for (LocalDate f : fechas) {
-			html.append("<th>").append(f.getDayOfMonth()).append("</th>");
-		}
-		html.append("</tr></thead><tbody>");
-		for (int i = 0; i < totalAlumnos; i++) {
-			html.append("<tr>");
-			for (@SuppressWarnings("unused") LocalDate f : fechas) {
-				html.append("<td></td>");
+				// Header
+				html.append("<div class='header-section'>");
+				if (!logoPng.isEmpty()) {
+					html.append("<div class='logo-container'><img src='").append(logoPng).append("' alt='Logo' /></div>");
+				}
+				html.append("<div class='header-titles'>");
+				html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
+				html.append("<p class='sub'>Tae Kwon Do</p>");
+				html.append("</div>");
+				html.append("<h2>LISTADO DE ASISTENCIA - ")
+						.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
+						.append(" ").append(year).append("</h2>");
+				html.append("<p class='deporte-label'>").append(deporte.name().replace("_", " ")).append("</p>");
+				html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
+				html.append("<p class='info'>").append(grupo.toUpperCase())
+						.append(" - Turno de ").append(turnoStr).append("</p>");
+				html.append("</div>");
+
+				// Tables
+				html.append("<div class='table-wrapper'>");
+				html.append("<div class='table-cell' style='width: 60%;'>");
+				html.append("<table class='main-table'>");
+				html.append("<thead><tr>");
+				html.append("<th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+				html.append("</tr></thead><tbody>");
+
+				for (Alumno a : alumnos) {
+					LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
+							.atZone(ZoneId.systemDefault()).toLocalDate();
+					int edad = Period.between(nac, LocalDate.now()).getYears();
+					boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
+					String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
+					String licClass = licOk ? "licencia-ok" : "licencia-no";
+
+					html.append("<tr>");
+					html.append(generateBeltCellHtml(a.getGrado().getTipoGrado()));
+					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
+					html.append("<td>").append(edad).append("</td>");
+					html.append("<td style='text-align:left; padding-left: 1.1mm;'>").append(a.getNombre()).append(" ")
+							.append(a.getApellidos()).append("</td>");
+					html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
+					html.append("</tr>");
+				}
+
+				html.append("</tbody></table>");
+				html.append("</div>");
+
+				// Attendance grid
+				html.append("<div class='table-cell' style='width: 40%;'>");
+				html.append("<table class='side-table'><thead><tr>");
+				for (LocalDate f : fechas) {
+					html.append("<th>").append(f.getDayOfMonth()).append("</th>");
+				}
+				html.append("</tr></thead><tbody>");
+				for (int i = 0; i < totalAlumnos; i++) {
+					html.append("<tr>");
+					for (@SuppressWarnings("unused") LocalDate f : fechas) {
+						html.append("<td></td>");
+					}
+					html.append("</tr>");
+				}
+				html.append("</tbody><tfoot><tr>");
+				for (LocalDate f : fechas) {
+					html.append("<td>").append(f.getDayOfMonth()).append("</td>");
+				}
+				html.append("</tr></tfoot></table>");
+				html.append("</div>");
+				html.append("</div>");
 			}
-			html.append("</tr>");
 		}
-		html.append("</tbody><tfoot><tr>");
-		for (LocalDate f : fechas) {
-			html.append("<td>").append(f.getDayOfMonth()).append("</td>");
-		}
-		html.append("</tr></tfoot></table>");
-		html.append("</div>");
-		html.append("</div>");
 
 		html.append("</body></html>");
 
@@ -1062,6 +1139,53 @@ public class PDFServiceImpl implements PDFService {
 			throw new RuntimeException("Error al generar el listado de asistencia PDF", e);
 		}
 		return os.toByteArray();
+	}
+
+	/**
+	 * Generates HTML content for the belt color cell in the attendance list.
+	 * Shows dan numbers for black belts and split colors for half-color belts.
+	 */
+	private String generateBeltCellHtml(TipoGrado tipoGrado) {
+		if (tipoGrado == null) {
+			return "<td class='cinturon-blanco'></td>";
+		}
+
+		String enumName = tipoGrado.name();
+
+		// Handle black belt grades (NEGRO_X_DAN) - show dan number
+		if (enumName.startsWith("NEGRO_")) {
+			String[] parts = enumName.split("_");
+			if (parts.length >= 2) {
+				String danNumber = parts[1]; // e.g., "1" from NEGRO_1_DAN
+				return "<td class='cinturon-negro'>" + danNumber + "º</td>";
+			}
+			return "<td class='cinturon-negro'></td>";
+		}
+
+		// Handle ROJO_NEGRO grades (pre-black belt) - show split colors with PUM number
+		if (enumName.startsWith("ROJO_NEGRO_")) {
+			String[] parts = enumName.split("_");
+			String pumNumber = parts.length >= 3 ? parts[2] : "";
+			return "<td style='padding: 0;'><div class='cinturon-split'>" +
+				   "<div class='cinturon-half-left cinturon-rojo'></div>" +
+				   "<div class='cinturon-half-right cinturon-negro' style='display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700; font-size: 6pt;'>" +
+				   pumNumber + "º" +
+				   "</div></div></td>";
+		}
+
+		// Check if it's a half-color belt (e.g., BLANCO_AMARILLO, AMARILLO_NARANJA)
+		String[] parts = enumName.split("_");
+		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
+			String color1 = parts[0].toLowerCase();
+			String color2 = parts[1].toLowerCase();
+			return "<td style='padding: 0;'><div class='cinturon-split'>" +
+				   "<div class='cinturon-half-left cinturon-" + color1 + "'></div>" +
+				   "<div class='cinturon-half-right cinturon-" + color2 + "'></div></div></td>";
+		}
+
+		// Single color belt
+		String color = parts[0].toLowerCase();
+		return "<td class='cinturon-" + color + "'></td>";
 	}
 
 	/**

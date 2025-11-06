@@ -40,15 +40,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   opcionesInforme: Array<{ value: string; label: string }> = [];
   mesAnoAsistencia!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves'];
-  turnosMap: Record<string, string[]> = {
-    lunes: ['17:00–18:00', '18:00–19:00'],
-    martes: ['17:30–18:30', '18:30–19:30'],
-    miércoles: ['16:00–17:00', '17:00–18:00'],
-    jueves: ['19:00–20:00', '20:00–21:00'],
-  };
-  turnosDisponibles: string[] = [];
   grupoSeleccionado!: string;
-  turnoSeleccionado: string | null = null;
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
@@ -70,10 +62,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.searchSubject.complete();
   }
 
-  onGrupoChange() {
-    this.turnosDisponibles = this.turnosMap[this.grupoSeleccionado] || [];
-    this.turnoSeleccionado = null;
-  }
 
   abrirModalInforme(): void {
     this.modalTitle = 'Generar Informe';
@@ -401,14 +389,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       .descargarAsistencia(
         year,
         month,
-        this.grupoSeleccionado,
-        this.turnoSeleccionado!
+        this.grupoSeleccionado
       )
       .subscribe((blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Asistencia-${this.grupoSeleccionado}-${this.turnoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
+        a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
       });
