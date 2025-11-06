@@ -68,6 +68,7 @@ public class Alumno {
 
 	@NotNull(message = "El tipo de tarifa no puede ser nulo")
 	@Enumerated(EnumType.STRING)
+	@Column(length = 50)
 	private TipoTarifa tipoTarifa;
 
 	@NotNull(message = "La cuantía de la tarifa no puede ser nula")
