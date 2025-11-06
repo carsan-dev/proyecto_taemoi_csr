@@ -232,26 +232,25 @@ public class PDFServiceImpl implements PDFService {
 			"  page-break-inside: avoid;" +
 			"}" +
 			".encabezado-grupo {" +
-			"  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);" +
+			"  background-color: #f8f9fa;" +
 			"  padding: 4mm 3mm;" +
 			"  border-radius: 3mm;" +
 			"  border: 1px solid #dee2e6;" +
-			"  box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.08);" +
-			"  display: flex;" +
-			"  justify-content: space-between;" +
-			"  align-items: center;" +
 			"  margin-bottom: 3mm;" +
 			"}" +
 			".encabezado-grupo .izquierda {" +
-			"  display: flex;" +
-			"  align-items: center;" +
-			"  flex: 1;" +
+			"  display: inline-block;" +
+			"  width: 70%;" +
+			"  vertical-align: middle;" +
 			"}" +
 			".encabezado-grupo .derecha {" +
+			"  display: inline-block;" +
+			"  width: 28%;" +
 			"  text-align: right;" +
 			"  font-weight: 600;" +
 			"  color: #007bff;" +
 			"  font-size: 11pt;" +
+			"  vertical-align: middle;" +
 			"}" +
 			".cinturon {" +
 			"  display: inline-block;" +
@@ -262,7 +261,6 @@ public class PDFServiceImpl implements PDFService {
 			"  border: 1.5px solid #495057;" +
 			"  border-radius: 1mm;" +
 			"  position: relative;" +
-			"  box-shadow: 0 1mm 2mm rgba(0, 0, 0, 0.1);" +
 			"}" +
 			".cinturon.doble .superior, .cinturon.doble .inferior {" +
 			"  width: 100%;" +
@@ -292,14 +290,12 @@ public class PDFServiceImpl implements PDFService {
 			"  transform: translateY(-50%);" +
 			"  height: 80%;" +
 			"  background-color: #FFD700;" +
-			"  box-shadow: 0 0 1mm rgba(0, 0, 0, 0.2);" +
 			"  z-index: 10;" +
 			"}" +
 			"table {" +
 			"  width: 100%;" +
 			"  border-collapse: collapse;" +
 			"  margin-top: 2mm;" +
-			"  box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.08);" +
 			"  border-radius: 2mm;" +
 			"  overflow: hidden;" +
 			"}" +
@@ -310,7 +306,7 @@ public class PDFServiceImpl implements PDFService {
 			"  font-size: 10pt;" +
 			"}" +
 			"th {" +
-			"  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);" +
+			"  background-color: #007bff;" +
 			"  color: #ffffff;" +
 			"  font-weight: 600;" +
 			"  font-size: 10pt;" +
@@ -332,7 +328,7 @@ public class PDFServiceImpl implements PDFService {
 			"  margin-top: 10mm;" +
 			"}" +
 			".section-header {" +
-			"  background: linear-gradient(135deg, #1b2b2e 0%, #284747 100%);" +
+			"  background-color: #1b2b2e;" +
 			"  color: #ffffff;" +
 			"  padding: 5mm;" +
 			"  border-radius: 2mm;" +
@@ -340,7 +336,6 @@ public class PDFServiceImpl implements PDFService {
 			"  font-size: 14pt;" +
 			"  font-weight: 700;" +
 			"  text-align: center;" +
-			"  box-shadow: 0 2mm 4mm rgba(0, 0, 0, 0.15);" +
 			"}";
 	}
 
@@ -389,7 +384,7 @@ public class PDFServiceImpl implements PDFService {
 			List<Alumno> alumnosTaekwondo = alumnos.stream()
 					.filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
 					.collect(Collectors.toList());
-			html.append("<div class='section-header' style='background: linear-gradient(135deg, #0D47A1 0%, #1976D2 100%);'>");
+			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
 			html.append("Taekwondo");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
@@ -397,7 +392,7 @@ public class PDFServiceImpl implements PDFService {
 			List<Alumno> alumnosKickboxing = alumnos.stream()
 					.filter(a -> a.getDeporte() == Deporte.KICKBOXING)
 					.collect(Collectors.toList());
-			html.append("<div class='section-header kickboxing' style='background: linear-gradient(135deg, #ff4500 0%, #e83e00 100%); margin-top: 10mm;'>");
+			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
 			html.append("Kickboxing");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosKickboxing));
@@ -515,7 +510,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<table>");
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>Nº Expediente</th>");
+			html.append("<th>N&#186; Expediente</th>");
 			html.append("<th>Licencia Federativa</th>");
 			html.append("<th>Fecha del Grado</th>");
 			html.append("</tr></thead>");
@@ -675,17 +670,17 @@ public class PDFServiceImpl implements PDFService {
 		// Add header with logo
 		html.append(generarCabeceraConLogo("Informe de Licencias"));
 
-		html.append("<div class='section-header' style='background: linear-gradient(135deg, #28a745 0%, #20c997 100%);'>");
+		html.append("<div class='section-header' style='background-color: #28a745;'>");
 		html.append("Licencias en Vigor (" + licenciasVigor.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasVigor));
 
-		html.append("<div class='section-header' style='background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);'>");
+		html.append("<div class='section-header' style='background-color: #dc3545;'>");
 		html.append("Licencias Caducadas (" + licenciasCaducadas.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasCaducadas));
 
-		html.append("<div class='section-header' style='background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);'>");
+		html.append("<div class='section-header' style='background-color: #ffc107;'>");
 		html.append("Sin Licencia (" + sinLicencia.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(sinLicencia));
@@ -713,8 +708,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<table>");
 		html.append("<thead><tr>");
 		html.append("<th>Nombre y Apellidos</th>");
-		html.append("<th>Nº Expediente</th>");
-		html.append("<th>Nº Licencia</th>");
+		html.append("<th>N&#186; Expediente</th>");
+		html.append("<th>N&#186; Licencia</th>");
 		html.append("<th>Fecha de Licencia</th>");
 		html.append("<th>Grado</th>");
 		html.append("</tr></thead>");
@@ -781,7 +776,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<table>");
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>Nº Expediente</th>");
+			html.append("<th>N&#186; Expediente</th>");
 			html.append("<th>Licencia Federativa</th>");
 			html.append("<th>Fecha Licencia</th>");
 			html.append("<th>Edad</th>");
@@ -862,7 +857,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<table>");
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>Nº Expediente</th>");
+			html.append("<th>N&#186; Expediente</th>");
 			html.append("<th>Licencia Federativa</th>");
 			html.append("<th>Fecha Licencia</th>");
 			html.append("<th>Edad</th>");
@@ -964,7 +959,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".table-cell { display: table-cell; vertical-align: top; }");
 		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; }");
 		html.append(".main-table th, .main-table td { border: 1px solid #dee2e6; padding: 2mm 1mm; text-align: center; font-size: 9pt; }");
-		html.append(".main-table th { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }");
+		html.append(".main-table th { background-color: #007bff; color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
 		html.append(".main-table th:first-child, .main-table td:first-child { width: 15mm; }");
@@ -978,7 +973,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
 		html.append(".side-table { table-layout: fixed; margin-left: 2mm; }");
 		html.append(".side-table th, .side-table td { border: 1px solid #dee2e6; width: 13mm; height: 10mm; padding: 1mm; text-align: center; font-size: 9pt; }");
-		html.append(".side-table th { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: #ffffff; font-weight: 600; }");
+		html.append(".side-table th { background-color: #007bff; color: #ffffff; font-weight: 600; }");
 		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; }");
 		html.append("</style>");
 		html.append("</head><body>");
