@@ -2,6 +2,7 @@ package com.taemoi.project.services.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.time.format.TextStyle;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -20,7 +22,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.image.PNGTranscoder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
@@ -46,6 +52,297 @@ public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private GradoRepository gradoRepository;
+
+	// Cache for the PNG logo to avoid repeated conversion
+	private String logoPngBase64Cache = null;
+
+	/**
+	 * Converts the school logo SVG to PNG and returns it as a base64 data URI.
+	 * This provides full compatibility with OpenHTML to PDF.
+	 * The result is cached to avoid repeated conversions.
+	 *
+	 * @return Base64-encoded PNG logo as a data URI
+	 */
+	private String getLogoPngBase64() {
+		if (logoPngBase64Cache != null) {
+			return logoPngBase64Cache;
+		}
+
+		try {
+			ClassPathResource resource = new ClassPathResource("static/logo_escuela.svg");
+			InputStream svgInputStream = resource.getInputStream();
+
+			// Convert SVG to PNG using Apache Batik
+			PNGTranscoder transcoder = new PNGTranscoder();
+			transcoder.addTranscodingHint(PNGTranscoder.KEY_WIDTH, 300f);
+			transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, 300f);
+
+			TranscoderInput input = new TranscoderInput(svgInputStream);
+			ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
+			TranscoderOutput output = new TranscoderOutput(pngOutputStream);
+
+			transcoder.transcode(input, output);
+			svgInputStream.close();
+			pngOutputStream.flush();
+
+			// Convert PNG bytes to base64
+			byte[] pngBytes = pngOutputStream.toByteArray();
+			String base64 = Base64.getEncoder().encodeToString(pngBytes);
+			logoPngBase64Cache = "data:image/png;base64," + base64;
+
+			pngOutputStream.close();
+			return logoPngBase64Cache;
+		} catch (Exception e) {
+			System.err.println("Error converting logo SVG to PNG: " + e.getMessage());
+			e.printStackTrace();
+			// Return empty string if conversion fails
+			return "";
+		}
+	}
+
+	/**
+	 * Generates a standard header section with logo for PDF reports.
+	 * The logo is converted to PNG and embedded as base64 for full compatibility.
+	 *
+	 * @param titulo Main title for the report
+	 * @return HTML string with header section
+	 */
+	private String generarCabeceraConLogo(String titulo) {
+		return generarCabeceraConLogo(titulo, "#007bff"); // Default blue
+	}
+
+	/**
+	 * Generates a standard header section with logo and custom border color.
+	 *
+	 * @param titulo Main title for the report
+	 * @param borderColor Border color for the header
+	 * @return HTML string with header section
+	 */
+	private String generarCabeceraConLogo(String titulo, String borderColor) {
+		String logoPng = getLogoPngBase64();
+		StringBuilder header = new StringBuilder();
+
+		header.append("<div class='pdf-header' style='border-bottom-color: ").append(borderColor).append(";'>");
+
+		if (!logoPng.isEmpty()) {
+			header.append("<div class='logo-container'>");
+			header.append("<img src='").append(logoPng).append("' alt='Logo' />");
+			header.append("</div>");
+		}
+
+		header.append("<div class='header-content'>");
+		header.append("<h1 class='club-name'>Moi's Kim Do Taekwondo</h1>");
+		if (titulo != null && !titulo.isEmpty()) {
+			header.append("<h2 class='report-title'>").append(titulo).append("</h2>");
+		}
+		header.append("</div>");
+		header.append("</div>");
+
+		return header.toString();
+	}
+
+	/**
+	 * Generates modern CSS styles matching the website design.
+	 * Uses Montserrat font, website colors, and modern design principles.
+	 *
+	 * @param pageTitle Title to display in the header
+	 * @param fechaGeneracion Date string to display in footer
+	 * @return CSS style string
+	 */
+	private String generarEstilosModernos(String pageTitle, String fechaGeneracion) {
+		return "@page {" +
+			"  margin: 25mm 15mm 20mm 15mm;" +
+			"  @top-center {" +
+			"    content: '" + pageTitle + "';" +
+			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
+			"    font-size: 16pt;" +
+			"    font-weight: 700;" +
+			"    color: #1b2b2e;" +
+			"    text-align: center;" +
+			"  }" +
+			"  @bottom-left {" +
+			"    content: '" + fechaGeneracion + "';" +
+			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
+			"    font-size: 9pt;" +
+			"    color: #6c757d;" +
+			"  }" +
+			"  @bottom-right {" +
+			"    content: 'Página ' counter(page) ' de ' counter(pages);" +
+			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
+			"    font-size: 9pt;" +
+			"    color: #6c757d;" +
+			"  }" +
+			"}" +
+			"* { box-sizing: border-box; }" +
+			"body {" +
+			"  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
+			"  color: #212529;" +
+			"  line-height: 1.6;" +
+			"  background: #ffffff;" +
+			"}" +
+			".pdf-header {" +
+			"  text-align: center;" +
+			"  margin-bottom: 8mm;" +
+			"  padding-bottom: 5mm;" +
+			"  border-bottom: 3px solid #007bff;" +
+			"  page-break-inside: avoid;" +
+			"}" +
+			".logo-container {" +
+			"  text-align: center;" +
+			"  margin-bottom: 3mm;" +
+			"}" +
+			".logo-container img {" +
+			"  width: 35mm;" +
+			"  height: auto;" +
+			"  max-height: 35mm;" +
+			"}" +
+			".header-content {" +
+			"  text-align: center;" +
+			"}" +
+			".club-name {" +
+			"  font-size: 20pt;" +
+			"  font-weight: 700;" +
+			"  color: #1b2b2e;" +
+			"  margin: 2mm 0;" +
+			"  text-transform: uppercase;" +
+			"  letter-spacing: 1px;" +
+			"}" +
+			".report-title {" +
+			"  font-size: 16pt;" +
+			"  font-weight: 600;" +
+			"  color: #007bff;" +
+			"  margin: 2mm 0 0 0;" +
+			"}" +
+			"h1, h2, h3 {" +
+			"  font-weight: 700;" +
+			"  color: #1b2b2e;" +
+			"  margin: 8mm 0 5mm 0;" +
+			"}" +
+			"h1 { font-size: 22pt; }" +
+			"h2 {" +
+			"  font-size: 16pt;" +
+			"  padding-bottom: 2mm;" +
+			"  border-bottom: 2px solid #007bff;" +
+			"  display: inline-block;" +
+			"  min-width: 40%;" +
+			"}" +
+			".grupo {" +
+			"  margin-top: 6mm;" +
+			"  margin-bottom: 6mm;" +
+			"  page-break-inside: avoid;" +
+			"}" +
+			".encabezado-grupo {" +
+			"  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);" +
+			"  padding: 4mm 3mm;" +
+			"  border-radius: 3mm;" +
+			"  border: 1px solid #dee2e6;" +
+			"  box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.08);" +
+			"  display: flex;" +
+			"  justify-content: space-between;" +
+			"  align-items: center;" +
+			"  margin-bottom: 3mm;" +
+			"}" +
+			".encabezado-grupo .izquierda {" +
+			"  display: flex;" +
+			"  align-items: center;" +
+			"  flex: 1;" +
+			"}" +
+			".encabezado-grupo .derecha {" +
+			"  text-align: right;" +
+			"  font-weight: 600;" +
+			"  color: #007bff;" +
+			"  font-size: 11pt;" +
+			"}" +
+			".cinturon {" +
+			"  display: inline-block;" +
+			"  vertical-align: middle;" +
+			"  width: 28mm;" +
+			"  height: 6mm;" +
+			"  margin-right: 3mm;" +
+			"  border: 1.5px solid #495057;" +
+			"  border-radius: 1mm;" +
+			"  position: relative;" +
+			"  box-shadow: 0 1mm 2mm rgba(0, 0, 0, 0.1);" +
+			"}" +
+			".cinturon.doble .superior, .cinturon.doble .inferior {" +
+			"  width: 100%;" +
+			"  height: 50%;" +
+			"  position: absolute;" +
+			"}" +
+			".cinturon.doble .superior {" +
+			"  top: 0;" +
+			"  border-top-left-radius: 0.5mm;" +
+			"  border-top-right-radius: 0.5mm;" +
+			"}" +
+			".cinturon.doble .inferior {" +
+			"  bottom: 0;" +
+			"  border-bottom-left-radius: 0.5mm;" +
+			"  border-bottom-right-radius: 0.5mm;" +
+			"}" +
+			".grado-nombre {" +
+			"  display: inline-block;" +
+			"  vertical-align: middle;" +
+			"  font-size: 12pt;" +
+			"  font-weight: 600;" +
+			"  color: #1b2b2e;" +
+			"}" +
+			".raya {" +
+			"  position: absolute;" +
+			"  top: 50%;" +
+			"  transform: translateY(-50%);" +
+			"  height: 80%;" +
+			"  background-color: #FFD700;" +
+			"  box-shadow: 0 0 1mm rgba(0, 0, 0, 0.2);" +
+			"  z-index: 10;" +
+			"}" +
+			"table {" +
+			"  width: 100%;" +
+			"  border-collapse: collapse;" +
+			"  margin-top: 2mm;" +
+			"  box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.08);" +
+			"  border-radius: 2mm;" +
+			"  overflow: hidden;" +
+			"}" +
+			"th, td {" +
+			"  border: 1px solid #dee2e6;" +
+			"  padding: 3mm 2mm;" +
+			"  text-align: center;" +
+			"  font-size: 10pt;" +
+			"}" +
+			"th {" +
+			"  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);" +
+			"  color: #ffffff;" +
+			"  font-weight: 600;" +
+			"  font-size: 10pt;" +
+			"  text-transform: uppercase;" +
+			"  letter-spacing: 0.5px;" +
+			"}" +
+			"tbody tr:nth-child(even) {" +
+			"  background-color: #f8f9fa;" +
+			"}" +
+			"tbody tr:nth-child(odd) {" +
+			"  background-color: #ffffff;" +
+			"}" +
+			"tbody tr:hover {" +
+			"  background-color: #e7f3ff;" +
+			"}" +
+			".kickboxing {" +
+			"  padding-top: 10mm;" +
+			"  border-top: 3px solid #ff4500;" +
+			"  margin-top: 10mm;" +
+			"}" +
+			".section-header {" +
+			"  background: linear-gradient(135deg, #1b2b2e 0%, #284747 100%);" +
+			"  color: #ffffff;" +
+			"  padding: 5mm;" +
+			"  border-radius: 2mm;" +
+			"  margin-bottom: 5mm;" +
+			"  font-size: 14pt;" +
+			"  font-weight: 700;" +
+			"  text-align: center;" +
+			"  box-shadow: 0 2mm 4mm rgba(0, 0, 0, 0.15);" +
+			"}";
+	}
 
 	@Override
 	public byte[] generarInformeAlumnosPorGrado() {
@@ -75,68 +372,42 @@ public class PDFServiceImpl implements PDFService {
 		String fechaGeneracion = now.format(formatter);
 
 		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("@page {");
-		html.append("  margin: 30mm 10mm 30mm 10mm;");
-		html.append("  @top-center {");
-		html.append("    content: 'Listado de Alumnos por Grado';");
-		html.append("    font-size: 24px;");
-		html.append("    font-weight: bold;");
-		html.append("  	 font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-left {");
-		html.append("    content: '" + fechaGeneracion + "';");
-		html.append("    font-size: 12px;");
-		html.append("  	 font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-right {");
-		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
-		html.append("    font-size: 12px;");
-		html.append("  	 font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("}");
-		html.append("body { font-family: Arial, sans-serif; }");
-		html.append(".grupo { margin-top: 20px; margin-bottom: 20px; page-break-inside: avoid; }");
-		html.append(
-				".encabezado-grupo { display: table; table-layout: fixed; background: #f0f0f0; padding: 10px 5px; border: 1px solid #ccc; width: 100%; }");
-		html.append(".celda { display: table-cell; vertical-align: middle; }");
-		html.append(".izquierda { padding-left: 10px; width: 100%; }");
-		html.append(".derecha { padding-right: 10px; text-align: right; width: 50%; }");
-		html.append(
-				".cinturon { display: inline-block; vertical-align: middle; width: 100px; height: 20px; margin-right: 10px; border: 1px solid #000; position: relative; }");
-		html.append(".cinturon.doble .superior, .cinturon.doble .inferior { width: 100%; height: 50%; }");
-		html.append(".cinturon.doble .superior { position: absolute; top: 0; }");
-		html.append(".cinturon.doble .inferior { position: absolute; bottom: 0; }");
-		html.append(".grado-nombre { display: inline-block; vertical-align: middle; margin-left: 10px;}");
-		html.append(
-				".raya { position: absolute; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; }");
-		html.append("table { width: 100%; border-collapse: collapse; }");
-		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
-		html.append("th { background-color: #666; color: #fff; }");
-		html.append(".kickboxing { padding-top: 30px; }");
+		html.append(generarEstilosModernos("Listado de Alumnos por Grado", fechaGeneracion));
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
+		// Add header with logo
 		if (deportes.size() == 2 && deportes.contains(Deporte.TAEKWONDO) && deportes.contains(Deporte.KICKBOXING)) {
+			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
 
-			List<Alumno> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
+			List<Alumno> alumnosTaekwondo = alumnos.stream()
+					.filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
 					.collect(Collectors.toList());
-			html.append("<h2>Taekwondo</h2>");
+			html.append("<div class='section-header' style='background: linear-gradient(135deg, #0D47A1 0%, #1976D2 100%);'>");
+			html.append("Taekwondo");
+			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
 
-			List<Alumno> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
+			List<Alumno> alumnosKickboxing = alumnos.stream()
+					.filter(a -> a.getDeporte() == Deporte.KICKBOXING)
 					.collect(Collectors.toList());
-			html.append("<h2 class='kickboxing'>Kickboxing</h2>");
+			html.append("<div class='section-header kickboxing' style='background: linear-gradient(135deg, #ff4500 0%, #e83e00 100%); margin-top: 10mm;'>");
+			html.append("Kickboxing");
+			html.append("</div>");
 			html.append(generarSeccion(alumnosKickboxing));
-
 		} else {
-			String titulo = (deportes.get(0) == Deporte.TAEKWONDO) ? "Informe de Taekwondo por Grado"
-					: "Informe de Kickboxing por Grado";
-			html.append("<h1>").append(titulo).append("</h1>");
+			// Use sport-specific colors for the header border
+			if (deportes.get(0) == Deporte.TAEKWONDO) {
+				html.append(generarCabeceraConLogo("Taekwondo por Grado", "#0D47A1"));
+			} else {
+				html.append(generarCabeceraConLogo("Kickboxing por Grado", "#ff4500"));
+			}
 			html.append(generarSeccion(alumnos));
 		}
 
@@ -177,8 +448,7 @@ public class PDFServiceImpl implements PDFService {
 
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
-
-			html.append("<div class='celda izquierda'>");
+			html.append("<div class='izquierda'>");
 			if (tipo.name().contains("ROJO_NEGRO")) {
 				String[] parts = tipo.name().split("_");
 				String colorInferior = obtenerColorPorNombre(parts[0]);
@@ -235,14 +505,11 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='cinturon' style='" + cinturonStyle + "'></div>");
 			}
 
-			html.append("<span class='grado-nombre'><strong>").append(tipo.getNombre()).append("</strong></span>");
+			html.append("<span class='grado-nombre'>").append(tipo.getNombre()).append("</span>");
 			html.append("</div>");
-			html.append("<div class='celda derecha'>");
-			html.append("<span class='total'>Alumnos: ").append(alumnosGrado.size()).append("</span>");
+			html.append("<div class='derecha'>");
+			html.append("Alumnos: ").append(alumnosGrado.size());
 			html.append("</div>");
-
-			html.append("<div style='clear: both;'></div>");
-
 			html.append("</div>");
 
 			html.append("<table>");
@@ -362,6 +629,10 @@ public class PDFServiceImpl implements PDFService {
 		List<Alumno> alumnos = alumnoRepository.findAll();
 
 		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
+
 		List<Alumno> licenciasVigor = new ArrayList<>();
 		List<Alumno> licenciasCaducadas = new ArrayList<>();
 		List<Alumno> sinLicencia = new ArrayList<>();
@@ -381,45 +652,42 @@ public class PDFServiceImpl implements PDFService {
 		}
 
 		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("@page {");
-		html.append("  margin: 30mm 10mm 30mm 10mm;");
-		html.append("  @top-center {");
-		html.append("    content: 'Informe de Licencias de Alumnos';");
-		html.append("    font-size: 24px;");
-		html.append("    font-weight: bold;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-left {");
-		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-right {");
-		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
+		html.append(generarEstilosModernos("Informe de Licencias de Alumnos", fechaGeneracion));
+		html.append(".status-badge {");
+		html.append("  display: inline-block;");
+		html.append("  padding: 1mm 3mm;");
+		html.append("  border-radius: 2mm;");
+		html.append("  font-weight: 600;");
+		html.append("  font-size: 9pt;");
 		html.append("}");
-		html.append("body { font-family: Arial, sans-serif; }");
-		html.append("h2 { margin-top: 20px; }");
-		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
-		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
-		html.append("th { background-color: #666; color: #fff; }");
+		html.append(".status-vigente { background: #d4edda; color: #155724; }");
+		html.append(".status-caducada { background: #f8d7da; color: #721c24; }");
+		html.append(".status-sin { background: #fff3cd; color: #856404; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
-		html.append("<h2>Licencias en Vigor</h2>");
+		// Add header with logo
+		html.append(generarCabeceraConLogo("Informe de Licencias"));
+
+		html.append("<div class='section-header' style='background: linear-gradient(135deg, #28a745 0%, #20c997 100%);'>");
+		html.append("Licencias en Vigor (" + licenciasVigor.size() + ")");
+		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasVigor));
 
-		html.append("<h2>Licencias Caducadas</h2>");
+		html.append("<div class='section-header' style='background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);'>");
+		html.append("Licencias Caducadas (" + licenciasCaducadas.size() + ")");
+		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasCaducadas));
 
-		html.append("<h2>Sin Licencia</h2>");
+		html.append("<div class='section-header' style='background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);'>");
+		html.append("Sin Licencia (" + sinLicencia.size() + ")");
+		html.append("</div>");
 		html.append(generarTablaAlumnos(sinLicencia));
 
 		html.append("</body>");
@@ -474,6 +742,9 @@ public class PDFServiceImpl implements PDFService {
 	public byte[] generarInformeInfantilesAPromocionar() {
 		List<Alumno> todosAlumnos = alumnoRepository.findAll();
 		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
 
 		List<Alumno> alumnosInfantiles = new ArrayList<>();
 		for (Alumno alumno : todosAlumnos) {
@@ -489,39 +760,23 @@ public class PDFServiceImpl implements PDFService {
 				.collect(Collectors.groupingBy(alumno -> getPromotionGrade(alumno)));
 
 		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("@page {");
-		html.append("  margin: 30mm 10mm 30mm 10mm;");
-		html.append("  @top-center {");
-		html.append("    content: 'Listado de Alumnos Infantiles a Promocionar';");
-		html.append("    font-size: 24px;");
-		html.append("    font-weight: bold;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-left {");
-		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-right {");
-		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("}");
-		html.append("body { font-family: Arial, sans-serif; }");
-		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
-		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
-		html.append("th { background-color: #666; color: #fff; }");
+		html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
+		html.append(".promotion-group { margin-bottom: 8mm; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
+		// Add header with logo
+		html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
+
 		for (Map.Entry<String, List<Alumno>> entry : alumnosAgrupados.entrySet()) {
 			String promotionGrade = entry.getKey();
+			html.append("<div class='promotion-group'>");
 			html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
 			html.append("<table>");
 			html.append("<thead><tr>");
@@ -544,11 +799,13 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>").append(fechaLic).append("</td>");
 				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 				html.append("<td>").append(edad).append("</td>");
-				html.append("<td>").append(alumno.getTieneDerechoExamen() ? "Sí" : "No").append("</td>");
+				String derechoExamen = alumno.getTieneDerechoExamen() ? "<span style='color: #28a745; font-weight: 600;'>Sí</span>" : "<span style='color: #dc3545; font-weight: 600;'>No</span>";
+				html.append("<td>").append(derechoExamen).append("</td>");
 				html.append("</tr>");
 			}
 			html.append("</tbody>");
 			html.append("</table>");
+			html.append("</div>");
 		}
 
 		html.append("</body>");
@@ -570,6 +827,9 @@ public class PDFServiceImpl implements PDFService {
 	public byte[] generarInformeAdultosAPromocionar() {
 		List<Alumno> todosAlumnos = alumnoRepository.findAll();
 		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
 
 		// Filtramos los adultos aptos
 		List<Alumno> alumnosAdultos = todosAlumnos.stream()
@@ -581,54 +841,49 @@ public class PDFServiceImpl implements PDFService {
 				.collect(Collectors.groupingBy(this::getPromotionGrade));
 
 		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("@page {");
-		html.append("  margin: 30mm 10mm 30mm 10mm;");
-		html.append("  @top-center {");
-		html.append("    content: 'Listado de Alumnos Adultos a Promocionar';");
-		html.append("    font-size: 24px;");
-		html.append("    font-weight: bold;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-left {");
-		html.append("    content: 'Fecha: " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "';");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("  @bottom-right {");
-		html.append("    content: 'Página ' counter(page) ' de ' counter(pages);");
-		html.append("    font-size: 12px;");
-		html.append("    font-family: Arial, sans-serif;");
-		html.append("  }");
-		html.append("}");
-		html.append("body { font-family: Arial, sans-serif; }");
-		html.append("table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }");
-		html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }");
-		html.append("th { background-color: #666; color: #fff; }");
+		html.append(generarEstilosModernos("Alumnos Adultos a Promocionar", fechaGeneracion));
+		html.append(".promotion-group { margin-bottom: 8mm; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
+		// Add header with logo
+		html.append(generarCabeceraConLogo("Adultos a Promocionar"));
+
 		for (Map.Entry<String, List<Alumno>> entry : alumnosAgrupados.entrySet()) {
 			String promotionGrade = entry.getKey();
-			html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>").append("<table>")
-					.append("<thead><tr>").append("<th>Nombre y Apellidos</th>").append("<th>Nº Expediente</th>")
-					.append("<th>Licencia Federativa</th>").append("<th>Fecha Licencia</th>").append("<th>Edad</th>")
-					.append("<th>Derecho a Examen</th>").append("</tr></thead>").append("<tbody>");
+			html.append("<div class='promotion-group'>");
+			html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
+			html.append("<table>");
+			html.append("<thead><tr>");
+			html.append("<th>Nombre y Apellidos</th>");
+			html.append("<th>Nº Expediente</th>");
+			html.append("<th>Licencia Federativa</th>");
+			html.append("<th>Fecha Licencia</th>");
+			html.append("<th>Edad</th>");
+			html.append("<th>Derecho a Examen</th>");
+			html.append("</tr></thead>");
+			html.append("<tbody>");
 			for (Alumno alumno : entry.getValue()) {
 				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-				html.append("<tr>").append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
-						.append("</td>").append("<td>").append(alumno.getNumeroExpediente()).append("</td>")
-						.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "N/A")
-						.append("</td>").append("<td>")
-						.append(alumno.getFechaLicencia() != null ? alumno.getFechaLicencia().toString() : "N/A")
-						.append("</td>").append("<td>").append(edad).append("</td>").append("<td>")
-						.append(alumno.getTieneDerechoExamen() ? "Sí" : "No").append("</td>").append("</tr>");
+				String derechoExamen = alumno.getTieneDerechoExamen() ? "<span style='color: #28a745; font-weight: 600;'>Sí</span>" : "<span style='color: #dc3545; font-weight: 600;'>No</span>";
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+				html.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "N/A").append("</td>");
+				html.append("<td>").append(alumno.getFechaLicencia() != null ? alumno.getFechaLicencia().toString() : "N/A").append("</td>");
+				html.append("<td>").append(edad).append("</td>");
+				html.append("<td>").append(derechoExamen).append("</td>");
+				html.append("</tr>");
 			}
-			html.append("</tbody></table>");
+			html.append("</tbody>");
+			html.append("</table>");
+			html.append("</div>");
 		}
 
 		html.append("</body></html>");
@@ -690,58 +945,101 @@ public class PDFServiceImpl implements PDFService {
 			actual = actual.plusWeeks(1);
 		}
 
+		String logoPng = getLogoPngBase64();
 		StringBuilder html = new StringBuilder();
-		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>").append("@page{margin:15mm;}")
-				.append(".header-titles{margin:8mm 0;text-align:center;font-family:Arial,sans-serif;}")
-				.append(".header-titles .main{font-size:24pt;color:red;font-weight:bold;margin:0;}")
-				.append(".header-titles .sub{font-size:18pt;color:teal;margin:0 0 4mm;}")
-				.append("h2{font-family:Arial,sans-serif;text-align:center;font-size:16pt;margin:4mm 0;font-weight:bold;}")
-				.append("p.total{font-family:Arial,sans-serif;text-align:center;font-size:12pt;margin:2mm 0;font-weight:bold;}")
-				.append(".main-table, .side-table{border-collapse:collapse;font-family:Arial,sans-serif;}")
-				.append(".main-table th, .main-table td{border:1px solid #000;padding:4px;text-align:center;}")
-				.append(".main-table th{background:#ffd080;font-weight:bold;}")
-				.append(".main-table th:first-child, .main-table td:first-child{width:20mm;}")
-				.append(".cinturon-blanco{background:#fff;}").append(".cinturon-amarillo{background:yellow;}")
-				.append(".cinturon-verde{background:green;}").append(".cinturon-azul{background:blue;}")
-				.append(".cinturon-rojo{background:red;}").append(".cinturon-negro{background:black;}")
-				.append(".licencia-no{color:red;font-weight:bold;}").append(".side-table{table-layout:fixed;}")
-				.append(".side-table th, .side-table td{border:1px solid #000;width:14mm;height:12mm;padding:2px;text-align:center;}")
-				.append("</style></head><body>").append("<div class='header-titles'>")
-				.append("<p class='main'>CLUB MOI'S KIM DO</p>").append("<p class='sub'>Tae Kwon Do</p>")
-				.append("</div>").append("<h2>LISTADO ASISTENCIA ")
-				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase()).append(" - ")
-				.append(year).append("</h2>").append("<p class='total'>TOTAL : ").append(totalAlumnos)
-				.append(" ALUMNOS</p>").append("<p class='total' style='font-size:12pt;'>").append(grupo.toUpperCase())
-				.append(" - TURNO DE ").append(turno.replace("–", " a ")).append("</p>")
-				.append("<table style='width:100%;'><tr>").append("<td style='vertical-align:top;'>")
-				.append("<table class='main-table' style='width:100%;'>").append("<thead><tr>")
-				.append("<th></th><th>LIC. FED</th><th>EDAD</th><th>NOMBRE</th><th>Nº EXP.</th>")
-				.append("</tr></thead><tbody>");
+		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'/>");
+		html.append("<style>");
+		html.append("@page { margin: 12mm; }");
+		html.append("* { box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }");
+		html.append("body { margin: 0; padding: 0; }");
+		html.append(".header-section { text-align: center; margin-bottom: 6mm; border-bottom: 2px solid #007bff; padding-bottom: 4mm; }");
+		html.append(".logo-container { text-align: center; margin-bottom: 3mm; }");
+		html.append(".logo-container img { width: 30mm; height: auto; max-height: 30mm; }");
+		html.append(".header-titles .main { font-size: 20pt; color: #1b2b2e; font-weight: 700; margin: 2mm 0; }");
+		html.append(".header-titles .sub { font-size: 16pt; color: #007bff; margin: 0 0 3mm; font-weight: 600; }");
+		html.append("h2 { font-size: 14pt; margin: 3mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
+		html.append("p.info { text-align: center; font-size: 10pt; margin: 2mm 0; font-weight: 600; color: #495057; }");
+		html.append(".table-container { width: 100%; }");
+		html.append(".table-wrapper { display: table; width: 100%; }");
+		html.append(".table-cell { display: table-cell; vertical-align: top; }");
+		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; }");
+		html.append(".main-table th, .main-table td { border: 1px solid #dee2e6; padding: 2mm 1mm; text-align: center; font-size: 9pt; }");
+		html.append(".main-table th { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }");
+		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
+		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
+		html.append(".main-table th:first-child, .main-table td:first-child { width: 15mm; }");
+		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
+		html.append(".cinturon-amarillo { background: #ffeb3b; }");
+		html.append(".cinturon-verde { background: #4caf50; }");
+		html.append(".cinturon-azul { background: #2196f3; }");
+		html.append(".cinturon-rojo { background: #f44336; }");
+		html.append(".cinturon-negro { background: #212529; }");
+		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
+		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
+		html.append(".side-table { table-layout: fixed; margin-left: 2mm; }");
+		html.append(".side-table th, .side-table td { border: 1px solid #dee2e6; width: 13mm; height: 10mm; padding: 1mm; text-align: center; font-size: 9pt; }");
+		html.append(".side-table th { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: #ffffff; font-weight: 600; }");
+		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; }");
+		html.append("</style>");
+		html.append("</head><body>");
+
+		// Header
+		html.append("<div class='header-section'>");
+		if (!logoPng.isEmpty()) {
+			html.append("<div class='logo-container'><img src='").append(logoPng).append("' alt='Logo' /></div>");
+		}
+		html.append("<div class='header-titles'>");
+		html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
+		html.append("<p class='sub'>Tae Kwon Do</p>");
+		html.append("</div>");
+		html.append("<h2>LISTADO DE ASISTENCIA - ")
+				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
+				.append(" ").append(year).append("</h2>");
+		html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
+		html.append("<p class='info'>").append(grupo.toUpperCase())
+				.append(" - Turno de ").append(turno.replace("–", " a ")).append("</p>");
+		html.append("</div>");
+
+		// Tables
+		html.append("<div class='table-wrapper'>");
+		html.append("<div class='table-cell' style='width: 60%;'>");
+		html.append("<table class='main-table'>");
+		html.append("<thead><tr>");
+		html.append("<th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+		html.append("</tr></thead><tbody>");
+
 		for (Alumno a : alumnos) {
-			LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime()).atZone(ZoneId.systemDefault())
-					.toLocalDate();
+			LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
+					.atZone(ZoneId.systemDefault()).toLocalDate();
 			int edad = Period.between(nac, LocalDate.now()).getYears();
 			boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
 			String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
-			String licClass = licOk ? "" : "licencia-no";
+			String licClass = licOk ? "licencia-ok" : "licencia-no";
 			String cintClass = "cinturon-" + extractPrimaryBeltColor(a.getGrado().getTipoGrado());
 
-			html.append("<tr>").append("<td class='").append(cintClass).append("'></td>").append("<td class='")
-					.append(licClass).append("'>").append(lic).append("</td>").append("<td>").append(edad)
-					.append("</td>").append("<td style='text-align:left;'>").append(a.getNombre()).append(" ")
-					.append(a.getApellidos()).append("</td>").append("<td>").append(a.getNumeroExpediente())
-					.append("</td>").append("</tr>");
+			html.append("<tr>");
+			html.append("<td class='").append(cintClass).append("'></td>");
+			html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
+			html.append("<td>").append(edad).append("</td>");
+			html.append("<td style='text-align:left; padding-left: 2mm;'>").append(a.getNombre()).append(" ")
+					.append(a.getApellidos()).append("</td>");
+			html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
+			html.append("</tr>");
 		}
-		html.append("</tbody></table></td>").append("<td style='vertical-align:top;'>")
-				.append("<table class='side-table'><thead><tr>");
+
+		html.append("</tbody></table>");
+		html.append("</div>");
+
+		// Attendance grid
+		html.append("<div class='table-cell' style='width: 40%;'>");
+		html.append("<table class='side-table'><thead><tr>");
 		for (LocalDate f : fechas) {
 			html.append("<th>").append(f.getDayOfMonth()).append("</th>");
 		}
 		html.append("</tr></thead><tbody>");
 		for (int i = 0; i < totalAlumnos; i++) {
 			html.append("<tr>");
-			for (@SuppressWarnings("unused")
-			LocalDate f : fechas) {
+			for (@SuppressWarnings("unused") LocalDate f : fechas) {
 				html.append("<td></td>");
 			}
 			html.append("</tr>");
@@ -750,7 +1048,11 @@ public class PDFServiceImpl implements PDFService {
 		for (LocalDate f : fechas) {
 			html.append("<td>").append(f.getDayOfMonth()).append("</td>");
 		}
-		html.append("</tr></tfoot></table></td>").append("</tr></table>").append("</body></html>");
+		html.append("</tr></tfoot></table>");
+		html.append("</div>");
+		html.append("</div>");
+
+		html.append("</body></html>");
 
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		PdfRendererBuilder builder = new PdfRendererBuilder();
