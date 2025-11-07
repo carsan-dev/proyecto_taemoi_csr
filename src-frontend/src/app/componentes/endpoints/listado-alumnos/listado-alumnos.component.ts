@@ -40,7 +40,15 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   opcionesInforme: Array<{ value: string; label: string }> = [];
   mesAnoAsistencia!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves'];
+  turnosMap: Record<string, string[]> = {
+    lunes: ['17:00–18:00', '18:00–19:00'],
+    martes: ['17:30–18:30', '18:30–19:30'],
+    miércoles: ['16:00–17:00', '17:00–18:00'],
+    jueves: ['19:00–20:00', '20:00–21:00'],
+  };
+  turnosDisponibles: string[] = [];
   grupoSeleccionado!: string;
+  turnoSeleccionado: string | null = null;
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
@@ -62,6 +70,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.searchSubject.complete();
   }
 
+  onGrupoChange() {
+    this.turnosDisponibles = this.turnosMap[this.grupoSeleccionado] || [];
+    this.turnoSeleccionado = null;
+  }
 
   abrirModalInforme(): void {
     this.modalTitle = 'Generar Informe';
@@ -84,6 +96,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         value: 'adultos',
         label: 'Informe de Alumnos Adultos a Promocionar',
       },
+      { value: 'deudas', label: 'Informe de Deudas de Alumnos' },
     ];
     this.mostrarModalInforme = true;
   }
@@ -190,6 +203,65 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           const url = window.URL.createObjectURL(blob);
           window.open(url);
         });
+    } else if (tipo === 'deudas') {
+      // Show SweetAlert to choose format
+      Swal.fire({
+        title: 'Seleccionar Formato',
+        text: '¿En qué formato deseas generar el informe de deudas?',
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+        denyButtonText: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc3545',
+        denyButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Generate PDF
+          this.endpointsService.generarInformeDeudas().subscribe({
+            next: (pdfBlob: Blob) => {
+              const fileURL = URL.createObjectURL(pdfBlob);
+              window.open(fileURL, '_blank');
+            },
+            error: () => {
+              Swal.fire(
+                'Error',
+                'No se pudo generar el informe de deudas en PDF',
+                'error'
+              );
+            },
+          });
+        } else if (result.isDenied) {
+          // Generate CSV
+          this.endpointsService.generarInformeDeudasCSV().subscribe({
+            next: (csvBlob: Blob) => {
+              const url = window.URL.createObjectURL(csvBlob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'informe_deudas_alumnos.csv';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+              Swal.fire({
+                title: 'Descarga Completada',
+                text: 'El archivo CSV se ha descargado correctamente',
+                icon: 'success',
+                timer: 2000,
+              });
+            },
+            error: () => {
+              Swal.fire(
+                'Error',
+                'No se pudo generar el informe de deudas en CSV',
+                'error'
+              );
+            },
+          });
+        }
+      });
     }
   }
 
@@ -389,13 +461,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       .descargarAsistencia(
         year,
         month,
-        this.grupoSeleccionado
+        this.grupoSeleccionado,
+        this.turnoSeleccionado!
       )
       .subscribe((blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
+        a.download = `Asistencia-${this.grupoSeleccionado}-${this.turnoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
       });
