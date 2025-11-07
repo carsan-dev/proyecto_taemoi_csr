@@ -98,13 +98,37 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
+	@GetMapping("/deudas")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeDeudas() {
+		byte[] pdfBytes = pdfService.generarInformeDeudas();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_deudas_alumnos.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/deudas/csv")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeDeudasCSV() {
+		byte[] csvBytes = pdfService.generarInformeDeudasCSV();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.parseMediaType("text/csv"));
+		headers.setContentDisposition(
+				ContentDisposition.builder("attachment").filename("informe_deudas_alumnos.csv").build());
+		return ResponseEntity.ok().headers(headers).body(csvBytes);
+	}
+
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
-			HttpServletResponse response) throws IOException {
+			@RequestParam String turno, HttpServletResponse response) throws IOException {
 
-		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo);
+		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo, turno);
 
-		String filename = "Asistencia-%s-%d-%02d.pdf".formatted(grupo, year, month);
+		String safeTurno = turno.replace('–', '-');
+
+		String filename = "Asistencia-%s-%s-%d-%02d.pdf".formatted(grupo, safeTurno, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
