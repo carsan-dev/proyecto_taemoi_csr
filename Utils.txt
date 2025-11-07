@@ -59,7 +59,9 @@ TODO:
 
 ✔ Listado de asistencia por fecha y grupos (Lunes, Martes, etc)
 
-⚙️ Listado de débitos
+✔ Listado de débitos
+
+⚙️
 
 ❌ Listado mensualidades (pagadas, sin pagar, etc)
 
