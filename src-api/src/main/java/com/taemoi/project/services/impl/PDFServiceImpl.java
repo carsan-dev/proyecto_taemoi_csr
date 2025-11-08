@@ -1006,12 +1006,16 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".table-container { width: 100%; }");
 		html.append(".table-wrapper { display: table; width: 100%; }");
 		html.append(".table-cell { display: table-cell; vertical-align: top; }");
-		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; }");
-		html.append(".main-table th, .main-table td { border: 1px solid #dee2e6; padding: 1.1mm 0.65mm; text-align: center; font-size: 7.2pt; }");
-		html.append(".main-table th { background-color: #007bff; color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; }");
+		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
+		html.append(".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 7pt; vertical-align: middle; box-sizing: border-box; }");
+		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; }");
+		html.append(".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
+		html.append(".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; }");
+		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
-		html.append(".main-table th:first-child, .main-table td:first-child { width: 10.5mm; padding: 0; }");
+		html.append(".main-table th:first-child, .main-table td:first-child { width: 8mm; }");
+		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 10.5mm; }");
 		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
 		html.append(".cinturon-naranja { background: #ff9800; }");
@@ -1019,14 +1023,15 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".cinturon-azul { background: #2196f3; }");
 		html.append(".cinturon-rojo { background: #f44336; }");
 		html.append(".cinturon-negro { background: #212529; color: #ffffff; font-weight: 700; font-size: 6.5pt; }");
-		html.append(".cinturon-split { display: flex; width: 100%; height: 100%; }");
-		html.append(".cinturon-half-left { flex: 1; }");
-		html.append(".cinturon-half-right { flex: 1; }");
+		html.append(".cinturon-split { position: relative; width: 100%; height: 100%; }");
+		html.append(".cinturon-half-superior { position: absolute; width: 100%; height: 50%; top: 0; left: 0; }");
+		html.append(".cinturon-half-inferior { position: absolute; width: 100%; height: 50%; bottom: 0; left: 0; }");
 		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
-		html.append(".side-table { table-layout: fixed; margin-left: 1.6mm; }");
-		html.append(".side-table th, .side-table td { border: 1px solid #dee2e6; width: 9.2mm; height: 6.2mm; padding: 0.65mm; text-align: center; font-size: 7.2pt; }");
-		html.append(".side-table th { background-color: #007bff; color: #ffffff; font-weight: 600; }");
+		html.append(".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 6.2pt; vertical-align: middle; }");
+		html.append(".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 6.2pt; vertical-align: middle; }");
+		html.append(".side-table { margin-left: 1.6mm; }");
+		html.append(".side-table th, .side-table td { width: 9mm; }");
 		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; }");
 		html.append("</style>");
 		html.append("</head><body>");
@@ -1076,7 +1081,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='table-cell' style='width: 60%;'>");
 				html.append("<table class='main-table'>");
 				html.append("<thead><tr>");
-				html.append("<th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+				html.append("<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
 				html.append("</tr></thead><tbody>");
 
 				for (Alumno a : alumnos) {
@@ -1087,11 +1092,23 @@ public class PDFServiceImpl implements PDFService {
 					String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
 					String licClass = licOk ? "licencia-ok" : "licencia-no";
 
+					// Calculate months with current grade
+					int mesesConGrado = 0;
+					if (a.getFechaGrado() != null) {
+						LocalDate fechaGrado = Instant.ofEpochMilli(a.getFechaGrado().getTime())
+								.atZone(ZoneId.systemDefault()).toLocalDate();
+						mesesConGrado = (int) Period.between(fechaGrado, LocalDate.now()).toTotalMonths();
+					}
+					boolean aptoExamen = Boolean.TRUE.equals(a.getAptoParaExamen());
+					String aptoClass = aptoExamen ? "apto-examen" : "no-apto-examen";
+					String aptoText = mesesConGrado + "m";
+
 					html.append("<tr>");
+					html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
 					html.append(generateBeltCellHtml(a.getGrado().getTipoGrado()));
 					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 					html.append("<td>").append(edad).append("</td>");
-					html.append("<td style='text-align:left; padding-left: 1.1mm;'>").append(a.getNombre()).append(" ")
+					html.append("<td style='text-align:left; padding-left: 1mm;'>").append(a.getNombre()).append(" ")
 							.append(a.getApellidos()).append("</td>");
 					html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
 					html.append("</tr>");
@@ -1166,9 +1183,9 @@ public class PDFServiceImpl implements PDFService {
 		if (enumName.startsWith("ROJO_NEGRO_")) {
 			String[] parts = enumName.split("_");
 			String pumNumber = parts.length >= 3 ? parts[2] : "";
-			return "<td style='padding: 0;'><div class='cinturon-split'>" +
-				   "<div class='cinturon-half-left cinturon-rojo'></div>" +
-				   "<div class='cinturon-half-right cinturon-negro' style='display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700; font-size: 6pt;'>" +
+			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
+				   "<div class='cinturon-half-superior' style='background-color: #f44336;'></div>" +
+				   "<div class='cinturon-half-inferior' style='background-color: #212529; text-align: center; line-height: 3.25mm; color: #ffffff; font-weight: 700; font-size: 5.5pt;'>" +
 				   pumNumber + "º" +
 				   "</div></div></td>";
 		}
@@ -1176,16 +1193,34 @@ public class PDFServiceImpl implements PDFService {
 		// Check if it's a half-color belt (e.g., BLANCO_AMARILLO, AMARILLO_NARANJA)
 		String[] parts = enumName.split("_");
 		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
-			String color1 = parts[0].toLowerCase();
-			String color2 = parts[1].toLowerCase();
-			return "<td style='padding: 0;'><div class='cinturon-split'>" +
-				   "<div class='cinturon-half-left cinturon-" + color1 + "'></div>" +
-				   "<div class='cinturon-half-right cinturon-" + color2 + "'></div></div></td>";
+			String color1 = getBeltColorHex(parts[0]);
+			String color2 = getBeltColorHex(parts[1]);
+			String borderTop = parts[0].equals("BLANCO") ? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
+			String borderBottom = parts[1].equals("BLANCO") ? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
+			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
+				   "<div class='cinturon-half-superior' style='background-color: " + color1 + "; " + borderTop + "'></div>" +
+				   "<div class='cinturon-half-inferior' style='background-color: " + color2 + "; " + borderBottom + "'></div></div></td>";
 		}
 
 		// Single color belt
 		String color = parts[0].toLowerCase();
 		return "<td class='cinturon-" + color + "'></td>";
+	}
+
+	/**
+	 * Returns the hex color code for a belt color name.
+	 */
+	private String getBeltColorHex(String colorName) {
+		switch (colorName) {
+		case "BLANCO": return "#ffffff";
+		case "AMARILLO": return "#ffeb3b";
+		case "NARANJA": return "#ff9800";
+		case "VERDE": return "#4caf50";
+		case "AZUL": return "#2196f3";
+		case "ROJO": return "#f44336";
+		case "NEGRO": return "#212529";
+		default: return "#cccccc";
+		}
 	}
 
 	@Override
