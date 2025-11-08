@@ -1289,6 +1289,220 @@ public class PDFServiceImpl implements PDFService {
 		return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 	}
 
+	@Override
+	public byte[] generarInformeMensualidades() {
+		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades = productoAlumnoRepository
+				.findAllMensualidadesWithAlumno();
+
+		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
+
+		// Group mensualidades by student
+		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> mensualidadesPorAlumno = todasMensualidades.stream()
+				.collect(Collectors.groupingBy(com.taemoi.project.entities.ProductoAlumno::getAlumno));
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Informe de Mensualidades", fechaGeneracion));
+		html.append(".status-badge {");
+		html.append("  display: inline-block;");
+		html.append("  padding: 1mm 3mm;");
+		html.append("  border-radius: 2mm;");
+		html.append("  font-weight: 600;");
+		html.append("  font-size: 9pt;");
+		html.append("}");
+		html.append(".status-pagado { background: #d4edda; color: #155724; }");
+		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
+		html.append(".alumno-section {");
+		html.append("  page-break-inside: avoid;");
+		html.append("  margin-bottom: 8mm;");
+		html.append("}");
+		html.append(".alumno-section h3 {");
+		html.append("  page-break-after: avoid;");
+		html.append("}");
+		html.append(".alumno-section table {");
+		html.append("  page-break-inside: auto;");
+		html.append("}");
+		html.append(".alumno-section tr {");
+		html.append("  page-break-inside: avoid;");
+		html.append("  page-break-after: auto;");
+		html.append("}");
+		html.append(".resumen-alumno {");
+		html.append("  font-size: 10pt;");
+		html.append("  margin-top: 2mm;");
+		html.append("  padding: 2mm;");
+		html.append("  background: #f8f9fa;");
+		html.append("  border-radius: 2mm;");
+		html.append("}");
+		html.append(".resumen-general {");
+		html.append("  margin-top: 8mm;");
+		html.append("  padding: 4mm;");
+		html.append("  background: #f8f9fa;");
+		html.append("  border: 2px solid #007bff;");
+		html.append("  border-radius: 2mm;");
+		html.append("  text-align: center;");
+		html.append("}");
+		html.append(".resumen-general h3 {");
+		html.append("  margin: 2mm 0;");
+		html.append("  font-size: 12pt;");
+		html.append("  color: #1b2b2e;");
+		html.append("}");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		// Add header with logo
+		html.append(generarCabeceraConLogo("Informe de Mensualidades", "#007bff"));
+
+		int totalAlumnos = mensualidadesPorAlumno.size();
+		int totalMensualidades = todasMensualidades.size();
+		int totalPagadas = 0;
+		int totalPendientes = 0;
+		double totalImportePagado = 0.0;
+		double totalImportePendiente = 0.0;
+
+		if (mensualidadesPorAlumno.isEmpty()) {
+			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("No hay mensualidades registradas");
+			html.append("</div>");
+		} else {
+			html.append("<div class='section-header' style='background-color: #007bff;'>");
+			html.append("Mensualidades de Alumnos (" + totalAlumnos + " alumnos)");
+			html.append("</div>");
+
+			// Sort by student name
+			List<Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>>> sortedEntries = mensualidadesPorAlumno
+					.entrySet().stream()
+					.sorted((e1, e2) -> {
+						String nombre1 = e1.getKey().getNombre() + " " + e1.getKey().getApellidos();
+						String nombre2 = e2.getKey().getNombre() + " " + e2.getKey().getApellidos();
+						return nombre1.compareTo(nombre2);
+					})
+					.collect(Collectors.toList());
+
+			for (Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> entry : sortedEntries) {
+				Alumno alumno = entry.getKey();
+				List<com.taemoi.project.entities.ProductoAlumno> mensualidades = entry.getValue();
+
+				int pagas = (int) mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
+				int pendientes = mensualidades.size() - pagas;
+				double importePagado = mensualidades.stream()
+						.filter(m -> Boolean.TRUE.equals(m.getPagado()))
+						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0)
+						.sum();
+				double importePendiente = mensualidades.stream()
+						.filter(m -> !Boolean.TRUE.equals(m.getPagado()))
+						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0)
+						.sum();
+
+				totalPagadas += pagas;
+				totalPendientes += pendientes;
+				totalImportePagado += importePagado;
+				totalImportePendiente += importePendiente;
+
+				html.append("<div class='alumno-section'>");
+				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
+						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
+						.append(" (Exp. ").append(alumno.getNumeroExpediente()).append(")");
+				html.append("</h3>");
+
+				html.append("<div class='resumen-alumno'>");
+				html.append("<strong>Total mensualidades:</strong> ").append(mensualidades.size());
+				html.append(" | <strong style='color: #28a745;'>Pagadas:</strong> ").append(pagas);
+				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
+				html.append(" | <strong style='color: #dc3545;'>Pendientes:</strong> ").append(pendientes);
+				html.append(" (").append(String.format("%.2f", importePendiente)).append(" €)");
+				html.append("</div>");
+
+				html.append("<table>");
+				html.append("<thead><tr>");
+				html.append("<th>Concepto</th>");
+				html.append("<th>Fecha Asignación</th>");
+				html.append("<th>Precio</th>");
+				html.append("<th>Estado</th>");
+				html.append("<th>Fecha Pago</th>");
+				html.append("<th>Notas</th>");
+				html.append("</tr></thead>");
+				html.append("<tbody>");
+
+				for (com.taemoi.project.entities.ProductoAlumno pa : mensualidades) {
+					boolean pagado = Boolean.TRUE.equals(pa.getPagado());
+
+					html.append("<tr>");
+					html.append("<td>").append(pa.getConcepto() != null ? pa.getConcepto() : "N/A").append("</td>");
+
+					String fechaAsignacion = "N/A";
+					if (pa.getFechaAsignacion() != null) {
+						LocalDate fecha = Instant.ofEpochMilli(pa.getFechaAsignacion().getTime())
+								.atZone(ZoneId.systemDefault()).toLocalDate();
+						DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+						fechaAsignacion = fecha.format(dateFormatter);
+					}
+					html.append("<td>").append(fechaAsignacion).append("</td>");
+
+					html.append("<td>").append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
+							.append(" €</td>");
+
+					String estadoClass = pagado ? "status-pagado" : "status-pendiente";
+					String estadoTexto = pagado ? "PAGADO" : "PENDIENTE";
+					html.append("<td><span class='status-badge ").append(estadoClass).append("'>")
+							.append(estadoTexto).append("</span></td>");
+
+					String fechaPago = "N/A";
+					if (pagado && pa.getFechaPago() != null) {
+						LocalDate fecha = Instant.ofEpochMilli(pa.getFechaPago().getTime())
+								.atZone(ZoneId.systemDefault()).toLocalDate();
+						DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+						fechaPago = fecha.format(dateFormatter);
+					}
+					html.append("<td>").append(fechaPago).append("</td>");
+
+					html.append("<td>").append(pa.getNotas() != null ? pa.getNotas() : "").append("</td>");
+					html.append("</tr>");
+				}
+
+				html.append("</tbody>");
+				html.append("</table>");
+				html.append("</div>");
+			}
+
+			// Add general summary
+			html.append("<div class='resumen-general'>");
+			html.append("<h3>RESUMEN GENERAL</h3>");
+			html.append("<p style='margin: 2mm 0;'><strong>Total de alumnos:</strong> ").append(totalAlumnos).append("</p>");
+			html.append("<p style='margin: 2mm 0;'><strong>Total de mensualidades:</strong> ").append(totalMensualidades).append("</p>");
+			html.append("<p style='margin: 2mm 0; color: #28a745;'><strong>Mensualidades pagadas:</strong> ")
+					.append(totalPagadas).append(" (").append(String.format("%.2f", totalImportePagado)).append(" €)</p>");
+			html.append("<p style='margin: 2mm 0; color: #dc3545;'><strong>Mensualidades pendientes:</strong> ")
+					.append(totalPendientes).append(" (").append(String.format("%.2f", totalImportePendiente)).append(" €)</p>");
+			html.append("<p style='margin: 2mm 0; font-size: 12pt;'><strong>TOTAL GENERAL:</strong> ")
+					.append(String.format("%.2f", totalImportePagado + totalImportePendiente)).append(" €</p>");
+			html.append("</div>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de mensualidades: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe PDF de mensualidades", e);
+		}
+		return outputStream.toByteArray();
+	}
+
 	/**
 	 * Escapes CSV special characters (quotes, commas, newlines)
 	 */

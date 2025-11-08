@@ -120,6 +120,17 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(csvBytes);
 	}
 
+	@GetMapping("/mensualidades")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeMensualidades() {
+		byte[] pdfBytes = pdfService.generarInformeMensualidades();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_mensualidades_alumnos.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
 			@RequestParam String turno, HttpServletResponse response) throws IOException {

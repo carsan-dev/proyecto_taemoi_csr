@@ -19,5 +19,7 @@ public interface PDFService {
 
 	byte[] generarInformeDeudasCSV();
 
+	byte[] generarInformeMensualidades();
+
 	byte[] generarListadoAsistencia(int year, int month, String grupo, String turno) throws IOException;
 }
