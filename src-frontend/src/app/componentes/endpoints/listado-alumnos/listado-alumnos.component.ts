@@ -483,7 +483,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Asistencia-${this.grupoSeleccionado}-${this.turnoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
+        a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
       });
