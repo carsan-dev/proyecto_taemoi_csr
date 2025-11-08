@@ -1009,8 +1009,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
 		html.append(".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 7pt; vertical-align: middle; box-sizing: border-box; }");
 		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; }");
-		html.append(".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
-		html.append(".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; }");
+		html.append(".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; min-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
+		html.append(".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; }");
 		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
