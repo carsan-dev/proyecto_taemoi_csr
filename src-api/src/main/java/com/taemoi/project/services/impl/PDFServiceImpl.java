@@ -1189,20 +1189,21 @@ public class PDFServiceImpl implements PDFService {
 		if (enumName.startsWith("ROJO_NEGRO_")) {
 			String[] parts = enumName.split("_");
 			String pumNumber = parts.length >= 3 ? parts[2] : "";
-			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
-				   "<div class='cinturon-half-superior' style='background-color: #f44336;'></div>" +
-				   "<div class='cinturon-half-inferior' style='background-color: #212529; text-align: center; line-height: 3.25mm; color: #ffffff; font-weight: 700; font-size: 6.5pt;'>" +
-				   pumNumber + "º" +
+			return "<td><div class='cinturon-split' style='height: 6.2mm; position: relative;'>" +
+				   "<div class='cinturon-half-superior' style='background-color: #212529;'></div>" +
+				   "<div class='cinturon-half-inferior' style='background-color: #f44336;'></div>" +
+				   "<div style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10;'>" +
+				   "<span style='color: #ffffff; font-weight: 700; font-size: 7pt;'>" + pumNumber + "º</span>" +
 				   "</div></div></td>";
 		}
 
 		// Check if it's a half-color belt (e.g., BLANCO_AMARILLO, AMARILLO_NARANJA)
 		String[] parts = enumName.split("_");
 		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
-			String color1 = getBeltColorHex(parts[0]);
-			String color2 = getBeltColorHex(parts[1]);
-			String borderTop = parts[0].equals("BLANCO") ? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
-			String borderBottom = parts[1].equals("BLANCO") ? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
+			String color1 = getBeltColorHex(parts[1]);
+			String color2 = getBeltColorHex(parts[0]);
+			String borderTop = parts[1].equals("BLANCO") ? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
+			String borderBottom = parts[0].equals("BLANCO") ? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
 			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
 				   "<div class='cinturon-half-superior' style='background-color: " + color1 + "; " + borderTop + "'></div>" +
 				   "<div class='cinturon-half-inferior' style='background-color: " + color2 + "; " + borderBottom + "'></div></div></td>";
