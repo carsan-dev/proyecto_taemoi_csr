@@ -1003,36 +1003,42 @@ public class PDFServiceImpl implements PDFService {
 		html.append("h2 { font-size: 9.5pt; margin: 1.1mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
 		html.append("p.info { text-align: center; font-size: 7.2pt; margin: 0.7mm 0; font-weight: 600; color: #495057; }");
 		html.append(".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
-		html.append(".table-container { width: 100%; }");
-		html.append(".table-wrapper { display: table; width: 100%; }");
-		html.append(".table-cell { display: table-cell; vertical-align: top; }");
+		html.append(".table-container { width: 100%; overflow: visible; }");
+		html.append(".table-wrapper { display: table; width: 100%; table-layout: fixed; }");
+		html.append(".table-cell { display: table-cell; vertical-align: top; overflow: visible; }");
 		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
-		html.append(".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 7pt; vertical-align: middle; box-sizing: border-box; }");
-		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; }");
+		html.append(".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
+		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
 		html.append(".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; min-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
 		html.append(".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; }");
 		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
-		html.append(".main-table th:first-child, .main-table td:first-child { width: 8mm; }");
+		html.append(".main-table th:first-child, .main-table td:first-child { width: 8mm; font-size: 7pt; }");
 		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 10.5mm; }");
+		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 8mm; font-size: 7.5pt; }");
+		html.append(".main-table th:nth-child(4), .main-table td:nth-child(4) { width: 7mm; font-size: 7.5pt; }");
+		html.append(".main-table th:nth-child(5) { width: 55mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
+		html.append(".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
+		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 10mm; font-size: 7.5pt; }");
 		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
 		html.append(".cinturon-naranja { background: #ff9800; }");
 		html.append(".cinturon-verde { background: #4caf50; }");
 		html.append(".cinturon-azul { background: #2196f3; }");
 		html.append(".cinturon-rojo { background: #f44336; }");
-		html.append(".cinturon-negro { background: #212529; color: #ffffff; font-weight: 700; font-size: 6.5pt; }");
+		html.append(".cinturon-negro { background: #212529; color: #ffffff; font-weight: 700; font-size: 7pt; }");
 		html.append(".cinturon-split { position: relative; width: 100%; height: 100%; }");
 		html.append(".cinturon-half-superior { position: absolute; width: 100%; height: 50%; top: 0; left: 0; }");
 		html.append(".cinturon-half-inferior { position: absolute; width: 100%; height: 50%; bottom: 0; left: 0; }");
 		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
-		html.append(".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 6.2pt; vertical-align: middle; }");
-		html.append(".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 6.2pt; vertical-align: middle; }");
-		html.append(".side-table { margin-left: 1.6mm; }");
-		html.append(".side-table th, .side-table td { width: 9mm; }");
-		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; }");
+		html.append(".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 7pt; vertical-align: middle; }");
+		html.append(".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 7pt; vertical-align: middle; }");
+		html.append(".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; }");
+		html.append(".side-table th, .side-table td { width: 6mm; padding: 0.8mm 0.3mm; text-align: center; box-sizing: border-box; }");
+		html.append(".side-table th:last-child, .side-table td:last-child { border-right: 1px solid #dee2e6 !important; }");
+		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; text-align: center; font-size: 6.5pt; }");
 		html.append("</style>");
 		html.append("</head><body>");
 
@@ -1078,7 +1084,7 @@ public class PDFServiceImpl implements PDFService {
 
 				// Tables
 				html.append("<div class='table-wrapper'>");
-				html.append("<div class='table-cell' style='width: 60%;'>");
+				html.append("<div class='table-cell' style='width: 65%;'>");
 				html.append("<table class='main-table'>");
 				html.append("<thead><tr>");
 				html.append("<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
@@ -1108,7 +1114,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append(generateBeltCellHtml(a.getGrado().getTipoGrado()));
 					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 					html.append("<td>").append(edad).append("</td>");
-					html.append("<td style='text-align:left; padding-left: 1mm;'>").append(a.getNombre()).append(" ")
+					html.append("<td>").append(a.getNombre()).append(" ")
 							.append(a.getApellidos()).append("</td>");
 					html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
 					html.append("</tr>");
@@ -1118,7 +1124,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("</div>");
 
 				// Attendance grid
-				html.append("<div class='table-cell' style='width: 40%;'>");
+				html.append("<div class='table-cell' style='width: 35%;'>");
 				html.append("<table class='side-table'><thead><tr>");
 				for (LocalDate f : fechas) {
 					html.append("<th>").append(f.getDayOfMonth()).append("</th>");
@@ -1185,7 +1191,7 @@ public class PDFServiceImpl implements PDFService {
 			String pumNumber = parts.length >= 3 ? parts[2] : "";
 			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
 				   "<div class='cinturon-half-superior' style='background-color: #f44336;'></div>" +
-				   "<div class='cinturon-half-inferior' style='background-color: #212529; text-align: center; line-height: 3.25mm; color: #ffffff; font-weight: 700; font-size: 5.5pt;'>" +
+				   "<div class='cinturon-half-inferior' style='background-color: #212529; text-align: center; line-height: 3.25mm; color: #ffffff; font-weight: 700; font-size: 6.5pt;'>" +
 				   pumNumber + "º" +
 				   "</div></div></td>";
 		}
