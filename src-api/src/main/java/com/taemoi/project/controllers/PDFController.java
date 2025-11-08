@@ -133,13 +133,11 @@ public class PDFController {
 
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
-			@RequestParam String turno, HttpServletResponse response) throws IOException {
+			HttpServletResponse response) throws IOException {
 
-		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo, turno);
+		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo);
 
-		String safeTurno = turno.replace('–', '-');
-
-		String filename = "Asistencia-%s-%s-%d-%02d.pdf".formatted(grupo, safeTurno, year, month);
+		String filename = "Asistencia-%s-%d-%02d.pdf".formatted(grupo, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
