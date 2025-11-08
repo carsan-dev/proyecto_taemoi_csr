@@ -61,8 +61,19 @@ TODO:
 
 ✔ Listado de débitos
 
-⚙️
-
-❌ Listado mensualidades (pagadas, sin pagar, etc)
+✔ Listado mensualidades (pagadas, sin pagar, etc)
 
 ❌ Listado por convocatoria
+
+⚙️ Informe asistencia grados de medio color, corregir altura de la celda de los dias y añadir antiguedad del grado a la izquierda del grado 
+(mostrando el número de meses que lleva con ese grado y si está apto para examen mostrarlo verde o de alguna manera que lo indique)
+
+Mostrar en el modal de grupos alumnos de alta
+
+Añadir antiguedad del club (años que lleva mirando la fecha de alta inicial). Debe tener un campo fechaAltainicial y una fechaAlta normal. Cuando se de de baja y se vuelva a dar de alta, actualizar la fechaAlta normal pero no tocar la fechaAltaInicial
+
+Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
+
+Actualizar mensualidad para añadir por deporte
+
+Revisar alta y baja para actualizarse correctamente
