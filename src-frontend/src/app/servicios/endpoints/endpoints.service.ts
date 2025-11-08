@@ -955,6 +955,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeMensualidades(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/mensualidades`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   descargarAsistencia(
     year: number,
     month: number,

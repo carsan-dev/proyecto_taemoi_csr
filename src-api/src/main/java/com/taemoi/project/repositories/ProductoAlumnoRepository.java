@@ -17,4 +17,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 
 	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumno a WHERE pa.pagado = false ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion")
 	List<ProductoAlumno> findAllUnpaidWithAlumno();
+
+	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumno a WHERE pa.concepto LIKE 'MENSUALIDAD%' ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion DESC")
+	List<ProductoAlumno> findAllMensualidadesWithAlumno();
 }

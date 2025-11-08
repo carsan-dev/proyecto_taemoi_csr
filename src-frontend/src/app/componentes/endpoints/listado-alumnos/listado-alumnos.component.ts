@@ -97,6 +97,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         label: 'Informe de Alumnos Adultos a Promocionar',
       },
       { value: 'deudas', label: 'Informe de Deudas de Alumnos' },
+      { value: 'mensualidades', label: 'Informe de Mensualidades de Alumnos' },
     ];
     this.mostrarModalInforme = true;
   }
@@ -261,6 +262,20 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
             },
           });
         }
+      });
+    } else if (tipo === 'mensualidades') {
+      this.endpointsService.generarInformeMensualidades().subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de mensualidades',
+            'error'
+          );
+        },
       });
     }
   }
