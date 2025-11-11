@@ -3,7 +3,10 @@ package com.taemoi.project.controllers;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,8 +23,10 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.services.ConvocatoriaService;
+import com.taemoi.project.services.PDFService;
 
 @RestController
 @RequestMapping("/api/convocatorias")
@@ -29,6 +34,9 @@ public class ConvocatoriaController {
 
 	@Autowired
 	private ConvocatoriaService convocatoriaService;
+
+	@Autowired
+	private PDFService pdfService;
 
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -69,6 +77,32 @@ public class ConvocatoriaController {
 	public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
 		List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
 		return ResponseEntity.ok(alumnos);
+	}
+
+	@GetMapping("/{id}/reporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<AlumnoConvocatoriaReporteDTO>> obtenerReporteDeConvocatoria(@PathVariable Long id) {
+		List<AlumnoConvocatoriaReporteDTO> reporte = convocatoriaService.obtenerReporteDeConvocatoria(id);
+		return ResponseEntity.ok(reporte);
+	}
+
+	@GetMapping("/{id}/informe-pdf")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformePDFConvocatoria(@PathVariable Long id) {
+		byte[] pdfBytes = pdfService.generarInformeConvocatoria(id);
+
+		// Get convocatoria to build filename
+		ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
+		String fechaStr = convocatoria.getFechaConvocatoria().toString().replaceAll("-", "_");
+		String filename = String.format("informe_convocatoria_%s_%s.pdf",
+				convocatoria.getDeporte(), fechaStr);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("attachment").filename(filename).build());
+
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
 	@DeleteMapping("/{id}")
