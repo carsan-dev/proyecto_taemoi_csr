@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.entities.Deporte;
 
 public interface ConvocatoriaService {
@@ -22,6 +23,8 @@ public interface ConvocatoriaService {
 	List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte);
 
 	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
+
+	List<AlumnoConvocatoriaReporteDTO> obtenerReporteDeConvocatoria(Long convocatoriaId);
 
 	void eliminarConvocatoria(Long convocatoriaId);
 
