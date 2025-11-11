@@ -81,8 +81,16 @@ export class ListadoGruposComponent implements OnInit {
     });
   }
 
-  obtenerConteoAlumnos(grupoNombre: string): number {
-    return this.endpointsService.conteoAlumnosPorGrupo[grupoNombre] || 0;
+  obtenerConteoAlumnos(grupoNombre: string): { active: number; total: number } {
+    const conteo = this.endpointsService.conteoAlumnosPorGrupo[grupoNombre];
+    if (!conteo) {
+      return { active: 0, total: 0 };
+    }
+
+    return {
+      active: conteo['active'] || 0,
+      total: conteo['total'] || 0
+    };
   }
 
   abrirModalAlumnos(tipo: string) {

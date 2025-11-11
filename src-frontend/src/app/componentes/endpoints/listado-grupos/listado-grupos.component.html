@@ -21,7 +21,8 @@
           <div class="stat-icon stat-icon-primary">
             <i class="bi bi-people-fill"></i>
           </div>
-          <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo) }}</h3>
+          <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo).active }}</h3>
+          <p class="stat-total">(Total: {{ obtenerConteoAlumnos(tipo).total }})</p>
           <p class="stat-label">{{ tipo }}</p>
         </div>
       </ng-container>
