@@ -115,6 +115,11 @@
             <strong>Alta:</strong>
             <span>{{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</span>
           </div>
+          <div class="item-field" *ngIf="alumno.antiguedad">
+            <i class="bi bi-clock-history"></i>
+            <strong>Antigüedad:</strong>
+            <span>{{ alumno.antiguedad }}</span>
+          </div>
           <div class="item-field">
             <i class="bi bi-trophy"></i>
             <strong>Categoría:</strong>
