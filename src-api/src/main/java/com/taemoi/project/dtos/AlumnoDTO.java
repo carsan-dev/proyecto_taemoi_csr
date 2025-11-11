@@ -7,6 +7,7 @@ import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.utils.FechaUtils;
 
 public class AlumnoDTO {
 	private final Long id;
@@ -23,6 +24,8 @@ public class AlumnoDTO {
 	private RolFamiliar rolFamiliar;
 	private String grupoFamiliar;
 	private Date fechaAlta;
+	private Date fechaAltaInicial;
+	private String antiguedad;
 	private Date fechaBaja;
 	private Boolean activo;
 	private Boolean autorizacionWeb;
@@ -42,10 +45,10 @@ public class AlumnoDTO {
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
-			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaBaja, Boolean activo,
-			Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso, Deporte deporte, String categoria,
-			String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia, Integer numeroLicencia,
-			Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
+			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
+			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
+			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
+			Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -60,6 +63,8 @@ public class AlumnoDTO {
 		this.rolFamiliar = rolFamiliar;
 		this.grupoFamiliar = grupoFamiliar;
 		this.fechaAlta = fechaAlta;
+		this.fechaAltaInicial = fechaAltaInicial;
+		this.antiguedad = antiguedad;
 		this.fechaBaja = fechaBaja;
 		this.activo = activo;
 		this.autorizacionWeb = autorizacionWeb;
@@ -148,6 +153,22 @@ public class AlumnoDTO {
 
 	public void setFechaAlta(Date fechaAlta) {
 		this.fechaAlta = fechaAlta;
+	}
+
+	public Date getFechaAltaInicial() {
+		return fechaAltaInicial;
+	}
+
+	public void setFechaAltaInicial(Date fechaAltaInicial) {
+		this.fechaAltaInicial = fechaAltaInicial;
+	}
+
+	public String getAntiguedad() {
+		return antiguedad;
+	}
+
+	public void setAntiguedad(String antiguedad) {
+		this.antiguedad = antiguedad;
 	}
 
 	public Date getFechaBaja() {
@@ -340,12 +361,15 @@ public class AlumnoDTO {
 			telefono = Integer.valueOf(alumno.getTelefono());
 		}
 
+		// Calcular antigüedad desde fechaAltaInicial
+		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
+
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
-				alumno.getFechaAlta(), alumno.getFechaBaja(), alumno.getActivo(), alumno.getAutorizacionWeb(),
-				alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(), categoriaNombre,
-				gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
+				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
+				alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(),
+				categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
 				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
 				alumno.getAptoParaExamen());
 	}
