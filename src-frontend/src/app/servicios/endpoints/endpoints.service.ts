@@ -820,6 +820,23 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerReporteDeConvocatoria(convocatoriaId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/convocatorias/${convocatoriaId}/reporte`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  descargarInformePDFConvocatoria(convocatoriaId: number): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/convocatorias/${convocatoriaId}/informe-pdf`, {
+        responseType: 'blob',
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarConvocatoria(id: number): Observable<void> {
     return this.http
       .delete<void>(`${this.urlBase}/convocatorias/${id}`, {
