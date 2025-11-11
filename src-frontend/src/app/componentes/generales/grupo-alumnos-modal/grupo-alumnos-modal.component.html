@@ -19,7 +19,30 @@
       <div class="modal-body">
         <div class="alumnos-info mb-3">
           <i class="bi bi-info-circle me-2"></i>
-          <span>Total de alumnos: <strong>{{ alumnos.length || 0 }}</strong></span>
+          <span>
+            Mostrando: <strong>{{ alumnosFiltrados.length }}</strong>
+            <ng-container *ngIf="alumnosFiltrados.length !== alumnos.length">
+              de <strong>{{ alumnos.length }}</strong>
+            </ng-container>
+            alumnos
+          </span>
+        </div>
+
+        <!-- Active/Inactive Filter Switch -->
+        <div class="filter-switch-container mb-3">
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="activoFilterSwitch"
+              [(ngModel)]="mostrarSoloActivos"
+              (change)="onActivoFilterChange()">
+            <label class="form-check-label" for="activoFilterSwitch">
+              <i class="bi bi-funnel me-1"></i>
+              {{ mostrarSoloActivos ? 'Mostrando solo alumnos activos' : 'Mostrando todos los alumnos' }}
+            </label>
+          </div>
         </div>
 
         <!-- Search Filter -->
@@ -36,9 +59,6 @@
               (ngModelChange)="onSearchChange()"
               aria-label="Buscar alumno por nombre">
           </div>
-          <small class="text-muted" *ngIf="nombreFiltro">
-            Mostrando {{ alumnosFiltrados.length }} de {{ alumnos.length }} alumnos
-          </small>
         </div>
 
         <!-- Alumnos Grid -->
