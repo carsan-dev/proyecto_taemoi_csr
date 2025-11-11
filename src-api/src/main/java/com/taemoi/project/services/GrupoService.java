@@ -45,7 +45,7 @@ public interface GrupoService {
 
 	List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo);
 
-	Map<String, Long> contarAlumnosPorGrupo();
+	Map<String, Map<String, Long>> contarAlumnosPorGrupo();
 
 	List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);
 }

@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +18,7 @@ import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoEnGrupoException;
@@ -217,19 +216,54 @@ public class GrupoServiceImpl implements GrupoService {
 	}
 
 	@Override
-	public Map<String, Long> contarAlumnosPorGrupo() {
-		Map<String, Long> conteoAlumnosPorGrupo = new HashMap<>();
+	public Map<String, Map<String, Long>> contarAlumnosPorGrupo() {
+		Map<String, Map<String, Long>> conteoAlumnosPorGrupo = new HashMap<>();
 
 		List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing",
 				"Defensa Personal Femenina");
 
 		for (String tipo : tipos) {
-			List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
-			Set<Alumno> alumnosSet = new HashSet<>();
-			for (Grupo grupo : grupos) {
-				alumnosSet.addAll(grupo.getAlumnos());
+			List<Alumno> alumnos;
+
+			if (tipo.equalsIgnoreCase("Taekwondo Competición")) {
+				// For Taekwondo Competición: only TAEKWONDO students with esCompetidor = true
+				alumnos = alumnoRepository.findByDeporte(Deporte.TAEKWONDO).stream()
+					.filter(a -> a.getCompetidor() != null && a.getCompetidor())
+					.collect(Collectors.toList());
+			} else {
+				// Map tipo string to Deporte enum
+				Deporte deporte;
+				String tipoUpper = tipo.toUpperCase();
+
+				if (tipoUpper.contains("TAEKWONDO")) {
+					deporte = Deporte.TAEKWONDO;
+				} else if (tipoUpper.contains("KICKBOXING")) {
+					deporte = Deporte.KICKBOXING;
+				} else if (tipoUpper.contains("PILATES")) {
+					deporte = Deporte.PILATES;
+				} else if (tipoUpper.contains("DEFENSA")) {
+					deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
+				} else {
+					continue;
+				}
+
+				// Get all students by deporte
+				alumnos = alumnoRepository.findByDeporte(deporte);
 			}
-			conteoAlumnosPorGrupo.put(tipo, (long) alumnosSet.size());
+
+			// Count active students
+			long activeCount = alumnos.stream()
+				.filter(a -> a.getActivo() != null && a.getActivo())
+				.count();
+
+			long totalCount = alumnos.size();
+
+			// Create inner map with active and total counts
+			Map<String, Long> counts = new HashMap<>();
+			counts.put("active", activeCount);
+			counts.put("total", totalCount);
+
+			conteoAlumnosPorGrupo.put(tipo, counts);
 		}
 
 		return conteoAlumnosPorGrupo;
@@ -237,18 +271,37 @@ public class GrupoServiceImpl implements GrupoService {
 
 	@Override
 	public List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo) {
-		List<Grupo> grupos = grupoRepository.findByTipoIgnoreCase(tipo);
+		List<Alumno> alumnos;
 
-		if (grupos.isEmpty()) {
-			throw new GrupoNoEncontradoException("No se encontraron grupos para el tipo de deporte " + tipo);
+		if (tipo.equalsIgnoreCase("Taekwondo Competición")) {
+			// For Taekwondo Competición: only TAEKWONDO students with esCompetidor = true
+			alumnos = alumnoRepository.findByDeporte(Deporte.TAEKWONDO).stream()
+				.filter(a -> a.getCompetidor() != null && a.getCompetidor())
+				.collect(Collectors.toList());
+		} else {
+			// Map grupo tipo to Deporte enum
+			Deporte deporte;
+			String tipoUpper = tipo.toUpperCase();
+
+			if (tipoUpper.contains("TAEKWONDO")) {
+				deporte = Deporte.TAEKWONDO;
+			} else if (tipoUpper.contains("KICKBOXING")) {
+				deporte = Deporte.KICKBOXING;
+			} else if (tipoUpper.contains("PILATES")) {
+				deporte = Deporte.PILATES;
+			} else if (tipoUpper.contains("DEFENSA")) {
+				deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
+			} else {
+				throw new GrupoNoEncontradoException("Deporte no válido: " + tipo);
+			}
+
+			// Get all students by deporte field, not just those in groups
+			alumnos = alumnoRepository.findByDeporte(deporte);
 		}
 
-		Set<Alumno> alumnosSet = new HashSet<>();
-		for (Grupo grupo : grupos) {
-			alumnosSet.addAll(grupo.getAlumnos());
-		}
-
-		return alumnosSet.stream().map(AlumnoCortoDTO::deAlumno).collect(Collectors.toList());
+		return alumnos.stream()
+			.map(AlumnoCortoDTO::deAlumno)
+			.collect(Collectors.toList());
 	}
 
 	/**
