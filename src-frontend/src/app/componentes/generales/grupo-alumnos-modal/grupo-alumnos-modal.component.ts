@@ -30,6 +30,9 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
   alumnosFiltrados: any[] = [];
   private searchSubject = new Subject<string>();
 
+  // Active filter
+  mostrarSoloActivos: boolean = true;
+
   constructor(private readonly router: Router) {}
 
   ngOnInit(): void {
@@ -37,9 +40,8 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
       this.modalVisible = true;
     }, 0);
 
-    // Initialize filtered list with all alumnos
-    this.alumnosFiltrados = this.alumnos || [];
-    this.calcularTotalPaginas();
+    // Initialize filtered list applying the active filter
+    this.filtrarAlumnos();
 
     // Setup debounced search
     this.searchSubject.pipe(
@@ -72,20 +74,32 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
   }
 
   filtrarAlumnos(): void {
-    if (!this.nombreFiltro || this.nombreFiltro.trim() === '') {
-      this.alumnosFiltrados = this.alumnos || [];
-    } else {
+    let alumnosFiltrados = this.alumnos || [];
+
+    // Filter by active status
+    if (this.mostrarSoloActivos) {
+      alumnosFiltrados = alumnosFiltrados.filter(alumno => alumno.activo === true);
+    }
+
+    // Filter by name
+    if (this.nombreFiltro && this.nombreFiltro.trim() !== '') {
       const filtroLowerCase = this.nombreFiltro.toLowerCase().trim();
-      this.alumnosFiltrados = (this.alumnos || []).filter(alumno =>
+      alumnosFiltrados = alumnosFiltrados.filter(alumno =>
         `${alumno.nombre} ${alumno.apellidos}`.toLowerCase().includes(filtroLowerCase)
       );
     }
+
+    this.alumnosFiltrados = alumnosFiltrados;
     this.paginaActual = 1;
     this.calcularTotalPaginas();
   }
 
   onSearchChange(): void {
     this.searchSubject.next(this.nombreFiltro);
+  }
+
+  onActivoFilterChange(): void {
+    this.filtrarAlumnos();
   }
 
   navegarAAlumno(alumno: any): void {
