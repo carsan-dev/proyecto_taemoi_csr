@@ -1789,7 +1789,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<th>EDAD</th>");
 			html.append("<th>CATEGORÍA</th>");
 			html.append("<th>PESO</th>");
-			html.append("<th>€</th>");
+			html.append("<th>PAGADO</th>");
 			html.append("</tr>");
 			html.append("</thead>");
 			html.append("<tbody>");
@@ -1802,11 +1802,11 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>").append(alumno.getEdad()).append("</td>");
 				html.append("<td>").append(alumno.getCategoria() != null ? alumno.getCategoria() : "").append("</td>");
 				html.append("<td>").append(alumno.getPeso() != null ? alumno.getPeso() : "").append("</td>");
-				html.append("<td>");
+				html.append("<td style='font-weight: 600;");
 				if (alumno.getPagado() != null && alumno.getPagado()) {
-					html.append("P");
+					html.append(" color: #28a745;'>SI");
 				} else {
-					html.append("P");
+					html.append(" color: #dc3545;'>NO");
 				}
 				html.append("</td>");
 				html.append("</tr>");
