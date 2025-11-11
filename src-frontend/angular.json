@@ -85,8 +85,7 @@
               "sourceMap": false,
               "namedChunks": false,
               "aot": true,
-              "extractLicenses": true,
-              "buildOptimizer": true
+              "extractLicenses": true
             },
             "development": {
               "optimization": false,
@@ -112,8 +111,7 @@
               "sourceMap": true,
               "namedChunks": true,
               "aot": true,
-              "extractLicenses": false,
-              "buildOptimizer": true
+              "extractLicenses": false
             }
           },
           "defaultConfiguration": "production"
