@@ -1849,7 +1849,7 @@ public class PDFServiceImpl implements PDFService {
 				stripeCount = Integer.parseInt(parts[2]);
 			} catch (Exception e) {}
 
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'>");
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #000;'>");
 			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
 			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
 
@@ -1862,7 +1862,7 @@ public class PDFServiceImpl implements PDFService {
 			}
 			html.append("</div>");
 		} else if (tipo.name().contains("DAN") || (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; position: relative; display: inline-block; border: 1px solid #000;'>");
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; position: relative; display: inline-block; vertical-align: middle; border: 1px solid #000;'>");
 
 			int stripeCount = 0;
 			if (tipo.name().contains("DAN")) {
@@ -1877,19 +1877,19 @@ public class PDFServiceImpl implements PDFService {
 			int initialMargin = 3;
 			for (int i = 0; i < stripeCount; i++) {
 				int rightOffset = initialMargin + i * (stripeWidth + gap);
-				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; top: 0; bottom: 0; background: gold;'></div>");
+				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; top: 0; bottom: 0; background: gold; z-index: 2;'></div>");
 			}
 			html.append("</div>");
 		} else if (tipo.name().contains("_")) {
 			String[] parts = tipo.name().split("_");
 			String colorSuperior = obtenerColorPorNombre(parts[1]);
 			String colorInferior = obtenerColorPorNombre(parts[0]);
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'>");
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #000;'>");
 			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%;'></div>");
 			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;'></div>");
 			html.append("</div>");
 		} else {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'></div>");
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #000;'></div>");
 		}
 
 		return html.toString();
