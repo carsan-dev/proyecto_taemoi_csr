@@ -9,6 +9,7 @@ import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
+import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
@@ -17,6 +18,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
+import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 
@@ -27,8 +29,9 @@ import com.taemoi.project.repositories.UsuarioRepository;
  * - Categorías - si no existen
  * - Usuarios administradores - si no existen
  * - Grupos y turnos - solo si no existen (normalmente vienen de la migración)
+ * - Productos básicos (MENSUALIDAD, LICENCIA FEDERATIVA, RESERVA DE PLAZA) - si no existen
  *
- * NOTA: Los productos vienen de la migración (extraídos del sistema de pagos antiguo)
+ * NOTA: La mayoría de productos vienen de la migración (extraídos del sistema de pagos antiguo)
  */
 @Component
 public class InicializadorDatos implements CommandLineRunner {
@@ -47,6 +50,9 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	@Autowired
 	private TurnoRepository turnoRepository;
+
+	@Autowired
+	private ProductoRepository productoRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -77,7 +83,10 @@ public class InicializadorDatos implements CommandLineRunner {
 			generarUsuarios();
 		}
 
-		// 4. Initialize grupos (groups) if they don't exist - only if no migration was run
+		// 4. Initialize basic products if they don't exist
+		generarProductosBasicos();
+
+		// 5. Initialize grupos (groups) if they don't exist - only if no migration was run
 		if (grupoRepository.count() == 0) {
 			Grupo taekwondoLunesMiercolesPrimerTurno = obtenerOcrearGrupo(
 					NombresGrupo.TAEKWONDO_LUNES_MIERCOLES_PRIMER_TURNO, "Taekwondo");
@@ -97,7 +106,7 @@ public class InicializadorDatos implements CommandLineRunner {
 			Grupo defensaPersonalFemeninaLunesMiercoles = obtenerOcrearGrupo(
 					NombresGrupo.DEFENSA_PERSONAL_FEMENINA_LUNES_MIERCOLES, "Defensa Personal Femenina");
 
-			// 5. Initialize turnos (schedules) if they don't exist
+			// 6. Initialize turnos (schedules) if they don't exist
 			if (turnoRepository.count() == 0) {
 				crearTurno("Lunes", "09:30", "10:30", defensaPersonalFemeninaLunesMiercoles,
 						"Defensa Personal Femenina Lunes");
@@ -129,8 +138,8 @@ public class InicializadorDatos implements CommandLineRunner {
 			}
 		}
 
-		// Note: Products are NOT initialized here because they come from the migration
-		// The migration imports real products from the old payment system (370+ products)
+		// Note: Most products come from the migration (370+ products from the old payment system)
+		// Only basic/essential products are initialized above
 	}
 
 	private Grupo obtenerOcrearGrupo(String nombreGrupo, String tipo) {
@@ -192,6 +201,34 @@ public class InicializadorDatos implements CommandLineRunner {
 		nuevoTurno.setTipo(tipo);
 		nuevoTurno.setGrupo(grupo);
 		turnoRepository.save(nuevoTurno);
+	}
+
+	/**
+	 * Genera los productos básicos necesarios para el funcionamiento del sistema.
+	 * Estos productos son esenciales para las operaciones básicas:
+	 * - MENSUALIDAD: Producto genérico para mensualidades (precio base 28€)
+	 * - LICENCIA FEDERATIVA: Alta de licencia federativa (sin coste adicional, 0€)
+	 * - RESERVA DE PLAZA: Reserva de plaza para nuevos alumnos (10€)
+	 */
+	private void generarProductosBasicos() {
+		crearProductoSiNoExiste("MENSUALIDAD", 28.0);
+		crearProductoSiNoExiste("LICENCIA FEDERATIVA", 0.0);
+		crearProductoSiNoExiste("RESERVA DE PLAZA", 10.0);
+	}
+
+	/**
+	 * Crea un producto si no existe en la base de datos.
+	 *
+	 * @param concepto El concepto/nombre del producto.
+	 * @param precio El precio del producto.
+	 */
+	private void crearProductoSiNoExiste(String concepto, Double precio) {
+		if (productoRepository.findByConcepto(concepto).isEmpty()) {
+			Producto producto = new Producto();
+			producto.setConcepto(concepto);
+			producto.setPrecio(precio);
+			productoRepository.save(producto);
+		}
 	}
 
 }
