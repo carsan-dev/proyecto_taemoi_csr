@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno` (
   `direccion` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NULL DEFAULT NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
+  `fecha_alta_inicial` DATE NULL DEFAULT NULL,
   `fecha_baja` DATE NULL DEFAULT NULL,
   `fecha_grado` DATE NULL DEFAULT NULL,
   `fecha_licencia` DATE NULL DEFAULT NULL,
