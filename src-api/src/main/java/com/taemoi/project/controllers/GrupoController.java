@@ -58,8 +58,8 @@ public class GrupoController {
 
 	@GetMapping("/conteo-alumnos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Map<String, Long>> obtenerConteoAlumnosPorGrupo() {
-		Map<String, Long> conteoAlumnos = grupoService.contarAlumnosPorGrupo();
+	public ResponseEntity<Map<String, Map<String, Long>>> obtenerConteoAlumnosPorGrupo() {
+		Map<String, Map<String, Long>> conteoAlumnos = grupoService.contarAlumnosPorGrupo();
 		return ResponseEntity.ok(conteoAlumnos);
 	}
 

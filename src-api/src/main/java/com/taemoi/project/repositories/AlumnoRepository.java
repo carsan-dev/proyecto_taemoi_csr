@@ -229,4 +229,7 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
 
 	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
+
+	// Obtener todos los alumnos por deporte
+	List<Alumno> findByDeporte(Deporte deporte);
 }
