@@ -22,4 +22,6 @@ public interface PDFService {
 	byte[] generarInformeMensualidades();
 
 	byte[] generarListadoAsistencia(int year, int month, String grupo) throws IOException;
+
+	byte[] generarInformeConvocatoria(Long convocatoriaId);
 }
