@@ -68,7 +68,7 @@ TODO:
 ✔ Informe asistencia grados de medio color, corregir altura de la celda de los dias y añadir antiguedad del grado a la izquierda del grado 
 (mostrando el número de meses que lleva con ese grado y si está apto para examen mostrarlo verde o de alguna manera que lo indique)
 
-❌ Mostrar en el modal de grupos alumnos de alta
+✔ Mostrar en el modal de grupos alumnos de alta
 
 ❌ Añadir antiguedad del club (años que lleva mirando la fecha de alta inicial). Debe tener un campo fechaAltainicial y una fechaAlta normal. Cuando se de de baja y se vuelva a dar de alta, actualizar la fechaAlta normal pero no tocar la fechaAltaInicial
 
@@ -78,7 +78,7 @@ TODO:
 
 ❌ Revisar alta y baja para actualizarse correctamente
 
-Añadir producto Renovacion Licencia
+✔ Añadir producto Renovacion Licencia (LICENCIA FEDERATIVA)
 
 Añadir opción para abrir carpeta de documentos vinculados al alumno
 
