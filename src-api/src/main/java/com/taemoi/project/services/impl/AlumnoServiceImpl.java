@@ -373,7 +373,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Asignar fecha de alta
-		nuevoAlumno.setFechaAlta(nuevoAlumnoDTO.getFechaAlta() != null ? nuevoAlumnoDTO.getFechaAlta() : new Date());
+		Date fechaAlta = nuevoAlumnoDTO.getFechaAlta() != null ? nuevoAlumnoDTO.getFechaAlta() : new Date();
+		nuevoAlumno.setFechaAlta(fechaAlta);
+
+		// Asignar fecha de alta inicial (solo se establece una vez en la creación)
+		nuevoAlumno.setFechaAltaInicial(nuevoAlumnoDTO.getFechaAltaInicial() != null ? nuevoAlumnoDTO.getFechaAltaInicial() : fechaAlta);
 
 		// Note: License handling already done above (lines 394-399), duplicate code removed
 
@@ -484,6 +488,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null ? alumnoActualizado.getRolFamiliar() : RolFamiliar.NINGUNO);
 			alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
 			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+
+			// Actualizar fechaAltaInicial solo si se proporciona un valor
+			if (alumnoActualizado.getFechaAltaInicial() != null) {
+				alumnoExistente.setFechaAltaInicial(alumnoActualizado.getFechaAltaInicial());
+			}
+
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
 			alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
@@ -678,6 +688,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			Alumno alumno = optionalAlumno.get();
 			alumno.setActivo(true);
 			alumno.setFechaBaja(null);
+			// Actualizar fechaAlta a la fecha actual al reactivar
+			alumno.setFechaAlta(new Date());
+			// fechaAltaInicial se mantiene sin cambios (conserva la fecha original de alta)
 			return alumnoRepository.save(alumno);
 		} else {
 			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
