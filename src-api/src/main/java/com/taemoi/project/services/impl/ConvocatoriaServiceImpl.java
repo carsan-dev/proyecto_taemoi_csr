@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.Convocatoria;
@@ -24,6 +25,7 @@ import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.ConvocatoriaService;
+import com.taemoi.project.utils.FechaUtils;
 
 @Service
 public class ConvocatoriaServiceImpl implements ConvocatoriaService {
@@ -99,6 +101,34 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 						alumnoConvocatoria.getAlumno().getApellidos(), alumnoConvocatoria.getCuantiaExamen(),
 						alumnoConvocatoria.getGradoActual(), alumnoConvocatoria.getGradoSiguiente(),
 						alumnoConvocatoria.getPagado()))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<AlumnoConvocatoriaReporteDTO> obtenerReporteDeConvocatoria(Long convocatoriaId) {
+		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
+				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+
+		return convocatoria.getAlumnosConvocatoria().stream()
+				.map(alumnoConvocatoria -> {
+					Alumno alumno = alumnoConvocatoria.getAlumno();
+					String nombreCompleto = alumno.getNombre() + " " + alumno.getApellidos();
+					Integer edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+					String categoriaNombre = alumno.getCategoria() != null ? alumno.getCategoria().getNombre() : null;
+
+					return new AlumnoConvocatoriaReporteDTO(
+							alumno.getId(),
+							nombreCompleto,
+							alumno.getNumeroExpediente(),
+							alumno.getNumeroLicencia(),
+							edad,
+							categoriaNombre,
+							alumno.getPeso(),
+							alumnoConvocatoria.getPagado(),
+							alumnoConvocatoria.getGradoActual(),
+							alumnoConvocatoria.getGradoSiguiente()
+					);
+				})
 				.collect(Collectors.toList());
 	}
 
