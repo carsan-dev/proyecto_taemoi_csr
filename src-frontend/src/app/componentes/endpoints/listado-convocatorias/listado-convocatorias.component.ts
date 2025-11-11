@@ -1,11 +1,15 @@
-import { ChangeDetectorRef, Component, OnInit, Pipe, PipeTransform } from '@angular/core';
+import { ChangeDetectorRef, Component, LOCALE_ID, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, registerLocaleData } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { trigger, transition, style, animate } from '@angular/animations';
+import localeEs from '@angular/common/locales/es';
+
+// Register Spanish locale
+registerLocaleData(localeEs, 'es');
 
 @Pipe({
   name: 'filter',
@@ -20,12 +24,39 @@ export class FilterPipe implements PipeTransform {
   }
 }
 
+@Pipe({
+  name: 'capitalizeMonth',
+  standalone: true
+})
+export class CapitalizeMonthPipe implements PipeTransform {
+  transform(value: string | Date, format: string = 'dd MMMM yyyy'): string {
+    if (!value) return '';
+
+    const date = new Date(value);
+    const formattedDate = new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+
+    // Capitalize first letter of month
+    return formattedDate.replaceAll(/\b\w/g, (char, index) => {
+      // Capitalize first character and the character after a space (month name)
+      if (index === 0 || formattedDate[index - 1] === ' ') {
+        return char.toUpperCase();
+      }
+      return char;
+    });
+  }
+}
+
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe],
+  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
+  providers: [{ provide: LOCALE_ID, useValue: 'es' }],
   animations: [
     trigger('slideDown', [
       transition(':enter', [
@@ -46,6 +77,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosFiltrados: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
+
 
   // Pagination for convocatorias list
   paginaActualConvocatorias = 1;
@@ -464,6 +496,55 @@ export class ListadoConvocatoriasComponent implements OnInit {
             },
           });
       }
+    });
+  }
+
+  generarReporte(convocatoria: any): void {
+    // Show loading message
+    Swal.fire({
+      title: 'Generando informe...',
+      text: 'Por favor, espere mientras se genera el PDF',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.endpointsService.descargarInformePDFConvocatoria(convocatoria.id).subscribe({
+      next: (blob: Blob) => {
+        // Close loading message
+        Swal.close();
+
+        // Create download link
+        const url = globalThis.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Format filename
+        const fechaStr = new Date(convocatoria.fechaConvocatoria).toLocaleDateString('es-ES').replaceAll('/', '_');
+        link.download = `informe_convocatoria_${convocatoria.deporte}_${fechaStr}.pdf`;
+
+        // Trigger download
+        link.click();
+
+        // Cleanup
+        globalThis.URL.revokeObjectURL(url);
+
+        Swal.fire({
+          title: 'Éxito',
+          text: 'El informe se ha descargado correctamente.',
+          icon: 'success',
+          timer: 2000,
+        });
+      },
+      error: () => {
+        Swal.close();
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo generar el informe.',
+          icon: 'error',
+        });
+      },
     });
   }
 }

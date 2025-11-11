@@ -7,6 +7,18 @@
         Gestión de Convocatorias
       </h2>
       <div class="action-buttons">
+        <button class="admin-btn admin-btn-info"
+                (click)="generarReporte(convocatoriaSeleccionada)"
+                [disabled]="!convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
+          <i class="bi bi-file-earmark-text"></i>
+          <span *ngIf="convocatoriaSeleccionada; else sinConvocatoria">
+            Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+          </span>
+          <ng-template #sinConvocatoria>
+            <span>Generar Informe</span>
+          </ng-template>
+        </button>
+
         <button class="admin-btn admin-btn-success" (click)="crearConvocatoria()">
           <i class="bi bi-plus-circle"></i>
           <span>Crear Convocatoria</span>
@@ -58,7 +70,7 @@
                 </div>
                 <div class="date-info">
                   <span class="date-label">Fecha de Examen</span>
-                  <span class="date-value">{{ convocatoria.fechaConvocatoria | date: 'dd MMMM yyyy' }}</span>
+                  <span class="date-value">{{ convocatoria.fechaConvocatoria | capitalizeMonth }}</span>
                 </div>
               </div>
 
