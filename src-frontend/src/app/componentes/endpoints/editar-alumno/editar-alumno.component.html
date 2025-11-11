@@ -380,6 +380,13 @@
                   </span>
                   <span class="info-value">{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</span>
                 </div>
+                <div class="info-item" *ngIf="alumno.antiguedad">
+                  <span class="info-label">
+                    <i class="bi bi-clock-history"></i>
+                    Antigüedad
+                  </span>
+                  <span class="info-value info-value-highlight">{{ alumno.antiguedad }}</span>
+                </div>
                 <div class="info-item" *ngIf="alumno.fechaBaja">
                   <span class="info-label">
                     <i class="bi bi-calendar-x"></i>
@@ -420,14 +427,7 @@
                     <i class="bi bi-check-circle"></i>
                     Apto para Examen
                   </span>
-                  <span class="info-value">
-                    <span *ngIf="alumno.aptoParaExamen" class="badge-yes">
-                      <i class="bi bi-check-circle-fill"></i> Sí
-                    </span>
-                    <span *ngIf="!alumno.aptoParaExamen" class="badge-no">
-                      <i class="bi bi-x-circle"></i> No
-                    </span>
-                  </span>
+                  <span class="info-value"><span *ngIf="alumno.aptoParaExamen" class="badge-yes"><i class="bi bi-check-circle-fill"></i> Sí</span><span *ngIf="!alumno.aptoParaExamen" class="badge-no"><i class="bi bi-x-circle"></i> No</span></span>
                 </div>
                 <div class="info-item" *ngIf="alumno?.fechaGrado && alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <span class="info-label">
@@ -966,6 +966,20 @@
                       <i class="bi bi-exclamation-triangle"></i>
                       <span>Fecha de alta debe ser posterior a la fecha de nacimiento</span>
                     </div>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field">
+                    <label for="fechaAltaInicial">
+                      <i class="bi bi-calendar-check"></i>
+                      Fecha de Alta Inicial
+                    </label>
+                    <input type="date" id="fechaAltaInicial" class="admin-form-control" formControlName="fechaAltaInicial"
+                      aria-label="Fecha de alta inicial" />
+                    <small class="form-text text-muted">
+                      Fecha de primera inscripción (se mantiene al reactivar al alumno)
+                    </small>
                   </div>
                 </div>
 
