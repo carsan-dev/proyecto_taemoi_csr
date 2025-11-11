@@ -561,6 +561,13 @@ $info-hover: #0b7dda;
     font-family: 'Osaka-Sans Serif', sans-serif;
   }
 
+  .stat-total {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin: 0.25rem 0 0 0;
+    font-weight: 400;
+  }
+
   .stat-label {
     font-size: 1rem;
     color: $text-muted;
