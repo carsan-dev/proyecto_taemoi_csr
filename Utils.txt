@@ -70,9 +70,9 @@ TODO:
 
 ✔ Mostrar en el modal de grupos alumnos de alta
 
-❌ Añadir antiguedad del club (años que lleva mirando la fecha de alta inicial). Debe tener un campo fechaAltainicial y una fechaAlta normal. Cuando se de de baja y se vuelva a dar de alta, actualizar la fechaAlta normal pero no tocar la fechaAltaInicial
+✔ Añadir antiguedad del club (años que lleva mirando la fecha de alta inicial). Debe tener un campo fechaAltainicial y una fechaAlta normal. Cuando se de de baja y se vuelva a dar de alta, actualizar la fechaAlta normal pero no tocar la fechaAltaInicial
 
-❌ Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
+⚙️ Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
 
 ❌ Actualizar mensualidad para añadir por deporte
 
@@ -82,4 +82,4 @@ TODO:
 
 Añadir opción para abrir carpeta de documentos vinculados al alumno
 
-⚙️
+Poner el texto de grado en editar-alumno del color del grado
