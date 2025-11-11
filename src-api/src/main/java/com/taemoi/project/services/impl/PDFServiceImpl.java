@@ -56,6 +56,12 @@ public class PDFServiceImpl implements PDFService {
 	@Autowired
 	private com.taemoi.project.repositories.ProductoAlumnoRepository productoAlumnoRepository;
 
+	@Autowired
+	private com.taemoi.project.repositories.ConvocatoriaRepository convocatoriaRepository;
+
+	@Autowired
+	private com.taemoi.project.services.ConvocatoriaService convocatoriaService;
+
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
 
@@ -1664,6 +1670,229 @@ public class PDFServiceImpl implements PDFService {
 			throw new RuntimeException("Error al generar el informe PDF de mensualidades", e);
 		}
 		return outputStream.toByteArray();
+	}
+
+	@Override
+	public byte[] generarInformeConvocatoria(Long convocatoriaId) {
+		// Get convocatoria data
+		com.taemoi.project.entities.Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
+				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+
+		// Get report data from service
+		List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnosReporte =
+				convocatoriaService.obtenerReporteDeConvocatoria(convocatoriaId);
+
+		LocalDate now = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
+				Locale.of("es", "ES"));
+		String fechaGeneracion = now.format(formatter);
+
+		// Format convocatoria date
+		String fechaConvocatoria = "";
+		if (convocatoria.getFechaConvocatoria() != null) {
+			LocalDate fechaConv = Instant.ofEpochMilli(convocatoria.getFechaConvocatoria().getTime())
+					.atZone(ZoneId.systemDefault()).toLocalDate();
+			fechaConvocatoria = fechaConv.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+		}
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Convocatoria a Exámen " + fechaConvocatoria, fechaGeneracion));
+		html.append(".convocatoria-title { text-align: center; font-size: 18pt; font-weight: 700; margin: 5mm 0 2mm 0; text-transform: uppercase; }");
+		html.append(".convocatoria-subtitle { text-align: center; font-size: 10pt; margin: 0 0 3mm 0; color: #666; }");
+		html.append(".total-alumnos { text-align: center; font-size: 12pt; font-weight: 600; margin: 3mm 0 5mm 0; }");
+		html.append(".grade-transition-box { margin: 5mm 0 2mm 0; padding: 2mm 3mm; background: #f8f9fa; border-left: 4px solid #007bff; }");
+		html.append(".grade-transition-table { width: 100%; border-collapse: collapse; }");
+		html.append(".grade-from { text-align: left; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
+		html.append(".grade-to { text-align: right; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
+		html.append(".student-count { text-align: center; font-size: 10pt; color: #666; font-weight: 600; vertical-align: middle; }");
+		html.append(".belt-with-text { vertical-align: middle; }");
+		html.append(".belt-text { margin-left: 3mm; vertical-align: middle; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		// Header
+		html.append(generarCabeceraConLogo(""));
+
+		// Convocatoria Title
+		html.append("<div class='convocatoria-title'>CONVOCATORIA A EXÁMEN ").append(fechaConvocatoria).append("</div>");
+		html.append("<div class='convocatoria-subtitle'>(SOLO ALUMNOS CON DERECHO A EXAMEN)</div>");
+		html.append("<div class='total-alumnos'>TOTAL ALUMNOS: ").append(alumnosReporte.size()).append("</div>");
+
+		// Group students by grade transition
+		Map<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> groupedByGrade =
+			alumnosReporte.stream().collect(Collectors.groupingBy(a ->
+				a.getGradoActual() + "_TO_" + a.getGradoSiguiente()
+			));
+
+		// Sort groups by grade ordinal (descending - highest first)
+		List<Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>>> sortedGroups =
+			new ArrayList<>(groupedByGrade.entrySet());
+		sortedGroups.sort((e1, e2) -> {
+			TipoGrado g1 = e1.getValue().get(0).getGradoActual();
+			TipoGrado g2 = e2.getValue().get(0).getGradoActual();
+			return Integer.compare(g2.ordinal(), g1.ordinal());
+		});
+
+		for (Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> entry : sortedGroups) {
+			List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnos = entry.getValue();
+			if (alumnos.isEmpty()) continue;
+
+			TipoGrado gradoActual = alumnos.get(0).getGradoActual();
+			TipoGrado gradoSiguiente = alumnos.get(0).getGradoSiguiente();
+
+			// Sort students by name
+			alumnos.sort(Comparator.comparing(a -> a.getNombreCompleto().toLowerCase()));
+
+			// Grade transition header using table for layout
+			html.append("<div class='grade-transition-box'>");
+			html.append("<table class='grade-transition-table'>");
+			html.append("<tr>");
+
+			// Left: DE [GRADE]
+			html.append("<td class='grade-from'>");
+			html.append("<span class='belt-with-text'>");
+			html.append(generarCinturonInlineHTML(gradoActual, 50, 15));
+			html.append("<span class='belt-text'>DE ").append(gradoActual.getNombre().toUpperCase()).append("</span>");
+			html.append("</span>");
+			html.append("</td>");
+
+			// Center: Student count
+			html.append("<td class='student-count' style='width: 30%;'>");
+			html.append(alumnos.size()).append(" Alumnos");
+			html.append("</td>");
+
+			// Right: A [GRADE]
+			html.append("<td class='grade-to'>");
+			html.append("<span class='belt-with-text'>");
+			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(gradoSiguiente.getNombre().toUpperCase()).append("</span>");
+			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
+			html.append("</span>");
+			html.append("</td>");
+
+			html.append("</tr>");
+			html.append("</table>");
+			html.append("</div>");
+
+			// Table for this grade group
+			html.append("<table>");
+			html.append("<thead>");
+			html.append("<tr>");
+			html.append("<th>NOMBRE</th>");
+			html.append("<th>EXP</th>");
+			html.append("<th>LIC. FEDERATIVA</th>");
+			html.append("<th>EDAD</th>");
+			html.append("<th>CATEGORÍA</th>");
+			html.append("<th>PESO</th>");
+			html.append("<th>€</th>");
+			html.append("</tr>");
+			html.append("</thead>");
+			html.append("<tbody>");
+
+			for (com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO alumno : alumnos) {
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombreCompleto().toUpperCase()).append("</td>");
+				html.append("<td>").append(alumno.getNumeroExpediente() != null ? alumno.getNumeroExpediente() : "").append("</td>");
+				html.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "").append("</td>");
+				html.append("<td>").append(alumno.getEdad()).append("</td>");
+				html.append("<td>").append(alumno.getCategoria() != null ? alumno.getCategoria() : "").append("</td>");
+				html.append("<td>").append(alumno.getPeso() != null ? alumno.getPeso() : "").append("</td>");
+				html.append("<td>");
+				if (alumno.getPagado() != null && alumno.getPagado()) {
+					html.append("P");
+				} else {
+					html.append("P");
+				}
+				html.append("</td>");
+				html.append("</tr>");
+			}
+
+			html.append("</tbody>");
+			html.append("</table>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de convocatoria: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe PDF de convocatoria", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	private String generarCinturonInlineHTML(TipoGrado tipo, int width, int height) {
+		if (tipo == null) {
+			return "";
+		}
+
+		StringBuilder html = new StringBuilder();
+
+		if (tipo.name().contains("ROJO_NEGRO")) {
+			String[] parts = tipo.name().split("_");
+			String colorInferior = obtenerColorPorNombre(parts[0]);
+			String colorSuperior = obtenerColorPorNombre(parts[1]);
+			int stripeCount = 0;
+			try {
+				stripeCount = Integer.parseInt(parts[2]);
+			} catch (Exception e) {}
+
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'>");
+			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
+			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
+
+			int stripeWidth = Math.max(2, width / 15);
+			int gap = 1;
+			int initialMargin = 3;
+			for (int i = 0; i < stripeCount; i++) {
+				int rightOffset = initialMargin + i * (stripeWidth + gap);
+				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; top: 0; bottom: 0; background: gold; z-index: 2;'></div>");
+			}
+			html.append("</div>");
+		} else if (tipo.name().contains("DAN") || (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; position: relative; display: inline-block; border: 1px solid #000;'>");
+
+			int stripeCount = 0;
+			if (tipo.name().contains("DAN")) {
+				String[] parts = tipo.name().split("_");
+				try {
+					stripeCount = Integer.parseInt(parts[1]);
+				} catch (Exception e) {}
+			}
+
+			int stripeWidth = Math.max(2, width / 15);
+			int gap = 1;
+			int initialMargin = 3;
+			for (int i = 0; i < stripeCount; i++) {
+				int rightOffset = initialMargin + i * (stripeWidth + gap);
+				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; top: 0; bottom: 0; background: gold;'></div>");
+			}
+			html.append("</div>");
+		} else if (tipo.name().contains("_")) {
+			String[] parts = tipo.name().split("_");
+			String colorSuperior = obtenerColorPorNombre(parts[1]);
+			String colorInferior = obtenerColorPorNombre(parts[0]);
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'>");
+			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%;'></div>");
+			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;'></div>");
+			html.append("</div>");
+		} else {
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; border: 1px solid #000;'></div>");
+		}
+
+		return html.toString();
 	}
 
 	/**
