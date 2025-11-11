@@ -85,6 +85,9 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
 
+	@Temporal(TemporalType.DATE)
+	private Date fechaAltaInicial;
+
 	@NotNull(message = "El estado de la baja no puede ser nulo")
 	private Boolean activo = true;
 
@@ -309,6 +312,14 @@ public class Alumno {
 
 	public void setFechaAlta(Date fechaAlta) {
 		this.fechaAlta = fechaAlta;
+	}
+
+	public Date getFechaAltaInicial() {
+		return fechaAltaInicial;
+	}
+
+	public void setFechaAltaInicial(Date fechaAltaInicial) {
+		this.fechaAltaInicial = fechaAltaInicial;
 	}
 
 	public Boolean getActivo() {
