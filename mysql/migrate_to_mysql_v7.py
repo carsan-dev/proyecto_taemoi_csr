@@ -603,6 +603,7 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
 
         # Dates
         fecha_alta = sql_date_or_null(r.get("Fecha_Alta"))
+        fecha_alta_inicial = fecha_alta  # Set fechaAltaInicial the same as fechaAlta during migration
         fecha_baja = sql_date_or_null(r.get("Fecha_baja"))
         fecha_grado = sql_date_or_null(r.get("Fgrado"))
         fecha_licencia = sql_date_or_null(r.get("Fecha_licencia"))
@@ -638,7 +639,7 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
             "numero_expediente", "nombre", "apellidos", "nif", "direccion",
             "telefono", "email", "fecha_nacimiento",
             "tipo_tarifa", "cuantia_tarifa",
-            "fecha_alta", "fecha_baja", "activo",
+            "fecha_alta", "fecha_alta_inicial", "fecha_baja", "activo",
             "autorizacion_web", "competidor",
             "peso", "fecha_peso",
             "tiene_licencia", "numero_licencia", "fecha_licencia",
@@ -651,7 +652,7 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
             str(exp_int), nombre, apellidos, nif, direccion,
             telefono, email, fecha_nacimiento,
             tipo_tarifa, cuantia_tarifa,
-            fecha_alta, fecha_baja, activo,
+            fecha_alta, fecha_alta_inicial, fecha_baja, activo,
             autorizacion_web, competidor,
             peso, fecha_peso,
             tiene_licencia, numero_licencia, fecha_licencia,
