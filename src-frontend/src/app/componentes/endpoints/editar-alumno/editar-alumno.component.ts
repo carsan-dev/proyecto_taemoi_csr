@@ -120,6 +120,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         deporte: ['', Validators.required],
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
+        fechaAltaInicial: [''],
         fechaBaja: [''],
         autorizacionWeb: [true, Validators.required],
         grado: [''],
@@ -440,6 +441,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   configurarFormulario(alumno: any): void {
     const fechaNacimiento = formatDate(alumno.fechaNacimiento);
     const fechaAlta = formatDate(alumno.fechaAlta);
+    const fechaAltaInicial = alumno.fechaAltaInicial ? formatDate(alumno.fechaAltaInicial) : '';
     const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
     const peso = alumno.peso || '';
     const fechaPeso = alumno.fechaPeso ? formatDate(alumno.fechaPeso) : '';
@@ -460,6 +462,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       fechaNacimiento,
       deporte: alumno.deporte,
       fechaAlta,
+      fechaAltaInicial,
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
       cuantiaTarifa: alumno.cuantiaTarifa,
