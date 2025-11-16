@@ -74,12 +74,10 @@ TODO:
 
 ✔ Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
 
-⚙️ Actualizar mensualidad para añadir por deporte
+✔ Actualizar mensualidad para añadir por deporte
 
-❌ Revisar alta y baja para actualizarse correctamente
+✔ Revisar alta y baja para actualizarse correctamente
 
 ✔ Añadir producto Renovacion Licencia (LICENCIA FEDERATIVA)
 
-Añadir opción para abrir carpeta de documentos vinculados al alumno
-
-Poner el texto de grado en editar-alumno del color del grado
+✔ Poner el texto de grado en editar-alumno del color del grado
