@@ -72,9 +72,9 @@ TODO:
 
 ✔ Añadir antiguedad del club (años que lleva mirando la fecha de alta inicial). Debe tener un campo fechaAltainicial y una fechaAlta normal. Cuando se de de baja y se vuelva a dar de alta, actualizar la fechaAlta normal pero no tocar la fechaAltaInicial
 
-⚙️ Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
+✔ Informe mensualidad mes específico (meter deporte con su correspondiente color. Si está en dos deportes mostrar los dos) ordenado por nombre
 
-❌ Actualizar mensualidad para añadir por deporte
+⚙️ Actualizar mensualidad para añadir por deporte
 
 ❌ Revisar alta y baja para actualizarse correctamente
 
