@@ -33,6 +33,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   mostrarInactivos: boolean = false;
   private searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
+  deporteSeleccionado: string = 'TODOS';
   alumnoSeleccionado: number | null = null;
   mesAnoSeleccionadoIndividual: string = '';
   mostrarModalInforme: boolean = false;
@@ -413,26 +414,38 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService
-      .cargarMensualidadesGenerales(this.mesAnoSeleccionado)
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Éxito',
-            text: 'Las mensualidades se han asignado correctamente.',
-            icon: 'success',
-            timer: 2000,
-          });
-          this.obtenerAlumnos();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'Ocurrió un error al asignar las mensualidades.',
-            icon: 'error',
-          });
-        },
-      });
+    // Determine which service method to call based on sport selection
+    const serviceCall =
+      this.deporteSeleccionado === 'TODOS'
+        ? this.endpointsService.cargarMensualidadesGenerales(this.mesAnoSeleccionado)
+        : this.endpointsService.cargarMensualidadesPorDeporte(
+            this.mesAnoSeleccionado,
+            this.deporteSeleccionado
+          );
+
+    const deporteTexto =
+      this.deporteSeleccionado === 'TODOS'
+        ? 'todos los alumnos'
+        : `alumnos de ${this.deporteSeleccionado}`;
+
+    serviceCall.subscribe({
+      next: () => {
+        Swal.fire({
+          title: 'Éxito',
+          text: `Las mensualidades se han asignado correctamente a ${deporteTexto}.`,
+          icon: 'success',
+          timer: 2000,
+        });
+        this.obtenerAlumnos();
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'Ocurrió un error al asignar las mensualidades.',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   cargarMensualidadIndividual(): void {
