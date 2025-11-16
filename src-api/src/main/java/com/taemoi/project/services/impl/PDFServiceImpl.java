@@ -1460,8 +1460,35 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeMensualidades() {
-		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades = productoAlumnoRepository
-				.findAllMensualidadesWithAlumno();
+		return generarInformeMensualidadesPorDeporte(null);
+	}
+
+	@Override
+	public byte[] generarInformeMensualidadesTaekwondo() {
+		return generarInformeMensualidadesPorDeporte(Deporte.TAEKWONDO);
+	}
+
+	@Override
+	public byte[] generarInformeMensualidadesKickboxing() {
+		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING);
+	}
+
+	/**
+	 * Generates a PDF report of student monthly fees (mensualidades).
+	 *
+	 * @param deporteFiltro If null, generates report for all students with color coding by sport.
+	 *                      If specified, filters students by that sport.
+	 */
+	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro) {
+		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
+
+		if (deporteFiltro == null) {
+			// Get all mensualidades
+			todasMensualidades = productoAlumnoRepository.findAllMensualidadesWithAlumno();
+		} else {
+			// Get mensualidades filtered by sport
+			todasMensualidades = productoAlumnoRepository.findMensualidadesByDeporteWithAlumno(deporteFiltro);
+		}
 
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
@@ -1526,8 +1553,22 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</head>");
 		html.append("<body>");
 
+		// Determine title and color based on sport filter
+		String titulo;
+		String colorPrincipal;
+		if (deporteFiltro == Deporte.TAEKWONDO) {
+			titulo = "Informe de Mensualidades - Taekwondo";
+			colorPrincipal = "#0D47A1"; // Blue for Taekwondo
+		} else if (deporteFiltro == Deporte.KICKBOXING) {
+			titulo = "Informe de Mensualidades - Kickboxing";
+			colorPrincipal = "#ff4500"; // Orange for Kickboxing
+		} else {
+			titulo = "Informe de Mensualidades";
+			colorPrincipal = "#007bff"; // Default blue
+		}
+
 		// Add header with logo
-		html.append(generarCabeceraConLogo("Informe de Mensualidades", "#007bff"));
+		html.append(generarCabeceraConLogo(titulo, colorPrincipal));
 
 		int totalAlumnos = mensualidadesPorAlumno.size();
 		int totalMensualidades = todasMensualidades.size();
@@ -1541,8 +1582,17 @@ public class PDFServiceImpl implements PDFService {
 			html.append("No hay mensualidades registradas");
 			html.append("</div>");
 		} else {
-			html.append("<div class='section-header' style='background-color: #007bff;'>");
-			html.append("Mensualidades de Alumnos (" + totalAlumnos + " alumnos)");
+			String tituloSeccion;
+			if (deporteFiltro == Deporte.TAEKWONDO) {
+				tituloSeccion = "Mensualidades de Alumnos - Taekwondo (" + totalAlumnos + " alumnos)";
+			} else if (deporteFiltro == Deporte.KICKBOXING) {
+				tituloSeccion = "Mensualidades de Alumnos - Kickboxing (" + totalAlumnos + " alumnos)";
+			} else {
+				tituloSeccion = "Mensualidades de Alumnos (" + totalAlumnos + " alumnos)";
+			}
+
+			html.append("<div class='section-header' style='background-color: ").append(colorPrincipal).append(";'>");
+			html.append(tituloSeccion);
 			html.append("</div>");
 
 			// Sort by student name
@@ -1575,13 +1625,28 @@ public class PDFServiceImpl implements PDFService {
 				totalImportePagado += importePagado;
 				totalImportePendiente += importePendiente;
 
+				// Determine color based on student's sport (for general PDF with all sports)
+				String colorAlumno = "#007bff"; // Default
+				String deporteNombre = "";
+				if (deporteFiltro == null && alumno.getDeporte() != null) {
+					// In general PDF, color-code by student's sport
+					if (alumno.getDeporte() == Deporte.TAEKWONDO) {
+						colorAlumno = "#0D47A1"; // Blue
+						deporteNombre = " <span style='color: #0D47A1; font-weight: bold;'>[Taekwondo]</span>";
+					} else if (alumno.getDeporte() == Deporte.KICKBOXING) {
+						colorAlumno = "#ff4500"; // Orange
+						deporteNombre = " <span style='color: #ff4500; font-weight: bold;'>[Kickboxing]</span>";
+					}
+				}
+
 				html.append("<div class='alumno-section'>");
 				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
 						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
-						.append(" (Exp. ").append(alumno.getNumeroExpediente()).append(")");
+						.append(" (Exp. ").append(alumno.getNumeroExpediente()).append(")")
+						.append(deporteNombre);
 				html.append("</h3>");
 
-				html.append("<div class='resumen-alumno'>");
+				html.append("<div class='resumen-alumno' style='border-left: 4px solid ").append(colorAlumno).append(";'>");
 				html.append("<strong>Total mensualidades:</strong> ").append(mensualidades.size());
 				html.append(" | <strong style='color: #28a745;'>Pagadas:</strong> ").append(pagas);
 				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
