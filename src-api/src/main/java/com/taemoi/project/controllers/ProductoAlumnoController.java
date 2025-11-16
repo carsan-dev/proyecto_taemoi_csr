@@ -86,6 +86,19 @@ public class ProductoAlumnoController {
 		return ResponseEntity.ok(Map.of("mensaje", "Mensualidades creadas correctamente."));
 	}
 
+	@PostMapping("/mensualidades/deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> cargarMensualidadesPorDeporte(@RequestBody String nombreMensualidad,
+			@RequestParam String deporte) {
+		try {
+			productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte);
+			return ResponseEntity.ok(Map.of("mensaje",
+					"Mensualidades creadas correctamente para alumnos de " + deporte + "."));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
+		}
+	}
+
 	@PostMapping("/mensualidades/individual")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarMensualidadIndividual(@RequestParam Long alumnoId,

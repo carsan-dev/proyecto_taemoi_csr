@@ -19,6 +19,8 @@ public interface ProductoAlumnoService {
 
 	void cargarMensualidadesGenerales(String mesAno);
 
+	void cargarMensualidadesPorDeporte(String mesAno, String deporte);
+
 	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar);
 	
 	void crearAltaLicenciaFederativa(Alumno alumno);
