@@ -131,6 +131,28 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
+	@GetMapping("/mensualidades/taekwondo")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeMensualidadesTaekwondo() {
+		byte[] pdfBytes = pdfService.generarInformeMensualidadesTaekwondo();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_mensualidades_taekwondo.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/mensualidades/kickboxing")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeMensualidadesKickboxing() {
+		byte[] pdfBytes = pdfService.generarInformeMensualidadesKickboxing();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_mensualidades_kickboxing.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
 			HttpServletResponse response) throws IOException {
