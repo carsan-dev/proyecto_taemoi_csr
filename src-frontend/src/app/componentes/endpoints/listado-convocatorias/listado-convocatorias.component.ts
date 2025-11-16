@@ -4,6 +4,7 @@ import { CommonModule, registerLocaleData } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
+import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { trigger, transition, style, animate } from '@angular/animations';
 import localeEs from '@angular/common/locales/es';
@@ -128,6 +129,10 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   cambiarPaginaConvocatorias(pageNumber: number): void {
     this.paginaActualConvocatorias = pageNumber;
+  }
+
+  getGradoStyle(tipoGrado: string): string {
+    return getGradoTextStyle(tipoGrado);
   }
 
   crearConvocatoria(): void {

@@ -167,10 +167,10 @@
                         </div>
                       </td>
                       <td>
-                        <span class="badge badge-grade current">{{ alumno.gradoActual }}</span>
+                        <span class="badge badge-grade current" [style]="getGradoStyle(alumno.gradoActual)">{{ alumno.gradoActual }}</span>
                       </td>
                       <td>
-                        <span class="badge badge-grade next">{{ alumno.gradoSiguiente }}</span>
+                        <span class="badge badge-grade next" [style]="getGradoStyle(alumno.gradoSiguiente)">{{ alumno.gradoSiguiente }}</span>
                       </td>
                       <td class="text-center">
                         <input type="number" class="cuantia-input" step="0.01" min="0"
