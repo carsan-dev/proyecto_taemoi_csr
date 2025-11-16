@@ -136,7 +136,7 @@
           <div class="item-field">
             <i class="bi bi-award"></i>
             <strong>Grado:</strong>
-            <span>{{ alumno.grado }}</span>
+            <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
           </div>
           <div class="item-field" *ngIf="mostrarInactivos && alumno.fechaBaja">
             <i class="bi bi-calendar-x"></i>

@@ -17,6 +17,7 @@ import { RolFamiliar } from '../../../enums/rol-familiar';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { formatDate } from '../../../utilities/formatear-fecha';
+import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -913,6 +914,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return 'MARRON';
     }
     return grado.tipoGrado;
+  }
+
+  getGradoStyle(tipoGrado: string): string {
+    return getGradoTextStyle(tipoGrado);
   }
 
   /**

@@ -5,6 +5,7 @@ import { PaginacionComponent } from '../paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { getGradoTextStyle } from '../../../utilities/grado-colors';
 
 @Component({
   selector: 'app-grupo-alumnos-modal',
@@ -121,5 +122,9 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.cerrar.emit();
     }, 300);
+  }
+
+  getGradoStyle(tipoGrado: string): string {
+    return getGradoTextStyle(tipoGrado);
   }
 }

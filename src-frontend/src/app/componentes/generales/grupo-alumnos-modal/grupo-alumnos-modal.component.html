@@ -80,7 +80,7 @@
                 </span>
                 <span class="alumno-grado" *ngIf="alumno.grado">
                   <i class="bi bi-award me-1"></i>
-                  {{ alumno.grado }}
+                  <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
                 </span>
               </div>
               <i class="bi bi-chevron-right arrow-icon"></i>

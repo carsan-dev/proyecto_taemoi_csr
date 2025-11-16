@@ -9,6 +9,7 @@ import { RouterLink } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { getGradoTextStyle } from '../../../utilities/grado-colors';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -319,6 +320,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   calcularEdad(fechaNacimiento: string): number {
     return calcularEdad(fechaNacimiento);
+  }
+
+  getGradoStyle(tipoGrado: string): string {
+    return getGradoTextStyle(tipoGrado);
   }
 
   cambiarPagina(pageNumber: number): void {

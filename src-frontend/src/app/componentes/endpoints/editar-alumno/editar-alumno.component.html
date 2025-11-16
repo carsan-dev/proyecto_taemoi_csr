@@ -420,7 +420,7 @@
                     <i class="bi bi-award"></i>
                     Grado
                   </span>
-                  <span class="info-value info-value-highlight">{{ alumno.grado }}</span>
+                  <span class="info-value info-value-highlight" [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
                 </div>
                 <div class="info-item" *ngIf="alumno.deporte !== 'PILATES' && alumno.deporte !== 'DEFENSA_PERSONAL_FEMENINA'">
                   <span class="info-label">
