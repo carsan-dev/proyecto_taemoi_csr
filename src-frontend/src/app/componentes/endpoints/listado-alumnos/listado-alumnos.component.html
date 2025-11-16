@@ -21,7 +21,15 @@
         <div class="admin-card">
           <div class="admin-section-header">
             <i class="bi bi-calendar-check"></i>
-            <h4>Cargar Mensualidades Generales</h4>
+            <h4>Cargar Mensualidades</h4>
+          </div>
+          <div class="mb-3">
+            <label for="deporteSeleccionado" class="form-label fw-semibold">Deporte:</label>
+            <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
+              <option value="TODOS">Todos los Alumnos</option>
+              <option value="TAEKWONDO">Solo Taekwondo</option>
+              <option value="KICKBOXING">Solo Kickboxing</option>
+            </select>
           </div>
           <div class="mb-3">
             <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
@@ -29,7 +37,7 @@
           </div>
           <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
             <i class="bi bi-cash-stack"></i>
-            <span>Cargar Mensualidades Generales</span>
+            <span>Cargar Mensualidades</span>
           </button>
         </div>
       </div>

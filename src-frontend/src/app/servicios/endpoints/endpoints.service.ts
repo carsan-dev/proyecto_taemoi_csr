@@ -445,6 +445,14 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  cargarMensualidadesPorDeporte(mesAno: string, deporte: string): Observable<any> {
+    return this.http
+      .post(`${this.urlBase}/productos-alumno/mensualidades/deporte?deporte=${deporte}`, mesAno, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   cargarMensualidadIndividual(
     alumnoId: number,
     mesAno: string,
