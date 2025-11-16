@@ -203,6 +203,43 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
+	public void cargarMensualidadesPorDeporte(String mesAno, String deporte) {
+		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+
+		// Convert string to Deporte enum
+		com.taemoi.project.entities.Deporte deporteEnum;
+		try {
+			deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no válido: " + deporte +
+					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
+		}
+
+		// Get students filtered by sport
+		List<Alumno> alumnos = alumnoRepository.findByDeporte(deporteEnum);
+		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+		for (Alumno alumno : alumnos) {
+			boolean yaExiste = alumno.getProductosAlumno().stream()
+					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+
+			if (!yaExiste) {
+				ProductoAlumno productoAlumno = new ProductoAlumno();
+				productoAlumno.setAlumno(alumno);
+				productoAlumno.setProducto(productoMensualidad);
+				productoAlumno.setConcepto(nombreMensualidad);
+				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setCantidad(1);
+				productoAlumno.setPagado(false);
+
+				productoAlumnoRepository.save(productoAlumno);
+			}
+		}
+	}
+
+	@Override
 	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		Alumno alumno = alumnoRepository.findById(alumnoId)
