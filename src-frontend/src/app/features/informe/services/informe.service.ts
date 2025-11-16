@@ -76,6 +76,36 @@ export class InformeService {
   }
 
   /**
+   * Generate report of all student monthly fees (mensualidades)
+   */
+  generarInformeMensualidades(): Observable<Blob> {
+    return this.http.get(`${this.urlBase}/mensualidades`, {
+      withCredentials: true,
+      responseType: 'blob',
+    });
+  }
+
+  /**
+   * Generate report of Taekwondo student monthly fees
+   */
+  generarInformeMensualidadesTaekwondo(): Observable<Blob> {
+    return this.http.get(`${this.urlBase}/mensualidades/taekwondo`, {
+      withCredentials: true,
+      responseType: 'blob',
+    });
+  }
+
+  /**
+   * Generate report of Kickboxing student monthly fees
+   */
+  generarInformeMensualidadesKickboxing(): Observable<Blob> {
+    return this.http.get(`${this.urlBase}/mensualidades/kickboxing`, {
+      withCredentials: true,
+      responseType: 'blob',
+    });
+  }
+
+  /**
    * Download attendance sheet for a specific group and schedule
    */
   descargarAsistencia(

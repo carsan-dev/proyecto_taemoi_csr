@@ -981,6 +981,24 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeMensualidadesTaekwondo(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/mensualidades/taekwondo`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeMensualidadesKickboxing(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/mensualidades/kickboxing`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   descargarAsistencia(
     year: number,
     month: number,

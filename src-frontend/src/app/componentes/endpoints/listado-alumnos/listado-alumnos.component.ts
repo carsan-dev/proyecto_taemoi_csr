@@ -97,7 +97,15 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         label: 'Informe de Alumnos Adultos a Promocionar',
       },
       { value: 'deudas', label: 'Informe de Deudas de Alumnos' },
-      { value: 'mensualidades', label: 'Informe de Mensualidades de Alumnos' },
+      { value: 'mensualidades', label: 'Informe de Mensualidades de Todos los Alumnos' },
+      {
+        value: 'mensualidades-taekwondo',
+        label: 'Informe de Mensualidades de Taekwondo',
+      },
+      {
+        value: 'mensualidades-kickboxing',
+        label: 'Informe de Mensualidades de Kickboxing',
+      },
     ];
     this.mostrarModalInforme = true;
   }
@@ -273,6 +281,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           Swal.fire(
             'Error',
             'No se pudo generar el informe de mensualidades',
+            'error'
+          );
+        },
+      });
+    } else if (tipo === 'mensualidades-taekwondo') {
+      this.endpointsService.generarInformeMensualidadesTaekwondo().subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de mensualidades de Taekwondo',
+            'error'
+          );
+        },
+      });
+    } else if (tipo === 'mensualidades-kickboxing') {
+      this.endpointsService.generarInformeMensualidadesKickboxing().subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de mensualidades de Kickboxing',
             'error'
           );
         },
