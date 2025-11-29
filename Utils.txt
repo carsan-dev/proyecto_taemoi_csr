@@ -81,3 +81,7 @@ TODO:
 ✔ Añadir producto Renovacion Licencia (LICENCIA FEDERATIVA)
 
 ✔ Poner el texto de grado en editar-alumno del color del grado
+
+Cambiar *ngif por @if en toda la app
+
+Cambiar *ngfor por @for en toda la app
