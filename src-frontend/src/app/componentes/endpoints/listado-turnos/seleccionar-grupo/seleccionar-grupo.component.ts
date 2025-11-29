@@ -17,7 +17,7 @@ import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton
 export class SeleccionarGrupoComponent implements OnInit {
   grupos: GrupoDTO[] = [];
   turnoId!: number;
-  cargando: boolean = false;
+  cargando: boolean = true;
 
   constructor(
     private readonly endpointsService: EndpointsService,

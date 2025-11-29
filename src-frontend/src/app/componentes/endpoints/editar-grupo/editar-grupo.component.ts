@@ -11,17 +11,20 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { GrupoDTO } from '../../../interfaces/grupo-dto';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-editar-grupo',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, SkeletonCardComponent],
   templateUrl: './editar-grupo.component.html',
   styleUrl: './editar-grupo.component.scss',
 })
 export class EditarGrupoComponent implements OnInit {
   grupoForm: FormGroup;
   grupoId!: number;
+  cargando: boolean = true;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -43,10 +46,22 @@ export class EditarGrupoComponent implements OnInit {
   }
 
   cargarGrupo(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerGrupoPorId(this.grupoId)
-      .subscribe((grupo: GrupoDTO) => {
-        this.grupoForm.patchValue({ nombre: grupo.nombre });
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (grupo: GrupoDTO) => {
+          this.grupoForm.patchValue({ nombre: grupo.nombre });
+        },
+        error: () => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo cargar el grupo',
+            icon: 'error',
+          });
+        }
       });
   }
 

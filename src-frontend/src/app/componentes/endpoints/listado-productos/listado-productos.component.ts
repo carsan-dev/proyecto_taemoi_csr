@@ -26,7 +26,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   totalElementos: number = 0;
   orderBy: string = 'id';
   order: string = 'asc';
-  cargando: boolean = false; // Local loading state
+  cargando: boolean = true; // Local loading state
   private searchSubject = new Subject<string>();
 
   constructor(private readonly endpointsService: EndpointsService) {}

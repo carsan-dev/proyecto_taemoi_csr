@@ -27,7 +27,7 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   alumnosEnGrupo: AlumnoDTO[] = [];
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
-  cargando: boolean = false;
+  cargando: boolean = true;
   private searchSubject = new Subject<string>();
 
   constructor(
