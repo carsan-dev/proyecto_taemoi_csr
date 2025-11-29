@@ -1,6 +1,5 @@
 services:
   database:
-    image: mysql:8.0
     container_name: mysql
     env_file:
       - .env
@@ -42,11 +41,13 @@ services:
       APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
       - .env:/app/.env:ro
+      # Named volumes for persistent storage (production-ready)
+      - imagenes_data:/var/www/app/imagenes
+      - documentos_data:/var/www/app/documentos
 
-      # Bind mounts para archivos estáticos (desarrollo)
-      # Descomentar y crear los directorios static_resources/imagenes y static_resources/documentos
-      # - ./static_resources/imagenes:/var/www/app/imagenes:ro
-      # - ./static_resources/documentos:/var/www/app/documentos:ro
+      # Alternative: Bind mounts for development (uncomment if needed)
+      # - ./static_resources/imagenes:/var/www/app/imagenes
+      # - ./static_resources/documentos:/var/www/app/documentos
     links:
       - database
 
@@ -65,3 +66,5 @@ services:
 
 volumes:
   db_data:
+  imagenes_data:
+  documentos_data:
