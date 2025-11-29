@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
 import { PaginacionComponent } from '../paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
@@ -14,9 +14,10 @@ import { getGradoTextStyle } from '../../../utilities/grado-colors';
   templateUrl: './grupo-alumnos-modal.component.html',
   styleUrl: './grupo-alumnos-modal.component.scss'
 })
-export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
+export class GrupoAlumnosModalComponent implements OnInit, OnDestroy, OnChanges {
   @Input() grupoNombre!: string;
   @Input() alumnos!: any[];
+  @Input() cargando: boolean = false;
   @Output() cerrar = new EventEmitter<void>();
 
   modalVisible = false;
@@ -51,6 +52,13 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy {
     ).subscribe(() => {
       this.filtrarAlumnos();
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // When alumnos input changes (data loaded), re-filter
+    if (changes['alumnos'] && !changes['alumnos'].firstChange) {
+      this.filtrarAlumnos();
+    }
   }
 
   ngOnDestroy(): void {

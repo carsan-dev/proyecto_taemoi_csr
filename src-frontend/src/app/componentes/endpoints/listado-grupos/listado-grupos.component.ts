@@ -27,6 +27,7 @@ export class ListadoGruposComponent implements OnInit {
   mostrarModalAlumnos = false;
   grupoNombreModal = '';
   alumnosGrupoModal: any[] = [];
+  cargandoAlumnosModal: boolean = false;
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
@@ -100,20 +101,28 @@ export class ListadoGruposComponent implements OnInit {
   }
 
   abrirModalAlumnos(tipo: string) {
-    this.endpointsService.obtenerAlumnosPorTipo(tipo).subscribe({
-      next: (alumnos) => {
-        this.grupoNombreModal = tipo;
-        this.alumnosGrupoModal = alumnos;
-        this.mostrarModalAlumnos = true;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la obtención',
-          text: 'No hemos podido obtener los alumnos del grupo',
-          icon: 'error',
-        });
-      }
-    });
+    // Show modal immediately with loading state
+    this.grupoNombreModal = tipo;
+    this.alumnosGrupoModal = [];
+    this.cargandoAlumnosModal = true;
+    this.mostrarModalAlumnos = true;
+
+    // Fetch alumnos data
+    this.endpointsService.obtenerAlumnosPorTipo(tipo)
+      .pipe(finalize(() => (this.cargandoAlumnosModal = false)))
+      .subscribe({
+        next: (alumnos) => {
+          this.alumnosGrupoModal = alumnos;
+        },
+        error: (error) => {
+          this.mostrarModalAlumnos = false;
+          Swal.fire({
+            title: 'Error en la obtención',
+            text: 'No hemos podido obtener los alumnos del grupo',
+            icon: 'error',
+          });
+        }
+      });
   }
 
   cerrarModalAlumnos() {

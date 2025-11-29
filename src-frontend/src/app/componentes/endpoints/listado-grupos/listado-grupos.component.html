@@ -65,5 +65,5 @@
 
 <!-- Modal de alumnos en un grupo -->
 <app-grupo-alumnos-modal *ngIf="mostrarModalAlumnos" [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
-  (cerrar)="cerrarModalAlumnos()">
+  [cargando]="cargandoAlumnosModal" (cerrar)="cerrarModalAlumnos()">
 </app-grupo-alumnos-modal>
