@@ -21,9 +21,9 @@
           <i class="bi bi-info-circle me-2"></i>
           <span>
             Mostrando: <strong>{{ alumnosFiltrados.length }}</strong>
-            <ng-container *ngIf="alumnosFiltrados.length !== alumnos.length">
+            @if (alumnosFiltrados.length !== alumnos.length) {
               de <strong>{{ alumnos.length }}</strong>
-            </ng-container>
+            }
             alumnos
           </span>
         </div>
@@ -62,51 +62,60 @@
         </div>
 
         <!-- Alumnos Grid -->
-        <div class="alumnos-grid" *ngIf="alumnosPaginados && alumnosPaginados.length > 0; else noAlumnos">
-          <div class="alumno-card" *ngFor="let alumno of alumnosPaginados">
-            <a class="alumno-link" (click)="navegarAAlumno(alumno)" style="cursor: pointer;">
-              <div class="alumno-avatar">
-                <img *ngIf="alumno.fotoAlumno?.url"
-                     [src]="alumno.fotoAlumno.url"
-                     [alt]="alumno.nombre + ' ' + alumno.apellidos"
-                     class="avatar-image">
-                <i *ngIf="!alumno.fotoAlumno?.url" class="bi bi-person-circle avatar-placeholder"></i>
+        @if (alumnosPaginados && alumnosPaginados.length > 0) {
+          <div class="alumnos-grid">
+            @for (alumno of alumnosPaginados; track alumno.id) {
+              <div class="alumno-card">
+                <a class="alumno-link" (click)="navegarAAlumno(alumno)" style="cursor: pointer;">
+                  <div class="alumno-avatar">
+                    @if (alumno.fotoAlumno?.url) {
+                      <img
+                        [src]="alumno.fotoAlumno.url"
+                        [alt]="alumno.nombre + ' ' + alumno.apellidos"
+                        class="avatar-image">
+                    } @else {
+                      <i class="bi bi-person-circle avatar-placeholder"></i>
+                    }
+                  </div>
+                  <div class="alumno-info">
+                    <h6 class="alumno-nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</h6>
+                    @if (alumno.numeroExpediente) {
+                      <span class="alumno-expediente">
+                        <i class="bi bi-card-text me-1"></i>
+                        Exp. {{ alumno.numeroExpediente }}
+                      </span>
+                    }
+                    @if (alumno.grado) {
+                      <span class="alumno-grado">
+                        <i class="bi bi-award me-1"></i>
+                        <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
+                      </span>
+                    }
+                  </div>
+                  <i class="bi bi-chevron-right arrow-icon"></i>
+                </a>
               </div>
-              <div class="alumno-info">
-                <h6 class="alumno-nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</h6>
-                <span class="alumno-expediente" *ngIf="alumno.numeroExpediente">
-                  <i class="bi bi-card-text me-1"></i>
-                  Exp. {{ alumno.numeroExpediente }}
-                </span>
-                <span class="alumno-grado" *ngIf="alumno.grado">
-                  <i class="bi bi-award me-1"></i>
-                  <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
-                </span>
-              </div>
-              <i class="bi bi-chevron-right arrow-icon"></i>
-            </a>
+            }
           </div>
-        </div>
-
-        <!-- No alumnos message -->
-        <ng-template #noAlumnos>
+        } @else {
           <div class="no-alumnos">
             <i class="bi bi-inbox no-alumnos-icon"></i>
             <p class="no-alumnos-text">
               {{ nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo' }}
             </p>
           </div>
-        </ng-template>
+        }
 
         <!-- Pagination -->
-        <app-paginacion
-          *ngIf="totalPaginas > 1"
-          [paginaActual]="paginaActual"
-          [totalPaginas]="totalPaginas"
-          [tamanoPagina]="tamanoPagina"
-          (pageChange)="cambiarPagina($event)"
-          class="mt-4">
-        </app-paginacion>
+        @if (totalPaginas > 1) {
+          <app-paginacion
+            [paginaActual]="paginaActual"
+            [totalPaginas]="totalPaginas"
+            [tamanoPagina]="tamanoPagina"
+            (pageChange)="cambiarPagina($event)"
+            class="mt-4">
+          </app-paginacion>
+        }
       </div>
 
       <!-- Modal Footer -->

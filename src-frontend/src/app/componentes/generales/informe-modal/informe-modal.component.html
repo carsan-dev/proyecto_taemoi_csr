@@ -6,16 +6,18 @@
         <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
       </div>
       <div class="modal-body">
-        <div *ngFor="let opcion of opcionesInforme" class="form-check mb-2">
-          <input
-            class="form-check-input"
-            type="radio"
-            name="informeTipo"
-            [id]="opcion.value"
-            [value]="opcion.value"
-            [(ngModel)]="selectedInforme">
-          <label class="form-check-label" [for]="opcion.value">{{ opcion.label }}</label>
-        </div>
+        @for (opcion of opcionesInforme; track opcion.value) {
+          <div class="form-check mb-2">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="informeTipo"
+              [id]="opcion.value"
+              [value]="opcion.value"
+              [(ngModel)]="selectedInforme">
+            <label class="form-check-label" [for]="opcion.value">{{ opcion.label }}</label>
+          </div>
+        }
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>

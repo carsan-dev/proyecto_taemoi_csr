@@ -30,36 +30,31 @@
       </li>
 
       <!-- Números de página -->
-      <ng-container *ngIf="totalPaginas <= 5">
-        <li
-          class="page-item"
-          *ngFor="let page of mostrarPaginas"
-          [class.active]="paginaActual === page"
-        >
-          <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
-            {{ page }}
-          </a>
-        </li>
-      </ng-container>
+      @if (totalPaginas <= 5) {
+        @for (page of mostrarPaginas; track $index) {
+          <li class="page-item" [class.active]="paginaActual === page">
+            <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
+              {{ page }}
+            </a>
+          </li>
+        }
+      }
 
-      <ng-container *ngIf="totalPaginas > 5">
-        <li
-          class="page-item"
-          *ngFor="let page of mostrarPaginas"
-          [class.active]="paginaActual === page"
-        >
-          <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
-            {{ page }}
-          </a>
-        </li>
+      @if (totalPaginas > 5) {
+        @for (page of mostrarPaginas; track $index) {
+          <li class="page-item" [class.active]="paginaActual === page">
+            <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
+              {{ page }}
+            </a>
+          </li>
+        }
         <!-- Tres puntos si hay muchas páginas -->
-        <li
-          class="page-item"
-          *ngIf="mostrarPaginas[mostrarPaginas.length - 1] < totalPaginas"
-        >
-          <a class="page-link disabled">...</a>
-        </li>
-      </ng-container>
+        @if (mostrarPaginas[mostrarPaginas.length - 1] < totalPaginas) {
+          <li class="page-item">
+            <a class="page-link disabled">...</a>
+          </li>
+        }
+      }
 
       <!-- Botón: Página siguiente -->
       <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
