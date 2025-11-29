@@ -11,11 +11,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Evento } from '../../../interfaces/evento';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-editar-evento',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, SkeletonCardComponent],
   templateUrl: './editar-evento.component.html',
   styleUrls: ['./editar-evento.component.scss'],
 })
@@ -26,6 +28,7 @@ export class EditarEventoComponent implements OnInit {
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
   evento: Evento | null = null;
   imagenPreview: string | null = null;
+  cargando: boolean = true;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -49,19 +52,31 @@ export class EditarEventoComponent implements OnInit {
   }
 
   cargarEvento(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerEventoPorId(this.eventoId)
-      .subscribe((evento: Evento) => {
-        this.evento = evento;
-        this.eventoForm.patchValue({
-          titulo: evento.titulo,
-          descripcion: evento.descripcion,
-        });
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (evento: Evento) => {
+          this.evento = evento;
+          this.eventoForm.patchValue({
+            titulo: evento.titulo,
+            descripcion: evento.descripcion,
+          });
 
-        // Use `ruta` for image preview, and fallback to default image
-        this.imagenPreview = evento.fotoEvento?.url
-          ? evento.fotoEvento.url
-          : '../../../../assets/media/default.webp';
+          // Use `ruta` for image preview, and fallback to default image
+          this.imagenPreview = evento.fotoEvento?.url
+            ? evento.fotoEvento.url
+            : '../../../../assets/media/default.webp';
+        },
+        error: () => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo cargar el evento',
+            icon: 'error',
+          });
+        }
       });
   }
 

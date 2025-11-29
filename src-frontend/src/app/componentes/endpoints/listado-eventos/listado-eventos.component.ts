@@ -15,7 +15,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 })
 export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
-  cargando: boolean = false; // Local loading state
+  cargando: boolean = true; // Local loading state
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}

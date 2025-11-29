@@ -16,7 +16,7 @@ import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton
 export class TurnosGrupoComponent implements OnInit, OnDestroy {
   grupoId!: number;
   turnos: any[] = [];
-  cargando: boolean = false; // Loading state
+  cargando: boolean = true; // Loading state
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(

@@ -80,7 +80,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosFiltrados: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
-  cargando: boolean = false; // Loading state
+  cargando: boolean = true; // Loading state
   cargandoAlumnos: boolean = false; // Loading state for alumnos
 
 

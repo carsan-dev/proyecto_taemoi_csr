@@ -16,7 +16,7 @@ import { finalize } from 'rxjs/operators';
 })
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
-  cargando: boolean = false; // Local loading state
+  cargando: boolean = true; // Local loading state
   gruposMostrar: string[] = [
     'Taekwondo',
     'Taekwondo Competición',

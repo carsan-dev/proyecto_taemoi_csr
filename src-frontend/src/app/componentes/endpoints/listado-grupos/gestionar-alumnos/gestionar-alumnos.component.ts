@@ -28,7 +28,7 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
-  cargando: boolean = false; // Loading state
+  cargando: boolean = true; // Loading state
   private searchSubject = new Subject<string>();
 
   constructor(

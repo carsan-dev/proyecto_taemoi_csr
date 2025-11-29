@@ -4,17 +4,20 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-editar-producto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonCardComponent],
   templateUrl: './editar-producto.component.html',
   styleUrl: './editar-producto.component.scss'
 })
 export class EditarProductoComponent implements OnInit {
   productoForm: FormGroup;
   productoId: number;
+  cargando: boolean = true;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -36,19 +39,23 @@ export class EditarProductoComponent implements OnInit {
   }
 
   cargarProducto(): void {
-    this.endpointsService.obtenerProductoPorId(this.productoId).subscribe({
-      next: (producto) => {
-        this.productoForm.patchValue(producto);
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo cargar el producto',
-          icon: 'error',
-        });
-        this.router.navigate(['/productosListar']);
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerProductoPorId(this.productoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (producto) => {
+          this.productoForm.patchValue(producto);
+        },
+        error: (error) => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo cargar el producto',
+            icon: 'error',
+          });
+          this.router.navigate(['/productosListar']);
+        },
+      });
   }
 
   onSubmit(): void {
