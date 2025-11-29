@@ -8,15 +8,21 @@
         </div>
 
         <!-- Skeleton Loading -->
-        <app-skeleton-card *ngIf="cargando" type="list" [count]="5"></app-skeleton-card>
+        @if (cargando) {
+          <app-skeleton-card type="list" [count]="5"></app-skeleton-card>
+        }
 
         <!-- Content -->
-        <div *ngIf="!cargando" class="list-group mt-4">
-          <button *ngFor="let grupo of grupos" class="list-group-item list-group-item-action"
-            (click)="asignarGrupo(grupo.id)">
-            {{ grupo.nombre }}
-          </button>
-        </div>
+        @if (!cargando) {
+          <div class="list-group mt-4">
+            @for (grupo of grupos; track grupo.id) {
+              <button class="list-group-item list-group-item-action"
+                (click)="asignarGrupo(grupo.id)">
+                {{ grupo.nombre }}
+              </button>
+            }
+          </div>
+        }
       </div>
     </div>
   </div>

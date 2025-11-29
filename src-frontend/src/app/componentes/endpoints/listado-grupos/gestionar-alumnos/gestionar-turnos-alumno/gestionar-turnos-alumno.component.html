@@ -1,26 +1,32 @@
 <div class="container my-5">
   <!-- Skeleton Loading -->
-  <div *ngIf="cargando" class="card p-4 shadow-sm">
-    <app-skeleton-card type="list" [count]="3"></app-skeleton-card>
-  </div>
+  @if (cargando) {
+    <div class="card p-4 shadow-sm">
+      <app-skeleton-card type="list" [count]="3"></app-skeleton-card>
+    </div>
+  }
 
-  <div *ngIf="!cargando" class="card p-4 shadow-sm">
+  @if (!cargando) {
+    <div class="card p-4 shadow-sm">
     <h2 class="text-center mb-4 fw-bold">
       Gestionar Turnos de {{ alumno.nombre }} {{ alumno.apellidos }}
     </h2>
 
     <!-- Sección para mostrar los turnos asignados al alumno -->
-    <div *ngIf="endpointsService.turnosDelAlumno$ | async as turnos; else noTurnos">
-      <ul class="p-0">
-        <li *ngFor="let turno of turnos" class="list-group-item d-flex justify-content-between align-items-center">
-          <span><strong>{{turno.tipoGrupo}}</strong> - {{ turno.horaInicio }} a {{ turno.horaFin }} </span>
-          <button class="btn btn-danger btn-sm rounded-pill" (click)="removerTurno(turno.id)">Remover Turno</button>
-        </li>
-      </ul>
-    </div>
-    <ng-template #noTurnos>
+    @if (endpointsService.turnosDelAlumno$ | async; as turnos) {
+      <div>
+        <ul class="p-0">
+          @for (turno of turnos; track turno.id) {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><strong>{{turno.tipoGrupo}}</strong> - {{ turno.horaInicio }} a {{ turno.horaFin }} </span>
+              <button class="btn btn-danger btn-sm rounded-pill" (click)="removerTurno(turno.id)">Remover Turno</button>
+            </li>
+          }
+        </ul>
+      </div>
+    } @else {
       <p class="text-center">Este alumno no tiene turnos asignados.</p>
-    </ng-template>
+    }
 
     <!-- Sección para agregar un nuevo turno al alumno -->
     <div class="mt-4">
@@ -36,9 +42,11 @@
             required
           >
             <!-- Usamos el async pipe para obtener los turnos disponibles -->
-            <option *ngFor="let turno of endpointsService.turnos$ | async" [value]="turno.id">
-              {{turno.tipoGrupo}} - {{ turno.horaInicio }} a {{ turno.horaFin }}
-            </option>
+            @for (turno of endpointsService.turnos$ | async; track turno.id) {
+              <option [value]="turno.id">
+                {{turno.tipoGrupo}} - {{ turno.horaInicio }} a {{ turno.horaFin }}
+              </option>
+            }
           </select>
         </div>
         <button type="submit" class="btn btn-primary mt-3" [disabled]="turnoForm.invalid">Asignar Turno</button>
@@ -49,5 +57,6 @@
     <div class="text-center mt-4">
       <button class="btn btn-secondary" (click)="volver()">Volver</button>
     </div>
-  </div>
+    </div>
+  }
 </div>

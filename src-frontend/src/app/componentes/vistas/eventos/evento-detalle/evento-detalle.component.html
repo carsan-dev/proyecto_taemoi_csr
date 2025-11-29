@@ -1,4 +1,5 @@
-<div class="evento-detalle-page" *ngIf="evento">
+@if (evento) {
+  <div class="evento-detalle-page">
   <!-- Hero Header -->
   <div class="hero-header">
     <div class="hero-overlay"></div>
@@ -57,33 +58,37 @@
   </div>
 
   <!-- Image Modal -->
-  <div class="image-modal" *ngIf="modalImagenAbierto" (click)="cerrarModalImagen()">
-    <div class="modal-overlay"></div>
-    <div class="modal-content">
-      <button class="close-button" (click)="cerrarModalImagen()" title="Cerrar">
-        <i class="bi bi-x-lg"></i>
-      </button>
-      <div class="modal-image-wrapper">
-        <img
-          [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
-          [alt]="evento.titulo"
-          class="modal-img"
-          (click)="$event.stopPropagation()"
-        />
+  @if (modalImagenAbierto) {
+    <div class="image-modal" (click)="cerrarModalImagen()">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <button class="close-button" (click)="cerrarModalImagen()" title="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="modal-image-wrapper">
+          <img
+            [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+            [alt]="evento.titulo"
+            class="modal-img"
+            (click)="$event.stopPropagation()"
+          />
+        </div>
+        <div class="modal-caption">{{ evento.titulo }}</div>
       </div>
-      <div class="modal-caption">{{ evento.titulo }}</div>
     </div>
+  }
   </div>
-</div>
+}
 
-<ngx-spinner
-  *ngIf="!evento"
-  bdColor="rgba(0, 0, 0, 0.8)"
-  size="medium"
-  color="#fff"
-  type="ball-clip-rotate"
-  [fullScreen]="true"
->
-  <p style="color: white">Cargando evento...</p>
-</ngx-spinner>
+@if (!evento) {
+  <ngx-spinner
+    bdColor="rgba(0, 0, 0, 0.8)"
+    size="medium"
+    color="#fff"
+    type="ball-clip-rotate"
+    [fullScreen]="true"
+  >
+    <p style="color: white">Cargando evento...</p>
+  </ngx-spinner>
+}
   

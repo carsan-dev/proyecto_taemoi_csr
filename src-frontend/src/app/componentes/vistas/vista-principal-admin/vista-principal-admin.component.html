@@ -11,19 +11,21 @@
 
     <!-- Navigation Cards Grid -->
     <div class="row g-4">
-      <div class="col-12 col-md-6 col-lg-4" *ngFor="let seccion of seccionesAdmin">
-        <a [routerLink]="[seccion.ruta]" class="admin-nav-card">
-          <div class="nav-icon">
-            <i [class]="seccion.icono"></i>
-          </div>
-          <h3>{{ seccion.titulo }}</h3>
-          <p>{{ seccion.descripcion }}</p>
-          <button class="admin-btn admin-btn-primary">
-            <span>Gestionar {{ seccion.titulo }}</span>
-            <i class="bi bi-arrow-right"></i>
-          </button>
-        </a>
-      </div>
+      @for (seccion of seccionesAdmin; track seccion.ruta) {
+        <div class="col-12 col-md-6 col-lg-4">
+          <a [routerLink]="[seccion.ruta]" class="admin-nav-card">
+            <div class="nav-icon">
+              <i [class]="seccion.icono"></i>
+            </div>
+            <h3>{{ seccion.titulo }}</h3>
+            <p>{{ seccion.descripcion }}</p>
+            <button class="admin-btn admin-btn-primary">
+              <span>Gestionar {{ seccion.titulo }}</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </a>
+        </div>
+      }
     </div>
   </div>
 </div>

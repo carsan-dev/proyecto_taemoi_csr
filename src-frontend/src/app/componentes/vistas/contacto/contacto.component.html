@@ -48,10 +48,12 @@
                 [class.invalid]="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched">
               <label for="nombre" class="form-label">Nombre</label>
             </div>
-            <div *ngIf="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched" class="error-message">
-              <i class="bi bi-exclamation-circle"></i>
-              El campo nombre es obligatorio
-            </div>
+            @if (contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                El campo nombre es obligatorio
+              </div>
+            }
           </div>
 
           <!-- Surname Field -->
@@ -67,10 +69,12 @@
                 [class.invalid]="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched">
               <label for="apellidos" class="form-label">Apellidos</label>
             </div>
-            <div *ngIf="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched" class="error-message">
-              <i class="bi bi-exclamation-circle"></i>
-              El campo apellidos es obligatorio
-            </div>
+            @if (contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                El campo apellidos es obligatorio
+              </div>
+            }
           </div>
 
           <!-- Email Field -->
@@ -86,10 +90,12 @@
                 [class.invalid]="contactForm.get('email')?.invalid && contactForm.get('email')?.touched">
               <label for="email" class="form-label">Correo electrónico</label>
             </div>
-            <div *ngIf="contactForm.get('email')?.invalid && contactForm.get('email')?.touched" class="error-message">
-              <i class="bi bi-exclamation-circle"></i>
-              Debes proporcionar un email válido
-            </div>
+            @if (contactForm.get('email')?.invalid && contactForm.get('email')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                Debes proporcionar un email válido
+              </div>
+            }
           </div>
 
           <!-- Subject Field -->
@@ -109,10 +115,12 @@
               </select>
               <label for="asunto" class="form-label select-label">Asunto</label>
             </div>
-            <div *ngIf="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched" class="error-message">
-              <i class="bi bi-exclamation-circle"></i>
-              El campo asunto es obligatorio
-            </div>
+            @if (contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                El campo asunto es obligatorio
+              </div>
+            }
           </div>
 
           <!-- Message Field -->
@@ -128,10 +136,12 @@
                 [class.invalid]="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched"></textarea>
               <label for="mensaje" class="form-label">Mensaje</label>
             </div>
-            <div *ngIf="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched" class="error-message">
-              <i class="bi bi-exclamation-circle"></i>
-              El campo mensaje es obligatorio
-            </div>
+            @if (contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                El campo mensaje es obligatorio
+              </div>
+            }
           </div>
 
           <!-- Action Buttons -->
