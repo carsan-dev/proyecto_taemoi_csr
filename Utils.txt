@@ -82,6 +82,8 @@ TODO:
 
 ✔ Poner el texto de grado en editar-alumno del color del grado
 
+✔ Arreglar skeleton card en las tarjetas de alumnos del grupo
+
 Cambiar *ngif por @if en toda la app
 
 Cambiar *ngfor por @for en toda la app
