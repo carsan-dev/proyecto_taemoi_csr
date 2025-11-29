@@ -4,11 +4,12 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-listado-turnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SkeletonCardComponent],
   templateUrl: './listado-turnos.component.html',
   styleUrls: ['./listado-turnos.component.scss'],
 })
@@ -22,10 +23,23 @@ export class ListadoTurnosComponent implements OnInit {
     'Sábado',
     'Domingo',
   ];
+  cargando: boolean = false; // Local loading state
+  turnos: any[] = [];
 
   constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
+    this.cargarTurnos();
+  }
+
+  cargarTurnos(): void {
+    this.cargando = true;
+    this.endpointsService.turnos$.subscribe({
+      next: (turnos) => {
+        this.turnos = turnos;
+        this.cargando = false;
+      }
+    });
     this.endpointsService.obtenerTurnos();
   }
 

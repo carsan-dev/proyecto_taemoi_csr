@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
@@ -18,6 +18,11 @@ import { Documento } from '../../interfaces/documento';
 })
 export class EndpointsService {
   private readonly urlBase = environment.apiUrl;
+
+  // Headers to skip global loading spinner
+  private readonly skipLoadingHeaders = new HttpHeaders({
+    'X-Skip-Loading': 'true'
+  });
 
   constructor(private readonly http: HttpClient) {}
 
@@ -65,6 +70,7 @@ export class EndpointsService {
       .get<any>(`${this.urlBase}/alumnos`, {
         params,
         withCredentials: true,
+        headers: this.skipLoadingHeaders
       })
       .pipe(catchError(this.manejarError));
   }
@@ -336,6 +342,7 @@ export class EndpointsService {
       .get<any>(`${this.urlBase}/productos`, {
         params: params,
         withCredentials: true,
+        headers: this.skipLoadingHeaders
       })
       .pipe(catchError(this.manejarError));
   }
@@ -493,7 +500,10 @@ export class EndpointsService {
 
   obtenerTodosLosGrupos(): Observable<GrupoDTO[]> {
     return this.http
-      .get<GrupoDTO[]>(`${this.urlBase}/grupos`, { withCredentials: true })
+      .get<GrupoDTO[]>(`${this.urlBase}/grupos`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders
+      })
       .pipe(catchError(this.manejarError));
   }
 
@@ -619,6 +629,7 @@ export class EndpointsService {
     this.http
       .get<any>(`${this.urlBase}/turnos`, {
         withCredentials: true,
+        headers: this.skipLoadingHeaders
       })
       .pipe(catchError(this.manejarError))
       .subscribe({
@@ -698,6 +709,7 @@ export class EndpointsService {
     this.http
       .get<any[]>(`${this.urlBase}/eventos/admin/todos`, {
         withCredentials: true,
+        headers: this.skipLoadingHeaders
       })
       .pipe(catchError(this.manejarError))
       .subscribe({

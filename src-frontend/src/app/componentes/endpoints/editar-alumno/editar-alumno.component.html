@@ -6,7 +6,14 @@
   <div id="caption"></div>
 </div>
 
-<div class="admin-page-container" *ngIf="alumno">
+<!-- Skeleton Loading -->
+<div class="admin-page-container" *ngIf="cargando">
+  <div class="container">
+    <app-skeleton-card type="list" [count]="1"></app-skeleton-card>
+  </div>
+</div>
+
+<div class="admin-page-container" *ngIf="!cargando && alumno">
   <div class="container">
     <!-- Page Header -->
     <div class="admin-page-header">

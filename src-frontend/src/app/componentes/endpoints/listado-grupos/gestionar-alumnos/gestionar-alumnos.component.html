@@ -12,27 +12,32 @@
         </button>
       </div>
 
-      <!-- Search Filter -->
-      <div class="mb-3">
-        <div class="input-group">
-          <span class="input-group-text">
-            <i class="bi bi-search"></i>
-          </span>
-          <input
-            type="text"
-            class="form-control"
-            placeholder="Buscar alumno por nombre..."
-            [(ngModel)]="nombreFiltro"
-            (ngModelChange)="onSearchChange()"
-            aria-label="Buscar alumno por nombre">
-        </div>
-        <small class="text-muted mt-1 d-block" *ngIf="nombreFiltro">
-          Mostrando {{ alumnosFiltrados.length }} de {{ alumnos.length }} alumnos
-        </small>
-      </div>
+      <!-- Skeleton Loading -->
+      <app-skeleton-card *ngIf="cargando" type="list" [count]="tamanoPagina"></app-skeleton-card>
 
-      <ul class="mt-4 p-0">
-        <li *ngFor="let alumno of alumnosPaginados" class="list-group-item d-flex justify-content-between align-items-center">
+      <!-- Content -->
+      <div *ngIf="!cargando">
+        <!-- Search Filter -->
+        <div class="mb-3">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar alumno por nombre..."
+              [(ngModel)]="nombreFiltro"
+              (ngModelChange)="onSearchChange()"
+              aria-label="Buscar alumno por nombre">
+          </div>
+          <small class="text-muted mt-1 d-block" *ngIf="nombreFiltro">
+            Mostrando {{ alumnosFiltrados.length }} de {{ alumnos.length }} alumnos
+          </small>
+        </div>
+
+        <ul class="mt-4 p-0">
+          <li *ngFor="let alumno of alumnosPaginados" class="list-group-item d-flex justify-content-between align-items-center">
           <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
           <div>
             <button class="btn btn-primary btn-sm me-2 rounded-pill" (click)="gestionarTurnos(alumno.id)">
@@ -50,18 +55,19 @@
         </li>
       </ul>
 
-      <app-paginacion
-        *ngIf="totalPaginas > 1"
-        [paginaActual]="paginaActual"
-        [totalPaginas]="totalPaginas"
-        (pageChange)="cambiarPagina($event)">
-      </app-paginacion>
+        <app-paginacion
+          *ngIf="totalPaginas > 1"
+          [paginaActual]="paginaActual"
+          [totalPaginas]="totalPaginas"
+          (pageChange)="cambiarPagina($event)">
+        </app-paginacion>
 
-      <div class="text-center mt-3">
-        <button class="btn btn-primary" (click)="redirigirSeleccionarAlumnos()">
-          <i class="bi bi-person-plus"></i>
-          Agregar Alumnos
-        </button>
+        <div class="text-center mt-3">
+          <button class="btn btn-primary" (click)="redirigirSeleccionarAlumnos()">
+            <i class="bi bi-person-plus"></i>
+            Agregar Alumnos
+          </button>
+        </div>
       </div>
     </div>
   </div>

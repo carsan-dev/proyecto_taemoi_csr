@@ -4,16 +4,19 @@ import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-listado-grupos',
   standalone: true,
-  imports: [CommonModule, RouterModule, GrupoAlumnosModalComponent],
+  imports: [CommonModule, RouterModule, GrupoAlumnosModalComponent, SkeletonCardComponent],
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss',
 })
 export class ListadoGruposComponent implements OnInit {
   grupos: any[] = [];
+  cargando: boolean = false; // Local loading state
   gruposMostrar: string[] = [
     'Taekwondo',
     'Taekwondo Competición',
@@ -33,18 +36,21 @@ export class ListadoGruposComponent implements OnInit {
   }
 
   obtenerGrupos(): void {
-    this.endpointsService.obtenerTodosLosGrupos().subscribe({
-      next: (response) => {
-        this.grupos = response;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerTodosLosGrupos()
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (response) => {
+          this.grupos = response;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   eliminarGrupo(id: number): void {
