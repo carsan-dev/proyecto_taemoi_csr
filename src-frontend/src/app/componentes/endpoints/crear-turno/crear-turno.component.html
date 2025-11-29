@@ -46,10 +46,12 @@
                       <option value="Sábado">Sábado</option>
                       <option value="Domingo">Domingo</option>
                     </select>
-                    <div *ngIf="turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El día de la semana es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
 
@@ -68,11 +70,17 @@
                       class="admin-form-control"
                       aria-label="Hora de inicio"
                       aria-required="true">
-                    <div *ngIf="turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="turnoForm.get('horaInicio')?.errors?.['required']">La hora de inicio es obligatoria</span>
-                      <span *ngIf="turnoForm.get('horaInicio')?.errors?.['pattern']">Formato HH:mm requerido</span>
+                      @if (turnoForm.get('horaInicio')?.errors?.['required']) {
+                      <span>La hora de inicio es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaInicio')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
@@ -90,21 +98,29 @@
                       class="admin-form-control"
                       aria-label="Hora de fin"
                       aria-required="true">
-                    <div *ngIf="turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="turnoForm.get('horaFin')?.errors?.['required']">La hora de fin es obligatoria</span>
-                      <span *ngIf="turnoForm.get('horaFin')?.errors?.['pattern']">Formato HH:mm requerido</span>
+                      @if (turnoForm.get('horaFin')?.errors?.['required']) {
+                      <span>La hora de fin es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaFin')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
                 <!-- Error de validación de horas -->
-                <div class="col-12" *ngIf="turnoForm.errors?.['horasInvalidas']">
+                @if (turnoForm.errors?.['horasInvalidas']) {
+                <div class="col-12">
                   <div class="admin-alert admin-alert-danger">
                     <i class="bi bi-exclamation-triangle"></i>
                     <span>La hora de inicio debe ser anterior a la hora de fin</span>
                   </div>
                 </div>
+                }
               </div>
             </div>
 
@@ -140,7 +156,8 @@
                 </div>
 
                 <!-- Selector de grupo (si está activado) -->
-                <div class="col-12 col-md-6" *ngIf="turnoForm.get('asignarGrupo')?.value">
+                @if (turnoForm.get('asignarGrupo')?.value) {
+                <div class="col-12 col-md-6">
                   <div class="admin-form-field">
                     <label for="grupo">
                       <i class="bi bi-people-fill"></i>
@@ -152,12 +169,16 @@
                       class="admin-form-control form-select"
                       aria-label="Seleccionar grupo">
                       <option value="" disabled selected>Selecciona un grupo...</option>
-                      <option *ngFor="let grupo of grupos" [value]="grupo.id">{{ grupo.nombre }}</option>
+                      @for (grupo of grupos; track grupo.id) {
+                      <option [value]="grupo.id">{{ grupo.nombre }}</option>
+                      }
                     </select>
                   </div>
                 </div>
+                }
 
-                <div class="col-12 col-md-6" *ngIf="turnoForm.get('asignarGrupo')?.value">
+                @if (turnoForm.get('asignarGrupo')?.value) {
+                <div class="col-12 col-md-6">
                   <div class="admin-form-field" [class.is-invalid]="turnoForm.get('tipoGrupo')?.errors && turnoForm.get('tipoGrupo')?.touched" [class.is-valid]="turnoForm.get('tipoGrupo')?.valid && turnoForm.get('tipoGrupo')?.touched">
                     <label for="tipoGrupo">
                       <i class="bi bi-tag-fill"></i>
@@ -179,12 +200,15 @@
                       <option value="Defensa Personal Femenina">Defensa Personal Femenina</option>
                       <option value="Competición">Competición</option>
                     </select>
-                    <div *ngIf="turnoForm.get('tipoGrupo')?.errors && turnoForm.get('tipoGrupo')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('tipoGrupo')?.errors && turnoForm.get('tipoGrupo')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El tipo de grupo es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
+                }
               </div>
             </div>
 

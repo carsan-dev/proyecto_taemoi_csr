@@ -38,11 +38,17 @@
                       placeholder="Ej: Infantiles Cinturón Blanco"
                       aria-label="Nombre del grupo"
                       aria-required="true">
-                    <div *ngIf="grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched" class="invalid-feedback">
+                    @if (grupoForm.get('nombre')?.errors && grupoForm.get('nombre')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="grupoForm.get('nombre')?.errors?.['required']">El nombre del grupo es obligatorio</span>
-                      <span *ngIf="grupoForm.get('nombre')?.errors?.['maxlength']">Máximo 50 caracteres</span>
+                      @if (grupoForm.get('nombre')?.errors?.['required']) {
+                      <span>El nombre del grupo es obligatorio</span>
+                      }
+                      @if (grupoForm.get('nombre')?.errors?.['maxlength']) {
+                      <span>Máximo 50 caracteres</span>
+                      }
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Elige un nombre descriptivo para identificar el grupo fácilmente</span>

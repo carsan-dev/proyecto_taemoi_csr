@@ -10,7 +10,8 @@
     </div>
 
     <!-- Skeleton Loading -->
-    <div *ngIf="cargando" class="row justify-content-center">
+    @if (cargando) {
+    <div class="row justify-content-center">
       <div class="col-12 col-lg-10 col-xl-8">
         <div class="admin-card admin-card-large">
           <div class="admin-form-section">
@@ -34,9 +35,11 @@
         </div>
       </div>
     </div>
+    }
 
     <!-- Form Card -->
-    <div *ngIf="!cargando" class="row justify-content-center">
+    @if (!cargando) {
+    <div class="row justify-content-center">
       <div class="col-12 col-lg-10 col-xl-8">
         <div class="admin-card admin-card-large">
           <form [formGroup]="turnoForm" (ngSubmit)="onSubmit()" method="post">
@@ -63,12 +66,16 @@
                       class="admin-form-control form-select"
                       aria-label="Día de la semana"
                       aria-required="true">
-                      <option *ngFor="let dia of diasSemana" [value]="dia">{{ dia }}</option>
+                      @for (dia of diasSemana; track dia) {
+                      <option [value]="dia">{{ dia }}</option>
+                      }
                     </select>
-                    <div *ngIf="turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El día de la semana es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
 
@@ -87,11 +94,17 @@
                       class="admin-form-control"
                       aria-label="Hora de inicio"
                       aria-required="true">
-                    <div *ngIf="turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="turnoForm.get('horaInicio')?.errors?.['required']">La hora de inicio es obligatoria</span>
-                      <span *ngIf="turnoForm.get('horaInicio')?.errors?.['pattern']">Formato HH:mm requerido</span>
+                      @if (turnoForm.get('horaInicio')?.errors?.['required']) {
+                      <span>La hora de inicio es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaInicio')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
@@ -109,21 +122,29 @@
                       class="admin-form-control"
                       aria-label="Hora de fin"
                       aria-required="true">
-                    <div *ngIf="turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched" class="invalid-feedback">
+                    @if (turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="turnoForm.get('horaFin')?.errors?.['required']">La hora de fin es obligatoria</span>
-                      <span *ngIf="turnoForm.get('horaFin')?.errors?.['pattern']">Formato HH:mm requerido</span>
+                      @if (turnoForm.get('horaFin')?.errors?.['required']) {
+                      <span>La hora de fin es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaFin')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
                 <!-- Error de validación de horas -->
-                <div class="col-12" *ngIf="turnoForm.errors?.['horasInvalidas']">
+                @if (turnoForm.errors?.['horasInvalidas']) {
+                <div class="col-12">
                   <div class="admin-alert admin-alert-danger">
                     <i class="bi bi-exclamation-triangle"></i>
                     <span>La hora de inicio debe ser anterior a la hora de fin</span>
                   </div>
                 </div>
+                }
               </div>
             </div>
 
@@ -150,5 +171,6 @@
         </div>
       </div>
     </div>
+    }
   </div>
 </div>
