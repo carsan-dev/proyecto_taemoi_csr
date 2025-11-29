@@ -7,25 +7,33 @@
       </div>
       <div class="modal-body">
         <!-- Mostrar notas en modo lectura si no estamos editando -->
-        <div *ngIf="!modoEdicion">
-          <p class="mb-0" [innerText]="productoAlumno.notas || 'Sin notas'"></p>
-        </div>
+        @if (!modoEdicion) {
+          <div>
+            <p class="mb-0" [innerText]="productoAlumno.notas || 'Sin notas'"></p>
+          </div>
+        }
 
         <!-- Textarea editable si estamos en modo edición -->
-        <div *ngIf="modoEdicion">
-          <textarea class="form-control" rows="5" [(ngModel)]="productoAlumno.notas"></textarea>
-        </div>
+        @if (modoEdicion) {
+          <div>
+            <textarea class="form-control" rows="5" [(ngModel)]="productoAlumno.notas"></textarea>
+          </div>
+        }
       </div>
       <div class="modal-footer">
-        <button *ngIf="!modoEdicion" type="button" class="btn btn-light" (click)="habilitarEdicion()">
-          Editar
-        </button>
+        @if (!modoEdicion) {
+          <button type="button" class="btn btn-light" (click)="habilitarEdicion()">
+            Editar
+          </button>
+        }
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
           {{ modoEdicion ? 'Cancelar' : 'Cerrar' }}
         </button>
-        <button *ngIf="modoEdicion" type="button" class="btn btn-primary" (click)="guardarNotas()">
-          Guardar
-        </button>
+        @if (modoEdicion) {
+          <button type="button" class="btn btn-primary" (click)="guardarNotas()">
+            Guardar
+          </button>
+        }
       </div>
     </div>
   </div>

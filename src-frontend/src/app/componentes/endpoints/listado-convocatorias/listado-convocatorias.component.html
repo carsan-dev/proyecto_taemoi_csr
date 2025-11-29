@@ -11,12 +11,13 @@
                 (click)="generarReporte(convocatoriaSeleccionada)"
                 [disabled]="!convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
           <i class="bi bi-file-earmark-text"></i>
-          <span *ngIf="convocatoriaSeleccionada; else sinConvocatoria">
-            Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
-          </span>
-          <ng-template #sinConvocatoria>
+          @if (convocatoriaSeleccionada) {
+            <span>
+              Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+            </span>
+          } @else {
             <span>Generar Informe</span>
-          </ng-template>
+          }
         </button>
 
         <button class="admin-btn admin-btn-success" (click)="crearConvocatoria()">
@@ -35,22 +36,27 @@
           </label>
           <select id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
             (change)="obtenerConvocatorias()">
-            <option *ngFor="let deporte of deportes" [value]="deporte">{{ deporte }}</option>
+            @for (deporte of deportes; track deporte) {
+              <option [value]="deporte">{{ deporte }}</option>
+            }
           </select>
         </div>
       </div>
     </div>
 
     <!-- Skeleton Loading -->
-    <app-skeleton-card *ngIf="cargando" type="list" [count]="tamanoPaginaConvocatorias"></app-skeleton-card>
+    @if (cargando) {
+      <app-skeleton-card type="list" [count]="tamanoPaginaConvocatorias"></app-skeleton-card>
+    }
 
     <!-- Lista de convocatorias o mensaje de vacío -->
-    <ng-container *ngIf="!cargando && convocatorias && convocatorias.length > 0; else noConvocatorias">
+    @if (!cargando && convocatorias && convocatorias.length > 0) {
 
       <!-- Convocatorias Grid -->
       <div class="convocatorias-grid">
-        <div *ngFor="let convocatoria of convocatoriasPaginadas" class="convocatoria-card"
-             [class.expanded]="convocatoria.expanded">
+        @for (convocatoria of convocatoriasPaginadas; track convocatoria.id) {
+          <div class="convocatoria-card"
+               [class.expanded]="convocatoria.expanded">
 
           <!-- Convocatoria Header (Clickable) -->
           <div class="convocatoria-card-header" (click)="seleccionarConvocatoria(convocatoria)"
@@ -94,11 +100,12 @@
           </div>
 
           <!-- Convocatoria Details (Expandable) -->
-          <div class="convocatoria-card-body" *ngIf="convocatoria.expanded && convocatoriaSeleccionada?.id === convocatoria.id"
-               [@slideDown]>
+          @if (convocatoria.expanded && convocatoriaSeleccionada?.id === convocatoria.id) {
+            <div class="convocatoria-card-body"
+                 [@slideDown]>
 
-            <!-- Summary Stats -->
-            <div class="summary-stats">
+              <!-- Summary Stats -->
+              <div class="summary-stats">
               <div class="stat-card">
                 <div class="stat-icon students">
                   <i class="bi bi-people-fill"></i>
@@ -141,26 +148,28 @@
             </div>
 
             <!-- Alumnos Table -->
-            <div class="students-section" *ngIf="alumnosInscritos.length > 0; else noAlumnos">
-              <h5 class="section-title">
-                <i class="bi bi-list-check me-2"></i>
-                Detalle de Alumnos
-              </h5>
+            @if (alumnosInscritos.length > 0) {
+              <div class="students-section">
+                <h5 class="section-title">
+                  <i class="bi bi-list-check me-2"></i>
+                  Detalle de Alumnos
+                </h5>
 
-              <div class="students-table-wrapper">
-                <table class="students-table">
-                  <thead>
-                    <tr>
-                      <th>Alumno</th>
-                      <th>Grado Actual</th>
-                      <th>Grado Siguiente</th>
-                      <th class="text-center">Cuantía (€)</th>
-                      <th class="text-center">Estado</th>
-                      <th class="text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let alumno of alumnosInscritos" [class.paid]="alumno.pagado" [class.unpaid]="!alumno.pagado">
+                <div class="students-table-wrapper">
+                  <table class="students-table">
+                    <thead>
+                      <tr>
+                        <th>Alumno</th>
+                        <th>Grado Actual</th>
+                        <th>Grado Siguiente</th>
+                        <th class="text-center">Cuantía (€)</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (alumno of alumnosInscritos; track alumno.id) {
+                        <tr [class.paid]="alumno.pagado" [class.unpaid]="!alumno.pagado">
                       <td class="student-info">
                         <div class="student-avatar">
                           {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }}
@@ -205,13 +214,13 @@
                           <i class="bi bi-trash3"></i>
                         </button>
                       </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-
-            <ng-template #noAlumnos>
+            } @else {
               <div class="empty-state">
                 <div class="empty-icon">
                   <i class="bi bi-inbox"></i>
@@ -219,7 +228,7 @@
                 <p class="empty-text">No hay alumnos inscritos en esta convocatoria</p>
                 <p class="empty-subtext">Agrega alumnos usando el formulario de abajo</p>
               </div>
-            </ng-template>
+            }
 
             <!-- Add Student Section -->
             <div class="add-student-section">
@@ -236,9 +245,11 @@
                   <select id="alumnoSeleccionado" class="form-select-custom"
                           [(ngModel)]="alumnoSeleccionado">
                     <option [value]="null" disabled>Seleccione un alumno apto para examen</option>
-                    <option *ngFor="let alumno of alumnosFiltrados" [value]="alumno.id">
-                      {{ alumno.nombre }} {{ alumno.apellidos }} - {{ alumno.grado }}
-                    </option>
+                    @for (alumno of alumnosFiltrados; track alumno.id) {
+                      <option [value]="alumno.id">
+                        {{ alumno.nombre }} {{ alumno.apellidos }} - {{ alumno.grado }}
+                      </option>
+                    }
                   </select>
                 </div>
 
@@ -250,15 +261,17 @@
                 </button>
               </div>
 
-              <button *ngIf="!alumnosCargadosCompletamente"
-                      class="load-more-btn"
-                      (click)="cargarAlumnosPaginados()">
-                <i class="bi bi-arrow-clockwise me-2"></i>
-                Cargar Más Alumnos
-              </button>
+              @if (!alumnosCargadosCompletamente) {
+                <button class="load-more-btn"
+                        (click)="cargarAlumnosPaginados()">
+                  <i class="bi bi-arrow-clockwise me-2"></i>
+                  Cargar Más Alumnos
+                </button>
+              }
             </div>
-          </div>
-        </div>
+            </div>
+          }
+        }
       </div>
 
       <!-- Pagination for Convocatorias -->
@@ -269,10 +282,8 @@
         (pageChange)="cambiarPaginaConvocatorias($event)"
         class="mt-4">
       </app-paginacion>
-    </ng-container>
-
-    <!-- Plantilla para cuando no haya convocatorias -->
-    <ng-template #noConvocatorias>
+    } @else {
+      <!-- Plantilla para cuando no haya convocatorias -->
       <div class="admin-card text-center empty-state-large">
         <div class="empty-illustration">
           <i class="bi bi-clipboard2-x"></i>
@@ -286,6 +297,6 @@
           Crear Primera Convocatoria
         </button>
       </div>
-    </ng-template>
+    }
   </div>
 </div>

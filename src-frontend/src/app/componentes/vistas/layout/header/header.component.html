@@ -1,4 +1,5 @@
-<header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}" *ngIf="!usuarioLogueado">
+@if (!usuarioLogueado) {
+  <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
@@ -91,10 +92,12 @@
       </div>
     </div>
   </nav>
-</header>
+  </header>
+}
 
 <!-- Header para administradores -->
-<header class="admin-top-navbar" *ngIf="isAdmin">
+@if (isAdmin) {
+  <header class="admin-top-navbar">
   <div class="navbar-container">
     <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú">
       <i class="bi bi-list"></i>
@@ -109,16 +112,18 @@
     <div class="navbar-actions">
       <div class="admin-user-info">
         <i class="bi bi-person-circle"></i>
-        <span class="username" *ngIf="username">{{ username }}</span>
+        @if (username) {
+          <span class="username">{{ username }}</span>
+        }
       </div>
       <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
         <i class="bi bi-box-arrow-right"></i>
       </button>
     </div>
   </div>
-</header>
+  </header>
 
-<nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }" *ngIf="isAdmin">
+  <nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
   <div class="sidebar-header">
     <h3>Navegación</h3>
     <button class="close-sidebar" (click)="closeAdminMenu()">
@@ -331,9 +336,11 @@
       </ul>
     </li>
   </ul>
-</nav>
+  </nav>
+}
 
-<header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}" *ngIf="usuarioLogueado && isUser && !isAdmin">
+@if (usuarioLogueado && isUser && !isAdmin) {
+  <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
@@ -430,7 +437,9 @@
             <li class="nav-item dropdown">
               <a class="user-menu-toggle" role="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle"></i>
-                <span class="user-name" *ngIf="username">{{ username }}</span>
+                @if (username) {
+                  <span class="user-name">{{ username }}</span>
+                }
               </a>
               <ul class="dropdown-menu dropdown-menu-end dropdown-menu-desktop" aria-labelledby="userMenuDropdown">
                 <li>
@@ -445,4 +454,5 @@
       </div>
     </div>
   </nav>
-</header>
+  </header>
+}

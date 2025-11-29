@@ -17,36 +17,43 @@
 
       <!-- Weekly Schedule Grid -->
       <div class="schedule-grid">
-        <div class="day-card" *ngFor="let dia of diasSemana">
-          <div class="day-header">
-            <i class="bi bi-calendar-week"></i>
-            <span>{{ dia }}</span>
-          </div>
-
-          <div class="day-content">
-            <!-- Time Slots -->
-            <div *ngIf="obtenerTurnosPorDia(dia).length > 0">
-              <div class="time-slot"
-                   *ngFor="let turno of obtenerTurnosPorDia(dia)"
-                   [attr.data-sport]="obtenerCategoria(turno.grupoId)">
-                <div class="slot-time">
-                  <i class="bi bi-clock"></i>
-                  <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                </div>
-                <div class="slot-category">
-                  <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
-                  <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
-                </div>
-              </div>
+        @for (dia of diasSemana; track $index) {
+          <div class="day-card">
+            <div class="day-header">
+              <i class="bi bi-calendar-week"></i>
+              <span>{{ dia }}</span>
             </div>
 
-            <!-- No Slots Available -->
-            <div *ngIf="obtenerTurnosPorDia(dia).length === 0" class="no-slots">
-              <i class="bi bi-calendar-x"></i>
-              <span>No hay turnos disponibles</span>
+            <div class="day-content">
+              <!-- Time Slots -->
+              @if (obtenerTurnosPorDia(dia).length > 0) {
+                <div>
+                  @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
+                    <div class="time-slot"
+                         [attr.data-sport]="obtenerCategoria(turno.grupoId)">
+                      <div class="slot-time">
+                        <i class="bi bi-clock"></i>
+                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                      </div>
+                      <div class="slot-category">
+                        <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
+                        <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- No Slots Available -->
+              @if (obtenerTurnosPorDia(dia).length === 0) {
+                <div class="no-slots">
+                  <i class="bi bi-calendar-x"></i>
+                  <span>No hay turnos disponibles</span>
+                </div>
+              }
             </div>
           </div>
-        </div>
+        }
       </div>
 
       <!-- Info Section -->
