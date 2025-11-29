@@ -10,7 +10,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-editar-producto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './editar-producto.component.html',
   styleUrl: './editar-producto.component.scss'
 })
