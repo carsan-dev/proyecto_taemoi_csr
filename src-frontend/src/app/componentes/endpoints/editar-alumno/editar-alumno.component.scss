@@ -430,3 +430,62 @@
     background: white;
   }
 }
+
+// ========================================
+// SKELETON LOADING STYLES
+// ========================================
+
+// Shimmer animation for skeleton loading
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+// Base skeleton styling with shimmer effect
+@mixin skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f5f5f5 0%,
+    #e8e8e8 20%,
+    #f5f5f5 40%,
+    #f5f5f5 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+// Skeleton elements
+.skeleton-line {
+  @include skeleton-shimmer;
+  height: 16px;
+  margin-bottom: 8px;
+
+  &.skeleton-title {
+    height: 24px;
+    width: 60%;
+  }
+
+  &.skeleton-text {
+    width: 100%;
+  }
+}
+
+.skeleton-avatar {
+  @include skeleton-shimmer;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-button {
+  @include skeleton-shimmer;
+  height: 36px;
+  width: 80px;
+  border-radius: 4px;
+}

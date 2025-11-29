@@ -37,7 +37,7 @@ import Swal from 'sweetalert2';
 })
 export class EditarAlumnoComponent implements OnInit, OnDestroy {
   alumno: any = null;
-  cargando: boolean = false; // Loading state
+  cargando: boolean = true; // Loading state - start as true to show skeleton immediately
 
   // Pagination - each page represents one alumno
   paginaActual: number = 1;
@@ -203,6 +203,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
+        this.cargando = false;
         Swal.fire({
           title: 'Error',
           text: 'No se pudo obtener la lista de alumnos.',
