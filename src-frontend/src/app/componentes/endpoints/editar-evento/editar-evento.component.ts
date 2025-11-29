@@ -17,7 +17,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-editar-evento',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, SkeletonCardComponent],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule],
   templateUrl: './editar-evento.component.html',
   styleUrls: ['./editar-evento.component.scss'],
 })

@@ -30,7 +30,6 @@ import Swal from 'sweetalert2';
     FormsModule,
     ReactiveFormsModule,
     PaginacionComponent,
-    SkeletonCardComponent,
   ],
   templateUrl: './editar-alumno.component.html',
   styleUrls: ['./editar-alumno.component.scss'],
