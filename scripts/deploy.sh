@@ -1,199 +1,140 @@
 #!/bin/bash
 
-###############################################################################
-# TaeMoi Production Deployment Script for Ubuntu Server
-# This script handles the deployment of the TaeMoi application with HTTPS
-###############################################################################
+# TaeMoi - Deployment Script
+# Automates the deployment process
 
-set -e  # Exit on error
+set -e
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Log functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+echo -e "${BLUE}"
+echo "============================================"
+echo "    TaeMoi Deployment Script"
+echo "============================================"
+echo -e "${NC}"
+
+# Function to print step
+step() {
+    echo -e "${BLUE}==>${NC} $1"
 }
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+# Function to print success
+success() {
+    echo -e "${GREEN}✓${NC} $1"
 }
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if running as root
-if [[ $EUID -ne 0 ]]; then
-   log_error "This script must be run as root (use sudo)"
-   exit 1
-fi
-
-# Check if .env exists
-if [ ! -f ".env" ]; then
-    log_error ".env file not found!"
-    log_info "Please copy .env.production.template to .env and configure it"
+# Function to print error and exit
+fail() {
+    echo -e "${RED}✗ ERROR:${NC} $1"
     exit 1
+}
+
+# Check if running from project root
+if [ ! -f docker-compose.yml ]; then
+    fail "docker-compose.yml not found. Run this script from the project root directory."
 fi
 
-# Load environment variables
-set -a  # Automatically export all variables
-source .env
-set +a  # Stop auto-exporting
+# Run verification script first
+step "Running pre-deployment verification..."
+if [ -f scripts/verify-deployment.sh ]; then
+    bash scripts/verify-deployment.sh || fail "Pre-deployment verification failed. Fix errors and try again."
+else
+    echo -e "${YELLOW}Warning: Verification script not found. Skipping verification.${NC}"
+fi
 
-# Validate required environment variables
-required_vars=("DOMAIN" "EMAIL" "MYSQL_ROOT_PASSWORD" "MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD" "JWT_SECRET")
-for var in "${required_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        log_error "Required environment variable $var is not set in .env"
-        exit 1
+echo ""
+step "Building Docker images..."
+docker-compose build || fail "Docker build failed"
+success "Docker images built successfully"
+
+echo ""
+step "Starting services..."
+docker-compose up -d || fail "Failed to start services"
+success "Services started"
+
+echo ""
+step "Waiting for services to be ready..."
+
+# Wait for database
+echo "Waiting for database..."
+for i in {1..30}; do
+    if docker-compose exec -T database mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} 2>/dev/null | grep -q "mysqld is alive"; then
+        success "Database is ready"
+        break
+    fi
+    echo -n "."
+    sleep 2
+    if [ $i -eq 30 ]; then
+        echo ""
+        echo -e "${YELLOW}Warning: Database health check timeout. Continuing anyway...${NC}"
+        break
     fi
 done
 
-log_info "Starting TaeMoi deployment..."
-
-# Update system packages
-log_info "Updating system packages..."
-apt-get update -qq
-apt-get upgrade -y -qq
-
-# Install required dependencies
-log_info "Installing required dependencies..."
-apt-get install -y -qq \
-    docker.io \
-    docker-compose \
-    curl \
-    git \
-    ufw \
-    certbot \
-    python3-certbot-nginx
-
-# Enable and start Docker
-log_info "Enabling Docker service..."
-systemctl enable docker
-systemctl start docker
-
-# Configure firewall
-log_info "Configuring firewall..."
-ufw --force enable
-ufw default deny incoming
-ufw default allow outgoing
-ufw allow ssh
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw status
-
-# Create necessary directories
-log_info "Creating necessary directories..."
-mkdir -p certbot/conf
-mkdir -p certbot/www
-mkdir -p nginx
-mkdir -p mysql/init
-
-# Update nginx configuration with actual domain
-log_info "Updating Nginx configuration with domain: $DOMAIN..."
-sed -i "s/your-domain.com/$DOMAIN/g" nginx/nginx-production.conf
-
-# Stop any existing containers
-log_info "Stopping existing containers..."
-docker-compose -f docker-compose.production.yml --env-file .env down 2>/dev/null || true
-
-# Check if SSL certificates exist
-if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
-    log_warn "SSL certificates not found. Obtaining Let's Encrypt certificates..."
-
-    # Check DNS resolution
-    log_info "Checking DNS resolution for $DOMAIN..."
-    if host $DOMAIN > /dev/null 2>&1; then
-        RESOLVED_IP=$(host $DOMAIN | grep "has address" | head -1 | awk '{print $4}')
-        log_info "Domain $DOMAIN resolves to: $RESOLVED_IP"
-    else
-        log_warn "Could not resolve $DOMAIN. Please check your DNS settings."
+# Wait for backend
+echo "Waiting for backend..."
+for i in {1..60}; do
+    if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
+        success "Backend is ready"
+        break
     fi
-
-    # Get server's public IP
-    SERVER_IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || echo "unknown")
-    log_info "Server's public IP: $SERVER_IP"
-
-    if [ "$RESOLVED_IP" != "$SERVER_IP" ] && [ "$RESOLVED_IP" != "" ] && [ "$SERVER_IP" != "unknown" ]; then
-        log_warn "DNS IP ($RESOLVED_IP) does not match server IP ($SERVER_IP)"
-        log_warn "SSL certificate generation may fail. Please update your DNS records."
+    echo -n "."
+    sleep 2
+    if [ $i -eq 60 ]; then
+        echo ""
+        echo -e "${YELLOW}Warning: Backend health check timeout. Check logs: docker-compose logs backend${NC}"
+        break
     fi
+done
 
-    # Clean up any existing nginx-certbot container
-    docker stop nginx-certbot 2>/dev/null || true
-    docker rm nginx-certbot 2>/dev/null || true
+# Check frontend
+echo "Waiting for frontend..."
+for i in {1..30}; do
+    if curl -s http://localhost > /dev/null 2>&1; then
+        success "Frontend is ready"
+        break
+    fi
+    echo -n "."
+    sleep 2
+    if [ $i -eq 30 ]; then
+        echo ""
+        echo -e "${YELLOW}Warning: Frontend health check timeout. Check logs: docker-compose logs frontend${NC}"
+        break
+    fi
+done
 
-    # Start nginx temporarily for certificate challenge with proper configuration
-    docker run --rm -d \
-        --name nginx-certbot \
-        -p 80:80 \
-        -v $(pwd)/certbot/www:/var/www/certbot:ro \
-        -v $(pwd)/nginx/nginx-certbot.conf:/etc/nginx/nginx.conf:ro \
-        nginx:alpine
+echo ""
+step "Checking container status..."
+docker-compose ps
 
-    # Wait for nginx to start
-    sleep 3
+echo ""
+echo -e "${GREEN}"
+echo "============================================"
+echo "    Deployment Completed!"
+echo "============================================"
+echo -e "${NC}"
 
-    # Test if nginx is responding
-    log_info "Testing nginx accessibility..."
-    docker exec nginx-certbot wget -O- http://localhost/ 2>/dev/null || log_warn "Nginx test failed"
-
-    # Obtain certificate
-    docker run --rm \
-        -v $(pwd)/certbot/conf:/etc/letsencrypt \
-        -v $(pwd)/certbot/www:/var/www/certbot \
-        certbot/certbot certonly \
-        --webroot \
-        --webroot-path=/var/www/certbot \
-        --email $EMAIL \
-        --agree-tos \
-        --no-eff-email \
-        -d $DOMAIN \
-        -d www.$DOMAIN
-
-    # Stop and remove temporary nginx
-    docker stop nginx-certbot 2>/dev/null || true
-    docker rm nginx-certbot 2>/dev/null || true
-
-    log_info "SSL certificates obtained successfully!"
-else
-    log_info "SSL certificates already exist"
-fi
-
-# Build and start containers
-log_info "Building and starting Docker containers..."
-docker-compose -f docker-compose.production.yml --env-file .env build --no-cache
-docker-compose -f docker-compose.production.yml --env-file .env up -d
-
-# Wait for services to be healthy
-log_info "Waiting for services to be ready..."
-sleep 10
-
-# Check service health
-log_info "Checking service health..."
-docker-compose -f docker-compose.production.yml --env-file .env ps
-
-# Display status
-log_info ""
-log_info "=========================================="
-log_info "Deployment completed successfully!"
-log_info "=========================================="
-log_info ""
-log_info "Your application should be available at:"
-log_info "  - https://$DOMAIN"
-log_info "  - https://www.$DOMAIN"
-log_info ""
-log_info "To view logs:"
-log_info "  docker-compose -f docker-compose.production.yml --env-file .env logs -f"
-log_info ""
-log_info "To stop the application:"
-log_info "  docker-compose -f docker-compose.production.yml --env-file .env down"
-log_info ""
-log_info "SSL certificates will auto-renew via certbot"
-log_info ""
-
-exit 0
+echo ""
+echo "Services running:"
+echo "  - Frontend: http://localhost"
+echo "  - Backend:  http://localhost:8080"
+echo "  - Database: localhost:3307"
+echo ""
+echo "Useful commands:"
+echo "  - View logs:       docker-compose logs -f"
+echo "  - View specific:   docker-compose logs -f backend"
+echo "  - Stop services:   docker-compose down"
+echo "  - Restart service: docker-compose restart <service>"
+echo ""
+echo "Next steps:"
+echo "  1. Test the application in your browser"
+echo "  2. Check logs if any services show issues"
+echo "  3. Configure SSL/HTTPS (see DEPLOYMENT_CHECKLIST.md Step 8)"
+echo "  4. Setup backups (see DEPLOYMENT_CHECKLIST.md Step 11)"
+echo "  5. Configure firewall (see DEPLOYMENT_CHECKLIST.md Step 9)"
+echo ""
