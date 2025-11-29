@@ -20,6 +20,29 @@
   }
 }
 
+// Skeleton shimmer animation
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@mixin skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #e0e0e0 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
 .modal-header {
   background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
   color: white;
@@ -285,4 +308,62 @@
 
 .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.7);
+}
+
+// Skeleton card styles
+.skeleton-alumno-card {
+  pointer-events: none;
+
+  &:hover {
+    transform: none;
+    box-shadow: $shadow-sm;
+  }
+
+  .alumno-link {
+    cursor: default;
+
+    .skeleton-avatar {
+      @include skeleton-shimmer;
+      background: linear-gradient(
+        90deg,
+        rgba($primary-color, 0.1) 0%,
+        rgba($primary-color, 0.15) 50%,
+        rgba($primary-color, 0.1) 100%
+      );
+      background-size: 1000px 100%;
+      animation: shimmer 2s infinite linear;
+      border: 3px solid rgba($primary-color, 0.1);
+    }
+
+    .skeleton-line {
+      @include skeleton-shimmer;
+      height: 12px;
+      margin-bottom: 0.5rem;
+
+      &.skeleton-nombre {
+        width: 80%;
+        height: 16px;
+        margin-bottom: 0.35rem;
+      }
+
+      &.skeleton-expediente {
+        width: 60%;
+        height: 11px;
+      }
+
+      &.skeleton-grado {
+        width: 50%;
+        height: 11px;
+        margin-bottom: 0;
+      }
+    }
+
+    .skeleton-arrow {
+      @include skeleton-shimmer;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      opacity: 0.3;
+    }
+  }
 }
