@@ -16,7 +16,7 @@
 
     <!-- Stats Cards - Conteo de Alumnos -->
     <div class="admin-stats-grid mb-4">
-      <ng-container *ngFor="let tipo of gruposMostrar">
+      @for (tipo of gruposMostrar; track tipo) {
         <div class="admin-stat-card" (click)="abrirModalAlumnos(tipo)" style="cursor: pointer;">
           <div class="stat-icon stat-icon-primary">
             <i class="bi bi-people-fill"></i>
@@ -25,15 +25,19 @@
           <p class="stat-total">(Total: {{ obtenerConteoAlumnos(tipo).total }})</p>
           <p class="stat-label">{{ tipo }}</p>
         </div>
-      </ng-container>
+      }
     </div>
 
     <!-- Skeleton Loading -->
-    <app-skeleton-card *ngIf="cargando" type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+    @if (cargando) {
+      <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+    }
 
     <!-- Grupos Grid -->
-    <div *ngIf="!cargando" class="admin-cards-grid">
-      <div *ngFor="let grupo of grupos" class="admin-item-card">
+    @if (!cargando) {
+      <div class="admin-cards-grid">
+        @for (grupo of grupos; track grupo.id) {
+          <div class="admin-item-card">
         <div class="item-header">
           <div class="item-title">
             <h4>{{ grupo.nombre }}</h4>
@@ -58,12 +62,16 @@
             <span>Eliminar</span>
           </button>
         </div>
+          </div>
+        }
       </div>
-    </div>
+    }
   </div>
 </div>
 
 <!-- Modal de alumnos en un grupo -->
-<app-grupo-alumnos-modal *ngIf="mostrarModalAlumnos" [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
-  [cargando]="cargandoAlumnosModal" (cerrar)="cerrarModalAlumnos()">
-</app-grupo-alumnos-modal>
+@if (mostrarModalAlumnos) {
+  <app-grupo-alumnos-modal [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
+    [cargando]="cargandoAlumnosModal" (cerrar)="cerrarModalAlumnos()">
+  </app-grupo-alumnos-modal>
+}

@@ -17,10 +17,11 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="content-wrapper">
-      <div *ngIf="endpointsService.gruposDelAlumno$ | async as grupos; else noGruposTemplate">
-
-        <!-- Sports Timetable Section -->
-        <div class="sports-timetable-section" *ngIf="allTurnos.length > 0">
+      @if (endpointsService.gruposDelAlumno$ | async; as grupos) {
+        <div>
+          <!-- Sports Timetable Section -->
+          @if (allTurnos.length > 0) {
+            <div class="sports-timetable-section">
           <h2 class="section-title">
             <i class="bi bi-grid-3x3-gap-fill"></i>
             Horarios por Deporte
@@ -28,104 +29,122 @@
 
           <!-- Sport Timetables -->
           <div class="sport-timetables-container">
-            <div *ngFor="let deporte of getDeportesUnicos()" class="sport-timetable-wrapper">
-              <div class="sport-timetable-header" [style.background]="getDeporteInfo(deporte).color">
-                <span class="sport-emoji">{{ getDeporteInfo(deporte).emoji }}</span>
-                <h3 class="sport-timetable-name">{{ getDeporteInfo(deporte).nombre }}</h3>
-              </div>
+            @for (deporte of getDeportesUnicos(); track deporte) {
+              <div class="sport-timetable-wrapper">
+                <div class="sport-timetable-header" [style.background]="getDeporteInfo(deporte).color">
+                  <span class="sport-emoji">{{ getDeporteInfo(deporte).emoji }}</span>
+                  <h3 class="sport-timetable-name">{{ getDeporteInfo(deporte).nombre }}</h3>
+                </div>
 
-              <div class="sport-week-grid">
-                <div *ngFor="let dia of diasSemana" class="sport-day-card">
-                  <div class="sport-day-header">
-                    <i class="bi bi-calendar-day"></i>
-                    <span>{{ dia }}</span>
-                  </div>
-                  <div class="sport-day-content">
-                    <div *ngIf="obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia).length > 0; else noSportDayTurns">
-                      <div *ngFor="let turno of obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia)"
-                           class="sport-time-slot"
-                           [style.border-left-color]="getDeporteInfo(deporte).color">
-                        <i class="bi bi-clock-fill"></i>
-                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                <div class="sport-week-grid">
+                  @for (dia of diasSemana; track $index) {
+                    <div class="sport-day-card">
+                      <div class="sport-day-header">
+                        <i class="bi bi-calendar-day"></i>
+                        <span>{{ dia }}</span>
+                      </div>
+                      <div class="sport-day-content">
+                        @if (obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia).length > 0) {
+                          <div>
+                            @for (turno of obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia); track turno.id) {
+                              <div class="sport-time-slot"
+                                   [style.border-left-color]="getDeporteInfo(deporte).color">
+                                <i class="bi bi-clock-fill"></i>
+                                <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="no-sport-turns">
+                            <i class="bi bi-dash-circle"></i>
+                            <span>Sin clases</span>
+                          </div>
+                        }
                       </div>
                     </div>
-                    <ng-template #noSportDayTurns>
-                      <div class="no-sport-turns">
-                        <i class="bi bi-dash-circle"></i>
-                        <span>Sin clases</span>
-                      </div>
-                    </ng-template>
-                  </div>
+                  }
                 </div>
               </div>
-            </div>
+            }
           </div>
-        </div>
+            </div>
+          }
 
         <!-- All Turns Calendar Section -->
-        <div class="all-turns-section" *ngIf="allTurnos.length > 0">
-          <h2 class="section-title">
-            <i class="bi bi-calendar-week"></i>
-            Todos Mis Horarios
-          </h2>
-          <div class="calendar-grid">
-            <div *ngFor="let dia of diasSemana" class="calendar-day-card">
-              <div class="calendar-day-header">
-                <i class="bi bi-calendar3"></i>
-                <span>{{ dia }}</span>
-              </div>
-              <div class="calendar-day-content">
-                <div *ngIf="obtenerTurnosPorDia(allTurnos, dia).length > 0; else noDayTurns">
-                  <div *ngFor="let turno of obtenerTurnosPorDia(allTurnos, dia)"
-                       class="calendar-turn-slot"
-                       [style.border-left-color]="getDeporteInfo(turno.tipoGrupo).color">
-                    <div class="turn-sport-badge" [style.background]="getDeporteInfo(turno.tipoGrupo).color">
-                      <span>{{ getDeporteInfo(turno.tipoGrupo).emoji }}</span>
-                      <span class="sport-label">{{ getDeporteInfo(turno.tipoGrupo).nombre }}</span>
+          @if (allTurnos.length > 0) {
+            <div class="all-turns-section">
+              <h2 class="section-title">
+                <i class="bi bi-calendar-week"></i>
+                Todos Mis Horarios
+              </h2>
+              <div class="calendar-grid">
+                @for (dia of diasSemana; track $index) {
+                  <div class="calendar-day-card">
+                    <div class="calendar-day-header">
+                      <i class="bi bi-calendar3"></i>
+                      <span>{{ dia }}</span>
                     </div>
-                    <div class="turn-time-info">
-                      <i class="bi bi-clock-fill"></i>
-                      <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                    <div class="calendar-day-content">
+                      @if (obtenerTurnosPorDia(allTurnos, dia).length > 0) {
+                        <div>
+                          @for (turno of obtenerTurnosPorDia(allTurnos, dia); track turno.id) {
+                            <div class="calendar-turn-slot"
+                                 [style.border-left-color]="getDeporteInfo(turno.tipoGrupo).color">
+                              <div class="turn-sport-badge" [style.background]="getDeporteInfo(turno.tipoGrupo).color">
+                                <span>{{ getDeporteInfo(turno.tipoGrupo).emoji }}</span>
+                                <span class="sport-label">{{ getDeporteInfo(turno.tipoGrupo).nombre }}</span>
+                              </div>
+                              <div class="turn-time-info">
+                                <i class="bi bi-clock-fill"></i>
+                                <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <div class="no-turns-day">
+                          <i class="bi bi-dash-circle"></i>
+                          <span>Sin clases</span>
+                        </div>
+                      }
                     </div>
                   </div>
-                </div>
-                <ng-template #noDayTurns>
-                  <div class="no-turns-day">
-                    <i class="bi bi-dash-circle"></i>
-                    <span>Sin clases</span>
-                  </div>
-                </ng-template>
+                }
               </div>
             </div>
-          </div>
-        </div>
+          }
 
         <!-- Groups Summary Section (Compact) -->
-        <div class="groups-summary-section" *ngIf="grupos.length > 0">
-          <h2 class="section-title">
-            <i class="bi bi-people-fill"></i>
-            Mis Grupos
-          </h2>
-          <div class="groups-compact-grid">
-            <div *ngFor="let grupo of grupos" class="group-compact-card">
-              <div class="group-compact-icon">
-                <i class="bi bi-collection-fill"></i>
-              </div>
-              <div class="group-compact-info">
-                <h3 class="group-compact-name">{{ grupo.nombre }}</h3>
-                <p class="group-compact-meta" *ngIf="grupo.deporte">
-                  <span class="sport-badge" [style.background]="getDeporteInfo(grupo.deporte).color">
-                    {{ getDeporteInfo(grupo.deporte).emoji }} {{ getDeporteInfo(grupo.deporte).nombre }}
-                  </span>
-                </p>
+          @if (grupos.length > 0) {
+            <div class="groups-summary-section">
+              <h2 class="section-title">
+                <i class="bi bi-people-fill"></i>
+                Mis Grupos
+              </h2>
+              <div class="groups-compact-grid">
+                @for (grupo of grupos; track grupo.id) {
+                  <div class="group-compact-card">
+                    <div class="group-compact-icon">
+                      <i class="bi bi-collection-fill"></i>
+                    </div>
+                    <div class="group-compact-info">
+                      <h3 class="group-compact-name">{{ grupo.nombre }}</h3>
+                      @if (grupo.deporte) {
+                        <p class="group-compact-meta">
+                          <span class="sport-badge" [style.background]="getDeporteInfo(grupo.deporte).color">
+                            {{ getDeporteInfo(grupo.deporte).emoji }} {{ getDeporteInfo(grupo.deporte).nombre }}
+                          </span>
+                        </p>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
             </div>
-          </div>
+          }
         </div>
-      </div>
-
-      <!-- No groups template -->
-      <ng-template #noGruposTemplate>
+      } @else {
+        <!-- No groups template -->
         <div class="no-groups-container">
           <div class="no-groups-icon">
             <i class="bi bi-inbox"></i>
@@ -133,7 +152,7 @@
           <h3 class="no-groups-title">No tienes grupos asignados</h3>
           <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios</p>
         </div>
-      </ng-template>
+      }
     </div>
   </div>
 </div>

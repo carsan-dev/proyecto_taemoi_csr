@@ -21,68 +21,76 @@
     </div>
 
     <!-- Skeleton Loading -->
-    <app-skeleton-card *ngIf="cargando" type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+    @if (cargando) {
+      <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+    }
 
     <!-- Eventos Grid -->
-    <ng-container *ngIf="!cargando && eventos && eventos.length > 0; else noEventos">
+    @if (!cargando && eventos && eventos.length > 0) {
       <div class="admin-cards-grid">
-        <div *ngFor="let evento of eventos" class="admin-item-card">
-          <div class="item-header">
-            <img class="item-image"
-              [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-              [alt]="'Imagen de ' + evento.titulo"
-              (click)="abrirModal(evento.fotoEvento?.url)"
-              style="cursor: zoom-in;" />
-            <div class="item-title">
-              <h4>
-                {{ evento.titulo }}
-                <span *ngIf="evento.visible === false" class="visibility-badge oculto" title="Evento oculto en la página pública">
-                  <i class="bi bi-eye-slash"></i>
-                  Oculto
-                </span>
-                <span *ngIf="evento.visible === true" class="visibility-badge visible" title="Evento visible en la página pública">
-                  <i class="bi bi-eye"></i>
-                  Visible
-                </span>
-              </h4>
+        @for (evento of eventos; track evento.id) {
+          <div class="admin-item-card">
+            <div class="item-header">
+              <img class="item-image"
+                [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                [alt]="'Imagen de ' + evento.titulo"
+                (click)="abrirModal(evento.fotoEvento?.url)"
+                style="cursor: zoom-in;" />
+              <div class="item-title">
+                <h4>
+                  {{ evento.titulo }}
+                  @if (evento.visible === false) {
+                    <span class="visibility-badge oculto" title="Evento oculto en la página pública">
+                      <i class="bi bi-eye-slash"></i>
+                      Oculto
+                    </span>
+                  }
+                  @if (evento.visible === true) {
+                    <span class="visibility-badge visible" title="Evento visible en la página pública">
+                      <i class="bi bi-eye"></i>
+                      Visible
+                    </span>
+                  }
+                </h4>
+              </div>
+            </div>
+
+            <div class="item-body">
+              <div class="item-field" style="display: block;">
+                <span>{{ evento.descripcion }}</span>
+              </div>
+            </div>
+
+            <div class="item-footer">
+              <button
+                class="admin-btn admin-btn-sm"
+                [ngClass]="evento.visible ? 'admin-btn-warning' : 'admin-btn-success'"
+                (click)="toggleVisibilidad(evento.id, evento.titulo)"
+                [title]="evento.visible ? 'Ocultar evento' : 'Mostrar evento'">
+                <i [class]="evento.visible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                <span>{{ evento.visible ? 'Ocultar' : 'Mostrar' }}</span>
+              </button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
+                <i class="bi bi-pencil-square"></i>
+                <span>Editar</span>
+              </button>
+              <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarEvento(evento.id)">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar</span>
+              </button>
             </div>
           </div>
-
-          <div class="item-body">
-            <div class="item-field" style="display: block;">
-              <span>{{ evento.descripcion }}</span>
-            </div>
-          </div>
-
-          <div class="item-footer">
-            <button
-              class="admin-btn admin-btn-sm"
-              [ngClass]="evento.visible ? 'admin-btn-warning' : 'admin-btn-success'"
-              (click)="toggleVisibilidad(evento.id, evento.titulo)"
-              [title]="evento.visible ? 'Ocultar evento' : 'Mostrar evento'">
-              <i [class]="evento.visible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-              <span>{{ evento.visible ? 'Ocultar' : 'Mostrar' }}</span>
-            </button>
-            <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
-              <i class="bi bi-pencil-square"></i>
-              <span>Editar</span>
-            </button>
-            <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarEvento(evento.id)">
-              <i class="bi bi-trash"></i>
-              <span>Eliminar</span>
-            </button>
-          </div>
+        }
+      </div>
+    } @else {
+      <!-- Plantilla para cuando no haya eventos -->
+      @if (!cargando) {
+        <div class="admin-card text-center">
+          <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
+          <h3 class="mb-3">¡No hay eventos disponibles!</h3>
+          <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!</p>
         </div>
-      </div>
-    </ng-container>
-
-    <!-- Plantilla para cuando no haya eventos -->
-    <ng-template #noEventos>
-      <div *ngIf="!cargando" class="admin-card text-center">
-        <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
-        <h3 class="mb-3">¡No hay eventos disponibles!</h3>
-        <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!</p>
-      </div>
-    </ng-template>
+      }
+    }
   </div>
 </div>

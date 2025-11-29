@@ -250,7 +250,9 @@
                       formControlName="tipoTarifa" required (change)="onTipoTarifaChange($event)"
                       aria-label="Tipo de tarifa o descuento" aria-required="true">
                       <option value="" disabled selected>Selecciona un tipo de tarifa</option>
-                      <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
+                      @for (tarifa of tiposTarifa; track tarifa) {
+                        <option [value]="tarifa">{{ tarifa }}</option>
+                      }
                     </select>
                     @if (alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched) {
                     <div class="invalid-feedback">
@@ -279,7 +281,9 @@
                     <select class="admin-form-control form-select" id="rolFamiliar" name="rolFamiliar"
                       formControlName="rolFamiliar" aria-label="Rol familiar" aria-required="true">
                       <option value="" disabled>Selecciona un rol</option>
-                      <option *ngFor="let rol of rolesFamiliares" [value]="rol">{{ rol }}</option>
+                      @for (rol of rolesFamiliares; track rol) {
+                        <option [value]="rol">{{ rol }}</option>
+                      }
                     </select>
                     @if (alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched) {
                     <div class="invalid-feedback">
@@ -401,9 +405,11 @@
                     <select class="admin-form-control form-select" id="grado" name="grado" formControlName="grado"
                       required aria-label="Grado o cinturón del alumno" aria-required="true">
                       <option value="" disabled selected>Selecciona un grado</option>
-                      <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
-                        {{ getGradoNombre(grado) }}
-                      </option>
+                      @for (grado of grados; track grado.id) {
+                        <option [value]="grado.tipoGrado">
+                          {{ getGradoNombre(grado) }}
+                        </option>
+                      }
                     </select>
                     @if (alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched) {
                     <div class="invalid-feedback">

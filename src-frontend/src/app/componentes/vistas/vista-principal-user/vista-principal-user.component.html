@@ -5,28 +5,33 @@
     <div class="hero-content">
       <div class="welcome-section">
         <h1 class="welcome-title">¡Bienvenido!</h1>
-        <p class="welcome-subtitle" *ngIf="selectedAlumno">
-          <i class="bi bi-person-circle"></i> {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
-        </p>
+        @if (selectedAlumno) {
+          <p class="welcome-subtitle">
+            <i class="bi bi-person-circle"></i> {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+          </p>
+        }
       </div>
 
       <!-- Student Selector (if multiple students) -->
-      <div *ngIf="alumnos.length > 1" class="student-selector">
-        <label class="selector-label">
-          <i class="bi bi-people-fill"></i> Seleccionar alumno
-        </label>
-        <div class="student-buttons">
-          <button
-            *ngFor="let alumno of alumnos"
-            type="button"
-            class="student-btn"
-            [class.active]="selectedAlumno?.id === alumno.id"
-            (click)="seleccionarAlumno(alumno)">
-            <i class="bi bi-person-badge"></i>
-            {{ alumno.nombre }} {{ alumno.apellidos }}
-          </button>
+      @if (alumnos.length > 1) {
+        <div class="student-selector">
+          <label class="selector-label">
+            <i class="bi bi-people-fill"></i> Seleccionar alumno
+          </label>
+          <div class="student-buttons">
+            @for (alumno of alumnos; track alumno.id) {
+              <button
+                type="button"
+                class="student-btn"
+                [class.active]="selectedAlumno?.id === alumno.id"
+                (click)="seleccionarAlumno(alumno)">
+                <i class="bi bi-person-badge"></i>
+                {{ alumno.nombre }} {{ alumno.apellidos }}
+              </button>
+            }
+          </div>
         </div>
-      </div>
+      }
 
       <!-- Quick Action Button -->
       <div class="quick-action">
@@ -54,27 +59,40 @@
       </div>
 
       <!-- Groups Grid -->
-      <div *ngIf="selectedAlumno && (endpointsService.gruposDelAlumno$ | async) as grupos; else noGruposTemplate">
-        <div *ngIf="grupos.length > 0; else noGruposTemplate" class="groups-grid">
-          <div *ngFor="let grupo of grupos" class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
-            <div class="card-shine"></div>
-            <div class="group-card-inner">
-              <div class="group-icon">
-                <span class="emoji">{{ obtenerEmoticonoCategoria(grupo.id) }}</span>
-              </div>
-              <div class="group-info">
-                <h3 class="group-name">{{ grupo.nombre }}</h3>
-                <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
-                  {{ obtenerNombreDeporte(grupo.id) }}
-                </span>
-              </div>
+      @if (selectedAlumno && (endpointsService.gruposDelAlumno$ | async); as grupos) {
+        @if (grupos.length > 0) {
+          <div>
+            <div class="groups-grid">
+              @for (grupo of grupos; track grupo.id) {
+                <div class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
+                  <div class="card-shine"></div>
+                  <div class="group-card-inner">
+                    <div class="group-icon">
+                      <span class="emoji">{{ obtenerEmoticonoCategoria(grupo.id) }}</span>
+                    </div>
+                    <div class="group-info">
+                      <h3 class="group-name">{{ grupo.nombre }}</h3>
+                      <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
+                        {{ obtenerNombreDeporte(grupo.id) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- No Groups Template -->
-      <ng-template #noGruposTemplate>
+        } @else {
+          <!-- No Groups -->
+          <div class="no-groups-container">
+            <div class="no-groups-icon">
+              <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="no-groups-title">No tienes grupos asignados</h3>
+            <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
+          </div>
+        }
+      } @else {
+        <!-- No Groups Template -->
         <div class="no-groups-container">
           <div class="no-groups-icon">
             <i class="bi bi-inbox"></i>
@@ -82,7 +100,7 @@
           <h3 class="no-groups-title">No tienes grupos asignados</h3>
           <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
         </div>
-      </ng-template>
+      }
     </div>
   </div>
 </div>
