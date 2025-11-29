@@ -7,11 +7,13 @@ import { Turno } from '../../../../../interfaces/turno';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-gestionar-turnos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SkeletonCardComponent],
   templateUrl: './gestionar-turnos-alumno.component.html',
   styleUrl: './gestionar-turnos-alumno.component.scss',
 })
@@ -22,6 +24,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   turnosDisponibles: Turno[] = [];
   turnoSeleccionado!: number;
   private readonly subscriptions: Subscription = new Subscription();
+  cargando: boolean = true;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -43,18 +46,22 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   }
 
   cargarAlumno(): void {
-    this.endpointsService.obtenerAlumnoPorId(this.alumnoId).subscribe({
-      next: (alumno: AlumnoDTO) => {
-        this.alumno = alumno;
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido obtener los datos del alumno',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerAlumnoPorId(this.alumnoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (alumno: AlumnoDTO) => {
+          this.alumno = alumno;
+        },
+        error: () => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido obtener los datos del alumno',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   cargarTurnos(): void {

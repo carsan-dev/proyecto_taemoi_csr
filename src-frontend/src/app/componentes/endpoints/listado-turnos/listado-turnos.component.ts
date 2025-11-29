@@ -23,7 +23,7 @@ export class ListadoTurnosComponent implements OnInit {
     'Sábado',
     'Domingo',
   ];
-  cargando: boolean = false; // Local loading state
+  cargando: boolean = true; // Local loading state
   turnos: any[] = [];
 
   constructor(public endpointsService: EndpointsService) {}

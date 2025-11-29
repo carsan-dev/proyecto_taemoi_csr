@@ -9,11 +9,13 @@ import { ActivatedRoute } from '@angular/router';
 import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
 import { ProductosAlumnoNotasComponent } from '../../../generales/productos-alumno-notas/productos-alumno-notas.component';
 import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
+import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-productos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent, PaginacionComponent],
+  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent, PaginacionComponent, SkeletonCardComponent],
   templateUrl: './productos-alumno.component.html',
   styleUrl: './productos-alumno.component.scss',
 })
@@ -26,6 +28,7 @@ export class ProductosAlumnoComponent implements OnInit {
   totalPaginas: number = 0;
   products: Producto[] = [];
   selectedProductoId: number | null = null;
+  cargando: boolean = true;
 
   mostrarModalNotas = false;
   productoSeleccionado!: ProductoAlumnoDTO;
@@ -43,20 +46,24 @@ export class ProductosAlumnoComponent implements OnInit {
   }
 
   obtenerProductosAlumno(alumnoId: number) {
-    this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
-      next: (productos) => {
-        this.productosAlumno = productos;
-        this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
-        this.cambiarPagina(1);
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error al obtener',
-          text: 'No se han podido obtener los productos del alumno',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerProductosDelAlumno(alumnoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (productos) => {
+          this.productosAlumno = productos;
+          this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
+          this.cambiarPagina(1);
+        },
+        error: (error) => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error al obtener',
+            text: 'No se han podido obtener los productos del alumno',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   cambiarPagina(pageNumber: number): void {

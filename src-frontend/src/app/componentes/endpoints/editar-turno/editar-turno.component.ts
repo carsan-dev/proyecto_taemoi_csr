@@ -12,11 +12,13 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-editar-turno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonCardComponent],
   templateUrl: './editar-turno.component.html',
   styleUrl: './editar-turno.component.scss',
 })
@@ -32,6 +34,7 @@ export class EditarTurnoComponent implements OnInit {
     'Domingo',
   ];
   turnoId!: number;
+  cargando: boolean = true;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -68,22 +71,26 @@ export class EditarTurnoComponent implements OnInit {
   }
 
   cargarTurno(): void {
-    this.endpointsService.obtenerTurnoPorId(this.turnoId).subscribe({
-      next: (turno) => {
-        this.turnoForm.patchValue({
-          diaSemana: turno.diaSemana,
-          horaInicio: turno.horaInicio,
-          horaFin: turno.horaFin,
-        });
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la carga del turno',
-          text: 'No hemos podido cargar los detalles del turno',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerTurnoPorId(this.turnoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (turno) => {
+          this.turnoForm.patchValue({
+            diaSemana: turno.diaSemana,
+            horaInicio: turno.horaInicio,
+            horaFin: turno.horaFin,
+          });
+        },
+        error: (error) => {
+          this.cargando = false;
+          Swal.fire({
+            title: 'Error en la carga del turno',
+            text: 'No hemos podido cargar los detalles del turno',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   onSubmit(): void {

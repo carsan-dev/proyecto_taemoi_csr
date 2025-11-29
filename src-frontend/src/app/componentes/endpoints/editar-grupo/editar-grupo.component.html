@@ -9,8 +9,27 @@
       <p>Modifica el nombre del grupo</p>
     </div>
 
+    <!-- Skeleton Loading -->
+    <div *ngIf="cargando" class="row justify-content-center">
+      <div class="col-12 col-lg-8 col-xl-6">
+        <div class="admin-card admin-card-large">
+          <div class="admin-form-section">
+            <div class="section-title">
+              <div class="skeleton-line skeleton-title" style="width: 200px; height: 24px;"></div>
+            </div>
+            <div class="skeleton-line" style="width: 100%; height: 40px; margin-bottom: 12px;"></div>
+            <div class="skeleton-line" style="width: 80%; height: 16px;"></div>
+          </div>
+          <div class="admin-form-button-group">
+            <div class="skeleton-button" style="width: 120px; height: 42px;"></div>
+            <div class="skeleton-button" style="width: 140px; height: 42px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Form Card -->
-    <div class="row justify-content-center">
+    <div *ngIf="!cargando" class="row justify-content-center">
       <div class="col-12 col-lg-8 col-xl-6">
         <div class="admin-card admin-card-large">
           <form [formGroup]="grupoForm" (ngSubmit)="actualizarGrupo()" method="post">

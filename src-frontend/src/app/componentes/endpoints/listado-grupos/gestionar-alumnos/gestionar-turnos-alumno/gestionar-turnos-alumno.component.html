@@ -1,5 +1,10 @@
 <div class="container my-5">
-  <div class="card p-4 shadow-sm">
+  <!-- Skeleton Loading -->
+  <div *ngIf="cargando" class="card p-4 shadow-sm">
+    <app-skeleton-card type="list" [count]="3"></app-skeleton-card>
+  </div>
+
+  <div *ngIf="!cargando" class="card p-4 shadow-sm">
     <h2 class="text-center mb-4 fw-bold">
       Gestionar Turnos de {{ alumno.nombre }} {{ alumno.apellidos }}
     </h2>

@@ -34,7 +34,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
-  cargando: boolean = false; // Local loading state
+  cargando: boolean = true; // Local loading state
   private searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   deporteSeleccionado: string = 'TODOS';
