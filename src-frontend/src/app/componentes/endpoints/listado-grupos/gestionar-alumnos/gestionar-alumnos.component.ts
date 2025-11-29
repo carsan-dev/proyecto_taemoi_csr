@@ -7,13 +7,14 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { CommonModule, Location } from '@angular/common';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
 import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
+import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-gestionar-alumnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginacionComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginacionComponent, SkeletonCardComponent],
   templateUrl: './gestionar-alumnos.component.html',
   styleUrl: './gestionar-alumnos.component.scss',
 })
@@ -27,6 +28,7 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   nombreFiltro: string = '';
+  cargando: boolean = false; // Loading state
   private searchSubject = new Subject<string>();
 
   constructor(
@@ -56,22 +58,25 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarGrupo(): void {
-    this.endpointsService.obtenerGrupoPorId(this.grupoId).subscribe({
-      next: (grupo: GrupoDTO) => {
-        this.grupo = grupo;
-        this.alumnos = grupo.alumnos;
-        this.alumnosFiltrados = grupo.alumnos;
-        this.totalPaginas = Math.ceil(this.alumnosFiltrados.length / this.tamanoPagina);
-        this.cambiarPagina(1);
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerGrupoPorId(this.grupoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (grupo: GrupoDTO) => {
+          this.grupo = grupo;
+          this.alumnos = grupo.alumnos;
+          this.alumnosFiltrados = grupo.alumnos;
+          this.totalPaginas = Math.ceil(this.alumnosFiltrados.length / this.tamanoPagina);
+          this.cambiarPagina(1);
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   cambiarPagina(pageNumber: number): void {

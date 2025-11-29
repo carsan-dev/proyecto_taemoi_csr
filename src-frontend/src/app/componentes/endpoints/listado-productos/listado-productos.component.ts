@@ -7,12 +7,13 @@ import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-listado-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent, RouterModule],
+  imports: [CommonModule, FormsModule, PaginacionComponent, RouterModule, SkeletonCardComponent],
   templateUrl: './listado-productos.component.html',
   styleUrl: './listado-productos.component.scss',
 })
@@ -25,6 +26,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   totalElementos: number = 0;
   orderBy: string = 'id';
   order: string = 'asc';
+  cargando: boolean = false; // Local loading state
   private searchSubject = new Subject<string>();
 
   constructor(private readonly endpointsService: EndpointsService) {}
@@ -47,6 +49,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   }
 
   obtenerProductos(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerTodosLosProductosPaginado(
         this.conceptoFiltro,
@@ -55,6 +58,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
         this.orderBy,
         this.order
       )
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (page: any) => {
           this.productos = page.content;

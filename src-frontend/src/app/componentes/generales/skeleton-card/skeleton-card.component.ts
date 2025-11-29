@@ -14,6 +14,6 @@ export class SkeletonCardComponent {
   @Input() columns: number = 3; // For grid layout
 
   get items(): number[] {
-    return Array(this.count).fill(0);
+    return new Array(this.count).fill(0);
   }
 }

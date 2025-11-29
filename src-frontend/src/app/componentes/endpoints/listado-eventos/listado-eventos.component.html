@@ -20,8 +20,11 @@
       </div>
     </div>
 
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+
     <!-- Eventos Grid -->
-    <ng-container *ngIf="eventos && eventos.length > 0; else noEventos">
+    <ng-container *ngIf="!cargando && eventos && eventos.length > 0; else noEventos">
       <div class="admin-cards-grid">
         <div *ngFor="let evento of eventos" class="admin-item-card">
           <div class="item-header">
@@ -75,7 +78,7 @@
 
     <!-- Plantilla para cuando no haya eventos -->
     <ng-template #noEventos>
-      <div class="admin-card text-center">
+      <div *ngIf="!cargando" class="admin-card text-center">
         <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
         <h3 class="mb-3">¡No hay eventos disponibles!</h3>
         <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!</p>

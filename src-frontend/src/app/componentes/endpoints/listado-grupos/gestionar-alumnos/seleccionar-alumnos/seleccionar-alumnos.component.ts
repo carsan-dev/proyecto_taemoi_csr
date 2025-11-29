@@ -7,12 +7,13 @@ import { CommonModule, Location } from '@angular/common';
 import { PaginacionComponent } from '../../../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-seleccionar-alumnos',
   standalone: true,
-  imports: [CommonModule, PaginacionComponent, FormsModule],
+  imports: [CommonModule, PaginacionComponent, FormsModule, SkeletonCardComponent],
   templateUrl: './seleccionar-alumnos.component.html',
   styleUrl: './seleccionar-alumnos.component.scss',
 })
@@ -26,6 +27,7 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   alumnosEnGrupo: AlumnoDTO[] = [];
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  cargando: boolean = false;
   private searchSubject = new Subject<string>();
 
   constructor(
@@ -56,22 +58,26 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarGrupoYAlumnos(): void {
-    this.endpointsService.obtenerGrupoPorId(this.grupoId).subscribe({
-      next: (grupo) => {
-        this.alumnosEnGrupo = grupo.alumnos;
-        this.cargarAlumnos();
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerGrupoPorId(this.grupoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (grupo) => {
+          this.alumnosEnGrupo = grupo.alumnos;
+          this.cargarAlumnos();
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   cargarAlumnos(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -79,6 +85,7 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
         this.nombreFiltro,
         this.mostrarInactivos
       )
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (response) => {
           const idsAlumnosEnGrupo = this.alumnosEnGrupo.map(

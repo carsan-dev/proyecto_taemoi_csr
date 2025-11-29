@@ -8,7 +8,10 @@
       </h2>
     </div>
 
-    <div *ngIf="endpointsService.turnos$ | async as turnos">
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="list" [count]="7"></app-skeleton-card>
+
+    <div *ngIf="!cargando">
       <!-- Días de la Semana -->
       <div class="row g-4">
         <div class="col-12" *ngFor="let diaSemana of diasSemana">

@@ -87,8 +87,11 @@
     </div>
 
 
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
+
     <!-- Alumnos Grid -->
-    <div class="admin-cards-grid mb-4">
+    <div *ngIf="!cargando" class="admin-cards-grid mb-4">
       <div *ngFor="let alumno of alumnos" class="admin-item-card">
         <div class="item-header">
           <a [routerLink]="['/alumnosEditar', alumno.id]">

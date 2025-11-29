@@ -8,8 +8,9 @@ import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -20,6 +21,7 @@ import { getGradoTextStyle } from '../../../utilities/grado-colors';
     FormsModule,
     RouterLink,
     InformeModalComponent,
+    SkeletonCardComponent,
   ],
   templateUrl: './listado-alumnos.component.html',
   styleUrl: './listado-alumnos.component.scss',
@@ -32,6 +34,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  cargando: boolean = false; // Local loading state
   private searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   deporteSeleccionado: string = 'TODOS';
@@ -117,6 +120,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   obtenerAlumnos(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -124,6 +128,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.nombreFiltro,
         this.mostrarInactivos
       )
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (response) => {
           this.alumnos = response.content;
