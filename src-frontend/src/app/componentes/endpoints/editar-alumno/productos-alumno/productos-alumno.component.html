@@ -17,10 +17,13 @@
     <!-- Admin Card -->
     <div class="admin-card">
       <!-- Skeleton Loading -->
-      <app-skeleton-card *ngIf="cargando" type="table" [count]="tamanoPagina"></app-skeleton-card>
+      @if (cargando) {
+      <app-skeleton-card type="table" [count]="tamanoPagina"></app-skeleton-card>
+      }
 
       <!-- Productos Table -->
-      <div *ngIf="!cargando" class="admin-table-responsive mb-3">
+      @if (!cargando) {
+      <div class="admin-table-responsive mb-3">
         <div class="admin-table">
           <table>
             <thead>
@@ -37,7 +40,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let productoAlumno of productosPaginados">
+              @for (productoAlumno of productosPaginados; track productoAlumno.id) {
+              <tr>
                 <td><strong>{{ productoAlumno.concepto }}</strong></td>
                 <td>{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
                 <td>
@@ -86,26 +90,31 @@
                   </button>
                 </td>
               </tr>
-              <tr *ngIf="!productosPaginados || productosPaginados.length === 0">
+              }
+              @if (!productosPaginados || productosPaginados.length === 0) {
+              <tr>
                 <td colspan="9" class="text-center text-muted py-5">
                   <img src="../../../../../assets/media/placeholder_roto.svg" alt="Sin productos"
                     style="width: 100px; height: auto; margin-bottom: 1rem; opacity: 0.5;" />
                   <p class="mb-0">No hay productos asignados a este alumno</p>
                 </td>
               </tr>
+              }
             </tbody>
           </table>
         </div>
       </div>
+      }
 
       <!-- Pagination -->
+      @if (totalPaginas > 1) {
       <app-paginacion
-        *ngIf="totalPaginas > 1"
         [paginaActual]="paginaActual"
         [totalPaginas]="totalPaginas"
         (pageChange)="cambiarPagina($event)"
         class="mt-4">
       </app-paginacion>
+      }
 
       <!-- Sección para asignar un nuevo producto -->
       <div class="admin-section-header mt-4">
@@ -118,9 +127,11 @@
           <label class="form-label fw-semibold">Seleccionar Producto:</label>
           <select class="admin-form-control form-select" [(ngModel)]="selectedProductoId" required>
             <option [ngValue]="null">Seleccione un producto</option>
-            <option *ngFor="let producto of products" [ngValue]="producto.id">
+            @for (producto of products; track producto.id) {
+            <option [ngValue]="producto.id">
               {{ producto.concepto }} - {{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}
             </option>
+            }
           </select>
         </div>
         <div class="col-sm-12 col-md-4 col-lg-3">
@@ -133,7 +144,9 @@
       </div>
     </div>
 
-    <app-productos-alumno-notas *ngIf="mostrarModalNotas" [productoAlumno]="productoSeleccionado"
+    @if (mostrarModalNotas) {
+    <app-productos-alumno-notas [productoAlumno]="productoSeleccionado"
       (cerrar)="cerrarModalNotas()" (guardar)="guardarNotas($event)"></app-productos-alumno-notas>
+    }
   </div>
 </div>

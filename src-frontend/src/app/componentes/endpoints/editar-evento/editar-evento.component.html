@@ -10,7 +10,8 @@
     </div>
 
     <!-- Skeleton Loading -->
-    <div *ngIf="cargando" class="row justify-content-center">
+    @if (cargando) {
+    <div class="row justify-content-center">
       <div class="col-12 col-lg-10 col-xl-8">
         <div class="admin-card admin-card-large">
           <div class="admin-form-section">
@@ -28,9 +29,11 @@
         </div>
       </div>
     </div>
+    }
 
     <!-- Form Card -->
-    <div *ngIf="!cargando" class="row justify-content-center">
+    @if (!cargando) {
+    <div class="row justify-content-center">
       <div class="col-12 col-lg-10 col-xl-8">
         <div class="admin-card admin-card-large">
           <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()" method="post">
@@ -60,11 +63,17 @@
                       placeholder="Ej: Campeonato Regional de Taekwondo"
                       aria-label="Título del evento"
                       aria-required="true">
-                    <div *ngIf="eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched" class="invalid-feedback">
+                    @if (eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título es obligatorio</span>
-                      <span *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">Máximo 100 caracteres</span>
+                      @if (eventoForm.get('titulo')?.errors?.['required']) {
+                      <span>El título es obligatorio</span>
+                      }
+                      @if (eventoForm.get('titulo')?.errors?.['maxlength']) {
+                      <span>Máximo 100 caracteres</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
@@ -85,11 +94,17 @@
                       placeholder="Describe el evento: fecha, lugar, participantes, etc."
                       aria-label="Descripción del evento"
                       aria-required="true"></textarea>
-                    <div *ngIf="eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched" class="invalid-feedback">
+                    @if (eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción es obligatoria</span>
-                      <span *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">Máximo 500 caracteres</span>
+                      @if (eventoForm.get('descripcion')?.errors?.['required']) {
+                      <span>La descripción es obligatoria</span>
+                      }
+                      @if (eventoForm.get('descripcion')?.errors?.['maxlength']) {
+                      <span>Máximo 500 caracteres</span>
+                      }
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Proporciona detalles relevantes sobre el evento</span>
@@ -121,17 +136,21 @@
                 </div>
 
                 <!-- Vista previa de la imagen -->
-                <div *ngIf="imagenPreview" class="file-preview">
+                @if (imagenPreview) {
+                <div class="file-preview">
                   <img [src]="imagenPreview" alt="Vista previa del evento">
                   <div class="file-info">
                     <p class="file-name">Imagen del evento</p>
                     <p class="file-size">Vista previa disponible</p>
                   </div>
-                  <button type="button" *ngIf="evento?.fotoEvento" class="file-remove" (click)="eliminarFoto()">
+                  @if (evento?.fotoEvento) {
+                  <button type="button" class="file-remove" (click)="eliminarFoto()">
                     <i class="bi bi-trash"></i>
                     <span>Eliminar</span>
                   </button>
+                  }
                 </div>
+                }
               </div>
             </div>
 
@@ -158,5 +177,6 @@
         </div>
       </div>
     </div>
+    }
   </div>
 </div>
