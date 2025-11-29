@@ -4,6 +4,7 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { skip } from 'rxjs/operators';
 import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
@@ -27,7 +28,36 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.obtenerGrupoId();
+    this.setupSubscription();
     this.obtenerTurnos();
+  }
+
+  setupSubscription(): void {
+    // Subscribe once and skip the initial cached value
+    const turnosSubscription = this.endpointsService.turnosDelGrupo$
+      .pipe(skip(1))
+      .subscribe({
+        next: (turnos) => {
+          this.turnos = turnos;
+          this.cargando = false;
+        },
+        error: (error) => {
+          this.cargando = false;
+          let errorMessage = '';
+          if (error.status === 404) {
+            errorMessage += 'Este grupo no tiene turnos asociados.';
+          } else {
+            errorMessage += 'Ha ocurrido un error.';
+          }
+          Swal.fire({
+            title: 'Error',
+            text: errorMessage,
+            icon: 'error',
+          });
+        },
+      });
+
+    this.subscriptions.add(turnosSubscription);
   }
 
   ngOnDestroy(): void {
@@ -46,31 +76,6 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
 
   obtenerTurnos() {
     this.cargando = true;
-    // Suscribirse al Observable expuesto por el BehaviorSubject
-    const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
-      next: (turnos) => {
-        this.turnos = turnos;
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.cargando = false;
-        let errorMessage = '';
-        if (error.status === 404) {
-          errorMessage += 'Este grupo no tiene turnos asociados.';
-        } else {
-          errorMessage += 'Ha ocurrido un error.';
-        }
-        Swal.fire({
-          title: 'Error',
-          text: errorMessage,
-          icon: 'error',
-        });
-      },
-    });
-
-    this.subscriptions.add(turnosSubscription);
-
-    // Llamar al método que inicia la carga de datos
     this.endpointsService.obtenerTurnosDelGrupo(this.grupoId);
   }
 
@@ -110,30 +115,6 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
   }
 
   actualizarTurnos() {
-    const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
-      next: (turnos) => {
-        this.turnos = turnos;
-        if (this.turnos.length === 0) {
-          Swal.fire({
-            title: 'Advertencia',
-            text: 'No quedan más turnos en el grupo.',
-            icon: 'warning',
-            timer: 2000,
-          });
-        }
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No hemos podido obtener los turnos del grupo.',
-          icon: 'error',
-        });
-      },
-    });
-
-    this.subscriptions.add(turnosSubscription);
-
-    // Llamar al método para iniciar la carga de datos
     this.endpointsService.obtenerTurnosDelGrupo(this.grupoId);
   }
 
