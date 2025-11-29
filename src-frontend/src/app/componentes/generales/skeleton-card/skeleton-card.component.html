@@ -1,45 +1,49 @@
 <!-- List View Skeleton -->
-<ng-container *ngIf="type === 'list'">
+@if (type === 'list') {
   <div class="skeleton-list">
-    <div class="skeleton-card" *ngFor="let item of items">
-      <div class="skeleton-card-header">
-        <div class="skeleton-avatar"></div>
-        <div class="skeleton-header-content">
-          <div class="skeleton-line skeleton-title"></div>
-          <div class="skeleton-line skeleton-subtitle"></div>
+    @for (item of items; track $index) {
+      <div class="skeleton-card">
+        <div class="skeleton-card-header">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-header-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-subtitle"></div>
+          </div>
+        </div>
+        <div class="skeleton-card-body">
+          <div class="skeleton-line skeleton-text"></div>
+          <div class="skeleton-line skeleton-text short"></div>
+        </div>
+        <div class="skeleton-card-footer">
+          <div class="skeleton-button"></div>
+          <div class="skeleton-button"></div>
         </div>
       </div>
-      <div class="skeleton-card-body">
-        <div class="skeleton-line skeleton-text"></div>
-        <div class="skeleton-line skeleton-text short"></div>
-      </div>
-      <div class="skeleton-card-footer">
-        <div class="skeleton-button"></div>
-        <div class="skeleton-button"></div>
-      </div>
-    </div>
+    }
   </div>
-</ng-container>
+}
 
 <!-- Grid View Skeleton -->
-<ng-container *ngIf="type === 'grid'">
+@if (type === 'grid') {
   <div class="skeleton-grid" [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'">
-    <div class="skeleton-card" *ngFor="let item of items">
-      <div class="skeleton-image"></div>
-      <div class="skeleton-card-body">
-        <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-line skeleton-text"></div>
-        <div class="skeleton-line skeleton-text short"></div>
+    @for (item of items; track $index) {
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-card-body">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-text"></div>
+          <div class="skeleton-line skeleton-text short"></div>
+        </div>
+        <div class="skeleton-card-footer">
+          <div class="skeleton-button full"></div>
+        </div>
       </div>
-      <div class="skeleton-card-footer">
-        <div class="skeleton-button full"></div>
-      </div>
-    </div>
+    }
   </div>
-</ng-container>
+}
 
 <!-- Table View Skeleton -->
-<ng-container *ngIf="type === 'table'">
+@if (type === 'table') {
   <div class="skeleton-table">
     <div class="skeleton-table-header">
       <div class="skeleton-line"></div>
@@ -47,11 +51,13 @@
       <div class="skeleton-line"></div>
       <div class="skeleton-line"></div>
     </div>
-    <div class="skeleton-table-row" *ngFor="let item of items">
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-    </div>
+    @for (item of items; track $index) {
+      <div class="skeleton-table-row">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+      </div>
+    }
   </div>
-</ng-container>
+}

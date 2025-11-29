@@ -25,29 +25,26 @@
               <!-- Selección de deporte -->
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched" [class.is-valid]="alumnoData.get('deporte')?.valid && alumnoData.get('deporte')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched"
+                    [class.is-valid]="alumnoData.get('deporte')?.valid && alumnoData.get('deporte')?.touched">
                     <label for="deporte">
                       <i class="bi bi-trophy"></i>
                       Deporte
                       <span class="required">*</span>
                     </label>
-                    <select
-                      class="admin-form-control form-select"
-                      id="deporte"
-                      name="deporte"
-                      formControlName="deporte"
-                      required
-                      (change)="onDeporteChange($event)"
-                      aria-label="Seleccionar deporte"
-                      aria-required="true">
+                    <select class="admin-form-control form-select" id="deporte" name="deporte" formControlName="deporte"
+                      required (change)="onDeporteChange($event)" aria-label="Seleccionar deporte" aria-required="true">
                       <option value="" disabled selected>Selecciona un deporte</option>
                       <option value="TAEKWONDO">Taekwondo</option>
                       <option value="KICKBOXING">Kickboxing</option>
                     </select>
-                    <div *ngIf="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El deporte es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
               </div>
@@ -63,186 +60,177 @@
               <!-- Nombre y Apellidos -->
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched" [class.is-valid]="alumnoData.get('nombre')?.valid && alumnoData.get('nombre')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched"
+                    [class.is-valid]="alumnoData.get('nombre')?.valid && alumnoData.get('nombre')?.touched">
                     <label for="nombre">
                       <i class="bi bi-person-fill"></i>
                       Nombre
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="nombre"
-                      name="nombre"
-                      formControlName="nombre"
-                      required
-                      placeholder="Nombre del alumno"
-                      aria-label="Nombre del alumno"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched" class="invalid-feedback">
+                    <input type="text" class="admin-form-control" id="nombre" name="nombre" formControlName="nombre"
+                      required placeholder="Nombre del alumno" aria-label="Nombre del alumno" aria-required="true" />
+                    @if (alumnoData.get('nombre')?.errors && alumnoData.get('nombre')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El nombre del alumno es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched" [class.is-valid]="alumnoData.get('apellidos')?.valid && alumnoData.get('apellidos')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched"
+                    [class.is-valid]="alumnoData.get('apellidos')?.valid && alumnoData.get('apellidos')?.touched">
                     <label for="apellidos">
                       <i class="bi bi-person-lines-fill"></i>
                       Apellidos
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="apellidos"
-                      name="apellidos"
-                      formControlName="apellidos"
-                      required
-                      placeholder="Apellidos del alumno"
-                      aria-label="Apellidos del alumno"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched" class="invalid-feedback">
+                    <input type="text" class="admin-form-control" id="apellidos" name="apellidos"
+                      formControlName="apellidos" required placeholder="Apellidos del alumno"
+                      aria-label="Apellidos del alumno" aria-required="true" />
+                    @if (alumnoData.get('apellidos')?.errors && alumnoData.get('apellidos')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       Los apellidos del alumno son obligatorios
                     </div>
+                    }
                   </div>
                 </div>
 
                 <!-- Fecha Nacimiento y NIF -->
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched" [class.is-valid]="alumnoData.get('fechaNacimiento')?.valid && alumnoData.get('fechaNacimiento')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched"
+                    [class.is-valid]="alumnoData.get('fechaNacimiento')?.valid && alumnoData.get('fechaNacimiento')?.touched">
                     <label for="fechaNacimiento">
                       <i class="bi bi-calendar-event"></i>
                       Fecha de Nacimiento
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="date"
-                      class="admin-form-control"
-                      id="fechaNacimiento"
-                      name="fechaNacimiento"
-                      formControlName="fechaNacimiento"
-                      required
-                      aria-label="Fecha de nacimiento"
+                    <input type="date" class="admin-form-control" id="fechaNacimiento" name="fechaNacimiento"
+                      formControlName="fechaNacimiento" required aria-label="Fecha de nacimiento"
                       aria-required="true" />
-                    <div *ngIf="alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('fechaNacimiento')?.errors && alumnoData.get('fechaNacimiento')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       La fecha de nacimiento es obligatoria
                     </div>
+                    }
                   </div>
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" [class.is-valid]="alumnoData.get('nif')?.valid && alumnoData.get('nif')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched"
+                    [class.is-valid]="alumnoData.get('nif')?.valid && alumnoData.get('nif')?.touched">
                     <label for="nif">
                       <i class="bi bi-card-text"></i>
                       NIF / DNI
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="nif"
-                      name="nif"
-                      formControlName="nif"
-                      required
-                      placeholder="12345678A"
-                      aria-label="NIF o DNI"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched" class="invalid-feedback">
+                    <input type="text" class="admin-form-control" id="nif" name="nif" formControlName="nif" required
+                      placeholder="12345678A" aria-label="NIF o DNI" aria-required="true" />
+                    @if (alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="alumnoData.get('nif')?.errors?.['required']">El DNI es obligatorio</span>
-                      <span *ngIf="alumnoData.get('nif')?.errors?.['pattern']">Formato inválido (8 números y una letra)</span>
+                      @if (alumnoData.get('nif')?.errors?.['required']) {
+                      <span>El DNI es obligatorio</span>
+                      }
+                      @if (alumnoData.get('nif')?.errors?.['pattern']) {
+                      <div>Formato inválido (8 números y una
+                        letra)</div>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
                 <!-- Dirección -->
                 <div class="col-12">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched" [class.is-valid]="alumnoData.get('direccion')?.valid && alumnoData.get('direccion')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched"
+                    [class.is-valid]="alumnoData.get('direccion')?.valid && alumnoData.get('direccion')?.touched">
                     <label for="direccion">
                       <i class="bi bi-geo-alt-fill"></i>
                       Dirección
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="direccion"
-                      name="direccion"
-                      formControlName="direccion"
-                      required
-                      placeholder="Calle, número, piso..."
-                      aria-label="Dirección"
+                    <input type="text" class="admin-form-control" id="direccion" name="direccion"
+                      formControlName="direccion" required placeholder="Calle, número, piso..." aria-label="Dirección"
                       aria-required="true" />
-                    <div *ngIf="alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('direccion')?.errors && alumnoData.get('direccion')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       La dirección es obligatoria
                     </div>
+                    }
                   </div>
                 </div>
 
                 <!-- Teléfono y Email -->
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched" [class.is-valid]="alumnoData.get('telefono')?.valid && alumnoData.get('telefono')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched"
+                    [class.is-valid]="alumnoData.get('telefono')?.valid && alumnoData.get('telefono')?.touched">
                     <label for="telefono">
                       <i class="bi bi-telephone-fill"></i>
                       Teléfono
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="tel"
-                      class="admin-form-control"
-                      id="telefono"
-                      name="telefono"
-                      formControlName="telefono"
-                      required
-                      placeholder="600123456"
-                      aria-label="Teléfono de contacto"
+                    <input type="tel" class="admin-form-control" id="telefono" name="telefono"
+                      formControlName="telefono" required placeholder="600123456" aria-label="Teléfono de contacto"
                       aria-required="true" />
-                    <div *ngIf="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="alumnoData.get('telefono')?.errors?.['required']">El teléfono es obligatorio</span>
-                      <span *ngIf="alumnoData.get('telefono')?.errors?.['pattern']">Solo números permitidos</span>
-                      <span *ngIf="alumnoData.get('telefono')?.errors?.['maxlength']">Máximo 9 caracteres</span>
+                      @if (alumnoData.get('telefono')?.errors?.['required']) {
+                      <span>El teléfono es obligatorio</span>
+                      }
+                      @if (alumnoData.get('telefono')?.errors?.['pattern']) {
+                      <span>Solo números permitidos</span>
+                      }
+                      @if (alumnoData.get('telefono')?.errors?.['maxlength']) {
+                      <div>Máximo 9 caracteres</div>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched" [class.is-valid]="alumnoData.get('email')?.valid && alumnoData.get('email')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched"
+                    [class.is-valid]="alumnoData.get('email')?.valid && alumnoData.get('email')?.touched">
                     <label for="email">
                       <i class="bi bi-envelope-fill"></i>
                       Email
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="email"
-                      class="admin-form-control"
-                      id="email"
-                      name="email"
-                      formControlName="email"
-                      required
-                      placeholder="email@ejemplo.com"
-                      aria-label="Correo electrónico"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched" class="invalid-feedback">
+                    <input type="email" class="admin-form-control" id="email" name="email" formControlName="email"
+                      required placeholder="email@ejemplo.com" aria-label="Correo electrónico" aria-required="true" />
+                    @if (alumnoData.get('email')?.errors && alumnoData.get('email')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      <span *ngIf="alumnoData.get('email')?.errors?.['required']">El email es obligatorio</span>
-                      <span *ngIf="alumnoData.get('email')?.errors?.['email']">Formato de email inválido</span>
+                      @if (alumnoData.get('email')?.errors?.['required']) {
+                      <span>El email es obligatorio</span>
+                      }
+                      @if (alumnoData.get('email')?.errors?.['email']) {
+                      <span>Formato de email inválido</span>
+                      }
                     </div>
+                    }
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Tarifa y Fecha de Alta (solo si no es PILATES o DEFENSA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value !== 'PILATES' &&
-                alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
-              ">
+            @if (alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-cash-coin"></i>
                 <h4>Tarifa y Fecha de Alta</h4>
@@ -250,28 +238,26 @@
 
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched" [class.is-valid]="alumnoData.get('tipoTarifa')?.valid && alumnoData.get('tipoTarifa')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched"
+                    [class.is-valid]="alumnoData.get('tipoTarifa')?.valid && alumnoData.get('tipoTarifa')?.touched">
                     <label for="tipoTarifa">
                       <i class="bi bi-tags-fill"></i>
                       Tipo de Tarifa / Descuento
                       <span class="required">*</span>
                     </label>
-                    <select
-                      class="admin-form-control form-select"
-                      id="tipoTarifa"
-                      name="tipoTarifa"
-                      formControlName="tipoTarifa"
-                      required
-                      (change)="onTipoTarifaChange($event)"
-                      aria-label="Tipo de tarifa o descuento"
-                      aria-required="true">
+                    <select class="admin-form-control form-select" id="tipoTarifa" name="tipoTarifa"
+                      formControlName="tipoTarifa" required (change)="onTipoTarifaChange($event)"
+                      aria-label="Tipo de tarifa o descuento" aria-required="true">
                       <option value="" disabled selected>Selecciona un tipo de tarifa</option>
                       <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
                     </select>
-                    <div *ngIf="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El tipo de tarifa es obligatorio
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Selecciona el tipo de tarifa que corresponda al alumno</span>
@@ -280,92 +266,90 @@
                 </div>
 
                 <!-- Rol Familiar (solo para PADRES_HIJOS) -->
-                <div class="col-12 col-md-6" *ngIf="alumnoData.get('rolFamiliar')?.enabled">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched" [class.is-valid]="alumnoData.get('rolFamiliar')?.valid && alumnoData.get('rolFamiliar')?.touched">
+                @if (alumnoData.get('rolFamiliar')?.enabled) {
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched"
+                    [class.is-valid]="alumnoData.get('rolFamiliar')?.valid && alumnoData.get('rolFamiliar')?.touched">
                     <label for="rolFamiliar">
                       <i class="bi bi-people-fill"></i>
                       Rol Familiar
                       <span class="required">*</span>
                     </label>
-                    <select
-                      class="admin-form-control form-select"
-                      id="rolFamiliar"
-                      name="rolFamiliar"
-                      formControlName="rolFamiliar"
-                      aria-label="Rol familiar"
-                      aria-required="true">
+                    <select class="admin-form-control form-select" id="rolFamiliar" name="rolFamiliar"
+                      formControlName="rolFamiliar" aria-label="Rol familiar" aria-required="true">
                       <option value="" disabled>Selecciona un rol</option>
                       <option *ngFor="let rol of rolesFamiliares" [value]="rol">{{ rol }}</option>
                     </select>
-                    <div *ngIf="alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El rol familiar es obligatorio para tarifa PADRES_HIJOS
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>PADRE paga 28€, HIJO paga 26€</span>
                     </div>
                   </div>
                 </div>
+                }
 
                 <!-- Grupo Familiar (solo para HERMANOS) -->
-                <div class="col-12 col-md-6" *ngIf="alumnoData.get('grupoFamiliar')?.enabled">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched" [class.is-valid]="alumnoData.get('grupoFamiliar')?.valid && alumnoData.get('grupoFamiliar')?.touched">
+                @if (alumnoData.get('grupoFamiliar')?.enabled) {
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched"
+                    [class.is-valid]="alumnoData.get('grupoFamiliar')?.valid && alumnoData.get('grupoFamiliar')?.touched">
                     <label for="grupoFamiliar">
                       <i class="bi bi-house-heart-fill"></i>
                       Grupo Familiar
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="grupoFamiliar"
-                      name="grupoFamiliar"
-                      formControlName="grupoFamiliar"
-                      placeholder="Ej: FAMILIA_GARCIA"
-                      aria-label="Grupo familiar"
+                    <input type="text" class="admin-form-control" id="grupoFamiliar" name="grupoFamiliar"
+                      formControlName="grupoFamiliar" placeholder="Ej: FAMILIA_GARCIA" aria-label="Grupo familiar"
                       aria-required="true" />
-                    <div *ngIf="alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El grupo familiar es obligatorio para tarifa HERMANOS
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Los hermanos deben tener el mismo nombre de grupo familiar</span>
                     </div>
                   </div>
                 </div>
+                }
 
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
+                    [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
                     <label for="fechaAlta">
                       <i class="bi bi-calendar-plus"></i>
                       Fecha de Alta
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="date"
-                      class="admin-form-control"
-                      id="fechaAlta"
-                      name="fechaAlta"
-                      formControlName="fechaAlta"
-                      required
-                      aria-label="Fecha de alta"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" class="invalid-feedback">
+                    <input type="date" class="admin-form-control" id="fechaAlta" name="fechaAlta"
+                      formControlName="fechaAlta" required aria-label="Fecha de alta" aria-required="true" />
+                    @if (alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       La fecha de alta es obligatoria
                     </div>
+                    }
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Fecha de Alta (si es PILATES o DEFENSA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value === 'PILATES' ||
-                alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA'
-              ">
+            @if (alumnoData.get('deporte')?.value === 'PILATES' ||
+            alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-calendar-plus"></i>
                 <h4>Fecha de Alta</h4>
@@ -373,35 +357,32 @@
 
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
+                    [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
                     <label for="fechaAltaPilates">
                       <i class="bi bi-calendar-plus"></i>
                       Fecha de Alta
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="date"
-                      class="admin-form-control"
-                      id="fechaAltaPilates"
-                      name="fechaAlta"
-                      formControlName="fechaAlta"
-                      required
-                      aria-label="Fecha de alta"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched" class="invalid-feedback">
+                    <input type="date" class="admin-form-control" id="fechaAltaPilates" name="fechaAlta"
+                      formControlName="fechaAlta" required aria-label="Fecha de alta" aria-required="true" />
+                    @if (alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       La fecha de alta es obligatoria
                     </div>
+                    }
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Grado (solo si no es PILATES o DEFENSA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value !== 'PILATES' &&
-                alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
-              ">
+            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-award-fill"></i>
                 <h4>Grado del Alumno</h4>
@@ -409,29 +390,27 @@
 
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched" [class.is-valid]="alumnoData.get('grado')?.valid && alumnoData.get('grado')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched"
+                    [class.is-valid]="alumnoData.get('grado')?.valid && alumnoData.get('grado')?.touched">
                     <label for="grado">
                       <i class="bi bi-star-fill"></i>
                       Grado / Cinturón
                       <span class="required">*</span>
                     </label>
-                    <select
-                      class="admin-form-control form-select"
-                      id="grado"
-                      name="grado"
-                      formControlName="grado"
-                      required
-                      aria-label="Grado o cinturón del alumno"
-                      aria-required="true">
+                    <select class="admin-form-control form-select" id="grado" name="grado" formControlName="grado"
+                      required aria-label="Grado o cinturón del alumno" aria-required="true">
                       <option value="" disabled selected>Selecciona un grado</option>
                       <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
                         {{ getGradoNombre(grado) }}
                       </option>
                     </select>
-                    <div *ngIf="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El grado del alumno es obligatorio
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Selecciona el grado o cinturón actual del alumno</span>
@@ -440,12 +419,12 @@
                 </div>
               </div>
             </div>
+            }
 
             <!-- Imagen del Alumno (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value !== 'PILATES' &&
-                alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
-              ">
+            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-image"></i>
                 <h4>Imagen del Alumno</h4>
@@ -453,12 +432,7 @@
 
               <div class="admin-file-upload">
                 <div class="file-upload-area">
-                  <input
-                    type="file"
-                    id="fotoAlumno"
-                    name="fotoAlumno"
-                    (change)="onFileChange($event)"
-                    accept="image/*"
+                  <input type="file" id="fotoAlumno" name="fotoAlumno" (change)="onFileChange($event)" accept="image/*"
                     aria-label="Subir imagen del alumno" />
                   <i class="bi bi-cloud-upload upload-icon"></i>
                   <p class="upload-text">Arrastra una imagen o haz clic para seleccionar</p>
@@ -466,7 +440,8 @@
                 </div>
 
                 <!-- Vista previa de la imagen -->
-                <div *ngIf="imagen && imagenPreview" class="file-preview">
+                @if (imagen && imagenPreview) {
+                <div class="file-preview">
                   <img [src]="imagenPreview" alt="Vista previa del alumno" />
                   <div class="file-info">
                     <p class="file-name">Imagen del alumno seleccionada</p>
@@ -477,14 +452,15 @@
                     <span>Eliminar</span>
                   </button>
                 </div>
+                }
               </div>
             </div>
+            }
 
             <!-- Autorización y Discapacidad (solo si no es PILATES o DEFENSA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value !== 'PILATES' &&
-                alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
-            ">
+            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-shield-check"></i>
                 <h4>Autorizaciones y Datos Adicionales</h4>
@@ -498,23 +474,13 @@
                   </label>
                   <div class="d-flex gap-2">
                     <div class="admin-form-check" [class.checked]="alumnoData.get('autorizacionWeb')?.value === true">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        formControlName="autorizacionWeb"
-                        id="autorizacionWebSi"
-                        [value]="true"
-                        aria-label="Autorización web: Sí" />
+                      <input class="form-check-input" type="radio" formControlName="autorizacionWeb"
+                        id="autorizacionWebSi" [value]="true" aria-label="Autorización web: Sí" />
                       <label class="form-check-label" for="autorizacionWebSi">Sí</label>
                     </div>
                     <div class="admin-form-check" [class.checked]="alumnoData.get('autorizacionWeb')?.value === false">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        formControlName="autorizacionWeb"
-                        id="autorizacionWebNo"
-                        [value]="false"
-                        aria-label="Autorización web: No" />
+                      <input class="form-check-input" type="radio" formControlName="autorizacionWeb"
+                        id="autorizacionWebNo" [value]="false" aria-label="Autorización web: No" />
                       <label class="form-check-label" for="autorizacionWebNo">No</label>
                     </div>
                   </div>
@@ -531,24 +497,20 @@
                       ¿Tiene discapacidad?
                     </label>
                     <div class="switch">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="tieneDiscapacidad"
-                        formControlName="tieneDiscapacidad"
-                        aria-label="Tiene discapacidad" />
+                      <input type="checkbox" class="form-check-input" id="tieneDiscapacidad"
+                        formControlName="tieneDiscapacidad" aria-label="Tiene discapacidad" />
                       <span class="slider"></span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Discapacidad solo (si es PILATES o DEFENSA) -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value === 'PILATES' ||
-                alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA'
-            ">
+            @if ( alumnoData.get('deporte')?.value === 'PILATES' ||
+            alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-shield-check"></i>
                 <h4>Datos Adicionales</h4>
@@ -562,24 +524,20 @@
                       ¿Tiene discapacidad?
                     </label>
                     <div class="switch">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="tieneDiscapacidadPilates"
-                        formControlName="tieneDiscapacidad"
-                        aria-label="Tiene discapacidad" />
+                      <input type="checkbox" class="form-check-input" id="tieneDiscapacidadPilates"
+                        formControlName="tieneDiscapacidad" aria-label="Tiene discapacidad" />
                       <span class="slider"></span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Competición y Licencia -->
-            <div class="admin-form-section" *ngIf="
-                alumnoData.get('deporte')?.value !== 'PILATES' &&
-                alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA'
-              ">
+            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
+            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-award"></i>
                 <h4>Competición y Licencia Federativa</h4>
@@ -593,34 +551,26 @@
                       ¿Es Competidor?
                     </label>
                     <div class="switch">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="competidor"
-                        formControlName="competidor"
-                        (change)="onCompetidorChange($event)"
-                        aria-label="Es competidor" />
+                      <input type="checkbox" class="form-check-input" id="competidor" formControlName="competidor"
+                        (change)="onCompetidorChange($event)" aria-label="Es competidor" />
                       <span class="slider"></span>
                     </div>
                   </div>
                 </div>
 
                 <!-- Peso (solo se muestra si es competidor) -->
-                <div class="col-12 col-md-6" *ngIf="alumnoData.get('competidor')?.value">
+                @if (alumnoData.get('competidor')?.value) {
+                <div class="col-12 col-md-6">
                   <div class="admin-form-field">
                     <label for="peso">
                       <i class="bi bi-speedometer"></i>
                       Peso (kg)
                     </label>
-                    <input
-                      type="number"
-                      class="admin-form-control"
-                      id="peso"
-                      formControlName="peso"
-                      placeholder="Peso en kg"
-                      aria-label="Peso del alumno en kilogramos" />
+                    <input type="number" class="admin-form-control" id="peso" formControlName="peso"
+                      placeholder="Peso en kg" aria-label="Peso del alumno en kilogramos" />
                   </div>
                 </div>
+                }
 
                 <div class="col-12">
                   <div class="admin-form-switch" [class.checked]="alumnoData.get('tieneLicencia')?.value">
@@ -629,22 +579,19 @@
                       ¿Tiene licencia federativa?
                     </label>
                     <div class="switch">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="tieneLicencia"
-                        formControlName="tieneLicencia"
-                        (change)="onLicenciaChange($event)"
-                        aria-label="Tiene licencia federativa" />
+                      <input type="checkbox" class="form-check-input" id="tieneLicencia" formControlName="tieneLicencia"
+                        (change)="onLicenciaChange($event)" aria-label="Tiene licencia federativa" />
                       <span class="slider"></span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Número y Fecha de Licencia (solo si la tiene) -->
-            <div class="admin-form-section" *ngIf="alumnoData.get('tieneLicencia')?.value">
+            @if (alumnoData.get('tieneLicencia')?.value) {
+            <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-card-checklist"></i>
                 <h4>Datos de la Licencia Federativa</h4>
@@ -652,66 +599,58 @@
 
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched" [class.is-valid]="alumnoData.get('numeroLicencia')?.valid && alumnoData.get('numeroLicencia')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched"
+                    [class.is-valid]="alumnoData.get('numeroLicencia')?.valid && alumnoData.get('numeroLicencia')?.touched">
                     <label for="numeroLicencia">
                       <i class="bi bi-hash"></i>
                       Número de Licencia
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="text"
-                      class="admin-form-control"
-                      id="numeroLicencia"
-                      name="numeroLicencia"
-                      formControlName="numeroLicencia"
-                      placeholder="Número de licencia federativa"
-                      aria-label="Número de licencia federativa"
-                      aria-required="true" />
-                    <div *ngIf="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched" class="invalid-feedback">
+                    <input type="text" class="admin-form-control" id="numeroLicencia" name="numeroLicencia"
+                      formControlName="numeroLicencia" placeholder="Número de licencia federativa"
+                      aria-label="Número de licencia federativa" aria-required="true" />
+                    @if (alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El número de licencia es obligatorio
                     </div>
+                    }
                   </div>
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched" [class.is-valid]="alumnoData.get('fechaLicencia')?.valid && alumnoData.get('fechaLicencia')?.touched">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched"
+                    [class.is-valid]="alumnoData.get('fechaLicencia')?.valid && alumnoData.get('fechaLicencia')?.touched">
                     <label for="fechaLicencia">
                       <i class="bi bi-calendar-check"></i>
                       Fecha de Licencia
                       <span class="required">*</span>
                     </label>
-                    <input
-                      type="date"
-                      class="admin-form-control"
-                      id="fechaLicencia"
-                      name="fechaLicencia"
-                      formControlName="fechaLicencia"
-                      aria-label="Fecha de emisión de la licencia"
+                    <input type="date" class="admin-form-control" id="fechaLicencia" name="fechaLicencia"
+                      formControlName="fechaLicencia" aria-label="Fecha de emisión de la licencia"
                       aria-required="true" />
-                    <div *ngIf="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched" class="invalid-feedback">
+                    @if (alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       La fecha de licencia es obligatoria
                     </div>
+                    }
                   </div>
                 </div>
               </div>
             </div>
+            }
 
             <!-- Submit Buttons -->
             <div class="admin-form-button-group">
-              <button
-                type="button"
-                class="admin-btn admin-btn-outline"
-                routerLink="/alumnosListar"
+              <button type="button" class="admin-btn admin-btn-outline" routerLink="/alumnosListar"
                 aria-label="Cancelar y volver al listado">
                 <i class="bi bi-x-circle"></i>
                 <span>Cancelar</span>
               </button>
-              <button
-                type="submit"
-                class="admin-btn admin-btn-primary"
-                [disabled]="alumnoData.invalid"
+              <button type="submit" class="admin-btn admin-btn-primary" [disabled]="alumnoData.invalid"
                 aria-label="Crear nuevo alumno">
                 <i class="bi bi-check-circle"></i>
                 <span>Crear Alumno</span>

@@ -19,65 +19,79 @@
     </div>
 
     <!-- Skeleton Loading -->
-    <app-skeleton-card *ngIf="cargando" type="table" [count]="tamanoPagina"></app-skeleton-card>
+    @if (cargando) {
+      <app-skeleton-card type="table" [count]="tamanoPagina"></app-skeleton-card>
+    }
 
     <!-- Tabla de productos -->
-    <div *ngIf="!cargando" class="admin-table">
-      <table>
-        <thead>
-          <tr>
-            <th (click)="ordenarPor('id')" style="cursor: pointer;">
-              ID
-              <span *ngIf="orderBy === 'id'">
-                <i class="bi" [ngClass]="{
-                      'bi-arrow-up-circle-fill': order === 'asc',
-                      'bi-arrow-down-circle-fill': order === 'desc'
-                    }"></i>
-              </span>
-            </th>
-            <th (click)="ordenarPor('concepto')" style="cursor: pointer;">
-              Concepto
-              <span *ngIf="orderBy === 'concepto'">
-                <i class="bi" [ngClass]="{
-                      'bi-arrow-up-circle-fill': order === 'asc',
-                      'bi-arrow-down-circle-fill': order === 'desc'
-                    }"></i>
-              </span>
-            </th>
-            <th (click)="ordenarPor('precio')" style="cursor: pointer;">
-              Precio
-              <span *ngIf="orderBy === 'precio'">
-                <i class="bi" [ngClass]="{
-                      'bi-arrow-up-circle-fill': order === 'asc',
-                      'bi-arrow-down-circle-fill': order === 'desc'
-                    }"></i>
-              </span>
-            </th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let producto of productos">
-            <td>{{ producto.id }}</td>
-            <td>{{ producto.concepto }}</td>
-            <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
-            <td>
-              <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">
-                <i class="bi bi-pencil-square"></i>
-                <span>Editar</span>
-              </button>
-              <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarProducto(producto.id)">
-                <i class="bi bi-trash"></i>
-                <span>Eliminar</span>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="!cargando && (!productos || productos.length === 0)">
-            <td colspan="4" class="text-center text-muted">No hay productos disponibles</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    @if (!cargando) {
+      <div class="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th (click)="ordenarPor('id')" style="cursor: pointer;">
+                ID
+                @if (orderBy === 'id') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th (click)="ordenarPor('concepto')" style="cursor: pointer;">
+                Concepto
+                @if (orderBy === 'concepto') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th (click)="ordenarPor('precio')" style="cursor: pointer;">
+                Precio
+                @if (orderBy === 'precio') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of productos; track producto.id) {
+              <tr>
+                <td>{{ producto.id }}</td>
+                <td>{{ producto.concepto }}</td>
+                <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
+                <td>
+                  <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>Editar</span>
+                  </button>
+                  <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarProducto(producto.id)">
+                    <i class="bi bi-trash"></i>
+                    <span>Eliminar</span>
+                  </button>
+                </td>
+              </tr>
+            }
+            @if (!cargando && (!productos || productos.length === 0)) {
+              <tr>
+                <td colspan="4" class="text-center text-muted">No hay productos disponibles</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
 
     <!-- Paginación -->
     <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"

@@ -51,9 +51,11 @@
           <div class="mb-3">
             <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
             <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
-              <option *ngFor="let alumno of alumnosSeleccionables" [value]="alumno.id">
-                {{ alumno.nombre }} {{ alumno.apellidos }}
-              </option>
+              @for (alumno of alumnosSeleccionables; track alumno.id) {
+                <option [value]="alumno.id">
+                  {{ alumno.nombre }} {{ alumno.apellidos }}
+                </option>
+              }
             </select>
           </div>
           <div class="mb-3">
@@ -88,82 +90,96 @@
 
 
     <!-- Skeleton Loading -->
-    <app-skeleton-card *ngIf="cargando" type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
+    @if (cargando) {
+      <app-skeleton-card type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
+    }
 
     <!-- Alumnos Grid -->
-    <div *ngIf="!cargando" class="admin-cards-grid mb-4">
-      <div *ngFor="let alumno of alumnos" class="admin-item-card">
-        <div class="item-header">
-          <a [routerLink]="['/alumnosEditar', alumno.id]">
-            <img class="item-image"
-              [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-              [alt]="'Perfil de ' + alumno.nombre" />
-          </a>
-          <div class="item-title">
-            <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
-            <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
-          </div>
-        </div>
+    @if (!cargando) {
+      <div class="admin-cards-grid mb-4">
+        @for (alumno of alumnos; track alumno.id) {
+          <div class="admin-item-card">
+            <div class="item-header">
+              <a [routerLink]="['/alumnosEditar', alumno.id]">
+                <img class="item-image"
+                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                  [alt]="'Perfil de ' + alumno.nombre" />
+              </a>
+              <div class="item-title">
+                <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
+                <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
+              </div>
+            </div>
 
-        <div class="item-body">
-          <div class="item-field">
-            <i class="bi bi-cake2"></i>
-            <strong>Edad:</strong>
-            <span>{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
-          </div>
-          <div class="item-field">
-            <i class="bi bi-telephone"></i>
-            <strong>Teléfono:</strong>
-            <span>{{ alumno.telefono }}</span>
-          </div>
-          <div class="item-field">
-            <i class="bi bi-cash-coin"></i>
-            <strong>Tarifa:</strong>
-            <span>{{ alumno.tipoTarifa }}</span>
-          </div>
-          <div class="item-field">
-            <i class="bi bi-calendar-plus"></i>
-            <strong>Alta:</strong>
-            <span>{{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</span>
-          </div>
-          <div class="item-field" *ngIf="alumno.antiguedad">
-            <i class="bi bi-clock-history"></i>
-            <strong>Antigüedad:</strong>
-            <span>{{ alumno.antiguedad }}</span>
-          </div>
-          <div class="item-field">
-            <i class="bi bi-trophy"></i>
-            <strong>Categoría:</strong>
-            <span>{{ alumno.categoria || 'N/A' }}</span>
-          </div>
-          <div class="item-field">
-            <i class="bi bi-award"></i>
-            <strong>Grado:</strong>
-            <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
-          </div>
-          <div class="item-field" *ngIf="mostrarInactivos && alumno.fechaBaja">
-            <i class="bi bi-calendar-x"></i>
-            <strong>Baja:</strong>
-            <span>{{ alumno.fechaBaja | date: 'dd/MM/yyyy' }}</span>
-          </div>
-        </div>
+            <div class="item-body">
+              <div class="item-field">
+                <i class="bi bi-cake2"></i>
+                <strong>Edad:</strong>
+                <span>{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
+              </div>
+              <div class="item-field">
+                <i class="bi bi-telephone"></i>
+                <strong>Teléfono:</strong>
+                <span>{{ alumno.telefono }}</span>
+              </div>
+              <div class="item-field">
+                <i class="bi bi-cash-coin"></i>
+                <strong>Tarifa:</strong>
+                <span>{{ alumno.tipoTarifa }}</span>
+              </div>
+              <div class="item-field">
+                <i class="bi bi-calendar-plus"></i>
+                <strong>Alta:</strong>
+                <span>{{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</span>
+              </div>
+              @if (alumno.antiguedad) {
+                <div class="item-field">
+                  <i class="bi bi-clock-history"></i>
+                  <strong>Antigüedad:</strong>
+                  <span>{{ alumno.antiguedad }}</span>
+                </div>
+              }
+              <div class="item-field">
+                <i class="bi bi-trophy"></i>
+                <strong>Categoría:</strong>
+                <span>{{ alumno.categoria || 'N/A' }}</span>
+              </div>
+              <div class="item-field">
+                <i class="bi bi-award"></i>
+                <strong>Grado:</strong>
+                <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
+              </div>
+              @if (mostrarInactivos && alumno.fechaBaja) {
+                <div class="item-field">
+                  <i class="bi bi-calendar-x"></i>
+                  <strong>Baja:</strong>
+                  <span>{{ alumno.fechaBaja | date: 'dd/MM/yyyy' }}</span>
+                </div>
+              }
+            </div>
 
-        <div class="item-footer">
-          <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
-            <i class="bi bi-pencil-square"></i>
-            <span>Editar</span>
-          </button>
-          <button *ngIf="alumno.fechaBaja" class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
-            <i class="bi bi-check-circle"></i>
-            <span>Dar de Alta</span>
-          </button>
-          <button *ngIf="!alumno.fechaBaja" class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)">
-            <i class="bi bi-x-circle"></i>
-            <span>Dar de Baja</span>
-          </button>
-        </div>
+            <div class="item-footer">
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
+                <i class="bi bi-pencil-square"></i>
+                <span>Editar</span>
+              </button>
+              @if (alumno.fechaBaja) {
+                <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Dar de Alta</span>
+                </button>
+              }
+              @if (!alumno.fechaBaja) {
+                <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)">
+                  <i class="bi bi-x-circle"></i>
+                  <span>Dar de Baja</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
       </div>
-    </div>
+    }
 
 
     <!-- Pagination -->
@@ -189,7 +205,9 @@
             <div class="col-12 col-md-6">
               <label for="grupoAsis" class="form-label fw-semibold mb-2">Día de la semana:</label>
               <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
-                <option *ngFor="let g of grupos" [value]="g">{{ g | titlecase }}</option>
+                @for (g of grupos; track g) {
+                  <option [value]="g">{{ g | titlecase }}</option>
+                }
               </select>
             </div>
           </div>
@@ -205,8 +223,10 @@
     </div>
 
     <!-- Informe Modal -->
-    <app-informe-modal *ngIf="mostrarModalInforme" [title]="modalTitle" [opcionesInforme]="opcionesInforme"
-      (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
-    </app-informe-modal>
+    @if (mostrarModalInforme) {
+      <app-informe-modal [title]="modalTitle" [opcionesInforme]="opcionesInforme"
+        (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
+      </app-informe-modal>
+    }
   </div>
 </div>
