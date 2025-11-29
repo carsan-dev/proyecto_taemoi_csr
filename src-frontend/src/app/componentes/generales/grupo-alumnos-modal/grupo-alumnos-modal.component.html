@@ -17,52 +17,70 @@
 
       <!-- Modal Body -->
       <div class="modal-body">
-        <div class="alumnos-info mb-3">
-          <i class="bi bi-info-circle me-2"></i>
-          <span>
-            Mostrando: <strong>{{ alumnosFiltrados.length }}</strong>
-            @if (alumnosFiltrados.length !== alumnos.length) {
-              de <strong>{{ alumnos.length }}</strong>
+        <!-- Skeleton Loading -->
+        @if (cargando) {
+          <div class="alumnos-grid">
+            @for (item of [1,2,3,4,5,6,7,8]; track $index) {
+              <div class="alumno-card skeleton-alumno-card">
+                <div class="alumno-link">
+                  <div class="alumno-avatar skeleton-avatar"></div>
+                  <div class="alumno-info">
+                    <div class="skeleton-line skeleton-nombre"></div>
+                    <div class="skeleton-line skeleton-expediente"></div>
+                    <div class="skeleton-line skeleton-grado"></div>
+                  </div>
+                  <div class="skeleton-arrow"></div>
+                </div>
+              </div>
             }
-            alumnos
-          </span>
-        </div>
-
-        <!-- Active/Inactive Filter Switch -->
-        <div class="filter-switch-container mb-3">
-          <div class="form-check form-switch">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              role="switch"
-              id="activoFilterSwitch"
-              [(ngModel)]="mostrarSoloActivos"
-              (change)="onActivoFilterChange()">
-            <label class="form-check-label" for="activoFilterSwitch">
-              <i class="bi bi-funnel me-1"></i>
-              {{ mostrarSoloActivos ? 'Mostrando solo alumnos activos' : 'Mostrando todos los alumnos' }}
-            </label>
           </div>
-        </div>
-
-        <!-- Search Filter -->
-        <div class="search-container mb-3">
-          <div class="input-group">
-            <span class="input-group-text">
-              <i class="bi bi-search"></i>
+        } @else {
+          <div class="alumnos-info mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <span>
+              Mostrando: <strong>{{ alumnosFiltrados.length }}</strong>
+              @if (alumnosFiltrados.length !== alumnos.length) {
+                de <strong>{{ alumnos.length }}</strong>
+              }
+              alumnos
             </span>
-            <input
-              type="text"
-              class="form-control"
-              placeholder="Buscar alumno por nombre..."
-              [(ngModel)]="nombreFiltro"
-              (ngModelChange)="onSearchChange()"
-              aria-label="Buscar alumno por nombre">
           </div>
-        </div>
 
-        <!-- Alumnos Grid -->
-        @if (alumnosPaginados && alumnosPaginados.length > 0) {
+          <!-- Active/Inactive Filter Switch -->
+          <div class="filter-switch-container mb-3">
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="activoFilterSwitch"
+                [(ngModel)]="mostrarSoloActivos"
+                (change)="onActivoFilterChange()">
+              <label class="form-check-label" for="activoFilterSwitch">
+                <i class="bi bi-funnel me-1"></i>
+                {{ mostrarSoloActivos ? 'Mostrando solo alumnos activos' : 'Mostrando todos los alumnos' }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Search Filter -->
+          <div class="search-container mb-3">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Buscar alumno por nombre..."
+                [(ngModel)]="nombreFiltro"
+                (ngModelChange)="onSearchChange()"
+                aria-label="Buscar alumno por nombre">
+            </div>
+          </div>
+
+          <!-- Alumnos Grid -->
+          @if (alumnosPaginados && alumnosPaginados.length > 0) {
           <div class="alumnos-grid">
             @for (alumno of alumnosPaginados; track alumno.id) {
               <div class="alumno-card">
@@ -106,15 +124,16 @@
           </div>
         }
 
-        <!-- Pagination -->
-        @if (totalPaginas > 1) {
-          <app-paginacion
-            [paginaActual]="paginaActual"
-            [totalPaginas]="totalPaginas"
-            [tamanoPagina]="tamanoPagina"
-            (pageChange)="cambiarPagina($event)"
-            class="mt-4">
-          </app-paginacion>
+          <!-- Pagination -->
+          @if (totalPaginas > 1) {
+            <app-paginacion
+              [paginaActual]="paginaActual"
+              [totalPaginas]="totalPaginas"
+              [tamanoPagina]="tamanoPagina"
+              (pageChange)="cambiarPagina($event)"
+              class="mt-4">
+            </app-paginacion>
+          }
         }
       </div>
 
