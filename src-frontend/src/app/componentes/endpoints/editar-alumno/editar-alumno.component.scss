@@ -459,6 +459,19 @@
   border-radius: 4px;
 }
 
+// Dark mode shimmer
+@mixin skeleton-shimmer-dark {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 0%,
+    #3a3a3a 20%,
+    #2a2a2a 40%,
+    #2a2a2a 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 // Skeleton elements
 .skeleton-line {
   @include skeleton-shimmer;
@@ -488,4 +501,13 @@
   height: 36px;
   width: 80px;
   border-radius: 4px;
+}
+
+// Dark mode support (only for skeleton shimmer)
+@media (prefers-color-scheme: dark) {
+  .skeleton-line,
+  .skeleton-avatar,
+  .skeleton-button {
+    @include skeleton-shimmer-dark;
+  }
 }
