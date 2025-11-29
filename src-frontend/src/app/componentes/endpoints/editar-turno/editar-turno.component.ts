@@ -18,7 +18,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-editar-turno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './editar-turno.component.html',
   styleUrl: './editar-turno.component.scss',
 })

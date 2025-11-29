@@ -17,7 +17,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-editar-grupo',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, SkeletonCardComponent],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule],
   templateUrl: './editar-grupo.component.html',
   styleUrl: './editar-grupo.component.scss',
 })
