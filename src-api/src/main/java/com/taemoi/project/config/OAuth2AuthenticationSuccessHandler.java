@@ -30,6 +30,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	@Value("${cors.allowed.origin}")
 	private String frontendUrl;
 
+	@Value("${spring.profiles.active:default}")
+	private String activeProfile;
+
 	public OAuth2AuthenticationSuccessHandler(OAuth2UserService oauth2UserService,
 											  JwtService jwtService) {
 		this.oauth2UserService = oauth2UserService;
@@ -49,12 +52,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			// Generar JWT token
 			String jwt = jwtService.generateToken(usuario);
 
+			// Determinar si usar Secure basado en el perfil activo
+			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
+
 			// Crear cookie HTTP-Only con el JWT (usando Cookie estándar como en AuthenticationController)
 			jakarta.servlet.http.Cookie jwtCookie = new jakarta.servlet.http.Cookie("jwt", jwt);
 			jwtCookie.setHttpOnly(true);
-			jwtCookie.setSecure(false); // Cambiar a true en producción con HTTPS
+			jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
 			jwtCookie.setPath("/");
 			jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas
+			if (isProduction) {
+				jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
+			}
 
 			// Agregar la cookie a la respuesta HTTP
 			response.addCookie(jwtCookie);
