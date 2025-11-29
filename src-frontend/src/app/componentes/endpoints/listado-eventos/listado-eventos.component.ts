@@ -4,26 +4,31 @@ import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-listado-eventos',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkeletonCardComponent],
   templateUrl: './listado-eventos.component.html',
   styleUrl: './listado-eventos.component.scss',
 })
 export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
+  cargando: boolean = false; // Local loading state
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
+    this.cargando = true;
     const eventosSubscription = this.endpointsService.eventos$.subscribe({
       next: (eventos) => {
         this.eventos = eventos;
+        this.cargando = false;
       },
       error: (error) => {
+        this.cargando = false;
         Swal.fire({
           title: 'Error en la petición',
           text: 'No hemos podido obtener los eventos',

@@ -6,7 +6,12 @@
           <h2 class="text-center m-0 fw-bold">Selecciona un grupo</h2>
           <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
         </div>
-        <div class="list-group mt-4">
+
+        <!-- Skeleton Loading -->
+        <app-skeleton-card *ngIf="cargando" type="list" [count]="5"></app-skeleton-card>
+
+        <!-- Content -->
+        <div *ngIf="!cargando" class="list-group mt-4">
           <button *ngFor="let grupo of grupos" class="list-group-item list-group-item-action"
             (click)="asignarGrupo(grupo.id)">
             {{ grupo.nombre }}

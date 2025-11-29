@@ -4,17 +4,19 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-turnos-grupo',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SkeletonCardComponent],
   templateUrl: './turnos-grupo.component.html',
   styleUrl: './turnos-grupo.component.scss',
 })
 export class TurnosGrupoComponent implements OnInit, OnDestroy {
   grupoId!: number;
   turnos: any[] = [];
+  cargando: boolean = false; // Loading state
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
@@ -43,12 +45,15 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
   }
 
   obtenerTurnos() {
+    this.cargando = true;
     // Suscribirse al Observable expuesto por el BehaviorSubject
     const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
       next: (turnos) => {
         this.turnos = turnos;
+        this.cargando = false;
       },
       error: (error) => {
+        this.cargando = false;
         let errorMessage = '';
         if (error.status === 404) {
           errorMessage += 'Este grupo no tiene turnos asociados.';

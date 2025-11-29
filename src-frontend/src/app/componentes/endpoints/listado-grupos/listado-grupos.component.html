@@ -28,8 +28,11 @@
       </ng-container>
     </div>
 
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+
     <!-- Grupos Grid -->
-    <div class="admin-cards-grid">
+    <div *ngIf="!cargando" class="admin-cards-grid">
       <div *ngFor="let grupo of grupos" class="admin-item-card">
         <div class="item-header">
           <div class="item-title">

@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -18,6 +19,7 @@ import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -28,12 +30,14 @@ import Swal from 'sweetalert2';
     FormsModule,
     ReactiveFormsModule,
     PaginacionComponent,
+    SkeletonCardComponent,
   ],
   templateUrl: './editar-alumno.component.html',
   styleUrls: ['./editar-alumno.component.scss'],
 })
 export class EditarAlumnoComponent implements OnInit, OnDestroy {
   alumno: any = null;
+  cargando: boolean = false; // Loading state
 
   // Pagination - each page represents one alumno
   paginaActual: number = 1;
@@ -242,6 +246,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Process the route parameter - always treated as an alumno ID
    */
   private procesarParametroRuta(idParam: number): void {
+    // Set loading to true and clear alumno data immediately when route changes
+    this.cargando = true;
+    this.alumno = null;
+
     // Check if this alumno ID exists in our current list
     const pageIndex = this.alumnosIds.indexOf(idParam);
 
@@ -268,39 +276,42 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private intentarCargarAlumnoNoEncontrado(alumnoId: number): void {
     this.endpointsService.obtenerAlumnoPorId(alumnoId).subscribe({
-      next: (alumnoResponse: any) => {
-        // Alumno exists! Check if we need to toggle inactive filter
-        const esInactivo = alumnoResponse.fechaBaja != null;
+        next: (alumnoResponse: any) => {
+          // Alumno exists! Check if we need to toggle inactive filter
+          const esInactivo = alumnoResponse.fechaBaja != null;
 
-        if (esInactivo && !this.mostrarInactivos) {
-          // This is an inactive alumno but we're not showing inactive ones
-          // Toggle the filter and reload the list
-          this.mostrarInactivos = true;
-          this.cargarTodosLosAlumnosIds(() => {
-            this.navegarAAlumno(alumnoId);
+          if (esInactivo && !this.mostrarInactivos) {
+            // This is an inactive alumno but we're not showing inactive ones
+            // Toggle the filter and reload the list
+            this.mostrarInactivos = true;
+            this.cargarTodosLosAlumnosIds(() => {
+              this.navegarAAlumno(alumnoId);
+            });
+          } else {
+            // Alumno exists and matches our filter, but wasn't in the array
+            // This means the array needs to be refreshed (e.g., newly created alumno)
+            this.cargarTodosLosAlumnosIds(() => {
+              this.navegarAAlumno(alumnoId);
+            });
+          }
+        },
+        error: () => {
+          // Alumno doesn't exist - stop loading
+          this.cargando = false;
+
+          // Show error and navigate to first alumno if available
+          Swal.fire({
+            title: 'Alumno no encontrado',
+            text: 'El alumno solicitado no existe.',
+            icon: 'error',
+            timer: 2000,
           });
-        } else {
-          // Alumno exists and matches our filter, but wasn't in the array
-          // This means the array needs to be refreshed (e.g., newly created alumno)
-          this.cargarTodosLosAlumnosIds(() => {
-            this.navegarAAlumno(alumnoId);
-          });
-        }
-      },
-      error: () => {
-        // Alumno doesn't exist - navigate to first alumno
-        Swal.fire({
-          title: 'Alumno no encontrado',
-          text: 'El alumno solicitado no existe.',
-          icon: 'error',
-          timer: 2000,
-        });
-        if (this.alumnosIds.length > 0) {
-          const firstAlumnoId = this.alumnosIds[0];
-          this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
-        }
-      },
-    });
+          if (this.alumnosIds.length > 0) {
+            const firstAlumnoId = this.alumnosIds[0];
+            this.router.navigate(['/alumnosEditar', firstAlumnoId], { replaceUrl: true });
+          }
+        },
+      });
   }
 
   /**
@@ -323,25 +334,28 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   cargarAlumno(id: number): void {
-    this.endpointsService.obtenerAlumnoPorId(id).subscribe({
-      next: (alumnoResponse: any) => {
-        this.alumno = alumnoResponse;
-        this.alumnoId = this.alumno.id;
+    this.cargando = true;
+    this.endpointsService.obtenerAlumnoPorId(id)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (alumnoResponse: any) => {
+          this.alumno = alumnoResponse;
+          this.alumnoId = this.alumno.id;
 
-        // Obtener productos del alumno, convocatorias, etc.
-        if (this.alumnoId) {
-          this.cargarDocumentosAlumno(this.alumnoId);
-          this.obtenerProductosAlumno(this.alumnoId);
-          this.cargarConvocatoriasDelAlumno(this.alumnoId);
-        }
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: `No se pudo cargar el alumno con ID ${id}`,
-          icon: 'error',
-        });
-      },
+          // Obtener productos del alumno, convocatorias, etc.
+          if (this.alumnoId) {
+            this.cargarDocumentosAlumno(this.alumnoId);
+            this.obtenerProductosAlumno(this.alumnoId);
+            this.cargarConvocatoriasDelAlumno(this.alumnoId);
+          }
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: `No se pudo cargar el alumno con ID ${id}`,
+            icon: 'error',
+          });
+        },
     });
   }
 

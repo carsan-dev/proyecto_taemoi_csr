@@ -8,12 +8,17 @@
         </div>
         <div class="mt-4">
           <h3 class="mb-3 fw-bold">Turnos Asociados</h3>
-          <!-- Usamos el async pipe para obtener los turnos del grupo -->
-          <div *ngIf="endpointsService.turnosDelGrupo$ | async as turnos; else noTurnosTemplate">
-            <ul class="list-group">
+
+          <!-- Skeleton Loading -->
+          <app-skeleton-card *ngIf="cargando" type="list" [count]="3"></app-skeleton-card>
+
+          <!-- Turnos List -->
+          <div *ngIf="!cargando && turnos && turnos.length > 0">
+            <ul class="list-group" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 2rem;">
               <li
                 class="list-group-item d-flex justify-content-between align-items-center"
                 *ngFor="let turno of turnos"
+                style="border-radius: 8px;"
               >
                 <span>{{ turno.diaSemana }} - {{ turno.horaInicio }} a {{ turno.horaFin }}</span>
                 <button class="btn btn-danger btn-sm rounded-pill" (click)="eliminarTurnoDelGrupo(turno.id)">
@@ -22,9 +27,11 @@
               </li>
             </ul>
           </div>
-          <ng-template #noTurnosTemplate>
-            <div class="alert alert-warning text-center">No quedan más turnos en el grupo.</div>
-          </ng-template>
+
+          <!-- No turnos message -->
+          <div *ngIf="!cargando && (!turnos || turnos.length === 0)" class="alert alert-warning text-center">
+            No quedan más turnos en el grupo.
+          </div>
         </div>
       </div>
     </div>

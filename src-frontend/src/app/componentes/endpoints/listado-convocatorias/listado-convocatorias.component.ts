@@ -8,6 +8,8 @@ import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { trigger, transition, style, animate } from '@angular/animations';
 import localeEs from '@angular/common/locales/es';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 // Register Spanish locale
 registerLocaleData(localeEs, 'es');
@@ -54,7 +56,7 @@ export class CapitalizeMonthPipe implements PipeTransform {
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe],
+  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe, SkeletonCardComponent],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
   providers: [{ provide: LOCALE_ID, useValue: 'es' }],
@@ -78,6 +80,8 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosFiltrados: any[] = [];
   deportes = ['TAEKWONDO', 'KICKBOXING'];
   deporteSeleccionado = 'TAEKWONDO';
+  cargando: boolean = false; // Loading state
+  cargandoAlumnos: boolean = false; // Loading state for alumnos
 
 
   // Pagination for convocatorias list
@@ -103,8 +107,10 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   obtenerConvocatorias(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerConvocatorias(this.deporteSeleccionado)
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (data) => {
           this.convocatorias = data.map((conv: any) => ({ ...conv, expanded: false }));

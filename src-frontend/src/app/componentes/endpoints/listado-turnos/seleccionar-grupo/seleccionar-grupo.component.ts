@@ -4,17 +4,20 @@ import Swal from 'sweetalert2';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
+import { finalize } from 'rxjs/operators';
+import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-seleccionar-grupo',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SkeletonCardComponent],
   templateUrl: './seleccionar-grupo.component.html',
   styleUrl: './seleccionar-grupo.component.scss',
 })
 export class SeleccionarGrupoComponent implements OnInit {
   grupos: GrupoDTO[] = [];
   turnoId!: number;
+  cargando: boolean = false;
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -29,18 +32,21 @@ export class SeleccionarGrupoComponent implements OnInit {
   }
 
   obtenerGrupos(): void {
-    this.endpointsService.obtenerTodosLosGrupos().subscribe({
-      next: (response) => {
-        this.grupos = response;
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
-          icon: 'error',
-        });
-      },
-    });
+    this.cargando = true;
+    this.endpointsService.obtenerTodosLosGrupos()
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (response) => {
+          this.grupos = response;
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   asignarGrupo(grupoId: number): void {

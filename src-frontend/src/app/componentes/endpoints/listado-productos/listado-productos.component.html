@@ -18,8 +18,11 @@
       </div>
     </div>
 
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="table" [count]="tamanoPagina"></app-skeleton-card>
+
     <!-- Tabla de productos -->
-    <div class="admin-table">
+    <div *ngIf="!cargando" class="admin-table">
       <table>
         <thead>
           <tr>
@@ -69,7 +72,7 @@
               </button>
             </td>
           </tr>
-          <tr *ngIf="!productos || productos.length === 0">
+          <tr *ngIf="!cargando && (!productos || productos.length === 0)">
             <td colspan="4" class="text-center text-muted">No hay productos disponibles</td>
           </tr>
         </tbody>

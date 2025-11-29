@@ -41,8 +41,11 @@
       </div>
     </div>
 
+    <!-- Skeleton Loading -->
+    <app-skeleton-card *ngIf="cargando" type="list" [count]="tamanoPaginaConvocatorias"></app-skeleton-card>
+
     <!-- Lista de convocatorias o mensaje de vacío -->
-    <ng-container *ngIf="convocatorias && convocatorias.length > 0; else noConvocatorias">
+    <ng-container *ngIf="!cargando && convocatorias && convocatorias.length > 0; else noConvocatorias">
 
       <!-- Convocatorias Grid -->
       <div class="convocatorias-grid">

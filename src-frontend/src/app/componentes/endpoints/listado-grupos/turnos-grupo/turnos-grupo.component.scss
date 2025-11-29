@@ -1,6 +1,17 @@
 // Import shared admin styles
 @use '../../../../componentes/admin-shared-styles.scss' as *;
 
+// Container layout to push footer down
+.container {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  flex: 1;
+}
+
 // Component-specific list group styles
 .list-group-item {
   border: none;
