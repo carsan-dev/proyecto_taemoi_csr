@@ -39,10 +39,12 @@
                       placeholder="Ej: Mensualidad Enero, Derechos de Examen, Licencia Federativa"
                       aria-label="Concepto del producto"
                       aria-required="true">
-                    <div *ngIf="productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched" class="invalid-feedback">
+                    @if (productoForm.get('concepto')?.errors && productoForm.get('concepto')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El concepto es obligatorio
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Nombre descriptivo del producto o servicio</span>
@@ -74,10 +76,12 @@
                         aria-required="true">
                       <div class="input-group-append">€</div>
                     </div>
-                    <div *ngIf="productoForm.get('precio')?.errors && productoForm.get('precio')?.touched" class="invalid-feedback">
+                    @if (productoForm.get('precio')?.errors && productoForm.get('precio')?.touched) {
+                    <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
                       El precio es obligatorio y debe ser mayor o igual a 0
                     </div>
+                    }
                     <div class="admin-form-help">
                       <i class="bi bi-info-circle"></i>
                       <span>Precio en euros (puede incluir decimales)</span>

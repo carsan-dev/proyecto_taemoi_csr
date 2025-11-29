@@ -41,17 +41,20 @@
 
     <!-- Info Cards Grid Skeleton -->
     <div class="row">
-      <div class="col-lg-6 col-md-12 mb-4" *ngFor="let i of [1,2,3,4]">
+      @for (i of [1,2,3,4]; track i) {
+      <div class="col-lg-6 col-md-12 mb-4">
         <div class="admin-card">
           <div class="info-card-header">
             <div class="skeleton-line skeleton-title" style="width: 200px; height: 24px;"></div>
           </div>
           <div class="info-card-body">
-            <div class="skeleton-line skeleton-text" style="width: 100%; height: 16px; margin-bottom: 12px;"
-              *ngFor="let j of [1,2,3,4]"></div>
+            @for (j of [1,2,3,4]; track j) {
+            <div class="skeleton-line skeleton-text" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            }
           </div>
         </div>
       </div>
+      }
     </div>
   </div>
 </div>
@@ -362,7 +365,8 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let producto of productosPaginados">
+                      @for (producto of productosPaginados; track producto.id) {
+                      <tr>
                         <td>{{ producto.concepto }}</td>
                         <td>{{ producto.fechaAsignacion | date:'dd/MM/yyyy' }}</td>
                         <td>{{ producto.cantidad }}</td>
@@ -382,6 +386,7 @@
                           }
                         </td>
                       </tr>
+                      }
                       @if (!productosPaginados || productosPaginados.length === 0) {
                       <tr>
                         <td colspan="5" class="text-center text-muted py-3">
@@ -592,7 +597,8 @@
               <div class="info-card-body">
                 @if (documentosAlumno && documentosAlumno.length > 0) {
                 <div class="documentos-grid">
-                  <div class="documento-item" *ngFor="let doc of documentosAlumno">
+                  @for (doc of documentosAlumno; track doc.id) {
+                  <div class="documento-item">
                     <div class="documento-icon">
                       <i class="bi bi-file-earmark-pdf-fill"></i>
                     </div>
@@ -611,6 +617,7 @@
                       </button>
                     </div>
                   </div>
+                  }
                 </div>
                 }
                 @if (!documentosAlumno || documentosAlumno.length === 0) {
@@ -713,9 +720,11 @@
                     <select class="admin-form-control form-select" id="deporte" formControlName="deporte" required
                       (change)="onDeporteChange($any($event.target).value)" aria-label="Deporte" aria-required="true">
                       <option value="" disabled>Selecciona un deporte</option>
-                      <option *ngFor="let deporte of deportes" [value]="deporte">
+                      @for (deporte of deportes; track deporte) {
+                      <option [value]="deporte">
                         {{ deporte }}
                       </option>
+                      }
                     </select>
                     @if (alumnoForm.get('deporte')?.errors && alumnoForm.get('deporte')?.touched) {
                     <div class="invalid-feedback">
@@ -992,9 +1001,11 @@
                     </label>
                     <select class="admin-form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required
                       aria-label="Tipo de tarifa" aria-required="true">
-                      <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">
+                      @for (tarifa of tiposTarifa; track tarifa) {
+                      <option [value]="tarifa">
                         {{ tarifa }}
                       </option>
+                      }
                     </select>
                     @if (alumnoForm.get('tipoTarifa')?.errors && alumnoForm.get('tipoTarifa')?.touched) {
                     <div class="invalid-feedback">
@@ -1019,7 +1030,9 @@
                     <select class="admin-form-control form-select" id="rolFamiliar" formControlName="rolFamiliar"
                       aria-label="Rol familiar" aria-required="true">
                       <option value="" disabled>Selecciona un rol</option>
-                      <option *ngFor="let rol of rolesFamiliares" [value]="rol">{{ rol }}</option>
+                      @for (rol of rolesFamiliares; track rol) {
+                      <option [value]="rol">{{ rol }}</option>
+                      }
                     </select>
                     @if (alumnoForm.get('rolFamiliar')?.errors && alumnoForm.get('rolFamiliar')?.touched) {
                     <div class="invalid-feedback">
@@ -1237,9 +1250,11 @@
                     </label>
                     <select class="admin-form-control form-select" id="grado" formControlName="grado" required
                       aria-label="Grado" aria-required="true">
-                      <option *ngFor="let grado of grados" [value]="grado.tipoGrado">
+                      @for (grado of grados; track grado.tipoGrado) {
+                      <option [value]="grado.tipoGrado">
                         {{ getGradoNombre(grado) }}
                       </option>
+                      }
                     </select>
                     @if (alumnoForm.get('grado')?.errors && alumnoForm.get('grado')?.touched) {
                     <div class="invalid-feedback">
@@ -1333,8 +1348,8 @@
             <i class="bi bi-chevron-right"></i>
           </div>
           }
-          <div *ngFor="let convocatoria of convocatoriasDisponibles"
-            (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
+          @for (convocatoria of convocatoriasDisponibles; track convocatoria.id) {
+          <div (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
             <div class="convocatoria-icon">
               <i class="bi bi-calendar-event"></i>
             </div>
@@ -1346,6 +1361,7 @@
             </div>
             <i class="bi bi-chevron-right"></i>
           </div>
+          }
         </div>
       </div>
       <div class="modal-footer">
@@ -1374,8 +1390,8 @@
       <div class="modal-body">
         <p class="mb-3">Elige la convocatoria de la que deseas eliminar al alumno:</p>
         <div class="convocatoria-list">
-          <div *ngFor="let convocatoria of convocatoriasDelAlumno"
-            (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)"
+          @for (convocatoria of convocatoriasDelAlumno; track convocatoria.id) {
+          <div (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)"
             class="convocatoria-item convocatoria-item-delete">
             <div class="convocatoria-icon">
               <i class="bi bi-calendar-x"></i>
@@ -1388,6 +1404,7 @@
             </div>
             <i class="bi bi-chevron-right"></i>
           </div>
+          }
         </div>
       </div>
       <div class="modal-footer">
