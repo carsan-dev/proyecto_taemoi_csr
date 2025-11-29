@@ -72,54 +72,62 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let alumno of alumnos">
-              <td>
-                <div class="form-check d-flex justify-content-center">
-                  <input type="checkbox" class="form-check-input" [(ngModel)]="alumno.selected">
-                </div>
-              </td>
-              <td>
-                <img class="table-profile-image"
-                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                  [alt]="'Perfil de ' + alumno.nombre">
-              </td>
-              <td>{{ alumno.nombre }}</td>
-              <td>{{ alumno.apellidos }}</td>
-              <td>{{ alumno.numeroExpediente }}</td>
-              <td>{{ alumno.nif }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="alumno.activo ? 'status-active' : 'status-inactive'">
-                  <i [class]="alumno.activo ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'"></i>
-                  {{ alumno.activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td>
-                <div class="d-flex gap-2 justify-content-center">
-                  <button *ngIf="alumno.activo" class="admin-btn admin-btn-warning admin-btn-sm"
-                    (click)="darDeBajaAlumno(alumno.id)" title="Dar de baja">
-                    <i class="bi bi-x-circle"></i>
-                    <span class="d-none d-lg-inline">Baja</span>
-                  </button>
-                  <span *ngIf="!alumno.activo" class="admin-btn admin-btn-secondary admin-btn-sm disabled"
-                    title="Este alumno ya está inactivo">
-                    <i class="bi bi-ban"></i>
-                    <span class="d-none d-lg-inline">Inactivo</span>
+            @for (alumno of alumnos; track alumno.id) {
+              <tr>
+                <td>
+                  <div class="form-check d-flex justify-content-center">
+                    <input type="checkbox" class="form-check-input" [(ngModel)]="alumno.selected">
+                  </div>
+                </td>
+                <td>
+                  <img class="table-profile-image"
+                    [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                    [alt]="'Perfil de ' + alumno.nombre">
+                </td>
+                <td>{{ alumno.nombre }}</td>
+                <td>{{ alumno.apellidos }}</td>
+                <td>{{ alumno.numeroExpediente }}</td>
+                <td>{{ alumno.nif }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="alumno.activo ? 'status-active' : 'status-inactive'">
+                    <i [class]="alumno.activo ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'"></i>
+                    {{ alumno.activo ? 'Activo' : 'Inactivo' }}
                   </span>
-                  <button class="admin-btn admin-btn-danger admin-btn-sm"
-                    (click)="eliminarAlumno(alumno.id)" title="Eliminar permanentemente">
-                    <i class="bi bi-trash"></i>
-                    <span class="d-none d-lg-inline">Eliminar</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="alumnos.length === 0">
-              <td colspan="8" class="text-center py-5">
-                <img src="../../../../assets/media/placeholder_roto.svg" alt="No hay alumnos"
-                  style="width: 120px; height: auto; margin-bottom: 1rem; opacity: 0.5;" />
-                <p class="text-muted mb-0">No se encontraron alumnos que coincidan con los criterios de búsqueda.</p>
-              </td>
-            </tr>
+                </td>
+                <td>
+                  <div class="d-flex gap-2 justify-content-center">
+                    @if (alumno.activo) {
+                      <button class="admin-btn admin-btn-warning admin-btn-sm"
+                        (click)="darDeBajaAlumno(alumno.id)" title="Dar de baja">
+                        <i class="bi bi-x-circle"></i>
+                        <span class="d-none d-lg-inline">Baja</span>
+                      </button>
+                    }
+                    @if (!alumno.activo) {
+                      <span class="admin-btn admin-btn-secondary admin-btn-sm disabled"
+                        title="Este alumno ya está inactivo">
+                        <i class="bi bi-ban"></i>
+                        <span class="d-none d-lg-inline">Inactivo</span>
+                      </span>
+                    }
+                    <button class="admin-btn admin-btn-danger admin-btn-sm"
+                      (click)="eliminarAlumno(alumno.id)" title="Eliminar permanentemente">
+                      <i class="bi bi-trash"></i>
+                      <span class="d-none d-lg-inline">Eliminar</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (alumnos.length === 0) {
+              <tr>
+                <td colspan="8" class="text-center py-5">
+                  <img src="../../../../assets/media/placeholder_roto.svg" alt="No hay alumnos"
+                    style="width: 120px; height: auto; margin-bottom: 1rem; opacity: 0.5;" />
+                  <p class="text-muted mb-0">No se encontraron alumnos que coincidan con los criterios de búsqueda.</p>
+                </td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
