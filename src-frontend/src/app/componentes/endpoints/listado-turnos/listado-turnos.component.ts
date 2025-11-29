@@ -34,13 +34,19 @@ export class ListadoTurnosComponent implements OnInit {
 
   cargarTurnos(): void {
     this.cargando = true;
-    this.endpointsService.turnos$.subscribe({
-      next: (turnos) => {
-        this.turnos = turnos;
-        this.cargando = false;
-      }
-    });
+
+    // Call the service method first
     this.endpointsService.obtenerTurnos();
+
+    // Subscribe to the observable with a slight delay to ensure loading state is visible
+    setTimeout(() => {
+      this.endpointsService.turnos$.subscribe({
+        next: (turnos) => {
+          this.turnos = turnos;
+          this.cargando = false;
+        }
+      });
+    }, 0);
   }
 
   obtenerTurnosPorDia(turnos: any[], diaSemana: string): any[] {
