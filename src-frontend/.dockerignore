@@ -33,3 +33,9 @@ Thumbs.db
 # Environment files (use build args instead)
 .env
 .env.*
+
+# SSR files (not used - this is a static SPA served by nginx)
+*.unused
+server.ts.unused
+src/main.server.ts.unused
+src/app/app.config.server.ts.unused
