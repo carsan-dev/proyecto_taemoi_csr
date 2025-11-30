@@ -18,7 +18,6 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.services.UsuarioService;
-import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Configuración de seguridad para la aplicación.
@@ -52,6 +51,16 @@ public class SecurityConfiguration {
 	private PasswordEncoder passwordEncoder;
 
 	/**
+	 * Configures which paths should be completely ignored by Spring Security.
+	 * Static resources (images and documents) bypass all security filters.
+	 */
+	@Bean
+	org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
+		return (web) -> web.ignoring()
+				.requestMatchers("/imagenes/**", "/documentos/**");
+	}
+
+	/**
 	 * Configuración del filtro de seguridad para las solicitudes HTTP.
 	 *
 	 * @param http El objeto HttpSecurity que se configura.
@@ -63,9 +72,6 @@ public class SecurityConfiguration {
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**", "/documentos/**"))
 				.authorizeHttpRequests(request -> request
-						// Static resources - MUST be first to avoid OAuth2 redirect
-						.requestMatchers("/imagenes/**").permitAll()
-						.requestMatchers("/documentos/**").permitAll()
 						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
@@ -176,19 +182,11 @@ public class SecurityConfiguration {
 						.successHandler(oauth2SuccessHandler)
 						.authorizationEndpoint(authorization -> authorization
 								.baseUri("/oauth2/authorize"))
-						// Explicitly prevent OAuth2 login for static resources
 						.permitAll())
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, authException) -> {
-							// Don't redirect static resources to OAuth2 login
-							String requestPath = request.getRequestURI();
-							if (requestPath.startsWith("/imagenes/") || requestPath.startsWith("/documentos/")) {
-								// Return 404 for non-existent static resources without OAuth redirect
-								response.sendError(HttpServletResponse.SC_NOT_FOUND);
-							} else {
-								// For other paths, let OAuth2 handle the redirect
-								response.sendRedirect("/oauth2/authorize/google");
-							}
+							// Redirect unauthenticated requests to OAuth2 login
+							response.sendRedirect("/oauth2/authorize/google");
 						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
