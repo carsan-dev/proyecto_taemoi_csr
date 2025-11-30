@@ -18,6 +18,8 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.services.UsuarioService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuración de seguridad para la aplicación.
@@ -25,6 +27,8 @@ import com.taemoi.project.services.UsuarioService;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+
+	private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
 
 	/**
 	 * Inyección del filtro de JWT.
@@ -56,6 +60,10 @@ public class SecurityConfiguration {
 	 */
 	@Bean
 	org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
+		logger.info("========================================");
+		logger.info("Configuring WebSecurityCustomizer to IGNORE /imagenes/** and /documentos/**");
+		logger.info("These paths will completely bypass Spring Security filters");
+		logger.info("========================================");
 		return (web) -> web.ignoring()
 				.requestMatchers("/imagenes/**", "/documentos/**");
 	}
@@ -69,6 +77,11 @@ public class SecurityConfiguration {
 	 */
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		logger.info("========================================");
+		logger.info("Configuring SecurityFilterChain");
+		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**, /imagenes/**, /documentos/**");
+		logger.info("========================================");
+
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**", "/documentos/**"))
 				.authorizeHttpRequests(request -> request
@@ -186,6 +199,14 @@ public class SecurityConfiguration {
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, authException) -> {
 							// Redirect unauthenticated requests to OAuth2 login
+							String requestURI = request.getRequestURI();
+							logger.warn("========================================");
+							logger.warn("AUTHENTICATION ENTRY POINT TRIGGERED!");
+							logger.warn("Request URI: {}", requestURI);
+							logger.warn("Request Method: {}", request.getMethod());
+							logger.warn("Auth Exception: {}", authException.getMessage());
+							logger.warn("This should NOT happen for /imagenes/** or /documentos/**");
+							logger.warn("========================================");
 							response.sendRedirect("/oauth2/authorize/google");
 						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
