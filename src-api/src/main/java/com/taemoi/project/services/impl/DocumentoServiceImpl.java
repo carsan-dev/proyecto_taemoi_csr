@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +18,13 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.services.DocumentoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class DocumentoServiceImpl implements DocumentoService {
+
+	private static final Logger logger = LoggerFactory.getLogger(DocumentoServiceImpl.class);
 
 	@Value("${app.base.url}")
 	private String baseUrl;
@@ -54,18 +59,25 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		// Try to find existing folder for this alumno (case-insensitive)
 		String numeroExpediente = String.valueOf(alumno.getNumeroExpediente());
+		logger.info("*** Searching for existing folder for alumno expediente: {}", numeroExpediente);
+		logger.info("*** Base path: {}", rutaBaseDocumentos);
+
 		Path rutaCarpetaAlumno = findExistingAlumnoFolder(rutaBaseDocumentos, numeroExpediente);
 
 		// If no folder exists, create a new one
 		if (rutaCarpetaAlumno == null) {
+			logger.warn("*** NO existing folder found for expediente: {}. Creating new folder.", numeroExpediente);
 			String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
 			String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
 			String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
 			rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno);
+			logger.info("*** New folder path: {}", rutaCarpetaAlumno);
 
 			if (!Files.exists(rutaCarpetaAlumno)) {
 				Files.createDirectories(rutaCarpetaAlumno);
 			}
+		} else {
+			logger.info("*** FOUND existing folder: {}", rutaCarpetaAlumno);
 		}
 
 		String nombreOriginalArchivo = archivo.getOriginalFilename();
@@ -142,21 +154,36 @@ public class DocumentoServiceImpl implements DocumentoService {
 	 * @throws IOException Si ocurre un error al listar directorios
 	 */
 	private Path findExistingAlumnoFolder(Path rutaBase, String numeroExpediente) throws IOException {
-		if (!Files.exists(rutaBase) || !Files.isDirectory(rutaBase)) {
+		logger.info("*** findExistingAlumnoFolder called with: rutaBase={}, numeroExpediente={}", rutaBase, numeroExpediente);
+
+		if (!Files.exists(rutaBase)) {
+			logger.warn("*** Base path does NOT exist: {}", rutaBase);
 			return null;
 		}
 
+		if (!Files.isDirectory(rutaBase)) {
+			logger.warn("*** Base path is NOT a directory: {}", rutaBase);
+			return null;
+		}
+
+		logger.info("*** Listing directories in: {}", rutaBase);
+
 		// List all directories that start with the numero expediente
 		try (Stream<Path> paths = Files.list(rutaBase)) {
-			return paths
-					.filter(Files::isDirectory)
-					.filter(path -> {
-						String folderName = path.getFileName().toString();
-						// Check if folder starts with "numeroExpediente_"
-						return folderName.toLowerCase().startsWith(numeroExpediente.toLowerCase() + "_");
-					})
-					.findFirst()
-					.orElse(null);
+			List<Path> allDirs = paths.filter(Files::isDirectory).collect(java.util.stream.Collectors.toList());
+			logger.info("*** Found {} directories total", allDirs.size());
+
+			for (Path dir : allDirs) {
+				String folderName = dir.getFileName().toString();
+				logger.info("*** Checking directory: {}", folderName);
+				if (folderName.toLowerCase().startsWith(numeroExpediente.toLowerCase() + "_")) {
+					logger.info("*** MATCH FOUND: {}", dir);
+					return dir;
+				}
+			}
+
+			logger.warn("*** NO MATCH found for pattern: {}_{}", numeroExpediente, "*");
+			return null;
 		}
 	}
 }
