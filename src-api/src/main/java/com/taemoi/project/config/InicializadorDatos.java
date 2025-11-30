@@ -153,7 +153,7 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	private void generarUsuarios() {
 		crearUsuarioSiNoExiste("moiskimdotaekwondo@gmail.com", "Moiskimdo", "Taekwondo", "09012013",
-				Roles.ROLE_MANAGER);
+				Roles.ROLE_ADMIN);
 		crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "16082017", Roles.ROLE_ADMIN);
 		crearUsuarioSiNoExiste("usuarioPrueba@gmail.com", "Prueba", "Standard User", "12345678", Roles.ROLE_USER);
 	}
