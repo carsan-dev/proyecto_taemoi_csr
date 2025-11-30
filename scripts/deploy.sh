@@ -126,16 +126,29 @@ for i in {1..60}; do
     fi
 done
 
-# Check if migration was executed
+# Check if schema and migration were executed
 if [ "$ENVIRONMENT" = "production" ]; then
-    step "Verifying migration execution..."
-    # Check if tables exist
+    step "Verifying database initialization..."
+
+    # Check if tables exist (DDL executed)
     TABLE_CHECK=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SHOW TABLES;" 2>/dev/null | wc -l)
     if [ "$TABLE_CHECK" -gt 1 ]; then
-        success "Database tables detected (migration executed)"
+        success "Schema created (01_ddl_schema_server.sql executed)"
     else
-        warn "No tables found. Migration may not have executed."
+        warn "No tables found. DDL script may not have executed."
         warn "Check: docker-compose -f $COMPOSE_FILE logs database"
+        warn "Init files should be in mysql/init/: 01_ddl_schema_server.sql, 02_migration_server.sql"
+    fi
+
+    # Check if data was migrated (check alumno table row count)
+    if [ "$TABLE_CHECK" -gt 1 ]; then
+        ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SELECT COUNT(*) FROM alumno;" 2>/dev/null | tail -n 1)
+        if [ "$ALUMNO_COUNT" -gt 0 ]; then
+            success "Data migrated (02_migration_server.sql executed - ${ALUMNO_COUNT} students found)"
+        else
+            warn "No student data found. Migration script may not have executed."
+            warn "Check: docker-compose -f $COMPOSE_FILE logs database"
+        fi
     fi
 fi
 
