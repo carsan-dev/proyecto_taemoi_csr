@@ -67,7 +67,7 @@ public class TurnoServiceImpl implements TurnoService {
 	 */
 	@Override
 	public List<TurnoCortoDTO> listarTurnosDTO() {
-		List<Turno> turnos = turnoRepository.findAll();
+		List<Turno> turnos = turnoRepository.findAllWithAlumnos();
 		return turnos.stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
 	}
 
