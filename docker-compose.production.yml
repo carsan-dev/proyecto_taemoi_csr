@@ -56,8 +56,9 @@ services:
       # - app_documentos:/var/www/app/documentos
 
       # Option 2: Bind mounts (ACTIVE - serves files directly from host)
-      - ./static_resources/imagenes:/var/www/app/imagenes:ro
-      - ./static_resources/documentos:/var/www/app/documentos:ro
+      # Using absolute paths to match migration SQL file locations
+      - /opt/taemoi/static_resources/imagenes:/var/www/app/imagenes:ro
+      - /opt/taemoi/static_resources/documentos:/var/www/app/documentos:ro
     networks:
       - taemoi-network
     healthcheck:
