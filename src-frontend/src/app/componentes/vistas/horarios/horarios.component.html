@@ -55,8 +55,9 @@
                 @if (obtenerTurnosPorDia(dia).length > 0) {
                   <div>
                     @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
-                      <div class="time-slot"
-                           [attr.data-sport]="obtenerCategoria(turno.grupoId)">
+                      <div class="time-slot clickable"
+                           [attr.data-sport]="obtenerCategoria(turno.grupoId)"
+                           (click)="onTurnoClick(turno)">
                         <div class="slot-time">
                           <i class="bi bi-clock"></i>
                           <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
@@ -65,6 +66,24 @@
                           <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
                           <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
                         </div>
+                        @if (!quedanPocasPlazas(turno) && !estaLleno(turno)) {
+                          <div class="availability-badge available">
+                            <i class="bi bi-check-circle"></i>
+                            Plazas disponibles
+                          </div>
+                        }
+                        @if (quedanPocasPlazas(turno)) {
+                          <div class="availability-badge warning">
+                            <i class="bi bi-exclamation-circle"></i>
+                            Quedan pocas plazas
+                          </div>
+                        }
+                        @if (estaLleno(turno)) {
+                          <div class="availability-badge full">
+                            <i class="bi bi-x-circle"></i>
+                            Completo
+                          </div>
+                        }
                       </div>
                     }
                   </div>
@@ -89,11 +108,88 @@
           <i class="bi bi-info-circle"></i>
           <div class="info-content">
             <h3>¿Cómo apuntarte?</h3>
-            <p>Contacta con nosotros para reservar tu plaza en el horario que prefieras. ¡Te esperamos!</p>
+            <p>
+              Haz clic en cualquier horario para ver más información, o
+              <a [routerLink]="['/contacto']" class="contacto-link">contacta con nosotros</a>
+              para reservar tu plaza en el horario que prefieras. ¡Te esperamos!
+            </p>
           </div>
         </div>
       </div>
 
     </div>
   </div>
+
+  <!-- Modal for Turno Details -->
+  @if (showModal && selectedTurno) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header" [attr.data-sport]="obtenerCategoria(selectedTurno.grupoId)">
+          <div class="modal-title">
+            <span class="category-icon-large">{{ obtenerEmoticonoCategoria(obtenerCategoria(selectedTurno.grupoId)) }}</span>
+            <div>
+              <h2>{{ obtenerCategoria(selectedTurno.grupoId) }}</h2>
+              <p class="modal-subtitle">{{ selectedTurno.diaSemana }} - {{ selectedTurno.horaInicio }} - {{ selectedTurno.horaFin }}</p>
+            </div>
+          </div>
+          <button class="close-btn" (click)="closeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Age Range -->
+          <div class="info-row">
+            <i class="bi bi-calendar-range"></i>
+            <div>
+              <h4>Rango de edades</h4>
+              <p>{{ obtenerRangoEdades(selectedTurno) }}</p>
+            </div>
+          </div>
+
+          <!-- Availability -->
+          <div class="info-row">
+            <i class="bi bi-people"></i>
+            <div>
+              <h4>Plazas ocupadas</h4>
+              <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / 30 alumnos</p>
+              @if (!quedanPocasPlazas(selectedTurno) && !estaLleno(selectedTurno)) {
+                <span class="badge-available">
+                  <i class="bi bi-check-circle"></i>
+                  Plazas disponibles
+                </span>
+              }
+              @if (quedanPocasPlazas(selectedTurno)) {
+                <span class="badge-warning">
+                  <i class="bi bi-exclamation-circle"></i>
+                  ¡Quedan pocas plazas!
+                </span>
+              }
+              @if (estaLleno(selectedTurno)) {
+                <span class="badge-full">
+                  <i class="bi bi-x-circle"></i>
+                  Grupo completo
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Consultation Message -->
+          @if (quedanPocasPlazas(selectedTurno) || estaLleno(selectedTurno)) {
+            <div class="consultation-message">
+              <i class="bi bi-info-circle-fill"></i>
+              <p>Consulta para más información</p>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-contacto" (click)="navegarAContacto()">
+            <i class="bi bi-envelope"></i>
+            {{ obtenerTextoBoton(selectedTurno) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
