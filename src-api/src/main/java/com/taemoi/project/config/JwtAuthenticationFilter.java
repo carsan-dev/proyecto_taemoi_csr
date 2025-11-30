@@ -11,6 +11,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.UsuarioService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +25,8 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+	private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
 	private final JwtService jwtService;
 	private final UsuarioService usuarioService;
@@ -45,9 +49,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
 			@NonNull FilterChain filterChain) throws ServletException, IOException {
-		// Skip JWT authentication for static resources
 		String requestPath = request.getRequestURI();
+		String method = request.getMethod();
+
+		logger.info(">>> JwtAuthenticationFilter processing: {} {}", method, requestPath);
+
+		// Skip JWT authentication for static resources
 		if (requestPath.startsWith("/imagenes/") || requestPath.startsWith("/documentos/")) {
+			logger.info(">>> SKIPPING JWT filter for static resource: {}", requestPath);
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -85,11 +94,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 			}
 		} catch (Exception e) {
-			logger.error("Error en la validación del token JWT", e);
+			logger.error(">>> ERROR en la validación del token JWT para {}: {}", requestPath, e.getMessage());
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
 			return;
 		}
 
+		logger.info(">>> JwtAuthenticationFilter completed for: {}", requestPath);
 		filterChain.doFilter(request, response);
 	}
 }
