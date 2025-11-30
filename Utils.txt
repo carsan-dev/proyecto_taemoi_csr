@@ -30,11 +30,11 @@ Comandos para eliminar todo lo existente en docker de cara a deploy limpio
   # 2. Eliminate the old images of containers and containers stopped
   sudo docker system prune -af
 
-  # 3. Check the existing volumes
-  sudo docker volume ls
-
-  # 4. Delete the non using volumes
+  # 3. Delete the non using volumes
   sudo docker volume prune
+
+  # 4. Check the existing volumes
+  sudo docker volume ls
 
   # 5. Delete all the other volumes
   sudo docker volume rm volumen1 volumen2 ...
@@ -112,3 +112,11 @@ TODO:
 ✔ Cambiar *ngif por @if en toda la app
 
 ✔ Cambiar *ngfor por @for en toda la app
+
+Añadir botón para descargar documentos
+
+Añadir link a contactar en horarios page y hacer interactuable de alguna forma las cards de horario (por ejemplo, redireccionar a contacto con la hora seleccionada en el mensaje)
+
+Añadir opcion para cambiar imagen del alumno o añadirle una si no tiene
+
+Terminar de reparar la apertura de ficheros (creo que tengo que cambiar todas las carpetas para estar en mayusculas)
