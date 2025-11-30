@@ -1,12 +1,18 @@
 package com.taemoi.project.dtos.response;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Turno;
 
 public class TurnoCortoDTO {
+	private Long id;
 	private String diaSemana;
 	private String horaInicio;
 	private String horaFin;
 	private Long grupoId;
+	private List<AlumnoDTO> alumnos;
 
 	public TurnoCortoDTO() {
 	}
@@ -43,16 +49,40 @@ public class TurnoCortoDTO {
 		this.grupoId = grupoId;
 	}
 
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public List<AlumnoDTO> getAlumnos() {
+		return alumnos;
+	}
+
+	public void setAlumnos(List<AlumnoDTO> alumnos) {
+		this.alumnos = alumnos;
+	}
+
 	public static TurnoCortoDTO deTurno(Turno turno) {
 		if (turno == null) {
 			return null;
 		}
 
 		TurnoCortoDTO turnoDTO = new TurnoCortoDTO();
+		turnoDTO.setId(turno.getId());
 		turnoDTO.setDiaSemana(turno.getDiaSemana());
 		turnoDTO.setHoraInicio(turno.getHoraInicio());
 		turnoDTO.setHoraFin(turno.getHoraFin());
 		turnoDTO.setGrupoId(turno.getGrupo().getId());
+
+		// Map alumnos to AlumnoDTO
+		if (turno.getAlumnos() != null) {
+			turnoDTO.setAlumnos(turno.getAlumnos().stream()
+					.map(AlumnoDTO::deAlumno)
+					.collect(Collectors.toList()));
+		}
 
 		return turnoDTO;
 	}
