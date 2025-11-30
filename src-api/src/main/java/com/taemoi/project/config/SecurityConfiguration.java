@@ -18,6 +18,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.services.UsuarioService;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Configuración de seguridad para la aplicación.
@@ -60,13 +61,15 @@ public class SecurityConfiguration {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**")).authorizeHttpRequests(request -> request
+				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**", "/documentos/**"))
+				.authorizeHttpRequests(request -> request
+						// Static resources - MUST be first to avoid OAuth2 redirect
+						.requestMatchers("/imagenes/**").permitAll()
+						.requestMatchers("/documentos/**").permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
-						.requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
-						.requestMatchers(HttpMethod.GET, "/documentos/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -170,7 +173,18 @@ public class SecurityConfiguration {
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(oauth2SuccessHandler)
 						.authorizationEndpoint(authorization -> authorization
-								.baseUri("/oauth2/authorize")));
+								.baseUri("/oauth2/authorize")))
+				.exceptionHandling(exceptions -> exceptions
+						.authenticationEntryPoint((request, response, authException) -> {
+							// Don't redirect static resources to OAuth2 login
+							String requestPath = request.getRequestURI();
+							if (requestPath.startsWith("/imagenes/") || requestPath.startsWith("/documentos/")) {
+								response.sendError(HttpServletResponse.SC_NOT_FOUND);
+							} else {
+								// For other paths, let OAuth2 handle the redirect
+								response.sendRedirect("/oauth2/authorize/google");
+							}
+						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
