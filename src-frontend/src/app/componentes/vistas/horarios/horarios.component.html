@@ -17,42 +17,69 @@
 
       <!-- Weekly Schedule Grid -->
       <div class="schedule-grid">
-        @for (dia of diasSemana; track $index) {
-          <div class="day-card">
-            <div class="day-header">
-              <i class="bi bi-calendar-week"></i>
-              <span>{{ dia }}</span>
-            </div>
-
-            <div class="day-content">
-              <!-- Time Slots -->
-              @if (obtenerTurnosPorDia(dia).length > 0) {
-                <div>
-                  @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
-                    <div class="time-slot"
-                         [attr.data-sport]="obtenerCategoria(turno.grupoId)">
-                      <div class="slot-time">
-                        <i class="bi bi-clock"></i>
-                        <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                      </div>
-                      <div class="slot-category">
-                        <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
-                        <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
-                      </div>
+        @if (isLoading) {
+          <!-- Skeleton Loading Cards -->
+          @for (dia of diasSemana; track $index) {
+            <div class="day-card skeleton-card">
+              <div class="day-header skeleton-shimmer">
+                <div class="skeleton-icon"></div>
+                <div class="skeleton-text skeleton-day"></div>
+              </div>
+              <div class="day-content">
+                @for (slot of [1, 2, 3]; track $index) {
+                  <div class="time-slot skeleton-slot">
+                    <div class="skeleton-shimmer slot-time">
+                      <div class="skeleton-icon-small"></div>
+                      <div class="skeleton-text skeleton-time"></div>
                     </div>
-                  }
-                </div>
-              }
-
-              <!-- No Slots Available -->
-              @if (obtenerTurnosPorDia(dia).length === 0) {
-                <div class="no-slots">
-                  <i class="bi bi-calendar-x"></i>
-                  <span>No hay turnos disponibles</span>
-                </div>
-              }
+                    <div class="skeleton-shimmer slot-category">
+                      <div class="skeleton-icon-small"></div>
+                      <div class="skeleton-text skeleton-category"></div>
+                    </div>
+                  </div>
+                }
+              </div>
             </div>
-          </div>
+          }
+        } @else {
+          <!-- Actual Content -->
+          @for (dia of diasSemana; track $index) {
+            <div class="day-card">
+              <div class="day-header">
+                <i class="bi bi-calendar-week"></i>
+                <span>{{ dia }}</span>
+              </div>
+
+              <div class="day-content">
+                <!-- Time Slots -->
+                @if (obtenerTurnosPorDia(dia).length > 0) {
+                  <div>
+                    @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
+                      <div class="time-slot"
+                           [attr.data-sport]="obtenerCategoria(turno.grupoId)">
+                        <div class="slot-time">
+                          <i class="bi bi-clock"></i>
+                          <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                        </div>
+                        <div class="slot-category">
+                          <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
+                          <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- No Slots Available -->
+                @if (obtenerTurnosPorDia(dia).length === 0) {
+                  <div class="no-slots">
+                    <i class="bi bi-calendar-x"></i>
+                    <span>No hay turnos disponibles</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         }
       </div>
 

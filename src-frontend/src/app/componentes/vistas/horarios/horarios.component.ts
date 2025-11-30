@@ -14,6 +14,7 @@ export class HorariosComponent implements OnInit {
   usuarioLogueado: boolean = false;
   turnos: any[] = [];
   diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves'];
+  isLoading: boolean = true;
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
@@ -22,11 +23,14 @@ export class HorariosComponent implements OnInit {
   }
 
   obtenerTurnos() {
+    this.isLoading = true;
     this.endpointsService.obtenerTurnosDTO().subscribe({
       next: (response) => {
         this.turnos = response;
+        this.isLoading = false;
       },
       error: (error) => {
+        this.isLoading = false;
         Swal.fire({
           title: 'Error',
           text: 'No hemos podido obtener el horario.',
