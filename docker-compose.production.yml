@@ -51,13 +51,13 @@ services:
       APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
       APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
-      # Option 1: Named volumes (data persists, populate manually after first run)
-      - app_imagenes:/var/www/app/imagenes
-      - app_documentos:/var/www/app/documentos
+      # Option 1: Named volumes (commented out - not used)
+      # - app_imagenes:/var/www/app/imagenes
+      # - app_documentos:/var/www/app/documentos
 
-      # Option 2: Bind mounts (uncomment to use host directories directly)
-      # - ./static_resources/imagenes:/var/www/app/imagenes:ro
-      # - ./static_resources/documentos:/var/www/app/documentos:ro
+      # Option 2: Bind mounts (ACTIVE - serves files directly from host)
+      - ./static_resources/imagenes:/var/www/app/imagenes:ro
+      - ./static_resources/documentos:/var/www/app/documentos:ro
     networks:
       - taemoi-network
     healthcheck:
@@ -65,7 +65,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      start_period: 180s  # Increased from 90s - backend needs more time on first start
 
   frontend:
     build:
@@ -111,9 +111,10 @@ networks:
 volumes:
   db_data:
     driver: local
-  app_imagenes:
-    driver: local
-  app_documentos:
-    driver: local
+  # app_imagenes and app_documentos not needed - using bind mounts instead
+  # app_imagenes:
+  #   driver: local
+  # app_documentos:
+  #   driver: local
   nginx_cache:
     driver: local
