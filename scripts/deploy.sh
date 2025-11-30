@@ -34,9 +34,54 @@ fail() {
     exit 1
 }
 
+# Function to print warning
+warn() {
+    echo -e "${YELLOW}⚠ WARNING:${NC} $1"
+}
+
+# Determine environment and compose file
+ENVIRONMENT=${1:-production}
+if [ "$ENVIRONMENT" = "production" ]; then
+    COMPOSE_FILE="docker-compose.production.yml"
+    PORT_HTTP=80
+    PORT_HTTPS=443
+    PORT_BACKEND=8080
+elif [ "$ENVIRONMENT" = "local" ]; then
+    COMPOSE_FILE="docker-compose.yml"
+    PORT_HTTP=80
+    PORT_BACKEND=8080
+else
+    fail "Invalid environment. Use: ./deploy.sh [production|local]"
+fi
+
+echo -e "${BLUE}Environment: ${ENVIRONMENT}${NC}"
+echo -e "${BLUE}Compose file: ${COMPOSE_FILE}${NC}"
+echo ""
+
 # Check if running from project root
-if [ ! -f docker-compose.yml ]; then
-    fail "docker-compose.yml not found. Run this script from the project root directory."
+if [ ! -f "$COMPOSE_FILE" ]; then
+    fail "${COMPOSE_FILE} not found. Run this script from the project root directory."
+fi
+
+# Check for .env file
+if [ ! -f .env ]; then
+    fail ".env file not found. Copy .env.production.template to .env and configure it."
+fi
+
+# Load environment variables to check database name
+source .env
+
+# Verify database name matches migration script
+if [ "$ENVIRONMENT" = "production" ]; then
+    if [ "$MYSQL_DATABASE" != "taemoi_db" ]; then
+        warn "MYSQL_DATABASE should be 'taemoi_db' for production (migration_server.sql expects this)"
+        warn "Current value: $MYSQL_DATABASE"
+        echo -e "${YELLOW}Continue anyway? (y/n)${NC}"
+        read -r response
+        if [ "$response" != "y" ]; then
+            fail "Deployment cancelled. Please update .env file."
+        fi
+    fi
 fi
 
 # Run verification script first
@@ -44,17 +89,22 @@ step "Running pre-deployment verification..."
 if [ -f scripts/verify-deployment.sh ]; then
     bash scripts/verify-deployment.sh || fail "Pre-deployment verification failed. Fix errors and try again."
 else
-    echo -e "${YELLOW}Warning: Verification script not found. Skipping verification.${NC}"
+    warn "Verification script not found. Skipping verification."
 fi
+
+# Stop and remove existing containers
+step "Stopping existing containers..."
+docker-compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+success "Existing containers stopped"
 
 echo ""
 step "Building Docker images..."
-docker-compose build || fail "Docker build failed"
+docker-compose -f "$COMPOSE_FILE" build || fail "Docker build failed"
 success "Docker images built successfully"
 
 echo ""
 step "Starting services..."
-docker-compose up -d || fail "Failed to start services"
+docker-compose -f "$COMPOSE_FILE" up -d || fail "Failed to start services"
 success "Services started"
 
 echo ""
@@ -62,55 +112,70 @@ step "Waiting for services to be ready..."
 
 # Wait for database
 echo "Waiting for database..."
-for i in {1..30}; do
-    if docker-compose exec -T database mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} 2>/dev/null | grep -q "mysqld is alive"; then
-        success "Database is ready"
-        break
-    fi
-    echo -n "."
-    sleep 2
-    if [ $i -eq 30 ]; then
-        echo ""
-        echo -e "${YELLOW}Warning: Database health check timeout. Continuing anyway...${NC}"
-        break
-    fi
-done
-
-# Wait for backend
-echo "Waiting for backend..."
 for i in {1..60}; do
-    if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
-        success "Backend is ready"
+    if docker-compose -f "$COMPOSE_FILE" exec -T database mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} 2>/dev/null | grep -q "mysqld is alive"; then
+        success "Database is ready"
         break
     fi
     echo -n "."
     sleep 2
     if [ $i -eq 60 ]; then
         echo ""
-        echo -e "${YELLOW}Warning: Backend health check timeout. Check logs: docker-compose logs backend${NC}"
+        warn "Database health check timeout. Continuing anyway..."
+        break
+    fi
+done
+
+# Check if migration was executed
+if [ "$ENVIRONMENT" = "production" ]; then
+    step "Verifying migration execution..."
+    # Check if tables exist
+    TABLE_CHECK=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SHOW TABLES;" 2>/dev/null | wc -l)
+    if [ "$TABLE_CHECK" -gt 1 ]; then
+        success "Database tables detected (migration executed)"
+    else
+        warn "No tables found. Migration may not have executed."
+        warn "Check: docker-compose -f $COMPOSE_FILE logs database"
+    fi
+fi
+
+# Wait for backend
+echo "Waiting for backend..."
+for i in {1..90}; do
+    if curl -s http://localhost:${PORT_BACKEND}/api/eventos > /dev/null 2>&1; then
+        success "Backend is ready"
+        break
+    fi
+    echo -n "."
+    sleep 2
+    if [ $i -eq 90 ]; then
+        echo ""
+        warn "Backend health check timeout. Check logs: docker-compose -f $COMPOSE_FILE logs backend"
         break
     fi
 done
 
 # Check frontend
-echo "Waiting for frontend..."
-for i in {1..30}; do
-    if curl -s http://localhost > /dev/null 2>&1; then
-        success "Frontend is ready"
-        break
-    fi
-    echo -n "."
-    sleep 2
-    if [ $i -eq 30 ]; then
-        echo ""
-        echo -e "${YELLOW}Warning: Frontend health check timeout. Check logs: docker-compose logs frontend${NC}"
-        break
-    fi
-done
+if [ "$ENVIRONMENT" = "production" ] || [ "$PORT_HTTP" = "80" ]; then
+    echo "Waiting for frontend..."
+    for i in {1..30}; do
+        if curl -s http://localhost:${PORT_HTTP} > /dev/null 2>&1; then
+            success "Frontend is ready"
+            break
+        fi
+        echo -n "."
+        sleep 2
+        if [ $i -eq 30 ]; then
+            echo ""
+            warn "Frontend health check timeout. Check logs: docker-compose -f $COMPOSE_FILE logs frontend"
+            break
+        fi
+    done
+fi
 
 echo ""
 step "Checking container status..."
-docker-compose ps
+docker-compose -f "$COMPOSE_FILE" ps
 
 echo ""
 echo -e "${GREEN}"
@@ -120,21 +185,41 @@ echo "============================================"
 echo -e "${NC}"
 
 echo ""
+echo "Environment: ${ENVIRONMENT}"
+echo ""
 echo "Services running:"
-echo "  - Frontend: http://localhost"
-echo "  - Backend:  http://localhost:8080"
-echo "  - Database: localhost:3307"
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo "  - Frontend:  http://localhost (port 80/443)"
+    echo "  - Backend:   Internal (accessed via Nginx proxy)"
+    echo "  - Database:  Internal (taemoi-network)"
+else
+    echo "  - Frontend:  http://localhost:${PORT_HTTP}"
+    echo "  - Backend:   http://localhost:${PORT_BACKEND}"
+    echo "  - Database:  localhost:3307"
+fi
 echo ""
 echo "Useful commands:"
-echo "  - View logs:       docker-compose logs -f"
-echo "  - View specific:   docker-compose logs -f backend"
-echo "  - Stop services:   docker-compose down"
-echo "  - Restart service: docker-compose restart <service>"
+echo "  - View logs:        docker-compose -f $COMPOSE_FILE logs -f"
+echo "  - View backend:     docker-compose -f $COMPOSE_FILE logs -f backend"
+echo "  - View database:    docker-compose -f $COMPOSE_FILE logs -f database"
+echo "  - Stop services:    docker-compose -f $COMPOSE_FILE down"
+echo "  - Restart service:  docker-compose -f $COMPOSE_FILE restart <service>"
+echo "  - Enter container:  docker-compose -f $COMPOSE_FILE exec <service> bash"
 echo ""
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo "Production-specific commands:"
+    echo "  - Check DB migration: docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SHOW TABLES;'"
+    echo "  - Manual migration:   docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < mysql/init/migration_server.sql"
+    echo ""
+fi
 echo "Next steps:"
 echo "  1. Test the application in your browser"
-echo "  2. Check logs if any services show issues"
-echo "  3. Configure SSL/HTTPS (see DEPLOYMENT_CHECKLIST.md Step 8)"
-echo "  4. Setup backups (see DEPLOYMENT_CHECKLIST.md Step 11)"
-echo "  5. Configure firewall (see DEPLOYMENT_CHECKLIST.md Step 9)"
+echo "  2. Check logs if any services show issues: docker-compose -f $COMPOSE_FILE logs -f backend"
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo "  3. Verify database migration completed successfully"
+    echo "  4. Configure SSL/HTTPS certificates (if not done)"
+    echo "  5. Setup automated backups"
+    echo "  6. Configure firewall rules"
+    echo "  7. Test all application features"
+fi
 echo ""
