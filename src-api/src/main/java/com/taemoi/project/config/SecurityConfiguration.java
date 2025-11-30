@@ -66,10 +66,12 @@ public class SecurityConfiguration {
 						// Static resources - MUST be first to avoid OAuth2 redirect
 						.requestMatchers("/imagenes/**").permitAll()
 						.requestMatchers("/documentos/**").permitAll()
-						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						.requestMatchers("/api/auth/**").permitAll()
+						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
+						// API endpoints
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -173,12 +175,15 @@ public class SecurityConfiguration {
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(oauth2SuccessHandler)
 						.authorizationEndpoint(authorization -> authorization
-								.baseUri("/oauth2/authorize")))
+								.baseUri("/oauth2/authorize"))
+						// Explicitly prevent OAuth2 login for static resources
+						.permitAll())
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, authException) -> {
 							// Don't redirect static resources to OAuth2 login
 							String requestPath = request.getRequestURI();
 							if (requestPath.startsWith("/imagenes/") || requestPath.startsWith("/documentos/")) {
+								// Return 404 for non-existent static resources without OAuth redirect
 								response.sendError(HttpServletResponse.SC_NOT_FOUND);
 							} else {
 								// For other paths, let OAuth2 handle the redirect
