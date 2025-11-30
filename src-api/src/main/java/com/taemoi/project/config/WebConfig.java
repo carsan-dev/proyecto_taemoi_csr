@@ -42,19 +42,6 @@ public class WebConfig implements WebMvcConfigurer {
 				.allowedOrigins(allowedOrigin)
 				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS").allowedHeaders("*")
 				.allowCredentials(true);
-
-		// Add CORS for static resources (images and documents)
-		registry.addMapping("/imagenes/**")
-				.allowedOrigins(allowedOrigin)
-				.allowedMethods("GET", "HEAD", "OPTIONS")
-				.allowedHeaders("*")
-				.allowCredentials(true);
-
-		registry.addMapping("/documentos/**")
-				.allowedOrigins(allowedOrigin)
-				.allowedMethods("GET", "HEAD", "OPTIONS")
-				.allowedHeaders("*")
-				.allowCredentials(true);
 	}
 
 	@Override
