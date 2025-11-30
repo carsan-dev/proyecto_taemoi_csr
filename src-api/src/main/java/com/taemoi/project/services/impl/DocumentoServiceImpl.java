@@ -52,13 +52,20 @@ public class DocumentoServiceImpl implements DocumentoService {
 			Files.createDirectories(rutaBaseDocumentos);
 		}
 
-		String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
-		String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
-		String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
+		// Try to find existing folder for this alumno (case-insensitive)
+		String numeroExpediente = String.valueOf(alumno.getNumeroExpediente());
+		Path rutaCarpetaAlumno = findExistingAlumnoFolder(rutaBaseDocumentos, numeroExpediente);
 
-		Path rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno);
-		if (!Files.exists(rutaCarpetaAlumno)) {
-			Files.createDirectories(rutaCarpetaAlumno);
+		// If no folder exists, create a new one
+		if (rutaCarpetaAlumno == null) {
+			String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
+			String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
+			String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
+			rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno);
+
+			if (!Files.exists(rutaCarpetaAlumno)) {
+				Files.createDirectories(rutaCarpetaAlumno);
+			}
 		}
 
 		String nombreOriginalArchivo = archivo.getOriginalFilename();
@@ -68,7 +75,9 @@ public class DocumentoServiceImpl implements DocumentoService {
 		Path rutaArchivoFinal = rutaCarpetaAlumno.resolve(nombreArchivoFinal);
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
 
-		String urlAcceso = "%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s".formatted(baseUrl, carpetaAlumno,
+		// Use the actual folder name (not the generated one) for the URL
+		String carpetaNombreReal = rutaCarpetaAlumno.getFileName().toString();
+		String urlAcceso = "%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s".formatted(baseUrl, carpetaNombreReal,
                 nombreArchivoFinal);
 
 		Documento documento = new Documento();
@@ -121,5 +130,33 @@ public class DocumentoServiceImpl implements DocumentoService {
 	public Documento obtenerDocumentoPorId(Long documentoId) {
 		return documentoRepository.findById(documentoId)
 				.orElseThrow(() -> new RuntimeException("Documento no encontrado: " + documentoId));
+	}
+
+	/**
+	 * Busca una carpeta existente para el alumno basándose en el número de expediente.
+	 * La búsqueda es case-insensitive para manejar diferencias de capitalización.
+	 *
+	 * @param rutaBase La ruta base donde buscar
+	 * @param numeroExpediente El número de expediente del alumno
+	 * @return La ruta de la carpeta existente, o null si no existe
+	 * @throws IOException Si ocurre un error al listar directorios
+	 */
+	private Path findExistingAlumnoFolder(Path rutaBase, String numeroExpediente) throws IOException {
+		if (!Files.exists(rutaBase) || !Files.isDirectory(rutaBase)) {
+			return null;
+		}
+
+		// List all directories that start with the numero expediente
+		try (Stream<Path> paths = Files.list(rutaBase)) {
+			return paths
+					.filter(Files::isDirectory)
+					.filter(path -> {
+						String folderName = path.getFileName().toString();
+						// Check if folder starts with "numeroExpediente_"
+						return folderName.toLowerCase().startsWith(numeroExpediente.toLowerCase() + "_");
+					})
+					.findFirst()
+					.orElse(null);
+		}
 	}
 }
