@@ -664,41 +664,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-
-    // Fetch document with credentials to maintain auth context
-    fetch(doc.url, {
-      method: 'GET',
-      credentials: 'include', // Include cookies (JWT)
-      headers: {
-        'Accept': 'application/pdf,application/octet-stream',
-      }
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.blob();
-    })
-    .then(blob => {
-      // Create blob URL and open in new tab
-      const blobUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(blobUrl, '_blank');
-
-      // Clean up blob URL after window opens
-      if (newWindow) {
-        newWindow.onload = () => {
-          URL.revokeObjectURL(blobUrl);
-        };
-      }
-    })
-    .catch(error => {
-      console.error('Error opening document:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al abrir documento',
-        text: 'No se pudo cargar el documento. Intenta de nuevo.',
-      });
-    });
+    // Abrir en una nueva pestaña
+    window.open(doc.url, '_blank');
   }
 
   /**
