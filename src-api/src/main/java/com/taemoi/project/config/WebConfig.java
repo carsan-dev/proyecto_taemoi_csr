@@ -38,9 +38,24 @@ public class WebConfig implements WebMvcConfigurer {
 	 */
 	@Override
 	public void addCorsMappings(@NonNull CorsRegistry registry) {
+		// API endpoints CORS
 		registry.addMapping("/api/**")
 				.allowedOrigins(allowedOrigin)
-				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS").allowedHeaders("*")
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS")
+				.allowedHeaders("*")
+				.allowCredentials(true);
+
+		// Static resources CORS - allow direct file access
+		registry.addMapping("/imagenes/**")
+				.allowedOrigins(allowedOrigin)
+				.allowedMethods("GET", "HEAD", "OPTIONS")
+				.allowedHeaders("*")
+				.allowCredentials(true);
+
+		registry.addMapping("/documentos/**")
+				.allowedOrigins(allowedOrigin)
+				.allowedMethods("GET", "HEAD", "OPTIONS")
+				.allowedHeaders("*")
 				.allowCredentials(true);
 	}
 
