@@ -538,9 +538,10 @@ def create_alumno_folder(
     nombre = fix_encoding_if_needed(alumno_info["nombre"])
     apellidos = fix_encoding_if_needed(alumno_info["apellidos"])
 
-    # Limpia y aplica formato
-    nombre_limpio = clean_filename(nombre, proper_case=True)
-    apellidos_limpio = clean_filename(apellidos, proper_case=True)
+    # Limpia y aplica formato - usa el mismo case que está en la base de datos
+    # para que coincida con lo que Java creará
+    nombre_limpio = clean_filename(nombre, proper_case=False)
+    apellidos_limpio = clean_filename(apellidos, proper_case=False)
 
     folder_name = f"{identifier}_{nombre_limpio}_{apellidos_limpio}"
     folder_path = Path(base_path) / folder_name
