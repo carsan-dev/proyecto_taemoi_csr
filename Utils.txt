@@ -119,4 +119,4 @@ Añadir link a contactar en horarios page y hacer interactuable de alguna forma 
 
 Añadir opcion para cambiar imagen del alumno o añadirle una si no tiene
 
-Terminar de reparar la apertura de ficheros (creo que tengo que cambiar todas las carpetas para estar en mayusculas)
+✔ Terminar de reparar la apertura de ficheros (creo que tengo que cambiar todas las carpetas para estar en mayusculas)
