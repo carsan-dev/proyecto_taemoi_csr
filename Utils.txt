@@ -1,19 +1,44 @@
-Comandos arrancar server
+Desplegar en el server
 
-  # 3. Stop the containers
+  # 1. cd /opt/taemoi
+
+  # 2. scp -P 52222 -r static_resources/ csroman-dev@moiskimdo.es:/opt/taemoi (Si no existen los ficheros en el servidor)
+
+  # 3. bash scripts/deploy.sh production
+
+  # 4. bash scripts/init-static-files.sh
+
+Comandos actualizar backend (sirve para arrancar server y para actualizar los otros contenedores tambien)
+
+  # 1. Stop the containers
   sudo docker-compose -f docker-compose.production.yml down
 
-  # 4. Rebuild the backend with the fix (no cache to ensere fresh build)
+  # 2. Rebuild the backend with the fix (no cache to ensere fresh build)
   sudo docker-compose -f docker-compose.production.yml build --no-cache backend
 
-  # 5. Start all containers
+  # 3. Start all containers
   sudo docker-compose -f docker-compose.production.yml up -d
 
-  # 6. Monitor the backend logs to ensure it starts successfully
+  # 4. Monitor the backend logs to ensure it starts successfully
   sudo docker-compose -f docker-compose.production.yml logs -f backend
 
-  # 7. Eliminate the old images of containers
+Comandos para eliminar todo lo existente en docker de cara a deploy limpio
+
+  # 1. Stop the containers if are running
+  sudo docker-compose -f docker-compose.production.yml down
+
+  # 2. Eliminate the old images of containers and containers stopped
   sudo docker system prune -af
+
+  # 3. Check the existing volumes
+  sudo docker volume ls
+
+  # 4. Delete the non using volumes
+  sudo docker volume prune
+
+  # 5. Delete all the other volumes
+  sudo docker volume rm volumen1 volumen2 ...
+
 
 Migrar data para local: 
 
@@ -84,6 +109,6 @@ TODO:
 
 ✔ Arreglar skeleton card en las tarjetas de alumnos del grupo
 
-Cambiar *ngif por @if en toda la app
+✔ Cambiar *ngif por @if en toda la app
 
-Cambiar *ngfor por @for en toda la app
+✔ Cambiar *ngfor por @for en toda la app
