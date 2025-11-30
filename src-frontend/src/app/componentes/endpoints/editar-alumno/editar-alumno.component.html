@@ -671,31 +671,40 @@
                 <h4>Foto del Alumno</h4>
               </div>
 
-              <div class="admin-file-upload">
-                <div class="file-upload-area">
-                  <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*"
-                    aria-label="Cambiar foto del alumno" />
-                  <i class="bi bi-cloud-upload upload-icon"></i>
-                  <p class="upload-text">Arrastra una imagen o haz clic para cambiar</p>
-                  <p class="upload-hint">Formatos: JPG, PNG, GIF, WebP (máx. 50MB)</p>
+              <div class="image-management-container">
+                <!-- Vista previa de la imagen -->
+                <div class="image-preview-section">
+                  <div class="preview-wrapper">
+                    <img [src]="imagenPreview" alt="Foto del alumno" class="preview-image">
+                  </div>
                 </div>
 
-                <!-- Vista previa de la imagen -->
-                @if (imagenPreview) {
-                <div class="file-preview">
-                  <img [src]="imagenPreview" alt="Vista previa del alumno">
-                  <div class="file-info">
-                    <p class="file-name">Foto del alumno</p>
-                    <p class="file-size">Vista previa disponible</p>
-                  </div>
-                  @if (alumnoEditado.fotoAlumno) {
-                  <button type="button" class="file-remove" (click)="eliminarFoto(alumnoEditado.id)">
-                    <i class="bi bi-trash"></i>
-                    <span>Eliminar</span>
-                  </button>
+                <!-- Botones de gestión -->
+                <div class="image-actions">
+                  <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*"
+                    style="display: none;" aria-label="Seleccionar foto del alumno" />
+
+                  @if (alumno.fotoAlumno?.url) {
+                    <button type="button" class="admin-btn admin-btn-primary" (click)="inputFile.click()">
+                      <i class="bi bi-arrow-repeat"></i>
+                      <span>Cambiar Imagen</span>
+                    </button>
+                    <button type="button" class="admin-btn admin-btn-danger" (click)="eliminarFoto(alumnoEditado.id)">
+                      <i class="bi bi-trash"></i>
+                      <span>Eliminar Imagen</span>
+                    </button>
+                  } @else {
+                    <button type="button" class="admin-btn admin-btn-primary" (click)="inputFile.click()">
+                      <i class="bi bi-plus-circle"></i>
+                      <span>Añadir Imagen</span>
+                    </button>
                   }
+
+                  <p class="upload-hint">
+                    <i class="bi bi-info-circle"></i>
+                    Formatos: JPG, PNG, GIF, WebP (máx. 50MB)
+                  </p>
                 </div>
-                }
               </div>
             </div>
 
