@@ -48,6 +48,9 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
 
     video.addEventListener('canplaythrough', () => {
       video.muted = true;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('disablepictureinpicture', 'true');
       video.play();
     });
 
