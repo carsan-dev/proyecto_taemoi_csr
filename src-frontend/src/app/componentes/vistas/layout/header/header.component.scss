@@ -139,6 +139,13 @@ header.fixed-header {
       }
     }
 
+    // Hide the burger on desktop widths
+    @media (min-width: 992px) {
+      .navbar-toggler {
+        display: none !important;
+      }
+    }
+
     // Smooth collapse transition (mobile only)
     .navbar-collapse {
       // On desktop (lg and up), always show with full opacity
