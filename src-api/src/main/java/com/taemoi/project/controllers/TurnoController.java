@@ -21,6 +21,7 @@ import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
+import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.TurnoService;
 
 /**
@@ -39,6 +40,12 @@ public class TurnoController {
 	 */
 	@Autowired
 	private TurnoService turnoService;
+
+	/**
+	 * Inyección del servicio de configuración del sistema.
+	 */
+	@Autowired
+	private ConfiguracionSistemaService configuracionSistemaService;
 
 	/**
 	 * Obtiene todos los turnos disponibles.
@@ -154,5 +161,17 @@ public class TurnoController {
 		} catch (Exception e) {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	/**
+	 * Obtiene el límite de alumnos por turno configurado en el sistema.
+	 * Este endpoint es público para que la página de horarios pueda obtener el límite.
+	 *
+	 * @return ResponseEntity con el límite configurado.
+	 */
+	@GetMapping("/limite")
+	public ResponseEntity<Integer> obtenerLimiteTurno() {
+		Integer limite = configuracionSistemaService.obtenerLimiteTurno();
+		return ResponseEntity.ok(limite);
 	}
 }
