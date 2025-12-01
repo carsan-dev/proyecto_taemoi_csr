@@ -1,5 +1,6 @@
 // Import shared admin styles
 @use '../../../componentes/admin-shared-styles.scss' as *;
+@use '../../../componentes/admin-mobile-forms.scss' as *;
 
 // Component-specific styles (if any additional customization needed)
 .form-group {
