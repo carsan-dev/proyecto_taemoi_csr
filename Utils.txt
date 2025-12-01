@@ -113,10 +113,12 @@ TODO:
 
 ✔ Cambiar *ngfor por @for en toda la app
 
-Añadir botón para descargar documentos
+- Añadir botón para descargar documentos (a futuro)
 
-Añadir link a contactar en horarios page y hacer interactuable de alguna forma las cards de horario (por ejemplo, redireccionar a contacto con la hora seleccionada en el mensaje)
+✔ Añadir link a contactar en horarios page y hacer interactuable de alguna forma las cards de horario (por ejemplo, redireccionar a contacto con la hora seleccionada en el mensaje)
 
-Añadir opcion para cambiar imagen del alumno o añadirle una si no tiene
+✔ Mejorar opcion de cambiar imagen del alumno o añadirle una si no tiene
 
 ✔ Terminar de reparar la apertura de ficheros (creo que tengo que cambiar todas las carpetas para estar en mayusculas)
+
+✔ Añadir opción de admin para poder hacer admin a otros usuarios
