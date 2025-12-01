@@ -89,57 +89,38 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerGruposDelAlumno(alumnoId);
   }
 
+  private normalizarDeporte(grupo: any): string {
+    return (grupo?.deporte || grupo?.tipoGrupo || '').toString().toLowerCase().trim();
+  }
+
+  obtenerEtiquetaColor(grupo: any): string {
+    const deporte = this.normalizarDeporte(grupo);
+    if (deporte.includes('competici')) return 'Taekwondo Competición';
+    if (deporte.includes('taekwondo')) return 'Taekwondo';
+    if (deporte.includes('kickboxing')) return 'Kickboxing';
+    if (deporte.includes('pilates')) return 'Pilates';
+    if (deporte.includes('defensa personal')) return 'Defensa Personal Femenina';
+    return 'Otro';
+  }
+
   obtenerClaseGrupo(grupo: any): string {
-    const deporte = (grupo?.deporte || '').toUpperCase();
-    switch (deporte) {
-      case 'TAEKWONDO':
-        return 'taekwondo';
-      case 'KICKBOXING':
-        return 'kickboxing';
-      case 'PILATES':
-        return 'pilates';
-      case 'DEFENSA_PERSONAL_FEMENINA':
-        return 'defensa_personal_femenina';
-      case 'COMPETICION':
-        return 'competicion';
-      default:
-        return 'otro';
-    }
+    const etiqueta = this.obtenerEtiquetaColor(grupo);
+    return etiqueta.toLowerCase().replace(/[^a-z0-9_ ]/gi, '').replace(/\s+/g, '_');
   }
 
   obtenerIconoDeporte(grupo: any): string {
-    const deporte = (grupo?.deporte || '').toUpperCase();
-    switch (deporte) {
-      case 'TAEKWONDO':
-        return 'bi bi-shield-shaded';
-      case 'KICKBOXING':
-        return 'bi bi-lightning-charge-fill';
-      case 'PILATES':
-        return 'bi bi-peace-fill';
-      case 'DEFENSA_PERSONAL_FEMENINA':
-        return 'bi bi-shield-lock-fill';
-      case 'COMPETICION':
-        return 'bi bi-trophy-fill';
-      default:
-        return 'bi bi-star-fill';
-    }
+    const etiqueta = this.obtenerEtiquetaColor(grupo).toLowerCase();
+    if (etiqueta.includes('competición')) return 'bi bi-trophy-fill';
+    if (etiqueta.includes('taekwondo')) return 'bi bi-shield-shaded';
+    if (etiqueta.includes('kickboxing')) return 'bi bi-lightning-charge-fill';
+    if (etiqueta.includes('pilates')) return 'bi bi-peace-fill';
+    if (etiqueta.includes('defensa personal')) return 'bi bi-shield-lock-fill';
+    return 'bi bi-star-fill';
   }
 
   obtenerNombreDeporte(grupo: any): string {
-    const deporte = (grupo?.deporte || '').toUpperCase();
-    switch (deporte) {
-      case 'TAEKWONDO':
-        return 'Taekwondo';
-      case 'KICKBOXING':
-        return 'Kickboxing';
-      case 'PILATES':
-        return 'Pilates';
-      case 'DEFENSA_PERSONAL_FEMENINA':
-        return 'Defensa Personal Femenina';
-      case 'COMPETICION':
-        return 'Competición';
-      default:
-        return 'Otro';
-    }
+    const etiqueta = this.obtenerEtiquetaColor(grupo);
+    if (etiqueta === 'Defensa Personal Femenina') return 'D.P. Femenina';
+    return etiqueta;
   }
 }
