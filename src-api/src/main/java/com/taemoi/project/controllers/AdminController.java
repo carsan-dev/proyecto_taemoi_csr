@@ -16,15 +16,20 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.UsuarioDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
+import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.UsuarioService;
 
@@ -115,5 +120,32 @@ public class AdminController {
 			throw new ListaUsuariosVaciaException("No hay usuarios registrados en el sistema.");
 		}
 		return ResponseEntity.ok(usuarios);
+	}
+
+	/**
+	 * Actualiza los roles de un usuario.
+	 *
+	 * @param userId ID del usuario a actualizar.
+	 * @param roles  Set de roles a asignar al usuario.
+	 * @return ResponseEntity con el usuario actualizado.
+	 * @throws UsuarioNoEncontradoException si no se encuentra el usuario.
+	 */
+	@PutMapping("/users/{userId}/roles")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<UsuarioDTO> actualizarRolesUsuario(@PathVariable Long userId,
+			@RequestBody java.util.Set<Roles> roles) {
+		logger.info("## AdminController :: actualizarRolesUsuario - userId: {}, roles: {}", userId, roles);
+
+		// Buscar el usuario
+		Usuario usuario = usuarioService.encontrarPorId(userId)
+				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
+
+		// Actualizar roles
+		usuario.setRoles(roles);
+		Usuario usuarioActualizado = usuarioService.actualizarUsuario(usuario);
+
+		// Convertir a DTO y devolver
+		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuarioActualizado);
+		return ResponseEntity.ok(usuarioDTO);
 	}
 }
