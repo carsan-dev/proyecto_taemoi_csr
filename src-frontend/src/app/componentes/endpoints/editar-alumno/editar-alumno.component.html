@@ -607,6 +607,10 @@
                       <span class="documento-type">{{ doc.tipo }}</span>
                     </div>
                     <div class="documento-actions">
+                      <button class="action-btn action-btn-primary" (click)="descargarDocumento(doc)"
+                        title="Descargar documento">
+                        <i class="bi bi-download"></i>
+                      </button>
                       <button class="action-btn action-btn-primary" (click)="abrirDocumento(doc)"
                         title="Abrir documento">
                         <i class="bi bi-eye"></i>
