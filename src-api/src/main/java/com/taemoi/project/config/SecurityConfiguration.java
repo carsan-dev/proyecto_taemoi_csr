@@ -56,16 +56,17 @@ public class SecurityConfiguration {
 
 	/**
 	 * Configures which paths should be completely ignored by Spring Security.
-	 * Static resources (images and documents) bypass all security filters.
+	 * Only public images bypass all security filters.
+	 * Documents require authentication (ADMIN or MANAGER).
 	 */
 	@Bean
 	org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
 		logger.info("========================================");
-		logger.info("Configuring WebSecurityCustomizer to IGNORE /imagenes/** and /documentos/**");
-		logger.info("These paths will completely bypass Spring Security filters");
+		logger.info("Configuring WebSecurityCustomizer to IGNORE /imagenes/** only");
+		logger.info("Documents (/documentos/**) now require authentication");
 		logger.info("========================================");
 		return (web) -> web.ignoring()
-				.requestMatchers("/imagenes/**", "/documentos/**");
+				.requestMatchers("/imagenes/**");
 	}
 
 	/**
@@ -79,15 +80,21 @@ public class SecurityConfiguration {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		logger.info("========================================");
 		logger.info("Configuring SecurityFilterChain");
-		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**, /imagenes/**, /documentos/**");
+		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**, /imagenes/**");
+		logger.info("Documents (/documentos/**) require authentication");
 		logger.info("========================================");
 
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**", "/documentos/**"))
+				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**"))
 				.authorizeHttpRequests(request -> request
 						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
+						// Static resources that browsers request automatically
+						.requestMatchers("/favicon.ico", "/error").permitAll()
+						// Document access - requires ADMIN or MANAGER role
+						.requestMatchers("/documentos/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers("/api/auth/**").permitAll()
@@ -205,7 +212,7 @@ public class SecurityConfiguration {
 							logger.warn("Request URI: {}", requestURI);
 							logger.warn("Request Method: {}", request.getMethod());
 							logger.warn("Auth Exception: {}", authException.getMessage());
-							logger.warn("This should NOT happen for /imagenes/** or /documentos/**");
+							logger.warn("This should NOT happen for /imagenes/** (documents now require auth)");
 							logger.warn("========================================");
 							response.sendRedirect("/oauth2/authorize/google");
 						}));
