@@ -54,9 +54,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		logger.info(">>> JwtAuthenticationFilter processing: {} {}", method, requestPath);
 
-		// Skip JWT authentication only for public images
-		// Documents now require authentication (ADMIN or MANAGER)
-		if (requestPath.startsWith("/imagenes/")) {
+		// Skip JWT authentication only for public images (not alumno images)
+		// Alumno images and documents require authentication (ADMIN or MANAGER)
+		if (requestPath.startsWith("/imagenes/") && !requestPath.startsWith("/imagenes/alumnos/")) {
 			logger.info(">>> SKIPPING JWT filter for public images: {}", requestPath);
 			filterChain.doFilter(request, response);
 			return;
