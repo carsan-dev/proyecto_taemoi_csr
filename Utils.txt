@@ -113,7 +113,7 @@ TODO:
 
 ✔ Cambiar *ngfor por @for en toda la app
 
-- Añadir botón para descargar documentos (a futuro)
+✔ Añadir botón para descargar documentos
 
 ✔ Añadir link a contactar en horarios page y hacer interactuable de alguna forma las cards de horario (por ejemplo, redireccionar a contacto con la hora seleccionada en el mensaje)
 
