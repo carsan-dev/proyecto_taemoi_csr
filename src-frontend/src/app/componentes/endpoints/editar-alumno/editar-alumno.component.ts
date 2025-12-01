@@ -675,7 +675,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       Swal.fire({
         icon: 'error',
         title: 'No se pudo descargar',
-        text: 'Falta la informaci��n necesaria del documento o del alumno.',
+        text: 'Falta la información necesaria del documento o del alumno.',
       });
       return;
     }
