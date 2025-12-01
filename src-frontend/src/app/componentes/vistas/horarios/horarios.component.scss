@@ -846,3 +846,367 @@ $defensa-color: #e91e63;
     background-position: -200% 0;
   }
 }
+
+// ========================================
+// ENHANCED MOBILE IMPROVEMENTS
+// ========================================
+
+// Better touch targets and accessibility
+@media (max-width: 767px) {
+  .time-slot {
+    min-height: 80px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    &.clickable:active {
+      transform: translateX(2px) scale(0.99);
+    }
+
+    .slot-time,
+    .slot-category {
+      font-size: 0.9375rem;
+    }
+  }
+
+  .day-card {
+    -webkit-tap-highlight-color: transparent;
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  // Better modal on mobile
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-end; // Slide up from bottom on mobile
+  }
+
+  .modal-content {
+    border-radius: 16px 16px 0 0;
+    max-height: 85vh;
+    width: 100%;
+    animation: slideUpFromBottom 0.3s ease;
+
+    .close-btn {
+      min-width: 44px;
+      min-height: 44px;
+      width: 44px;
+      height: 44px;
+    }
+
+    .btn-contacto {
+      min-height: 52px;
+      font-size: 1rem;
+    }
+  }
+
+  .info-card {
+    .contacto-link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+}
+
+// Extra small devices
+@media (max-width: 576px) {
+  .horarios-page {
+    padding-top: 80px;
+    padding-bottom: 2rem;
+  }
+
+  .hero-header {
+    padding: 1.75rem 1rem;
+    margin-bottom: 2rem;
+
+    .page-title-section {
+      gap: 0.75rem;
+
+      i {
+        font-size: 2.25rem;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+      }
+
+      .hero-subtitle {
+        font-size: 0.9375rem;
+      }
+    }
+  }
+
+  .main-content {
+    padding: 0 0.75rem;
+
+    .schedule-grid {
+      gap: 1.25rem;
+    }
+
+    .day-card {
+      border-radius: 16px;
+
+      .day-header {
+        padding: 0.875rem 1.25rem;
+        font-size: 1rem;
+
+        i {
+          font-size: 1.2rem;
+        }
+      }
+
+      .day-content {
+        padding: 1.25rem;
+        min-height: 120px;
+      }
+
+      .time-slot {
+        padding: 0.875rem;
+        margin-bottom: 0.625rem;
+
+        .slot-time {
+          margin-bottom: 0.4rem;
+
+          span {
+            font-size: 0.875rem;
+          }
+        }
+
+        .slot-category {
+          font-size: 0.8125rem;
+
+          .category-icon {
+            font-size: 1.1rem;
+          }
+        }
+
+        .availability-badge {
+          font-size: 0.7rem;
+          padding: 0.25rem 0.5rem;
+        }
+      }
+
+      .no-slots {
+        padding: 1.75rem 1rem;
+
+        i {
+          font-size: 2rem;
+        }
+
+        span {
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    .info-section {
+      .info-card {
+        padding: 1.25rem;
+        gap: 1rem;
+
+        i {
+          font-size: 2rem;
+        }
+
+        .info-content {
+          h3 {
+            font-size: 1.125rem;
+          }
+
+          p {
+            font-size: 0.9375rem;
+          }
+        }
+      }
+    }
+  }
+
+  .modal-content {
+    border-radius: 12px 12px 0 0;
+
+    .modal-header {
+      padding: 1.25rem;
+
+      .modal-title {
+        gap: 0.5rem;
+
+        .category-icon-large {
+          font-size: 2.25rem;
+        }
+
+        h2 {
+          font-size: 1.125rem;
+        }
+
+        .modal-subtitle {
+          font-size: 0.8125rem;
+        }
+      }
+
+      .close-btn {
+        min-width: 40px;
+        min-height: 40px;
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+
+      .info-row {
+        padding: 0.875rem;
+        flex-direction: column;
+        gap: 0.75rem;
+
+        i {
+          font-size: 1.25rem;
+        }
+
+        h4 {
+          font-size: 0.9375rem;
+        }
+
+        p {
+          font-size: 0.875rem;
+        }
+
+        .badge-available,
+        .badge-warning,
+        .badge-full {
+          font-size: 0.8125rem;
+          padding: 0.35rem 0.7rem;
+
+          i {
+            font-size: 0.9375rem;
+          }
+        }
+      }
+
+      .consultation-message {
+        padding: 1.25rem;
+        flex-direction: column;
+        text-align: center;
+
+        i {
+          font-size: 1.75rem;
+        }
+
+        p {
+          font-size: 0.9375rem;
+        }
+      }
+    }
+
+    .modal-footer {
+      padding: 1rem 1.25rem;
+
+      .btn-contacto {
+        padding: 0.875rem;
+        font-size: 0.9375rem;
+        min-height: 48px;
+      }
+    }
+  }
+}
+
+// Extra small devices - very narrow
+@media (max-width: 375px) {
+  .main-content {
+    padding: 0 0.5rem;
+
+    .day-card {
+      .day-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+      }
+
+      .day-content {
+        padding: 1rem;
+      }
+
+      .time-slot {
+        padding: 0.75rem;
+      }
+    }
+  }
+}
+
+// Landscape mode on mobile
+@media (max-height: 600px) and (orientation: landscape) {
+  .horarios-page {
+    padding-top: 70px;
+  }
+
+  .hero-header {
+    padding: 1.5rem 1rem;
+
+    .page-title-section {
+      i {
+        font-size: 2rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .hero-subtitle {
+        display: none; // Hide subtitle in landscape to save space
+      }
+    }
+  }
+
+  .modal-content {
+    max-height: 90vh;
+    border-radius: 12px; // Full rounded corners in landscape
+
+    .modal-overlay {
+      align-items: center; // Center in landscape
+    }
+  }
+}
+
+// Animation for mobile modal
+@keyframes slideUpFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .day-card,
+  .time-slot,
+  .info-card,
+  .modal-content {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .time-slot {
+    &:hover,
+    &.clickable:hover {
+      transform: none !important;
+    }
+  }
+}
+
+// High DPI displays
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .day-card,
+  .time-slot {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+}

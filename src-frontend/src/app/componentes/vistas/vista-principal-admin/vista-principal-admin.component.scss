@@ -1,8 +1,206 @@
 // Import shared admin styles
 @use '../../../componentes/admin-shared-styles.scss' as *;
 
-// Component-specific styles (if any additional customization needed)
+// ========================================
+// ADMIN DASHBOARD MOBILE ENHANCEMENTS
+// ========================================
+
+// Navigation cards mobile improvements
 .admin-nav-card {
-  // All styles inherited from admin-shared-styles.scss
-  // Add component-specific overrides here if needed
+  // Touch feedback for mobile
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+
+  @media (max-width: 767px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 280px;
+    padding: 2rem 1.5rem;
+
+    // Better touch feedback
+    &:active {
+      transform: scale(0.98);
+    }
+
+    .nav-icon {
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 0.9375rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .admin-btn {
+      width: 100%;
+      min-height: 52px;
+      justify-content: center;
+      margin-top: auto;
+      font-size: 1rem;
+
+      span {
+        flex: 1;
+        text-align: center;
+      }
+    }
+  }
+
+  @media (max-width: 575px) {
+    min-height: 260px;
+    padding: 1.75rem 1.25rem;
+
+    .nav-icon {
+      margin-bottom: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+      margin-bottom: 0.875rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .admin-btn {
+      min-height: 48px;
+      font-size: 0.9375rem;
+    }
+  }
+}
+
+// Page header mobile improvements
+.admin-page-header {
+  @media (max-width: 767px) {
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+
+      i {
+        font-size: 1.75rem;
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    p {
+      font-size: 0.9375rem;
+      margin-bottom: 0;
+    }
+  }
+
+  @media (max-width: 575px) {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.25rem;
+
+      i {
+        font-size: 1.5rem;
+      }
+    }
+
+    p {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Grid improvements for mobile
+.row.g-4 {
+  @media (max-width: 767px) {
+    gap: 1.25rem !important;
+  }
+
+  @media (max-width: 575px) {
+    gap: 1rem !important;
+  }
+}
+
+// Container padding adjustments
+.admin-page-container {
+  @media (max-width: 767px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .container {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+  }
+}
+
+// Landscape orientation on mobile
+@media (max-height: 600px) and (orientation: landscape) {
+  .admin-nav-card {
+    min-height: 220px;
+    padding: 1.5rem 1.25rem;
+
+    .nav-icon {
+      margin-bottom: 1rem;
+
+      i {
+        font-size: 2.5rem;
+      }
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: 0.8125rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .admin-page-header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.25rem;
+    }
+
+    p {
+      display: none; // Hide description in landscape to save space
+    }
+  }
+}
+
+// High DPI displays
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .admin-nav-card {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-card {
+    &:hover,
+    &:active {
+      transform: none !important;
+    }
+  }
 }
