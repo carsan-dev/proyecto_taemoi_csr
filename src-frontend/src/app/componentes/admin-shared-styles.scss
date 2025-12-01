@@ -1400,74 +1400,132 @@ $info-hover: #0b7dda;
 }
 
 // ========================================
-// RESPONSIVE DESIGN
+// RESPONSIVE DESIGN (Mobile-First Enhanced)
 // ========================================
-@media (max-width: 992px) {
+
+// Tablet and Below (< 992px)
+@media (max-width: 991px) {
   .admin-page-container {
-    padding: 2rem 0;
+    padding: 2rem 1rem;
   }
 
   .admin-action-bar {
     flex-direction: column;
     gap: 1rem;
-    align-items: flex-start;
+    align-items: stretch;
+    padding: 1.25rem;
+
+    h2 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
 
     .action-buttons {
       width: 100%;
-      justify-content: stretch;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
 
       .admin-btn {
-        flex: 1;
+        width: 100%;
+        justify-content: center;
       }
     }
   }
 
   .admin-cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .admin-stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  // Improved form layout
+  .admin-form-field {
+    margin-bottom: 1.25rem;
+  }
+
+  // Better button sizing
+  .admin-btn {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 1rem 1.5rem;
   }
 }
 
-@media (max-width: 768px) {
+// Mobile and Below (< 768px)
+@media (max-width: 767px) {
+  .admin-page-container {
+    padding: 1.5rem 0.75rem;
+  }
+
   .admin-page-header {
+    margin-bottom: 1.5rem;
+
     h1, h2 {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
 
       i {
         font-size: 2rem;
-        padding: 0.5rem;
+        padding: 0.625rem;
       }
     }
 
     p {
-      font-size: 1rem;
+      font-size: 0.9375rem;
+      text-align: center;
     }
   }
 
   .admin-card {
-    padding: 1.5rem;
+    padding: 1.25rem;
+    border-radius: 12px;
 
     &.admin-card-large {
-      padding: 2rem;
+      padding: 1.5rem;
+    }
+
+    &.admin-card-small {
+      padding: 1rem;
+    }
+  }
+
+  .admin-section-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+
+    i {
+      font-size: 1.5rem;
+    }
+
+    h3, h4 {
+      font-size: 1.25rem;
     }
   }
 
   .admin-action-bar {
-    padding: 1.25rem;
+    padding: 1rem;
+    border-radius: 12px;
 
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
   }
 
   .admin-filter-bar {
-    padding: 1.25rem;
+    padding: 1rem;
+    border-radius: 12px;
 
     .filter-row {
       flex-direction: column;
+      gap: 0.75rem;
 
       .filter-item {
         min-width: 100%;
@@ -1475,22 +1533,43 @@ $info-hover: #0b7dda;
     }
   }
 
-  .admin-cards-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
   .admin-item-card {
+    padding: 1.25rem;
+
     .item-header {
       flex-direction: column;
       text-align: center;
+      gap: 0.75rem;
+
+      .item-image {
+        width: 64px;
+        height: 64px;
+      }
+    }
+
+    .item-body {
+      .item-field {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 0.25rem;
+
+        strong {
+          min-width: auto;
+          font-size: 0.85rem;
+          color: #6c757d;
+        }
+
+        span {
+          font-size: 1rem;
+          color: #212529;
+        }
+      }
     }
 
     .item-footer {
       flex-direction: column;
+      gap: 0.75rem;
 
       .admin-btn {
         width: 100%;
@@ -1498,34 +1577,146 @@ $info-hover: #0b7dda;
     }
   }
 
+  // Mobile-friendly tables
   .admin-table {
+    border-radius: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
     table {
+      min-width: 600px; // Enables horizontal scroll
+
       thead th,
       tbody td {
-        padding: 1rem;
+        padding: 0.875rem;
         font-size: 0.875rem;
+        white-space: nowrap;
       }
     }
   }
-}
 
-@media (max-width: 576px) {
-  .admin-page-container {
-    padding: 1.5rem 0;
-  }
+  // Alternative: Convert tables to cards on mobile
+  .admin-table-mobile-cards {
+    table {
+      thead {
+        display: none;
+      }
 
-  .admin-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9375rem;
+      tbody, tr {
+        display: block;
+        width: 100%;
+      }
 
-    &.admin-btn-sm {
-      padding: 0.5rem 1rem;
-      font-size: 0.8125rem;
+      tr {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: $text-light;
+        border-radius: 12px;
+        box-shadow: $shadow-sm;
+
+        &:hover {
+          box-shadow: $shadow-md;
+        }
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.9375rem;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: $text-dark;
+          margin-right: 1rem;
+        }
+      }
     }
   }
 
+  // Form improvements
+  .admin-form-control {
+    padding: 1rem 1.25rem;
+    font-size: 16px; // Prevents iOS zoom
+  }
+
+  .admin-form-field {
+    label {
+      font-size: 0.9375rem;
+    }
+  }
+
+  .admin-form-button-group {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .admin-btn {
+      width: 100%;
+    }
+  }
+
+  // Modal improvements
+  .modal-content {
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: 1.25rem 1rem;
+    }
+
+    .modal-title {
+      font-size: 1.125rem;
+    }
+  }
+
+  .alumno-list,
+  .convocatoria-list {
+    max-height: 300px;
+  }
+
+  .alumno-item,
+  .convocatoria-item {
+    padding: 0.875rem 1rem;
+
+    .alumno-icon,
+    .convocatoria-icon {
+      width: 40px;
+      height: 40px;
+
+      i {
+        font-size: 1.5rem;
+      }
+    }
+
+    .alumno-info,
+    .convocatoria-info {
+      .alumno-name,
+      .convocatoria-title {
+        font-size: 0.9375rem;
+      }
+
+      .alumno-action,
+      .convocatoria-date {
+        font-size: 0.8125rem;
+      }
+    }
+  }
+
+  // Status badges
+  .status-badge {
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  // Nav cards
   .admin-nav-card {
-    padding: 1.5rem;
+    padding: 1.5rem 1.25rem;
 
     .nav-icon {
       font-size: 2.5rem;
@@ -1534,23 +1725,379 @@ $info-hover: #0b7dda;
     }
 
     h3 {
-      font-size: 1.25rem;
+      font-size: 1.125rem;
     }
 
     p {
-      font-size: 0.9375rem;
+      font-size: 0.875rem;
     }
   }
 
+  // Stat cards
   .admin-stat-card {
-    padding: 1.5rem;
+    padding: 1.25rem;
 
     .stat-icon {
       font-size: 2.5rem;
+      padding: 0.75rem;
     }
 
     .stat-value {
       font-size: 2rem;
+    }
+
+    .stat-label {
+      font-size: 0.9375rem;
+    }
+  }
+
+  // Document grid
+  .documentos-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .documento-item {
+    padding: 0.875rem;
+
+    .documento-icon {
+      width: 40px;
+      height: 40px;
+
+      i {
+        font-size: 1.5rem;
+      }
+    }
+
+    .documento-info {
+      .documento-name {
+        font-size: 0.875rem;
+      }
+
+      .documento-type {
+        font-size: 0.8125rem;
+      }
+    }
+  }
+
+  // Profile view improvements
+  .profile-image-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .profile-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .meta-item {
+      font-size: 0.875rem;
+    }
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .info-label {
+      min-width: auto;
+      font-size: 0.875rem;
+    }
+
+    .info-value {
+      text-align: left;
+      font-size: 0.9375rem;
+
+      &.info-value-highlight {
+        font-size: 1rem;
+      }
+    }
+  }
+}
+
+// Extra Small Mobile (< 576px)
+@media (max-width: 575px) {
+  .admin-page-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .admin-page-header {
+    margin-bottom: 1.25rem;
+
+    h1, h2 {
+      font-size: 1.25rem;
+
+      i {
+        font-size: 1.75rem;
+        padding: 0.5rem;
+      }
+    }
+
+    p {
+      font-size: 0.875rem;
+    }
+  }
+
+  .admin-card {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  .admin-action-bar {
+    padding: 0.875rem;
+
+    h2 {
+      font-size: 1.125rem;
+    }
+  }
+
+  .admin-btn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+
+    i {
+      font-size: 1.125rem;
+    }
+
+    &.admin-btn-sm {
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .admin-form-control {
+    padding: 0.875rem 1rem;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+
+  .admin-form-field {
+    margin-bottom: 1rem;
+
+    label {
+      font-size: 0.875rem;
+      margin-bottom: 0.375rem;
+    }
+  }
+
+  .admin-badge {
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .admin-alert {
+    padding: 1rem 1.125rem;
+    font-size: 0.9375rem;
+
+    i {
+      font-size: 1.25rem;
+    }
+  }
+
+  // Compact stat cards
+  .admin-stat-card {
+    padding: 1rem;
+
+    .stat-icon {
+      font-size: 2rem;
+      padding: 0.625rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+    }
+
+    .stat-change {
+      font-size: 0.8125rem;
+    }
+  }
+
+  // Compact nav cards
+  .admin-nav-card {
+    padding: 1.25rem 1rem;
+
+    .nav-icon {
+      font-size: 2rem;
+      width: 70px;
+      height: 70px;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      font-size: 0.8125rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .profile-image-wrapper {
+    width: 100px;
+    height: 100px;
+    border-width: 3px;
+  }
+
+  .profile-name {
+    font-size: 1.25rem;
+  }
+
+  .deporte-banner {
+    height: 60px;
+
+    .deporte-badge {
+      font-size: 1.125rem;
+    }
+  }
+
+  // Info cards
+  .info-card-header {
+    padding: 1rem 1.125rem;
+  }
+
+  .info-card-title {
+    font-size: 1rem;
+
+    i {
+      font-size: 1.125rem;
+    }
+  }
+
+  .info-card-body {
+    padding: 1.125rem;
+  }
+
+  .info-item {
+    padding: 0.625rem 0;
+
+    .info-label {
+      font-size: 0.8125rem;
+
+      i {
+        font-size: 0.9375rem;
+      }
+    }
+
+    .info-value {
+      font-size: 0.875rem;
+    }
+  }
+
+  // Compact file upload
+  .admin-file-upload {
+    .file-upload-area {
+      padding: 2rem 1rem;
+
+      .upload-icon {
+        font-size: 2.5rem;
+      }
+
+      .upload-text {
+        font-size: 1rem;
+      }
+
+      .upload-hint {
+        font-size: 0.875rem;
+      }
+    }
+
+    .file-preview {
+      padding: 1rem;
+      gap: 1rem;
+
+      img {
+        width: 80px;
+        height: 80px;
+      }
+
+      .file-info {
+        .file-name {
+          font-size: 0.875rem;
+        }
+
+        .file-size {
+          font-size: 0.8125rem;
+        }
+      }
+    }
+  }
+
+  // Better touch targets for action buttons
+  .action-btn {
+    width: 40px;
+    height: 40px;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+
+  // Modal adjustments
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-content {
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: 1rem 0.875rem;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+    }
+  }
+}
+
+// ========================================
+// LANDSCAPE ORIENTATION FIXES
+// ========================================
+@media (max-height: 500px) and (orientation: landscape) {
+  .modal-dialog {
+    margin: 0.25rem;
+    max-height: 95vh;
+  }
+
+  .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .alumno-list,
+  .convocatoria-list {
+    max-height: 200px;
+  }
+}
+
+// ========================================
+// HIGH DPI DISPLAYS
+// ========================================
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .admin-card,
+  .admin-item-card,
+  .admin-nav-card,
+  .admin-stat-card {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 }
