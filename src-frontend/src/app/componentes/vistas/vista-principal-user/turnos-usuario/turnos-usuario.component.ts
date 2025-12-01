@@ -121,27 +121,29 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
         nombre: 'Taekwondo Competición',
         nombreCorto: 'Taekwondo Competición',
         icono: 'bi bi-trophy-fill',
+        emoji: '🏆',
         color: '#f28b8b',
       };
     }
     if (key.includes('taekwondo')) {
-      return { nombre: 'Taekwondo', nombreCorto: 'Taekwondo', icono: 'bi bi-shield-shaded', color: '#a6bfe3' };
+      return { nombre: 'Taekwondo', nombreCorto: 'Taekwondo', icono: 'bi bi-shield-shaded', emoji: '🥋', color: '#a6bfe3' };
     }
     if (key.includes('kickboxing')) {
-      return { nombre: 'Kickboxing', nombreCorto: 'Kickboxing', icono: 'bi bi-lightning-charge-fill', color: '#ffa573' };
+      return { nombre: 'Kickboxing', nombreCorto: 'Kickboxing', icono: 'bi bi-lightning-charge-fill', emoji: '🥊', color: '#ffa573' };
     }
     if (key.includes('pilates')) {
-      return { nombre: 'Pilates', nombreCorto: 'Pilates', icono: 'bi bi-peace-fill', color: '#a8d2d4' };
+      return { nombre: 'Pilates', nombreCorto: 'Pilates', icono: 'bi bi-peace-fill', emoji: '🧘', color: '#a8d2d4' };
     }
     if (key.includes('defensa personal')) {
       return {
         nombre: 'Defensa Personal Femenina',
         nombreCorto: 'D.P. Femenina',
         icono: 'bi bi-shield-lock-fill',
+        emoji: '🛡️',
         color: '#f8bbd0',
       };
     }
-    return { nombre: tipoGrupo, nombreCorto: tipoGrupo, icono: 'bi bi-star-fill', color: '#6c757d' };
+    return { nombre: tipoGrupo, nombreCorto: tipoGrupo, icono: 'bi bi-star-fill', emoji: '⭐', color: '#6c757d' };
   }
 
   getTurnosSorted(): Turno[] {
