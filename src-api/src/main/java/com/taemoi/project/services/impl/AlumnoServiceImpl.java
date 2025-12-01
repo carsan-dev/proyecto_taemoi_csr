@@ -604,21 +604,31 @@ public class AlumnoServiceImpl implements AlumnoService {
 	
     @Override
     public void eliminarDocumentoDeAlumno(Long alumnoId, Long documentoId) {
-        Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
-
-        Documento documento = documentoRepository.findById(documentoId)
-                .orElseThrow(() -> new RuntimeException("Documento no encontrado con ID: " + documentoId));
-
-        if (!documento.getAlumno().getId().equals(alumnoId)) {
-            throw new RuntimeException("El documento no pertenece a este alumno.");
-        }
+        Documento documento = obtenerDocumentoDeAlumno(alumnoId, documentoId);
+        Alumno alumno = documento.getAlumno();
 
         documentoService.eliminarDocumento(documento);
 
-        alumno.getDocumentos().remove(documento);
-        alumnoRepository.save(alumno);
+        if (alumno != null) {
+            alumno.getDocumentos().remove(documento);
+            alumnoRepository.save(alumno);
+        }
     }
+
+	@Override
+	public Documento obtenerDocumentoDeAlumno(Long alumnoId, Long documentoId) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+		Documento documento = documentoRepository.findById(documentoId)
+				.orElseThrow(() -> new RuntimeException("Documento no encontrado con ID: " + documentoId));
+
+		if (documento.getAlumno() == null || !documento.getAlumno().getId().equals(alumnoId)) {
+			throw new RuntimeException("El documento no pertenece a este alumno.");
+		}
+
+		return documento;
+	}
 
 	/**
 	 * Elimina un alumno por su ID y elimina su imagen.
