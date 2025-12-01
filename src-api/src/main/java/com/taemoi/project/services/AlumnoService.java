@@ -93,4 +93,6 @@ public interface AlumnoService {
 	List<Documento> obtenerDocumentosAlumno(Long alumnoId);
 
 	void eliminarDocumentoDeAlumno(Long alumnoId, Long documentoId);
+
+	Documento obtenerDocumentoDeAlumno(Long alumnoId, Long documentoId);
 }
