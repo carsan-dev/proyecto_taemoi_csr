@@ -16,6 +16,12 @@
         <h2 class="hero-subtitle">TAEKWONDO</h2>
         <p class="hero-description">Transforma tu vida a través de las artes marciales</p>
         <div class="hero-buttons">
+          @if (usuarioLogueado) {
+          <button class="hero-btn accent" routerLink="/userpage/turnos">
+            <i class="bi bi-collection-play-fill"></i>
+            <span>Mis clases</span>
+          </button>
+          }
           <button class="hero-btn primary" routerLink="/horarios">
             <i class="bi bi-calendar3"></i>
             <span>Ver Horarios</span>
