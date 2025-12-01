@@ -181,11 +181,6 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
-    path: 'gestionarRoles',
-    loadComponent: () => import('./componentes/endpoints/gestionar-roles/gestionar-roles.component').then(m => m.GestionarRolesComponent),
-    canActivate: [roleGuard],
-  },
-  {
     path: 'configuracion-sistema',
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard],
