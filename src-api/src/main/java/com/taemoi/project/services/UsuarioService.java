@@ -20,6 +20,14 @@ public interface UsuarioService extends UserDetailsService {
 	Optional<Usuario> encontrarPorEmail(String email);
 
 	/**
+	 * Encuentra un usuario por su ID.
+	 *
+	 * @param id El ID del usuario.
+	 * @return Un Optional que contiene el usuario si existe.
+	 */
+	Optional<Usuario> encontrarPorId(Long id);
+
+	/**
 	 * Elimina un usuario por su ID.
 	 *
 	 * @param id El ID del usuario a eliminar.
