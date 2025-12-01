@@ -7,11 +7,13 @@ import {
   QueryList,
   Inject,
   PLATFORM_ID,
+  OnInit,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { RouterLink } from '@angular/router';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -20,7 +22,7 @@ import { RouterLink } from '@angular/router';
   templateUrl: './escaparate-principal.component.html',
   styleUrl: './escaparate-principal.component.scss',
 })
-export class EscaparatePrincipalComponent implements AfterViewInit {
+export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
   @ViewChild('videoPresentacion')
   videoPresentacion!: ElementRef<HTMLVideoElement>;
 
@@ -29,7 +31,17 @@ export class EscaparatePrincipalComponent implements AfterViewInit {
 
   usuarioLogueado: boolean = false;
 
-  constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
+  constructor(
+    @Inject(PLATFORM_ID) private readonly platformId: Object,
+    private readonly authService: AuthenticationService
+  ) {}
+
+  ngOnInit(): void {
+    this.usuarioLogueado = this.authService.comprobarLogueado();
+    this.authService.usuarioLogueadoCambio.subscribe((estado) => {
+      this.usuarioLogueado = estado;
+    });
+  }
 
   ngAfterViewInit(): void {
     const video: HTMLVideoElement = this.videoPresentacion.nativeElement;
