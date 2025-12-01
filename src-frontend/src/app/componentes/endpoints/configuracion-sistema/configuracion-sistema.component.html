@@ -1,0 +1,85 @@
+<div class="container-fluid admin-container">
+  <div class="row">
+    <div class="col-12">
+      <div class="admin-header">
+        <h1 class="admin-title">Configuración del Sistema</h1>
+        <p class="admin-subtitle">Ajusta los parámetros generales de la aplicación</p>
+      </div>
+
+      <div class="admin-card" *ngIf="!cargando">
+        <div class="config-section">
+          <div class="section-header">
+            <i class="bi bi-sliders fs-3 text-primary me-3"></i>
+            <div>
+              <h3 class="section-title">Límite de Alumnos por Turno</h3>
+              <p class="section-description">Define el número máximo de alumnos permitidos en cada turno/horario</p>
+            </div>
+          </div>
+
+          <div class="config-content">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="limiteTurno" class="form-label">Límite de alumnos:</label>
+                  <input
+                    type="number"
+                    id="limiteTurno"
+                    class="form-control form-control-lg"
+                    [(ngModel)]="limiteTurno"
+                    min="1"
+                    max="100"
+                  />
+                  <small class="form-text text-muted">
+                    Este valor determina cuándo un turno se considera "lleno" o con "pocas plazas"
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-box">
+                  <i class="bi bi-info-circle-fill text-info fs-4 me-2"></i>
+                  <div>
+                    <strong>Valor actual:</strong> {{ limiteTurnoOriginal }} alumnos<br>
+                    <strong>Nuevo valor:</strong> {{ limiteTurno }} alumnos
+                    <span *ngIf="hayCambios()" class="badge bg-warning ms-2">Modificado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="button-group mt-4">
+              <button
+                class="btn btn-primary btn-lg"
+                (click)="guardarConfiguracion()"
+                [disabled]="!hayCambios()"
+              >
+                <i class="bi bi-check-circle me-2"></i>
+                Guardar cambios
+              </button>
+              <button
+                class="btn btn-secondary btn-lg"
+                (click)="restaurarValor()"
+                [disabled]="!hayCambios()"
+              >
+                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                Restaurar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-4">
+          <i class="bi bi-lightbulb-fill me-2"></i>
+          <strong>Información:</strong> Los cambios en esta configuración afectarán inmediatamente a la visualización
+          de disponibilidad en la página de horarios públicos.
+        </div>
+      </div>
+
+      <div class="skeleton-container" *ngIf="cargando">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-input"></div>
+      </div>
+    </div>
+  </div>
+</div>
