@@ -31,6 +31,7 @@ import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
 import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 import com.taemoi.project.services.AlumnoService;
+import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.UsuarioService;
 
 /**
@@ -55,6 +56,12 @@ public class AdminController {
 	 */
 	@Autowired
 	private AlumnoService alumnoService;
+
+	/**
+	 * Inyección del servicio de configuración del sistema.
+	 */
+	@Autowired
+	private ConfiguracionSistemaService configuracionSistemaService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o no paginada según los parámetros
@@ -147,5 +154,31 @@ public class AdminController {
 		// Convertir a DTO y devolver
 		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuarioActualizado);
 		return ResponseEntity.ok(usuarioDTO);
+	}
+
+	/**
+	 * Obtiene el límite de alumnos por turno configurado en el sistema.
+	 *
+	 * @return ResponseEntity con el límite configurado.
+	 */
+	@GetMapping("/configuracion/limite-turno")
+	public ResponseEntity<Integer> obtenerLimiteTurno() {
+		logger.info("## AdminController :: obtenerLimiteTurno");
+		Integer limite = configuracionSistemaService.obtenerLimiteTurno();
+		return ResponseEntity.ok(limite);
+	}
+
+	/**
+	 * Actualiza el límite de alumnos por turno.
+	 *
+	 * @param nuevoLimite El nuevo límite a establecer.
+	 * @return ResponseEntity con el límite actualizado.
+	 */
+	@PutMapping("/configuracion/limite-turno")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<Integer> actualizarLimiteTurno(@RequestBody Integer nuevoLimite) {
+		logger.info("## AdminController :: actualizarLimiteTurno - nuevoLimite: {}", nuevoLimite);
+		configuracionSistemaService.actualizarLimiteTurno(nuevoLimite);
+		return ResponseEntity.ok(nuevoLimite);
 	}
 }
