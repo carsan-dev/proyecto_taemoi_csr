@@ -171,10 +171,21 @@ $defensa-hover: #d81b60;
 
             &:hover {
               transform: translateY(-3px);
-              background: rgba(255, 255, 255, 0.2);
-              border-color: rgba(255, 255, 255, 0.5);
-              box-shadow: $shadow-lg;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: $shadow-lg;
+          }
+
+          &.accent {
+            background: linear-gradient(135deg, #00c853, #009624);
+            color: $text-light;
+            box-shadow: 0 6px 18px rgba(0, 200, 83, 0.35);
+
+            &:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 8px 25px rgba(0, 200, 83, 0.45);
             }
+          }
           }
 
           &:active {
