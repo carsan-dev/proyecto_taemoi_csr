@@ -54,9 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		logger.info(">>> JwtAuthenticationFilter processing: {} {}", method, requestPath);
 
-		// Skip JWT authentication for static resources
-		if (requestPath.startsWith("/imagenes/") || requestPath.startsWith("/documentos/")) {
-			logger.info(">>> SKIPPING JWT filter for static resource: {}", requestPath);
+		// Skip JWT authentication only for public images
+		// Documents now require authentication (ADMIN or MANAGER)
+		if (requestPath.startsWith("/imagenes/")) {
+			logger.info(">>> SKIPPING JWT filter for public images: {}", requestPath);
 			filterChain.doFilter(request, response);
 			return;
 		}
