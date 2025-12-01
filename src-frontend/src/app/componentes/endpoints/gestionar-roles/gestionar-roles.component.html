@@ -1,0 +1,159 @@
+<!-- Skeleton Loading -->
+@if (cargando) {
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header Skeleton -->
+    <div class="admin-page-header">
+      <div class="skeleton-line skeleton-title" style="width: 300px; height: 36px; margin-bottom: 8px;"></div>
+      <div class="skeleton-line skeleton-text" style="width: 400px; height: 20px;"></div>
+    </div>
+
+    <!-- Table Skeleton -->
+    <div class="admin-card">
+      @for (i of [1,2,3,4,5]; track i) {
+      <div class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
+      }
+    </div>
+  </div>
+</div>
+}
+
+@if (!cargando) {
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-shield-check"></i>
+        Gestión de Roles
+      </h2>
+      <p>Administra los permisos y roles de los usuarios del sistema</p>
+    </div>
+
+    <!-- Users Table -->
+    <div class="admin-card admin-card-large">
+      @if (usuarios.length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-people"></i>
+        <p>No hay usuarios registrados en el sistema</p>
+      </div>
+      } @else {
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Roles Actuales</th>
+              <th class="text-center">Asignar Roles</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (usuario of usuarios; track usuario.id) {
+            <tr>
+              <!-- User Info -->
+              <td>
+                <div class="user-info">
+                  <div class="user-avatar">
+                    {{ usuario.nombre.charAt(0) }}{{ usuario.apellidos.charAt(0) }}
+                  </div>
+                  <div class="user-details">
+                    <span class="user-name">{{ usuario.nombre }} {{ usuario.apellidos }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email -->
+              <td>
+                <span class="email-text">{{ usuario.email }}</span>
+              </td>
+
+              <!-- Current Roles -->
+              <td>
+                <div class="roles-badges">
+                  @for (role of getCurrentRoles(usuario); track role) {
+                  <span class="role-badge" [ngClass]="getRoleBadgeClass(role)">
+                    {{ getRoleDisplayName(role) }}
+                  </span>
+                  }
+                </div>
+              </td>
+
+              <!-- Role Selection -->
+              <td>
+                <div class="roles-checkboxes">
+                  <div class="role-checkbox-item">
+                    <input type="checkbox" [id]="'user-' + usuario.id"
+                      [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_USER"
+                      (change)="onRoleChange(usuario.id, 'ROLE_USER')" />
+                    <label [for]="'user-' + usuario.id">
+                      <i class="bi bi-person"></i>
+                      Usuario
+                    </label>
+                  </div>
+                  <div class="role-checkbox-item">
+                    <input type="checkbox" [id]="'manager-' + usuario.id"
+                      [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_MANAGER"
+                      (change)="onRoleChange(usuario.id, 'ROLE_MANAGER')" />
+                    <label [for]="'manager-' + usuario.id">
+                      <i class="bi bi-briefcase"></i>
+                      Manager
+                    </label>
+                  </div>
+                  <div class="role-checkbox-item">
+                    <input type="checkbox" [id]="'admin-' + usuario.id"
+                      [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_ADMIN"
+                      (change)="onRoleChange(usuario.id, 'ROLE_ADMIN')" />
+                    <label [for]="'admin-' + usuario.id">
+                      <i class="bi bi-shield-fill-check"></i>
+                      Admin
+                    </label>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="text-center">
+                <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
+                  [disabled]="!hasChanges(usuario)">
+                  <i class="bi bi-save"></i>
+                  <span>Guardar</span>
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </div>
+
+    <!-- Info Card -->
+    <div class="admin-card mt-4">
+      <div class="info-card-header">
+        <h5 class="info-card-title">
+          <i class="bi bi-info-circle"></i>
+          Información sobre Roles
+        </h5>
+      </div>
+      <div class="info-card-body">
+        <div class="role-info-grid">
+          <div class="role-info-item">
+            <span class="role-badge badge-user">Usuario</span>
+            <p>Acceso básico para estudiantes. Pueden ver sus propios grupos y horarios.</p>
+          </div>
+          <div class="role-info-item">
+            <span class="role-badge badge-manager">Manager</span>
+            <p>Gestión de alumnos, grupos, horarios, eventos y productos. Sin acceso a administración del sistema.</p>
+          </div>
+          <div class="role-info-item">
+            <span class="role-badge badge-admin">Administrador</span>
+            <p>Acceso completo al sistema, incluyendo gestión de usuarios y roles.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
