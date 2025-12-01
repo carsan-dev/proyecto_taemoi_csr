@@ -110,12 +110,12 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   obtenerIconoDeporte(grupo: any): string {
     const etiqueta = this.obtenerEtiquetaColor(grupo).toLowerCase();
-    if (etiqueta.includes('competición')) return 'bi bi-trophy-fill';
-    if (etiqueta.includes('taekwondo')) return 'bi bi-shield-shaded';
-    if (etiqueta.includes('kickboxing')) return 'bi bi-lightning-charge-fill';
-    if (etiqueta.includes('pilates')) return 'bi bi-peace-fill';
-    if (etiqueta.includes('defensa personal')) return 'bi bi-shield-lock-fill';
-    return 'bi bi-star-fill';
+    if (etiqueta.includes('competición')) return '🏆';
+    if (etiqueta.includes('taekwondo')) return '🥋';
+    if (etiqueta.includes('kickboxing')) return '🥊';
+    if (etiqueta.includes('pilates')) return '🧘';
+    if (etiqueta.includes('defensa personal')) return '🛡️';
+    return '⭐';
   }
 
   obtenerNombreDeporte(grupo: any): string {
