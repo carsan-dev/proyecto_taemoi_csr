@@ -668,6 +668,37 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     window.open(doc.url, '_blank');
   }
 
+  descargarDocumento(doc: any) {
+    const alumnoId = this.alumno?.id ?? this.alumnoId;
+
+    if (!doc?.id || !alumnoId) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo descargar',
+        text: 'Falta la informaci��n necesaria del documento o del alumno.',
+      });
+      return;
+    }
+
+    this.endpointsService.descargarDocumentoAlumno(alumnoId, doc.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.nombre || 'documento';
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Descarga fallida',
+          text: 'No se pudo descargar el documento.',
+        });
+      },
+    });
+  }
+
   /**
    * Para cargar los diferentes grados disponibles (según tu lógica de backend).
    */
