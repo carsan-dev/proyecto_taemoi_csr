@@ -920,6 +920,18 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  descargarDocumentoAlumno(
+    alumnoId: number,
+    documentoId: number
+  ): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}/descargar`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   generarInformeAlumnosPorGrado(): Observable<Blob> {
     return this.http
       .get(`${this.urlBase}/informes/alumnosPorGrado`, {
