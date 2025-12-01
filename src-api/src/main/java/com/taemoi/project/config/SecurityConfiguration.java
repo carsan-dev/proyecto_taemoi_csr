@@ -56,17 +56,16 @@ public class SecurityConfiguration {
 
 	/**
 	 * Configures which paths should be completely ignored by Spring Security.
-	 * Only public images bypass all security filters.
-	 * Documents require authentication (ADMIN or MANAGER).
+	 * No paths are completely ignored anymore - all go through SecurityFilterChain.
+	 * This allows granular control over alumno images vs public images.
 	 */
 	@Bean
 	org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
 		logger.info("========================================");
-		logger.info("Configuring WebSecurityCustomizer to IGNORE /imagenes/** only");
-		logger.info("Documents (/documentos/**) now require authentication");
+		logger.info("WebSecurityCustomizer: No paths ignored");
+		logger.info("All image and document access controlled by SecurityFilterChain");
 		logger.info("========================================");
-		return (web) -> web.ignoring()
-				.requestMatchers("/imagenes/**");
+		return (web) -> {};
 	}
 
 	/**
@@ -80,8 +79,9 @@ public class SecurityConfiguration {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		logger.info("========================================");
 		logger.info("Configuring SecurityFilterChain");
-		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**, /imagenes/**");
-		logger.info("Documents (/documentos/**) require authentication");
+		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**");
+		logger.info("Protected resources: /imagenes/alumnos/**, /documentos/** (ADMIN/MANAGER only)");
+		logger.info("Public images: /imagenes/** (except alumnos subdirectory)");
 		logger.info("========================================");
 
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -92,6 +92,11 @@ public class SecurityConfiguration {
 						.requestMatchers("/oauth2/**").permitAll()
 						// Static resources that browsers request automatically
 						.requestMatchers("/favicon.ico", "/error").permitAll()
+						// Protected images - alumno photos require ADMIN or MANAGER role
+						.requestMatchers("/imagenes/alumnos/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Public images - eventos, etc. (must come after specific rules)
+						.requestMatchers("/imagenes/**").permitAll()
 						// Document access - requires ADMIN or MANAGER role
 						.requestMatchers("/documentos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
