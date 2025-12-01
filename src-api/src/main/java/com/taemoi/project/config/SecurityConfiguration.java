@@ -200,8 +200,6 @@ public class SecurityConfiguration {
 				.authenticationProvider(authenticationProvider())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(oauth2SuccessHandler)
-						.authorizationEndpoint(authorization -> authorization
-								.baseUri("/oauth2/authorize"))
 						.permitAll())
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, authException) -> {
@@ -214,7 +212,7 @@ public class SecurityConfiguration {
 							logger.warn("Auth Exception: {}", authException.getMessage());
 							logger.warn("This should NOT happen for /imagenes/** (documents now require auth)");
 							logger.warn("========================================");
-							response.sendRedirect("/oauth2/authorize/google");
+							response.sendRedirect("/oauth2/authorization/google");
 						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
