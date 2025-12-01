@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
@@ -46,6 +46,7 @@ export class HorariosComponent implements OnInit {
     this.isLoading = true;
     this.endpointsService.obtenerTurnosDTO().subscribe({
       next: (response) => {
+        console.log('Turnos recibidos:', response);
         this.turnos = response;
         this.isLoading = false;
       },
@@ -61,44 +62,58 @@ export class HorariosComponent implements OnInit {
   }
 
   obtenerTurnosPorDia(diaSemana: string): any[] {
-    return this.turnos.filter((turno) => turno.diaSemana === diaSemana);
+    return this.turnos
+      .filter((turno) => turno.diaSemana === diaSemana)
+      .filter((turno) => !this.esCompeticion(this.obtenerCategoria(turno)));
   }
 
-  obtenerCategoria(grupoId: number): string {
-    switch (grupoId) {
-      case 7:
-        return 'Taekwondo Competición';
-      case 8:
-        return 'Pilates';
-      case 9:
-        return 'Kickboxing';
-      case 10:
-        return 'Defensa Personal Femenina';
-      default:
-        return 'Taekwondo';
-    }
+  obtenerNombreMostrado(turno: any): string {
+    const categoriaOriginal = this.obtenerCategoria(turno);
+    const categoria = categoriaOriginal.toLowerCase().trim();
+    if (categoria.includes('taekwondo') && !this.esCompeticion(categoria)) return 'Taekwondo';
+    if (categoria.includes('kickboxing')) return 'Kickboxing';
+    if (categoria.includes('pilates')) return 'Pilates';
+    if (categoria.includes('defensa personal')) return 'D.P. Femenina';
+    return categoriaOriginal;
+  }
+
+  obtenerCategoria(turno: any): string {
+    return turno.tipoGrupo || 'Taekwondo';
+  }
+
+  obtenerEtiquetaColor(turno: any): string {
+    const categoriaOriginal = this.obtenerCategoria(turno);
+    const categoria = categoriaOriginal.toLowerCase().trim();
+    if (this.esCompeticion(categoria)) return 'Taekwondo Competición';
+    if (categoria.includes('taekwondo')) return 'Taekwondo';
+    if (categoria.includes('kickboxing')) return 'Kickboxing';
+    if (categoria.includes('pilates')) return 'Pilates';
+    if (categoria.includes('defensa personal')) return 'Defensa Personal Femenina';
+    return categoriaOriginal;
+  }
+
+  private esCompeticion(categoria: string): boolean {
+    const normalizado = categoria.toLowerCase().trim();
+    return normalizado.includes('competici');
   }
 
   obtenerColorDeporte(deporte: string): string {
-    const colores: { [key: string]: string } = {
-      Pilates: '#A8D2D4',
-      Kickboxing: '#FFA573',
-      'Taekwondo Competición': '#F28B8B',
-      Taekwondo: '#A6BFE3',
-      'Defensa Personal Femenina': '#F8BBD0',
-    };
-    return colores[deporte] || '#ffffff';
+    const deporteNormalizado = deporte.toLowerCase().trim();
+    if (deporteNormalizado.includes('pilates')) return '#A8D2D4';
+    if (deporteNormalizado.includes('kickboxing')) return '#FFA573';
+    if (this.esCompeticion(deporteNormalizado)) return '#F28B8B';
+    if (deporteNormalizado.includes('defensa personal')) return '#F8BBD0';
+    return '#A6BFE3'; // Taekwondo default
   }
 
   obtenerEmoticonoCategoria(deporte: string): string {
-    const emoticonos: { [key: string]: string } = {
-      Pilates: '🧘‍♀️',
-      Kickboxing: '🥊',
-      Taekwondo: '🥋',
-      'Taekwondo Competición': '🥋',
-      'Defensa Personal Femenina': '🛡️',
-    };
-    return emoticonos[deporte] || '❓';
+    const deporteNormalizado = deporte.toLowerCase().trim();
+    if (deporteNormalizado.includes('pilates')) return '🧘';
+    if (deporteNormalizado.includes('kickboxing')) return '🥊';
+    if (deporteNormalizado.includes('taekwondo') && !this.esCompeticion(deporteNormalizado)) return '🥋';
+    if (this.esCompeticion(deporteNormalizado)) return '🏆';
+    if (deporteNormalizado.includes('defensa personal')) return '🛡️';
+    return '🙂';
   }
 
   onTurnoClick(turno: any): void {

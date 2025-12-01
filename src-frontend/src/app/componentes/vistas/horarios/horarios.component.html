@@ -1,4 +1,4 @@
-<div class="horarios-page">
+﻿<div class="horarios-page">
   <!-- Hero Header -->
   <div class="hero-header">
     <div class="hero-overlay"></div>
@@ -18,87 +18,86 @@
       <!-- Weekly Schedule Grid -->
       <div class="schedule-grid">
         @if (isLoading) {
-          <!-- Skeleton Loading Cards -->
-          @for (dia of diasSemana; track $index) {
-            <div class="day-card skeleton-card">
-              <div class="day-header skeleton-shimmer">
-                <div class="skeleton-icon"></div>
-                <div class="skeleton-text skeleton-day"></div>
+        <!-- Skeleton Loading Cards -->
+        @for (dia of diasSemana; track $index) {
+        <div class="day-card skeleton-card">
+          <div class="day-header skeleton-shimmer">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-text skeleton-day"></div>
+          </div>
+          <div class="day-content">
+            @for (slot of [1, 2, 3]; track $index) {
+            <div class="time-slot skeleton-slot">
+              <div class="skeleton-shimmer slot-time">
+                <div class="skeleton-icon-small"></div>
+                <div class="skeleton-text skeleton-time"></div>
               </div>
-              <div class="day-content">
-                @for (slot of [1, 2, 3]; track $index) {
-                  <div class="time-slot skeleton-slot">
-                    <div class="skeleton-shimmer slot-time">
-                      <div class="skeleton-icon-small"></div>
-                      <div class="skeleton-text skeleton-time"></div>
-                    </div>
-                    <div class="skeleton-shimmer slot-category">
-                      <div class="skeleton-icon-small"></div>
-                      <div class="skeleton-text skeleton-category"></div>
-                    </div>
-                  </div>
-                }
+              <div class="skeleton-shimmer slot-category">
+                <div class="skeleton-icon-small"></div>
+                <div class="skeleton-text skeleton-category"></div>
               </div>
             </div>
-          }
+            }
+          </div>
+        </div>
+        }
         } @else {
-          <!-- Actual Content -->
-          @for (dia of diasSemana; track $index) {
-            <div class="day-card">
-              <div class="day-header">
-                <i class="bi bi-calendar-week"></i>
-                <span>{{ dia }}</span>
-              </div>
+        <!-- Actual Content -->
+        @for (dia of diasSemana; track $index) {
+        <div class="day-card">
+          <div class="day-header">
+            <i class="bi bi-calendar-week"></i>
+            <span>{{ dia }}</span>
+          </div>
 
-              <div class="day-content">
-                <!-- Time Slots -->
-                @if (obtenerTurnosPorDia(dia).length > 0) {
-                  <div>
-                    @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
-                      <div class="time-slot clickable"
-                           [attr.data-sport]="obtenerCategoria(turno.grupoId)"
-                           (click)="onTurnoClick(turno)">
-                        <div class="slot-time">
-                          <i class="bi bi-clock"></i>
-                          <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                        </div>
-                        <div class="slot-category">
-                          <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerCategoria(turno.grupoId)) }}</span>
-                          <span class="category-name">{{ obtenerCategoria(turno.grupoId) }}</span>
-                        </div>
-                        @if (!quedanPocasPlazas(turno) && !estaLleno(turno)) {
-                          <div class="availability-badge available">
-                            <i class="bi bi-check-circle"></i>
-                            Plazas disponibles
-                          </div>
-                        }
-                        @if (quedanPocasPlazas(turno)) {
-                          <div class="availability-badge warning">
-                            <i class="bi bi-exclamation-circle"></i>
-                            Quedan pocas plazas
-                          </div>
-                        }
-                        @if (estaLleno(turno)) {
-                          <div class="availability-badge full">
-                            <i class="bi bi-x-circle"></i>
-                            Completo
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
+          <div class="day-content">
+            <!-- Time Slots -->
+            @if (obtenerTurnosPorDia(dia).length > 0) {
+            <div>
+              @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
+              <div class="time-slot clickable" [attr.data-sport]="obtenerEtiquetaColor(turno)"
+                (click)="onTurnoClick(turno)">
+                <div class="slot-time">
+                  <i class="bi bi-clock"></i>
+                  <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
+                </div>
+                <div class="slot-category">
+                  <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerEtiquetaColor(turno)) }}</span>
+                  <span class="category-name">{{ obtenerNombreMostrado(turno) }}</span>
+                </div>
+                @if (!quedanPocasPlazas(turno) && !estaLleno(turno)) {
+                <div class="availability-badge available">
+                  <i class="bi bi-check-circle"></i>
+                  Plazas disponibles
+                </div>
                 }
-
-                <!-- No Slots Available -->
-                @if (obtenerTurnosPorDia(dia).length === 0) {
-                  <div class="no-slots">
-                    <i class="bi bi-calendar-x"></i>
-                    <span>No hay turnos disponibles</span>
-                  </div>
+                @if (quedanPocasPlazas(turno)) {
+                <div class="availability-badge warning">
+                  <i class="bi bi-exclamation-circle"></i>
+                  Quedan pocas plazas
+                </div>
+                }
+                @if (estaLleno(turno)) {
+                <div class="availability-badge full">
+                  <i class="bi bi-x-circle"></i>
+                  Completo
+                </div>
                 }
               </div>
+              }
             </div>
-          }
+            }
+
+            <!-- No Slots Available -->
+            @if (obtenerTurnosPorDia(dia).length === 0) {
+            <div class="no-slots">
+              <i class="bi bi-calendar-x"></i>
+              <span>No hay turnos disponibles</span>
+            </div>
+            }
+          </div>
+        </div>
+        }
         }
       </div>
 
@@ -122,74 +121,75 @@
 
   <!-- Modal for Turno Details -->
   @if (showModal && selectedTurno) {
-    <div class="modal-overlay" (click)="closeModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header" [attr.data-sport]="obtenerCategoria(selectedTurno.grupoId)">
-          <div class="modal-title">
-            <span class="category-icon-large">{{ obtenerEmoticonoCategoria(obtenerCategoria(selectedTurno.grupoId)) }}</span>
-            <div>
-              <h2>{{ obtenerCategoria(selectedTurno.grupoId) }}</h2>
-              <p class="modal-subtitle">{{ selectedTurno.diaSemana }} - {{ selectedTurno.horaInicio }} - {{ selectedTurno.horaFin }}</p>
-            </div>
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header" [attr.data-sport]="obtenerEtiquetaColor(selectedTurno)">
+        <div class="modal-title">
+          <span class="category-icon-large">{{ obtenerEmoticonoCategoria(obtenerEtiquetaColor(selectedTurno)) }}</span>
+          <div>
+            <h2>{{ obtenerNombreMostrado(selectedTurno) }}</h2>
+            <p class="modal-subtitle">{{ selectedTurno.diaSemana }} - {{ selectedTurno.horaInicio }} - {{
+              selectedTurno.horaFin }}</p>
           </div>
-          <button class="close-btn" (click)="closeModal()">
-            <i class="bi bi-x-lg"></i>
-          </button>
+        </div>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Age Range -->
+        <div class="info-row">
+          <i class="bi bi-calendar-range"></i>
+          <div>
+            <h4>Rango de edades</h4>
+            <p>{{ obtenerRangoEdades(selectedTurno) }}</p>
+          </div>
         </div>
 
-        <div class="modal-body">
-          <!-- Age Range -->
-          <div class="info-row">
-            <i class="bi bi-calendar-range"></i>
-            <div>
-              <h4>Rango de edades</h4>
-              <p>{{ obtenerRangoEdades(selectedTurno) }}</p>
-            </div>
+        <!-- Availability -->
+        <div class="info-row">
+          <i class="bi bi-people"></i>
+          <div>
+            <h4>Plazas ocupadas</h4>
+            <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }} alumnos</p>
+            @if (!quedanPocasPlazas(selectedTurno) && !estaLleno(selectedTurno)) {
+            <span class="badge-available">
+              <i class="bi bi-check-circle"></i>
+              Plazas disponibles
+            </span>
+            }
+            @if (quedanPocasPlazas(selectedTurno)) {
+            <span class="badge-warning">
+              <i class="bi bi-exclamation-circle"></i>
+              ¡Quedan pocas plazas!
+            </span>
+            }
+            @if (estaLleno(selectedTurno)) {
+            <span class="badge-full">
+              <i class="bi bi-x-circle"></i>
+              Grupo completo
+            </span>
+            }
           </div>
-
-          <!-- Availability -->
-          <div class="info-row">
-            <i class="bi bi-people"></i>
-            <div>
-              <h4>Plazas ocupadas</h4>
-              <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }} alumnos</p>
-              @if (!quedanPocasPlazas(selectedTurno) && !estaLleno(selectedTurno)) {
-                <span class="badge-available">
-                  <i class="bi bi-check-circle"></i>
-                  Plazas disponibles
-                </span>
-              }
-              @if (quedanPocasPlazas(selectedTurno)) {
-                <span class="badge-warning">
-                  <i class="bi bi-exclamation-circle"></i>
-                  ¡Quedan pocas plazas!
-                </span>
-              }
-              @if (estaLleno(selectedTurno)) {
-                <span class="badge-full">
-                  <i class="bi bi-x-circle"></i>
-                  Grupo completo
-                </span>
-              }
-            </div>
-          </div>
-
-          <!-- Consultation Message -->
-          @if (quedanPocasPlazas(selectedTurno) || estaLleno(selectedTurno)) {
-            <div class="consultation-message">
-              <i class="bi bi-info-circle-fill"></i>
-              <p>Consulta para más información</p>
-            </div>
-          }
         </div>
 
-        <div class="modal-footer">
-          <button class="btn-contacto" (click)="navegarAContacto()">
-            <i class="bi bi-envelope"></i>
-            {{ obtenerTextoBoton(selectedTurno) }}
-          </button>
+        <!-- Consultation Message -->
+        @if (quedanPocasPlazas(selectedTurno) || estaLleno(selectedTurno)) {
+        <div class="consultation-message">
+          <i class="bi bi-info-circle-fill"></i>
+          <p>Consulta para más información</p>
         </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-contacto" (click)="navegarAContacto()">
+          <i class="bi bi-envelope"></i>
+          {{ obtenerTextoBoton(selectedTurno) }}
+        </button>
       </div>
     </div>
+  </div>
   }
 </div>
