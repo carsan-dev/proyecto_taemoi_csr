@@ -1,8 +1,9 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
-import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Subscription } from 'rxjs/internal/Subscription';
+
+import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Turno } from '../../../../interfaces/turno';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 
@@ -16,7 +17,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   private readonly subscriptions: Subscription = new Subscription();
-  allTurnos: Turno[] = []; // Store all turns from all groups
+  allTurnos: Turno[] = [];
   diasSemana: string[] = [
     'Lunes',
     'Martes',
@@ -27,14 +28,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     'Domingo',
   ];
   alumnoId!: number;
-
-  // Sport utilities
-  deportes = {
-    TAEKWONDO: { nombre: 'Taekwondo', emoji: '🥋', color: '#dc3545' },
-    KICKBOXING: { nombre: 'Kickboxing', emoji: '🥊', color: '#ffc107' },
-    PILATES: { nombre: 'Pilates', emoji: '🧘', color: '#28a745' },
-    DEFENSA_PERSONAL_FEMENINA: { nombre: 'Defensa Personal Femenina', emoji: '💪', color: '#6f42c1' }
-  };
 
   constructor(
     public endpointsService: EndpointsService,
@@ -60,7 +53,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
       next: (grupos) => {
         this.grupos = grupos;
-        // Load all turns once groups are loaded
         setTimeout(() => this.cargarTodosTurnos(), 100);
       },
       error: () => {
@@ -80,27 +72,27 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     return turnos.filter((turno) => turno.diaSemana === diaSemana);
   }
 
-  // New methods for sport-based grouping
   cargarTodosTurnos(): void {
     const alumnoId = this.authService.getAlumnoId();
     if (!alumnoId) return;
 
-    // Load all turns from all groups
-    this.grupos.forEach(grupo => {
+    this.grupos.forEach((grupo) => {
       const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
         next: (response) => {
-          // Add turns avoiding duplicates
-          response.forEach(turno => {
-            if (!this.allTurnos.find(t =>
-              t.diaSemana === turno.diaSemana &&
-              t.horaInicio === turno.horaInicio &&
-              t.horaFin === turno.horaFin &&
-              t.tipoGrupo === turno.tipoGrupo
-            )) {
+          response.forEach((turno) => {
+            if (
+              !this.allTurnos.find(
+                (t) =>
+                  t.diaSemana === turno.diaSemana &&
+                  t.horaInicio === turno.horaInicio &&
+                  t.horaFin === turno.horaFin &&
+                  t.tipoGrupo === turno.tipoGrupo
+              )
+            ) {
               this.allTurnos.push(turno);
             }
           });
-        }
+        },
       });
       this.subscriptions.add(turnosSubscription);
       this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupo.id, alumnoId);
@@ -108,13 +100,13 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   getDeportesUnicos(): string[] {
-    const deportesSet = new Set(this.allTurnos.map(turno => turno.tipoGrupo));
+    const deportesSet = new Set(this.allTurnos.map((turno) => this.normalizarDeporte(turno.tipoGrupo)));
     return Array.from(deportesSet).sort();
   }
 
   getTurnosPorDeporte(deporte: string): Turno[] {
     return this.allTurnos
-      .filter(turno => turno.tipoGrupo === deporte)
+      .filter((turno) => this.normalizarDeporte(turno.tipoGrupo) === deporte)
       .sort((a, b) => {
         const diaOrder = this.diasSemana.indexOf(a.diaSemana) - this.diasSemana.indexOf(b.diaSemana);
         if (diaOrder !== 0) return diaOrder;
@@ -123,20 +115,41 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   getDeporteInfo(tipoGrupo: string): any {
-    return this.deportes[tipoGrupo as keyof typeof this.deportes] || {
-      nombre: tipoGrupo,
-      emoji: '⚽',
-      color: '#6c757d'
-    };
+    const key = this.normalizarDeporte(tipoGrupo);
+    if (key.includes('competici')) {
+      return {
+        nombre: 'Taekwondo Competición',
+        nombreCorto: 'Taekwondo Competición',
+        icono: 'bi bi-trophy-fill',
+        color: '#f28b8b',
+      };
+    }
+    if (key.includes('taekwondo')) {
+      return { nombre: 'Taekwondo', nombreCorto: 'Taekwondo', icono: 'bi bi-shield-shaded', color: '#a6bfe3' };
+    }
+    if (key.includes('kickboxing')) {
+      return { nombre: 'Kickboxing', nombreCorto: 'Kickboxing', icono: 'bi bi-lightning-charge-fill', color: '#ffa573' };
+    }
+    if (key.includes('pilates')) {
+      return { nombre: 'Pilates', nombreCorto: 'Pilates', icono: 'bi bi-peace-fill', color: '#a8d2d4' };
+    }
+    if (key.includes('defensa personal')) {
+      return {
+        nombre: 'Defensa Personal Femenina',
+        nombreCorto: 'D.P. Femenina',
+        icono: 'bi bi-shield-lock-fill',
+        color: '#f8bbd0',
+      };
+    }
+    return { nombre: tipoGrupo, nombreCorto: tipoGrupo, icono: 'bi bi-star-fill', color: '#6c757d' };
   }
 
   getTurnosSorted(): Turno[] {
-    return this.allTurnos
-      .sort((a, b) => {
-        const diaOrder = this.diasSemana.indexOf(a.diaSemana) - this.diasSemana.indexOf(b.diaSemana);
-        if (diaOrder !== 0) return diaOrder;
-        return a.horaInicio.localeCompare(b.horaInicio);
-      });
+    return this.allTurnos.sort((a, b) => {
+      const diaOrder = this.diasSemana.indexOf(a.diaSemana) - this.diasSemana.indexOf(b.diaSemana);
+      if (diaOrder !== 0) return diaOrder;
+      return a.horaInicio.localeCompare(b.horaInicio);
+    });
   }
 
   volver(): void {
@@ -145,5 +158,9 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  private normalizarDeporte(valor: string): string {
+    return (valor || '').toString().toLowerCase().trim();
   }
 }

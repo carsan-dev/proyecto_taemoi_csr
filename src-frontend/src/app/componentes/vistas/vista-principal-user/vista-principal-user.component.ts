@@ -123,4 +123,14 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     if (etiqueta === 'Defensa Personal Femenina') return 'D.P. Femenina';
     return etiqueta;
   }
+
+  obtenerColorDeporte(grupo: any): string {
+    const etiqueta = this.obtenerEtiquetaColor(grupo).toLowerCase();
+    if (etiqueta.includes('competición')) return '#f28b8b';
+    if (etiqueta.includes('taekwondo')) return '#a6bfe3';
+    if (etiqueta.includes('kickboxing')) return '#ffa573';
+    if (etiqueta.includes('pilates')) return '#a8d2d4';
+    if (etiqueta.includes('defensa personal')) return '#f8bbd0';
+    return '#6c757d';
+  }
 }
