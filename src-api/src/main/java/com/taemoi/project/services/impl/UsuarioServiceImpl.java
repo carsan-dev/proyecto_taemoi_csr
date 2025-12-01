@@ -50,9 +50,7 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Override
 	public List<UsuarioDTO> obtenerTodos() {
-		return usuarioRepository.findAll().stream().map(usuario -> new UsuarioDTO(usuario.getNombre(),
-				usuario.getApellidos(), usuario.getEmail(), usuario.getRoles().toString()))
-				.collect(Collectors.toList());
+		return usuarioRepository.findAll().stream().map(UsuarioDTO::deUsuario).collect(Collectors.toList());
 	}
 
 	/**
@@ -67,8 +65,19 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	}
 
 	/**
+	 * Encuentra un usuario por su ID.
+	 *
+	 * @param id El ID del usuario.
+	 * @return Un Optional que contiene el usuario si existe.
+	 */
+	@Override
+	public Optional<Usuario> encontrarPorId(Long id) {
+		return usuarioRepository.findById(id);
+	}
+
+	/**
 	 * Guarda un nuevo usuario en la base de datos.
-	 * 
+	 *
 	 * @param usuario El objeto Usuario que se va a guardar.
 	 * @return El usuario guardado.
 	 */
