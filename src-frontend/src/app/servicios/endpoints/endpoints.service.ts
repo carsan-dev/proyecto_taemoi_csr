@@ -1056,7 +1056,7 @@ export class EndpointsService {
 
   obtenerLimiteTurno(): Observable<number> {
     return this.http
-      .get<number>(`${this.urlBase}/admin/configuracion/limite-turno`)
+      .get<number>(`${this.urlBase}/turnos/limite`)
       .pipe(catchError(this.manejarError));
   }
 
