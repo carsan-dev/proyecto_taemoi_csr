@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
-import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import Swal from 'sweetalert2';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
+import Swal from 'sweetalert2';
+
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
+import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 
 @Component({
   selector: 'app-vista-principal-user',
@@ -25,7 +26,6 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Show welcome message if this is a fresh OAuth2 login
     this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       if (nombre && !sessionStorage.getItem('welcomeShown')) {
         Swal.fire({
@@ -38,12 +38,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Cargar todos los alumnos asociados al email del usuario
     this.authService.obtenerTodosLosAlumnos().subscribe({
       next: (alumnos) => {
         if (alumnos && alumnos.length > 0) {
           this.alumnos = alumnos;
-          // Seleccionar el primer alumno por defecto
           this.selectedAlumno = alumnos[0];
           this.cargarGruposDelAlumno(this.selectedAlumno.id);
         } else {
@@ -54,7 +52,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
           });
         }
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error en la petición',
           text: 'Error al obtener los alumnos.',
@@ -64,7 +62,6 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Método para cambiar el alumno seleccionado
   seleccionarAlumno(alumno: any): void {
     this.selectedAlumno = alumno;
     this.cargarGruposDelAlumno(alumno.id);
@@ -75,12 +72,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   cargarGruposDelAlumno(alumnoId: number): void {
-    // Suscribirse al Observable expuesto por el BehaviorSubject
     const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
       next: (grupos) => {
         this.grupos = grupos;
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error en la petición',
           text: 'Error al obtener los grupos del alumno.',
@@ -90,72 +86,58 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(gruposSubscription);
-
-    // Llamar al método que inicia la carga de datos
     this.endpointsService.obtenerGruposDelAlumno(alumnoId);
   }
 
-  obtenerClaseGrupo(grupoId: number): string {
-    switch (grupoId) {
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
+  obtenerClaseGrupo(grupo: any): string {
+    const deporte = (grupo?.deporte || '').toUpperCase();
+    switch (deporte) {
+      case 'TAEKWONDO':
         return 'taekwondo';
-      case 7:
-        return 'competicion';
-      case 8:
-        return 'pilates';
-      case 9:
+      case 'KICKBOXING':
         return 'kickboxing';
-      case 10:
+      case 'PILATES':
+        return 'pilates';
+      case 'DEFENSA_PERSONAL_FEMENINA':
         return 'defensa_personal_femenina';
+      case 'COMPETICION':
+        return 'competicion';
       default:
-        return ''; // Clase por defecto
+        return 'otro';
     }
   }
 
-  obtenerEmoticonoCategoria(grupoId: number): string {
-    switch (grupoId) {
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-        return '🥋';
-      case 7:
-        return '🥋';
-      case 8:
-        return '🧘‍♀️';
-      case 9:
-        return '🥊';
-      case 10:
-        return '🛡️';
+  obtenerIconoDeporte(grupo: any): string {
+    const deporte = (grupo?.deporte || '').toUpperCase();
+    switch (deporte) {
+      case 'TAEKWONDO':
+        return 'bi bi-shield-shaded';
+      case 'KICKBOXING':
+        return 'bi bi-lightning-charge-fill';
+      case 'PILATES':
+        return 'bi bi-peace-fill';
+      case 'DEFENSA_PERSONAL_FEMENINA':
+        return 'bi bi-shield-lock-fill';
+      case 'COMPETICION':
+        return 'bi bi-trophy-fill';
       default:
-        return '❓';
+        return 'bi bi-star-fill';
     }
   }
 
-  obtenerNombreDeporte(grupoId: number): string {
-    switch (grupoId) {
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
+  obtenerNombreDeporte(grupo: any): string {
+    const deporte = (grupo?.deporte || '').toUpperCase();
+    switch (deporte) {
+      case 'TAEKWONDO':
         return 'Taekwondo';
-      case 7:
-        return 'Competición';
-      case 8:
-        return 'Pilates';
-      case 9:
+      case 'KICKBOXING':
         return 'Kickboxing';
-      case 10:
-        return 'Defensa Personal';
+      case 'PILATES':
+        return 'Pilates';
+      case 'DEFENSA_PERSONAL_FEMENINA':
+        return 'Defensa Personal Femenina';
+      case 'COMPETICION':
+        return 'Competición';
       default:
         return 'Otro';
     }
