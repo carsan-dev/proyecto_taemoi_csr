@@ -86,7 +86,7 @@
                   <div class="role-checkbox-item">
                     <input type="checkbox" [id]="'user-' + usuario.id"
                       [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_USER"
-                      (change)="onRoleChange(usuario.id, 'ROLE_USER')" />
+                      (ngModelChange)="onRoleChange(usuario.id, 'ROLE_USER')" />
                     <label [for]="'user-' + usuario.id">
                       <i class="bi bi-person"></i>
                       Usuario
@@ -95,7 +95,7 @@
                   <div class="role-checkbox-item">
                     <input type="checkbox" [id]="'manager-' + usuario.id"
                       [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_MANAGER"
-                      (change)="onRoleChange(usuario.id, 'ROLE_MANAGER')" />
+                      (ngModelChange)="onRoleChange(usuario.id, 'ROLE_MANAGER')" />
                     <label [for]="'manager-' + usuario.id">
                       <i class="bi bi-briefcase"></i>
                       Manager
@@ -104,7 +104,7 @@
                   <div class="role-checkbox-item">
                     <input type="checkbox" [id]="'admin-' + usuario.id"
                       [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_ADMIN"
-                      (change)="onRoleChange(usuario.id, 'ROLE_ADMIN')" />
+                      (ngModelChange)="onRoleChange(usuario.id, 'ROLE_ADMIN')" />
                     <label [for]="'admin-' + usuario.id">
                       <i class="bi bi-shield-fill-check"></i>
                       Admin
