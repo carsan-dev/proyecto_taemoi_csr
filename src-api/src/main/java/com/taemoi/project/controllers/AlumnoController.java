@@ -11,10 +11,12 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +51,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
+import com.taemoi.project.services.DocumentoService;
 
 import jakarta.validation.Valid;
 
@@ -83,6 +86,9 @@ public class AlumnoController {
 
 	@Autowired
 	private ImagenService imagenService;
+
+	@Autowired
+	private DocumentoService documentoService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -149,6 +155,35 @@ public class AlumnoController {
         List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
         return ResponseEntity.ok(documentos);
     }
+
+	@GetMapping("/{alumnoId}/documentos/{documentoId}/descargar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<Resource> descargarDocumento(
+			@PathVariable Long alumnoId,
+			@PathVariable Long documentoId) {
+		try {
+			Documento documento = alumnoService.obtenerDocumentoDeAlumno(alumnoId, documentoId);
+			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+			if (documento.getTipo() != null) {
+				try {
+					mediaType = MediaType.parseMediaType(documento.getTipo());
+				} catch (Exception e) {
+					logger.warn("Tipo MIME inva1lido para documento {}: {}. Se usara application/octet-stream",
+							documento.getId(), documento.getTipo());
+				}
+			}
+
+			return ResponseEntity.ok()
+					.contentType(mediaType)
+					.header(HttpHeaders.CONTENT_DISPOSITION,
+							"attachment; filename=\"" + documento.getNombre() + "\"")
+					.body(recurso);
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+	}
 	
     @GetMapping("/count")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")

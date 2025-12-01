@@ -9,6 +9,8 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -141,6 +143,19 @@ public class DocumentoServiceImpl implements DocumentoService {
 	public Documento obtenerDocumentoPorId(Long documentoId) {
 		return documentoRepository.findById(documentoId)
 				.orElseThrow(() -> new RuntimeException("Documento no encontrado: " + documentoId));
+	}
+
+	@Override
+	public Resource obtenerRecursoDocumento(Documento documento) {
+		try {
+			Path rutaArchivo = Path.of(documento.getRuta());
+			if (!Files.exists(rutaArchivo)) {
+				throw new RuntimeException("El archivo no existe en el sistema de archivos: " + rutaArchivo);
+			}
+			return new UrlResource(rutaArchivo.toUri());
+		} catch (Exception e) {
+			throw new RuntimeException("No se pudo cargar el documento: " + documento.getNombre(), e);
+		}
 	}
 
 	/**

@@ -2,6 +2,7 @@ package com.taemoi.project.services;
 
 import java.io.IOException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
@@ -13,5 +14,7 @@ public interface DocumentoService {
 	void eliminarDocumento(Documento documento);
 
 	Documento obtenerDocumentoPorId(Long documentoId);
+
+	Resource obtenerRecursoDocumento(Documento documento);
 	
 }
