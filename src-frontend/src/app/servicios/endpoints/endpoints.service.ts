@@ -1037,4 +1037,34 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
+
+  obtenerUsuarios(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/admin/users`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarRolesUsuario(userId: number, roles: string[]): Observable<any> {
+    return this.http
+      .put<any>(`${this.urlBase}/admin/users/${userId}/roles`, roles, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerLimiteTurno(): Observable<number> {
+    return this.http
+      .get<number>(`${this.urlBase}/admin/configuracion/limite-turno`)
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarLimiteTurno(nuevoLimite: number): Observable<number> {
+    return this.http
+      .put<number>(`${this.urlBase}/admin/configuracion/limite-turno`, nuevoLimite, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
 }
