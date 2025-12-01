@@ -148,11 +148,28 @@ export class HeaderComponent implements OnInit, OnDestroy {
         return;
       }
 
+      // Don't close if clicking a dropdown toggle (let it open the dropdown)
+      const clickedDropdownToggle = target.closest('.dropdown-toggle');
+      if (clickedDropdownToggle) {
+        return;
+      }
+
+      // Don't close if clicking inside an open dropdown menu
+      const clickedInsideDropdown = target.closest('.dropdown-menu');
+      if (clickedInsideDropdown) {
+        // Only close if clicked on a dropdown-item (actual menu option)
+        const clickedDropdownItem = target.closest('.dropdown-item');
+        if (clickedDropdownItem) {
+          this.collapseNavbar();
+        }
+        return;
+      }
+
       const clickedInsideNavbar = target.closest('.navbar');
-      const clickedNavLink = target.closest('.nav-link') || target.closest('.dropdown-item');
+      const clickedNavLink = target.closest('.nav-link:not(.dropdown-toggle)'); // Exclude dropdown toggles
       const clickedButton = target.closest('.btn-login') || target.closest('.btn-my-classes') || target.closest('.btn-my-classes-mobile') || target.closest('.social-link');
 
-      // Close if clicked on a nav-link/dropdown-item/button OR clicked outside the navbar
+      // Close if clicked on a regular nav-link/button OR clicked outside the navbar
       if (clickedNavLink || clickedButton || !clickedInsideNavbar) {
         this.collapseNavbar();
       }
