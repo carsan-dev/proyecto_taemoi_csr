@@ -335,6 +335,29 @@
         </li>
       </ul>
     </li>
+
+    <!-- Administración Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()" [class.expanded]="expandedSections['administracion']">
+        <i class="bi bi-gear-fill"></i>
+        <span>Administración</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </div>
+      <ul class="submenu" [class.show]="expandedSections['administracion']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/gestionarRoles']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-person-badge-fill"></i>
+            <span>Gestionar Roles</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/configuracionSistema']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-sliders"></i>
+            <span>Configuración</span>
+          </a>
+        </li>
+      </ul>
+    </li>
   </ul>
   </nav>
 }
