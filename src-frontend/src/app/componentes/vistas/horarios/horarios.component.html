@@ -152,7 +152,7 @@
             <i class="bi bi-people"></i>
             <div>
               <h4>Plazas ocupadas</h4>
-              <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / 30 alumnos</p>
+              <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }} alumnos</p>
               @if (!quedanPocasPlazas(selectedTurno) && !estaLleno(selectedTurno)) {
                 <span class="badge-available">
                   <i class="bi bi-check-circle"></i>

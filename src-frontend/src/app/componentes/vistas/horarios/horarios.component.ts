@@ -18,6 +18,7 @@ export class HorariosComponent implements OnInit {
   isLoading: boolean = true;
   selectedTurno: any = null;
   showModal: boolean = false;
+  limiteTurno: number = 36; // Valor por defecto
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -25,7 +26,20 @@ export class HorariosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargarLimiteTurno();
     this.obtenerTurnos();
+  }
+
+  cargarLimiteTurno(): void {
+    this.endpointsService.obtenerLimiteTurno().subscribe({
+      next: (limite) => {
+        this.limiteTurno = limite;
+      },
+      error: (error) => {
+        console.error('Error al cargar el límite de turno, usando valor por defecto:', error);
+        this.limiteTurno = 36; // Valor por defecto en caso de error
+      }
+    });
   }
 
   obtenerTurnos() {
@@ -133,14 +147,13 @@ export class HorariosComponent implements OnInit {
 
   quedanPocasPlazas(turno: any): boolean {
     const numAlumnos = this.obtenerNumeroAlumnos(turno);
-    const MAX_ALUMNOS = 30;
-    const UMBRAL_POCAS_PLAZAS = 25; // Si hay 25 o más alumnos, quedan pocas plazas
-    return numAlumnos >= UMBRAL_POCAS_PLAZAS && numAlumnos < MAX_ALUMNOS;
+    // Quedan pocas plazas cuando el 80% o más de las plazas están ocupadas
+    const UMBRAL_POCAS_PLAZAS = Math.ceil(this.limiteTurno * 0.8);
+    return numAlumnos >= UMBRAL_POCAS_PLAZAS && numAlumnos < this.limiteTurno;
   }
 
   estaLleno(turno: any): boolean {
-    const MAX_ALUMNOS = 30;
-    return this.obtenerNumeroAlumnos(turno) >= MAX_ALUMNOS;
+    return this.obtenerNumeroAlumnos(turno) >= this.limiteTurno;
   }
 
   navegarAContacto(): void {
