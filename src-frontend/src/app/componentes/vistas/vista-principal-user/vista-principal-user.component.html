@@ -64,16 +64,16 @@
           <div>
             <div class="groups-grid">
               @for (grupo of grupos; track grupo.id) {
-                <div class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
+                <div class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo)">
                   <div class="card-shine"></div>
                   <div class="group-card-inner">
                     <div class="group-icon">
-                      <span class="emoji">{{ obtenerEmoticonoCategoria(grupo.id) }}</span>
+                      <i [ngClass]="obtenerIconoDeporte(grupo)"></i>
                     </div>
                     <div class="group-info">
                       <h3 class="group-name">{{ grupo.nombre }}</h3>
-                      <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo.id)">
-                        {{ obtenerNombreDeporte(grupo.id) }}
+                      <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo)">
+                        {{ obtenerNombreDeporte(grupo) }}
                       </span>
                     </div>
                   </div>
