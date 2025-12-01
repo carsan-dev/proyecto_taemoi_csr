@@ -186,7 +186,7 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
-    path: 'configuracionSistema',
+    path: 'configuracion-sistema',
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard],
   }
