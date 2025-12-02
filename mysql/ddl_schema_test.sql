@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno` (
   `tiene_derecho_examen` BIT(1) NOT NULL,
   `tiene_discapacidad` BIT(1) NULL DEFAULT NULL,
   `tiene_licencia` BIT(1) NOT NULL,
-  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'PADRES_HIJOS', 'PILATES') NOT NULL,
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'PADRES_HIJOS', 'PILATES', 'KICKBOXING') NOT NULL,
   `categoria_id` BIGINT NULL DEFAULT NULL,
   `foto_alumno_id` BIGINT NULL DEFAULT NULL,
   `grado_id` BIGINT NULL DEFAULT NULL,
@@ -111,6 +111,39 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno` (
     REFERENCES `taemoi_test`.`grado` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 23
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `taemoi_db`.`alumno_deporte`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_deporte` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `apto_para_examen` BIT(1) NULL DEFAULT NULL,
+  `competidor` BIT(1) NULL DEFAULT b'0',
+  `cuantia_tarifa` DOUBLE NULL DEFAULT NULL,
+  `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
+  `fecha_grado` DATE NULL DEFAULT NULL,
+  `fecha_licencia` DATE NULL DEFAULT NULL,
+  `fecha_peso` DATE NULL DEFAULT NULL,
+  `numero_licencia` INT NULL DEFAULT NULL,
+  `peso` DOUBLE NULL DEFAULT NULL,
+  `tiene_licencia` BIT(1) NULL DEFAULT b'0',
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'PADRES_HIJOS', 'PILATES', 'KICKBOXING') NULL DEFAULT NULL,
+  `alumno_id` BIGINT NOT NULL,
+  `grado_id` BIGINT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `FK_alumno_deporte_alumno` (`alumno_id` ASC) VISIBLE,
+  INDEX `FK_alumno_deporte_grado` (`grado_id` ASC) VISIBLE,
+  CONSTRAINT `FK_alumno_deporte_alumno`
+    FOREIGN KEY (`alumno_id`)
+    REFERENCES `taemoi_db`.`alumno` (`id`)
+    ON DELETE CASCADE,
+  CONSTRAINT `FK_alumno_deporte_grado`
+    FOREIGN KEY (`grado_id`)
+    REFERENCES `taemoi_db`.`grado` (`id`))
+ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
