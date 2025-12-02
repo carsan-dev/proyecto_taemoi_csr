@@ -25,10 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.AlumnoDeporteDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Convocatoria;
@@ -386,6 +388,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 																					// tu repositorio
 		nuevoAlumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
 
+		sincronizarDeportesDesdeDTO(nuevoAlumno, nuevoAlumnoDTO);
+
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
 		
@@ -496,7 +500,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
-			alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
 
 			alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
 			if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
@@ -566,6 +569,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			} else {
 				alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
 			}
+
+			sincronizarDeportesDesdeDTO(alumnoExistente, alumnoActualizado);
 
 			// Guardar los cambios en el alumno en la base de datos
 			return alumnoRepository.save(alumnoExistente);
@@ -1133,6 +1138,97 @@ public class AlumnoServiceImpl implements AlumnoService {
 		dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
 		dto.setPagado(alumnoConvocatoria.getPagado());
 		return dto;
+	}
+
+	private void sincronizarDeportesDesdeDTO(Alumno alumno, AlumnoDTO dto) {
+		alumno.getDeportes().clear();
+
+		List<AlumnoDeporteDTO> deportesDTO = dto.getDeportes();
+
+		if ((deportesDTO == null || deportesDTO.isEmpty()) && dto.getDeporte() != null) {
+			AlumnoDeporteDTO unico = new AlumnoDeporteDTO();
+			unico.setDeporte(dto.getDeporte());
+			unico.setTipoTarifa(dto.getTipoTarifa());
+			unico.setCuantiaTarifa(dto.getCuantiaTarifa());
+			unico.setCompetidor(dto.getCompetidor());
+			unico.setPeso(dto.getPeso());
+			unico.setFechaPeso(dto.getFechaPeso());
+			unico.setTieneLicencia(dto.getTieneLicencia());
+			unico.setNumeroLicencia(dto.getNumeroLicencia());
+			unico.setFechaLicencia(dto.getFechaLicencia());
+			unico.setGrado(dto.getGrado());
+			unico.setFechaGrado(dto.getFechaGrado());
+			unico.setAptoParaExamen(dto.getAptoParaExamen());
+			deportesDTO = List.of(unico);
+		}
+
+		if (deportesDTO != null) {
+			for (AlumnoDeporteDTO deporteDTO : deportesDTO) {
+				if (deporteDTO.getDeporte() == null) {
+					continue;
+				}
+
+				AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
+				alumnoDeporte.setAlumno(alumno);
+				alumnoDeporte.setDeporte(deporteDTO.getDeporte());
+				alumnoDeporte.setTipoTarifa(
+						deporteDTO.getTipoTarifa() != null ? deporteDTO.getTipoTarifa() : alumno.getTipoTarifa());
+				alumnoDeporte.setCuantiaTarifa(
+						deporteDTO.getCuantiaTarifa() != null ? deporteDTO.getCuantiaTarifa() : alumno.getCuantiaTarifa());
+				alumnoDeporte.setCompetidor(
+						deporteDTO.getCompetidor() != null ? deporteDTO.getCompetidor() : alumno.getCompetidor());
+				alumnoDeporte.setPeso(deporteDTO.getPeso() != null ? deporteDTO.getPeso() : alumno.getPeso());
+				alumnoDeporte
+						.setFechaPeso(deporteDTO.getFechaPeso() != null ? deporteDTO.getFechaPeso() : alumno.getFechaPeso());
+				alumnoDeporte
+						.setTieneLicencia(deporteDTO.getTieneLicencia() != null ? deporteDTO.getTieneLicencia() : alumno.getTieneLicencia());
+				alumnoDeporte.setNumeroLicencia(deporteDTO.getNumeroLicencia() != null ? deporteDTO.getNumeroLicencia()
+						: alumno.getNumeroLicencia());
+				alumnoDeporte
+						.setFechaLicencia(deporteDTO.getFechaLicencia() != null ? deporteDTO.getFechaLicencia() : alumno.getFechaLicencia());
+
+				if (deporteDTO.getGrado() != null) {
+					try {
+						TipoGrado tipoGrado = TipoGrado.valueOf(deporteDTO.getGrado());
+						Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGrado);
+						alumnoDeporte.setGrado(gradoSeleccionado);
+					} catch (IllegalArgumentException ex) {
+						// Grado inválido; se ignora
+					}
+				} else {
+					alumnoDeporte.setGrado(alumno.getGrado());
+				}
+
+				alumnoDeporte.setFechaGrado(
+						deporteDTO.getFechaGrado() != null ? deporteDTO.getFechaGrado() : alumno.getFechaGrado());
+				alumnoDeporte.setAptoParaExamen(
+						deporteDTO.getAptoParaExamen() != null ? deporteDTO.getAptoParaExamen() : alumno.getAptoParaExamen());
+
+				alumno.getDeportes().add(alumnoDeporte);
+			}
+		}
+
+		if (!alumno.getDeportes().isEmpty()) {
+			AlumnoDeporte principal = alumno.getDeportes().get(0);
+			alumno.setDeporte(principal.getDeporte());
+			if (principal.getTipoTarifa() != null) {
+				alumno.setTipoTarifa(principal.getTipoTarifa());
+			}
+			if (principal.getCuantiaTarifa() != null) {
+				alumno.setCuantiaTarifa(principal.getCuantiaTarifa());
+			}
+			alumno.setCompetidor(Optional.ofNullable(principal.getCompetidor()).orElse(false));
+			alumno.setPeso(principal.getPeso());
+			alumno.setFechaPeso(principal.getFechaPeso());
+			alumno.setTieneLicencia(Optional.ofNullable(principal.getTieneLicencia()).orElse(false));
+			alumno.setNumeroLicencia(principal.getNumeroLicencia());
+			alumno.setFechaLicencia(principal.getFechaLicencia());
+			if (principal.getGrado() != null) {
+				alumno.setGrado(principal.getGrado());
+			}
+			alumno.setFechaGrado(principal.getFechaGrado());
+			alumno.setAptoParaExamen(principal.getAptoParaExamen());
+		}
 	}
 
 	@Override
