@@ -391,7 +391,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
 
 			List<Alumno> alumnosTaekwondo = alumnos.stream()
-					.filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
+					.filter(a -> hasDeporte(a, Deporte.TAEKWONDO))
 					.collect(Collectors.toList());
 			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
 			html.append("Taekwondo");
@@ -399,7 +399,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append(generarSeccion(alumnosTaekwondo));
 
 			List<Alumno> alumnosKickboxing = alumnos.stream()
-					.filter(a -> a.getDeporte() == Deporte.KICKBOXING)
+					.filter(a -> hasDeporte(a, Deporte.KICKBOXING))
 					.collect(Collectors.toList());
 			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
 			html.append("Kickboxing");
@@ -949,7 +949,7 @@ public class PDFServiceImpl implements PDFService {
 
 		// Process each alumno to build the turno-alumno-deporte relationships
 		for (Alumno alumno : allAlumnos) {
-			Deporte deporte = alumno.getDeporte();
+			Deporte deporte = obtenerDeportePrincipal(alumno);
 			if (deporte == null) continue; // Skip alumnos without a deporte
 
 			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
@@ -1628,14 +1628,21 @@ public class PDFServiceImpl implements PDFService {
 				// Determine color based on student's sport (for general PDF with all sports)
 				String colorAlumno = "#007bff"; // Default
 				String deporteNombre = "";
-				if (deporteFiltro == null && alumno.getDeporte() != null) {
+				Deporte deporteAlumno = obtenerDeportePrincipal(alumno);
+				if (deporteFiltro == null && deporteAlumno != null) {
 					// In general PDF, color-code by student's sport
-					if (alumno.getDeporte() == Deporte.TAEKWONDO) {
+					if (deporteAlumno == Deporte.TAEKWONDO) {
 						colorAlumno = "#0D47A1"; // Blue
 						deporteNombre = " <span style='color: #0D47A1; font-weight: bold;'>[Taekwondo]</span>";
-					} else if (alumno.getDeporte() == Deporte.KICKBOXING) {
+					} else if (deporteAlumno == Deporte.KICKBOXING) {
 						colorAlumno = "#ff4500"; // Orange
 						deporteNombre = " <span style='color: #ff4500; font-weight: bold;'>[Kickboxing]</span>";
+					} else if (deporteAlumno == Deporte.PILATES) {
+						colorAlumno = "#6c63ff";
+						deporteNombre = " <span style='color: #6c63ff; font-weight: bold;'>[Pilates]</span>";
+					} else if (deporteAlumno == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+						colorAlumno = "#f5a524";
+						deporteNombre = " <span style='color: #f5a524; font-weight: bold;'>[Defensa Personal]</span>";
 					}
 				}
 
@@ -1970,5 +1977,19 @@ public class PDFServiceImpl implements PDFService {
 			return "";
 		}
 		return value.replace("\"", "\"\"");
+	}
+
+	private boolean hasDeporte(Alumno alumno, Deporte deporte) {
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			return alumno.getDeportes().stream().anyMatch(ad -> ad.getDeporte() == deporte);
+		}
+		return alumno.getDeporte() == deporte;
+	}
+
+	private Deporte obtenerDeportePrincipal(Alumno alumno) {
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			return alumno.getDeportes().get(0).getDeporte();
+		}
+		return alumno.getDeporte();
 	}
 }
