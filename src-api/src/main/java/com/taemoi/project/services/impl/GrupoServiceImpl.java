@@ -247,7 +247,7 @@ public class GrupoServiceImpl implements GrupoService {
 					continue;
 				}
 
-				// Get all students by deporte
+				// Get all students by deporte (multi-deporte)
 				alumnos = alumnoRepository.findByDeporte(deporte);
 			}
 
@@ -295,7 +295,7 @@ public class GrupoServiceImpl implements GrupoService {
 				throw new GrupoNoEncontradoException("Deporte no válido: " + tipo);
 			}
 
-			// Get all students by deporte field, not just those in groups
+			// Get all students by deporte field, not just those in groups (multi-deporte)
 			alumnos = alumnoRepository.findByDeporte(deporte);
 		}
 

@@ -315,7 +315,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
 		nuevoAlumno.setRolFamiliar(nuevoAlumnoDTO.getRolFamiliar() != null ? nuevoAlumnoDTO.getRolFamiliar() : RolFamiliar.NINGUNO);
 		nuevoAlumno.setGrupoFamiliar(nuevoAlumnoDTO.getGrupoFamiliar());
-		nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
 		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
