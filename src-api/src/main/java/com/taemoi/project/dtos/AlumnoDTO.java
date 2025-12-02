@@ -1,6 +1,8 @@
 package com.taemoi.project.dtos;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
@@ -42,13 +44,15 @@ public class AlumnoDTO {
 	private Date fechaLicencia;
 	private Boolean tieneDiscapacidad;
 	private Boolean aptoParaExamen;
+	private List<AlumnoDeporteDTO> deportes;
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
 			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
 			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
-			Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
+			Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen,
+			List<AlumnoDeporteDTO> deportes) {
 		this.id = id;
 		this.nombre = nombre;
 		this.apellidos = apellidos;
@@ -81,6 +85,7 @@ public class AlumnoDTO {
 		this.fechaLicencia = fechaLicencia;
 		this.tieneDiscapacidad = tieneDiscapacidad;
 		this.aptoParaExamen = aptoParaExamen;
+		this.deportes = deportes;
 	}
 
 	public AlumnoDTO() {
@@ -215,16 +220,16 @@ public class AlumnoDTO {
 		return fechaPeso;
 	}
 
+	public void setFechaPeso(Date fechaPeso) {
+		this.fechaPeso = fechaPeso;
+	}
+
 	public Deporte getDeporte() {
 		return deporte;
 	}
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
-	}
-
-	public void setFechaPeso(Date fechaPeso) {
-		this.fechaPeso = fechaPeso;
 	}
 
 	public String getCategoria() {
@@ -339,13 +344,14 @@ public class AlumnoDTO {
 		this.aptoParaExamen = aptoParaExamen;
 	}
 
-	/**
-	 * Convierte un objeto Alumno en un objeto AlumnoDTO.
-	 *
-	 * @param alumno El objeto Alumno a convertir.
-	 * @return El objeto AlumnoDTO resultante, o null si el parámetro alumno es
-	 *         null.
-	 */
+	public List<AlumnoDeporteDTO> getDeportes() {
+		return deportes;
+	}
+
+	public void setDeportes(List<AlumnoDeporteDTO> deportes) {
+		this.deportes = deportes;
+	}
+
 	public static AlumnoDTO deAlumno(Alumno alumno) {
 		if (alumno == null) {
 			return null;
@@ -361,8 +367,11 @@ public class AlumnoDTO {
 			telefono = Integer.valueOf(alumno.getTelefono());
 		}
 
-		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
+
+		List<AlumnoDeporteDTO> deportes = alumno.getDeportes() != null
+				? alumno.getDeportes().stream().map(AlumnoDeporteDTO::new).collect(Collectors.toList())
+				: null;
 
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
@@ -371,6 +380,6 @@ public class AlumnoDTO {
 				alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(),
 				categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
 				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
-				alumno.getAptoParaExamen());
+				alumno.getAptoParaExamen(), deportes);
 	}
 }

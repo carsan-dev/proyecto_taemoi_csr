@@ -118,6 +118,10 @@ public class Alumno {
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "foto_alumno_id")
 	private Imagen fotoAlumno;
+
+	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<AlumnoDeporte> deportes = new ArrayList<>();
 	
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
@@ -418,12 +422,27 @@ public class Alumno {
 		this.documentos = documentos;
 	}
 
+	public List<AlumnoDeporte> getDeportes() {
+		return deportes;
+	}
+
+	public void setDeportes(List<AlumnoDeporte> deportes) {
+		this.deportes = deportes;
+	}
+
+	// Compatibilidad: devolver el primero si no hay campo simple
 	public Deporte getDeporte() {
-		return deporte;
+		return deporte != null ? deporte : (deportes.isEmpty() ? null : deportes.get(0).getDeporte());
 	}
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+		if (deporte != null && deportes.isEmpty()) {
+			AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
+			alumnoDeporte.setAlumno(this);
+			alumnoDeporte.setDeporte(deporte);
+			deportes.add(alumnoDeporte);
+		}
 	}
 
 	public List<Grupo> getGrupos() {
