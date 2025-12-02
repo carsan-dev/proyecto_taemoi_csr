@@ -373,13 +373,19 @@ public class AlumnoDTO {
 				? alumno.getDeportes().stream().map(AlumnoDeporteDTO::new).collect(Collectors.toList())
 				: null;
 
+		// Fallback: si el deporte principal no est�� en Alumno, usar el primero de la lista
+		Deporte deportePrincipal = alumno.getDeporte();
+		if (deportePrincipal == null && alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			deportePrincipal = alumno.getDeportes().get(0).getDeporte();
+		}
+
 		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
-				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
-				alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(),
-				categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
-				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
-				alumno.getAptoParaExamen(), deportes);
+				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(),
+				alumno.getActivo(), alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(),
+				alumno.getFechaPeso(), deportePrincipal, categoriaNombre, gradoTipo, alumno.getFechaGrado(),
+				alumno.getFotoAlumno(), alumno.getTieneLicencia(), alumno.getNumeroLicencia(), alumno.getFechaLicencia(),
+				alumno.getTieneDiscapacidad(), alumno.getAptoParaExamen(), deportes);
 	}
 }
