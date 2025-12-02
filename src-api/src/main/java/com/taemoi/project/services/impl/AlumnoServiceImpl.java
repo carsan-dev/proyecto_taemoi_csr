@@ -1166,8 +1166,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		if (deportesDTO != null) {
+			Set<Deporte> deportesAgregados = new HashSet<>();
+
 			for (AlumnoDeporteDTO deporteDTO : deportesDTO) {
 				if (deporteDTO.getDeporte() == null) {
+					continue;
+				}
+
+				// Evitar duplicados del mismo deporte para este alumno
+				if (!deportesAgregados.add(deporteDTO.getDeporte())) {
 					continue;
 				}
 
