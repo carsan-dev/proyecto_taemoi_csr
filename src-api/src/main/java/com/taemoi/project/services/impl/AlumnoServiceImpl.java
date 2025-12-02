@@ -917,7 +917,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
 		TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
-		Deporte deporte = alumno.getDeporte();
+		Deporte deporte = obtenerDeportePrincipal(alumno);
 		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
 
@@ -939,6 +939,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
+
+		if (!practicaDeporte(alumno, convocatoria.getDeporte())) {
+			throw new IllegalArgumentException("El alumno no practica el deporte de la convocatoria");
+		}
 
 		TipoGrado gradoSiguiente = calcularSiguienteGrado(alumno);
 		if (gradoSiguiente == null) {
@@ -1286,5 +1290,22 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 		};
+	}
+
+	private Deporte obtenerDeportePrincipal(Alumno alumno) {
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			return alumno.getDeportes().get(0).getDeporte();
+		}
+		return alumno.getDeporte();
+	}
+
+	private boolean practicaDeporte(Alumno alumno, Deporte deporte) {
+		if (deporte == null) {
+			return true;
+		}
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			return alumno.getDeportes().stream().anyMatch(ad -> ad.getDeporte() == deporte);
+		}
+		return alumno.getDeporte() == deporte;
 	}
 }
