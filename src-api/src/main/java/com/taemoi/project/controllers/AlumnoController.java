@@ -491,4 +491,128 @@ public class AlumnoController {
 		alumnoService.eliminarAlumnoDeConvocatoria(alumnoId, convocatoriaId);
 		return ResponseEntity.noContent().build();
 	}
+
+	// ==================== ENDPOINTS MULTI-DEPORTE ====================
+
+	/**
+	 * Obtiene todos los deportes de un alumno
+	 * GET /api/alumnos/{id}/deportes
+	 */
+	@GetMapping("/{id}/deportes")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
+		try {
+			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoService.obtenerDeportesDelAlumno(id);
+			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
+					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
+					.collect(Collectors.toList());
+			return ResponseEntity.ok(deportesDTO);
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
+	/**
+	 * Agrega un deporte a un alumno
+	 * POST /api/alumnos/{id}/deportes
+	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO" }
+	 */
+	@PostMapping("/{id}/deportes")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> agregarDeporteAAlumno(@PathVariable Long id,
+			@RequestBody Map<String, String> params) {
+		try {
+			String deporteStr = params.get("deporte");
+			String gradoStr = params.get("gradoInicial");
+
+			if (deporteStr == null) {
+				return ResponseEntity.badRequest().body("El deporte es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporte = com.taemoi.project.entities.Deporte.valueOf(deporteStr);
+			com.taemoi.project.entities.TipoGrado gradoInicial = gradoStr != null
+					? com.taemoi.project.entities.TipoGrado.valueOf(gradoStr)
+					: null;
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.agregarDeporteAAlumno(id, deporte, gradoInicial);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al agregar deporte al alumno", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al agregar deporte");
+		}
+	}
+
+	/**
+	 * Elimina un deporte de un alumno
+	 * DELETE /api/alumnos/{id}/deportes/{deporte}
+	 */
+	@DeleteMapping("/{id}/deportes/{deporte}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> removerDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			alumnoService.removerDeporteDeAlumno(id, deporteEnum);
+			return ResponseEntity.noContent().build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al remover deporte del alumno", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al remover deporte");
+		}
+	}
+
+	/**
+	 * Actualiza el grado de un alumno en un deporte específico
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/grado
+	 * Body: { "nuevoGrado": "AZUL" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/grado")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarGradoPorDeporte(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String nuevoGradoStr = params.get("nuevoGrado");
+			if (nuevoGradoStr == null) {
+				return ResponseEntity.badRequest().body("El grado es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.TipoGrado nuevoGrado = com.taemoi.project.entities.TipoGrado.valueOf(nuevoGradoStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.actualizarGradoPorDeporte(id, deporteEnum, nuevoGrado);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar grado por deporte", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar grado");
+		}
+	}
+
+	/**
+	 * Obtiene un alumno con todos sus deportes (respuesta completa)
+	 * GET /api/alumnos/{id}/completo
+	 */
+	@GetMapping("/{id}/completo")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<com.taemoi.project.dtos.response.AlumnoConDeportesDTO> obtenerAlumnoCompleto(@PathVariable Long id) {
+		try {
+			Alumno alumno = alumnoService.obtenerAlumnoPorId(id)
+					.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
+			com.taemoi.project.dtos.response.AlumnoConDeportesDTO dto =
+					com.taemoi.project.dtos.response.AlumnoConDeportesDTO.deAlumno(alumno);
+			return ResponseEntity.ok(dto);
+		} catch (AlumnoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			logger.error("Error al obtener alumno completo", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
 }

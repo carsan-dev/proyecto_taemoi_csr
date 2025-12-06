@@ -95,4 +95,30 @@ public interface AlumnoService {
 	void eliminarDocumentoDeAlumno(Long alumnoId, Long documentoId);
 
 	Documento obtenerDocumentoDeAlumno(Long alumnoId, Long documentoId);
+
+	// ==================== MÉTODOS MULTI-DEPORTE ====================
+
+	/**
+	 * Obtiene todos los deportes de un alumno
+	 */
+	List<com.taemoi.project.entities.AlumnoDeporte> obtenerDeportesDelAlumno(Long alumnoId);
+
+	/**
+	 * Agrega un deporte a un alumno
+	 */
+	com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte,
+			com.taemoi.project.entities.TipoGrado gradoInicial);
+
+	/**
+	 * Remueve un deporte de un alumno
+	 */
+	void removerDeporteDeAlumno(Long alumnoId, com.taemoi.project.entities.Deporte deporte);
+
+	/**
+	 * Actualiza el grado de un alumno en un deporte específico
+	 */
+	com.taemoi.project.entities.AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte,
+			com.taemoi.project.entities.TipoGrado nuevoGrado);
 }

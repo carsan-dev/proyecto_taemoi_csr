@@ -123,6 +123,7 @@ public class Alumno {
 	@JsonManagedReference
 	private List<Documento> documentos = new ArrayList<>();
 
+	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	@Enumerated(EnumType.STRING)
 	private Deporte deporte;
 
@@ -131,15 +132,23 @@ public class Alumno {
 	@JsonManagedReference
 	private Categoria categoria;
 
+	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
 	private Grado grado;
 
+	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	@Temporal(TemporalType.DATE)
 	private Date fechaGrado;
 
+	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	private Boolean aptoParaExamen;
+
+	// NUEVO: Relación de deportes del alumno (multi-deporte)
+	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@JsonManagedReference
+	private List<AlumnoDeporte> deportes = new ArrayList<>();
 	
 	@Column(nullable = false)
 	private Boolean tieneDerechoExamen = false;
@@ -476,5 +485,25 @@ public class Alumno {
 
 	public void setConvocatorias(List<AlumnoConvocatoria> convocatorias) {
 		this.convocatorias = convocatorias;
+	}
+
+	public List<AlumnoDeporte> getDeportes() {
+		return deportes;
+	}
+
+	public void setDeportes(List<AlumnoDeporte> deportes) {
+		this.deportes = deportes;
+	}
+
+	public void addDeporte(AlumnoDeporte alumnoDeporte) {
+		if (!this.deportes.contains(alumnoDeporte)) {
+			this.deportes.add(alumnoDeporte);
+			alumnoDeporte.setAlumno(this);
+		}
+	}
+
+	public void removeDeporte(AlumnoDeporte alumnoDeporte) {
+		this.deportes.remove(alumnoDeporte);
+		alumnoDeporte.setAlumno(null);
 	}
 }
