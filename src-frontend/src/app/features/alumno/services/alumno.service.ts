@@ -305,4 +305,40 @@ export class AlumnoService {
       { withCredentials: true }
     );
   }
+
+  /**
+   * Update exam eligibility status for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param aptoParaExamen New exam eligibility status
+   */
+  actualizarAptoParaExamen(
+    alumnoId: number,
+    deporte: string,
+    aptoParaExamen: boolean
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/apto-examen`,
+      { aptoParaExamen },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update grade date for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaGrado New grade date (YYYY-MM-DD format)
+   */
+  actualizarFechaGrado(
+    alumnoId: number,
+    deporte: string,
+    fechaGrado: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-grado`,
+      { fechaGrado },
+      { withCredentials: true }
+    );
+  }
 }

@@ -143,6 +143,42 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
+	public AlumnoDeporte actualizarAptoParaExamen(Long alumnoId, Deporte deporte, Boolean aptoParaExamen) {
+		// Buscar el AlumnoDeporte
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Actualizar estado de aptitud
+		alumnoDeporte.setAptoParaExamen(aptoParaExamen);
+
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaGrado(Long alumnoId, Deporte deporte, java.util.Date fechaGrado) {
+		// Buscar el AlumnoDeporte
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Validar que el deporte admite grados
+		if (deporte == Deporte.PILATES || deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+			throw new IllegalArgumentException(
+					"El deporte " + deporte + " no tiene sistema de grados");
+		}
+
+		// Actualizar fecha de grado
+		alumnoDeporte.setFechaGrado(fechaGrado);
+
+		// Recalcular aptitud para examen basado en la nueva fecha
+		boolean aptoParaExamen = esAptoParaExamen(alumnoDeporte);
+		alumnoDeporte.setAptoParaExamen(aptoParaExamen);
+
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
 	public TipoGrado calcularSiguienteGrado(AlumnoDeporte alumnoDeporte) {
 		// Validar que tiene grado actual
 		if (alumnoDeporte.getGrado() == null) {
