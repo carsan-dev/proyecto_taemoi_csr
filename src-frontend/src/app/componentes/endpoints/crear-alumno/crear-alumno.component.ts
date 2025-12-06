@@ -281,6 +281,22 @@ export class CrearAlumnoComponent implements OnInit {
         TipoTarifa.KICKBOXING,
       ];
       this.aplicarFiltrosGrado();
+    } else if (selectedDeporte === 'PILATES') {
+      this.showAllFields();
+      // Tarifas para Pilates
+      this.tiposTarifa = [
+        TipoTarifa.PILATES,
+      ];
+      // Pilates typically doesn't have grades, so clear grade requirement
+      this.alumnoData.get('grado')?.clearValidators();
+      this.alumnoData.get('grado')?.updateValueAndValidity();
+    } else if (selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA') {
+      this.showAllFields();
+      // Tarifas para Defensa Personal Femenina
+      this.tiposTarifa = [
+        TipoTarifa.DEFENSA_PERSONAL_FEMENINA,
+      ];
+      this.aplicarFiltrosGrado();
     }
   }
 
