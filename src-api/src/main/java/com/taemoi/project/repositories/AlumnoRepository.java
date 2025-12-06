@@ -228,10 +228,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT a FROM Alumno a WHERE a.aptoParaExamen = true AND a.id = :id")
 	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
 
-	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes d WHERE a.grado IS NOT NULL AND d.deporte IN :deportes")
 	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
 
 	// Obtener todos los alumnos por deporte
-	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes d WHERE d.deporte = :deporte")
-	List<Alumno> findByDeporte(@Param("deporte") Deporte deporte);
+	List<Alumno> findByDeporte(Deporte deporte);
 }
