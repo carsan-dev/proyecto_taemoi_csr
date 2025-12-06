@@ -21,9 +21,15 @@ public class AlumnoConvocatoria {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	@ManyToOne
 	@JoinColumn(name = "alumno_id")
 	private Alumno alumno;
+
+	// NUEVO: Relación con AlumnoDeporte (vincula examen a deporte específico)
+	@ManyToOne
+	@JoinColumn(name = "alumno_deporte_id")
+	private AlumnoDeporte alumnoDeporte;
 
 	@ManyToOne
 	@JoinColumn(name = "convocatoria_id")
@@ -118,5 +124,13 @@ public class AlumnoConvocatoria {
 
 	public void setGradoSiguiente(TipoGrado gradoSiguiente) {
 		this.gradoSiguiente = gradoSiguiente;
+	}
+
+	public AlumnoDeporte getAlumnoDeporte() {
+		return alumnoDeporte;
+	}
+
+	public void setAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
+		this.alumnoDeporte = alumnoDeporte;
 	}
 }

@@ -124,4 +124,71 @@ public class ProductoAlumnoController {
         ProductoAlumnoDTO productoAlumnoDTO = productoAlumnoService.renovarLicencia(alumnoId);
         return ResponseEntity.ok(productoAlumnoDTO);
     }
+
+	// ===== ENDPOINTS MULTI-DEPORTE =====
+
+	/**
+	 * Asigna un producto a un alumno para un deporte específico
+	 * POST /api/productos-alumno/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}
+	 */
+	@PostMapping("/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<ProductoAlumnoDTO> asignarProductoAAlumnoDeporte(
+			@PathVariable Long alumnoId,
+			@PathVariable Long productoId,
+			@PathVariable String deporte,
+			@Valid @RequestBody ProductoAlumnoDTO detallesDTO) {
+
+		try {
+			ProductoAlumnoDTO productoAlumnoDTO = productoAlumnoService.asignarProductoAAlumnoDeporte(
+				alumnoId, productoId, deporte, detallesDTO);
+			return ResponseEntity.ok(productoAlumnoDTO);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
+	}
+
+	/**
+	 * Carga mensualidades para todos los alumnos, una por cada deporte que practican
+	 * POST /api/productos-alumno/mensualidades/multi-deporte
+	 */
+	@PostMapping("/mensualidades/multi-deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> cargarMensualidadesMultiDeporte(@RequestBody String nombreMensualidad) {
+		try {
+			productoAlumnoService.cargarMensualidadesMultiDeporte(nombreMensualidad);
+			return ResponseEntity.ok(Map.of("mensaje",
+				"Mensualidades multi-deporte creadas correctamente para todos los alumnos."));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("mensaje", "Error al crear mensualidades: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * Carga mensualidad individual para un deporte específico de un alumno
+	 * POST /api/productos-alumno/mensualidades/individual-deporte
+	 */
+	@PostMapping("/mensualidades/individual-deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> cargarMensualidadIndividualPorDeporte(
+			@RequestParam Long alumnoId,
+			@RequestParam String deporte,
+			@RequestBody String nombreMensualidad,
+			@RequestParam(defaultValue = "false") boolean forzar) {
+		try {
+			productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar);
+			return ResponseEntity.ok(Map.of("mensaje",
+				"Mensualidad individual creada correctamente para " + deporte + "."));
+		} catch (IllegalStateException ex) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(Map.of("mensaje", ex.getMessage(), "accion", "confirmar"));
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(Map.of("mensaje", ex.getMessage()));
+		} catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("mensaje", "Ocurrió un error al crear la mensualidad.", "detalle", ex.getMessage()));
+		}
+	}
 }

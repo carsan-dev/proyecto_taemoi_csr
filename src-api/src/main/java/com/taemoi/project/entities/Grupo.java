@@ -6,6 +6,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +17,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -29,6 +32,11 @@ public class Grupo {
 	private String nombre;
 
 	private String tipo;
+
+	// NUEVO: Campo para identificar explícitamente el deporte del grupo
+	@Enumerated(EnumType.STRING)
+	@NotNull(message = "El deporte del grupo no puede ser nulo")
+	private Deporte deporte;
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
@@ -61,6 +69,14 @@ public class Grupo {
 
 	public void setTipo(String tipo) {
 		this.tipo = tipo;
+	}
+
+	public Deporte getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(Deporte deporte) {
+		this.deporte = deporte;
 	}
 
 	public List<Alumno> getAlumnos() {

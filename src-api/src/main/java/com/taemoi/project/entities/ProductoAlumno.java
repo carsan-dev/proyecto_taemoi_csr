@@ -24,11 +24,17 @@ public class ProductoAlumno {
 	@JoinColumn(name = "producto_id")
 	private Producto producto;
 
-	// Relación con Alumno
+	// Relación con Alumno (DEPRECATED: usar alumnoDeporte)
 	@ManyToOne
 	@JoinColumn(name = "alumno_id")
 	@JsonIgnore
 	private Alumno alumno;
+
+	// NUEVO: Relación con AlumnoDeporte (para productos específicos por deporte)
+	@ManyToOne
+	@JoinColumn(name = "alumno_deporte_id")
+	@JsonIgnore
+	private AlumnoDeporte alumnoDeporte;
 
 	private String concepto;
 
@@ -122,5 +128,13 @@ public class ProductoAlumno {
 
 	public void setNotas(String notas) {
 		this.notas = notas;
+	}
+
+	public AlumnoDeporte getAlumnoDeporte() {
+		return alumnoDeporte;
+	}
+
+	public void setAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
+		this.alumnoDeporte = alumnoDeporte;
 	}
 }

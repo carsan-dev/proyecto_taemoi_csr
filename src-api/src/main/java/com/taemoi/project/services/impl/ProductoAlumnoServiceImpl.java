@@ -40,6 +40,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private AlumnoConvocatoriaRepository alumnoConvocatoriaRepository;
 
+	@Autowired
+	private com.taemoi.project.repositories.AlumnoDeporteRepository alumnoDeporteRepository;
+
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -371,5 +374,133 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		dto.setFechaPago(productoAlumno.getFechaPago());
 		dto.setNotas(productoAlumno.getNotas());
 		return dto;
+	}
+
+	// ===== IMPLEMENTACIÓN MÉTODOS MULTI-DEPORTE =====
+
+	@Override
+	public ProductoAlumnoDTO asignarProductoAAlumnoDeporte(Long alumnoId, Long productoId, String deporte, ProductoAlumnoDTO detallesDTO) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+
+		Producto producto = productoRepository.findById(productoId)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+
+		// Convertir string a Deporte enum
+		com.taemoi.project.entities.Deporte deporteEnum;
+		try {
+			deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no válido: " + deporte +
+					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
+		}
+
+		// Buscar AlumnoDeporte correspondiente
+		com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteRepository
+				.findByAlumnoIdAndDeporte(alumnoId, deporteEnum)
+				.orElseThrow(() -> new IllegalArgumentException(
+					"El alumno no practica el deporte " + deporte));
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(producto);
+		productoAlumno.setAlumnoDeporte(alumnoDeporte);
+		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
+		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setNotas(detallesDTO.getNotas());
+
+		if (productoAlumno.getPagado()) {
+			productoAlumno.setFechaPago(new Date());
+		}
+
+		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+
+		return convertirADTO(savedProductoAlumno);
+	}
+
+	@Override
+	public void cargarMensualidadesMultiDeporte(String mesAno) {
+		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+		// Obtener todos los AlumnoDeporte activos
+		List<com.taemoi.project.entities.AlumnoDeporte> alumnosDeportes =
+			alumnoDeporteRepository.findAll().stream()
+				.filter(ad -> ad.getActivo() != null && ad.getActivo())
+				.collect(Collectors.toList());
+
+		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
+
+			// Verificar si ya existe esta mensualidad para este deporte
+			boolean yaExiste = productoAlumnoRepository.findByAlumnoId(alumno.getId()).stream()
+					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
+
+			if (!yaExiste) {
+				ProductoAlumno productoAlumno = new ProductoAlumno();
+				productoAlumno.setAlumno(alumno);
+				productoAlumno.setProducto(productoMensualidad);
+				productoAlumno.setAlumnoDeporte(alumnoDeporte);
+				productoAlumno.setConcepto(conceptoCompleto);
+				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setCantidad(1);
+				productoAlumno.setPagado(false);
+
+				productoAlumnoRepository.save(productoAlumno);
+			}
+		}
+	}
+
+	@Override
+	public void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar) {
+		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+
+		// Convertir string a Deporte enum
+		com.taemoi.project.entities.Deporte deporteEnum;
+		try {
+			deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no válido: " + deporte +
+					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
+		}
+
+		// Buscar AlumnoDeporte correspondiente
+		com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteRepository
+				.findByAlumnoIdAndDeporte(alumnoId, deporteEnum)
+				.orElseThrow(() -> new IllegalArgumentException(
+					"El alumno no practica el deporte " + deporte));
+
+		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+
+		String conceptoCompleto = nombreMensualidad + " - " + deporteEnum.name();
+
+		boolean yaExiste = productoAlumnoRepository.findByAlumnoId(alumno.getId()).stream()
+				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
+
+		if (yaExiste && !forzar) {
+			throw new IllegalStateException("El alumno ya tiene asignada la " + conceptoCompleto);
+		}
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setProducto(productoMensualidad);
+		productoAlumno.setAlumnoDeporte(alumnoDeporte);
+		productoAlumno.setConcepto(conceptoCompleto);
+		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPagado(false);
+
+		productoAlumnoRepository.save(productoAlumno);
 	}
 }

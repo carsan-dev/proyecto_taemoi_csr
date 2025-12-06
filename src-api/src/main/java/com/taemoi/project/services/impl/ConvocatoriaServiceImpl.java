@@ -48,6 +48,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	@Autowired
 	private GradoRepository gradoRepository;
 
+	@Autowired
+	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
+
 	@Override
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
 		Convocatoria convocatoria = new Convocatoria();
@@ -162,17 +165,36 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
 	    for (AlumnoConvocatoria ac : convocatoria.getAlumnosConvocatoria()) {
-	        Alumno alumno = ac.getAlumno();
-	        TipoGrado nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
-	        if (nuevoTipo != null) {
-	            Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-	            alumno.setGrado(nuevoGrado);
-	            alumno.setFechaGrado(new Date());
-	            alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
+	        // Verificar si existe AlumnoDeporte (multi-sport)
+	        if (ac.getAlumnoDeporte() != null) {
+	            // MULTI-SPORT: Actualizar grado en AlumnoDeporte
+	            com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = ac.getAlumnoDeporte();
+	            TipoGrado nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
 
-	            alumno.setTieneDerechoExamen(false);
-
-	            alumnoRepository.save(alumno);
+	            if (nuevoTipo != null) {
+	                Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
+	                if (nuevoGrado != null) {
+	                    alumnoDeporteService.actualizarGradoPorDeporte(
+	                        alumnoDeporte.getAlumno().getId(),
+	                        alumnoDeporte.getDeporte(),
+	                        nuevoTipo
+	                    );
+	                }
+	            }
+	        } else {
+	            // LEGACY: Actualizar grado directamente en Alumno (backward compatibility)
+	            Alumno alumno = ac.getAlumno();
+	            TipoGrado nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
+	            if (nuevoTipo != null) {
+	                Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
+	                if (nuevoGrado != null) {
+	                    alumno.setGrado(nuevoGrado);
+	                    alumno.setFechaGrado(new Date());
+	                    alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
+	                    alumno.setTieneDerechoExamen(false);
+	                    alumnoRepository.save(alumno);
+	                }
+	            }
 	        }
 	    }
 	}
