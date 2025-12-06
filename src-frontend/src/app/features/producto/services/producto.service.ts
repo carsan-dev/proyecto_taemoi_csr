@@ -197,4 +197,63 @@ export class ProductoService {
       { withCredentials: true }
     );
   }
+
+  // ============ MULTI-SPORT Product Operations ============
+
+  /**
+   * Assign a product to a student for a specific sport
+   * @param alumnoId Student ID
+   * @param productoId Product ID
+   * @param deporte Sport name (TAEKWONDO, KICKBOXING, etc.)
+   * @param detalles Product details
+   */
+  asignarProductoAAlumnoDeporte(
+    alumnoId: number,
+    productoId: number,
+    deporte: string,
+    detalles: ProductoAlumnoDTO
+  ): Observable<ProductoAlumnoDTO> {
+    return this.http.post<ProductoAlumnoDTO>(
+      `${this.productoAlumnoBase}/alumno/${alumnoId}/producto/${productoId}/deporte/${deporte}`,
+      detalles,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Load monthly fees for all students, one per sport they practice
+   * @param mesAno Month and year in format "MM/YYYY"
+   */
+  cargarMensualidadesMultiDeporte(mesAno: string): Observable<any> {
+    return this.http.post(
+      `${this.productoAlumnoBase}/mensualidades/multi-deporte`,
+      mesAno,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Load monthly fee for a specific student and sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param mesAno Month and year in format "MM/YYYY"
+   * @param forzar Force creation even if already exists
+   */
+  cargarMensualidadIndividualPorDeporte(
+    alumnoId: number,
+    deporte: string,
+    mesAno: string,
+    forzar: boolean = false
+  ): Observable<any> {
+    const params = new HttpParams()
+      .set('alumnoId', alumnoId.toString())
+      .set('deporte', deporte)
+      .set('forzar', forzar.toString());
+
+    return this.http.post(
+      `${this.productoAlumnoBase}/mensualidades/individual-deporte`,
+      mesAno,
+      { params, withCredentials: true }
+    );
+  }
 }

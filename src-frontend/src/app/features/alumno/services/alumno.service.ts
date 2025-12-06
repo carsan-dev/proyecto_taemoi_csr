@@ -235,4 +235,74 @@ export class AlumnoService {
       withCredentials: true,
     });
   }
+
+  // ==================== MULTI-SPORT METHODS ====================
+
+  /**
+   * Get all sports (deportes) for a specific student
+   * Returns array of AlumnoDeporteDTO
+   */
+  obtenerDeportesDelAlumno(alumnoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.urlBase}/${alumnoId}/deportes`, {
+      withCredentials: true,
+    });
+  }
+
+  /**
+   * Get complete student data with all sports
+   * Returns AlumnoConDeportesDTO
+   */
+  obtenerAlumnoCompleto(alumnoId: number): Observable<any> {
+    return this.http.get<any>(`${this.urlBase}/${alumnoId}/completo`, {
+      withCredentials: true,
+    });
+  }
+
+  /**
+   * Add a sport to a student
+   * @param alumnoId Student ID
+   * @param deporte Sport name (TAEKWONDO, KICKBOXING, etc.)
+   * @param gradoInicial Initial grade for this sport
+   */
+  agregarDeporteAAlumno(
+    alumnoId: number,
+    deporte: string,
+    gradoInicial: string
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.urlBase}/${alumnoId}/deportes`,
+      { deporte, gradoInicial },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Remove a sport from a student
+   * @param alumnoId Student ID
+   * @param deporte Sport name to remove
+   */
+  removerDeporteDeAlumno(alumnoId: number, deporte: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}`,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update grade for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param nuevoGrado New grade (TipoGrado value)
+   */
+  actualizarGradoPorDeporte(
+    alumnoId: number,
+    deporte: string,
+    nuevoGrado: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/grado`,
+      { nuevoGrado },
+      { withCredentials: true }
+    );
+  }
 }
