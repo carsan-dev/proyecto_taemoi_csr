@@ -722,8 +722,9 @@
   }
 }
 
-// Modal for adding sport
-#agregarDeporteModal {
+// Modals for sport management (add sport and update grade)
+#agregarDeporteModal,
+#actualizarGradoModal {
   .modal-content {
     background-color: $text-light;
     margin: auto;
@@ -815,7 +816,8 @@
     }
   }
 
-  #agregarDeporteModal {
+  #agregarDeporteModal,
+  #actualizarGradoModal {
     .modal-content {
       width: 90%;
       padding: 1.5rem;

@@ -48,6 +48,7 @@ import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
@@ -89,6 +90,9 @@ public class AlumnoController {
 
 	@Autowired
 	private DocumentoService documentoService;
+	
+	@Autowired
+	private AlumnoDeporteService alumnoDeporteService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -592,6 +596,68 @@ public class AlumnoController {
 		} catch (Exception e) {
 			logger.error("Error al actualizar grado por deporte", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar grado");
+		}
+	}
+
+	/**
+	 * Actualiza el estado de aptoParaExamen para un deporte específico
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/apto-examen
+	 * Body: { "aptoParaExamen": true }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/apto-examen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarAptoParaExamen(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Boolean> params) {
+		try {
+			Boolean aptoParaExamen = params.get("aptoParaExamen");
+			if (aptoParaExamen == null) {
+				return ResponseEntity.badRequest().body("El campo aptoParaExamen es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarAptoParaExamen(id, deporteEnum, aptoParaExamen);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar apto para examen", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar apto para examen");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de grado para un deporte específico
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-grado
+	 * Body: { "fechaGrado": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-grado")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaGrado(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaGradoStr = params.get("fechaGrado");
+			if (fechaGradoStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de grado es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaGrado = java.sql.Date.valueOf(fechaGradoStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaGrado(id, deporteEnum, fechaGrado);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de grado", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de grado");
 		}
 	}
 
