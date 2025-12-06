@@ -150,6 +150,165 @@
           </app-paginacion>
         </div>
 
+        <!-- Multi-Sport Tabs Section -->
+        @if (deportesDelAlumno.length > 0) {
+        <div class="admin-card mb-4">
+          <div class="info-card-header d-flex justify-content-between align-items-center">
+            <h5 class="info-card-title">
+              <i class="bi bi-trophy-fill"></i>
+              Deportes del Alumno
+            </h5>
+            @if (deportesDisponibles.length > 0) {
+            <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="abrirModalAgregarDeporte()">
+              <i class="bi bi-plus-circle"></i>
+              <span>Agregar Deporte</span>
+            </button>
+            }
+          </div>
+
+          <!-- Tabs Navigation -->
+          <div class="deportes-tabs">
+            <div class="tabs-nav">
+              @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+              <button
+                class="tab-item"
+                [class.active]="deporteActivo === deporteItem.deporte"
+                (click)="cambiarTab(deporteItem.deporte)">
+                <i class="bi bi-trophy"></i>
+                <span class="tab-label">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                <span class="tab-badge">{{ deporteItem.grado || 'Sin grado' }}</span>
+              </button>
+              }
+            </div>
+
+            <!-- Tab Content -->
+            @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+            @if (deporteActivo === deporteItem.deporte) {
+            <div class="tab-content">
+              <div class="tab-panel active">
+                <div class="row g-3">
+                  <!-- Deporte Info -->
+                  <div class="col-12">
+                    <div class="deporte-header">
+                      <h4>
+                        <i class="bi bi-trophy-fill"></i>
+                        {{ getDeporteLabel(deporteItem.deporte) }}
+                      </h4>
+                      @if (deportesDelAlumno.length > 1) {
+                      <button class="admin-btn admin-btn-danger admin-btn-sm"
+                        (click)="removerDeporte(deporteItem.deporte)">
+                        <i class="bi bi-trash"></i>
+                        <span>Eliminar Deporte</span>
+                      </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Grado -->
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-award"></i>
+                        Grado Actual
+                      </span>
+                      <span class="info-value info-value-highlight"
+                        [style]="getGradoStyle(deporteItem.grado || '')">
+                        {{ deporteItem.grado || 'Sin grado asignado' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Fecha de Grado -->
+                  @if (deporteItem.fechaGrado) {
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-calendar-check"></i>
+                        Fecha de Grado
+                      </span>
+                      <span class="info-value">{{ deporteItem.fechaGrado | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                  </div>
+                  }
+
+                  <!-- Apto para Examen -->
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-check-circle"></i>
+                        Apto para Examen
+                      </span>
+                      <span class="info-value">
+                        @if (deporteItem.aptoParaExamen) {
+                        <span class="badge-yes">
+                          <i class="bi bi-check-circle-fill"></i> Sí
+                        </span>
+                        }
+                        @if (!deporteItem.aptoParaExamen) {
+                        <span class="badge-no">
+                          <i class="bi bi-x-circle"></i> No
+                        </span>
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Fecha de Alta en este deporte -->
+                  @if (deporteItem.fechaAlta) {
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-calendar-plus"></i>
+                        Fecha de Alta
+                      </span>
+                      <span class="info-value">{{ deporteItem.fechaAlta | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                  </div>
+                  }
+
+                  <!-- Antigüedad -->
+                  @if (deporteItem.antiguedad) {
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-clock-history"></i>
+                        Antigüedad en este deporte
+                      </span>
+                      <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
+                    </div>
+                  </div>
+                  }
+
+                  <!-- Estado -->
+                  <div class="col-md-6">
+                    <div class="info-item">
+                      <span class="info-label">
+                        <i class="bi bi-info-circle"></i>
+                        Estado
+                      </span>
+                      <span class="info-value">
+                        @if (deporteItem.activo) {
+                        <span class="status-badge status-active">
+                          <i class="bi bi-check-circle-fill"></i> Activo
+                        </span>
+                        }
+                        @if (!deporteItem.activo) {
+                        <span class="status-badge status-inactive">
+                          <i class="bi bi-x-circle-fill"></i> Inactivo
+                        </span>
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            }
+            }
+          </div>
+        </div>
+        }
+
         <!-- Información del alumno: secciones personales, pagos, etc. -->
         <div class="row">
           <!-- Información Personal -->
@@ -1424,6 +1583,69 @@
         <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalEliminarConvocatorias()">
           <i class="bi bi-x-circle"></i>
           <span>Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal para agregar deporte -->
+  @if (alumno) {
+  <div id="agregarDeporteModal" class="modal" [class.show]="mostrarModalAgregarDeporte"
+    (click)="cerrarModalAgregarDeporte()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle me-2"></i>
+          Agregar Deporte al Alumno
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalAgregarDeporte()"
+          aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Selecciona el deporte que deseas agregar:</p>
+
+        <!-- Deporte Selection -->
+        <div class="admin-form-field mb-3">
+          <label for="nuevoDeporte">
+            <i class="bi bi-trophy"></i>
+            Deporte
+            <span class="required">*</span>
+          </label>
+          <select id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte">
+            @for (deporte of deportesDisponibles; track deporte) {
+            <option [value]="deporte">{{ getDeporteLabel(deporte) }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Grado Inicial -->
+        <div class="admin-form-field">
+          <label for="gradoInicialDeporte">
+            <i class="bi bi-award"></i>
+            Grado Inicial
+            <span class="required">*</span>
+          </label>
+          <select id="gradoInicialDeporte" class="admin-form-control form-select" [(ngModel)]="gradoInicialDeporte">
+            @for (grado of todosLosGrados; track grado.tipoGrado) {
+            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            }
+          </select>
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Selecciona el grado con el que comenzará en este deporte
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalAgregarDeporte()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-primary" (click)="agregarDeporte()"
+          [disabled]="!nuevoDeporte || !gradoInicialDeporte">
+          <i class="bi bi-check-circle"></i>
+          <span>Agregar Deporte</span>
         </button>
       </div>
     </div>

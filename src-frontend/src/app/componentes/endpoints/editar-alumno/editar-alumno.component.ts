@@ -17,9 +17,12 @@ import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
+import { AlumnoDeporteDTO, AlumnoConDeportesDTO } from '../../../interfaces/alumno-deporte-dto';
+import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -83,6 +86,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   mostrarModalEliminarConvocatorias = false;
   documentosAlumno: any[] = [];
 
+  // Multi-sport properties
+  deportesDelAlumno: AlumnoDeporteDTO[] = [];
+  deporteActivo: string = Deporte.TAEKWONDO;
+  mostrarModalAgregarDeporte = false;
+  nuevoDeporte: string = '';
+  gradoInicialDeporte: string = '';
+  deportesDisponibles: Deporte[] = [];
+  DeporteEnum = Deporte;
+  DeporteLabels = DeporteLabels;
+
   // Para manipular el input file
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
 
@@ -94,6 +107,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly endpointsService: EndpointsService,
+    private readonly alumnoService: AlumnoService,
     private readonly fb: FormBuilder,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
@@ -347,6 +361,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.cargarDocumentosAlumno(this.alumnoId);
             this.obtenerProductosAlumno(this.alumnoId);
             this.cargarConvocatoriasDelAlumno(this.alumnoId);
+            this.cargarDeportesDelAlumno(this.alumnoId);
           }
         },
         error: (error) => {
@@ -1379,5 +1394,190 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  // ==================== MULTI-SPORT METHODS ====================
+
+  /**
+   * Load all sports for the current alumno
+   */
+  cargarDeportesDelAlumno(alumnoId: number): void {
+    this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
+      next: (deportes: AlumnoDeporteDTO[]) => {
+        this.deportesDelAlumno = deportes;
+
+        // Set active sport to the first one, or the alumno's primary sport
+        if (deportes.length > 0) {
+          if (this.alumno.deporte) {
+            // Try to set to alumno's primary sport
+            const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
+            this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
+          } else {
+            this.deporteActivo = deportes[0].deporte;
+          }
+        }
+
+        // Calculate available sports to add
+        this.deportesDisponibles = this.getDeportesDisponiblesParaAgregar();
+      },
+      error: () => {
+        this.deportesDelAlumno = [];
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los deportes del alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Get list of sports available to add (not already assigned)
+   */
+  getDeportesDisponiblesParaAgregar(): Deporte[] {
+    const deportesAsignados = this.deportesDelAlumno.map(d => d.deporte);
+    return Object.values(Deporte).filter(d => !deportesAsignados.includes(d));
+  }
+
+  /**
+   * Change the active sport tab
+   */
+  cambiarTab(deporte: string): void {
+    this.deporteActivo = deporte;
+  }
+
+  /**
+   * Open modal to add a new sport
+   */
+  abrirModalAgregarDeporte(): void {
+    this.deportesDisponibles = this.getDeportesDisponiblesParaAgregar();
+    if (this.deportesDisponibles.length === 0) {
+      Swal.fire({
+        title: 'No hay deportes disponibles',
+        text: 'El alumno ya está inscrito en todos los deportes disponibles',
+        icon: 'info',
+      });
+      return;
+    }
+    this.nuevoDeporte = this.deportesDisponibles[0];
+    this.gradoInicialDeporte = 'BLANCO';
+    this.mostrarModalAgregarDeporte = true;
+  }
+
+  /**
+   * Close modal to add sport
+   */
+  cerrarModalAgregarDeporte(): void {
+    this.mostrarModalAgregarDeporte = false;
+    this.nuevoDeporte = '';
+    this.gradoInicialDeporte = '';
+  }
+
+  /**
+   * Add a new sport to the alumno
+   */
+  agregarDeporte(): void {
+    if (!this.nuevoDeporte || !this.gradoInicialDeporte || !this.alumnoId) {
+      return;
+    }
+
+    this.alumnoService
+      .agregarDeporteAAlumno(this.alumnoId, this.nuevoDeporte, this.gradoInicialDeporte)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Deporte agregado!',
+            text: `El deporte ${getDeporteLabel(this.nuevoDeporte)} ha sido agregado exitosamente`,
+            icon: 'success',
+            timer: 2000,
+          });
+          this.cerrarModalAgregarDeporte();
+          this.cargarDeportesDelAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo agregar el deporte',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  /**
+   * Remove a sport from the alumno
+   */
+  removerDeporte(deporte: string): void {
+    if (this.deportesDelAlumno.length === 1) {
+      Swal.fire({
+        title: 'No se puede eliminar',
+        text: 'El alumno debe tener al menos un deporte asignado',
+        icon: 'warning',
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Eliminarás el deporte ${getDeporteLabel(deporte)} del alumno. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed && this.alumnoId) {
+        this.alumnoService.removerDeporteDeAlumno(this.alumnoId, deporte).subscribe({
+          next: () => {
+            Swal.fire({
+              title: '¡Eliminado!',
+              text: 'El deporte ha sido eliminado correctamente',
+              icon: 'success',
+              timer: 2000,
+            });
+
+            // If we removed the active sport, switch to the first remaining one
+            if (this.deporteActivo === deporte && this.deportesDelAlumno.length > 1) {
+              const otherDeporte = this.deportesDelAlumno.find(d => d.deporte !== deporte);
+              if (otherDeporte) {
+                this.deporteActivo = otherDeporte.deporte;
+              }
+            }
+
+            this.cargarDeportesDelAlumno(this.alumnoId!);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: error.error || 'No se pudo eliminar el deporte',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Get the AlumnoDeporteDTO for the active sport
+   */
+  getDeporteActivo(): AlumnoDeporteDTO | undefined {
+    return this.deportesDelAlumno.find(d => d.deporte === this.deporteActivo);
+  }
+
+  /**
+   * Get the grade name for a specific sport
+   */
+  getGradoDelDeporte(deporte: string): string {
+    const alumnoDeporte = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    return alumnoDeporte?.grado || 'Sin grado';
+  }
+
+  /**
+   * Get deporte label (for display)
+   */
+  getDeporteLabel(deporte: string): string {
+    return getDeporteLabel(deporte);
   }
 }
