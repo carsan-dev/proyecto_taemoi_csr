@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.taemoi.project.entities.Categoria;
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
@@ -147,8 +148,36 @@ public class InicializadorDatos implements CommandLineRunner {
 			Grupo nuevoGrupo = new Grupo();
 			nuevoGrupo.setNombre(nombreGrupo);
 			nuevoGrupo.setTipo(tipo);
+
+			// Asignar deporte basado en el tipo del grupo
+			nuevoGrupo.setDeporte(determinarDeportePorTipo(tipo));
+
 			return grupoRepository.save(nuevoGrupo);
 		});
+	}
+
+	/**
+	 * Determina el deporte basándose en el tipo del grupo.
+	 */
+	private Deporte determinarDeportePorTipo(String tipo) {
+		if (tipo == null) {
+			return Deporte.TAEKWONDO;
+		}
+
+		String tipoLower = tipo.toLowerCase();
+
+		if (tipoLower.contains("taekwondo")) {
+			return Deporte.TAEKWONDO;
+		} else if (tipoLower.contains("kickboxing")) {
+			return Deporte.KICKBOXING;
+		} else if (tipoLower.contains("pilates")) {
+			return Deporte.PILATES;
+		} else if (tipoLower.contains("defensa") || tipoLower.contains("femenina")) {
+			return Deporte.DEFENSA_PERSONAL_FEMENINA;
+		}
+
+		// Por defecto, asignar Taekwondo
+		return Deporte.TAEKWONDO;
 	}
 
 	private void generarUsuarios() {

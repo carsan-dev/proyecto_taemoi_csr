@@ -145,6 +145,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.config.TarifaConfig tarifaConfig;
 
+	@Autowired
+	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
+
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
 	 *
@@ -617,8 +620,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Override
 	public Documento obtenerDocumentoDeAlumno(Long alumnoId, Long documentoId) {
-		Alumno alumno = alumnoRepository.findById(alumnoId)
-				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+		// Verificar que el alumno existe
+		if (!alumnoRepository.existsById(alumnoId)) {
+			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId);
+		}
 
 		Documento documento = documentoRepository.findById(documentoId)
 				.orElseThrow(() -> new RuntimeException("Documento no encontrado con ID: " + documentoId));
@@ -1191,5 +1196,31 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 		};
+	}
+
+	// ==================== IMPLEMENTACIÓN MÉTODOS MULTI-DEPORTE ====================
+
+	@Override
+	public List<com.taemoi.project.entities.AlumnoDeporte> obtenerDeportesDelAlumno(Long alumnoId) {
+		return alumnoDeporteService.obtenerDeportesDelAlumno(alumnoId);
+	}
+
+	@Override
+	public com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte,
+			com.taemoi.project.entities.TipoGrado gradoInicial) {
+		return alumnoDeporteService.agregarDeporteAAlumno(alumnoId, deporte, gradoInicial);
+	}
+
+	@Override
+	public void removerDeporteDeAlumno(Long alumnoId, com.taemoi.project.entities.Deporte deporte) {
+		alumnoDeporteService.removerDeporteDeAlumno(alumnoId, deporte);
+	}
+
+	@Override
+	public com.taemoi.project.entities.AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte,
+			com.taemoi.project.entities.TipoGrado nuevoGrado) {
+		return alumnoDeporteService.actualizarGradoPorDeporte(alumnoId, deporte, nuevoGrado);
 	}
 }
