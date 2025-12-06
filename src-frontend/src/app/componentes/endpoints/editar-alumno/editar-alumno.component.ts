@@ -90,8 +90,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
   deporteActivo: string = Deporte.TAEKWONDO;
   mostrarModalAgregarDeporte = false;
+  mostrarModalActualizarGrado = false;
   nuevoDeporte: string = '';
   gradoInicialDeporte: string = '';
+  deporteParaActualizarGrado: string = '';
+  nuevoGradoActualizar: string = '';
   deportesDisponibles: Deporte[] = [];
   DeporteEnum = Deporte;
   DeporteLabels = DeporteLabels;
@@ -135,20 +138,20 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         tipoTarifa: ['', Validators.required],
         rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
         grupoFamiliar: [{ value: '', disabled: true }],
-        deporte: ['', Validators.required],
+        deporte: [''], // DEPRECATED: No longer required - managed via tabs
         cuantiaTarifa: ['', Validators.required],
         fechaAlta: ['', Validators.required],
         fechaAltaInicial: [''],
         fechaBaja: [''],
         autorizacionWeb: [true, Validators.required],
-        grado: [''],
+        grado: [''], // DEPRECATED: No longer required - managed via tabs
         competidor: [false],
         peso: [''],
         fechaPeso: [''],
         tieneLicencia: [false],
         numeroLicencia: [''],
         fechaLicencia: [''],
-        aptoParaExamen: [false],
+        aptoParaExamen: [false], // DEPRECATED: No longer required - managed via tabs
         tieneDiscapacidad: [false],
       },
       {
@@ -166,9 +169,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Load the list of IDs first, then handle route changes
     this.cargarTodosLosAlumnosIds();
 
-    this.alumnoForm.get('deporte')?.valueChanges.subscribe((valor) => {
-      this.onDeporteChange(valor);
-    });
+    // DEPRECATED: Deporte is now managed via tabs, not through form
+    // this.alumnoForm.get('deporte')?.valueChanges.subscribe((valor) => {
+    //   this.onDeporteChange(valor);
+    // });
+
     this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
       if (valor) {
         this.obtenerGradosDisponibles(valor);
@@ -1579,5 +1584,128 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
+  }
+
+  /**
+   * Open modal to update grade for a specific sport
+   */
+  abrirModalActualizarGrado(deporte: string): void {
+    this.deporteParaActualizarGrado = deporte;
+    const deporteActual = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    this.nuevoGradoActualizar = deporteActual?.grado || 'BLANCO';
+    this.mostrarModalActualizarGrado = true;
+  }
+
+  /**
+   * Close grade update modal
+   */
+  cerrarModalActualizarGrado(): void {
+    this.mostrarModalActualizarGrado = false;
+    this.deporteParaActualizarGrado = '';
+    this.nuevoGradoActualizar = '';
+  }
+
+  /**
+   * Update grade for a specific sport
+   */
+  actualizarGradoDeporte(): void {
+    if (!this.deporteParaActualizarGrado || !this.nuevoGradoActualizar || !this.alumnoId) {
+      return;
+    }
+
+    this.alumnoService
+      .actualizarGradoPorDeporte(this.alumnoId, this.deporteParaActualizarGrado, this.nuevoGradoActualizar)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Grado actualizado!',
+            text: `El grado para ${getDeporteLabel(this.deporteParaActualizarGrado)} ha sido actualizado a ${this.nuevoGradoActualizar}`,
+            icon: 'success',
+            timer: 2000,
+          });
+          this.cerrarModalActualizarGrado();
+          this.cargarDeportesDelAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo actualizar el grado',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  /**
+   * Update exam eligibility for a specific sport
+   */
+  actualizarAptoParaExamen(deporte: string, event: any): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    const aptoParaExamen = event.target.checked;
+
+    this.alumnoService
+      .actualizarAptoParaExamen(this.alumnoId, deporte, aptoParaExamen)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Actualizado!',
+            text: `Estado de aptitud para examen actualizado en ${getDeporteLabel(deporte)}`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          this.cargarDeportesDelAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          // Revert the checkbox
+          event.target.checked = !aptoParaExamen;
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo actualizar el estado',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  /**
+   * Update grade date for a specific sport
+   */
+  actualizarFechaGrado(deporte: string, event: any): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    const fechaGrado = event.target.value;
+    if (!fechaGrado) {
+      return;
+    }
+
+    this.alumnoService
+      .actualizarFechaGrado(this.alumnoId, deporte, fechaGrado)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Fecha actualizada!',
+            text: `Fecha de grado actualizada en ${getDeporteLabel(deporte)}`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          this.cargarDeportesDelAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo actualizar la fecha',
+            icon: 'error',
+          });
+          // Reload to revert the date input
+          this.cargarDeportesDelAlumno(this.alumnoId!);
+        },
+      });
   }
 }

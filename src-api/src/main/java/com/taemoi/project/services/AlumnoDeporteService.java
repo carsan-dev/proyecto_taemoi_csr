@@ -63,6 +63,26 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId, Deporte deporte, TipoGrado nuevoGrado);
 
 	/**
+	 * Actualiza el estado de aptitud para examen de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param aptoParaExamen Nuevo estado de aptitud
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarAptoParaExamen(Long alumnoId, Deporte deporte, Boolean aptoParaExamen);
+
+	/**
+	 * Actualiza la fecha de grado de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaGrado Nueva fecha de grado
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaGrado(Long alumnoId, Deporte deporte, java.util.Date fechaGrado);
+
+	/**
 	 * Calcula el siguiente grado para un alumno en un deporte específico
 	 *
 	 * @param alumnoDeporte AlumnoDeporte para calcular siguiente grado

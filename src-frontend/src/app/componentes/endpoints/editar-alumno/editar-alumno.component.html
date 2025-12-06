@@ -218,38 +218,53 @@
                     </div>
                   </div>
 
-                  <!-- Fecha de Grado -->
-                  @if (deporteItem.fechaGrado) {
+                  <!-- Update Grade Button -->
+                  <div class="col-12">
+                    <button type="button" class="admin-btn admin-btn-success"
+                      (click)="abrirModalActualizarGrado(deporteItem.deporte)">
+                      <i class="bi bi-arrow-up-circle"></i>
+                      <span>Actualizar Grado</span>
+                    </button>
+                  </div>
+
+                  <!-- Fecha de Grado (Editable) -->
                   <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
+                    <div class="admin-form-field">
+                      <label [for]="'fechaGrado-' + deporteItem.deporte">
                         <i class="bi bi-calendar-check"></i>
                         Fecha de Grado
-                      </span>
-                      <span class="info-value">{{ deporteItem.fechaGrado | date: 'dd/MM/yyyy' }}</span>
+                      </label>
+                      <input
+                        type="date"
+                        [id]="'fechaGrado-' + deporteItem.deporte"
+                        class="admin-form-control"
+                        [value]="deporteItem.fechaGrado | date: 'yyyy-MM-dd'"
+                        (change)="actualizarFechaGrado(deporteItem.deporte, $event)"
+                        [attr.aria-label]="'Fecha de grado para ' + getDeporteLabel(deporteItem.deporte)" />
+                      <small class="form-text text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Fecha en que obtuvo este grado
+                      </small>
                     </div>
                   </div>
-                  }
 
-                  <!-- Apto para Examen -->
+                  <!-- Apto para Examen (Editable Toggle) -->
                   <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
+                    <div class="admin-form-switch" [class.checked]="deporteItem.aptoParaExamen">
+                      <label [for]="'aptoExamen-' + deporteItem.deporte">
                         <i class="bi bi-check-circle"></i>
-                        Apto para Examen
-                      </span>
-                      <span class="info-value">
-                        @if (deporteItem.aptoParaExamen) {
-                        <span class="badge-yes">
-                          <i class="bi bi-check-circle-fill"></i> Sí
-                        </span>
-                        }
-                        @if (!deporteItem.aptoParaExamen) {
-                        <span class="badge-no">
-                          <i class="bi bi-x-circle"></i> No
-                        </span>
-                        }
-                      </span>
+                        ¿Apto para examen?
+                      </label>
+                      <div class="switch">
+                        <input
+                          type="checkbox"
+                          class="form-check-input"
+                          [id]="'aptoExamen-' + deporteItem.deporte"
+                          [checked]="deporteItem.aptoParaExamen"
+                          (change)="actualizarAptoParaExamen(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Apto para examen en ' + getDeporteLabel(deporteItem.deporte)" />
+                        <span class="slider"></span>
+                      </div>
                     </div>
                   </div>
 
@@ -811,19 +826,18 @@
       <!-- Formulario de edición -->
       @if (mostrarFormulario) {
       <div class="py-5 w-100">
-        <div class="deporte-container mb-4" [ngClass]="{
-            'taekwondo': alumnoForm.get('deporte')?.value === 'TAEKWONDO',
-            'pilates': alumnoForm.get('deporte')?.value === 'PILATES',
-            'kickboxing': alumnoForm.get('deporte')?.value === 'KICKBOXING',
-            'defensa-personal-femenina':
-              alumnoForm.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA'
-          }">
-          <h2 class="deporte-text">
-            {{ alumnoForm.get('deporte')?.value }}
-          </h2>
-        </div>
-
         <div class="admin-card admin-card-large">
+          <div class="info-card-header mb-4">
+            <h3 class="info-card-title">
+              <i class="bi bi-pencil-square"></i>
+              Editar Información General del Alumno
+            </h3>
+            <p class="text-muted mb-0">
+              <i class="bi bi-info-circle"></i>
+              Para gestionar deportes y grados, usa la sección de deportes en la vista principal
+            </p>
+          </div>
+
           <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
             method="post">
 
@@ -879,34 +893,6 @@
               </div>
 
               <div class="row g-3">
-                <!-- Deporte -->
-                <div class="col-12">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('deporte')?.errors && alumnoForm.get('deporte')?.touched"
-                    [class.is-valid]="alumnoForm.get('deporte')?.valid && alumnoForm.get('deporte')?.touched">
-                    <label for="deporte">
-                      <i class="bi bi-trophy"></i>
-                      Deporte
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="deporte" formControlName="deporte" required
-                      (change)="onDeporteChange($any($event.target).value)" aria-label="Deporte" aria-required="true">
-                      <option value="" disabled>Selecciona un deporte</option>
-                      @for (deporte of deportes; track deporte) {
-                      <option [value]="deporte">
-                        {{ deporte }}
-                      </option>
-                      }
-                    </select>
-                    @if (alumnoForm.get('deporte')?.errors && alumnoForm.get('deporte')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El deporte es obligatorio
-                    </div>
-                    }
-                  </div>
-                </div>
-
                 <!-- Nombre y Apellidos -->
                 <div class="col-12 col-md-6">
                   <div class="admin-form-field"
@@ -1407,66 +1393,15 @@
                     }
                   </div>
                 </div>
+              </div>
 
-                <!-- Grado -->
-                @if ( alumnoForm.get('deporte')?.value !== 'PILATES' &&
-                alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('grado')?.errors && alumnoForm.get('grado')?.touched"
-                    [class.is-valid]="alumnoForm.get('grado')?.valid && alumnoForm.get('grado')?.touched">
-                    <label for="grado">
-                      <i class="bi bi-award"></i>
-                      Grado
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="grado" formControlName="grado" required
-                      aria-label="Grado" aria-required="true">
-                      @for (grado of grados; track grado.tipoGrado) {
-                      <option [value]="grado.tipoGrado">
-                        {{ getGradoNombre(grado) }}
-                      </option>
-                      }
-                    </select>
-                    @if (alumnoForm.get('grado')?.errors && alumnoForm.get('grado')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      Grado es requerido
-                    </div>
-                    }
-                  </div>
+              <!-- Info alert for sport management -->
+              <div class="alert alert-info d-flex align-items-start gap-3 mt-3" role="alert">
+                <i class="bi bi-info-circle-fill fs-4"></i>
+                <div>
+                  <strong>Gestión de Deportes y Grados</strong>
+                  <p class="mb-0 mt-1">Los deportes, grados y elegibilidad para exámenes se gestionan en la <strong>sección "Deportes del Alumno"</strong> en la vista principal. Ahí puedes agregar deportes, actualizar grados y ver el estado de cada deporte.</p>
                 </div>
-                }
-
-                <!-- Apto para examen -->
-                @if ( alumnoForm.get('deporte')?.value !== 'PILATES' &&
-                alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-switch" [class.checked]="alumnoForm.get('aptoParaExamen')?.value">
-                    <label for="aptoParaExamen">
-                      <i class="bi bi-check-circle"></i>
-                      ¿Apto para examen?
-                    </label>
-                    <div class="switch">
-                      <input type="checkbox" class="form-check-input" id="aptoParaExamen"
-                        formControlName="aptoParaExamen" aria-label="Apto para examen" />
-                      <span class="slider"></span>
-                    </div>
-                  </div>
-                </div>
-                }
-
-                <!-- Fecha de Grado (solo lectura) -->
-                @if ( alumnoEditado.grado &&
-                alumnoForm.get('deporte')?.value !== 'PILATES' &&
-                alumnoForm.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-                <div class="col-12">
-                  <div class="admin-form-help">
-                    <i class="bi bi-calendar-check"></i>
-                    <span><strong>Fecha de Grado:</strong> {{ alumnoEditado.fechaGrado | date: 'dd/MM/yyyy' }}</span>
-                  </div>
-                </div>
-                }
               </div>
             </div>
 
@@ -1646,6 +1581,61 @@
           [disabled]="!nuevoDeporte || !gradoInicialDeporte">
           <i class="bi bi-check-circle"></i>
           <span>Agregar Deporte</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal para actualizar grado -->
+  @if (alumno) {
+  <div id="actualizarGradoModal" class="modal" [class.show]="mostrarModalActualizarGrado"
+    (click)="cerrarModalActualizarGrado()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-arrow-up-circle me-2"></i>
+          Actualizar Grado - {{ getDeporteLabel(deporteParaActualizarGrado) }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalActualizarGrado()"
+          aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Selecciona el nuevo grado:</p>
+
+        <!-- Current Grade Display -->
+        <div class="alert alert-info mb-3" role="alert">
+          <i class="bi bi-info-circle"></i>
+          <strong>Grado Actual:</strong> {{ getGradoDelDeporte(deporteParaActualizarGrado) }}
+        </div>
+
+        <!-- New Grade Selection -->
+        <div class="admin-form-field">
+          <label for="nuevoGradoActualizar">
+            <i class="bi bi-award"></i>
+            Nuevo Grado
+            <span class="required">*</span>
+          </label>
+          <select id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
+            @for (grado of todosLosGrados; track grado.tipoGrado) {
+            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            }
+          </select>
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            La fecha de grado se actualizará automáticamente
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalActualizarGrado()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-success" (click)="actualizarGradoDeporte()"
+          [disabled]="!nuevoGradoActualizar">
+          <i class="bi bi-check-circle"></i>
+          <span>Actualizar Grado</span>
         </button>
       </div>
     </div>
