@@ -30,21 +30,29 @@
                     [class.is-valid]="alumnoData.get('deporte')?.valid && alumnoData.get('deporte')?.touched">
                     <label for="deporte">
                       <i class="bi bi-trophy"></i>
-                      Deporte
+                      Deporte Principal
                       <span class="required">*</span>
                     </label>
                     <select class="admin-form-control form-select" id="deporte" name="deporte" formControlName="deporte"
-                      required (change)="onDeporteChange($event)" aria-label="Seleccionar deporte" aria-required="true">
-                      <option value="" disabled selected>Selecciona un deporte</option>
+                      required (change)="onDeporteChange($event)" aria-label="Seleccionar deporte principal" aria-required="true">
+                      <option value="" disabled selected>Selecciona el deporte principal</option>
                       <option value="TAEKWONDO">Taekwondo</option>
                       <option value="KICKBOXING">Kickboxing</option>
+                      <option value="PILATES">Pilates</option>
+                      <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
                     </select>
                     @if (alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched) {
                     <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      El deporte es obligatorio
+                      El deporte principal es obligatorio
                     </div>
                     }
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Nota:</strong> Puedes agregar deportes adicionales después de crear el alumno en la página de edición.
                   </div>
                 </div>
               </div>
