@@ -350,28 +350,19 @@ def extract_alumno_id_from_filename(filename: str) -> Optional[int]:
 
 def clean_filename_for_storage(filename: str, alumno_id: int) -> str:
     """
-    Remove the AL{id} token only if the filename has other content.
-    If the base name is just the token (e.g. AL17.pdf), keep it unchanged.
+    Normalize filename by replacing spaces with underscores.
+    Keeps the AL{id} prefix in the filename.
     """
-    p = Path(filename)
-    stem, suffix = p.stem, p.suffix
+    # Normalize spaces to underscores
+    normalized = re.sub(r"\s+", "_", filename)
 
-    # If the *entire* stem is just the token (e.g. "AL17"), preserve
-    if re.fullmatch(rf"(?i)AL\D*{alumno_id}", stem):
-        return filename
+    # Collapse multiple underscores to single
+    normalized = re.sub(r"__+", "_", normalized)
 
-    # Otherwise, strip the token (and nearby separators) from anywhere
-    cleaned = re.sub(rf"(?i)AL\D*{alumno_id}(?:[_\-\s]*)?", "", filename)
+    # Clean up leading separators (but preserve the filename structure)
+    normalized = normalized.lstrip(" _-.")
 
-    # Tidy leftovers
-    cleaned = re.sub(r"__+", "_", cleaned)
-    cleaned = cleaned.lstrip(" _-.")
-
-    # If stripping would leave only an extension (e.g. ".pdf"), keep original
-    if not cleaned or (Path(cleaned).stem == "" and Path(cleaned).suffix):
-        return filename
-
-    return cleaned
+    return normalized
 
 
 def load_env_file(env_path: str = ".env") -> Dict[str, str]:
@@ -517,11 +508,11 @@ def create_alumno_folder(
 ) -> Path:
     """
     Create folder for alumno using new naming convention:
-    {id}_{Nombre}_{Apellidos} or {numero_expediente}_{Nombre}_{Apellidos}
+    {id}_{NOMBRE}_{APELLIDOS} or {numero_expediente}_{NOMBRE}_{APELLIDOS}
 
-    Folder names use proper case (only first letter uppercase):
-    - Example: 7_Moises_Sanchez_Roman
-    - Example: 21_Javier_Lazcano_Diajara
+    Folder names are in UPPERCASE without accents:
+    - Example: 7_MOISES_SANCHEZ_ROMAN
+    - Example: 21_JAVIER_LAZCANO_DIAJARA
 
     Args:
         base_path: Base directory path
@@ -533,15 +524,13 @@ def create_alumno_folder(
         alumno_info["numero_expediente"] if use_num_expediente else alumno_info["id"]
     )
 
-    # Clean names with proper case (Title Case: First Letter Uppercase)
-    # Repara posibles codificaciones dañadas antes de limpiar
+    # Repair possible damaged encodings before cleaning
     nombre = fix_encoding_if_needed(alumno_info["nombre"])
     apellidos = fix_encoding_if_needed(alumno_info["apellidos"])
 
-    # Limpia y aplica formato - usa el mismo case que está en la base de datos
-    # para que coincida con lo que Java creará
-    nombre_limpio = clean_filename(nombre, proper_case=False)
-    apellidos_limpio = clean_filename(apellidos, proper_case=False)
+    # Clean and convert to UPPERCASE without accents
+    nombre_limpio = clean_filename(nombre, proper_case=False).upper()
+    apellidos_limpio = clean_filename(apellidos, proper_case=False).upper()
 
     folder_name = f"{identifier}_{nombre_limpio}_{apellidos_limpio}"
     folder_path = Path(base_path) / folder_name
