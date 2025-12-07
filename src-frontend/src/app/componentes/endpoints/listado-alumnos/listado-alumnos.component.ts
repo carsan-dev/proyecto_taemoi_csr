@@ -61,12 +61,22 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   // Multi-sport data
   deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
 
+  // View mode and filters
+  vistaActual: 'cards' | 'table' = 'cards'; // Default to cards view
+  deporteFiltro: string = 'TODOS'; // Filter by sport
+
   constructor(
     private readonly endpointsService: EndpointsService,
     private readonly alumnoService: AlumnoService
   ) {}
 
   ngOnInit(): void {
+    // Load saved view preference
+    const savedView = localStorage.getItem('listadoAlumnosView');
+    if (savedView === 'cards' || savedView === 'table') {
+      this.vistaActual = savedView;
+    }
+
     this.obtenerAlumnos();
     this.cargarTodosLosAlumnos();
 
@@ -200,6 +210,51 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
+  }
+
+  /**
+   * Toggle between cards and table view
+   */
+  cambiarVista(vista: 'cards' | 'table'): void {
+    this.vistaActual = vista;
+    localStorage.setItem('listadoAlumnosView', vista);
+  }
+
+  /**
+   * Filter by sport
+   */
+  filtrarPorDeporte(): void {
+    this.paginaActual = 1;
+    this.obtenerAlumnos();
+  }
+
+  /**
+   * Check if alumno practices a specific sport
+   */
+  practicaDeporte(alumnoId: number, deporte: string): boolean {
+    const deportes = this.deportesPorAlumno.get(alumnoId) || [];
+    return deportes.some(d => d.deporte === deporte);
+  }
+
+  /**
+   * Get filtered alumnos based on sport filter and inactive status
+   */
+  get alumnosFiltrados(): any[] {
+    let filtrados = this.alumnos;
+
+    // Filter by inactive status first
+    if (!this.mostrarInactivos) {
+      filtrados = filtrados.filter(alumno => !alumno.fechaBaja);
+    }
+
+    // Then filter by sport if needed
+    if (this.deporteFiltro !== 'TODOS') {
+      filtrados = filtrados.filter(alumno =>
+        this.practicaDeporte(alumno.id, this.deporteFiltro)
+      );
+    }
+
+    return filtrados;
   }
 
   cargarTodosLosAlumnos(): void {
