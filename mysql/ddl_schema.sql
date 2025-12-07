@@ -14,7 +14,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema taemoidb
 -- -----------------------------------------------------
--- DROP SCHEMA IF EXISTS `taemoidb`;
+DROP SCHEMA IF EXISTS `taemoidb`;
 CREATE SCHEMA IF NOT EXISTS `taemoidb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
 USE `taemoidb` ;
 
@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno` (
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NULL DEFAULT NULL,
   `direccion` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NULL DEFAULT NULL,
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NOT NULL DEFAULT 'NINGUNO',
+  `grupo_familiar` VARCHAR(50) NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
   `fecha_alta_inicial` DATE NULL DEFAULT NULL,
   `fecha_baja` DATE NULL DEFAULT NULL,
