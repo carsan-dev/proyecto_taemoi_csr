@@ -166,7 +166,9 @@ public class AlumnoController {
 			@PathVariable Long alumnoId,
 			@PathVariable Long documentoId) {
 		try {
+			logger.info("Attempting to download document - AlumnoId: {}, DocumentoId: {}", alumnoId, documentoId);
 			Documento documento = alumnoService.obtenerDocumentoDeAlumno(alumnoId, documentoId);
+			logger.info("Document found - Name: {}, Path: {}", documento.getNombre(), documento.getRuta());
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
 
 			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
@@ -179,12 +181,15 @@ public class AlumnoController {
 				}
 			}
 
+			logger.info("Sending document download response - Name: {}", documento.getNombre());
 			return ResponseEntity.ok()
 					.contentType(mediaType)
 					.header(HttpHeaders.CONTENT_DISPOSITION,
 							"attachment; filename=\"" + documento.getNombre() + "\"")
 					.body(recurso);
 		} catch (Exception e) {
+			logger.error("Error downloading document - AlumnoId: {}, DocumentoId: {}. Error: {}",
+					alumnoId, documentoId, e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		}
 	}
