@@ -125,4 +125,4 @@ TODO:
 
 ✔ Arreglar tabs de deporte para mejor diseño y añadir agregar a convocatoria y demas
 
-Actualizar migrate_documents para normalizar los nombres de ficheros y evitar problemas
+✔ Actualizar migrate_documents para normalizar los nombres de ficheros y evitar problemas
