@@ -26,7 +26,6 @@ import com.taemoi.project.services.MigracionMultiDeporteService;
 public class MigracionMultiDeporteServiceImpl implements MigracionMultiDeporteService {
 
 	private static final Logger logger = LoggerFactory.getLogger(MigracionMultiDeporteServiceImpl.class);
-	private static final String MIGRACION_FLAG_FILE = "migracion_multideporte_completada";
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
@@ -260,7 +259,6 @@ public class MigracionMultiDeporteServiceImpl implements MigracionMultiDeporteSe
 	 * (verifica si existen AlumnoDeporte)
 	 */
 	private boolean verificarMigracionEnBD() {
-		long countAlumnos = alumnoRepository.count();
 		long countAlumnoDeporte = alumnoDeporteRepository.count();
 
 		// Si hay AlumnoDeporte creados, asumimos que la migración se ejecutó
