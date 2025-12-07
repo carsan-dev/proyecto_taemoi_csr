@@ -125,4 +125,4 @@ TODO:
 
 ✔ Arreglar tabs de deporte para mejor diseño y añadir agregar a convocatoria y demas
 
-continue with the multi-sport implementation
+Actualizar migrate_documents para normalizar los nombres de ficheros y evitar problemas
