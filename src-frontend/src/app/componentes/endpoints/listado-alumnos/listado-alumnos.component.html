@@ -7,7 +7,11 @@
         Gestión de Alumnos
       </h2>
       <div class="action-buttons">
-        <button class="admin-btn admin-btn-primary" (click)="abrirModalInforme()">
+        <button class="admin-btn admin-btn-success" routerLink="/alumnosCrear" aria-label="Crear nuevo alumno">
+          <i class="bi bi-person-plus-fill"></i>
+          <span>Nuevo Alumno</span>
+        </button>
+        <button class="admin-btn admin-btn-primary" (click)="abrirModalInforme()" aria-label="Generar informe de alumnos">
           <i class="bi bi-file-earmark-text"></i>
           <span>Generar Informe</span>
         </button>
@@ -15,74 +19,85 @@
     </div>
 
 
-    <!-- Mensualidades Cards -->
-    <div class="row g-4 mb-4">
-      <div class="col-12 col-lg-6">
-        <div class="admin-card">
-          <div class="admin-section-header">
-            <i class="bi bi-calendar-check"></i>
-            <h4>Cargar Mensualidades</h4>
-          </div>
-          <div class="mb-3">
-            <label for="deporteSeleccionado" class="form-label fw-semibold">Deporte:</label>
-            <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
-              <option value="TODOS">Todos los Alumnos</option>
-              <option value="TAEKWONDO">Solo Taekwondo</option>
-              <option value="KICKBOXING">Solo Kickboxing</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
-            <input id="mesAno" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionado" />
-          </div>
-          <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
-            <i class="bi bi-cash-stack"></i>
-            <span>Cargar Mensualidades</span>
+    <!-- Unified Filters & Controls Bar -->
+    <div class="unified-controls-bar" role="search" aria-label="Filtros y controles de alumnos">
+      <!-- Left: Filters -->
+      <div class="controls-section filters-section">
+        <div class="filter-group">
+          <label for="nombreFilter" class="filter-label">
+            <i class="bi bi-search"></i>
+            Buscar:
+          </label>
+          <input
+            id="nombreFilter"
+            type="text"
+            class="admin-form-control filter-input"
+            placeholder="Nombre o apellidos..."
+            [(ngModel)]="nombreFiltro"
+            (ngModelChange)="filtrarPorNombre()"
+            aria-label="Filtrar alumnos por nombre o apellidos" />
+        </div>
+
+        <div class="filter-group">
+          <label for="deporteFilter" class="filter-label">
+            <i class="bi bi-trophy-fill"></i>
+            Deporte:
+          </label>
+          <select
+            id="deporteFilter"
+            class="admin-form-control filter-select"
+            [(ngModel)]="deporteFiltro"
+            (ngModelChange)="filtrarPorDeporte()"
+            aria-label="Filtrar alumnos por deporte">
+            <option value="TODOS">Todos los deportes</option>
+            <option value="TAEKWONDO">Taekwondo</option>
+            <option value="KICKBOXING">Kickboxing</option>
+            <option value="PILATES">Pilates</option>
+            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <button
+            class="filter-toggle-btn"
+            [class.active]="mostrarInactivos"
+            (click)="alternarInactivos()"
+            [attr.aria-pressed]="mostrarInactivos"
+            aria-label="Alternar mostrar alumnos inactivos">
+            <i class="bi" [class.bi-eye]="!mostrarInactivos" [class.bi-eye-slash]="mostrarInactivos"></i>
+            <span>{{ mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos' }}</span>
           </button>
         </div>
       </div>
 
-      <div class="col-12 col-lg-6">
-        <div class="admin-card">
-          <div class="admin-section-header">
-            <i class="bi bi-person-check"></i>
-            <h4>Cargar Mensualidad Individual</h4>
-          </div>
-          <div class="mb-3">
-            <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
-            <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
-              @for (alumno of alumnosSeleccionables; track alumno.id) {
-                <option [value]="alumno.id">
-                  {{ alumno.nombre }} {{ alumno.apellidos }}
-                </option>
-              }
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="mesAnoIndividual" class="form-label fw-semibold">Mes y Año:</label>
-            <input id="mesAnoIndividual" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionadoIndividual" />
-          </div>
-          <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
-            [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
-            <i class="bi bi-cash"></i>
-            <span>Cargar Mensualidad</span>
-          </button>
+      <!-- Center: Results Count -->
+      <div class="controls-section results-section">
+        <div class="results-count">
+          <i class="bi bi-people-fill"></i>
+          <span><strong>{{ alumnosFiltrados.length }}</strong> {{ alumnosFiltrados.length === 1 ? 'alumno' : 'alumnos' }}</span>
         </div>
       </div>
-    </div>
 
-
-    <!-- Filter Bar -->
-    <div class="admin-filter-bar">
-      <div class="filter-row">
-        <div class="filter-item">
-          <input type="text" class="admin-form-control" placeholder="🔍 Filtrar por nombre..." [(ngModel)]="nombreFiltro"
-            (ngModelChange)="filtrarPorNombre()" />
-        </div>
-        <div class="filter-item" style="flex: 0 0 auto;">
-          <button class="admin-btn admin-btn-info" (click)="alternarInactivos()">
-            <i class="bi bi-filter"></i>
-            <span>{{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}</span>
+      <!-- Right: View Toggle -->
+      <div class="controls-section view-section">
+        <div class="view-toggle-buttons" role="group" aria-label="Cambiar vista">
+          <button
+            class="view-toggle-btn"
+            [class.active]="vistaActual === 'cards'"
+            (click)="cambiarVista('cards')"
+            [attr.aria-pressed]="vistaActual === 'cards'"
+            aria-label="Vista de tarjetas">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>Tarjetas</span>
+          </button>
+          <button
+            class="view-toggle-btn"
+            [class.active]="vistaActual === 'table'"
+            (click)="cambiarVista('table')"
+            [attr.aria-pressed]="vistaActual === 'table'"
+            aria-label="Vista de tabla">
+            <i class="bi bi-table"></i>
+            <span>Tabla</span>
           </button>
         </div>
       </div>
@@ -94,10 +109,10 @@
       <app-skeleton-card type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
     }
 
-    <!-- Alumnos Grid -->
-    @if (!cargando) {
+    <!-- Cards View -->
+    @if (!cargando && vistaActual === 'cards') {
       <div class="admin-cards-grid mb-4">
-        @for (alumno of alumnos; track alumno.id) {
+        @for (alumno of alumnosFiltrados; track alumno.id) {
           <div class="admin-item-card">
             <div class="item-header">
               <a [routerLink]="['/alumnosEditar', alumno.id]">
@@ -194,46 +209,199 @@
       </div>
     }
 
+    <!-- Table View -->
+    @if (!cargando && vistaActual === 'table') {
+      <div class="table-wrapper mb-4">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Nombre</th>
+              <th>Nº Exp.</th>
+              <th>Edad</th>
+              <th>Teléfono</th>
+              <th>Tarifa</th>
+              <th>Deportes</th>
+              <th>Categoría</th>
+              <th>Alta</th>
+              @if (mostrarInactivos) {
+                <th>Baja</th>
+              }
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (alumno of alumnosFiltrados; track alumno.id) {
+              <tr [class.inactive-row]="alumno.fechaBaja">
+                <td>
+                  <a [routerLink]="['/alumnosEditar', alumno.id]">
+                    <img class="table-avatar"
+                      [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                      [alt]="'Perfil de ' + alumno.nombre" />
+                  </a>
+                </td>
+                <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>
+                <td>{{ alumno.numeroExpediente }}</td>
+                <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
+                <td>{{ alumno.telefono }}</td>
+                <td>{{ alumno.tipoTarifa }}</td>
+                <td>
+                  <div class="table-deportes-badges">
+                    @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                      <span class="badge-loading-small">...</span>
+                    }
+                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                      <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="getDeporteLabel(deporteItem.deporte) + ': ' + (deporteItem.grado || 'Sin grado')">
+                        {{ getDeporteLabel(deporteItem.deporte).substring(0, 3) }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td>{{ alumno.categoria || 'N/A' }}</td>
+                <td>{{ alumno.fechaAlta | date: 'dd/MM/yy' }}</td>
+                @if (mostrarInactivos) {
+                  <td [class.text-danger]="alumno.fechaBaja">
+                    {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yy') : '-' }}
+                  </td>
+                }
+                <td>
+                  <div class="table-actions">
+                    <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    @if (alumno.fechaBaja) {
+                      <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
+                        <i class="bi bi-check-circle"></i>
+                      </button>
+                    }
+                    @if (!alumno.fechaBaja) {
+                      <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)" title="Dar de Baja">
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
 
     <!-- Pagination -->
     <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
       (pageChange)="cambiarPagina($event)" class="mt-4">
     </app-paginacion>
 
-    <!-- Listado de Asistencia Card -->
-    <div class="row mt-4">
-      <div class="col-12 col-lg-8 mx-auto">
-        <div class="admin-card">
-          <div class="admin-section-header">
-            <i class="bi bi-clipboard-check"></i>
-            <h4>Listado de Asistencia</h4>
+    <!-- Collapsible Gestión de Mensualidades Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-calendar-check"></i>
+        <span>Gestión de Mensualidades</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-calendar-check"></i>
+                <h4>Cargar Mensualidades</h4>
+              </div>
+              <div class="mb-3">
+                <label for="deporteSeleccionado" class="form-label fw-semibold">Deporte:</label>
+                <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
+                  <option value="TODOS">Todos los Alumnos</option>
+                  <option value="TAEKWONDO">Solo Taekwondo</option>
+                  <option value="KICKBOXING">Solo Kickboxing</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
+                <input id="mesAno" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionado" />
+              </div>
+              <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
+                <i class="bi bi-cash-stack"></i>
+                <span>Cargar Mensualidades</span>
+              </button>
+            </div>
           </div>
 
-          <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-6">
-              <label for="mesAnoAsis" class="form-label fw-semibold mb-2">Mes y Año:</label>
-              <input id="mesAnoAsis" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoAsistencia" />
-            </div>
-
-            <div class="col-12 col-md-6">
-              <label for="grupoAsis" class="form-label fw-semibold mb-2">Día de la semana:</label>
-              <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
-                @for (g of grupos; track g) {
-                  <option [value]="g">{{ g | titlecase }}</option>
-                }
-              </select>
+          <div class="col-12 col-lg-6">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-person-check"></i>
+                <h4>Cargar Mensualidad Individual</h4>
+              </div>
+              <div class="mb-3">
+                <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
+                <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                  @for (alumno of alumnosSeleccionables; track alumno.id) {
+                    <option [value]="alumno.id">
+                      {{ alumno.nombre }} {{ alumno.apellidos }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="mesAnoIndividual" class="form-label fw-semibold">Mes y Año:</label>
+                <input id="mesAnoIndividual" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+              </div>
+              <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
+                [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
+                <i class="bi bi-cash"></i>
+                <span>Cargar Mensualidad</span>
+              </button>
             </div>
           </div>
-
-          <button class="admin-btn admin-btn-primary w-100 mt-4"
-            [disabled]="!mesAnoAsistencia || !grupoSeleccionado"
-            (click)="generarListadoAsistencia()">
-            <i class="bi bi-file-earmark-pdf"></i>
-            <span>Generar PDF de Asistencia (Todos los turnos)</span>
-          </button>
         </div>
       </div>
-    </div>
+    </details>
+
+    <!-- Collapsible Listado de Asistencia Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Listado de Asistencia</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row mt-2">
+          <div class="col-12 col-lg-8 mx-auto">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-clipboard-check"></i>
+                <h4>Listado de Asistencia</h4>
+              </div>
+
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6">
+                  <label for="mesAnoAsis" class="form-label fw-semibold mb-2">Mes y Año:</label>
+                  <input id="mesAnoAsis" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoAsistencia" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label for="grupoAsis" class="form-label fw-semibold mb-2">Día de la semana:</label>
+                  <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
+                    @for (g of grupos; track g) {
+                      <option [value]="g">{{ g | titlecase }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <button class="admin-btn admin-btn-primary w-100 mt-4"
+                [disabled]="!mesAnoAsistencia || !grupoSeleccionado"
+                (click)="generarListadoAsistencia()">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span>Generar PDF de Asistencia (Todos los turnos)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
 
     <!-- Informe Modal -->
     @if (mostrarModalInforme) {
