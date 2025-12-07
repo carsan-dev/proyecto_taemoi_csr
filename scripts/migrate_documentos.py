@@ -61,7 +61,7 @@ else:
 DB_CONFIG = {
     "host": "localhost",
     "port": 3306,
-    "database": "taemoi_test",  # Main database with 685 students
+    "database": "taemoidb",  # Main database with 685 students
     "user": "root",
     "password": "root",
 }
