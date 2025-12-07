@@ -144,10 +144,23 @@
                 <strong>Categoría:</strong>
                 <span>{{ alumno.categoria || 'N/A' }}</span>
               </div>
-              <div class="item-field">
+              <div class="item-field-full">
                 <i class="bi bi-award"></i>
-                <strong>Grado:</strong>
-                <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
+                <strong>Deportes:</strong>
+                <div class="deportes-badges">
+                  @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                    <span class="badge-loading">Cargando...</span>
+                  }
+                  @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                    <span class="deporte-badge" [class]="deporteItem.deporte.toLowerCase()">
+                      <i class="bi bi-trophy-fill"></i>
+                      <span class="deporte-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                      <span class="deporte-grado" [style]="getGradoStyle(deporteItem.grado || '')">
+                        {{ deporteItem.grado || 'Sin grado' }}
+                      </span>
+                    </span>
+                  }
+                </div>
               </div>
               @if (mostrarInactivos && alumno.fechaBaja) {
                 <div class="item-field">

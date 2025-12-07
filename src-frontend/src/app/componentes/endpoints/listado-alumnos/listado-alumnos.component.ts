@@ -7,10 +7,13 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
-import { Subject } from 'rxjs';
+import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { AlumnoService } from '../../../features/alumno/services/alumno.service';
+import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
+import { getDeporteLabel } from '../../../enums/deporte';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -55,7 +58,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   grupoSeleccionado!: string;
   turnoSeleccionado: string | null = null;
 
-  constructor(private readonly endpointsService: EndpointsService) {}
+  // Multi-sport data
+  deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
+
+  constructor(
+    private readonly endpointsService: EndpointsService,
+    private readonly alumnoService: AlumnoService
+  ) {}
 
   ngOnInit(): void {
     this.obtenerAlumnos();
@@ -133,6 +142,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.alumnos = response.content;
           this.totalPaginas = response.totalPages;
+
+          // Load sports for all alumnos on this page
+          this.cargarDeportesDeAlumnos();
         },
         error: () => {
           Swal.fire({
@@ -142,6 +154,52 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           });
         },
       });
+  }
+
+  /**
+   * Load sports data for all alumnos on the current page
+   */
+  cargarDeportesDeAlumnos(): void {
+    if (this.alumnos.length === 0) {
+      return;
+    }
+
+    // Create an array of observables for loading each alumno's sports
+    const deportesRequests = this.alumnos.map(alumno =>
+      this.alumnoService.obtenerDeportesDelAlumno(alumno.id)
+    );
+
+    // Execute all requests in parallel
+    forkJoin(deportesRequests).subscribe({
+      next: (deportesArrays: AlumnoDeporteDTO[][]) => {
+        // Clear the existing map
+        this.deportesPorAlumno.clear();
+
+        // Store deportes for each alumno
+        deportesArrays.forEach((deportes, index) => {
+          const alumnoId = this.alumnos[index].id;
+          this.deportesPorAlumno.set(alumnoId, deportes);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading sports data:', error);
+        // Continue showing the page even if sports data fails to load
+      }
+    });
+  }
+
+  /**
+   * Get sports for a specific alumno
+   */
+  getDeportesDeAlumno(alumnoId: number): AlumnoDeporteDTO[] {
+    return this.deportesPorAlumno.get(alumnoId) || [];
+  }
+
+  /**
+   * Get deporte label for display
+   */
+  getDeporteLabel(deporte: string): string {
+    return getDeporteLabel(deporte);
   }
 
   cargarTodosLosAlumnos(): void {
