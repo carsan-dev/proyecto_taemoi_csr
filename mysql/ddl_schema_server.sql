@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno` (
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NULL DEFAULT NULL,
   `direccion` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NULL DEFAULT NULL,
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NOT NULL DEFAULT 'NINGUNO',
+  `grupo_familiar` VARCHAR(50) NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
   `fecha_alta_inicial` DATE NULL DEFAULT NULL,
   `fecha_baja` DATE NULL DEFAULT NULL,
