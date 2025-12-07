@@ -95,6 +95,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   gradoInicialDeporte: string = '';
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
+  deporteParaConvocatoria: string = '';
+  convocatoriasFiltradasPorDeporte: any[] = [];
   deportesDisponibles: Deporte[] = [];
   DeporteEnum = Deporte;
   DeporteLabels = DeporteLabels;
@@ -1405,20 +1407,40 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   /**
    * Load all sports for the current alumno
+   * @param preserveActiveTab If true, keeps the current active tab after reload
    */
-  cargarDeportesDelAlumno(alumnoId: number): void {
+  cargarDeportesDelAlumno(alumnoId: number, preserveActiveTab: boolean = false): void {
+    // Save the current active sport before reloading
+    const currentActiveDeporte = this.deporteActivo;
+
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
         this.deportesDelAlumno = deportes;
 
-        // Set active sport to the first one, or the alumno's primary sport
+        // Set active sport
         if (deportes.length > 0) {
-          if (this.alumno.deporte) {
-            // Try to set to alumno's primary sport
-            const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
-            this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
+          if (preserveActiveTab && currentActiveDeporte) {
+            // Try to preserve the current active tab
+            const stillExists = deportes.find(d => d.deporte === currentActiveDeporte);
+            if (stillExists) {
+              this.deporteActivo = currentActiveDeporte;
+            } else {
+              // Current tab no longer exists, fall back to first or primary
+              if (this.alumno.deporte) {
+                const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
+                this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
+              } else {
+                this.deporteActivo = deportes[0].deporte;
+              }
+            }
           } else {
-            this.deporteActivo = deportes[0].deporte;
+            // Default behavior: set to primary sport or first
+            if (this.alumno.deporte) {
+              const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
+              this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
+            } else {
+              this.deporteActivo = deportes[0].deporte;
+            }
           }
         }
 
@@ -1486,18 +1508,31 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Save the new sport to switch to it after adding
+    const deporteToActivate = this.nuevoDeporte;
+
     this.alumnoService
       .agregarDeporteAAlumno(this.alumnoId, this.nuevoDeporte, this.gradoInicialDeporte)
       .subscribe({
         next: () => {
           Swal.fire({
             title: '¡Deporte agregado!',
-            text: `El deporte ${getDeporteLabel(this.nuevoDeporte)} ha sido agregado exitosamente`,
+            text: `El deporte ${getDeporteLabel(deporteToActivate)} ha sido agregado exitosamente`,
             icon: 'success',
             timer: 2000,
           });
           this.cerrarModalAgregarDeporte();
-          this.cargarDeportesDelAlumno(this.alumnoId!);
+          // Reload and switch to the newly added sport
+          if (this.alumnoId) {
+            this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId).subscribe({
+              next: (deportes: AlumnoDeporteDTO[]) => {
+                this.deportesDelAlumno = deportes;
+                // Switch to the newly added sport
+                this.deporteActivo = deporteToActivate;
+                this.deportesDisponibles = this.getDeportesDisponiblesParaAgregar();
+              }
+            });
+          }
         },
         error: (error) => {
           Swal.fire({
@@ -1624,7 +1659,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             timer: 2000,
           });
           this.cerrarModalActualizarGrado();
-          this.cargarDeportesDelAlumno(this.alumnoId!);
+          // Reload sports data while preserving the current active tab
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
           Swal.fire({
@@ -1657,7 +1693,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             timer: 1500,
             showConfirmButton: false,
           });
-          this.cargarDeportesDelAlumno(this.alumnoId!);
+          // Reload sports data while preserving the current active tab
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
           // Revert the checkbox
@@ -1695,7 +1732,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             timer: 1500,
             showConfirmButton: false,
           });
-          this.cargarDeportesDelAlumno(this.alumnoId!);
+          // Reload sports data while preserving the current active tab
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
           Swal.fire({
@@ -1703,8 +1741,129 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             text: error.error || 'No se pudo actualizar la fecha',
             icon: 'error',
           });
-          // Reload to revert the date input
-          this.cargarDeportesDelAlumno(this.alumnoId!);
+          // Reload to revert the date input, preserve tab
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
+        },
+      });
+  }
+
+  /**
+   * Open convocatoria modal for a specific sport
+   * First asks whether the exam is "por recompensa" or "por antigüedad"
+   */
+  abrirModalConvocatoriasPorDeporte(deporte: string): void {
+    // Ask if it's por recompensa or por antigüedad
+    Swal.fire({
+      title: 'Selecciona el tipo de convocatoria',
+      text: '¿Asignar el precio por antigüedad o por recompensa?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Por Recompensa',
+      cancelButtonText: 'Por Antigüedad',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed || result.dismiss === Swal.DismissReason.cancel) {
+        const porRecompensa = result.isConfirmed;
+        this.cargarConvocatoriasFiltradasPorDeporte(deporte, porRecompensa);
+      }
+    });
+  }
+
+  /**
+   * Load convocatorias filtered by sport and open the modal
+   */
+  private cargarConvocatoriasFiltradasPorDeporte(deporte: string, porRecompensa: boolean): void {
+    this.deporteParaConvocatoria = deporte;
+    this.alumnoEditado.porRecompensa = porRecompensa;
+
+    // Load all convocatorias and filter by sport
+    this.endpointsService.obtenerConvocatorias().subscribe({
+      next: (convocatorias: any[]) => {
+        // Filter convocatorias by the selected sport
+        this.convocatoriasFiltradasPorDeporte = convocatorias.filter(
+          (conv) => conv.deporte === deporte
+        );
+
+        // Find the current convocatoria for this sport
+        const ahora = new Date();
+        this.convocatoriaActual = this.convocatoriasFiltradasPorDeporte.find((conv) => {
+          const fechaConv = new Date(conv.fechaConvocatoria);
+          return fechaConv >= ahora;
+        }) || null;
+
+        // Remove current from available list
+        if (this.convocatoriaActual) {
+          this.convocatoriasFiltradasPorDeporte = this.convocatoriasFiltradasPorDeporte.filter(
+            (conv) => conv.id !== this.convocatoriaActual.id
+          );
+        }
+
+        this.mostrarModalConvocatorias = true;
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar las convocatorias',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Add alumno to convocatoria for a specific sport
+   */
+  agregarAConvocatoriaPorDeporte(convocatoria: any): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    // Find the AlumnoDeporte ID for the selected sport
+    const deporteData = this.deportesDelAlumno.find(
+      (d) => d.deporte === this.deporteParaConvocatoria
+    );
+
+    if (!deporteData) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo encontrar el registro del deporte',
+        icon: 'error',
+      });
+      return;
+    }
+
+    // Get the porRecompensa value set earlier
+    const porRecompensa = this.alumnoEditado.porRecompensa ?? false;
+
+    // Prepare the data with AlumnoDeporte ID
+    const alumnoConvocatoriaData = {
+      alumno: { id: this.alumnoId },
+      convocatoria: { id: convocatoria.id },
+      alumnoDeporte: { id: deporteData.id }, // Link to the specific sport
+    };
+
+    this.endpointsService
+      .agregarAlumnoAConvocatoriaMultiDeporte(convocatoria.id, alumnoConvocatoriaData, porRecompensa)
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Agregado!',
+            text: `El alumno ha sido agregado a la convocatoria de ${getDeporteLabel(
+              this.deporteParaConvocatoria
+            )}`,
+            icon: 'success',
+            timer: 2000,
+          });
+          this.cerrarModalConvocatorias();
+          this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error?.message || 'No se pudo agregar a la convocatoria',
+            icon: 'error',
+          });
         },
       });
   }
