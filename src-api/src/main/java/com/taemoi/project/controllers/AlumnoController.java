@@ -499,14 +499,14 @@ public class AlumnoController {
 	// ==================== ENDPOINTS MULTI-DEPORTE ====================
 
 	/**
-	 * Obtiene todos los deportes de un alumno
+	 * Obtiene todos los deportes activos de un alumno
 	 * GET /api/alumnos/{id}/deportes
 	 */
 	@GetMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
 		try {
-			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoService.obtenerDeportesDelAlumno(id);
+			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoService.obtenerDeportesActivosDelAlumno(id);
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
 					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
 					.collect(Collectors.toList());
