@@ -108,6 +108,97 @@
           <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
         </div>
       }
+
+      <!-- Sports Section -->
+      @if (selectedAlumno) {
+        <div class="section-header mt-5">
+          <div class="section-title-box">
+            <i class="bi bi-trophy-fill"></i>
+            <h2>Mis Deportes</h2>
+          </div>
+          <div class="section-divider"></div>
+        </div>
+
+        @if (cargandoDeportes) {
+          <div class="loading-sports">
+            <i class="bi bi-hourglass-split"></i>
+            <p>Cargando deportes...</p>
+          </div>
+        } @else if (deportesDelAlumno.length > 0) {
+          <div class="sports-grid">
+            @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+              <div class="sport-card" [attr.data-sport]="deporteItem.deporte.toLowerCase()">
+                <div class="sport-card-header">
+                  <span class="sport-icon">{{ getIconoDeportePorNombre(deporteItem.deporte) }}</span>
+                  <h3 class="sport-name">{{ getDeporteLabel(deporteItem.deporte) }}</h3>
+                </div>
+
+                <div class="sport-card-body">
+                  @if (deporteItem.grado) {
+                    <div class="sport-info-item">
+                      <i class="bi bi-award-fill"></i>
+                      <div class="sport-info-content">
+                        <span class="sport-info-label">Grado Actual</span>
+                        <span class="sport-info-value" [style]="getGradoStyle(deporteItem.grado)">
+                          {{ deporteItem.grado }}
+                        </span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (deporteItem.fechaGrado) {
+                    <div class="sport-info-item">
+                      <i class="bi bi-calendar-event"></i>
+                      <div class="sport-info-content">
+                        <span class="sport-info-label">Fecha de Grado</span>
+                        <span class="sport-info-value">{{ formatearFecha(deporteItem.fechaGrado) }}</span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (deporteItem.fechaAlta) {
+                    <div class="sport-info-item">
+                      <i class="bi bi-calendar-plus"></i>
+                      <div class="sport-info-content">
+                        <span class="sport-info-label">Fecha de Alta</span>
+                        <span class="sport-info-value">{{ formatearFecha(deporteItem.fechaAlta) }}</span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (deporteItem.antiguedad) {
+                    <div class="sport-info-item">
+                      <i class="bi bi-clock-history"></i>
+                      <div class="sport-info-content">
+                        <span class="sport-info-label">Antigüedad</span>
+                        <span class="sport-info-value">{{ deporteItem.antiguedad }}</span>
+                      </div>
+                    </div>
+                  }
+
+                  <div class="sport-info-item">
+                    <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen" [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
+                    <div class="sport-info-content">
+                      <span class="sport-info-label">Estado de Examen</span>
+                      <span class="sport-info-value" [class.text-success]="deporteItem.aptoParaExamen" [class.text-muted]="!deporteItem.aptoParaExamen">
+                        {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-groups-container">
+            <div class="no-groups-icon">
+              <i class="bi bi-trophy"></i>
+            </div>
+            <h3 class="no-groups-title">No practicas ningún deporte</h3>
+            <p class="no-groups-text">Ponte en contacto con la escuela para inscribirte</p>
+          </div>
+        }
+      }
     </div>
   </div>
 </div>
