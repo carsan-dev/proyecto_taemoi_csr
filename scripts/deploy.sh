@@ -150,19 +150,6 @@ if [ "$ENVIRONMENT" = "production" ]; then
             warn "Check: docker-compose -f $COMPOSE_FILE logs database"
         fi
     fi
-
-    # Run documento path migration to convert absolute paths to relative paths
-    step "Running documento path migration..."
-    if [ -f mysql/migrations/migration_documento_to_relative_paths.sql ]; then
-        docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} < mysql/migrations/migration_documento_to_relative_paths.sql 2>/dev/null
-        if [ $? -eq 0 ]; then
-            success "Documento paths migrated to relative format"
-        else
-            warn "Documento path migration failed (may have already been applied)"
-        fi
-    else
-        warn "Documento migration file not found. Skipping path migration."
-    fi
 fi
 
 # Wait for backend
@@ -236,7 +223,6 @@ if [ "$ENVIRONMENT" = "production" ]; then
     echo "Production-specific commands:"
     echo "  - Check DB migration: docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SHOW TABLES;'"
     echo "  - Manual migration:   docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < mysql/init/migration_server.sql"
-    echo "  - Check doc paths:    docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e \"SELECT ruta FROM documento LIMIT 5;\""
     echo ""
 fi
 echo "Next steps:"
