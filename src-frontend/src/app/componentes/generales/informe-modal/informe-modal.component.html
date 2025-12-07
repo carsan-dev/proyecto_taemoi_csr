@@ -1,27 +1,89 @@
-<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
-  <div class="modal-dialog modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
-    <div class="modal-content rounded-4 shadow-lg">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold">{{ title }}</h5>
-        <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+<div class="informe-modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <div class="header-content">
+          <i class="bi bi-file-earmark-bar-graph-fill header-icon"></i>
+          <div>
+            <h4 class="modal-title">{{ title }}</h4>
+            <p class="modal-subtitle">Selecciona el tipo de informe que deseas generar</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-custom" (click)="cerrarModal()" aria-label="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
+
+      <!-- Body with Categories -->
       <div class="modal-body">
-        @for (opcion of opcionesInforme; track opcion.value) {
-          <div class="form-check mb-2">
-            <input
-              class="form-check-input"
-              type="radio"
-              name="informeTipo"
-              [id]="opcion.value"
-              [value]="opcion.value"
-              [(ngModel)]="selectedInforme">
-            <label class="form-check-label" [for]="opcion.value">{{ opcion.label }}</label>
+        @for (categoria of categoriasInforme; track categoria.title) {
+          <div class="informe-category">
+            <!-- Category Header -->
+            <div class="category-header" [style.border-left-color]="categoria.color">
+              <i class="bi {{ categoria.icon }}" [style.color]="categoria.color"></i>
+              <h5 class="category-title">{{ categoria.title }}</h5>
+              <span class="category-badge">{{ categoria.opciones.length }}</span>
+            </div>
+
+            <!-- Category Options -->
+            <div class="category-options">
+              @for (opcion of categoria.opciones; track opcion.value) {
+                <div
+                  class="informe-option"
+                  [class.selected]="selectedInforme === opcion.value"
+                  (click)="seleccionarInforme(opcion.value)"
+                  role="button"
+                  tabindex="0">
+                  <div class="option-content">
+                    <div class="option-header">
+                      <i class="bi {{ opcion.icon }} option-icon"></i>
+                      <div class="option-text">
+                        <h6 class="option-title">{{ opcion.label }}</h6>
+                        @if (opcion.description) {
+                          <p class="option-description">{{ opcion.description }}</p>
+                        }
+                      </div>
+                    </div>
+                    <div class="option-radio">
+                      <input
+                        type="radio"
+                        name="informeTipo"
+                        [id]="opcion.value"
+                        [value]="opcion.value"
+                        [(ngModel)]="selectedInforme"
+                        (click)="$event.stopPropagation()">
+                      <span class="radio-custom"></span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (categoriasInforme.length === 0) {
+          <div class="no-informes">
+            <i class="bi bi-inbox"></i>
+            <p>No hay informes disponibles</p>
           </div>
         }
       </div>
+
+      <!-- Footer -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!selectedInforme" (click)="generarInforme()">Generar Informe</button>
+        <button type="button" class="btn-cancel" (click)="cerrarModal()">
+          <i class="bi bi-x-circle"></i>
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-generate"
+          [disabled]="!selectedInforme"
+          (click)="generarInforme()">
+          <i class="bi bi-file-earmark-pdf"></i>
+          Generar Informe
+        </button>
       </div>
     </div>
   </div>
