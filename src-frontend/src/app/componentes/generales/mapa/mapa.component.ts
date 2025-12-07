@@ -69,7 +69,7 @@ export class MapaComponent implements AfterViewInit {
 
       // Add geocoder with safe error handling
       try {
-        const geocoder = (this.L.Control as any).geocoder({
+        const geocoder = (this.L.Control).geocoder({
           defaultMarkGeocode: false,
         });
 
@@ -103,7 +103,7 @@ export class MapaComponent implements AfterViewInit {
           const miniMapLayer = this.L.tileLayer(
             'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
           );
-          const miniMap = new (this.L.Control as any).MiniMap(miniMapLayer, {
+          const miniMap = new (this.L.Control).MiniMap(miniMapLayer, {
             toggleDisplay: true,
             position: 'topleft',
           });
@@ -161,7 +161,7 @@ export class MapaComponent implements AfterViewInit {
           }
 
           // Create new routing control
-          this.routingControl = (this.L as any).Routing.control({
+          this.routingControl = (this.L).Routing.control({
             waypoints: [
               this.L.latLng(userLocation[0], userLocation[1]),
               this.L.latLng(this.localizacionConcreta[0], this.localizacionConcreta[1]),

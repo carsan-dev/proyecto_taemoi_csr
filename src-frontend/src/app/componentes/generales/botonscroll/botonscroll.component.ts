@@ -19,7 +19,7 @@ export class BotonscrollComponent {
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
-    if (typeof window !== 'undefined') {
+    if (typeof globalThis !== 'undefined') {
       this.mostrarBoton = window.scrollY > 100;
     }
   }

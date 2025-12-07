@@ -315,21 +315,21 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       });
     } else if (tipo === 'licencias') {
       this.endpointsService.generarInformeLicencias().subscribe((blob) => {
-        const url = window.URL.createObjectURL(blob);
+        const url = globalThis.URL.createObjectURL(blob);
         window.open(url);
       });
     } else if (tipo === 'infantiles') {
       this.endpointsService
         .generarInformeInfantilesAPromocionar()
         .subscribe((blob) => {
-          const url = window.URL.createObjectURL(blob);
+          const url = globalThis.URL.createObjectURL(blob);
           window.open(url);
         });
     } else if (tipo === 'adultos') {
       this.endpointsService
         .generarInformeAdultosAPromocionar()
         .subscribe((blob) => {
-          const url = window.URL.createObjectURL(blob);
+          const url = globalThis.URL.createObjectURL(blob);
           window.open(url);
         });
     } else if (tipo === 'deudas') {
@@ -366,14 +366,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           // Generate CSV
           this.endpointsService.generarInformeDeudasCSV().subscribe({
             next: (csvBlob: Blob) => {
-              const url = window.URL.createObjectURL(csvBlob);
+              const url = globalThis.URL.createObjectURL(csvBlob);
               const a = document.createElement('a');
               a.href = url;
               a.download = 'informe_deudas_alumnos.csv';
               document.body.appendChild(a);
               a.click();
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(url);
+              a.remove();
+              globalThis.URL.revokeObjectURL(url);
               Swal.fire({
                 title: 'Descarga Completada',
                 text: 'El archivo CSV se ha descargado correctamente',
@@ -652,12 +652,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.turnoSeleccionado!
       )
       .subscribe((blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
+        const url = globalThis.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
         a.click();
-        window.URL.revokeObjectURL(url);
+        globalThis.URL.revokeObjectURL(url);
       });
   }
 
@@ -677,6 +677,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       'NOVIEMBRE',
       'DICIEMBRE',
     ];
-    return `${meses[parseInt(mes, 10) - 1]} ${anio}`;
+    return `${meses[Number.parseInt(mes, 10) - 1]} ${anio}`;
   }
 }

@@ -140,7 +140,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   parseRoles(rolString: string): RoleSelection {
-    const cleanString = rolString.replace(/[\[\]]/g, '');
+    const cleanString = rolString.replaceAll(/[[\]]/g, '');
     const rolesArray = cleanString.split(',').map((r) => r.trim());
 
     return {
