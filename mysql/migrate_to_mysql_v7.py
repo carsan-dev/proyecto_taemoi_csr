@@ -13,10 +13,11 @@ This ensures documento and imagen URLs work correctly without percent-encoding.
 Tables migrated:
   - grado (generated to match InicializadorDatos.java logic)
   - categoria (generated to match InicializadorDatos.java logic)
-  - alumno (with all fields)
+  - alumno (with all fields, including deprecated multi-sport fields)
+  - alumno_deporte (generated from alumno deprecated fields for multi-sport support)
   - imagen (from FOTOS_ALUMNOS)
   - documento (from DOCUMENTOS_VINCULADOS)
-  - grupo (generated to match InicializadorDatos.java logic)
+  - grupo (generated to match InicializadorDatos.java logic with deporte field)
   - turno (generated to match InicializadorDatos.java logic)
   - alumno_grupo (student-group assignments mapped to predefined grupos)
   - alumno_turno (student-schedule assignments mapped to predefined turnos)
@@ -367,6 +368,26 @@ def map_tipo_tarifa(tarifa: Optional[Any]) -> str:
 
     return "'INFANTIL'"
 
+def map_rol_familiar(rol: Optional[Any]) -> str:
+    """Map Access rol familiar to MySQL RolFamiliar enum"""
+    if rol is None:
+        return "'NINGUNO'"
+    s = str(rol).strip().upper()
+
+    mapping = {
+        "PADRE": "PADRE",
+        "MADRE": "PADRE",  # Map MADRE to PADRE (parent role)
+        "HIJO": "HIJO",
+        "HIJA": "HIJO",  # Map HIJA to HIJO (child role)
+        "NINGUNO": "NINGUNO",
+    }
+
+    for key, value in mapping.items():
+        if key in s:
+            return f"'{value}'"
+
+    return "'NINGUNO'"
+
 def map_grado_to_tipo(grado: Optional[Any]) -> Optional[str]:
     """Map Access grado text to MySQL TipoGrado enum"""
     if grado is None:
@@ -601,6 +622,10 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
         if cuantia_tarifa == "NULL":
             cuantia_tarifa = "0"
 
+        # Rol familiar y grupo familiar (new fields for family grouping)
+        rol_familiar = map_rol_familiar(r.get("Rol_Familiar") or r.get("RolFamiliar"))
+        grupo_familiar = sql_str_or_null(r.get("Grupo_Familiar") or r.get("GrupoFamiliar"))
+
         # Dates
         fecha_alta = sql_date_or_null(r.get("Fecha_Alta"))
         fecha_alta_inicial = fecha_alta  # Set fechaAltaInicial the same as fechaAlta during migration
@@ -638,7 +663,7 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
         cols = [
             "numero_expediente", "nombre", "apellidos", "nif", "direccion",
             "telefono", "email", "fecha_nacimiento",
-            "tipo_tarifa", "cuantia_tarifa",
+            "tipo_tarifa", "cuantia_tarifa", "rol_familiar", "grupo_familiar",
             "fecha_alta", "fecha_alta_inicial", "fecha_baja", "activo",
             "autorizacion_web", "competidor",
             "peso", "fecha_peso",
@@ -651,7 +676,7 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
         vals = [
             str(exp_int), nombre, apellidos, nif, direccion,
             telefono, email, fecha_nacimiento,
-            tipo_tarifa, cuantia_tarifa,
+            tipo_tarifa, cuantia_tarifa, rol_familiar, grupo_familiar,
             fecha_alta, fecha_alta_inicial, fecha_baja, activo,
             autorizacion_web, competidor,
             peso, fecha_peso,
@@ -666,6 +691,32 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
 
     stats["alumno"] = {"processed": processed, "skipped": skipped}
     f.write(f"\n-- Processed: {processed}, Skipped: {skipped}\n\n")
+
+def write_alumno_deporte(f, schema: str, stats: Dict):
+    """
+    Generate alumno_deporte records from deprecated alumno fields.
+    Migrates deporte, grado_id, fecha_grado, and apto_para_examen to the new multi-sport structure.
+    """
+    f.write("-- =====================================================\n")
+    f.write("-- ALUMNO_DEPORTE (Multi-sport migration)\n")
+    f.write("-- Migrates deprecated fields from alumno table\n")
+    f.write("-- =====================================================\n\n")
+
+    f.write(f"INSERT INTO `{schema}`.`alumno_deporte` \n")
+    f.write("  (`alumno_id`, `deporte`, `grado_id`, `fecha_grado`, `apto_para_examen`, `activo`, `fecha_alta`)\n")
+    f.write("SELECT \n")
+    f.write("  a.id,\n")
+    f.write("  a.deporte,\n")
+    f.write("  a.grado_id,\n")
+    f.write("  a.fecha_grado,\n")
+    f.write("  COALESCE(a.apto_para_examen, false) as apto_para_examen,\n")
+    f.write("  a.activo,\n")
+    f.write("  COALESCE(a.fecha_alta, a.fecha_alta_inicial) as fecha_alta\n")
+    f.write(f"FROM `{schema}`.`alumno` a\n")
+    f.write("WHERE a.deporte IS NOT NULL;\n\n")
+
+    f.write("-- Migrated alumno_deporte records from deprecated alumno fields\n\n")
+    stats["alumno_deporte"] = {"note": "Generated from alumno SELECT-INSERT"}
 
 def write_imagenes(f, schema: str, rows: List[Dict[str, Any]], stats: Dict, env: str):
     """Migrate FOTOS_ALUMNOS to imagen table"""
@@ -905,21 +956,22 @@ def write_grupos_turnos_relations(f, schema: str, aux_grupos: List[Dict[str, Any
     # ===== GENERATE GRUPOS (matching InicializadorDatos.java) =====
     f.write("-- ===== GRUPO (generated to match InicializadorDatos.java) =====\n")
 
+    # Format: (nombre, tipo, deporte_enum)
     predefined_grupos = [
-        ("Taekwondo Lunes y Miércoles Primer Turno", "Taekwondo"),
-        ("Taekwondo Lunes y Miércoles Segundo Turno", "Taekwondo"),
-        ("Taekwondo Lunes y Miércoles Tercer Turno", "Taekwondo"),
-        ("Taekwondo Martes y Jueves Primer Turno", "Taekwondo"),
-        ("Taekwondo Martes y Jueves Segundo Turno", "Taekwondo"),
-        ("Taekwondo Martes y Jueves Tercer Turno", "Taekwondo"),
-        ("Taekwondo Competición", "Taekwondo Competición"),
-        ("Pilates Martes y Jueves", "Pilates"),
-        ("Kickboxing Lunes y Miércoles", "Kickboxing"),
-        ("Defensa Personal Femenina Lunes y Miércoles", "Defensa Personal Femenina"),
+        ("Taekwondo Lunes y Miércoles Primer Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Lunes y Miércoles Segundo Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Lunes y Miércoles Tercer Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Martes y Jueves Primer Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Martes y Jueves Segundo Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Martes y Jueves Tercer Turno", "Taekwondo", "TAEKWONDO"),
+        ("Taekwondo Competición", "Taekwondo Competición", "TAEKWONDO"),
+        ("Pilates Martes y Jueves", "Pilates", "PILATES"),
+        ("Kickboxing Lunes y Miércoles", "Kickboxing", "KICKBOXING"),
+        ("Defensa Personal Femenina Lunes y Miércoles", "Defensa Personal Femenina", "DEFENSA_PERSONAL_FEMENINA"),
     ]
 
-    for nombre, tipo in predefined_grupos:
-        f.write(f"INSERT IGNORE INTO `{schema}`.`grupo` (`nombre`, `tipo`) VALUES ('{sql_escape(nombre)}', '{sql_escape(tipo)}');\n")
+    for nombre, tipo, deporte in predefined_grupos:
+        f.write(f"INSERT IGNORE INTO `{schema}`.`grupo` (`nombre`, `tipo`, `deporte`) VALUES ('{sql_escape(nombre)}', '{sql_escape(tipo)}', '{deporte}');\n")
 
     f.write(f"\n-- Generated: {len(predefined_grupos)} grupos\n\n")
 
@@ -1112,6 +1164,13 @@ def write_productos_pagos(f, schema: str, pagos: List[Dict[str, Any]], stats: Di
     stats["producto_alumno"] = {"processed": pa_count, "orphans": pa_orphans, "no_concepto": pa_no_concepto}
     f.write(f"\n-- Processed: {pa_count}, Orphans: {pa_orphans}, No concepto: {pa_no_concepto}\n\n")
 
+    # Link producto_alumno to alumno_deporte (multi-sport support)
+    f.write("-- Link producto_alumno to alumno_deporte\n")
+    f.write(f"UPDATE `{schema}`.`producto_alumno` pa\n")
+    f.write(f"INNER JOIN `{schema}`.`alumno_deporte` ad ON pa.`alumno_id` = ad.`alumno_id`\n")
+    f.write(f"SET pa.`alumno_deporte_id` = ad.`id`\n")
+    f.write(f"WHERE pa.`alumno_id` IS NOT NULL;\n\n")
+
 def write_convocatorias_examenes(f, schema: str, examenes: List[Dict[str, Any]], stats: Dict):
     """Write convocatoria and alumno_convocatoria tables"""
 
@@ -1187,6 +1246,13 @@ def write_convocatorias_examenes(f, schema: str, examenes: List[Dict[str, Any]],
     stats["alumno_convocatoria"] = {"processed": ac_count, "orphans": ac_orphans}
     f.write(f"\n-- Processed: {ac_count}, Orphans: {ac_orphans}\n\n")
 
+    # Link alumno_convocatoria to alumno_deporte (multi-sport support)
+    f.write("-- Link alumno_convocatoria to alumno_deporte\n")
+    f.write(f"UPDATE `{schema}`.`alumno_convocatoria` ac\n")
+    f.write(f"INNER JOIN `{schema}`.`alumno_deporte` ad ON ac.`alumno_id` = ad.`alumno_id`\n")
+    f.write(f"SET ac.`alumno_deporte_id` = ad.`id`\n")
+    f.write(f"WHERE ac.`alumno_id` IS NOT NULL;\n\n")
+
 # ========== MAIN ==========
 
 def migrate(access_path: str, out_sql: str, schema: str, env: str, base_url: Optional[str] = None) -> int:
@@ -1238,7 +1304,7 @@ def migrate(access_path: str, out_sql: str, schema: str, env: str, base_url: Opt
         f.write("-- Clear existing data\n")
         for table in ["alumno_convocatoria", "convocatoria", "producto_alumno", "producto",
                      "alumno_turno", "alumno_grupo", "turno", "grupo",
-                     "documento", "alumno", "imagen", "categoria", "grado"]:
+                     "documento", "alumno_deporte", "alumno", "imagen", "categoria", "grado"]:
             f.write(f"DELETE FROM `{schema}`.`{table}`;\n")
         f.write("\n")
 
@@ -1246,6 +1312,7 @@ def migrate(access_path: str, out_sql: str, schema: str, env: str, base_url: Opt
         write_grados(f, schema)
         write_categorias(f, schema)
         write_alumnos(f, schema, alumnos, stats)
+        write_alumno_deporte(f, schema, stats)
         write_imagenes(f, schema, fotos, stats, env)
         write_documentos(f, schema, documentos, alumnos, stats, env)
         write_grupos_turnos_relations(f, schema, aux_grupos, stats)
