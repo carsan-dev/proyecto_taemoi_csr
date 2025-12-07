@@ -69,12 +69,16 @@ import com.taemoi.project.utils.MensualidadUtils;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementación del servicio para operaciones relacionadas con los alumnos.
  */
 @Service
 public class AlumnoServiceImpl implements AlumnoService {
+
+	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
 
 	/**
 	 * Inyección del repositorio de alumno.
@@ -620,18 +624,32 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Override
 	public Documento obtenerDocumentoDeAlumno(Long alumnoId, Long documentoId) {
+		logger.info("Getting document {} for alumno {}", documentoId, alumnoId);
+
 		// Verificar que el alumno existe
 		if (!alumnoRepository.existsById(alumnoId)) {
+			logger.error("Alumno not found with ID: {}", alumnoId);
 			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId);
 		}
 
 		Documento documento = documentoRepository.findById(documentoId)
-				.orElseThrow(() -> new RuntimeException("Documento no encontrado con ID: " + documentoId));
+				.orElseThrow(() -> {
+					logger.error("Document not found with ID: {}", documentoId);
+					return new RuntimeException("Documento no encontrado con ID: " + documentoId);
+				});
 
-		if (documento.getAlumno() == null || !documento.getAlumno().getId().equals(alumnoId)) {
+		if (documento.getAlumno() == null) {
+			logger.error("Document {} has no associated alumno (null)", documentoId);
+			throw new RuntimeException("El documento no tiene un alumno asociado.");
+		}
+
+		if (!documento.getAlumno().getId().equals(alumnoId)) {
+			logger.error("Document {} belongs to alumno {} but was requested for alumno {}",
+					documentoId, documento.getAlumno().getId(), alumnoId);
 			throw new RuntimeException("El documento no pertenece a este alumno.");
 		}
 
+		logger.info("Document {} successfully retrieved for alumno {}", documentoId, alumnoId);
 		return documento;
 	}
 
