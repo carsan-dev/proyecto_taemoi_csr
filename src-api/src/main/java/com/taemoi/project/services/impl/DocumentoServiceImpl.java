@@ -93,11 +93,14 @@ public class DocumentoServiceImpl implements DocumentoService {
 		String urlAcceso = "%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s".formatted(baseUrl, carpetaNombreReal,
                 nombreArchivoFinal);
 
+		// Store RELATIVE path (from documentos directory) to be environment-independent
+		String rutaRelativa = "Documentos_Alumnos_Moiskimdo/" + carpetaNombreReal + "/" + nombreArchivoFinal;
+
 		Documento documento = new Documento();
 		documento.setNombre(nombreArchivoFinal);
 		documento.setTipo(archivo.getContentType());
 		documento.setUrl(urlAcceso);
-		documento.setRuta(rutaArchivoFinal.toString());
+		documento.setRuta(rutaRelativa);  // Store relative path instead of absolute
 		documento.setAlumno(alumno);
 
 		return documentoRepository.save(documento);
@@ -106,7 +109,30 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public void eliminarDocumento(Documento documento) {
 		if (documento != null && documento.getRuta() != null) {
-			Path rutaArchivo = Path.of(documento.getRuta());
+			String rutaDocumento = documento.getRuta();
+			Path rutaArchivo;
+
+			// Handle both relative and absolute paths
+			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
+				// Absolute path (old format)
+				rutaArchivo = Path.of(rutaDocumento);
+			} else {
+				// Relative path (new format) - resolve against base directory
+				String os = System.getProperty("os.name").toLowerCase();
+				String directorioDocumentos;
+
+				if (os.contains("win")) {
+					String userProfile = System.getenv("USERPROFILE");
+					directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+				} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+					directorioDocumentos = directorioDocumentosLinux;
+				} else {
+					throw new IllegalStateException("Sistema operativo no soportado: " + os);
+				}
+
+				rutaArchivo = Path.of(directorioDocumentos).resolve(rutaDocumento);
+			}
+
 			try {
 				if (Files.exists(rutaArchivo)) {
 					Files.delete(rutaArchivo);
@@ -148,7 +174,32 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public Resource obtenerRecursoDocumento(Documento documento) {
 		try {
-			Path rutaArchivo = Path.of(documento.getRuta());
+			String rutaDocumento = documento.getRuta();
+			Path rutaArchivo;
+
+			// Handle both relative and absolute paths for backward compatibility
+			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
+				// Absolute path (old format) - use as is
+				logger.warn("Document {} uses absolute path (deprecated): {}", documento.getId(), rutaDocumento);
+				rutaArchivo = Path.of(rutaDocumento);
+			} else {
+				// Relative path (new format) - resolve against base directory
+				String os = System.getProperty("os.name").toLowerCase();
+				String directorioDocumentos;
+
+				if (os.contains("win")) {
+					String userProfile = System.getenv("USERPROFILE");
+					directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+				} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+					directorioDocumentos = directorioDocumentosLinux;
+				} else {
+					throw new IllegalStateException("Sistema operativo no soportado: " + os);
+				}
+
+				rutaArchivo = Path.of(directorioDocumentos).resolve(rutaDocumento);
+				logger.info("Resolved relative path {} to absolute: {}", rutaDocumento, rutaArchivo);
+			}
+
 			if (!Files.exists(rutaArchivo)) {
 				throw new RuntimeException("El archivo no existe en el sistema de archivos: " + rutaArchivo);
 			}
