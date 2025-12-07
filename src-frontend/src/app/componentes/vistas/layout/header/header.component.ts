@@ -180,7 +180,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const navbarCollapse = document.querySelector('.navbar-collapse.show') as HTMLElement;
     if (navbarCollapse) {
       // Use Bootstrap's Collapse API for smooth animation
-      const bsCollapse = (window as any).bootstrap?.Collapse?.getInstance(navbarCollapse);
+      const bsCollapse = (globalThis as any).bootstrap?.Collapse?.getInstance(navbarCollapse);
       if (bsCollapse) {
         bsCollapse.hide();
       } else {

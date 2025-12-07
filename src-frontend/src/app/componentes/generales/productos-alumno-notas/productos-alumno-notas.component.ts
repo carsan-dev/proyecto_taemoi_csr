@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './productos-alumno-notas.component.html',
   styleUrls: ['./productos-alumno-notas.component.scss']
 })
-export class ProductosAlumnoNotasComponent {
+export class ProductosAlumnoNotasComponent implements OnInit{
   @Input() productoAlumno!: ProductoAlumnoDTO;
   @Output() cerrar = new EventEmitter<void>();
   @Output() guardar = new EventEmitter<ProductoAlumnoDTO>();

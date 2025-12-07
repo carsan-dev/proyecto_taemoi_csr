@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 interface InformeOption {
@@ -23,7 +23,7 @@ interface InformeCategory {
   templateUrl: './informe-modal.component.html',
   styleUrl: './informe-modal.component.scss'
 })
-export class InformeModalComponent {
+export class InformeModalComponent implements OnInit {
   @Input() title: string = 'Generar Informe';
   @Input() opcionesInforme: Array<{ value: string, label: string }> = [];
 

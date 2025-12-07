@@ -12,7 +12,6 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
 
 @Component({

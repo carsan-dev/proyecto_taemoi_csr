@@ -4,7 +4,6 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
-import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
 
 @Component({
