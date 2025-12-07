@@ -1206,6 +1206,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	@Override
+	public List<com.taemoi.project.entities.AlumnoDeporte> obtenerDeportesActivosDelAlumno(Long alumnoId) {
+		return alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId);
+	}
+
+	@Override
 	public com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
 			com.taemoi.project.entities.Deporte deporte,
 			com.taemoi.project.entities.TipoGrado gradoInicial) {

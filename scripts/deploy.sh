@@ -137,7 +137,7 @@ if [ "$ENVIRONMENT" = "production" ]; then
     else
         warn "No tables found. DDL script may not have executed."
         warn "Check: docker-compose -f $COMPOSE_FILE logs database"
-        warn "Init files should be in mysql/init/: 01_ddl_schema_server.sql, 02_migration_server.sql, 03_multisport_migration.sql"
+        warn "Init files should be in mysql/init/: 01_ddl_schema_server.sql, 02_migration_server.sql"
     fi
 
     # Check if data was migrated (check alumno table row count)
