@@ -98,13 +98,19 @@
 
         <!-- Card con la info principal del alumno -->
         <div class="admin-card admin-card-large alumno-profile-card mb-4">
-          <div class="deporte-banner" [ngClass]="{
-              'taekwondo': alumno.deporte === 'TAEKWONDO',
-              'pilates': alumno.deporte === 'PILATES',
-              'kickboxing': alumno.deporte === 'KICKBOXING',
-              'defensa-personal-femenina': alumno.deporte === 'DEFENSA_PERSONAL_FEMENINA'
-            }">
-            <span class="deporte-badge">{{ alumno.deporte }}</span>
+          <!-- Multi-sport badges header -->
+          <div class="deportes-banner-container">
+            @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+              <div class="deporte-banner-badge" [ngClass]="{
+                'taekwondo': deporteItem.deporte === 'TAEKWONDO',
+                'pilates': deporteItem.deporte === 'PILATES',
+                'kickboxing': deporteItem.deporte === 'KICKBOXING',
+                'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
+              }">
+                <i class="bi bi-trophy-fill"></i>
+                <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
+              </div>
+            }
           </div>
 
           <div class="profile-content">
