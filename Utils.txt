@@ -122,3 +122,7 @@ TODO:
 ✔ Terminar de reparar la apertura de ficheros (creo que tengo que cambiar todas las carpetas para estar en mayusculas)
 
 ✔ Añadir opción de admin para poder hacer admin a otros usuarios
+
+✔ Arreglar tabs de deporte para mejor diseño y añadir agregar a convocatoria y demas
+
+continue with the multi-sport implementation
