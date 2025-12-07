@@ -186,133 +186,156 @@
             @if (deporteActivo === deporteItem.deporte) {
             <div class="tab-content">
               <div class="tab-panel active">
-                <div class="row g-3">
-                  <!-- Deporte Info -->
-                  <div class="col-12">
-                    <div class="deporte-header">
-                      <h4>
-                        <i class="bi bi-trophy-fill"></i>
-                        {{ getDeporteLabel(deporteItem.deporte) }}
-                      </h4>
-                      @if (deportesDelAlumno.length > 1) {
-                      <button class="admin-btn admin-btn-danger admin-btn-sm"
-                        (click)="removerDeporte(deporteItem.deporte)">
-                        <i class="bi bi-trash"></i>
-                        <span>Eliminar Deporte</span>
+                <!-- Deporte Header with Action Buttons -->
+                <div class="deporte-header">
+                  <h4>
+                    <i class="bi bi-trophy-fill"></i>
+                    {{ getDeporteLabel(deporteItem.deporte) }}
+                  </h4>
+                  <div class="deporte-actions">
+                    @if (deportesDelAlumno.length > 1) {
+                    <button class="admin-btn admin-btn-danger admin-btn-sm"
+                      (click)="removerDeporte(deporteItem.deporte)">
+                      <i class="bi bi-trash"></i>
+                      <span>Eliminar Deporte</span>
+                    </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="row g-4">
+                  <!-- Left Column: Grade Management -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-award-fill"></i>
+                        Información de Grado
+                      </h5>
+
+                      <!-- Grado Actual -->
+                      <div class="info-item-horizontal">
+                        <span class="info-label">
+                          <i class="bi bi-award"></i>
+                          Grado Actual
+                        </span>
+                        <span class="info-value info-value-highlight"
+                          [style]="getGradoStyle(deporteItem.grado || '')">
+                          {{ deporteItem.grado || 'Sin grado asignado' }}
+                        </span>
+                      </div>
+
+                      <!-- Update Grade Button -->
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm w-100 mt-2"
+                        (click)="abrirModalActualizarGrado(deporteItem.deporte)">
+                        <i class="bi bi-arrow-up-circle"></i>
+                        <span>Actualizar Grado</span>
                       </button>
+
+                      <!-- Fecha de Grado -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaGrado-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Grado
+                        </label>
+                        <input
+                          type="date"
+                          [id]="'fechaGrado-' + deporteItem.deporte"
+                          class="admin-form-control"
+                          [value]="deporteItem.fechaGrado | date: 'yyyy-MM-dd'"
+                          (change)="actualizarFechaGrado(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de grado para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha en que obtuvo este grado
+                        </small>
+                      </div>
+
+                      <!-- Apto para Examen Toggle -->
+                      <div class="admin-form-switch mt-3" [class.checked]="deporteItem.aptoParaExamen">
+                        <label [for]="'aptoExamen-' + deporteItem.deporte">
+                          <i class="bi bi-check-circle"></i>
+                          ¿Apto para examen?
+                        </label>
+                        <div class="switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            [id]="'aptoExamen-' + deporteItem.deporte"
+                            [checked]="deporteItem.aptoParaExamen"
+                            (change)="actualizarAptoParaExamen(deporteItem.deporte, $event)"
+                            [attr.aria-label]="'Apto para examen en ' + getDeporteLabel(deporteItem.deporte)" />
+                          <span class="slider"></span>
+                        </div>
+                      </div>
+
+                      <!-- Convocatorias Section (Only for sports with grades and if apto) -->
+                      @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA' && deporteItem.aptoParaExamen) {
+                      <div class="convocatorias-section mt-4">
+                        <h6 class="section-mini-title">
+                          <i class="bi bi-calendar-event"></i>
+                          Convocatorias
+                        </h6>
+                        <div class="button-group-vertical">
+                          <button class="admin-btn admin-btn-primary admin-btn-sm"
+                            (click)="abrirModalConvocatoriasPorDeporte(deporteItem.deporte)">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>Agregar a Convocatoria</span>
+                          </button>
+                        </div>
+                      </div>
                       }
                     </div>
                   </div>
 
-                  <!-- Grado -->
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
-                        <i class="bi bi-award"></i>
-                        Grado Actual
-                      </span>
-                      <span class="info-value info-value-highlight"
-                        [style]="getGradoStyle(deporteItem.grado || '')">
-                        {{ deporteItem.grado || 'Sin grado asignado' }}
-                      </span>
-                    </div>
-                  </div>
+                  <!-- Right Column: Sport Statistics -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Estadísticas del Deporte
+                      </h5>
 
-                  <!-- Update Grade Button -->
-                  <div class="col-12">
-                    <button type="button" class="admin-btn admin-btn-success"
-                      (click)="abrirModalActualizarGrado(deporteItem.deporte)">
-                      <i class="bi bi-arrow-up-circle"></i>
-                      <span>Actualizar Grado</span>
-                    </button>
-                  </div>
-
-                  <!-- Fecha de Grado (Editable) -->
-                  <div class="col-md-6">
-                    <div class="admin-form-field">
-                      <label [for]="'fechaGrado-' + deporteItem.deporte">
-                        <i class="bi bi-calendar-check"></i>
-                        Fecha de Grado
-                      </label>
-                      <input
-                        type="date"
-                        [id]="'fechaGrado-' + deporteItem.deporte"
-                        class="admin-form-control"
-                        [value]="deporteItem.fechaGrado | date: 'yyyy-MM-dd'"
-                        (change)="actualizarFechaGrado(deporteItem.deporte, $event)"
-                        [attr.aria-label]="'Fecha de grado para ' + getDeporteLabel(deporteItem.deporte)" />
-                      <small class="form-text text-muted">
-                        <i class="bi bi-info-circle"></i>
-                        Fecha en que obtuvo este grado
-                      </small>
-                    </div>
-                  </div>
-
-                  <!-- Apto para Examen (Editable Toggle) -->
-                  <div class="col-md-6">
-                    <div class="admin-form-switch" [class.checked]="deporteItem.aptoParaExamen">
-                      <label [for]="'aptoExamen-' + deporteItem.deporte">
-                        <i class="bi bi-check-circle"></i>
-                        ¿Apto para examen?
-                      </label>
-                      <div class="switch">
-                        <input
-                          type="checkbox"
-                          class="form-check-input"
-                          [id]="'aptoExamen-' + deporteItem.deporte"
-                          [checked]="deporteItem.aptoParaExamen"
-                          (change)="actualizarAptoParaExamen(deporteItem.deporte, $event)"
-                          [attr.aria-label]="'Apto para examen en ' + getDeporteLabel(deporteItem.deporte)" />
-                        <span class="slider"></span>
+                      <!-- Fecha de Alta -->
+                      @if (deporteItem.fechaAlta) {
+                      <div class="info-item-horizontal">
+                        <span class="info-label">
+                          <i class="bi bi-calendar-plus"></i>
+                          Fecha de Alta
+                        </span>
+                        <span class="info-value">{{ deporteItem.fechaAlta | date: 'dd/MM/yyyy' }}</span>
                       </div>
-                    </div>
-                  </div>
+                      }
 
-                  <!-- Fecha de Alta en este deporte -->
-                  @if (deporteItem.fechaAlta) {
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
-                        <i class="bi bi-calendar-plus"></i>
-                        Fecha de Alta
-                      </span>
-                      <span class="info-value">{{ deporteItem.fechaAlta | date: 'dd/MM/yyyy' }}</span>
-                    </div>
-                  </div>
-                  }
-
-                  <!-- Antigüedad -->
-                  @if (deporteItem.antiguedad) {
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
-                        <i class="bi bi-clock-history"></i>
-                        Antigüedad en este deporte
-                      </span>
-                      <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
-                    </div>
-                  </div>
-                  }
-
-                  <!-- Estado -->
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">
-                        <i class="bi bi-info-circle"></i>
-                        Estado
-                      </span>
-                      <span class="info-value">
-                        @if (deporteItem.activo) {
-                        <span class="status-badge status-active">
-                          <i class="bi bi-check-circle-fill"></i> Activo
+                      <!-- Antigüedad -->
+                      @if (deporteItem.antiguedad) {
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-clock-history"></i>
+                          Antigüedad en este deporte
                         </span>
-                        }
-                        @if (!deporteItem.activo) {
-                        <span class="status-badge status-inactive">
-                          <i class="bi bi-x-circle-fill"></i> Inactivo
+                        <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
+                      </div>
+                      }
+
+                      <!-- Estado -->
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-info-circle"></i>
+                          Estado
                         </span>
-                        }
-                      </span>
+                        <span class="info-value">
+                          @if (deporteItem.activo) {
+                          <span class="status-badge status-active">
+                            <i class="bi bi-check-circle-fill"></i> Activo
+                          </span>
+                          }
+                          @if (!deporteItem.activo) {
+                          <span class="status-badge status-inactive">
+                            <i class="bi bi-x-circle-fill"></i> Inactivo
+                          </span>
+                          }
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1433,15 +1456,24 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="bi bi-calendar-event me-2"></i>
-          Seleccionar Convocatoria
+          Seleccionar Convocatoria - {{ getDeporteLabel(deporteParaConvocatoria) }}
         </h5>
         <button type="button" class="btn-close" (click)="cerrarModalConvocatorias()" aria-label="Cerrar modal"></button>
       </div>
       <div class="modal-body">
-        <p class="mb-3">Convocatorias disponibles para <strong>{{ alumno.deporte }}</strong>:</p>
+        <p class="mb-3">Convocatorias disponibles para <strong>{{ getDeporteLabel(deporteParaConvocatoria) }}</strong>:</p>
+
+        @if (convocatoriasFiltradasPorDeporte.length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-calendar-x fs-1"></i>
+          <p class="mt-3">No hay convocatorias disponibles para este deporte</p>
+        </div>
+        }
+
+        @if (convocatoriasFiltradasPorDeporte.length > 0) {
         <div class="convocatoria-list">
           @if (convocatoriaActual) {
-          <div (click)="agregarAConvocatoriaEspecifica(convocatoriaActual)"
+          <div (click)="agregarAConvocatoriaPorDeporte(convocatoriaActual)"
             class="convocatoria-item convocatoria-item-current">
             <div class="convocatoria-icon">
               <i class="bi bi-star-fill"></i>
@@ -1455,8 +1487,8 @@
             <i class="bi bi-chevron-right"></i>
           </div>
           }
-          @for (convocatoria of convocatoriasDisponibles; track convocatoria.id) {
-          <div (click)="agregarAConvocatoriaEspecifica(convocatoria)" class="convocatoria-item">
+          @for (convocatoria of convocatoriasFiltradasPorDeporte; track convocatoria.id) {
+          <div (click)="agregarAConvocatoriaPorDeporte(convocatoria)" class="convocatoria-item">
             <div class="convocatoria-icon">
               <i class="bi bi-calendar-event"></i>
             </div>
@@ -1470,6 +1502,7 @@
           </div>
           }
         </div>
+        }
       </div>
       <div class="modal-footer">
         <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalConvocatorias()">

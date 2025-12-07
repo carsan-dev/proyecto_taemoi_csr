@@ -290,6 +290,30 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /**
+   * Add alumno to convocatoria with multi-sport support
+   * @param convocatoriaId ID of the convocatoria
+   * @param alumnoConvocatoriaData Data including alumno, convocatoria, and alumnoDeporte IDs
+   * @param porRecompensa Whether the exam is by reward or seniority
+   */
+  agregarAlumnoAConvocatoriaMultiDeporte(
+    convocatoriaId: number,
+    alumnoConvocatoriaData: any,
+    porRecompensa: boolean
+  ): Observable<any> {
+    const alumnoId = alumnoConvocatoriaData.alumno.id;
+    return this.http
+      .post<any>(
+        `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
+        {
+          porRecompensa,
+          alumnoDeporteId: alumnoConvocatoriaData.alumnoDeporte.id
+        },
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarAlumnoDeConvocatoria(
     alumnoId: number,
     convocatoriaId: number

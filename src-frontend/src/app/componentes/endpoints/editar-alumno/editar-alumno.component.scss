@@ -691,7 +691,7 @@
     animation: fadeIn 0.3s ease;
 
     .tab-panel {
-      padding: 1.5rem;
+      padding: 2rem;
       background: $text-light;
       border-radius: 12px;
       box-shadow: $shadow-sm;
@@ -700,22 +700,114 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid $background-light;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 3px solid $background-light;
 
         h4 {
           margin: 0;
           color: $text-dark;
-          font-weight: 600;
+          font-weight: 700;
+          font-size: 1.5rem;
           display: flex;
           align-items: center;
           gap: 0.75rem;
 
           i {
             color: $primary-color;
-            font-size: 1.5rem;
+            font-size: 1.75rem;
           }
+        }
+
+        .deporte-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+      }
+
+      // Improved info sections
+      .sport-info-section {
+        background: $background-light;
+        padding: 1.5rem;
+        border-radius: 10px;
+        height: 100%;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+
+        .section-subtitle {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: $text-dark;
+          margin-bottom: 1.25rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 2px solid rgba($primary-color, 0.2);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          i {
+            color: $primary-color;
+            font-size: 1.25rem;
+          }
+        }
+
+        .section-mini-title {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: $text-muted;
+          margin-bottom: 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          i {
+            color: $primary-color;
+          }
+        }
+
+        .info-item-horizontal {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          background: $text-light;
+          border-radius: 8px;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+
+          .info-label {
+            font-weight: 500;
+            color: $text-muted;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            i {
+              color: $primary-color;
+              font-size: 1rem;
+            }
+          }
+
+          .info-value {
+            font-weight: 600;
+            color: $text-dark;
+            font-size: 0.95rem;
+          }
+
+          .info-value-highlight {
+            color: $primary-color;
+            font-weight: 700;
+          }
+        }
+
+        .button-group-vertical {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .convocatorias-section {
+          padding-top: 1rem;
+          border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
       }
     }
@@ -787,6 +879,23 @@
   }
 }
 
+// Empty state styles
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: $text-muted;
+
+  i {
+    color: rgba($primary-color, 0.3);
+  }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+}
+
 // Responsive adjustments for tabs
 @media (max-width: 768px) {
   .deportes-tabs {
@@ -801,15 +910,37 @@
 
     .tab-content {
       .tab-panel {
-        padding: 1rem;
+        padding: 1.25rem;
 
         .deporte-header {
           flex-direction: column;
           align-items: flex-start;
           gap: 1rem;
 
-          button {
+          h4 {
+            font-size: 1.25rem;
+          }
+
+          .deporte-actions {
             width: 100%;
+
+            button {
+              width: 100%;
+            }
+          }
+        }
+
+        .sport-info-section {
+          padding: 1rem;
+
+          .section-subtitle {
+            font-size: 1rem;
+          }
+
+          .info-item-horizontal {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
           }
         }
       }
