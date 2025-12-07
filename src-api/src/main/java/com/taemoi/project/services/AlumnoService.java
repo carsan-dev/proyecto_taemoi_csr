@@ -104,6 +104,11 @@ public interface AlumnoService {
 	List<com.taemoi.project.entities.AlumnoDeporte> obtenerDeportesDelAlumno(Long alumnoId);
 
 	/**
+	 * Obtiene solo los deportes activos de un alumno
+	 */
+	List<com.taemoi.project.entities.AlumnoDeporte> obtenerDeportesActivosDelAlumno(Long alumnoId);
+
+	/**
 	 * Agrega un deporte a un alumno
 	 */
 	com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
