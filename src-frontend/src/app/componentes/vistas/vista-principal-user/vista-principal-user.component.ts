@@ -6,6 +6,10 @@ import Swal from 'sweetalert2';
 
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { AlumnoService } from '../../../features/alumno/services/alumno.service';
+import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
+import { getDeporteLabel } from '../../../enums/deporte';
+import { getGradoTextStyle } from '../../../utilities/grado-colors';
 
 @Component({
   selector: 'app-vista-principal-user',
@@ -18,11 +22,14 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   alumnos: any[] = [];
   selectedAlumno: any = null;
   grupos: any[] = [];
+  deportesDelAlumno: AlumnoDeporteDTO[] = [];
+  cargandoDeportes: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly alumnoService: AlumnoService
   ) {}
 
   ngOnInit() {
@@ -44,6 +51,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
           this.alumnos = alumnos;
           this.selectedAlumno = alumnos[0];
           this.cargarGruposDelAlumno(this.selectedAlumno.id);
+          this.cargarDeportesDelAlumno(this.selectedAlumno.id);
         } else {
           Swal.fire({
             title: 'Error',
@@ -65,6 +73,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   seleccionarAlumno(alumno: any): void {
     this.selectedAlumno = alumno;
     this.cargarGruposDelAlumno(alumno.id);
+    this.cargarDeportesDelAlumno(alumno.id);
   }
 
   ngOnDestroy(): void {
@@ -132,5 +141,62 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     if (etiqueta.includes('pilates')) return '#a8d2d4';
     if (etiqueta.includes('defensa personal')) return '#f8bbd0';
     return '#6c757d';
+  }
+
+  /**
+   * Load all sports for the selected alumno
+   */
+  cargarDeportesDelAlumno(alumnoId: number): void {
+    this.cargandoDeportes = true;
+    this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
+      next: (deportes: AlumnoDeporteDTO[]) => {
+        this.deportesDelAlumno = deportes;
+        this.cargandoDeportes = false;
+      },
+      error: () => {
+        this.deportesDelAlumno = [];
+        this.cargandoDeportes = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los deportes del alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Get deporte label for display
+   */
+  getDeporteLabel(deporte: string): string {
+    return getDeporteLabel(deporte);
+  }
+
+  /**
+   * Get grado style
+   */
+  getGradoStyle(tipoGrado: string): string {
+    return getGradoTextStyle(tipoGrado);
+  }
+
+  /**
+   * Format date to Spanish format
+   */
+  formatearFecha(fecha: string | Date | null): string {
+    if (!fecha) return 'Sin fecha';
+    const date = fecha instanceof Date ? fecha : new Date(fecha);
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  /**
+   * Get icon for sport
+   */
+  getIconoDeportePorNombre(deporte: string): string {
+    const deporteLower = deporte.toLowerCase();
+    if (deporteLower.includes('taekwondo')) return '🥋';
+    if (deporteLower.includes('kickboxing')) return '🥊';
+    if (deporteLower.includes('pilates')) return '🧘';
+    if (deporteLower.includes('defensa')) return '🛡️';
+    return '⭐';
   }
 }
