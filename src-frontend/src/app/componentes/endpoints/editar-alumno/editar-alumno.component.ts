@@ -17,11 +17,10 @@ import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
-import { AlumnoDeporteDTO, AlumnoConDeportesDTO } from '../../../interfaces/alumno-deporte-dto';
+import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
-import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import Swal from 'sweetalert2';
 
@@ -704,12 +703,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.descargarDocumentoAlumno(alumnoId, doc.id).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
+        const url = globalThis.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = doc.nombre || 'documento';
         link.click();
-        window.URL.revokeObjectURL(url);
+        globalThis.URL.revokeObjectURL(url);
       },
       error: () => {
         Swal.fire({

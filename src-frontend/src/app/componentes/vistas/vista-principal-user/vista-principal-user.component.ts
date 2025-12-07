@@ -114,7 +114,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   obtenerClaseGrupo(grupo: any): string {
     const etiqueta = this.obtenerEtiquetaColor(grupo);
-    return etiqueta.toLowerCase().replace(/[^a-z0-9_ ]/gi, '').replace(/\s+/g, '_');
+    return etiqueta.toLowerCase().replaceAll(/[^a-z0-9_ ]/gi, '').replaceAll(/\s+/g, '_');
   }
 
   obtenerIconoDeporte(grupo: any): string {

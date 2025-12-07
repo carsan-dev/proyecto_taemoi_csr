@@ -105,7 +105,7 @@ export class VistaLoginComponent implements OnInit {
               icon: 'success',
               timer: 2000,
             });
-  
+
             this.redirigirSegunRol(roles);
           }
         });
@@ -122,8 +122,8 @@ export class VistaLoginComponent implements OnInit {
 
   loginWithGoogle() {
     // Redirect to Google OAuth2 authorization endpoint
-    const baseUrl = environment.apiUrl.replace('/api', '');
-    window.location.href = `${baseUrl}/oauth2/authorization/google`;
+    const baseUrl = environment.apiUrl.replaceAll('/api', '');
+    globalThis.location.href = `${baseUrl}/oauth2/authorization/google`;
   }
 
   private redirigirSegunRol(roles: string[]) {
