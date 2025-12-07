@@ -958,6 +958,216 @@ $defensa-color: #e91e63;
       padding: 1rem;
       min-height: 100px;
     }
+
+    // Responsive sports grid
+    .sports-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .sport-card {
+      padding: 1.25rem;
+
+      .sport-card-header {
+        .sport-icon {
+          font-size: 2rem;
+        }
+
+        .sport-name {
+          font-size: 1.2rem;
+        }
+      }
+
+      .sport-card-body {
+        gap: 0.75rem;
+
+        .sport-info-item {
+          padding: 0.625rem;
+
+          i {
+            font-size: 1.1rem;
+          }
+
+          .sport-info-content {
+            .sport-info-label {
+              font-size: 0.75rem;
+            }
+
+            .sport-info-value {
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// SPORTS SECTION
+// ========================================
+
+.loading-sports {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: $text-muted;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: spin 2s linear infinite;
+  }
+
+  p {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+}
+
+.sports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.6s ease;
+}
+
+.sport-card {
+  background: $text-light;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  transition: $transition;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, $primary-color, $primary-dark);
+  }
+
+  &[data-sport="taekwondo"]::before {
+    background: linear-gradient(90deg, $taekwondo-color, color.adjust($taekwondo-color, $lightness: -10%));
+  }
+
+  &[data-sport="kickboxing"]::before {
+    background: linear-gradient(90deg, $kickboxing-color, color.adjust($kickboxing-color, $lightness: -10%));
+  }
+
+  &[data-sport="pilates"]::before {
+    background: linear-gradient(90deg, $pilates-color, color.adjust($pilates-color, $lightness: -10%));
+  }
+
+  &[data-sport="defensa_personal_femenina"]::before {
+    background: linear-gradient(90deg, $defensa-color, color.adjust($defensa-color, $lightness: -10%));
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-md;
+    border-color: rgba($primary-color, 0.2);
+  }
+
+  .sport-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+
+    .sport-icon {
+      font-size: 2.5rem;
+      line-height: 1;
+    }
+
+    .sport-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .sport-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .sport-info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: rgba($primary-color, 0.02);
+      border-radius: 10px;
+      transition: $transition;
+
+      &:hover {
+        background: rgba($primary-color, 0.05);
+      }
+
+      i {
+        font-size: 1.25rem;
+        color: $primary-color;
+        margin-top: 0.125rem;
+        flex-shrink: 0;
+
+        &.bi-check-circle-fill {
+          color: #28a745;
+        }
+
+        &.bi-x-circle-fill {
+          color: $text-muted;
+        }
+      }
+
+      .sport-info-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+
+        .sport-info-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: $text-muted;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .sport-info-value {
+          font-size: 1rem;
+          font-weight: 600;
+          color: $text-dark;
+
+          &.text-success {
+            color: #28a745;
+          }
+
+          &.text-muted {
+            color: $text-muted;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -966,12 +1176,16 @@ $defensa-color: #e91e63;
   .hero-header,
   .section-header,
   .groups-grid,
+  .sports-grid,
   .group-card,
-  .no-groups-container {
+  .sport-card,
+  .no-groups-container,
+  .loading-sports i {
     animation: none !important;
   }
 
-  .group-card {
+  .group-card,
+  .sport-card {
     &:hover {
       transform: none !important;
     }
