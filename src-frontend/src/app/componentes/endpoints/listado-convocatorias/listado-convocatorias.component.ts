@@ -103,7 +103,6 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   ngOnInit(): void {
     this.obtenerConvocatorias();
-    this.cargarAlumnosPaginados();
   }
 
   obtenerConvocatorias(): void {
@@ -341,19 +340,32 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
   filtrarAlumnos(): void {
     if (!this.convocatoriaSeleccionada) {
-      this.alumnosFiltrados = this.alumnos.filter(
-        (alumno) => alumno.aptoParaExamen
-      );
+      this.alumnosFiltrados = [];
       return;
     }
 
-    this.alumnosFiltrados = this.alumnos.filter(
-      (alumno) =>
-        alumno.aptoParaExamen &&
-        !this.alumnosInscritos.some(
-          (inscrito) => inscrito.alumnoId === alumno.id
-        )
-    );
+    this.cargandoAlumnos = true;
+    this.endpointsService
+      .obtenerAlumnosElegiblesParaConvocatoria(this.convocatoriaSeleccionada.deporte)
+      .subscribe({
+        next: (alumnos) => {
+          // Filter out already inscribed students
+          this.alumnosFiltrados = alumnos.filter(
+            (alumno) => !this.alumnosInscritos.some(
+              (inscrito) => inscrito.alumnoId === alumno.id
+            )
+          );
+          this.cargandoAlumnos = false;
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron cargar los alumnos elegibles.',
+            icon: 'error',
+          });
+          this.cargandoAlumnos = false;
+        },
+      });
   }
 
   actualizarGrados(convocatoria: any): void {

@@ -476,6 +476,15 @@ public class AlumnoController {
 		return alumno.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
+	// Endpoint para obtener alumnos elegibles para una convocatoria específica
+	@GetMapping("/aptos/convocatoria")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosElegiblesParaConvocatoria(
+			@RequestParam com.taemoi.project.entities.Deporte deporte) {
+		List<AlumnoConGruposDTO> alumnosElegibles = alumnoService.obtenerAlumnosElegiblesParaConvocatoria(deporte);
+		return ResponseEntity.ok(alumnosElegibles);
+	}
+
 	@PostMapping("/{convocatoriaId}/alumno/{alumnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId,

@@ -276,6 +276,17 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  // Obtener alumnos elegibles para una convocatoria específica basándose en el deporte
+  obtenerAlumnosElegiblesParaConvocatoria(deporte: string): Observable<any[]> {
+    const params = new HttpParams().set('deporte', deporte);
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/aptos/convocatoria`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   agregarAlumnoAConvocatoria(
     alumnoId: number,
     convocatoriaId: number,

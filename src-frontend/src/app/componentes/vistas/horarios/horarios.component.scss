@@ -67,7 +67,7 @@ $defensa-color: #e91e63;
   .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
@@ -109,14 +109,14 @@ $defensa-color: #e91e63;
   padding: 0 2rem;
 
   .content-wrapper {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
   // Schedule Grid
   .schedule-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
     margin-bottom: 3rem;
     animation: fadeInUp 0.6s ease 0.3s backwards;
@@ -671,6 +671,27 @@ $defensa-color: #e91e63;
 // ========================================
 // RESPONSIVE
 // ========================================
+// Large screens - 5 columns fits well
+@media (max-width: 1400px) {
+  .main-content {
+    .content-wrapper {
+      max-width: 100%;
+      padding: 0 1rem;
+    }
+  }
+}
+
+// Medium-large screens - 3 columns for better card width
+@media (max-width: 1199px) {
+  .main-content {
+    .schedule-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+  }
+}
+
+// Medium screens - 2 columns
 @media (max-width: 992px) {
   .main-content {
     .schedule-grid {
