@@ -35,6 +35,7 @@ $Taemoi_Angular_Front-theme: mat.define-theme();
 html,
 body {
   height: 100%;
+  overflow-x: hidden; // Prevent horizontal scroll globally
 }
 
 body {
@@ -42,9 +43,31 @@ body {
   font-family: Montserrat, sans-serif;
   background: #f8f9fa; // Clean, light background matching the main site
   min-height: 100vh;
+  width: 100%;
+  position: relative;
 }
 
 // Add padding to main content when admin navbar is present
 body:has(.admin-top-navbar) #content {
   padding-top: 70px !important;
+}
+
+// Fix Bootstrap container overflow on mobile
+.container,
+.container-fluid {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.row {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+// Prevent common elements from causing horizontal scroll
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
 }
