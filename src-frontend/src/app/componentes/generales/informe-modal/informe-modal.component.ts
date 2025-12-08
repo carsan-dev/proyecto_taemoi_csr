@@ -29,10 +29,11 @@ export class InformeModalComponent implements OnInit {
 
   modalVisible = false;
   selectedInforme: string = '';
+  soloActivos: boolean = true;
   categoriasInforme: InformeCategory[] = [];
 
   @Output() cerrar = new EventEmitter<void>();
-  @Output() informeSeleccionado = new EventEmitter<string>();
+  @Output() informeSeleccionado = new EventEmitter<{ tipo: string, soloActivos: boolean }>();
 
   ngOnInit(): void {
     this.organizarInformesPorCategoria();
@@ -134,7 +135,7 @@ export class InformeModalComponent implements OnInit {
   }
 
   generarInforme(): void {
-    this.informeSeleccionado.emit(this.selectedInforme);
+    this.informeSeleccionado.emit({ tipo: this.selectedInforme, soloActivos: this.soloActivos });
     this.cerrarModal();
   }
 

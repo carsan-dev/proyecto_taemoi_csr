@@ -349,26 +349,33 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeAlumnosPorGrado() {
-		return generarInformePorGrado(Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+	public byte[] generarInformeAlumnosPorGrado(boolean soloActivos) {
+		return generarInformePorGrado(Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING), soloActivos);
 	}
 
 	@Override
-	public byte[] generarInformeTaekwondoPorGrado() {
-		return generarInformePorGrado(Collections.singletonList(Deporte.TAEKWONDO));
+	public byte[] generarInformeTaekwondoPorGrado(boolean soloActivos) {
+		return generarInformePorGrado(Collections.singletonList(Deporte.TAEKWONDO), soloActivos);
 	}
 
 	@Override
-	public byte[] generarInformeKickboxingPorGrado() {
-		return generarInformePorGrado(Collections.singletonList(Deporte.KICKBOXING));
+	public byte[] generarInformeKickboxingPorGrado(boolean soloActivos) {
+		return generarInformePorGrado(Collections.singletonList(Deporte.KICKBOXING), soloActivos);
 	}
 
 	/**
 	 * Genera el informe PDF filtrando los alumnos según la lista de deportes. Si se
 	 * solicitan ambos deportes, se generan secciones separadas para cada uno.
 	 */
-	private byte[] generarInformePorGrado(List<Deporte> deportes) {
+	private byte[] generarInformePorGrado(List<Deporte> deportes, boolean soloActivos) {
 		List<Alumno> alumnos = alumnoRepository.findByGradoNotNullAndDeporteIn(deportes);
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			alumnos = alumnos.stream()
+					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+					.collect(Collectors.toList());
+		}
 
 		LocalDate now = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
@@ -629,8 +636,15 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeLicencias() {
+	public byte[] generarInformeLicencias(boolean soloActivos) {
 		List<Alumno> alumnos = alumnoRepository.findAll();
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			alumnos = alumnos.stream()
+					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+					.collect(Collectors.toList());
+		}
 
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
@@ -743,8 +757,16 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeInfantilesAPromocionar() {
+	public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			todosAlumnos = todosAlumnos.stream()
+					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+					.collect(Collectors.toList());
+		}
+
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
 				Locale.of("es", "ES"));
@@ -828,8 +850,16 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeAdultosAPromocionar() {
+	public byte[] generarInformeAdultosAPromocionar(boolean soloActivos) {
 		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			todosAlumnos = todosAlumnos.stream()
+					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+					.collect(Collectors.toList());
+		}
+
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
 				Locale.of("es", "ES"));
@@ -925,9 +955,11 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarListadoAsistencia(int year, int month, String grupo) throws IOException {
+	public byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException {
 		// Find all alumnos with turnos on the specified day
 		List<Alumno> allAlumnos = alumnoRepository.findAll().stream()
+				.filter(a -> Boolean.TRUE.equals(a.getActivo())) // Only active alumnos
+				.filter(a -> deporte == null || a.getDeporte() == deporte) // Filter by sport if specified
 				.filter(a -> a.getFechaNacimiento() != null && a.getTurnos() != null && !a.getTurnos().isEmpty())
 				.filter(a -> a.getTurnos().stream()
 						.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
@@ -949,15 +981,15 @@ public class PDFServiceImpl implements PDFService {
 
 		// Process each alumno to build the turno-alumno-deporte relationships
 		for (Alumno alumno : allAlumnos) {
-			Deporte deporte = alumno.getDeporte();
-			if (deporte == null) continue; // Skip alumnos without a deporte
+			Deporte alumnoDeporte = alumno.getDeporte();
+			if (alumnoDeporte == null) continue; // Skip alumnos without a deporte
 
 			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
 				if (turno.getDiaSemana() != null && turno.getDiaSemana().equalsIgnoreCase(grupo)) {
-					turnosByDeporte.computeIfAbsent(deporte, k -> new ArrayList<>());
+					turnosByDeporte.computeIfAbsent(alumnoDeporte, k -> new ArrayList<>());
 
 					// Find or create TurnoWithAlumnos for this turno and deporte
-					TurnoWithAlumnos existing = turnosByDeporte.get(deporte).stream()
+					TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporte).stream()
 							.filter(twa -> twa.turno.getId().equals(turno.getId()))
 							.findFirst()
 							.orElse(null);
@@ -965,7 +997,7 @@ public class PDFServiceImpl implements PDFService {
 					if (existing == null) {
 						List<Alumno> alumnosForTurno = new ArrayList<>();
 						alumnosForTurno.add(alumno);
-						turnosByDeporte.get(deporte).add(new TurnoWithAlumnos(turno, alumnosForTurno, deporte));
+						turnosByDeporte.get(alumnoDeporte).add(new TurnoWithAlumnos(turno, alumnosForTurno, alumnoDeporte));
 					} else {
 						if (!existing.alumnos.contains(alumno)) {
 							existing.alumnos.add(alumno);
@@ -1052,8 +1084,8 @@ public class PDFServiceImpl implements PDFService {
 		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES, Deporte.DEFENSA_PERSONAL_FEMENINA);
 		boolean firstPage = true;
 
-		for (Deporte deporte : deportesOrdenados) {
-			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporte);
+		for (Deporte deporteActual : deportesOrdenados) {
+			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
 			if (turnosDeporte == null || turnosDeporte.isEmpty()) continue;
 
 			for (TurnoWithAlumnos twa : turnosDeporte) {
@@ -1082,7 +1114,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<h2>LISTADO DE ASISTENCIA - ")
 						.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
 						.append(" ").append(year).append("</h2>");
-				html.append("<p class='deporte-label'>").append(deporte.name().replace("_", " ")).append("</p>");
+				html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " ")).append("</p>");
 				html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
 				html.append("<p class='info'>").append(grupo.toUpperCase())
 						.append(" - Turno de ").append(turnoStr).append("</p>");
@@ -1237,9 +1269,16 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeDeudas() {
+	public byte[] generarInformeDeudas(boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = productoAlumnoRepository
 				.findAllUnpaidWithAlumno();
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			productosImpagados = productosImpagados.stream()
+					.filter(pa -> pa.getAlumno() != null && Boolean.TRUE.equals(pa.getAlumno().getActivo()))
+					.collect(Collectors.toList());
+		}
 
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
@@ -1391,9 +1430,16 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeDeudasCSV() {
+	public byte[] generarInformeDeudasCSV(boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = productoAlumnoRepository
 				.findAllUnpaidWithAlumno();
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			productosImpagados = productosImpagados.stream()
+					.filter(pa -> pa.getAlumno() != null && Boolean.TRUE.equals(pa.getAlumno().getActivo()))
+					.collect(Collectors.toList());
+		}
 
 		// Group debts by student
 		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> deudasPorAlumno = productosImpagados.stream()
@@ -1459,18 +1505,18 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarInformeMensualidades() {
-		return generarInformeMensualidadesPorDeporte(null);
+	public byte[] generarInformeMensualidades(boolean soloActivos) {
+		return generarInformeMensualidadesPorDeporte(null, soloActivos);
 	}
 
 	@Override
-	public byte[] generarInformeMensualidadesTaekwondo() {
-		return generarInformeMensualidadesPorDeporte(Deporte.TAEKWONDO);
+	public byte[] generarInformeMensualidadesTaekwondo(boolean soloActivos) {
+		return generarInformeMensualidadesPorDeporte(Deporte.TAEKWONDO, soloActivos);
 	}
 
 	@Override
-	public byte[] generarInformeMensualidadesKickboxing() {
-		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING);
+	public byte[] generarInformeMensualidadesKickboxing(boolean soloActivos) {
+		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING, soloActivos);
 	}
 
 	/**
@@ -1478,8 +1524,9 @@ public class PDFServiceImpl implements PDFService {
 	 *
 	 * @param deporteFiltro If null, generates report for all students with color coding by sport.
 	 *                      If specified, filters students by that sport.
+	 * @param soloActivos If true, only includes active students.
 	 */
-	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro) {
+	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro, boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
 
 		if (deporteFiltro == null) {
@@ -1488,6 +1535,13 @@ public class PDFServiceImpl implements PDFService {
 		} else {
 			// Get mensualidades filtered by sport
 			todasMensualidades = productoAlumnoRepository.findMensualidadesByDeporteWithAlumno(deporteFiltro);
+		}
+
+		// Filter by active status if requested
+		if (soloActivos) {
+			todasMensualidades = todasMensualidades.stream()
+					.filter(pa -> pa.getAlumno() != null && Boolean.TRUE.equals(pa.getAlumno().getActivo()))
+					.collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
