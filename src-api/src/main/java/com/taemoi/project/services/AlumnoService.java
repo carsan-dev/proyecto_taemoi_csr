@@ -115,7 +115,9 @@ public interface AlumnoService {
 	 */
 	com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
 			com.taemoi.project.entities.Deporte deporte,
-			com.taemoi.project.entities.TipoGrado gradoInicial);
+			com.taemoi.project.entities.TipoGrado gradoInicial,
+			java.util.Date fechaAlta,
+			java.util.Date fechaGrado);
 
 	/**
 	 * Remueve un deporte de un alumno
