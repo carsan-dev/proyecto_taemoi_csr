@@ -757,4 +757,25 @@ public class AlumnoController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
+
+	/**
+	 * Obtiene todos los alumnos con sus deportes (batch endpoint)
+	 * GET /api/alumnos/con-deportes
+	 */
+	@GetMapping("/con-deportes")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO>> obtenerTodosLosAlumnosConDeportes(
+			@RequestParam(required = false, defaultValue = "false") Boolean incluirInactivos) {
+		try {
+			logger.info("## AlumnoController :: obtenerTodosLosAlumnosConDeportes :: incluirInactivos={}", incluirInactivos);
+			List<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(null, null, null, incluirInactivos);
+			List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO> alumnosDTO = alumnos.stream()
+					.map(com.taemoi.project.dtos.response.AlumnoConDeportesDTO::deAlumno)
+					.collect(Collectors.toList());
+			return ResponseEntity.ok(alumnosDTO);
+		} catch (Exception e) {
+			logger.error("Error al obtener alumnos con deportes", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
 }
