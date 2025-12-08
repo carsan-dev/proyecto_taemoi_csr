@@ -297,10 +297,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Get sports for a specific alumno
+   * Get sports for a specific alumno (only active sports)
    */
   getDeportesDeAlumno(alumnoId: number): AlumnoDeporteDTO[] {
-    return this.deportesPorAlumno.get(alumnoId) || [];
+    const deportes = this.deportesPorAlumno.get(alumnoId) || [];
+    // Filter to show only active sports in the list
+    return deportes.filter(d => d.activo !== false);
   }
 
   /**
