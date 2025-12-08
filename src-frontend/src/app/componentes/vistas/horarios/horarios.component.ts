@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
 export class HorariosComponent implements OnInit {
   usuarioLogueado: boolean = false;
   turnos: any[] = [];
-  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves'];
+  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
   isLoading: boolean = true;
   selectedTurno: any = null;
   showModal: boolean = false;
