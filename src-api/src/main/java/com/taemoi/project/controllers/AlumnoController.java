@@ -513,14 +513,15 @@ public class AlumnoController {
 	// ==================== ENDPOINTS MULTI-DEPORTE ====================
 
 	/**
-	 * Obtiene todos los deportes activos de un alumno
+	 * Obtiene todos los deportes de un alumno (activos e inactivos)
 	 * GET /api/alumnos/{id}/deportes
 	 */
 	@GetMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
 		try {
-			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoService.obtenerDeportesActivosDelAlumno(id);
+			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
+			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
 					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
 					.collect(Collectors.toList());
@@ -533,7 +534,7 @@ public class AlumnoController {
 	/**
 	 * Agrega un deporte a un alumno
 	 * POST /api/alumnos/{id}/deportes
-	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO" }
+	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO", "fechaAlta": "2024-01-15", "fechaGrado": "2024-01-15" }
 	 */
 	@PostMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -542,6 +543,8 @@ public class AlumnoController {
 		try {
 			String deporteStr = params.get("deporte");
 			String gradoStr = params.get("gradoInicial");
+			String fechaAltaStr = params.get("fechaAlta");
+			String fechaGradoStr = params.get("fechaGrado");
 
 			if (deporteStr == null) {
 				return ResponseEntity.badRequest().body("El deporte es requerido");
@@ -552,7 +555,27 @@ public class AlumnoController {
 					? com.taemoi.project.entities.TipoGrado.valueOf(gradoStr)
 					: null;
 
-			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.agregarDeporteAAlumno(id, deporte, gradoInicial);
+			// Parse dates if provided (format: YYYY-MM-DD)
+			java.util.Date fechaAlta = null;
+			java.util.Date fechaGrado = null;
+
+			if (fechaAltaStr != null && !fechaAltaStr.isEmpty()) {
+				try {
+					fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
+				} catch (Exception e) {
+					return ResponseEntity.badRequest().body("Formato de fecha de alta inválido. Use YYYY-MM-DD");
+				}
+			}
+
+			if (fechaGradoStr != null && !fechaGradoStr.isEmpty()) {
+				try {
+					fechaGrado = java.sql.Date.valueOf(fechaGradoStr);
+				} catch (Exception e) {
+					return ResponseEntity.badRequest().body("Formato de fecha de grado inválido. Use YYYY-MM-DD");
+				}
+			}
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService.agregarDeporteAAlumno(id, deporte, gradoInicial, fechaAlta, fechaGrado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
@@ -567,6 +590,45 @@ public class AlumnoController {
 	/**
 	 * Elimina un deporte de un alumno
 	 * DELETE /api/alumnos/{id}/deportes/{deporte}
+	 */
+	/**
+	 * Desactiva un deporte de un alumno (soft delete - mantiene todos los datos)
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/desactivar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> desactivarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			alumnoDeporteService.desactivarDeporteDeAlumno(id, deporteEnum);
+			return ResponseEntity.ok().body("Deporte desactivado correctamente");
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al desactivar deporte del alumno", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al desactivar deporte");
+		}
+	}
+
+	/**
+	 * Activa un deporte de un alumno que estaba inactivo (preserva todos los datos)
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/activar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> activarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			alumnoDeporteService.activarDeporteDeAlumno(id, deporteEnum);
+			return ResponseEntity.ok().body("Deporte activado correctamente");
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al activar deporte del alumno", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al activar deporte");
+		}
+	}
+
+	/**
+	 * Remueve completamente un deporte de un alumno (hard delete - eliminación física)
 	 */
 	@DeleteMapping("/{id}/deportes/{deporte}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
