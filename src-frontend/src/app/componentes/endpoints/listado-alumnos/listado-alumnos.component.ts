@@ -31,6 +31,7 @@ import { getDeporteLabel } from '../../../enums/deporte';
 })
 export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   alumnos: any[] = [];
+  alumnosCompletos: any[] = []; // Full dataset for client-side filtering
   alumnosSeleccionables: any[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 9;
@@ -38,6 +39,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
   cargando: boolean = true; // Local loading state
+  usandoPaginacionCliente: boolean = false; // Track if using client-side pagination
   private searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   deporteSeleccionado: string = 'TODOS';
@@ -140,6 +142,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   obtenerAlumnos(): void {
     this.cargando = true;
+    this.usandoPaginacionCliente = false; // Reset to backend pagination
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -199,6 +202,101 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Load all students with their sports data for client-side filtering
+   */
+  obtenerTodosLosAlumnosConDeportes(): void {
+    this.cargando = true;
+    this.usandoPaginacionCliente = true;
+
+    this.endpointsService
+      .obtenerAlumnosSinPaginar(this.mostrarInactivos)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (alumnos) => {
+          this.alumnosCompletos = alumnos;
+
+          // Load sports for all alumnos
+          if (alumnos.length > 0) {
+            const deportesRequests = alumnos.map(alumno =>
+              this.alumnoService.obtenerDeportesDelAlumno(alumno.id)
+            );
+
+            forkJoin(deportesRequests).subscribe({
+              next: (deportesArrays: AlumnoDeporteDTO[][]) => {
+                this.deportesPorAlumno.clear();
+                deportesArrays.forEach((deportes, index) => {
+                  const alumnoId = alumnos[index].id;
+                  this.deportesPorAlumno.set(alumnoId, deportes);
+                });
+
+                // Update alumnos array with the filtered and paginated data
+                this.actualizarAlumnosPaginadosCliente();
+              },
+              error: (error) => {
+                console.error('Error loading sports data:', error);
+                this.actualizarAlumnosPaginadosCliente();
+              }
+            });
+          } else {
+            this.alumnos = [];
+            this.totalPaginas = 0;
+          }
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error en la petición',
+            text: 'No hemos podido conectar con el servidor',
+            icon: 'error',
+          });
+        },
+      });
+  }
+
+  /**
+   * Update alumnos array with client-side pagination
+   */
+  actualizarAlumnosPaginadosCliente(): void {
+    // Apply filters to the complete dataset
+    let filtrados = this.alumnosCompletos;
+
+    // Filter by inactive status
+    if (!this.mostrarInactivos) {
+      filtrados = filtrados.filter(alumno => !alumno.fechaBaja);
+    }
+
+    // Filter by sport
+    if (this.deporteFiltro !== 'TODOS') {
+      filtrados = filtrados.filter(alumno =>
+        this.practicaDeporte(alumno.id, this.deporteFiltro)
+      );
+    }
+
+    // Filter by name if needed
+    if (this.nombreFiltro && this.nombreFiltro.trim()) {
+      const searchTerm = this.nombreFiltro.toLowerCase().trim();
+      filtrados = filtrados.filter(alumno =>
+        alumno.nombre?.toLowerCase().includes(searchTerm) ||
+        alumno.apellidos?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Sort by name ascending (to match backend pagination sorting)
+    filtrados = filtrados.sort((a, b) => {
+      const nombreA = (a.nombre || '').toLowerCase();
+      const nombreB = (b.nombre || '').toLowerCase();
+      return nombreA.localeCompare(nombreB);
+    });
+
+    // Calculate total pages
+    this.totalPaginas = Math.ceil(filtrados.length / this.tamanoPagina);
+
+    // Get the current page slice
+    const startIndex = (this.paginaActual - 1) * this.tamanoPagina;
+    const endIndex = startIndex + this.tamanoPagina;
+    this.alumnos = filtrados.slice(startIndex, endIndex);
+  }
+
+  /**
    * Get sports for a specific alumno
    */
   getDeportesDeAlumno(alumnoId: number): AlumnoDeporteDTO[] {
@@ -225,7 +323,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   filtrarPorDeporte(): void {
     this.paginaActual = 1;
-    this.obtenerAlumnos();
+
+    // If filtering by sport, we need to load all students and paginate client-side
+    if (this.deporteFiltro !== 'TODOS') {
+      this.obtenerTodosLosAlumnosConDeportes();
+    } else {
+      // If showing all sports, use backend pagination
+      this.obtenerAlumnos();
+    }
   }
 
   /**
@@ -237,24 +342,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Get filtered alumnos based on sport filter and inactive status
+   * Get filtered alumnos - now just returns alumnos since filtering is handled elsewhere
    */
   get alumnosFiltrados(): any[] {
-    let filtrados = this.alumnos;
-
-    // Filter by inactive status first
-    if (!this.mostrarInactivos) {
-      filtrados = filtrados.filter(alumno => !alumno.fechaBaja);
-    }
-
-    // Then filter by sport if needed
-    if (this.deporteFiltro !== 'TODOS') {
-      filtrados = filtrados.filter(alumno =>
-        this.practicaDeporte(alumno.id, this.deporteFiltro)
-      );
-    }
-
-    return filtrados;
+    // Filtering is now handled in actualizarAlumnosPaginadosCliente for client-side pagination
+    // or by the backend for server-side pagination
+    return this.alumnos;
   }
 
   cargarTodosLosAlumnos(): void {
@@ -448,16 +541,38 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
-    this.obtenerAlumnos();
+
+    if (this.usandoPaginacionCliente) {
+      // Use client-side pagination
+      this.actualizarAlumnosPaginadosCliente();
+    } else {
+      // Use backend pagination
+      this.obtenerAlumnos();
+    }
   }
 
   filtrarPorNombre(): void {
-    this.searchSubject.next(this.nombreFiltro);
+    // If using client-side pagination, filter immediately
+    if (this.usandoPaginacionCliente) {
+      this.paginaActual = 1;
+      this.actualizarAlumnosPaginadosCliente();
+    } else {
+      // Use debounced backend search
+      this.searchSubject.next(this.nombreFiltro);
+    }
   }
 
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
-    this.obtenerAlumnos();
+    this.paginaActual = 1; // Reset pagination
+
+    if (this.usandoPaginacionCliente) {
+      // Reload all data with new inactive filter
+      this.obtenerTodosLosAlumnosConDeportes();
+    } else {
+      this.obtenerAlumnos();
+    }
+
     this.cargarTodosLosAlumnos();
   }
 
@@ -481,7 +596,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
               icon: 'success',
               timer: 2000,
             });
-            this.obtenerAlumnos();
+            // Reload data using the current pagination mode
+            if (this.usandoPaginacionCliente) {
+              this.obtenerTodosLosAlumnosConDeportes();
+            } else {
+              this.obtenerAlumnos();
+            }
           },
           error: () => {
             Swal.fire({
@@ -515,7 +635,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
               icon: 'success',
               timer: 2000,
             });
-            this.obtenerAlumnos();
+            // Reload data using the current pagination mode
+            if (this.usandoPaginacionCliente) {
+              this.obtenerTodosLosAlumnosConDeportes();
+            } else {
+              this.obtenerAlumnos();
+            }
           },
           error: () => {
             Swal.fire({
@@ -561,7 +686,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           icon: 'success',
           timer: 2000,
         });
-        this.obtenerAlumnos();
+        // Reload data using the current pagination mode
+        if (this.usandoPaginacionCliente) {
+          this.obtenerTodosLosAlumnosConDeportes();
+        } else {
+          this.obtenerAlumnos();
+        }
       },
       error: () => {
         Swal.fire({
