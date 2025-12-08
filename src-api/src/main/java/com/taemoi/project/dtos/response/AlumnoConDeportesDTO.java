@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.taemoi.project.dtos.AlumnoDeporteDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 
@@ -42,6 +43,7 @@ public class AlumnoConDeportesDTO {
 	private Date fechaLicencia;
 	private Boolean tieneDiscapacidad;
 	private Boolean tieneDerechoExamen;
+	private Imagen fotoAlumno;
 
 	// Nuevo: Lista de deportes del alumno
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
@@ -93,6 +95,7 @@ public class AlumnoConDeportesDTO {
 		dto.setFechaLicencia(alumno.getFechaLicencia());
 		dto.setTieneDiscapacidad(alumno.getTieneDiscapacidad());
 		dto.setTieneDerechoExamen(alumno.getTieneDerechoExamen());
+		dto.setFotoAlumno(alumno.getFotoAlumno());
 
 		// Convertir deportes a DTOs
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
@@ -312,6 +315,14 @@ public class AlumnoConDeportesDTO {
 
 	public void setTieneDerechoExamen(Boolean tieneDerechoExamen) {
 		this.tieneDerechoExamen = tieneDerechoExamen;
+	}
+
+	public Imagen getFotoAlumno() {
+		return fotoAlumno;
+	}
+
+	public void setFotoAlumno(Imagen fotoAlumno) {
+		this.fotoAlumno = fotoAlumno;
 	}
 
 	public List<AlumnoDeporteDTO> getDeportes() {
