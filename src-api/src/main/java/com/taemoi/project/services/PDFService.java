@@ -2,30 +2,32 @@ package com.taemoi.project.services;
 
 import java.io.IOException;
 
+import com.taemoi.project.entities.Deporte;
+
 public interface PDFService {
-	byte[] generarInformeAlumnosPorGrado();
+	byte[] generarInformeAlumnosPorGrado(boolean soloActivos);
 
-	byte[] generarInformeTaekwondoPorGrado();
+	byte[] generarInformeTaekwondoPorGrado(boolean soloActivos);
 
-	byte[] generarInformeKickboxingPorGrado();
+	byte[] generarInformeKickboxingPorGrado(boolean soloActivos);
 
-	byte[] generarInformeLicencias();
+	byte[] generarInformeLicencias(boolean soloActivos);
 
-	byte[] generarInformeInfantilesAPromocionar();
+	byte[] generarInformeInfantilesAPromocionar(boolean soloActivos);
 
-	byte[] generarInformeAdultosAPromocionar();
+	byte[] generarInformeAdultosAPromocionar(boolean soloActivos);
 
-	byte[] generarInformeDeudas();
+	byte[] generarInformeDeudas(boolean soloActivos);
 
-	byte[] generarInformeDeudasCSV();
+	byte[] generarInformeDeudasCSV(boolean soloActivos);
 
-	byte[] generarInformeMensualidades();
+	byte[] generarInformeMensualidades(boolean soloActivos);
 
-	byte[] generarInformeMensualidadesTaekwondo();
+	byte[] generarInformeMensualidadesTaekwondo(boolean soloActivos);
 
-	byte[] generarInformeMensualidadesKickboxing();
+	byte[] generarInformeMensualidadesKickboxing(boolean soloActivos);
 
-	byte[] generarListadoAsistencia(int year, int month, String grupo) throws IOException;
+	byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException;
 
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 }

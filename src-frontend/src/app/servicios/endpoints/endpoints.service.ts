@@ -956,99 +956,121 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeAlumnosPorGrado(): Observable<Blob> {
+  generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/alumnosPorGrado`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeTaekwondoPorGrado(): Observable<Blob> {
+  generarInformeTaekwondoPorGrado(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/taekwondoPorGrado`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeKickboxingPorGrado(): Observable<Blob> {
+  generarInformeKickboxingPorGrado(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/kickboxingPorGrado`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeLicencias(): Observable<Blob> {
+  generarInformeLicencias(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/licencias`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeInfantilesAPromocionar(): Observable<Blob> {
+  generarInformeInfantilesAPromocionar(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/infantilesAPromocionar`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeAdultosAPromocionar(): Observable<Blob> {
+  generarInformeAdultosAPromocionar(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/adultosAPromocionar`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeDeudas(): Observable<Blob> {
+  generarInformeDeudas(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/deudas`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeDeudasCSV(): Observable<Blob> {
+  generarInformeDeudasCSV(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/deudas/csv`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeMensualidades(): Observable<Blob> {
+  generarInformeMensualidades(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/mensualidades`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeMensualidadesTaekwondo(): Observable<Blob> {
+  generarInformeMensualidadesTaekwondo(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/mensualidades/taekwondo`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
   }
 
-  generarInformeMensualidadesKickboxing(): Observable<Blob> {
+  generarInformeMensualidadesKickboxing(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/mensualidades/kickboxing`, {
+        params,
         withCredentials: true,
         responseType: 'blob',
       })
@@ -1059,13 +1081,17 @@ export class EndpointsService {
     year: number,
     month: number,
     grupo: string,
-    turno: string
+    deporte?: string
   ): Observable<Blob> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('year', year.toString())
       .set('month', month.toString())
-      .set('grupo', grupo)
-      .set('turno', turno);
+      .set('grupo', grupo);
+
+    if (deporte) {
+      params = params.set('deporte', deporte);
+    }
+
     return this.http
       .get(`${this.urlBase}/informes/asistencia`, {
         params,

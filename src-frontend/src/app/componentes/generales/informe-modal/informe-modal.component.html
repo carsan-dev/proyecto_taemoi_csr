@@ -72,18 +72,26 @@
 
       <!-- Footer -->
       <div class="modal-footer">
-        <button type="button" class="btn-cancel" (click)="cerrarModal()">
-          <i class="bi bi-x-circle"></i>
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="btn-generate"
-          [disabled]="!selectedInforme"
-          (click)="generarInforme()">
-          <i class="bi bi-file-earmark-pdf"></i>
-          Generar Informe
-        </button>
+        <div class="footer-options">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="soloActivos" />
+            <span class="checkbox-text">Solo alumnos activos</span>
+          </label>
+        </div>
+        <div class="footer-buttons">
+          <button type="button" class="btn-cancel" (click)="cerrarModal()">
+            <i class="bi bi-x-circle"></i>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-generate"
+            [disabled]="!selectedInforme"
+            (click)="generarInforme()">
+            <i class="bi bi-file-earmark-pdf"></i>
+            Generar Informe
+          </button>
+        </div>
       </div>
     </div>
   </div>
