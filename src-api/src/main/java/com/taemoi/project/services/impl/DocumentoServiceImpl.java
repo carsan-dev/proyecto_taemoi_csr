@@ -115,7 +115,28 @@ public class DocumentoServiceImpl implements DocumentoService {
 			// Handle both relative and absolute paths
 			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
 				// Absolute path (old format)
-				rutaArchivo = Path.of(rutaDocumento);
+				// Check if this is an old path from /opt/taemoi/static_resources/documentos/
+				if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
+					// Extract the relative part and resolve against current base directory
+					String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
+					String os = System.getProperty("os.name").toLowerCase();
+					String directorioDocumentos;
+
+					if (os.contains("win")) {
+						String userProfile = System.getenv("USERPROFILE");
+						directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+					} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+						directorioDocumentos = directorioDocumentosLinux;
+					} else {
+						throw new IllegalStateException("Sistema operativo no soportado: " + os);
+					}
+
+					rutaArchivo = Path.of(directorioDocumentos).resolve(relativePart);
+					logger.info("Converted old absolute path for deletion: {} -> {}", rutaDocumento, rutaArchivo);
+				} else {
+					// Other absolute path - use as is
+					rutaArchivo = Path.of(rutaDocumento);
+				}
 			} else {
 				// Relative path (new format) - resolve against base directory
 				String os = System.getProperty("os.name").toLowerCase();
@@ -179,9 +200,32 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 			// Handle both relative and absolute paths for backward compatibility
 			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
-				// Absolute path (old format) - use as is
+				// Absolute path (old format)
 				logger.warn("Document {} uses absolute path (deprecated): {}", documento.getId(), rutaDocumento);
-				rutaArchivo = Path.of(rutaDocumento);
+
+				// Check if this is an old path from /opt/taemoi/static_resources/documentos/
+				// and convert it to the new location
+				if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
+					// Extract the relative part after /opt/taemoi/static_resources/documentos/
+					String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
+					String os = System.getProperty("os.name").toLowerCase();
+					String directorioDocumentos;
+
+					if (os.contains("win")) {
+						String userProfile = System.getenv("USERPROFILE");
+						directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+					} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+						directorioDocumentos = directorioDocumentosLinux;
+					} else {
+						throw new IllegalStateException("Sistema operativo no soportado: " + os);
+					}
+
+					rutaArchivo = Path.of(directorioDocumentos).resolve(relativePart);
+					logger.info("Converted old absolute path to new location: {} -> {}", rutaDocumento, rutaArchivo);
+				} else {
+					// Other absolute path - use as is
+					rutaArchivo = Path.of(rutaDocumento);
+				}
 			} else {
 				// Relative path (new format) - resolve against base directory
 				String os = System.getProperty("os.name").toLowerCase();
