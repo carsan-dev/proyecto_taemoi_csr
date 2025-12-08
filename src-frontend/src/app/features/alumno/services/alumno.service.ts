@@ -70,6 +70,22 @@ export class AlumnoService {
   }
 
   /**
+   * Get all students with their sports embedded (batch endpoint - optimized)
+   * Returns AlumnoConDeportesDTO[] with all sports data included
+   */
+  obtenerAlumnosConDeportes(incluirInactivos: boolean = false): Observable<any[]> {
+    const params = new HttpParams().set(
+      'incluirInactivos',
+      incluirInactivos.toString()
+    );
+
+    return this.http.get<any[]>(`${this.urlBase}/con-deportes`, {
+      params,
+      withCredentials: true,
+    });
+  }
+
+  /**
    * Get student by ID
    */
   obtenerAlumnoPorId(id: number): Observable<any> {

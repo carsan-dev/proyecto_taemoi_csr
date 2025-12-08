@@ -203,46 +203,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   /**
    * Load all students with their sports data for client-side filtering
+   * OPTIMIZED: Uses batch endpoint to avoid N+1 HTTP requests problem
    */
   obtenerTodosLosAlumnosConDeportes(): void {
     this.cargando = true;
     this.usandoPaginacionCliente = true;
 
-    this.endpointsService
-      .obtenerAlumnosSinPaginar(this.mostrarInactivos)
+    // Use batch endpoint that returns all students with sports embedded
+    this.alumnoService
+      .obtenerAlumnosConDeportes(this.mostrarInactivos)
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
-        next: (alumnos) => {
-          this.alumnosCompletos = alumnos;
+        next: (alumnosConDeportes) => {
+          // Store complete alumnos
+          this.alumnosCompletos = alumnosConDeportes;
 
-          // Load sports for all alumnos
-          if (alumnos.length > 0) {
-            const deportesRequests = alumnos.map(alumno =>
-              this.alumnoService.obtenerDeportesDelAlumno(alumno.id)
-            );
+          // Extract sports data from each alumno and store in map
+          this.deportesPorAlumno.clear();
+          alumnosConDeportes.forEach(alumno => {
+            if (alumno.deportes && alumno.deportes.length > 0) {
+              this.deportesPorAlumno.set(alumno.id, alumno.deportes);
+            }
+          });
 
-            forkJoin(deportesRequests).subscribe({
-              next: (deportesArrays: AlumnoDeporteDTO[][]) => {
-                this.deportesPorAlumno.clear();
-                deportesArrays.forEach((deportes, index) => {
-                  const alumnoId = alumnos[index].id;
-                  this.deportesPorAlumno.set(alumnoId, deportes);
-                });
-
-                // Update alumnos array with the filtered and paginated data
-                this.actualizarAlumnosPaginadosCliente();
-              },
-              error: (error) => {
-                console.error('Error loading sports data:', error);
-                this.actualizarAlumnosPaginadosCliente();
-              }
-            });
-          } else {
-            this.alumnos = [];
-            this.totalPaginas = 0;
-          }
+          // Update alumnos array with the filtered and paginated data
+          this.actualizarAlumnosPaginadosCliente();
         },
-        error: () => {
+        error: (error) => {
+          console.error('Error loading students with sports:', error);
           Swal.fire({
             title: 'Error en la petición',
             text: 'No hemos podido conectar con el servidor',
