@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.services.PDFService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,8 +27,9 @@ public class PDFController {
 
 	@GetMapping("/alumnosPorGrado")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeAlumnosPorGrado() {
-		byte[] pdfBytes = pdfService.generarInformeAlumnosPorGrado();
+	public ResponseEntity<byte[]> generarInformeAlumnosPorGrado(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeAlumnosPorGrado(soloActivos);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
@@ -39,8 +41,9 @@ public class PDFController {
 
 	@GetMapping("/taekwondoPorGrado")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeTaekwondoPorGrado() {
-		byte[] pdfBytes = pdfService.generarInformeTaekwondoPorGrado();
+	public ResponseEntity<byte[]> generarInformeTaekwondoPorGrado(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeTaekwondoPorGrado(soloActivos);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
@@ -51,8 +54,9 @@ public class PDFController {
 
 	@GetMapping("/kickboxingPorGrado")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeKickboxingPorGrado() {
-		byte[] pdfBytes = pdfService.generarInformeKickboxingPorGrado();
+	public ResponseEntity<byte[]> generarInformeKickboxingPorGrado(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeKickboxingPorGrado(soloActivos);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
@@ -63,8 +67,9 @@ public class PDFController {
 
 	@GetMapping("/licencias")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeLicencias() {
-		byte[] pdfBytes = pdfService.generarInformeLicencias();
+	public ResponseEntity<byte[]> generarInformeLicencias(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeLicencias(soloActivos);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
@@ -76,8 +81,9 @@ public class PDFController {
 
 	@GetMapping("/infantilesAPromocionar")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeInfantilesAPromocionar() {
-		byte[] pdfBytes = pdfService.generarInformeInfantilesAPromocionar();
+	public ResponseEntity<byte[]> generarInformeInfantilesAPromocionar(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeInfantilesAPromocionar(soloActivos);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
@@ -89,8 +95,9 @@ public class PDFController {
 
 	@GetMapping("/adultosAPromocionar")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeAdultosAPromocionar() {
-		byte[] pdfBytes = pdfService.generarInformeAdultosAPromocionar();
+	public ResponseEntity<byte[]> generarInformeAdultosAPromocionar(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeAdultosAPromocionar(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
 		headers.setContentDisposition(
@@ -100,8 +107,9 @@ public class PDFController {
 
 	@GetMapping("/deudas")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeDeudas() {
-		byte[] pdfBytes = pdfService.generarInformeDeudas();
+	public ResponseEntity<byte[]> generarInformeDeudas(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeDeudas(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
 		headers.setContentDisposition(
@@ -111,8 +119,9 @@ public class PDFController {
 
 	@GetMapping("/deudas/csv")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeDeudasCSV() {
-		byte[] csvBytes = pdfService.generarInformeDeudasCSV();
+	public ResponseEntity<byte[]> generarInformeDeudasCSV(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] csvBytes = pdfService.generarInformeDeudasCSV(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.parseMediaType("text/csv"));
 		headers.setContentDisposition(
@@ -122,8 +131,9 @@ public class PDFController {
 
 	@GetMapping("/mensualidades")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeMensualidades() {
-		byte[] pdfBytes = pdfService.generarInformeMensualidades();
+	public ResponseEntity<byte[]> generarInformeMensualidades(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeMensualidades(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
 		headers.setContentDisposition(
@@ -133,8 +143,9 @@ public class PDFController {
 
 	@GetMapping("/mensualidades/taekwondo")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeMensualidadesTaekwondo() {
-		byte[] pdfBytes = pdfService.generarInformeMensualidadesTaekwondo();
+	public ResponseEntity<byte[]> generarInformeMensualidadesTaekwondo(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeMensualidadesTaekwondo(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
 		headers.setContentDisposition(
@@ -144,8 +155,9 @@ public class PDFController {
 
 	@GetMapping("/mensualidades/kickboxing")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<byte[]> generarInformeMensualidadesKickboxing() {
-		byte[] pdfBytes = pdfService.generarInformeMensualidadesKickboxing();
+	public ResponseEntity<byte[]> generarInformeMensualidadesKickboxing(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeMensualidadesKickboxing(soloActivos);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_PDF);
 		headers.setContentDisposition(
@@ -155,11 +167,13 @@ public class PDFController {
 
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
+			@RequestParam(required = false) Deporte deporte,
 			HttpServletResponse response) throws IOException {
 
-		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo);
+		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo, deporte);
 
-		String filename = "Asistencia-%s-%d-%02d.pdf".formatted(grupo, year, month);
+		String deporteSuffix = deporte != null ? "_" + deporte.name() : "";
+		String filename = "Asistencia-%s%s-%d-%02d.pdf".formatted(grupo, deporteSuffix, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
