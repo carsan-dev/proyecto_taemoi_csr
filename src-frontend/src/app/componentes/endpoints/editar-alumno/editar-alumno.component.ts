@@ -710,11 +710,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         link.click();
         globalThis.URL.revokeObjectURL(url);
       },
-      error: () => {
+      error: (error) => {
+        console.error('Download error details:', error);
         Swal.fire({
           icon: 'error',
           title: 'Descarga fallida',
-          text: 'No se pudo descargar el documento.',
+          text: `Error ${error.status}: ${error.statusText || 'No se pudo descargar el documento.'}`,
         });
       },
     });
