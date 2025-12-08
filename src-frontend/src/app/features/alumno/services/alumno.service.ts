@@ -263,28 +263,58 @@ export class AlumnoService {
    * @param alumnoId Student ID
    * @param deporte Sport name (TAEKWONDO, KICKBOXING, etc.)
    * @param gradoInicial Initial grade for this sport
+   * @param fechaAlta Registration date for this sport (YYYY-MM-DD)
+   * @param fechaGrado Grade date for this sport (YYYY-MM-DD)
    */
   agregarDeporteAAlumno(
     alumnoId: number,
     deporte: string,
-    gradoInicial: string
+    gradoInicial: string,
+    fechaAlta: string,
+    fechaGrado: string
   ): Observable<any> {
     return this.http.post<any>(
       `${this.urlBase}/${alumnoId}/deportes`,
-      { deporte, gradoInicial },
+      { deporte, gradoInicial, fechaAlta, fechaGrado },
       { withCredentials: true }
     );
   }
 
   /**
-   * Remove a sport from a student
+   * Deactivate a sport from a student (soft delete - keeps all data)
+   * @param alumnoId Student ID
+   * @param deporte Sport name to deactivate
+   */
+  desactivarDeporteDeAlumno(alumnoId: number, deporte: string): Observable<any> {
+    return this.http.put(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/desactivar`,
+      {},
+      { withCredentials: true, responseType: 'text' }
+    );
+  }
+
+  /**
+   * Activate a sport for a student that was inactive (preserves all data)
+   * @param alumnoId Student ID
+   * @param deporte Sport name to activate
+   */
+  activarDeporteDeAlumno(alumnoId: number, deporte: string): Observable<any> {
+    return this.http.put(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/activar`,
+      {},
+      { withCredentials: true, responseType: 'text' }
+    );
+  }
+
+  /**
+   * Remove a sport from a student completely (hard delete - physical deletion)
    * @param alumnoId Student ID
    * @param deporte Sport name to remove
    */
   removerDeporteDeAlumno(alumnoId: number, deporte: string): Observable<any> {
-    return this.http.delete<any>(
+    return this.http.delete(
       `${this.urlBase}/${alumnoId}/deportes/${deporte}`,
-      { withCredentials: true }
+      { withCredentials: true, responseType: 'text' }
     );
   }
 
