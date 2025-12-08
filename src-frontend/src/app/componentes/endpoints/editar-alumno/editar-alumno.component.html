@@ -98,9 +98,10 @@
 
         <!-- Card con la info principal del alumno -->
         <div class="admin-card admin-card-large alumno-profile-card mb-4">
-          <!-- Multi-sport badges header -->
+          <!-- Multi-sport badges header (only active sports) -->
           <div class="deportes-banner-container">
             @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+              @if (deporteItem.activo !== false) {
               <div class="deporte-banner-badge" [ngClass]="{
                 'taekwondo': deporteItem.deporte === 'TAEKWONDO',
                 'pilates': deporteItem.deporte === 'PILATES',
@@ -110,6 +111,7 @@
                 <i class="bi bi-trophy-fill"></i>
                 <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
               </div>
+              }
             }
           </div>
 
@@ -179,9 +181,16 @@
               <button
                 class="tab-item"
                 [class.active]="deporteActivo === deporteItem.deporte"
+                [class.inactive-tab]="deporteItem.activo === false"
+                [style.opacity]="deporteItem.activo === false ? '0.6' : '1'"
                 (click)="cambiarTab(deporteItem.deporte)">
                 <i class="bi bi-trophy"></i>
-                <span class="tab-label">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                <span class="tab-label">
+                  {{ getDeporteLabel(deporteItem.deporte) }}
+                  @if (deporteItem.activo === false) {
+                    <small class="ms-1 text-muted">(Inactivo)</small>
+                  }
+                </span>
                 <span class="tab-badge">{{ deporteItem.grado || 'Sin grado' }}</span>
               </button>
               }
@@ -197,9 +206,21 @@
                   <h4>
                     <i class="bi bi-trophy-fill"></i>
                     {{ getDeporteLabel(deporteItem.deporte) }}
+                    @if (deporteItem.activo === false) {
+                      <span class="badge bg-secondary ms-2">
+                        <i class="bi bi-pause-circle"></i> Inactivo
+                      </span>
+                    }
                   </h4>
                   <div class="deporte-actions">
-                    @if (deportesDelAlumno.length > 1) {
+                    @if (deporteItem.activo === false) {
+                    <button class="admin-btn admin-btn-success admin-btn-sm"
+                      (click)="activarDeporte(deporteItem.deporte)">
+                      <i class="bi bi-check-circle"></i>
+                      <span>Activar Deporte</span>
+                    </button>
+                    }
+                    @if (deportesDelAlumno.length > 1 && deporteItem.activo !== false) {
                     <button class="admin-btn admin-btn-danger admin-btn-sm"
                       (click)="removerDeporte(deporteItem.deporte)">
                       <i class="bi bi-trash"></i>
@@ -1594,7 +1615,7 @@
         </div>
 
         <!-- Grado Inicial -->
-        <div class="admin-form-field">
+        <div class="admin-form-field mb-3">
           <label for="gradoInicialDeporte">
             <i class="bi bi-award"></i>
             Grado Inicial
@@ -1610,6 +1631,44 @@
             Selecciona el grado con el que comenzará en este deporte
           </small>
         </div>
+
+        <!-- Fecha de Alta -->
+        <div class="admin-form-field mb-3">
+          <label for="fechaAltaDeporte">
+            <i class="bi bi-calendar-plus"></i>
+            Fecha de Alta
+            <span class="required">*</span>
+          </label>
+          <input
+            type="date"
+            id="fechaAltaDeporte"
+            class="admin-form-control"
+            [(ngModel)]="fechaAltaDeporte"
+            aria-label="Fecha de alta en el deporte" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Fecha en que el alumno se inscribe en este deporte
+          </small>
+        </div>
+
+        <!-- Fecha de Grado -->
+        <div class="admin-form-field">
+          <label for="fechaGradoDeporte">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Grado
+            <span class="required">*</span>
+          </label>
+          <input
+            type="date"
+            id="fechaGradoDeporte"
+            class="admin-form-control"
+            [(ngModel)]="fechaGradoDeporte"
+            aria-label="Fecha de grado inicial" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Fecha en que obtuvo el grado inicial
+          </small>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalAgregarDeporte()">
@@ -1617,7 +1676,7 @@
           <span>Cancelar</span>
         </button>
         <button type="button" class="admin-btn admin-btn-primary" (click)="agregarDeporte()"
-          [disabled]="!nuevoDeporte || !gradoInicialDeporte">
+          [disabled]="!nuevoDeporte || !gradoInicialDeporte || !fechaAltaDeporte || !fechaGradoDeporte">
           <i class="bi bi-check-circle"></i>
           <span>Agregar Deporte</span>
         </button>
