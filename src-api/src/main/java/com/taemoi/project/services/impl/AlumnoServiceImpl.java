@@ -30,6 +30,7 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Convocatoria;
 import com.taemoi.project.entities.Deporte;
@@ -830,6 +831,33 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
+	 * Obtiene alumnos elegibles para una convocatoria específica
+	 * basándose en el deporte y el estado de aptoParaExamen en AlumnoDeporte
+	 */
+	@Override
+	public List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(Deporte deporte) {
+		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+
+		// Filter alumnos that have the specific sport active and are eligible for exam
+		List<Alumno> alumnosElegibles = todosAlumnos.stream()
+				.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo())) // Only active alumnos
+				.filter(alumno -> alumno.getDeportes() != null && !alumno.getDeportes().isEmpty())
+				.filter(alumno -> {
+					// Check if alumno has the specific deporte active and is eligible for exam
+					return alumno.getDeportes().stream()
+							.anyMatch(ad -> ad.getDeporte() == deporte
+									&& Boolean.TRUE.equals(ad.getActivo())
+									&& Boolean.TRUE.equals(ad.getAptoParaExamen()));
+				})
+				.collect(Collectors.toList());
+
+		// Map to DTO
+		return alumnosElegibles.stream()
+				.map(AlumnoConGruposDTO::deAlumnoConGrupos)
+				.collect(Collectors.toList());
+	}
+
+	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
 	 * Delegado a TarifaConfig para centralizar la configuración de precios.
 	 *
@@ -950,6 +978,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return fechaCumple14.getYear() == anioActual;
 	}
 
+	/**
+	 * Calcula el siguiente grado para un alumno según un deporte específico y grado actual.
+	 * Útil para sistema multi-deporte.
+	 */
+	private TipoGrado calcularSiguienteGradoPorDeporte(TipoGrado gradoActual, Deporte deporte, Alumno alumno) {
+		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
+	}
+
 	@Override
 	@Transactional
 	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa) {
@@ -959,9 +997,23 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
-		TipoGrado gradoSiguiente = calcularSiguienteGrado(alumno);
+		// Find the AlumnoDeporte for the sport of the convocatoria
+		AlumnoDeporte alumnoDeporte = alumno.getDeportes().stream()
+				.filter(ad -> ad.getDeporte() == convocatoria.getDeporte() && Boolean.TRUE.equals(ad.getActivo()))
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no está activo en el deporte " + convocatoria.getDeporte()));
+
+		// Verify the alumno is eligible for exam in this sport
+		if (!Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+			throw new IllegalArgumentException("El alumno no está apto para examen en el deporte " + convocatoria.getDeporte());
+		}
+
+		// Calculate next grade based on the AlumnoDeporte's current grade
+		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, convocatoria.getDeporte(), alumno);
 		if (gradoSiguiente == null) {
-			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno");
+			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno para el deporte " + convocatoria.getDeporte());
 		}
 
 		// Usar el método del enum TipoGrado para obtener el nombre del producto
@@ -984,8 +1036,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 		alumnoConvocatoria.setConvocatoria(convocatoria);
 		alumnoConvocatoria.setProductoAlumno(productoAlumno);
 		alumnoConvocatoria.setCuantiaExamen(producto.getPrecio());
-		alumnoConvocatoria.setGradoActual(alumno.getGrado().getTipoGrado());
+		alumnoConvocatoria.setGradoActual(gradoActual);
 		alumnoConvocatoria.setGradoSiguiente(gradoSiguiente);
+		alumnoConvocatoria.setAlumnoDeporte(alumnoDeporte);
 		alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 
 		return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);

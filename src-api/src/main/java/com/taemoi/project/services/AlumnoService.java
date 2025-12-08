@@ -80,6 +80,8 @@ public interface AlumnoService {
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 
+	List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(com.taemoi.project.entities.Deporte deporte);
+
 	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa);
 
 	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
