@@ -37,7 +37,7 @@ Comandos para eliminar todo lo existente en docker de cara a deploy limpio
   sudo docker volume ls
 
   # 5. Delete all the other volumes
-  sudo docker volume rm volumen1 volumen2 ...
+  sudo docker volume rm volumen1 volumen2 ... (sudo docker volume rm taemoi_db_data taemoi_nginx_cache)
 
 
 Migrar data para local: 
@@ -126,3 +126,13 @@ TODO:
 ✔ Arreglar tabs de deporte para mejor diseño y añadir agregar a convocatoria y demas
 
 ✔ Actualizar migrate_documents para normalizar los nombres de ficheros y evitar problemas
+
+✔ Añadir tiempo que tarda el servidor en desplegar la app
+
+✔ Arreglar añadir a convocatoria
+
+✔ Arreglar filtro por deporte, ya que filtra mal (aparecen los alumnos paginados y el alumno filtrado en la página que estaba) EN SERVER SIGUE SIN FUNCIONAR (error al obtener los alumnos)
+
+Actualizar precio productos
+
+✔ Terminar de arreglar desactivar o eliminar el deporte del alumno
