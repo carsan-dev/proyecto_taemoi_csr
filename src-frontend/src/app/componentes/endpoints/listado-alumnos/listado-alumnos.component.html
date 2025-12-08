@@ -160,8 +160,10 @@
                 <span>{{ alumno.categoria || 'N/A' }}</span>
               </div>
               <div class="item-field-full">
-                <i class="bi bi-award"></i>
-                <strong>Deportes:</strong>
+                <div class="deportes-header">
+                  <i class="bi bi-award"></i>
+                  <strong>Deportes:</strong>
+                </div>
                 <div class="deportes-badges">
                   @if (getDeportesDeAlumno(alumno.id).length === 0) {
                     <span class="badge-loading">Cargando...</span>
