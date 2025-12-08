@@ -43,15 +43,22 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	private ExamEligibilityConfig examEligibilityConfig;
 
 	@Override
-	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial) {
+	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, Date fechaAlta, Date fechaGrado) {
 		// Verificar que el alumno existe
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
-		// Verificar que no tenga ya ese deporte
-		if (alumnoDeporteRepository.existsByAlumnoIdAndDeporte(alumnoId, deporte)) {
+		// Verificar que no tenga ya ese deporte activo
+		Optional<AlumnoDeporte> existente = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte);
+		if (existente.isPresent() && Boolean.TRUE.equals(existente.get().getActivo())) {
 			throw new IllegalArgumentException(
 					"El alumno ya tiene asignado el deporte: " + deporte);
+		}
+
+		// If there's an inactive record, suggest using activate instead
+		if (existente.isPresent() && Boolean.FALSE.equals(existente.get().getActivo())) {
+			throw new IllegalArgumentException(
+					"El alumno ya tiene un registro inactivo de este deporte. Use activar en lugar de agregar.");
 		}
 
 		// Crear nuevo AlumnoDeporte
@@ -59,7 +66,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		alumnoDeporte.setAlumno(alumno);
 		alumnoDeporte.setDeporte(deporte);
 		alumnoDeporte.setActivo(true);
-		alumnoDeporte.setFechaAlta(new Date());
+		// Use provided fechaAlta or default to current date
+		alumnoDeporte.setFechaAlta(fechaAlta != null ? fechaAlta : new Date());
 		alumnoDeporte.setAptoParaExamen(false);
 
 		// Asignar grado si se proporcionó (deportes como Pilates no tienen grado)
@@ -69,10 +77,56 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 				throw new IllegalArgumentException("Grado no encontrado: " + gradoInicial);
 			}
 			alumnoDeporte.setGrado(grado);
-			alumnoDeporte.setFechaGrado(new Date());
+			// Use provided fechaGrado or default to current date
+			alumnoDeporte.setFechaGrado(fechaGrado != null ? fechaGrado : new Date());
 		}
 
 		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public void desactivarDeporteDeAlumno(Long alumnoId, Deporte deporte) {
+		// Verificar que el alumno tiene más de un deporte activo
+		long deportesActivos = alumnoDeporteRepository.countByAlumnoIdAndActivoTrue(alumnoId);
+		if (deportesActivos <= 1) {
+			throw new IllegalArgumentException(
+					"No se puede desactivar el último deporte del alumno. Debe practicar al menos un deporte.");
+		}
+
+		// Buscar el AlumnoDeporte
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Verificar que está activo
+		if (Boolean.FALSE.equals(alumnoDeporte.getActivo())) {
+			throw new IllegalArgumentException("El deporte ya está inactivo");
+		}
+
+		// Marcar como inactivo (mantiene todos los datos: grado, fechaGrado, aptoParaExamen, etc.)
+		alumnoDeporte.setActivo(false);
+		alumnoDeporte.setFechaBaja(new Date());
+		alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public void activarDeporteDeAlumno(Long alumnoId, Deporte deporte) {
+		// Buscar el AlumnoDeporte
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Verificar que está inactivo
+		if (Boolean.TRUE.equals(alumnoDeporte.getActivo())) {
+			throw new IllegalArgumentException("El deporte ya está activo");
+		}
+
+		// Reactivar (preserva todos los datos: grado, fechaGrado, aptoParaExamen, etc.)
+		alumnoDeporte.setActivo(true);
+		alumnoDeporte.setFechaBaja(null);
+		// NO se actualiza fechaAlta para preservar la fecha original
+		// NO se resetea aptoParaExamen ni grado - se mantienen como estaban
+		alumnoDeporteRepository.save(alumnoDeporte);
 	}
 
 	@Override
@@ -89,10 +143,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
-		// Marcar como inactivo en lugar de eliminar (para mantener histórico)
-		alumnoDeporte.setActivo(false);
-		alumnoDeporte.setFechaBaja(new Date());
-		alumnoDeporteRepository.save(alumnoDeporte);
+		// Eliminar completamente el registro de la base de datos
+		alumnoDeporteRepository.delete(alumnoDeporte);
 	}
 
 	@Override

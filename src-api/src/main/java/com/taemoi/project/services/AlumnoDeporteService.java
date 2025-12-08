@@ -15,12 +15,30 @@ public interface AlumnoDeporteService {
 	 * @param alumnoId ID del alumno
 	 * @param deporte Deporte a agregar
 	 * @param gradoInicial Grado inicial del alumno en ese deporte (puede ser null para deportes sin grado)
+	 * @param fechaAlta Fecha de alta en el deporte (puede ser null, se asigna fecha actual)
+	 * @param fechaGrado Fecha de grado (puede ser null, se asigna fecha actual)
 	 * @return AlumnoDeporte creado
 	 */
-	AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial);
+	AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, java.util.Date fechaAlta, java.util.Date fechaGrado);
 
 	/**
-	 * Remueve un deporte de un alumno (marca como inactivo)
+	 * Desactiva un deporte de un alumno (marca como inactivo pero mantiene todos los datos)
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a desactivar
+	 */
+	void desactivarDeporteDeAlumno(Long alumnoId, Deporte deporte);
+
+	/**
+	 * Activa un deporte de un alumno que estaba inactivo (preserva todos los datos)
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a activar
+	 */
+	void activarDeporteDeAlumno(Long alumnoId, Deporte deporte);
+
+	/**
+	 * Remueve completamente un deporte de un alumno (eliminación física del registro)
 	 *
 	 * @param alumnoId ID del alumno
 	 * @param deporte Deporte a remover
