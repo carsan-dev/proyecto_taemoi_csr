@@ -3,6 +3,9 @@
 # TaeMoi - Deployment Script
 # Automates the deployment process
 
+# Capture start time
+START_TIME=$(date +%s)
+
 set -e
 
 # Colors
@@ -196,6 +199,15 @@ echo "============================================"
 echo "    Deployment Completed!"
 echo "============================================"
 echo -e "${NC}"
+
+# Calculate and display deployment time
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+MINUTES=$((DURATION / 60))
+SECONDS=$((DURATION % 60))
+
+echo ""
+echo -e "${BLUE}⏱  Deployment time: ${MINUTES}m ${SECONDS}s${NC}"
 
 echo ""
 echo "Environment: ${ENVIRONMENT}"
