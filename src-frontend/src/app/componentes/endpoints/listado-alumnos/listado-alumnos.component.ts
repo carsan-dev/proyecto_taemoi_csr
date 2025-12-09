@@ -83,13 +83,15 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.cargarTodosLosAlumnos();
 
     // Setup debounced search
-    this.searchSubject.pipe(
-      debounceTime(500), // Wait 500ms after user stops typing
-      distinctUntilChanged() // Only trigger if value actually changed
-    ).subscribe(() => {
-      this.paginaActual = 1;
-      this.obtenerAlumnos();
-    });
+    this.searchSubject
+      .pipe(
+        debounceTime(500), // Wait 500ms after user stops typing
+        distinctUntilChanged() // Only trigger if value actually changed
+      )
+      .subscribe(() => {
+        this.paginaActual = 1;
+        this.obtenerAlumnos();
+      });
   }
 
   ngOnDestroy(): void {
@@ -116,14 +118,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       { value: 'licencias', label: 'Informe de Estado de Licencias' },
       {
         value: 'infantiles',
-        label: 'Informe de Alumnos Infantiles a Promocionar',
+        label:
+          'Informe de Alumnos Infantiles a Promocionar (Todos los deportes)',
       },
       {
         value: 'adultos',
-        label: 'Informe de Alumnos Adultos a Promocionar',
+        label: 'Informe de Alumnos Adultos a Promocionar (Todos los deportes)',
+      },
+      {
+        value: 'infantiles-taekwondo',
+        label: 'Informe de Alumnos Infantiles a Promocionar (Taekwondo)',
+      },
+      {
+        value: 'adultos-taekwondo',
+        label: 'Informe de Alumnos Adultos a Promocionar (Taekwondo)',
+      },
+      {
+        value: 'infantiles-kickboxing',
+        label: 'Informe de Alumnos Infantiles a Promocionar (Kickboxing)',
+      },
+      {
+        value: 'adultos-kickboxing',
+        label: 'Informe de Alumnos Adultos a Promocionar (Kickboxing)',
       },
       { value: 'deudas', label: 'Informe de Deudas de Alumnos' },
-      { value: 'mensualidades', label: 'Informe de Mensualidades de Todos los Alumnos' },
+      {
+        value: 'mensualidades',
+        label: 'Informe de Mensualidades de Todos los Alumnos',
+      },
       {
         value: 'mensualidades-taekwondo',
         label: 'Informe de Mensualidades de Taekwondo',
@@ -178,7 +200,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     }
 
     // Create an array of observables for loading each alumno's sports
-    const deportesRequests = this.alumnos.map(alumno =>
+    const deportesRequests = this.alumnos.map((alumno) =>
       this.alumnoService.obtenerDeportesDelAlumno(alumno.id)
     );
 
@@ -197,7 +219,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading sports data:', error);
         // Continue showing the page even if sports data fails to load
-      }
+      },
     });
   }
 
@@ -220,7 +242,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
           // Extract sports data from each alumno and store in map
           this.deportesPorAlumno.clear();
-          alumnosConDeportes.forEach(alumno => {
+          alumnosConDeportes.forEach((alumno) => {
             if (alumno.deportes && alumno.deportes.length > 0) {
               this.deportesPorAlumno.set(alumno.id, alumno.deportes);
             }
@@ -249,12 +271,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     // Filter by inactive status
     if (!this.mostrarInactivos) {
-      filtrados = filtrados.filter(alumno => !alumno.fechaBaja);
+      filtrados = filtrados.filter((alumno) => !alumno.fechaBaja);
     }
 
     // Filter by sport
     if (this.deporteFiltro !== 'TODOS') {
-      filtrados = filtrados.filter(alumno =>
+      filtrados = filtrados.filter((alumno) =>
         this.practicaDeporte(alumno.id, this.deporteFiltro)
       );
     }
@@ -262,9 +284,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Filter by name if needed
     if (this.nombreFiltro && this.nombreFiltro.trim()) {
       const searchTerm = this.nombreFiltro.toLowerCase().trim();
-      filtrados = filtrados.filter(alumno =>
-        alumno.nombre?.toLowerCase().includes(searchTerm) ||
-        alumno.apellidos?.toLowerCase().includes(searchTerm)
+      filtrados = filtrados.filter(
+        (alumno) =>
+          alumno.nombre?.toLowerCase().includes(searchTerm) ||
+          alumno.apellidos?.toLowerCase().includes(searchTerm)
       );
     }
 
@@ -290,7 +313,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   getDeportesDeAlumno(alumnoId: number): AlumnoDeporteDTO[] {
     const deportes = this.deportesPorAlumno.get(alumnoId) || [];
     // Filter to show only active sports in the list
-    return deportes.filter(d => d.activo !== false);
+    return deportes.filter((d) => d.activo !== false);
   }
 
   /**
@@ -328,7 +351,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   practicaDeporte(alumnoId: number, deporte: string): boolean {
     const deportes = this.deportesPorAlumno.get(alumnoId) || [];
-    return deportes.some(d => d.deporte === deporte);
+    return deportes.some((d) => d.deporte === deporte);
   }
 
   /**
@@ -357,52 +380,67 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       });
   }
 
-  generarInformeSeleccionado(event: { tipo: string, soloActivos: boolean }): void {
+  generarInformeSeleccionado(event: {
+    tipo: string;
+    soloActivos: boolean;
+  }): void {
     const { tipo, soloActivos } = event;
 
     if (tipo === 'general') {
-      this.endpointsService.generarInformeAlumnosPorGrado(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire('Error', 'No se pudo generar el informe general', 'error');
-        },
-      });
+      this.endpointsService
+        .generarInformeAlumnosPorGrado(soloActivos)
+        .subscribe({
+          next: (pdfBlob: Blob) => {
+            const fileURL = URL.createObjectURL(pdfBlob);
+            window.open(fileURL, '_blank');
+          },
+          error: () => {
+            Swal.fire(
+              'Error',
+              'No se pudo generar el informe general',
+              'error'
+            );
+          },
+        });
     } else if (tipo === 'taekwondo') {
-      this.endpointsService.generarInformeTaekwondoPorGrado(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de Taekwondo',
-            'error'
-          );
-        },
-      });
+      this.endpointsService
+        .generarInformeTaekwondoPorGrado(soloActivos)
+        .subscribe({
+          next: (pdfBlob: Blob) => {
+            const fileURL = URL.createObjectURL(pdfBlob);
+            window.open(fileURL, '_blank');
+          },
+          error: () => {
+            Swal.fire(
+              'Error',
+              'No se pudo generar el informe de Taekwondo',
+              'error'
+            );
+          },
+        });
     } else if (tipo === 'kickboxing') {
-      this.endpointsService.generarInformeKickboxingPorGrado(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de Kickboxing',
-            'error'
-          );
-        },
-      });
+      this.endpointsService
+        .generarInformeKickboxingPorGrado(soloActivos)
+        .subscribe({
+          next: (pdfBlob: Blob) => {
+            const fileURL = URL.createObjectURL(pdfBlob);
+            window.open(fileURL, '_blank');
+          },
+          error: () => {
+            Swal.fire(
+              'Error',
+              'No se pudo generar el informe de Kickboxing',
+              'error'
+            );
+          },
+        });
     } else if (tipo === 'licencias') {
-      this.endpointsService.generarInformeLicencias(soloActivos).subscribe((blob) => {
-        const url = globalThis.URL.createObjectURL(blob);
-        window.open(url);
-      });
+      this.endpointsService
+        .generarInformeLicencias(soloActivos)
+        .subscribe((blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          window.open(url);
+        });
     } else if (tipo === 'infantiles') {
       this.endpointsService
         .generarInformeInfantilesAPromocionar(soloActivos)
@@ -413,6 +451,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     } else if (tipo === 'adultos') {
       this.endpointsService
         .generarInformeAdultosAPromocionar(soloActivos)
+        .subscribe((blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          window.open(url);
+        });
+    } else if (tipo === 'infantiles-taekwondo') {
+      this.endpointsService
+        .generarInformeInfantilesAPromocionarTaekwondo(soloActivos)
+        .subscribe((blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          window.open(url);
+        });
+    } else if (tipo === 'infantiles-kickboxing') {
+      this.endpointsService
+        .generarInformeInfantilesAPromocionarKickboxing(soloActivos)
+        .subscribe((blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          window.open(url);
+        });
+    } else if (tipo === 'adultos-taekwondo') {
+      this.endpointsService
+        .generarInformeAdultosAPromocionarTaekwondo(soloActivos)
+        .subscribe((blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          window.open(url);
+        });
+    } else if (tipo === 'adultos-kickboxing') {
+      this.endpointsService
+        .generarInformeAdultosAPromocionarKickboxing(soloActivos)
         .subscribe((blob) => {
           const url = globalThis.URL.createObjectURL(blob);
           window.open(url);
@@ -491,33 +557,37 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         },
       });
     } else if (tipo === 'mensualidades-taekwondo') {
-      this.endpointsService.generarInformeMensualidadesTaekwondo(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de mensualidades de Taekwondo',
-            'error'
-          );
-        },
-      });
+      this.endpointsService
+        .generarInformeMensualidadesTaekwondo(soloActivos)
+        .subscribe({
+          next: (pdfBlob: Blob) => {
+            const fileURL = URL.createObjectURL(pdfBlob);
+            window.open(fileURL, '_blank');
+          },
+          error: () => {
+            Swal.fire(
+              'Error',
+              'No se pudo generar el informe de mensualidades de Taekwondo',
+              'error'
+            );
+          },
+        });
     } else if (tipo === 'mensualidades-kickboxing') {
-      this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de mensualidades de Kickboxing',
-            'error'
-          );
-        },
-      });
+      this.endpointsService
+        .generarInformeMensualidadesKickboxing(soloActivos)
+        .subscribe({
+          next: (pdfBlob: Blob) => {
+            const fileURL = URL.createObjectURL(pdfBlob);
+            window.open(fileURL, '_blank');
+          },
+          error: () => {
+            Swal.fire(
+              'Error',
+              'No se pudo generar el informe de mensualidades de Kickboxing',
+              'error'
+            );
+          },
+        });
     }
   }
 
@@ -657,7 +727,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Determine which service method to call based on sport selection
     const serviceCall =
       this.deporteSeleccionado === 'TODOS'
-        ? this.endpointsService.cargarMensualidadesGenerales(this.mesAnoSeleccionado)
+        ? this.endpointsService.cargarMensualidadesGenerales(
+            this.mesAnoSeleccionado
+          )
         : this.endpointsService.cargarMensualidadesPorDeporte(
             this.mesAnoSeleccionado,
             this.deporteSeleccionado
