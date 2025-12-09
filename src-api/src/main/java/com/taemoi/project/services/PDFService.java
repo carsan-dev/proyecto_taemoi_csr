@@ -17,6 +17,14 @@ public interface PDFService {
 
 	byte[] generarInformeAdultosAPromocionar(boolean soloActivos);
 
+	byte[] generarInformeInfantilesAPromocionarTaekwondo(boolean soloActivos);
+
+	byte[] generarInformeInfantilesAPromocionarKickboxing(boolean soloActivos);
+
+	byte[] generarInformeAdultosAPromocionarTaekwondo(boolean soloActivos);
+
+	byte[] generarInformeAdultosAPromocionarKickboxing(boolean soloActivos);
+
 	byte[] generarInformeDeudas(boolean soloActivos);
 
 	byte[] generarInformeDeudasCSV(boolean soloActivos);
