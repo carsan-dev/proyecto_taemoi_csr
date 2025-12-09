@@ -105,6 +105,54 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
+	@GetMapping("/infantilesAPromocionarTaekwondo")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeInfantilesAPromocionarTaekwondo(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeInfantilesAPromocionarTaekwondo(soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_infantiles_taekwondo_promocion.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/infantilesAPromocionarKickboxing")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeInfantilesAPromocionarKickboxing(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeInfantilesAPromocionarKickboxing(soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_infantiles_kickboxing_promocion.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/adultosAPromocionarTaekwondo")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeAdultosAPromocionarTaekwondo(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeAdultosAPromocionarTaekwondo(soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_adultos_taekwondo_promocion.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
+	@GetMapping("/adultosAPromocionarKickboxing")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeAdultosAPromocionarKickboxing(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeAdultosAPromocionarKickboxing(soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_adultos_kickboxing_promocion.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/deudas")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<byte[]> generarInformeDeudas(
