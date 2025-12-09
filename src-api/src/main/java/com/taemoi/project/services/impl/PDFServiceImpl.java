@@ -38,7 +38,6 @@ import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
-import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
@@ -48,9 +47,6 @@ public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
-
-	@Autowired
-	private AlumnoService alumnoService;
 
 	@Autowired
 	private GradoRepository gradoRepository;
@@ -71,9 +67,9 @@ public class PDFServiceImpl implements PDFService {
 	private String logoPngBase64Cache = null;
 
 	/**
-	 * Converts the school logo SVG to PNG and returns it as a base64 data URI.
-	 * This provides full compatibility with OpenHTML to PDF.
-	 * The result is cached to avoid repeated conversions.
+	 * Converts the school logo SVG to PNG and returns it as a base64 data URI. This
+	 * provides full compatibility with OpenHTML to PDF. The result is cached to
+	 * avoid repeated conversions.
 	 *
 	 * @return Base64-encoded PNG logo as a data URI
 	 */
@@ -115,8 +111,8 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * Generates a standard header section with logo for PDF reports.
-	 * The logo is converted to PNG and embedded as base64 for full compatibility.
+	 * Generates a standard header section with logo for PDF reports. The logo is
+	 * converted to PNG and embedded as base64 for full compatibility.
 	 *
 	 * @param titulo Main title for the report
 	 * @return HTML string with header section
@@ -128,7 +124,7 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Generates a standard header section with logo and custom border color.
 	 *
-	 * @param titulo Main title for the report
+	 * @param titulo      Main title for the report
 	 * @param borderColor Border color for the header
 	 * @return HTML string with header section
 	 */
@@ -156,201 +152,63 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * Generates modern CSS styles matching the website design.
-	 * Uses Montserrat font, website colors, and modern design principles.
+	 * Generates modern CSS styles matching the website design. Uses Montserrat
+	 * font, website colors, and modern design principles.
 	 *
-	 * @param pageTitle Title to display in the header
+	 * @param pageTitle       Title to display in the header
 	 * @param fechaGeneracion Date string to display in footer
 	 * @return CSS style string
 	 */
 	private String generarEstilosModernos(String pageTitle, String fechaGeneracion) {
-		return "@page {" +
-			"  margin: 25mm 15mm 20mm 15mm;" +
-			"  @top-center {" +
-			"    content: '" + pageTitle + "';" +
-			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
-			"    font-size: 16pt;" +
-			"    font-weight: 700;" +
-			"    color: #1b2b2e;" +
-			"    text-align: center;" +
-			"  }" +
-			"  @bottom-left {" +
-			"    content: '" + fechaGeneracion + "';" +
-			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
-			"    font-size: 9pt;" +
-			"    color: #6c757d;" +
-			"  }" +
-			"  @bottom-right {" +
-			"    content: 'Página ' counter(page) ' de ' counter(pages);" +
-			"    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
-			"    font-size: 9pt;" +
-			"    color: #6c757d;" +
-			"  }" +
-			"}" +
-			"* { box-sizing: border-box; }" +
-			"body {" +
-			"  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" +
-			"  color: #212529;" +
-			"  line-height: 1.6;" +
-			"  background: #ffffff;" +
-			"}" +
-			".pdf-header {" +
-			"  text-align: center;" +
-			"  margin-bottom: 8mm;" +
-			"  padding-bottom: 5mm;" +
-			"  border-bottom: 3px solid #007bff;" +
-			"  page-break-inside: avoid;" +
-			"}" +
-			".logo-container {" +
-			"  text-align: center;" +
-			"  margin-bottom: 3mm;" +
-			"}" +
-			".logo-container img {" +
-			"  width: 35mm;" +
-			"  height: auto;" +
-			"  max-height: 35mm;" +
-			"}" +
-			".header-content {" +
-			"  text-align: center;" +
-			"}" +
-			".club-name {" +
-			"  font-size: 20pt;" +
-			"  font-weight: 700;" +
-			"  color: #1b2b2e;" +
-			"  margin: 2mm 0;" +
-			"  text-transform: uppercase;" +
-			"  letter-spacing: 1px;" +
-			"}" +
-			".report-title {" +
-			"  font-size: 16pt;" +
-			"  font-weight: 600;" +
-			"  color: #007bff;" +
-			"  margin: 2mm 0 0 0;" +
-			"}" +
-			"h1, h2, h3 {" +
-			"  font-weight: 700;" +
-			"  color: #1b2b2e;" +
-			"  margin: 8mm 0 5mm 0;" +
-			"}" +
-			"h1 { font-size: 22pt; }" +
-			"h2 {" +
-			"  font-size: 16pt;" +
-			"  padding-bottom: 2mm;" +
-			"  border-bottom: 2px solid #007bff;" +
-			"  display: inline-block;" +
-			"  min-width: 40%;" +
-			"}" +
-			".grupo {" +
-			"  margin-top: 6mm;" +
-			"  margin-bottom: 6mm;" +
-			"  page-break-inside: avoid;" +
-			"}" +
-			".encabezado-grupo {" +
-			"  background-color: #f8f9fa;" +
-			"  padding: 4mm 3mm;" +
-			"  border-radius: 3mm;" +
-			"  border: 1px solid #dee2e6;" +
-			"  margin-bottom: 3mm;" +
-			"}" +
-			".encabezado-grupo .izquierda {" +
-			"  display: inline-block;" +
-			"  width: 70%;" +
-			"  vertical-align: middle;" +
-			"}" +
-			".encabezado-grupo .derecha {" +
-			"  display: inline-block;" +
-			"  width: 28%;" +
-			"  text-align: right;" +
-			"  font-weight: 600;" +
-			"  color: #007bff;" +
-			"  font-size: 11pt;" +
-			"  vertical-align: middle;" +
-			"}" +
-			".cinturon {" +
-			"  display: inline-block;" +
-			"  vertical-align: middle;" +
-			"  width: 28mm;" +
-			"  height: 6mm;" +
-			"  margin-right: 3mm;" +
-			"  border: 1.5px solid #495057;" +
-			"  border-radius: 1mm;" +
-			"  position: relative;" +
-			"}" +
-			".cinturon.doble .superior, .cinturon.doble .inferior {" +
-			"  width: 100%;" +
-			"  height: 50%;" +
-			"  position: absolute;" +
-			"}" +
-			".cinturon.doble .superior {" +
-			"  top: 0;" +
-			"  border-top-left-radius: 0.5mm;" +
-			"  border-top-right-radius: 0.5mm;" +
-			"}" +
-			".cinturon.doble .inferior {" +
-			"  bottom: 0;" +
-			"  border-bottom-left-radius: 0.5mm;" +
-			"  border-bottom-right-radius: 0.5mm;" +
-			"}" +
-			".grado-nombre {" +
-			"  display: inline-block;" +
-			"  vertical-align: middle;" +
-			"  font-size: 12pt;" +
-			"  font-weight: 600;" +
-			"  color: #1b2b2e;" +
-			"}" +
-			".raya {" +
-			"  position: absolute;" +
-			"  top: 50%;" +
-			"  transform: translateY(-50%);" +
-			"  height: 80%;" +
-			"  background-color: #FFD700;" +
-			"  z-index: 10;" +
-			"}" +
-			"table {" +
-			"  width: 100%;" +
-			"  border-collapse: collapse;" +
-			"  margin-top: 2mm;" +
-			"  border-radius: 2mm;" +
-			"  overflow: hidden;" +
-			"}" +
-			"th, td {" +
-			"  border: 1px solid #dee2e6;" +
-			"  padding: 3mm 2mm;" +
-			"  text-align: center;" +
-			"  font-size: 10pt;" +
-			"}" +
-			"th {" +
-			"  background-color: #007bff;" +
-			"  color: #ffffff;" +
-			"  font-weight: 600;" +
-			"  font-size: 10pt;" +
-			"  text-transform: uppercase;" +
-			"  letter-spacing: 0.5px;" +
-			"}" +
-			"tbody tr:nth-child(even) {" +
-			"  background-color: #f8f9fa;" +
-			"}" +
-			"tbody tr:nth-child(odd) {" +
-			"  background-color: #ffffff;" +
-			"}" +
-			"tbody tr:hover {" +
-			"  background-color: #e7f3ff;" +
-			"}" +
-			".kickboxing {" +
-			"  padding-top: 10mm;" +
-			"  border-top: 3px solid #ff4500;" +
-			"  margin-top: 10mm;" +
-			"}" +
-			".section-header {" +
-			"  background-color: #1b2b2e;" +
-			"  color: #ffffff;" +
-			"  padding: 5mm;" +
-			"  border-radius: 2mm;" +
-			"  margin-bottom: 5mm;" +
-			"  font-size: 14pt;" +
-			"  font-weight: 700;" +
-			"  text-align: center;" +
-			"}";
+		return "@page {" + "  margin: 25mm 15mm 20mm 15mm;" + "  @top-center {" + "    content: '" + pageTitle + "';"
+				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 16pt;"
+				+ "    font-weight: 700;" + "    color: #1b2b2e;" + "    text-align: center;" + "  }"
+				+ "  @bottom-left {" + "    content: '" + fechaGeneracion + "';"
+				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 9pt;"
+				+ "    color: #6c757d;" + "  }" + "  @bottom-right {"
+				+ "    content: 'Página ' counter(page) ' de ' counter(pages);"
+				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 9pt;"
+				+ "    color: #6c757d;" + "  }" + "}" + "* { box-sizing: border-box; }" + "body {"
+				+ "  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "  color: #212529;"
+				+ "  line-height: 1.6;" + "  background: #ffffff;" + "}" + ".pdf-header {" + "  text-align: center;"
+				+ "  margin-bottom: 8mm;" + "  padding-bottom: 5mm;" + "  border-bottom: 3px solid #007bff;"
+				+ "  page-break-inside: avoid;" + "}" + ".logo-container {" + "  text-align: center;"
+				+ "  margin-bottom: 3mm;" + "}" + ".logo-container img {" + "  width: 35mm;" + "  height: auto;"
+				+ "  max-height: 35mm;" + "}" + ".header-content {" + "  text-align: center;" + "}" + ".club-name {"
+				+ "  font-size: 20pt;" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 2mm 0;"
+				+ "  text-transform: uppercase;" + "  letter-spacing: 1px;" + "}" + ".report-title {"
+				+ "  font-size: 16pt;" + "  font-weight: 600;" + "  color: #007bff;" + "  margin: 2mm 0 0 0;" + "}"
+				+ "h1, h2, h3 {" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 8mm 0 5mm 0;" + "}"
+				+ "h1 { font-size: 22pt; }" + "h2 {" + "  font-size: 16pt;" + "  padding-bottom: 2mm;"
+				+ "  border-bottom: 2px solid #007bff;" + "  display: inline-block;" + "  min-width: 40%;" + "}"
+				+ ".grupo {" + "  margin-top: 6mm;" + "  margin-bottom: 6mm;" + "  page-break-inside: avoid;" + "}"
+				+ ".encabezado-grupo {" + "  background-color: #f8f9fa;" + "  padding: 4mm 3mm;"
+				+ "  border-radius: 3mm;" + "  border: 1px solid #dee2e6;" + "  margin-bottom: 3mm;" + "}"
+				+ ".encabezado-grupo .izquierda {" + "  display: inline-block;" + "  width: 70%;"
+				+ "  vertical-align: middle;" + "}" + ".encabezado-grupo .derecha {" + "  display: inline-block;"
+				+ "  width: 28%;" + "  text-align: right;" + "  font-weight: 600;" + "  color: #007bff;"
+				+ "  font-size: 11pt;" + "  vertical-align: middle;" + "}" + ".cinturon {" + "  display: inline-block;"
+				+ "  vertical-align: middle;" + "  width: 28mm;" + "  height: 6mm;" + "  margin-right: 3mm;"
+				+ "  border: 1.5px solid #495057;" + "  border-radius: 1mm;" + "  position: relative;" + "}"
+				+ ".cinturon.doble .superior, .cinturon.doble .inferior {" + "  width: 100%;" + "  height: 50%;"
+				+ "  position: absolute;" + "}" + ".cinturon.doble .superior {" + "  top: 0;"
+				+ "  border-top-left-radius: 0.5mm;" + "  border-top-right-radius: 0.5mm;" + "}"
+				+ ".cinturon.doble .inferior {" + "  bottom: 0;" + "  border-bottom-left-radius: 0.5mm;"
+				+ "  border-bottom-right-radius: 0.5mm;" + "}" + ".grado-nombre {" + "  display: inline-block;"
+				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;" + "}"
+				+ ".raya {" + "  position: absolute;" + "  top: 50%;" + "  transform: translateY(-50%);"
+				+ "  height: 80%;" + "  background-color: #FFD700;" + "  z-index: 10;" + "}" + "table {"
+				+ "  width: 100%;" + "  border-collapse: collapse;" + "  margin-top: 2mm;" + "  border-radius: 2mm;"
+				+ "  overflow: hidden;" + "}" + "th, td {" + "  border: 1px solid #dee2e6;" + "  padding: 3mm 2mm;"
+				+ "  text-align: center;" + "  font-size: 10pt;" + "}" + "th {" + "  background-color: #007bff;"
+				+ "  color: #ffffff;" + "  font-weight: 600;" + "  font-size: 10pt;" + "  text-transform: uppercase;"
+				+ "  letter-spacing: 0.5px;" + "}" + "tbody tr:nth-child(even) {" + "  background-color: #f8f9fa;" + "}"
+				+ "tbody tr:nth-child(odd) {" + "  background-color: #ffffff;" + "}" + "tbody tr:hover {"
+				+ "  background-color: #e7f3ff;" + "}" + ".kickboxing {" + "  padding-top: 10mm;"
+				+ "  border-top: 3px solid #ff4500;" + "  margin-top: 10mm;" + "}" + ".section-header {"
+				+ "  background-color: #1b2b2e;" + "  color: #ffffff;" + "  padding: 5mm;" + "  border-radius: 2mm;"
+				+ "  margin-bottom: 5mm;" + "  font-size: 14pt;" + "  font-weight: 700;" + "  text-align: center;"
+				+ "}";
 	}
 
 	@Override
@@ -377,14 +235,11 @@ public class PDFServiceImpl implements PDFService {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			alumnos = alumnos.stream()
-					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
-					.collect(Collectors.toList());
+			alumnos = alumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo())).collect(Collectors.toList());
 		}
 
 		LocalDate now = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = now.format(formatter);
 
 		StringBuilder html = new StringBuilder();
@@ -402,16 +257,14 @@ public class PDFServiceImpl implements PDFService {
 		if (deportes.size() == 2 && deportes.contains(Deporte.TAEKWONDO) && deportes.contains(Deporte.KICKBOXING)) {
 			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
 
-			List<Alumno> alumnosTaekwondo = alumnos.stream()
-					.filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
+			List<Alumno> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
 					.collect(Collectors.toList());
 			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
 			html.append("Taekwondo");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
 
-			List<Alumno> alumnosKickboxing = alumnos.stream()
-					.filter(a -> a.getDeporte() == Deporte.KICKBOXING)
+			List<Alumno> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
 					.collect(Collectors.toList());
 			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
 			html.append("Kickboxing");
@@ -646,14 +499,11 @@ public class PDFServiceImpl implements PDFService {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			alumnos = alumnos.stream()
-					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
-					.collect(Collectors.toList());
+			alumnos = alumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo())).collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
 		List<Alumno> licenciasVigor = new ArrayList<>();
@@ -761,145 +611,163 @@ public class PDFServiceImpl implements PDFService {
 		return html.toString();
 	}
 
-	@Override
-	public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
-		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+@Override
+public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
+    List<Alumno> todosAlumnos = alumnoRepository.findAll();
 
-		// Filter by active status if requested
-		if (soloActivos) {
-			todosAlumnos = todosAlumnos.stream()
-					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
-					.collect(Collectors.toList());
-		}
+    // Filter by active status if requested
+    if (soloActivos) {
+        todosAlumnos = todosAlumnos.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getActivo()))
+                .collect(Collectors.toList());
+    }
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
+    LocalDate today = LocalDate.now();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+            "EEEE, d 'de' MMMM 'de' yyyy",
+            Locale.of("es", "ES")
+    );
+    String fechaGeneracion = today.format(formatter);
 
-		// Create a structure to hold alumno-deporte-promotion info
-		// Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
-		Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
+    // Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
+    Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
 
-		for (Alumno alumno : todosAlumnos) {
-			if (alumno.getFechaNacimiento() == null) {
-				continue;
-			}
+    for (Alumno alumno : todosAlumnos) {
+        if (alumno.getFechaNacimiento() == null) {
+            continue;
+        }
 
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad >= 15) {
-				continue; // Not infantiles
-			}
+        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+        if (edad >= 15) {
+            continue; // Not infantiles
+        }
 
-			// Check each sport the student practices
-			for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
-				// Skip inactive sports or sports where student is not ready for exam
-				if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
-						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
-					continue;
-				}
+        // Check each sport the student practices
+        for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
 
-				// Calculate promotion grade for this sport
-				String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
+            // Skip inactive sports or sports where student is not ready for exam
+            if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
+                    || !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+                continue;
+            }
 
-				// Add to the map
-				Deporte deporte = alumnoDeporte.getDeporte();
-				deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
-				deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
-				deporteGradoMap.get(deporte).get(promotionGrade)
-						.add(new AlumnoPromotionInfo(alumno, alumnoDeporte, promotionGrade));
-			}
-		}
+            // Calculate promotion grade for this sport
+            String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
 
-		// Build HTML
-		StringBuilder html = new StringBuilder();
-		html.append("<!DOCTYPE html>");
-		html.append("<html>");
-		html.append("<head>");
-		html.append("<meta charset='UTF-8' />");
-		html.append("<style>");
-		html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
-		html.append(".promotion-group { margin-bottom: 8mm; }");
-		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
-		html.append(".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
-		html.append("</style>");
-		html.append("</head>");
-		html.append("<body>");
+            // Add to the map
+            Deporte deporte = alumnoDeporte.getDeporte();
+            deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
+            deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
+            deporteGradoMap.get(deporte).get(promotionGrade)
+                    .add(new AlumnoPromotionInfo(alumno, alumnoDeporte, promotionGrade));
+        }
+    }
 
-		// Add header with logo
-		html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
+    // Build HTML
+    StringBuilder html = new StringBuilder();
+    html.append("<!DOCTYPE html>");
+    html.append("<html>");
+    html.append("<head>");
+    html.append("<meta charset='UTF-8' />");
+    html.append("<style>");
+    html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
+    html.append(".promotion-group { margin-bottom: 8mm; }");
+    html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
+    html.append(".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+    html.append("</style>");
+    html.append("</head>");
+    html.append("<body>");
 
-		// If no students found
-		if (deporteGradoMap.isEmpty()) {
-			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
-			html.append("No se encontraron alumnos infantiles aptos para promocionar.");
-			html.append("</p>");
-		} else {
-			// Iterate through sports
-			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap
-					.entrySet()) {
-				Deporte deporte = deporteEntry.getKey();
-				html.append("<div class='sport-section'>");
-				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
+    // Add header with logo
+    html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
 
-				// Iterate through promotion grades for this sport
-				for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
-					String promotionGrade = gradeEntry.getKey();
-					List<AlumnoPromotionInfo> alumnos = gradeEntry.getValue();
+    // If no students found
+    if (deporteGradoMap.isEmpty()) {
+        html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
+        html.append("No se encontraron alumnos infantiles aptos para promocionar.");
+        html.append("</p>");
+    } else {
 
-					html.append("<div class='promotion-group'>");
-					html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
-					html.append("<table>");
-					html.append("<thead><tr>");
-					html.append("<th>Nombre y Apellidos</th>");
-					html.append("<th>N&#186; Expediente</th>");
-					html.append("<th>Grado Actual</th>");
-					html.append("<th>Edad</th>");
-					html.append("</tr></thead>");
-					html.append("<tbody>");
+        // Iterate through sports
+        for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
+            Deporte deporte = deporteEntry.getKey();
 
-					for (AlumnoPromotionInfo info : alumnos) {
-						Alumno alumno = info.alumno;
-						AlumnoDeporte alumnoDeporte = info.alumnoDeporte;
-						html.append("<tr>");
-						html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
-								.append("</td>");
-						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+            html.append("<div class='sport-section'>");
+            html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
 
-						String gradoActual = (alumnoDeporte.getGrado() != null
-								&& alumnoDeporte.getGrado().getTipoGrado() != null)
-										? alumnoDeporte.getGrado().getTipoGrado().getNombre()
-										: "N/A";
-						html.append("<td>").append(gradoActual).append("</td>");
+            // Iterate through promotion grades for this sport
+            for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
+                String promotionGrade = gradeEntry.getKey();
+                List<AlumnoPromotionInfo> alumnos = gradeEntry.getValue();
 
-						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-						html.append("<td>").append(edad).append("</td>");
-						html.append("</tr>");
-					}
+                html.append("<div class='promotion-group'>");
+                html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
 
-					html.append("</tbody>");
-					html.append("</table>");
-					html.append("</div>");
-				}
+                html.append("<table>");
+                html.append("<thead><tr>");
+                html.append("<th>Nombre y Apellidos</th>");
+                html.append("<th>N&#186; Expediente</th>");
+                html.append("<th>Grado Actual</th>");
+                html.append("<th>Edad</th>");
+                html.append("</tr></thead>");
+                html.append("<tbody>");
 
-				html.append("</div>"); // Close sport-section
-			}
-		}
+                for (AlumnoPromotionInfo info : alumnos) {
+                    Alumno alumno = info.alumno;
+                    AlumnoDeporte alumnoDeporte = info.alumnoDeporte;
 
-		html.append("</body>");
-		html.append("</html>");
+                    html.append("<tr>");
 
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
-		builder.withHtmlContent(html.toString(), null);
-		builder.toStream(outputStream);
-		try {
-			builder.run();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return outputStream.toByteArray();
-	}
+                    html.append("<td>")
+                            .append(alumno.getNombre()).append(" ")
+                            .append(alumno.getApellidos())
+                            .append("</td>");
+
+                    html.append("<td>")
+                            .append(alumno.getNumeroExpediente())
+                            .append("</td>");
+
+                    // Grado Actual with belt
+                    if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
+                        TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
+                        String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
+                        html.append("<td>").append(cinturonActual).append("</td>");
+                    } else {
+                        html.append("<td>N/A</td>");
+                    }
+
+                    int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+                    html.append("<td>").append(edad).append("</td>");
+
+                    html.append("</tr>");
+                }
+
+                html.append("</tbody>");
+                html.append("</table>");
+                html.append("</div>");
+            }
+
+            html.append("</div>"); // Close sport-section
+        }
+    }
+
+    html.append("</body>");
+    html.append("</html>");
+
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    PdfRendererBuilder builder = new PdfRendererBuilder();
+    builder.withHtmlContent(html.toString(), null);
+    builder.toStream(outputStream);
+
+    try {
+        builder.run();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return outputStream.toByteArray();
+}
+
 
 	@Override
 	public byte[] generarInformeAdultosAPromocionar(boolean soloActivos) {
@@ -907,14 +775,12 @@ public class PDFServiceImpl implements PDFService {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			todosAlumnos = todosAlumnos.stream()
-					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+			todosAlumnos = todosAlumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo()))
 					.collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
 		// Create a structure to hold alumno-deporte-promotion info
@@ -961,7 +827,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append(generarEstilosModernos("Alumnos Adultos a Promocionar", fechaGeneracion));
 		html.append(".promotion-group { margin-bottom: 8mm; }");
 		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
-		html.append(".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+		html.append(
+				".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
@@ -976,8 +843,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("</p>");
 		} else {
 			// Iterate through sports
-			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap
-					.entrySet()) {
+			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
 				Deporte deporte = deporteEntry.getKey();
 				html.append("<div class='sport-section'>");
 				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
@@ -994,6 +860,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<th>Nombre y Apellidos</th>");
 					html.append("<th>N&#186; Expediente</th>");
 					html.append("<th>Grado Actual</th>");
+					html.append("<th>Grado a Promocionar</th>");
 					html.append("<th>Edad</th>");
 					html.append("</tr></thead>");
 					html.append("<tbody>");
@@ -1006,11 +873,31 @@ public class PDFServiceImpl implements PDFService {
 								.append("</td>");
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						String gradoActual = (alumnoDeporte.getGrado() != null
-								&& alumnoDeporte.getGrado().getTipoGrado() != null)
-										? alumnoDeporte.getGrado().getTipoGrado().getNombre()
-										: "N/A";
-						html.append("<td>").append(gradoActual).append("</td>");
+						// Grado Actual with belt
+						if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
+							TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
+							String gradoActualNombre = gradoActualTipo.getNombre();
+							String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
+							html.append("<td>").append(cinturonActual).append(" ").append(gradoActualNombre)
+									.append("</td>");
+						} else {
+							html.append("<td>N/A</td>");
+						}
+
+						// Grado a Promocionar with belt
+						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
+								alumnoDeporte.getDeporte(),
+								FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
+										|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
+												&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+								alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
+						if (gradoPromocionTipo != null) {
+							String cinturonPromocion = generarCinturonInlineHTML(gradoPromocionTipo, 80, 20);
+							html.append("<td>").append(cinturonPromocion).append(" ").append(promotionGrade)
+									.append("</td>");
+						} else {
+							html.append("<td>").append(promotionGrade).append("</td>");
+						}
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 						html.append("<td>").append(edad).append("</td>");
@@ -1075,14 +962,12 @@ public class PDFServiceImpl implements PDFService {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			todosAlumnos = todosAlumnos.stream()
-					.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+			todosAlumnos = todosAlumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo()))
 					.collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
 		// Map<PromotionGrade, List<AlumnoPromotionInfo>>
@@ -1138,7 +1023,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Alumnos " + categoriaTexto + " a Promocionar - " + deporteTexto, fechaGeneracion));
+		html.append(generarEstilosModernos("Alumnos " + categoriaTexto + " a Promocionar - " + deporteTexto,
+				fechaGeneracion));
 		html.append(".promotion-group { margin-bottom: 8mm; }");
 		html.append("</style>");
 		html.append("</head>");
@@ -1150,8 +1036,8 @@ public class PDFServiceImpl implements PDFService {
 		// If no students found
 		if (gradoMap.isEmpty()) {
 			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
-			html.append("No se encontraron alumnos ").append(categoriaTexto.toLowerCase())
-					.append(" de ").append(deporteTexto).append(" aptos para promocionar.");
+			html.append("No se encontraron alumnos ").append(categoriaTexto.toLowerCase()).append(" de ")
+					.append(deporteTexto).append(" aptos para promocionar.");
 			html.append("</p>");
 		} else {
 			// Iterate through promotion grades
@@ -1166,6 +1052,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<th>Nombre y Apellidos</th>");
 				html.append("<th>N&#186; Expediente</th>");
 				html.append("<th>Grado Actual</th>");
+				html.append("<th>Grado a Promocionar</th>");
 				html.append("<th>Edad</th>");
 				html.append("</tr></thead>");
 				html.append("<tbody>");
@@ -1178,11 +1065,31 @@ public class PDFServiceImpl implements PDFService {
 							.append("</td>");
 					html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-					String gradoActual = (alumnoDeporte.getGrado() != null
-							&& alumnoDeporte.getGrado().getTipoGrado() != null)
-									? alumnoDeporte.getGrado().getTipoGrado().getNombre()
-									: "N/A";
-					html.append("<td>").append(gradoActual).append("</td>");
+					// Grado Actual with belt
+					if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
+						TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
+						String gradoActualNombre = gradoActualTipo.getNombre();
+						String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
+						html.append("<td>").append(cinturonActual).append(" ").append(gradoActualNombre)
+								.append("</td>");
+					} else {
+						html.append("<td>N/A</td>");
+					}
+
+					// Grado a Promocionar with belt
+					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
+							alumnoDeporte.getDeporte(),
+							FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
+									|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
+											&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+							alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
+					if (gradoPromocionTipo != null) {
+						String cinturonPromocion = generarCinturonInlineHTML(gradoPromocionTipo, 80, 20);
+						html.append("<td>").append(cinturonPromocion).append(" ").append(promotionGrade)
+								.append("</td>");
+					} else {
+						html.append("<td>").append(promotionGrade).append("</td>");
+					}
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 					html.append("<td>").append(edad).append("</td>");
@@ -1211,30 +1118,8 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * DEPRECATED: Uses old single-sport model. Kept for backward compatibility.
-	 */
-	@Deprecated
-	private String getPromotionGrade(Alumno alumno) {
-		if (alumno == null || alumno.getGrado() == null) {
-			return "Sin Grado Asignado";
-		}
-
-		var nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
-		if (nuevoTipo == null) {
-			return "Grado Máximo Alcanzado";
-		}
-		var nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-		if (nuevoGrado == null) {
-			return "Grado No Encontrado";
-		}
-		return (nuevoGrado.getTipoGrado() != null && nuevoGrado.getTipoGrado().getNombre() != null)
-				? nuevoGrado.getTipoGrado().getNombre()
-				: "N/A";
-	}
-
-	/**
-	 * Calculates the next grade for a student in a specific sport.
-	 * Works with the multi-sport system.
+	 * Calculates the next grade for a student in a specific sport. Works with the
+	 * multi-sport system.
 	 */
 	private String getPromotionGradeForSport(Alumno alumno, AlumnoDeporte alumnoDeporte) {
 		if (alumno == null || alumnoDeporte == null || alumnoDeporte.getGrado() == null) {
@@ -1276,8 +1161,9 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException {
 		// Find all alumnos with turnos on the specified day
-		List<Alumno> allAlumnos = alumnoRepository.findAll().stream()
-				.filter(a -> Boolean.TRUE.equals(a.getActivo())) // Only active alumnos
+		List<Alumno> allAlumnos = alumnoRepository.findAll().stream().filter(a -> Boolean.TRUE.equals(a.getActivo())) // Only
+																														// active
+																														// alumnos
 				.filter(a -> deporte == null || a.getDeporte() == deporte) // Filter by sport if specified
 				.filter(a -> a.getFechaNacimiento() != null && a.getTurnos() != null && !a.getTurnos().isEmpty())
 				.filter(a -> a.getTurnos().stream()
@@ -1289,6 +1175,7 @@ public class PDFServiceImpl implements PDFService {
 		class TurnoWithAlumnos {
 			com.taemoi.project.entities.Turno turno;
 			List<Alumno> alumnos;
+
 			TurnoWithAlumnos(com.taemoi.project.entities.Turno turno, List<Alumno> alumnos, Deporte deporte) {
 				this.turno = turno;
 				this.alumnos = alumnos;
@@ -1301,7 +1188,8 @@ public class PDFServiceImpl implements PDFService {
 		// Process each alumno to build the turno-alumno-deporte relationships
 		for (Alumno alumno : allAlumnos) {
 			Deporte alumnoDeporte = alumno.getDeporte();
-			if (alumnoDeporte == null) continue; // Skip alumnos without a deporte
+			if (alumnoDeporte == null)
+				continue; // Skip alumnos without a deporte
 
 			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
 				if (turno.getDiaSemana() != null && turno.getDiaSemana().equalsIgnoreCase(grupo)) {
@@ -1309,14 +1197,13 @@ public class PDFServiceImpl implements PDFService {
 
 					// Find or create TurnoWithAlumnos for this turno and deporte
 					TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporte).stream()
-							.filter(twa -> twa.turno.getId().equals(turno.getId()))
-							.findFirst()
-							.orElse(null);
+							.filter(twa -> twa.turno.getId().equals(turno.getId())).findFirst().orElse(null);
 
 					if (existing == null) {
 						List<Alumno> alumnosForTurno = new ArrayList<>();
 						alumnosForTurno.add(alumno);
-						turnosByDeporte.get(alumnoDeporte).add(new TurnoWithAlumnos(turno, alumnosForTurno, alumnoDeporte));
+						turnosByDeporte.get(alumnoDeporte)
+								.add(new TurnoWithAlumnos(turno, alumnosForTurno, alumnoDeporte));
 					} else {
 						if (!existing.alumnos.contains(alumno)) {
 							existing.alumnos.add(alumno);
@@ -1352,22 +1239,28 @@ public class PDFServiceImpl implements PDFService {
 		html.append("* { box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }");
 		html.append("body { margin: 0; padding: 0; }");
 		html.append(".page-break { page-break-after: always; }");
-		html.append(".header-section { text-align: center; margin-bottom: 3.2mm; border-bottom: 1.5px solid #007bff; padding-bottom: 2.2mm; }");
+		html.append(
+				".header-section { text-align: center; margin-bottom: 3.2mm; border-bottom: 1.5px solid #007bff; padding-bottom: 2.2mm; }");
 		html.append(".logo-container { text-align: center; margin-bottom: 1.6mm; }");
 		html.append(".logo-container img { width: 22mm; height: auto; max-height: 22mm; }");
 		html.append(".header-titles .main { font-size: 14.5pt; color: #1b2b2e; font-weight: 700; margin: 1.1mm 0; }");
 		html.append(".header-titles .sub { font-size: 10.5pt; color: #007bff; margin: 0 0 1.1mm; font-weight: 600; }");
 		html.append("h2 { font-size: 9.5pt; margin: 1.1mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
-		html.append("p.info { text-align: center; font-size: 7.2pt; margin: 0.7mm 0; font-weight: 600; color: #495057; }");
-		html.append(".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
+		html.append(
+				"p.info { text-align: center; font-size: 7.2pt; margin: 0.7mm 0; font-weight: 600; color: #495057; }");
+		html.append(
+				".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
 		html.append(".table-container { width: 100%; overflow: visible; }");
 		html.append(".table-wrapper { display: table; width: 100%; table-layout: fixed; }");
 		html.append(".table-cell { display: table-cell; vertical-align: top; overflow: visible; }");
 		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
-		html.append(".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
+		html.append(
+				".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
 		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
-		html.append(".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; min-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
-		html.append(".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; }");
+		html.append(
+				".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; min-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
+		html.append(
+				".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; }");
 		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
@@ -1375,8 +1268,10 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 10.5mm; }");
 		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 8mm; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(4), .main-table td:nth-child(4) { width: 7mm; font-size: 7.5pt; }");
-		html.append(".main-table th:nth-child(5) { width: 55mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
-		html.append(".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
+		html.append(
+				".main-table th:nth-child(5) { width: 55mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
+		html.append(
+				".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 10mm; font-size: 7.5pt; }");
 		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
@@ -1390,22 +1285,30 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".cinturon-half-inferior { position: absolute; width: 100%; height: 50%; bottom: 0; left: 0; }");
 		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
-		html.append(".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 7pt; vertical-align: middle; }");
-		html.append(".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 7pt; vertical-align: middle; }");
-		html.append(".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; }");
-		html.append(".side-table th, .side-table td { width: 6mm; padding: 0.8mm 0.3mm; text-align: center; box-sizing: border-box; }");
-		html.append(".side-table th:last-child, .side-table td:last-child { border-right: 1px solid #dee2e6 !important; }");
-		html.append(".side-table tfoot td { background: #e9ecef; font-weight: 600; text-align: center; font-size: 6.5pt; }");
+		html.append(
+				".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 7pt; vertical-align: middle; }");
+		html.append(
+				".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 7pt; vertical-align: middle; }");
+		html.append(
+				".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; }");
+		html.append(
+				".side-table th, .side-table td { width: 6mm; padding: 0.8mm 0.3mm; text-align: center; box-sizing: border-box; }");
+		html.append(
+				".side-table th:last-child, .side-table td:last-child { border-right: 1px solid #dee2e6 !important; }");
+		html.append(
+				".side-table tfoot td { background: #e9ecef; font-weight: 600; text-align: center; font-size: 6.5pt; }");
 		html.append("</style>");
 		html.append("</head><body>");
 
 		// Generate pages organized by sport, then by turno
-		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES, Deporte.DEFENSA_PERSONAL_FEMENINA);
+		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
+				Deporte.DEFENSA_PERSONAL_FEMENINA);
 		boolean firstPage = true;
 
 		for (Deporte deporteActual : deportesOrdenados) {
 			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
-			if (turnosDeporte == null || turnosDeporte.isEmpty()) continue;
+			if (turnosDeporte == null || turnosDeporte.isEmpty())
+				continue;
 
 			for (TurnoWithAlumnos twa : turnosDeporte) {
 				// Add page break before each page except the first
@@ -1424,7 +1327,8 @@ public class PDFServiceImpl implements PDFService {
 				// Header
 				html.append("<div class='header-section'>");
 				if (!logoPng.isEmpty()) {
-					html.append("<div class='logo-container'><img src='").append(logoPng).append("' alt='Logo' /></div>");
+					html.append("<div class='logo-container'><img src='").append(logoPng)
+							.append("' alt='Logo' /></div>");
 				}
 				html.append("<div class='header-titles'>");
 				html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
@@ -1435,8 +1339,8 @@ public class PDFServiceImpl implements PDFService {
 						.append(" ").append(year).append("</h2>");
 				html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " ")).append("</p>");
 				html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
-				html.append("<p class='info'>").append(grupo.toUpperCase())
-						.append(" - Turno de ").append(turnoStr).append("</p>");
+				html.append("<p class='info'>").append(grupo.toUpperCase()).append(" - Turno de ").append(turnoStr)
+						.append("</p>");
 				html.append("</div>");
 
 				// Tables
@@ -1444,7 +1348,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='table-cell' style='width: 65%;'>");
 				html.append("<table class='main-table'>");
 				html.append("<thead><tr>");
-				html.append("<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+				html.append(
+						"<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
 				html.append("</tr></thead><tbody>");
 
 				for (Alumno a : alumnos) {
@@ -1471,8 +1376,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append(generateBeltCellHtml(a.getGrado().getTipoGrado()));
 					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 					html.append("<td>").append(edad).append("</td>");
-					html.append("<td>").append(a.getNombre()).append(" ")
-							.append(a.getApellidos()).append("</td>");
+					html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");
 					html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
 					html.append("</tr>");
 				}
@@ -1489,7 +1393,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("</tr></thead><tbody>");
 				for (int i = 0; i < totalAlumnos; i++) {
 					html.append("<tr>");
-					for (@SuppressWarnings("unused") LocalDate f : fechas) {
+					for (@SuppressWarnings("unused")
+					LocalDate f : fechas) {
 						html.append("<td></td>");
 					}
 					html.append("</tr>");
@@ -1522,8 +1427,8 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * Generates HTML content for the belt color cell in the attendance list.
-	 * Shows dan numbers for black belts and split colors for half-color belts.
+	 * Generates HTML content for the belt color cell in the attendance list. Shows
+	 * dan numbers for black belts and split colors for half-color belts.
 	 */
 	private String generateBeltCellHtml(TipoGrado tipoGrado) {
 		if (tipoGrado == null) {
@@ -1546,12 +1451,12 @@ public class PDFServiceImpl implements PDFService {
 		if (enumName.startsWith("ROJO_NEGRO_")) {
 			String[] parts = enumName.split("_");
 			String pumNumber = parts.length >= 3 ? parts[2] : "";
-			return "<td><div class='cinturon-split' style='height: 6.2mm; position: relative;'>" +
-				   "<div class='cinturon-half-superior' style='background-color: #212529;'></div>" +
-				   "<div class='cinturon-half-inferior' style='background-color: #f44336;'></div>" +
-				   "<div style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10;'>" +
-				   "<span style='color: #ffffff; font-weight: 700; font-size: 7pt;'>" + pumNumber + "º</span>" +
-				   "</div></div></td>";
+			return "<td><div class='cinturon-split' style='height: 6.2mm; position: relative;'>"
+					+ "<div class='cinturon-half-superior' style='background-color: #212529;'></div>"
+					+ "<div class='cinturon-half-inferior' style='background-color: #f44336;'></div>"
+					+ "<div style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10;'>"
+					+ "<span style='color: #ffffff; font-weight: 700; font-size: 7pt;'>" + pumNumber + "º</span>"
+					+ "</div></div></td>";
 		}
 
 		// Check if it's a half-color belt (e.g., BLANCO_AMARILLO, AMARILLO_NARANJA)
@@ -1559,11 +1464,16 @@ public class PDFServiceImpl implements PDFService {
 		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
 			String color1 = getBeltColorHex(parts[1]);
 			String color2 = getBeltColorHex(parts[0]);
-			String borderTop = parts[1].equals("BLANCO") ? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
-			String borderBottom = parts[0].equals("BLANCO") ? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;" : "";
-			return "<td><div class='cinturon-split' style='height: 6.5mm;'>" +
-				   "<div class='cinturon-half-superior' style='background-color: " + color1 + "; " + borderTop + "'></div>" +
-				   "<div class='cinturon-half-inferior' style='background-color: " + color2 + "; " + borderBottom + "'></div></div></td>";
+			String borderTop = parts[1].equals("BLANCO")
+					? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;"
+					: "";
+			String borderBottom = parts[0].equals("BLANCO")
+					? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;"
+					: "";
+			return "<td><div class='cinturon-split' style='height: 6.5mm;'>"
+					+ "<div class='cinturon-half-superior' style='background-color: " + color1 + "; " + borderTop
+					+ "'></div>" + "<div class='cinturon-half-inferior' style='background-color: " + color2 + "; "
+					+ borderBottom + "'></div></div></td>";
 		}
 
 		// Single color belt
@@ -1576,14 +1486,22 @@ public class PDFServiceImpl implements PDFService {
 	 */
 	private String getBeltColorHex(String colorName) {
 		switch (colorName) {
-		case "BLANCO": return "#ffffff";
-		case "AMARILLO": return "#ffeb3b";
-		case "NARANJA": return "#ff9800";
-		case "VERDE": return "#4caf50";
-		case "AZUL": return "#2196f3";
-		case "ROJO": return "#f44336";
-		case "NEGRO": return "#212529";
-		default: return "#cccccc";
+		case "BLANCO":
+			return "#ffffff";
+		case "AMARILLO":
+			return "#ffeb3b";
+		case "NARANJA":
+			return "#ff9800";
+		case "VERDE":
+			return "#4caf50";
+		case "AZUL":
+			return "#2196f3";
+		case "ROJO":
+			return "#f44336";
+		case "NEGRO":
+			return "#212529";
+		default:
+			return "#cccccc";
 		}
 	}
 
@@ -1600,8 +1518,7 @@ public class PDFServiceImpl implements PDFService {
 		}
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
 		// Group debts by student
@@ -1667,29 +1584,26 @@ public class PDFServiceImpl implements PDFService {
 
 			// Sort by student name
 			List<Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>>> sortedEntries = deudasPorAlumno
-					.entrySet().stream()
-					.sorted((e1, e2) -> {
+					.entrySet().stream().sorted((e1, e2) -> {
 						String nombre1 = e1.getKey().getNombre() + " " + e1.getKey().getApellidos();
 						String nombre2 = e2.getKey().getNombre() + " " + e2.getKey().getApellidos();
 						return nombre1.compareTo(nombre2);
-					})
-					.collect(Collectors.toList());
+					}).collect(Collectors.toList());
 
 			for (Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> entry : sortedEntries) {
 				Alumno alumno = entry.getKey();
 				List<com.taemoi.project.entities.ProductoAlumno> deudas = entry.getValue();
 
-				double totalAlumno = deudas.stream()
-						.mapToDouble(pa -> pa.getPrecio() != null ? pa.getPrecio() : 0.0)
+				double totalAlumno = deudas.stream().mapToDouble(pa -> pa.getPrecio() != null ? pa.getPrecio() : 0.0)
 						.sum();
 				totalGeneral += totalAlumno;
 
 				html.append("<div class='alumno-section'>");
 				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
-						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
-						.append(" (Exp. ").append(alumno.getNumeroExpediente()).append(")");
-				html.append(" - <span class='deuda-total'>Total: ")
-						.append(String.format("%.2f", totalAlumno)).append(" €</span>");
+						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append(" (Exp. ")
+						.append(alumno.getNumeroExpediente()).append(")");
+				html.append(" - <span class='deuda-total'>Total: ").append(String.format("%.2f", totalAlumno))
+						.append(" €</span>");
 				html.append("</h3>");
 
 				html.append("<table>");
@@ -1773,13 +1687,11 @@ public class PDFServiceImpl implements PDFService {
 
 		// Sort by student name
 		List<Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>>> sortedEntries = deudasPorAlumno
-				.entrySet().stream()
-				.sorted((e1, e2) -> {
+				.entrySet().stream().sorted((e1, e2) -> {
 					String nombre1 = e1.getKey().getNombre() + " " + e1.getKey().getApellidos();
 					String nombre2 = e2.getKey().getNombre() + " " + e2.getKey().getApellidos();
 					return nombre1.compareTo(nombre2);
-				})
-				.collect(Collectors.toList());
+				}).collect(Collectors.toList());
 
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 		double totalGeneral = 0.0;
@@ -1841,9 +1753,10 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Generates a PDF report of student monthly fees (mensualidades).
 	 *
-	 * @param deporteFiltro If null, generates report for all students with color coding by sport.
-	 *                      If specified, filters students by that sport.
-	 * @param soloActivos If true, only includes active students.
+	 * @param deporteFiltro If null, generates report for all students with color
+	 *                      coding by sport. If specified, filters students by that
+	 *                      sport.
+	 * @param soloActivos   If true, only includes active students.
 	 */
 	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro, boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
@@ -1864,13 +1777,12 @@ public class PDFServiceImpl implements PDFService {
 		}
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
 		// Group mensualidades by student
-		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> mensualidadesPorAlumno = todasMensualidades.stream()
-				.collect(Collectors.groupingBy(com.taemoi.project.entities.ProductoAlumno::getAlumno));
+		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> mensualidadesPorAlumno = todasMensualidades
+				.stream().collect(Collectors.groupingBy(com.taemoi.project.entities.ProductoAlumno::getAlumno));
 
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
@@ -1970,13 +1882,11 @@ public class PDFServiceImpl implements PDFService {
 
 			// Sort by student name
 			List<Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>>> sortedEntries = mensualidadesPorAlumno
-					.entrySet().stream()
-					.sorted((e1, e2) -> {
+					.entrySet().stream().sorted((e1, e2) -> {
 						String nombre1 = e1.getKey().getNombre() + " " + e1.getKey().getApellidos();
 						String nombre2 = e2.getKey().getNombre() + " " + e2.getKey().getApellidos();
 						return nombre1.compareTo(nombre2);
-					})
-					.collect(Collectors.toList());
+					}).collect(Collectors.toList());
 
 			for (Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> entry : sortedEntries) {
 				Alumno alumno = entry.getKey();
@@ -1984,14 +1894,10 @@ public class PDFServiceImpl implements PDFService {
 
 				int pagas = (int) mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
 				int pendientes = mensualidades.size() - pagas;
-				double importePagado = mensualidades.stream()
-						.filter(m -> Boolean.TRUE.equals(m.getPagado()))
-						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0)
-						.sum();
-				double importePendiente = mensualidades.stream()
-						.filter(m -> !Boolean.TRUE.equals(m.getPagado()))
-						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0)
-						.sum();
+				double importePagado = mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado()))
+						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
+				double importePendiente = mensualidades.stream().filter(m -> !Boolean.TRUE.equals(m.getPagado()))
+						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
 
 				totalPagadas += pagas;
 				totalPendientes += pendientes;
@@ -2014,12 +1920,12 @@ public class PDFServiceImpl implements PDFService {
 
 				html.append("<div class='alumno-section'>");
 				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
-						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
-						.append(" (Exp. ").append(alumno.getNumeroExpediente()).append(")")
-						.append(deporteNombre);
+						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append(" (Exp. ")
+						.append(alumno.getNumeroExpediente()).append(")").append(deporteNombre);
 				html.append("</h3>");
 
-				html.append("<div class='resumen-alumno' style='border-left: 4px solid ").append(colorAlumno).append(";'>");
+				html.append("<div class='resumen-alumno' style='border-left: 4px solid ").append(colorAlumno)
+						.append(";'>");
 				html.append("<strong>Total mensualidades:</strong> ").append(mensualidades.size());
 				html.append(" | <strong style='color: #28a745;'>Pagadas:</strong> ").append(pagas);
 				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
@@ -2058,8 +1964,8 @@ public class PDFServiceImpl implements PDFService {
 
 					String estadoClass = pagado ? "status-pagado" : "status-pendiente";
 					String estadoTexto = pagado ? "PAGADO" : "PENDIENTE";
-					html.append("<td><span class='status-badge ").append(estadoClass).append("'>")
-							.append(estadoTexto).append("</span></td>");
+					html.append("<td><span class='status-badge ").append(estadoClass).append("'>").append(estadoTexto)
+							.append("</span></td>");
 
 					String fechaPago = "N/A";
 					if (pagado && pa.getFechaPago() != null) {
@@ -2082,12 +1988,16 @@ public class PDFServiceImpl implements PDFService {
 			// Add general summary
 			html.append("<div class='resumen-general'>");
 			html.append("<h3>RESUMEN GENERAL</h3>");
-			html.append("<p style='margin: 2mm 0;'><strong>Total de alumnos:</strong> ").append(totalAlumnos).append("</p>");
-			html.append("<p style='margin: 2mm 0;'><strong>Total de mensualidades:</strong> ").append(totalMensualidades).append("</p>");
+			html.append("<p style='margin: 2mm 0;'><strong>Total de alumnos:</strong> ").append(totalAlumnos)
+					.append("</p>");
+			html.append("<p style='margin: 2mm 0;'><strong>Total de mensualidades:</strong> ")
+					.append(totalMensualidades).append("</p>");
 			html.append("<p style='margin: 2mm 0; color: #28a745;'><strong>Mensualidades pagadas:</strong> ")
-					.append(totalPagadas).append(" (").append(String.format("%.2f", totalImportePagado)).append(" €)</p>");
+					.append(totalPagadas).append(" (").append(String.format("%.2f", totalImportePagado))
+					.append(" €)</p>");
 			html.append("<p style='margin: 2mm 0; color: #dc3545;'><strong>Mensualidades pendientes:</strong> ")
-					.append(totalPendientes).append(" (").append(String.format("%.2f", totalImportePendiente)).append(" €)</p>");
+					.append(totalPendientes).append(" (").append(String.format("%.2f", totalImportePendiente))
+					.append(" €)</p>");
 			html.append("<p style='margin: 2mm 0; font-size: 12pt;'><strong>TOTAL GENERAL:</strong> ")
 					.append(String.format("%.2f", totalImportePagado + totalImportePendiente)).append(" €</p>");
 			html.append("</div>");
@@ -2114,15 +2024,15 @@ public class PDFServiceImpl implements PDFService {
 	public byte[] generarInformeConvocatoria(Long convocatoriaId) {
 		// Get convocatoria data
 		com.taemoi.project.entities.Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
-				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
+				.orElseThrow(
+						() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
 		// Get report data from service
-		List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnosReporte =
-				convocatoriaService.obtenerReporteDeConvocatoria(convocatoriaId);
+		List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnosReporte = convocatoriaService
+				.obtenerReporteDeConvocatoria(convocatoriaId);
 
 		LocalDate now = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy",
-				Locale.of("es", "ES"));
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = now.format(formatter);
 
 		// Format convocatoria date
@@ -2140,14 +2050,17 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
 		html.append(generarEstilosModernos("Convocatoria a Exámen " + fechaConvocatoria, fechaGeneracion));
-		html.append(".convocatoria-title { text-align: center; font-size: 18pt; font-weight: 700; margin: 5mm 0 2mm 0; text-transform: uppercase; }");
+		html.append(
+				".convocatoria-title { text-align: center; font-size: 18pt; font-weight: 700; margin: 5mm 0 2mm 0; text-transform: uppercase; }");
 		html.append(".convocatoria-subtitle { text-align: center; font-size: 10pt; margin: 0 0 3mm 0; color: #666; }");
 		html.append(".total-alumnos { text-align: center; font-size: 12pt; font-weight: 600; margin: 3mm 0 5mm 0; }");
-		html.append(".grade-transition-box { margin: 5mm 0 2mm 0; padding: 2mm 3mm; background: #f8f9fa; border-left: 4px solid #007bff; }");
+		html.append(
+				".grade-transition-box { margin: 5mm 0 2mm 0; padding: 2mm 3mm; background: #f8f9fa; border-left: 4px solid #007bff; }");
 		html.append(".grade-transition-table { width: 100%; border-collapse: collapse; }");
 		html.append(".grade-from { text-align: left; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
 		html.append(".grade-to { text-align: right; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
-		html.append(".student-count { text-align: center; font-size: 10pt; color: #666; font-weight: 600; vertical-align: middle; }");
+		html.append(
+				".student-count { text-align: center; font-size: 10pt; color: #666; font-weight: 600; vertical-align: middle; }");
 		html.append(".belt-with-text { vertical-align: middle; }");
 		html.append(".belt-text { margin-left: 3mm; vertical-align: middle; }");
 		html.append("</style>");
@@ -2158,19 +2071,18 @@ public class PDFServiceImpl implements PDFService {
 		html.append(generarCabeceraConLogo(""));
 
 		// Convocatoria Title
-		html.append("<div class='convocatoria-title'>CONVOCATORIA A EXÁMEN ").append(fechaConvocatoria).append("</div>");
+		html.append("<div class='convocatoria-title'>CONVOCATORIA A EXÁMEN ").append(fechaConvocatoria)
+				.append("</div>");
 		html.append("<div class='convocatoria-subtitle'>(SOLO ALUMNOS CON DERECHO A EXAMEN)</div>");
 		html.append("<div class='total-alumnos'>TOTAL ALUMNOS: ").append(alumnosReporte.size()).append("</div>");
 
 		// Group students by grade transition
-		Map<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> groupedByGrade =
-			alumnosReporte.stream().collect(Collectors.groupingBy(a ->
-				a.getGradoActual() + "_TO_" + a.getGradoSiguiente()
-			));
+		Map<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> groupedByGrade = alumnosReporte
+				.stream().collect(Collectors.groupingBy(a -> a.getGradoActual() + "_TO_" + a.getGradoSiguiente()));
 
 		// Sort groups by grade ordinal (descending - highest first)
-		List<Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>>> sortedGroups =
-			new ArrayList<>(groupedByGrade.entrySet());
+		List<Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>>> sortedGroups = new ArrayList<>(
+				groupedByGrade.entrySet());
 		sortedGroups.sort((e1, e2) -> {
 			TipoGrado g1 = e1.getValue().get(0).getGradoActual();
 			TipoGrado g2 = e2.getValue().get(0).getGradoActual();
@@ -2179,7 +2091,8 @@ public class PDFServiceImpl implements PDFService {
 
 		for (Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> entry : sortedGroups) {
 			List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnos = entry.getValue();
-			if (alumnos.isEmpty()) continue;
+			if (alumnos.isEmpty())
+				continue;
 
 			TipoGrado gradoActual = alumnos.get(0).getGradoActual();
 			TipoGrado gradoSiguiente = alumnos.get(0).getGradoSiguiente();
@@ -2208,7 +2121,8 @@ public class PDFServiceImpl implements PDFService {
 			// Right: A [GRADE]
 			html.append("<td class='grade-to'>");
 			html.append("<span class='belt-with-text'>");
-			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(gradoSiguiente.getNombre().toUpperCase()).append("</span>");
+			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ")
+					.append(gradoSiguiente.getNombre().toUpperCase()).append("</span>");
 			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
 			html.append("</span>");
 			html.append("</td>");
@@ -2235,8 +2149,10 @@ public class PDFServiceImpl implements PDFService {
 			for (com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO alumno : alumnos) {
 				html.append("<tr>");
 				html.append("<td>").append(alumno.getNombreCompleto().toUpperCase()).append("</td>");
-				html.append("<td>").append(alumno.getNumeroExpediente() != null ? alumno.getNumeroExpediente() : "").append("</td>");
-				html.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "").append("</td>");
+				html.append("<td>").append(alumno.getNumeroExpediente() != null ? alumno.getNumeroExpediente() : "")
+						.append("</td>");
+				html.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "")
+						.append("</td>");
 				html.append("<td>").append(alumno.getEdad()).append("</td>");
 				html.append("<td>").append(alumno.getCategoria() != null ? alumno.getCategoria() : "").append("</td>");
 				html.append("<td>").append(alumno.getPeso() != null ? alumno.getPeso() : "").append("</td>");
@@ -2285,30 +2201,39 @@ public class PDFServiceImpl implements PDFService {
 			int stripeCount = 0;
 			try {
 				stripeCount = Integer.parseInt(parts[2]);
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
-			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
-			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height)
+					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
+			html.append("<div style='background-color: ").append(colorSuperior)
+					.append("; position: absolute; top: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
+			html.append("<div style='background-color: ").append(colorInferior)
+					.append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
 
 			int stripeWidth = Math.max(2, width / 15);
 			int gap = 1;
 			int initialMargin = 3;
 			for (int i = 0; i < stripeCount; i++) {
 				int rightOffset = initialMargin + i * (stripeWidth + gap);
-				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth)
-					.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
+				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:")
+						.append(stripeWidth)
+						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
 			}
 			html.append("</div>");
-		} else if (tipo.name().contains("DAN") || (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; position: relative; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
+		} else if (tipo.name().contains("DAN")
+				|| (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ")
+					.append(width).append("px; height: ").append(height)
+					.append("px; position: relative; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
 
 			int stripeCount = 0;
 			if (tipo.name().contains("DAN")) {
 				String[] parts = tipo.name().split("_");
 				try {
 					stripeCount = Integer.parseInt(parts[1]);
-				} catch (Exception e) {}
+				} catch (Exception e) {
+				}
 			}
 
 			int stripeWidth = Math.max(2, width / 15);
@@ -2316,20 +2241,26 @@ public class PDFServiceImpl implements PDFService {
 			int initialMargin = 3;
 			for (int i = 0; i < stripeCount; i++) {
 				int rightOffset = initialMargin + i * (stripeWidth + gap);
-				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:").append(stripeWidth)
-					.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
+				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:")
+						.append(stripeWidth)
+						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
 			}
 			html.append("</div>");
 		} else if (tipo.name().contains("_")) {
 			String[] parts = tipo.name().split("_");
 			String colorSuperior = obtenerColorPorNombre(parts[1]);
 			String colorInferior = obtenerColorPorNombre(parts[0]);
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
-			html.append("<div style='background-color: ").append(colorSuperior).append("; position: absolute; top: 0; left: 0; right: 0; height: 50%;'></div>");
-			html.append("<div style='background-color: ").append(colorInferior).append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;'></div>");
+			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height)
+					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
+			html.append("<div style='background-color: ").append(colorSuperior)
+					.append("; position: absolute; top: 0; left: 0; right: 0; height: 50%;'></div>");
+			html.append("<div style='background-color: ").append(colorInferior)
+					.append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;'></div>");
 			html.append("</div>");
 		} else {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ").append(width).append("px; height: ").append(height).append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'></div>");
+			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ")
+					.append(width).append("px; height: ").append(height)
+					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'></div>");
 		}
 
 		return html.toString();
@@ -2372,12 +2303,10 @@ public class PDFServiceImpl implements PDFService {
 	private static class AlumnoPromotionInfo {
 		final Alumno alumno;
 		final AlumnoDeporte alumnoDeporte;
-		final String promotionGrade;
 
 		AlumnoPromotionInfo(Alumno alumno, AlumnoDeporte alumnoDeporte, String promotionGrade) {
 			this.alumno = alumno;
 			this.alumnoDeporte = alumnoDeporte;
-			this.promotionGrade = promotionGrade;
 		}
 	}
 }
