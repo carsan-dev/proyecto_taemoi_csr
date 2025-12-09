@@ -1033,6 +1033,50 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeInfantilesAPromocionarTaekwondo(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/infantilesAPromocionarTaekwondo`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeInfantilesAPromocionarKickboxing(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/infantilesAPromocionarKickboxing`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeAdultosAPromocionarTaekwondo(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/adultosAPromocionarTaekwondo`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeAdultosAPromocionarKickboxing(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/adultosAPromocionarKickboxing`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   generarInformeDeudas(soloActivos: boolean = true): Observable<Blob> {
     const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
