@@ -695,28 +695,51 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
 def write_alumno_deporte(f, schema: str, stats: Dict):
     """
     Generate alumno_deporte records from deprecated alumno fields.
-    Migrates deporte, grado_id, fecha_grado, and apto_para_examen to the new multi-sport structure.
+    Migrates all per-sport fields from alumno to alumno_deporte:
+    - Sport and grade data: deporte, grado_id, fecha_grado, apto_para_examen
+    - Tarifa data: tipo_tarifa, cuantia_tarifa, rol_familiar, grupo_familiar
+    - Competitor data: competidor, peso, fecha_peso
+    - License data: tiene_licencia, numero_licencia, fecha_licencia
+    - Dates: fecha_alta, fecha_alta_inicial, fecha_baja, activo
     """
     f.write("-- =====================================================\n")
     f.write("-- ALUMNO_DEPORTE (Multi-sport migration)\n")
     f.write("-- Migrates deprecated fields from alumno table\n")
+    f.write("-- Includes all per-sport fields for complete migration\n")
     f.write("-- =====================================================\n\n")
 
     f.write(f"INSERT INTO `{schema}`.`alumno_deporte` \n")
-    f.write("  (`alumno_id`, `deporte`, `grado_id`, `fecha_grado`, `apto_para_examen`, `activo`, `fecha_alta`)\n")
+    f.write("  (`alumno_id`, `deporte`, `grado_id`, `fecha_grado`, `fecha_alta`, `fecha_alta_inicial`, \n")
+    f.write("   `apto_para_examen`, `activo`, `fecha_baja`, \n")
+    f.write("   `tipo_tarifa`, `cuantia_tarifa`, `rol_familiar`, `grupo_familiar`, \n")
+    f.write("   `competidor`, `peso`, `fecha_peso`, \n")
+    f.write("   `tiene_licencia`, `numero_licencia`, `fecha_licencia`)\n")
     f.write("SELECT \n")
     f.write("  a.id,\n")
     f.write("  a.deporte,\n")
     f.write("  a.grado_id,\n")
     f.write("  a.fecha_grado,\n")
+    f.write("  a.fecha_alta,\n")
+    f.write("  COALESCE(a.fecha_alta_inicial, a.fecha_alta) as fecha_alta_inicial,\n")
     f.write("  COALESCE(a.apto_para_examen, false) as apto_para_examen,\n")
-    f.write("  a.activo,\n")
-    f.write("  COALESCE(a.fecha_alta, a.fecha_alta_inicial) as fecha_alta\n")
+    f.write("  COALESCE(a.activo, true) as activo,\n")
+    f.write("  a.fecha_baja,\n")
+    f.write("  a.tipo_tarifa,\n")
+    f.write("  a.cuantia_tarifa,\n")
+    f.write("  a.rol_familiar,\n")
+    f.write("  a.grupo_familiar,\n")
+    f.write("  COALESCE(a.competidor, false) as competidor,\n")
+    f.write("  a.peso,\n")
+    f.write("  a.fecha_peso,\n")
+    f.write("  COALESCE(a.tiene_licencia, false) as tiene_licencia,\n")
+    f.write("  a.numero_licencia,\n")
+    f.write("  a.fecha_licencia\n")
     f.write(f"FROM `{schema}`.`alumno` a\n")
     f.write("WHERE a.deporte IS NOT NULL;\n\n")
 
-    f.write("-- Migrated alumno_deporte records from deprecated alumno fields\n\n")
-    stats["alumno_deporte"] = {"note": "Generated from alumno SELECT-INSERT"}
+    f.write("-- Migrated alumno_deporte records from deprecated alumno fields\n")
+    f.write("-- NOTE: After migration, alumno legacy fields should be set to NULL for multi-sport mode\n\n")
+    stats["alumno_deporte"] = {"note": "Generated from alumno SELECT-INSERT with all per-sport fields"}
 
 def write_imagenes(f, schema: str, rows: List[Dict[str, Any]], stats: Dict, env: str):
     """Migrate FOTOS_ALUMNOS to imagen table"""
