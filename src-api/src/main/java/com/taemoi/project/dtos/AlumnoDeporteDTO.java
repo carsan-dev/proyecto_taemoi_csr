@@ -10,36 +10,49 @@ import com.taemoi.project.entities.Deporte;
 
 public class AlumnoDeporteDTO {
 
+	// Identity and sport
 	private Long id;
 	private Deporte deporte;
+
+	// Grade data (per-sport)
 	private String grado; // TipoGrado como String
 	private Date fechaGrado;
 	private Boolean aptoParaExamen;
+
+	// Status and dates
 	private Boolean activo;
 	private Date fechaAlta;
+	private Date fechaAltaInicial; // For seniority calculation
 	private Date fechaBaja;
-	private String antiguedad; // Tiempo en el deporte (calculado)
+	private String antiguedad; // Tiempo en el deporte (calculado from fechaAltaInicial)
+
+	// Tarifa (per-sport)
+	private String tipoTarifa; // TipoTarifa as String
+	private Double cuantiaTarifa;
+	private String rolFamiliar; // RolFamiliar as String
+	private String grupoFamiliar;
+
+	// Competitor data (per-sport)
+	private Boolean competidor;
+	private Double peso;
+	private Date fechaPeso;
+
+	// License data (per-sport)
+	private Boolean tieneLicencia;
+	private Integer numeroLicencia;
+	private Date fechaLicencia;
 
 	// Constructor vacío
 	public AlumnoDeporteDTO() {
 	}
 
-	// Constructor completo
-	public AlumnoDeporteDTO(Long id, Deporte deporte, String grado, Date fechaGrado, Boolean aptoParaExamen,
-			Boolean activo, Date fechaAlta, Date fechaBaja, String antiguedad) {
-		this.id = id;
-		this.deporte = deporte;
-		this.grado = grado;
-		this.fechaGrado = fechaGrado;
-		this.aptoParaExamen = aptoParaExamen;
-		this.activo = activo;
-		this.fechaAlta = fechaAlta;
-		this.fechaBaja = fechaBaja;
-		this.antiguedad = antiguedad;
-	}
-
 	/**
 	 * Convierte una entidad AlumnoDeporte a DTO
+	 * UPDATED: Now includes all per-sport fields (tarifa, licencia, competidor, etc.)
+	 * and uses fechaAltaInicial from AlumnoDeporte (not from Alumno) for antiguedad calculation
+	 *
+	 * @param alumnoDeporte La entidad AlumnoDeporte a convertir
+	 * @return El DTO convertido
 	 */
 	public static AlumnoDeporteDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
 		if (alumnoDeporte == null) {
@@ -47,17 +60,55 @@ public class AlumnoDeporteDTO {
 		}
 
 		AlumnoDeporteDTO dto = new AlumnoDeporteDTO();
+
+		// Identity and sport
 		dto.setId(alumnoDeporte.getId());
 		dto.setDeporte(alumnoDeporte.getDeporte());
+
+		// Grade data
 		dto.setGrado(alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado().name() : null);
 		dto.setFechaGrado(alumnoDeporte.getFechaGrado());
 		dto.setAptoParaExamen(alumnoDeporte.getAptoParaExamen());
+
+		// Status and dates
 		dto.setActivo(alumnoDeporte.getActivo());
 		dto.setFechaAlta(alumnoDeporte.getFechaAlta());
+		dto.setFechaAltaInicial(alumnoDeporte.getFechaAltaInicial());
 		dto.setFechaBaja(alumnoDeporte.getFechaBaja());
-		dto.setAntiguedad(calcularAntiguedad(alumnoDeporte.getFechaAlta(), alumnoDeporte.getFechaBaja()));
+
+		// FIXED: Use fechaAltaInicial from AlumnoDeporte entity (per-sport) instead of Alumno (general)
+		Date fechaParaAntiguedad = alumnoDeporte.getFechaAltaInicial() != null
+			? alumnoDeporte.getFechaAltaInicial()
+			: alumnoDeporte.getFechaAlta();
+		dto.setAntiguedad(calcularAntiguedad(fechaParaAntiguedad, alumnoDeporte.getFechaBaja()));
+
+		// Tarifa (per-sport)
+		dto.setTipoTarifa(alumnoDeporte.getTipoTarifa() != null ? alumnoDeporte.getTipoTarifa().name() : null);
+		dto.setCuantiaTarifa(alumnoDeporte.getCuantiaTarifa());
+		dto.setRolFamiliar(alumnoDeporte.getRolFamiliar() != null ? alumnoDeporte.getRolFamiliar().name() : null);
+		dto.setGrupoFamiliar(alumnoDeporte.getGrupoFamiliar());
+
+		// Competitor data (per-sport)
+		dto.setCompetidor(alumnoDeporte.getCompetidor());
+		dto.setPeso(alumnoDeporte.getPeso());
+		dto.setFechaPeso(alumnoDeporte.getFechaPeso());
+
+		// License data (per-sport)
+		dto.setTieneLicencia(alumnoDeporte.getTieneLicencia());
+		dto.setNumeroLicencia(alumnoDeporte.getNumeroLicencia());
+		dto.setFechaLicencia(alumnoDeporte.getFechaLicencia());
 
 		return dto;
+	}
+
+	/**
+	 * @deprecated Use deAlumnoDeporte(AlumnoDeporte) instead.
+	 * This method is kept for backward compatibility but should not be used.
+	 */
+	@Deprecated
+	public static AlumnoDeporteDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte, Date fechaAltaInicialAlumno) {
+		// Just delegate to the new method that uses fechaAltaInicial from AlumnoDeporte
+		return deAlumnoDeporte(alumnoDeporte);
 	}
 
 	/**
@@ -169,5 +220,93 @@ public class AlumnoDeporteDTO {
 
 	public void setAntiguedad(String antiguedad) {
 		this.antiguedad = antiguedad;
+	}
+
+	public Date getFechaAltaInicial() {
+		return fechaAltaInicial;
+	}
+
+	public void setFechaAltaInicial(Date fechaAltaInicial) {
+		this.fechaAltaInicial = fechaAltaInicial;
+	}
+
+	public String getTipoTarifa() {
+		return tipoTarifa;
+	}
+
+	public void setTipoTarifa(String tipoTarifa) {
+		this.tipoTarifa = tipoTarifa;
+	}
+
+	public Double getCuantiaTarifa() {
+		return cuantiaTarifa;
+	}
+
+	public void setCuantiaTarifa(Double cuantiaTarifa) {
+		this.cuantiaTarifa = cuantiaTarifa;
+	}
+
+	public String getRolFamiliar() {
+		return rolFamiliar;
+	}
+
+	public void setRolFamiliar(String rolFamiliar) {
+		this.rolFamiliar = rolFamiliar;
+	}
+
+	public String getGrupoFamiliar() {
+		return grupoFamiliar;
+	}
+
+	public void setGrupoFamiliar(String grupoFamiliar) {
+		this.grupoFamiliar = grupoFamiliar;
+	}
+
+	public Boolean getCompetidor() {
+		return competidor;
+	}
+
+	public void setCompetidor(Boolean competidor) {
+		this.competidor = competidor;
+	}
+
+	public Double getPeso() {
+		return peso;
+	}
+
+	public void setPeso(Double peso) {
+		this.peso = peso;
+	}
+
+	public Date getFechaPeso() {
+		return fechaPeso;
+	}
+
+	public void setFechaPeso(Date fechaPeso) {
+		this.fechaPeso = fechaPeso;
+	}
+
+	public Boolean getTieneLicencia() {
+		return tieneLicencia;
+	}
+
+	public void setTieneLicencia(Boolean tieneLicencia) {
+		this.tieneLicencia = tieneLicencia;
+	}
+
+	public Integer getNumeroLicencia() {
+		return numeroLicencia;
+	}
+
+	public void setNumeroLicencia(Integer numeroLicencia) {
+		this.numeroLicencia = numeroLicencia;
+	}
+
+	public Date getFechaLicencia() {
+		return fechaLicencia;
+	}
+
+	public void setFechaLicencia(Date fechaLicencia) {
+		this.fechaLicencia = fechaLicencia;
 	}
 }

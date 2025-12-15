@@ -1,7 +1,10 @@
 package com.taemoi.project.dtos;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Imagen;
@@ -42,6 +45,11 @@ public class AlumnoDTO {
 	private Date fechaLicencia;
 	private Boolean tieneDiscapacidad;
 	private Boolean aptoParaExamen;
+
+	/**
+	 * Lista de deportes para asignar durante la creación del alumno
+	 */
+	private List<AlumnoDeporteCreacionDTO> deportesInicial = new ArrayList<>();
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
@@ -337,6 +345,14 @@ public class AlumnoDTO {
 
 	public void setAptoParaExamen(Boolean aptoParaExamen) {
 		this.aptoParaExamen = aptoParaExamen;
+	}
+
+	public List<AlumnoDeporteCreacionDTO> getDeportesInicial() {
+		return deportesInicial;
+	}
+
+	public void setDeportesInicial(List<AlumnoDeporteCreacionDTO> deportesInicial) {
+		this.deportesInicial = deportesInicial;
 	}
 
 	/**

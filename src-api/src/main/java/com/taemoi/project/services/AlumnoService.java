@@ -130,4 +130,23 @@ public interface AlumnoService {
 	com.taemoi.project.entities.AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId,
 			com.taemoi.project.entities.Deporte deporte,
 			com.taemoi.project.entities.TipoGrado nuevoGrado);
+
+	/**
+	 * Actualiza la fecha de alta inicial del alumno
+	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
+	 *
+	 * @param id                    ID del alumno
+	 * @param nuevaFechaAltaInicial Nueva fecha de alta inicial
+	 * @return Alumno actualizado
+	 */
+	Alumno actualizarFechaAltaInicial(@NonNull Long id, Date nuevaFechaAltaInicial);
+
+	/**
+	 * Busca un alumno por ID (alias de obtenerAlumnoPorId para compatibilidad)
+	 *
+	 * @param id ID del alumno
+	 * @return Alumno encontrado
+	 * @throws com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException si no se encuentra
+	 */
+	Alumno buscarAlumno(@NonNull Long id);
 }
