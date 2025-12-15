@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import {
+  FormArray,
   FormBuilder,
   FormGroup,
   FormsModule,
@@ -12,8 +13,30 @@ import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
+import { Deporte } from '../../../enums/deporte';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
+
+/**
+ * Interface for sport entry in the form
+ */
+interface DeporteEntry {
+  deporte: string;
+  grado: string;
+  fechaGrado: string;
+  fechaAlta: string;
+  fechaAltaInicial: string;
+  tipoTarifa: string;
+  cuantiaTarifa: number | null;
+  rolFamiliar: string;
+  grupoFamiliar: string;
+  competidor: boolean;
+  peso: number | null;
+  fechaPeso: string;
+  tieneLicencia: boolean;
+  numeroLicencia: number | null;
+  fechaLicencia: string;
+}
 
 @Component({
   selector: 'app-crear-alumno',
@@ -31,6 +54,20 @@ export class CrearAlumnoComponent implements OnInit {
   tiposGrado: TipoGrado[] = [];
   grados: any[] = [];
   todosLosGrados: any[] = [];
+
+  // Default cuantías for each TipoTarifa (matching backend TarifaConfig)
+  private readonly cuantiasPorTarifa: Map<string, number> = new Map([
+    ['FAMILIAR', 0],
+    ['PADRES_HIJOS', 0],
+    ['ADULTO_GRUPO', 20],
+    ['INFANTIL_GRUPO', 20],
+    ['HERMANOS', 26],
+    ['INFANTIL', 28],
+    ['ADULTO', 30],
+    ['KICKBOXING', 30],
+    ['PILATES', 30],
+    ['DEFENSA_PERSONAL_FEMENINA', 30],
+  ]);
 
   constructor(
     private readonly fb: FormBuilder,
@@ -70,20 +107,219 @@ export class CrearAlumnoComponent implements OnInit {
         ],
       ],
       email: ['', [Validators.required, Validators.email]],
-      fechaAlta: ['', Validators.required],
       autorizacionWeb: [true, Validators.required],
-      tipoTarifa: [TipoTarifa.ADULTO, Validators.required],
       rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
       grupoFamiliar: [{ value: '', disabled: true }],
-      grado: ['', Validators.required],
-      competidor: [false],
-      peso: [{ value: null, disabled: true }, Validators.required],
-      tieneLicencia: [false],
-      numeroLicencia: [{ value: '', disabled: true }, Validators.required],
-      fechaLicencia: [{ value: '', disabled: true }, Validators.required],
-      deporte: ['', Validators.required],
       tieneDiscapacidad: [false],
+      // NEW: FormArray for multiple sports
+      deportesInicial: this.fb.array(
+        [this.crearDeporteFormGroup()], // Start with 1 sport
+        Validators.required
+      ),
     });
+  }
+
+  crearDeporteFormGroup(): FormGroup {
+    return this.fb.group({
+      deporte: ['', Validators.required],
+      grado: [''],  // Not required by default, will be conditionally required
+      fechaGrado: [this.obtenerFechaHoy()],  // Not required by default, will be conditionally required
+      fechaAlta: [this.obtenerFechaHoy(), Validators.required],
+      fechaAltaInicial: [''],  // Optional, defaults to fechaAlta if not provided
+      tipoTarifa: ['', Validators.required],
+      cuantiaTarifa: [null],
+      rolFamiliar: [{ value: '', disabled: true }],  // For PADRES_HIJOS tarifa, disabled by default
+      grupoFamiliar: [{ value: '', disabled: true }],  // For HERMANOS tarifa, disabled by default
+      competidor: [false],
+      peso: [null],
+      fechaPeso: [this.obtenerFechaHoy()],
+      tieneLicencia: [false],
+      numeroLicencia: [null],
+      fechaLicencia: [this.obtenerFechaHoy()],
+    });
+  }
+
+  obtenerFechaHoy(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  get deportesFormArray(): FormArray {
+    return this.alumnoData.get('deportesInicial') as FormArray;
+  }
+
+  agregarDeporte(): void {
+    if (this.deportesFormArray.length < 4) {
+      // Max 4 sports
+      this.deportesFormArray.push(this.crearDeporteFormGroup());
+    } else {
+      Swal.fire({
+        title: 'Límite alcanzado',
+        text: 'Un alumno puede tener un máximo de 4 deportes',
+        icon: 'warning',
+      });
+    }
+  }
+
+  eliminarDeporte(index: number): void {
+    if (this.deportesFormArray.length > 1) {
+      this.deportesFormArray.removeAt(index);
+    } else {
+      Swal.fire({
+        title: 'Acción no permitida',
+        text: 'Un alumno debe tener al menos 1 deporte',
+        icon: 'error',
+      });
+    }
+  }
+
+  obtenerGradosFiltradosParaDeporte(index: number): any[] {
+    const deporteControl = this.deportesFormArray.at(index).get('deporte');
+    const deporteSeleccionado = deporteControl?.value;
+
+    if (!deporteSeleccionado) {
+      return [];
+    }
+
+    let gradosFiltrados = this.todosLosGrados;
+
+    // Filter by sport (Kickboxing has limited grades, Pilates has none)
+    if (deporteSeleccionado === 'KICKBOXING') {
+      const gradosKickboxing = new Set<string>([
+        'BLANCO',
+        'AMARILLO',
+        'NARANJA',
+        'VERDE',
+        'AZUL',
+        'ROJO',
+        'NEGRO_1_DAN',
+        'NEGRO_2_DAN',
+        'NEGRO_3_DAN',
+        'NEGRO_4_DAN',
+        'NEGRO_5_DAN',
+      ]);
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        gradosKickboxing.has(grado.tipoGrado)
+      );
+    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
+      return []; // Pilates and Defensa Personal don't have grades
+    }
+
+    // Filter by age if fechaNacimiento is set
+    const fechaNacimiento = this.alumnoData.get('fechaNacimiento')?.value;
+    if (fechaNacimiento && this.tiposGrado.length > 0) {
+      gradosFiltrados = gradosFiltrados.filter((grado) =>
+        this.tiposGrado.includes(grado.tipoGrado)
+      );
+    }
+
+    return gradosFiltrados;
+  }
+
+  obtenerTarifasFiltradas(index: number): TipoTarifa[] {
+    const deporteControl = this.deportesFormArray.at(index).get('deporte');
+    const deporteSeleccionado = deporteControl?.value;
+
+    if (!deporteSeleccionado) {
+      return [];
+    }
+
+    // Filter tarifas based on selected sport
+    switch (deporteSeleccionado) {
+      case 'TAEKWONDO':
+        // All tarifas except sport-specific ones (KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA)
+        return this.tiposTarifa.filter(tarifa =>
+          tarifa !== TipoTarifa.KICKBOXING &&
+          tarifa !== TipoTarifa.PILATES &&
+          tarifa !== TipoTarifa.DEFENSA_PERSONAL_FEMENINA
+        );
+
+      case 'KICKBOXING':
+        // Only KICKBOXING tarifa
+        return [TipoTarifa.KICKBOXING];
+
+      case 'PILATES':
+        // Only PILATES tarifa
+        return [TipoTarifa.PILATES];
+
+      case 'DEFENSA_PERSONAL_FEMENINA':
+        // Only DEFENSA_PERSONAL_FEMENINA tarifa
+        return [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
+
+      default:
+        return [];
+    }
+  }
+
+  onDeporteChangeEnLista(index: number): void {
+    const deporteControl = this.deportesFormArray.at(index).get('deporte');
+    const gradoControl = this.deportesFormArray.at(index).get('grado');
+    const fechaGradoControl = this.deportesFormArray.at(index).get('fechaGrado');
+    const tipoTarifaControl = this.deportesFormArray.at(index).get('tipoTarifa');
+
+    // Reset tarifa when sport changes, as valid tarifas depend on the sport
+    const currentTarifa = tipoTarifaControl?.value;
+    const validTarifas = this.obtenerTarifasFiltradas(index);
+
+    // If current tarifa is not valid for the new sport, clear it
+    if (currentTarifa && !validTarifas.includes(currentTarifa)) {
+      tipoTarifaControl?.setValue('');
+    }
+
+    if (deporteControl?.value === 'PILATES' || deporteControl?.value === 'DEFENSA_PERSONAL_FEMENINA') {
+      // Clear validators and values for Pilates and Defensa Personal Femenina
+      gradoControl?.clearValidators();
+      gradoControl?.setValue('');
+      fechaGradoControl?.clearValidators();
+      fechaGradoControl?.setValue('');
+    } else {
+      // Set validators for Taekwondo and Kickboxing
+      gradoControl?.setValidators(Validators.required);
+      fechaGradoControl?.setValidators(Validators.required);
+    }
+    gradoControl?.updateValueAndValidity();
+    fechaGradoControl?.updateValueAndValidity();
+  }
+
+  onTipoTarifaChangeEnLista(index: number): void {
+    const tipoTarifaControl = this.deportesFormArray.at(index).get('tipoTarifa');
+    const cuantiaTarifaControl = this.deportesFormArray.at(index).get('cuantiaTarifa');
+    const rolFamiliarControl = this.deportesFormArray.at(index).get('rolFamiliar');
+    const grupoFamiliarControl = this.deportesFormArray.at(index).get('grupoFamiliar');
+
+    if (tipoTarifaControl?.value) {
+      // Set default cuantía
+      const cuantiaDefault = this.cuantiasPorTarifa.get(tipoTarifaControl.value) || 0;
+      cuantiaTarifaControl?.setValue(cuantiaDefault);
+
+      // Handle PADRES_HIJOS tarifa - needs rolFamiliar
+      if (tipoTarifaControl.value === 'PADRES_HIJOS') {
+        rolFamiliarControl?.setValidators(Validators.required);
+        rolFamiliarControl?.enable();
+        grupoFamiliarControl?.clearValidators();
+        grupoFamiliarControl?.setValue('');
+        grupoFamiliarControl?.disable();
+      }
+      // Handle HERMANOS tarifa - needs grupoFamiliar
+      else if (tipoTarifaControl.value === 'HERMANOS') {
+        grupoFamiliarControl?.setValidators(Validators.required);
+        grupoFamiliarControl?.enable();
+        rolFamiliarControl?.clearValidators();
+        rolFamiliarControl?.setValue('');
+        rolFamiliarControl?.disable();
+      }
+      // Other tarifas - clear both fields
+      else {
+        rolFamiliarControl?.clearValidators();
+        rolFamiliarControl?.setValue('');
+        rolFamiliarControl?.disable();
+        grupoFamiliarControl?.clearValidators();
+        grupoFamiliarControl?.setValue('');
+        grupoFamiliarControl?.disable();
+      }
+
+      rolFamiliarControl?.updateValueAndValidity();
+      grupoFamiliarControl?.updateValueAndValidity();
+    }
   }
 
   cargarGrados(): void {
@@ -177,14 +413,38 @@ export class CrearAlumnoComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.alumnoData.invalid) {
+      Swal.fire({
+        title: 'Formulario incompleto',
+        text: 'Por favor completa todos los campos requeridos',
+        icon: 'error',
+      });
+      return;
+    }
+
     const alumnoData = this.alumnoData.getRawValue();
+
+    // For each sport, set fechaAltaInicial to fechaAlta if not provided
+    if (alumnoData.deportesInicial) {
+      alumnoData.deportesInicial.forEach((deporte: any) => {
+        if (!deporte.fechaAltaInicial) {
+          deporte.fechaAltaInicial = deporte.fechaAlta;
+        }
+      });
+    }
+
+    // Remove deprecated single-sport fields (not needed with deportesInicial)
+    delete alumnoData.deporte;
+    delete alumnoData.grado;
+
     alumnoData.aptoParaExamen = false;
 
     this.endpointsService.crearAlumno(alumnoData, this.imagen).subscribe({
       next: (response) => {
+        const numDeportes = alumnoData.deportesInicial?.length || 0;
         Swal.fire({
           title: 'Perfecto!',
-          text: 'Has creado un nuevo alumno',
+          text: `Has creado un nuevo alumno con ${numDeportes} deporte(s)`,
           icon: 'success',
           timer: 2000,
         }).then(() => {
@@ -202,7 +462,7 @@ export class CrearAlumnoComponent implements OnInit {
       error: (error) => {
         Swal.fire({
           title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
+          text: error.error || 'No has completado todos los campos requeridos',
           icon: 'error',
         }).then(() => {
           // Scroll to top to show form errors

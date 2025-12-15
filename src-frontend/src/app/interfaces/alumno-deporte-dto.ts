@@ -1,17 +1,39 @@
 /**
  * DTO for AlumnoDeporte - represents a student's participation in a specific sport
  * IMPORTANT: Property names must match backend AlumnoDeporteDTO.java
+ * All per-sport fields are included here (tarifa, grado, licencia, competidor, etc.)
  */
 export interface AlumnoDeporteDTO {
   id: number;
   deporte: string; // TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA
+
+  // Grade data (per-sport)
   grado: string | null; // TipoGrado name (e.g., "BLANCO", "AMARILLO")
   fechaGrado: Date | string | null;
   aptoParaExamen: boolean;
+
+  // Status and dates
   activo: boolean;
   fechaAlta: Date | string;
+  fechaAltaInicial: Date | string | null; // For seniority calculation
   fechaBaja: Date | string | null;
-  antiguedad: string | null; // e.g., "3 años, 2 meses"
+  antiguedad: string | null; // e.g., "3 años, 2 meses" - calculated from fechaAltaInicial
+
+  // Tarifa (per-sport)
+  tipoTarifa: string | null; // TipoTarifa enum value
+  cuantiaTarifa: number | null;
+  rolFamiliar: string | null; // For PADRES_HIJOS tarifa
+  grupoFamiliar: string | null; // For HERMANOS tarifa
+
+  // Competitor data (per-sport)
+  competidor: boolean;
+  peso: number | null;
+  fechaPeso: Date | string | null;
+
+  // License data (per-sport)
+  tieneLicencia: boolean;
+  numeroLicencia: number | null;
+  fechaLicencia: Date | string | null;
 }
 
 /**
