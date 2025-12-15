@@ -79,6 +79,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       this.vistaActual = savedView;
     }
 
+    // Restore pagination state if returning from another page
+    this.restaurarEstadoPaginacion();
+
     this.obtenerAlumnos();
     this.cargarTodosLosAlumnos();
 
@@ -90,6 +93,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => {
         this.paginaActual = 1;
+        this.guardarEstadoPaginacion(); // Save state when searching
         this.obtenerAlumnos();
       });
   }
@@ -178,6 +182,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           this.alumnos = response.content;
           this.totalPaginas = response.totalPages;
 
+          // Save current state after successful load
+          this.guardarEstadoPaginacion();
+
           // Load sports for all alumnos on this page
           this.cargarDeportesDeAlumnos();
         },
@@ -250,6 +257,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
           // Update alumnos array with the filtered and paginated data
           this.actualizarAlumnosPaginadosCliente();
+
+          // Save current state after successful load
+          this.guardarEstadoPaginacion();
         },
         error: (error) => {
           console.error('Error loading students with sports:', error);
@@ -336,6 +346,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   filtrarPorDeporte(): void {
     this.paginaActual = 1;
+    this.guardarEstadoPaginacion(); // Save state when filtering
 
     // If filtering by sport, we need to load all students and paginate client-side
     if (this.deporteFiltro !== 'TODOS') {
@@ -601,6 +612,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   cambiarPagina(pageNumber: number): void {
     this.paginaActual = pageNumber;
+    this.guardarEstadoPaginacion(); // Save state when changing pages
 
     if (this.usandoPaginacionCliente) {
       // Use client-side pagination
@@ -615,9 +627,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // If using client-side pagination, filter immediately
     if (this.usandoPaginacionCliente) {
       this.paginaActual = 1;
+      this.guardarEstadoPaginacion(); // Save state when filtering
       this.actualizarAlumnosPaginadosCliente();
     } else {
-      // Use debounced backend search
+      // Use debounced backend search (saves state in the subscription)
       this.searchSubject.next(this.nombreFiltro);
     }
   }
@@ -625,6 +638,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
     this.paginaActual = 1; // Reset pagination
+    this.guardarEstadoPaginacion(); // Save state when toggling inactive filter
 
     if (this.usandoPaginacionCliente) {
       // Reload all data with new inactive filter
@@ -872,5 +886,39 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       'DICIEMBRE',
     ];
     return `${meses[Number.parseInt(mes, 10) - 1]} ${anio}`;
+  }
+
+  /**
+   * Save pagination state to sessionStorage
+   */
+  private guardarEstadoPaginacion(): void {
+    const estado = {
+      paginaActual: this.paginaActual,
+      nombreFiltro: this.nombreFiltro,
+      mostrarInactivos: this.mostrarInactivos,
+      deporteFiltro: this.deporteFiltro,
+      usandoPaginacionCliente: this.usandoPaginacionCliente,
+    };
+    sessionStorage.setItem('listadoAlumnosEstado', JSON.stringify(estado));
+  }
+
+  /**
+   * Restore pagination state from sessionStorage
+   */
+  private restaurarEstadoPaginacion(): void {
+    const estadoGuardado = sessionStorage.getItem('listadoAlumnosEstado');
+    if (estadoGuardado) {
+      try {
+        const estado = JSON.parse(estadoGuardado);
+        this.paginaActual = estado.paginaActual || 1;
+        this.nombreFiltro = estado.nombreFiltro || '';
+        this.mostrarInactivos = estado.mostrarInactivos || false;
+        this.deporteFiltro = estado.deporteFiltro || 'TODOS';
+        this.usandoPaginacionCliente = estado.usandoPaginacionCliente || false;
+      } catch (error) {
+        // If parsing fails, just use default values
+        console.error('Error parsing saved pagination state:', error);
+      }
+    }
   }
 }
