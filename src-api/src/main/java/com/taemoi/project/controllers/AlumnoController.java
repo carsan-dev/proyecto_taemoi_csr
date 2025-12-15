@@ -1086,6 +1086,70 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Actualiza la fecha de alta como competidor per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta-competicion
+	 * Body: { "fechaAltaCompeticion": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-competicion")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaAltaCompeticion(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaStr = params.get("fechaAltaCompeticion");
+			if (fechaStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de alta competición es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaAltaCompeticion = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaAltaCompeticion(id, deporteEnum, fechaAltaCompeticion);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de alta competición", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de alta competición");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de alta inicial como competidor per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta-competidor-inicial
+	 * Body: { "fechaAltaCompetidorInicial": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-competidor-inicial")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaAltaCompetidorInicial(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaStr = params.get("fechaAltaCompetidorInicial");
+			if (fechaStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de alta inicial competidor es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaAltaCompetidorInicial = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaAltaCompetidorInicial(id, deporteEnum, fechaAltaCompetidorInicial);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de alta inicial competidor", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de alta inicial competidor");
+		}
+	}
+
+	/**
 	 * Actualiza la fecha de alta inicial del alumno (GENERAL - all sports)
 	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
 	 * PUT /api/alumnos/{id}/fecha-alta-inicial

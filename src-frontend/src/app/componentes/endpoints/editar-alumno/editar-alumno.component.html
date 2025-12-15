@@ -534,6 +534,8 @@
                         Información de Competidor
                       </h5>
 
+                      <!-- Check if student has license before showing competitor option -->
+                      @if (pendingLicenciaChanges.get(deporteItem.deporte)?.tieneLicencia ?? deporteItem.tieneLicencia) {
                       <div class="admin-form-switch" [class.checked]="pendingCompetidorChanges.get(deporteItem.deporte)?.competidor ?? deporteItem.competidor">
                         <label [for]="'competidor-' + deporteItem.deporte">
                           <i class="bi bi-check-circle"></i>
@@ -548,6 +550,48 @@
                       </div>
 
                       @if (pendingCompetidorChanges.get(deporteItem.deporte)?.competidor ?? deporteItem.competidor) {
+                      <!-- Competition dates -->
+                      <div class="row mt-3">
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'fechaAltaCompeticion-' + deporteItem.deporte">
+                              <i class="bi bi-calendar-plus"></i>
+                              Fecha Alta Competición
+                            </label>
+                            <input type="date" [id]="'fechaAltaCompeticion-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.fechaAltaCompeticion ?? (deporteItem.fechaAltaCompeticion ? (deporteItem.fechaAltaCompeticion | date: 'yyyy-MM-dd') : '')"
+                              (change)="onFechaAltaCompeticionChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'fechaAltaCompetidorInicial-' + deporteItem.deporte">
+                              <i class="bi bi-calendar-event"></i>
+                              Fecha Alta Competidor Inicial
+                            </label>
+                            <input type="date" [id]="'fechaAltaCompetidorInicial-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.fechaAltaCompetidorInicial ?? (deporteItem.fechaAltaCompetidorInicial ? (deporteItem.fechaAltaCompetidorInicial | date: 'yyyy-MM-dd') : '')"
+                              (change)="onFechaAltaCompetidorInicialChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Antiguedad display -->
+                      @if (deporteItem.antiguedadCompetidor) {
+                      <div class="row mt-3">
+                        <div class="col-12">
+                          <div class="info-item">
+                            <span class="info-label">
+                              <i class="bi bi-hourglass-split"></i>
+                              Antigüedad como Competidor
+                            </span>
+                            <span class="info-value">{{ deporteItem.antiguedadCompetidor }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      }
+
+                      <!-- Weight fields -->
                       <div class="row mt-3">
                         <div class="col-md-6">
                           <div class="admin-form-field">
@@ -571,6 +615,12 @@
                               (change)="onFechaPesoChange(deporteItem.deporte, $event)" />
                           </div>
                         </div>
+                      </div>
+                      }
+                      } @else {
+                      <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        El alumno debe tener una licencia federativa activa para poder ser marcado como competidor.
                       </div>
                       }
 

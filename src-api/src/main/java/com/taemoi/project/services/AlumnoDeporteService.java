@@ -242,6 +242,26 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarFechaPeso(Long alumnoId, Deporte deporte, java.util.Date fechaPeso);
 
 	/**
+	 * Actualiza la fecha de alta como competidor de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaAltaCompeticion Nueva fecha de alta como competidor
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaAltaCompeticion(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompeticion);
+
+	/**
+	 * Actualiza la fecha de alta inicial como competidor de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaAltaCompetidorInicial Nueva fecha de alta inicial como competidor
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaAltaCompetidorInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompetidorInicial);
+
+	/**
 	 * Calcula el siguiente grado para un alumno en un deporte específico
 	 *
 	 * @param alumnoDeporte AlumnoDeporte para calcular siguiente grado
