@@ -15,7 +15,9 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nCorregido NullPointerException en WebConfig para entornos Linux/Docker\n\nEl código intentaba usar la variable de entorno USERPROFILE (Windows) sin \nverificar si existía, causando un NullPointerException en contenedores Docker \nLinux. Ahora se verifica la existencia de USERPROFILE antes de usarla.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(mvn clean package:*)",
+      "Bash(npm run build:production:*)"
     ],
     "deny": [],
     "ask": []
