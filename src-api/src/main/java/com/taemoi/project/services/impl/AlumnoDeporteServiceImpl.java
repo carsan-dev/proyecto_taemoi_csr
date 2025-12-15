@@ -16,7 +16,9 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
@@ -80,6 +82,69 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			// Use provided fechaGrado or default to current date
 			alumnoDeporte.setFechaGrado(fechaGrado != null ? fechaGrado : new Date());
 		}
+
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
+			Date fechaAlta, Date fechaAltaInicial, Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
+			String rolFamiliar, String grupoFamiliar, Boolean competidor, Double peso,
+			Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia) {
+		// Verificar que el alumno existe
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
+
+		// Verificar que no tenga ya ese deporte activo
+		Optional<AlumnoDeporte> existente = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte);
+		if (existente.isPresent() && Boolean.TRUE.equals(existente.get().getActivo())) {
+			throw new IllegalArgumentException(
+					"El alumno ya tiene asignado el deporte: " + deporte);
+		}
+
+		// If there's an inactive record, suggest using activate instead
+		if (existente.isPresent() && Boolean.FALSE.equals(existente.get().getActivo())) {
+			throw new IllegalArgumentException(
+					"El alumno ya tiene un registro inactivo de este deporte. Use activar en lugar de agregar.");
+		}
+
+		// Crear nuevo AlumnoDeporte
+		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
+		alumnoDeporte.setAlumno(alumno);
+		alumnoDeporte.setDeporte(deporte);
+		alumnoDeporte.setActivo(true);
+		// Use provided fechaAlta or default to current date
+		Date fechaAltaFinal = fechaAlta != null ? fechaAlta : new Date();
+		alumnoDeporte.setFechaAlta(fechaAltaFinal);
+		// Use provided fechaAltaInicial or default to fechaAlta
+		alumnoDeporte.setFechaAltaInicial(fechaAltaInicial != null ? fechaAltaInicial : fechaAltaFinal);
+		alumnoDeporte.setAptoParaExamen(false);
+
+		// Asignar grado si se proporcionó (deportes como Pilates no tienen grado)
+		if (gradoInicial != null) {
+			Grado grado = gradoRepository.findByTipoGrado(gradoInicial);
+			if (grado == null) {
+				throw new IllegalArgumentException("Grado no encontrado: " + gradoInicial);
+			}
+			alumnoDeporte.setGrado(grado);
+			// Use provided fechaGrado or default to current date
+			alumnoDeporte.setFechaGrado(fechaGrado != null ? fechaGrado : new Date());
+		}
+
+		// Set per-sport fields
+		alumnoDeporte.setTipoTarifa(tipoTarifa);
+		alumnoDeporte.setCuantiaTarifa(cuantiaTarifa);
+		// Set rolFamiliar and grupoFamiliar if provided
+		if (rolFamiliar != null && !rolFamiliar.isEmpty()) {
+			alumnoDeporte.setRolFamiliar(RolFamiliar.valueOf(rolFamiliar));
+		}
+		alumnoDeporte.setGrupoFamiliar(grupoFamiliar);
+		alumnoDeporte.setCompetidor(competidor != null ? competidor : false);
+		alumnoDeporte.setPeso(peso);
+		alumnoDeporte.setFechaPeso(fechaPeso);
+		alumnoDeporte.setTieneLicencia(tieneLicencia != null ? tieneLicencia : false);
+		alumnoDeporte.setNumeroLicencia(numeroLicencia);
+		alumnoDeporte.setFechaLicencia(fechaLicencia);
 
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
@@ -227,6 +292,116 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		boolean aptoParaExamen = esAptoParaExamen(alumnoDeporte);
 		alumnoDeporte.setAptoParaExamen(aptoParaExamen);
 
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaAltaInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaInicial) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaAltaInicial(fechaAltaInicial);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarTipoTarifa(Long alumnoId, Deporte deporte, TipoTarifa tipoTarifa) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setTipoTarifa(tipoTarifa);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarCuantiaTarifa(Long alumnoId, Deporte deporte, Double cuantiaTarifa) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setCuantiaTarifa(cuantiaTarifa);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarRolFamiliar(Long alumnoId, Deporte deporte, String rolFamiliar) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setRolFamiliar(rolFamiliar);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarGrupoFamiliar(Long alumnoId, Deporte deporte, String grupoFamiliar) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setGrupoFamiliar(grupoFamiliar);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarTieneLicencia(Long alumnoId, Deporte deporte, Boolean tieneLicencia) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setTieneLicencia(tieneLicencia);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarNumeroLicencia(Long alumnoId, Deporte deporte, Integer numeroLicencia) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setNumeroLicencia(numeroLicencia);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaLicencia(Long alumnoId, Deporte deporte, java.util.Date fechaLicencia) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaLicencia(fechaLicencia);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarCompetidor(Long alumnoId, Deporte deporte, Boolean competidor) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setCompetidor(competidor);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarPeso(Long alumnoId, Deporte deporte, Double peso) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setPeso(peso);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaPeso(Long alumnoId, Deporte deporte, java.util.Date fechaPeso) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaPeso(fechaPeso);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 
