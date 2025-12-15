@@ -64,18 +64,21 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- -----------------------------------------------------
 -- Table `taemoidb`.`alumno`
 -- -----------------------------------------------------
+-- IMPORTANT: Many fields are now nullable for multi-sport mode.
+-- In multi-sport mode, per-sport data is stored in alumno_deporte table.
+-- Legacy single-sport mode still uses these fields.
 CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
   `apellidos` VARCHAR(255) NOT NULL,
   `apto_para_examen` BIT(1) NULL DEFAULT NULL,
   `autorizacion_web` BIT(1) NOT NULL,
-  `competidor` BIT(1) NOT NULL,
-  `cuantia_tarifa` DOUBLE NOT NULL,
+  `competidor` BIT(1) NULL DEFAULT NULL,
+  `cuantia_tarifa` DOUBLE NULL DEFAULT NULL,
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NULL DEFAULT NULL,
   `direccion` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NULL DEFAULT NULL,
-  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NOT NULL DEFAULT 'NINGUNO',
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NULL DEFAULT NULL,
   `grupo_familiar` VARCHAR(50) NULL DEFAULT NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
   `fecha_alta_inicial` DATE NULL DEFAULT NULL,
@@ -92,8 +95,8 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno` (
   `telefono` INT NOT NULL,
   `tiene_derecho_examen` BIT(1) NOT NULL,
   `tiene_discapacidad` BIT(1) NULL DEFAULT NULL,
-  `tiene_licencia` BIT(1) NOT NULL,
-  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'KICKBOXING', 'PADRES_HIJOS', 'PILATES') NOT NULL,
+  `tiene_licencia` BIT(1) NULL DEFAULT NULL,
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'KICKBOXING', 'PADRES_HIJOS', 'PILATES') NULL DEFAULT NULL,
   `categoria_id` BIGINT NULL DEFAULT NULL,
   `foto_alumno_id` BIGINT NULL DEFAULT NULL,
   `grado_id` BIGINT NULL DEFAULT NULL,
@@ -134,14 +137,27 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- -----------------------------------------------------
 -- Table `taemoidb`.`alumno_deporte`
 -- -----------------------------------------------------
+-- Per-sport data for multi-sport mode
+-- Each student can have multiple sports with independent configuration
 CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_deporte` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
   `apto_para_examen` BIT(1) NOT NULL,
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
+  `fecha_alta_inicial` DATE NULL DEFAULT NULL,
   `fecha_baja` DATE NULL DEFAULT NULL,
   `fecha_grado` DATE NULL DEFAULT NULL,
+  `fecha_licencia` DATE NULL DEFAULT NULL,
+  `fecha_peso` DATE NULL DEFAULT NULL,
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'KICKBOXING', 'PADRES_HIJOS', 'PILATES') NULL DEFAULT NULL,
+  `cuantia_tarifa` DOUBLE NULL DEFAULT NULL,
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NULL DEFAULT NULL,
+  `grupo_familiar` VARCHAR(50) NULL DEFAULT NULL,
+  `competidor` BIT(1) NOT NULL DEFAULT 0,
+  `peso` DOUBLE NULL DEFAULT NULL,
+  `tiene_licencia` BIT(1) NOT NULL DEFAULT 0,
+  `numero_licencia` INT NULL DEFAULT NULL,
   `alumno_id` BIGINT NOT NULL,
   `grado_id` BIGINT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),

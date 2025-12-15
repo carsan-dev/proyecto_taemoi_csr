@@ -64,17 +64,22 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- -----------------------------------------------------
 -- Table `taemoi_test`.`alumno`
 -- -----------------------------------------------------
+-- IMPORTANT: Many fields are now nullable for multi-sport mode.
+-- In multi-sport mode, per-sport data is stored in alumno_deporte table.
+-- Legacy single-sport mode still uses these fields.
 CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
   `apellidos` VARCHAR(255) NOT NULL,
   `apto_para_examen` BIT(1) NULL DEFAULT NULL,
   `autorizacion_web` BIT(1) NOT NULL,
-  `competidor` BIT(1) NOT NULL,
-  `cuantia_tarifa` DOUBLE NOT NULL,
+  `competidor` BIT(1) NULL DEFAULT NULL,
+  `cuantia_tarifa` DOUBLE NULL DEFAULT NULL,
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NULL DEFAULT NULL,
   `direccion` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NULL DEFAULT NULL,
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NULL DEFAULT NULL,
+  `grupo_familiar` VARCHAR(50) NULL DEFAULT NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
   `fecha_alta_inicial` DATE NULL DEFAULT NULL,
   `fecha_baja` DATE NULL DEFAULT NULL,
@@ -90,8 +95,8 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno` (
   `telefono` INT NOT NULL,
   `tiene_derecho_examen` BIT(1) NOT NULL,
   `tiene_discapacidad` BIT(1) NULL DEFAULT NULL,
-  `tiene_licencia` BIT(1) NOT NULL,
-  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'PADRES_HIJOS', 'PILATES') NOT NULL,
+  `tiene_licencia` BIT(1) NULL DEFAULT NULL,
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'KICKBOXING', 'PADRES_HIJOS', 'PILATES') NULL DEFAULT NULL,
   `categoria_id` BIGINT NULL DEFAULT NULL,
   `foto_alumno_id` BIGINT NULL DEFAULT NULL,
   `grado_id` BIGINT NULL DEFAULT NULL,
@@ -130,6 +135,50 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
+-- Table `taemoi_test`.`alumno_deporte`
+-- -----------------------------------------------------
+-- Per-sport data for multi-sport mode
+-- Each student can have multiple sports with independent configuration
+CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno_deporte` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `activo` BIT(1) NOT NULL,
+  `apto_para_examen` BIT(1) NOT NULL,
+  `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
+  `fecha_alta` DATE NULL DEFAULT NULL,
+  `fecha_alta_inicial` DATE NULL DEFAULT NULL,
+  `fecha_baja` DATE NULL DEFAULT NULL,
+  `fecha_grado` DATE NULL DEFAULT NULL,
+  `fecha_licencia` DATE NULL DEFAULT NULL,
+  `fecha_peso` DATE NULL DEFAULT NULL,
+  `tipo_tarifa` ENUM('ADULTO', 'ADULTO_GRUPO', 'DEFENSA_PERSONAL_FEMENINA', 'FAMILIAR', 'HERMANOS', 'INFANTIL', 'INFANTIL_GRUPO', 'KICKBOXING', 'PADRES_HIJOS', 'PILATES') NULL DEFAULT NULL,
+  `cuantia_tarifa` DOUBLE NULL DEFAULT NULL,
+  `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NULL DEFAULT NULL,
+  `grupo_familiar` VARCHAR(50) NULL DEFAULT NULL,
+  `competidor` BIT(1) NOT NULL DEFAULT 0,
+  `peso` DOUBLE NULL DEFAULT NULL,
+  `tiene_licencia` BIT(1) NOT NULL DEFAULT 0,
+  `numero_licencia` INT NULL DEFAULT NULL,
+  `alumno_id` BIGINT NOT NULL,
+  `grado_id` BIGINT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `UKloubbjnmncoc7hi1oasugm5fa` (`alumno_id` ASC, `deporte` ASC) VISIBLE,
+  INDEX `idx_alumno_deporte_alumno_id` (`alumno_id` ASC) VISIBLE,
+  INDEX `idx_alumno_deporte_deporte` (`deporte` ASC) VISIBLE,
+  INDEX `idx_alumno_deporte_apto` (`deporte` ASC, `apto_para_examen` ASC) VISIBLE,
+  INDEX `FKirt39noykqeplscbxi32tb786` (`grado_id` ASC) VISIBLE,
+  CONSTRAINT `FK9fr1k4ow5l16qts5508vqk9wn_test`
+    FOREIGN KEY (`alumno_id`)
+    REFERENCES `taemoi_test`.`alumno` (`id`),
+  CONSTRAINT `FKirt39noykqeplscbxi32tb786_test`
+    FOREIGN KEY (`grado_id`)
+    REFERENCES `taemoi_test`.`grado` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
 -- Table `taemoi_test`.`producto_alumno`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `taemoi_test`.`producto_alumno` (
@@ -143,15 +192,20 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`producto_alumno` (
   `precio` DOUBLE NULL DEFAULT NULL,
   `alumno_id` BIGINT NULL DEFAULT NULL,
   `producto_id` BIGINT NULL DEFAULT NULL,
+  `alumno_deporte_id` BIGINT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `FK5aq2e0hk0dllyuil2f7rn526r` (`alumno_id` ASC) VISIBLE,
   INDEX `FKhr3yv7e998cyd9np3nod2uo0j` (`producto_id` ASC) VISIBLE,
+  INDEX `FKmi1jp8li7aa59orox8hohl213` (`alumno_deporte_id` ASC) VISIBLE,
   CONSTRAINT `FK5aq2e0hk0dllyuil2f7rn526r`
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoi_test`.`alumno` (`id`),
   CONSTRAINT `FKhr3yv7e998cyd9np3nod2uo0j`
     FOREIGN KEY (`producto_id`)
-    REFERENCES `taemoi_test`.`producto` (`id`))
+    REFERENCES `taemoi_test`.`producto` (`id`),
+  CONSTRAINT `FKmi1jp8li7aa59orox8hohl213_test`
+    FOREIGN KEY (`alumno_deporte_id`)
+    REFERENCES `taemoi_test`.`alumno_deporte` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 24
 DEFAULT CHARACTER SET = utf8mb4
@@ -184,13 +238,18 @@ CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno_convocatoria` (
   `alumno_id` BIGINT NULL DEFAULT NULL,
   `convocatoria_id` BIGINT NULL DEFAULT NULL,
   `producto_alumno_id` BIGINT NULL DEFAULT NULL,
+  `alumno_deporte_id` BIGINT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `FKpm62kpl6nbmqiuach08e2t3sk` (`alumno_id` ASC) VISIBLE,
   INDEX `FKqwjl8svxuu5mywp3cnosoewrk` (`convocatoria_id` ASC) VISIBLE,
   INDEX `FK7i5raysl38e3apc5kow9mtii2` (`producto_alumno_id` ASC) VISIBLE,
+  INDEX `FKgor9jlkap0uaen39m2eon5ct8` (`alumno_deporte_id` ASC) VISIBLE,
   CONSTRAINT `FK7i5raysl38e3apc5kow9mtii2`
     FOREIGN KEY (`producto_alumno_id`)
     REFERENCES `taemoi_test`.`producto_alumno` (`id`),
+  CONSTRAINT `FKgor9jlkap0uaen39m2eon5ct8_test`
+    FOREIGN KEY (`alumno_deporte_id`)
+    REFERENCES `taemoi_test`.`alumno_deporte` (`id`),
   CONSTRAINT `FKpm62kpl6nbmqiuach08e2t3sk`
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoi_test`.`alumno` (`id`),
