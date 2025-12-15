@@ -136,3 +136,9 @@ TODO:
 Actualizar precio productos
 
 ✔ Terminar de arreglar desactivar o eliminar el deporte del alumno
+
+✔ Poder añadir todos los deportes en la creación y no uno principal
+
+✔ Poder añadir personalizada también la antiguedad al crear al alumno y editarla luego
+
+Modificar licencia federativa en la migración o el propio campo para usar la licencia del deporte y no la general o migrarse bien

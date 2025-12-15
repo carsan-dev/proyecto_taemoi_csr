@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -327,12 +328,24 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 	@Override
 	public AlumnoDeporte actualizarRolFamiliar(Long alumnoId, Deporte deporte, String rolFamiliar) {
-		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
-				.orElseThrow(() -> new IllegalArgumentException(
-						"El alumno no tiene asignado el deporte: " + deporte));
+	    AlumnoDeporte alumnoDeporte = alumnoDeporteRepository
+	            .findByAlumnoIdAndDeporte(alumnoId, deporte)
+	            .orElseThrow(() -> new IllegalArgumentException(
+	                    "El alumno no tiene asignado el deporte: " + deporte));
 
-		alumnoDeporte.setRolFamiliar(rolFamiliar);
-		return alumnoDeporteRepository.save(alumnoDeporte);
+	    if (rolFamiliar == null || rolFamiliar.isBlank()) {
+	        throw new IllegalArgumentException("rolFamiliar no puede ser nulo o vacío");
+	    }
+
+	    RolFamiliar rolEnum;
+	    try {
+	        rolEnum = RolFamiliar.valueOf(rolFamiliar.trim().toUpperCase(Locale.ROOT));
+	    } catch (IllegalArgumentException e) {
+	        throw new IllegalArgumentException("rolFamiliar inválido: " + rolFamiliar, e);
+	    }
+
+	    alumnoDeporte.setRolFamiliar(rolEnum);
+	    return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 
 	@Override
