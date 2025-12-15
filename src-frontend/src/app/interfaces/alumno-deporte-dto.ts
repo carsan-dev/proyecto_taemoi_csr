@@ -27,6 +27,9 @@ export interface AlumnoDeporteDTO {
 
   // Competitor data (per-sport)
   competidor: boolean;
+  fechaAltaCompeticion: Date | string | null; // Date when became competitor
+  fechaAltaCompetidorInicial: Date | string | null; // Initial competitor registration date (for seniority)
+  antiguedadCompetidor: string | null; // e.g., "1 año, 3 meses" - calculated from fechaAltaCompetidorInicial
   peso: number | null;
   fechaPeso: Date | string | null;
 

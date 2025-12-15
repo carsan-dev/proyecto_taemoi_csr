@@ -116,6 +116,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   pendingCompetidorChanges: Map<string, {
     competidor?: boolean;
+    fechaAltaCompeticion?: string;
+    fechaAltaCompetidorInicial?: string;
     peso?: number;
     fechaPeso?: string;
   }> = new Map();
@@ -2314,6 +2316,28 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.pendingCompetidorChanges.set(deporte, pending);
   }
 
+  /**
+   * Handle fecha alta competicion change - updates pending changes
+   */
+  onFechaAltaCompeticionChange(deporte: string, event: any): void {
+    const fechaAltaCompeticion = event.target.value;
+
+    const pending = this.pendingCompetidorChanges.get(deporte) || {};
+    pending.fechaAltaCompeticion = fechaAltaCompeticion;
+    this.pendingCompetidorChanges.set(deporte, pending);
+  }
+
+  /**
+   * Handle fecha alta competidor inicial change - updates pending changes
+   */
+  onFechaAltaCompetidorInicialChange(deporte: string, event: any): void {
+    const fechaAltaCompetidorInicial = event.target.value;
+
+    const pending = this.pendingCompetidorChanges.get(deporte) || {};
+    pending.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
+    this.pendingCompetidorChanges.set(deporte, pending);
+  }
+
   // ========== HELPER METHODS TO GET DISPLAYED VALUES ==========
 
   /**
@@ -2635,6 +2659,36 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         });
     }
 
+    // Update fecha alta competicion
+    if (pending.fechaAltaCompeticion !== undefined) {
+      this.alumnoService
+        .actualizarFechaAltaCompeticionDeporte(this.alumnoId, deporte, pending.fechaAltaCompeticion)
+        .subscribe({
+          next: () => {
+            updateCount++;
+            if (updateCount === totalUpdates) {
+              this.onAllCompetidorUpdatesComplete(deporte);
+            }
+          },
+          error: this.handleUpdateError.bind(this, 'fecha alta competición'),
+        });
+    }
+
+    // Update fecha alta competidor inicial
+    if (pending.fechaAltaCompetidorInicial !== undefined) {
+      this.alumnoService
+        .actualizarFechaAltaCompetidorInicialDeporte(this.alumnoId, deporte, pending.fechaAltaCompetidorInicial)
+        .subscribe({
+          next: () => {
+            updateCount++;
+            if (updateCount === totalUpdates) {
+              this.onAllCompetidorUpdatesComplete(deporte);
+            }
+          },
+          error: this.handleUpdateError.bind(this, 'fecha alta competidor inicial'),
+        });
+    }
+
     // Update peso
     if (pending.peso !== undefined) {
       this.alumnoService
@@ -2667,15 +2721,39 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   private onAllCompetidorUpdatesComplete(deporte: string): void {
-    this.pendingCompetidorChanges.delete(deporte);
-    Swal.fire({
-      title: 'Competidor actualizado',
-      text: `Información de competidor actualizada en ${getDeporteLabel(deporte)}`,
-      icon: 'success',
-      timer: 1500,
-      showConfirmButton: false,
+    // Reload the data first, then delete pending changes in the callback
+    // This ensures the checkbox doesn't reset to old value during reload
+    const currentActiveDeporte = this.deporteActivo;
+
+    this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId!).subscribe({
+      next: (deportes: AlumnoDeporteDTO[]) => {
+        this.deportesDelAlumno = deportes;
+
+        // Preserve the current active tab
+        const stillExists = deportes.find(d => d.deporte === currentActiveDeporte);
+        if (stillExists) {
+          this.deporteActivo = currentActiveDeporte;
+        } else if (deportes.length > 0) {
+          this.deporteActivo = deportes[0].deporte;
+        }
+
+        // NOW delete pending changes after data has been reloaded
+        this.pendingCompetidorChanges.delete(deporte);
+
+        Swal.fire({
+          title: 'Competidor actualizado',
+          text: `Información de competidor actualizada en ${getDeporteLabel(deporte)}`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      },
+      error: (error) => {
+        console.error('Error reloading deportes after competidor update:', error);
+        // Still delete pending changes even if reload fails
+        this.pendingCompetidorChanges.delete(deporte);
+      }
     });
-    this.cargarDeportesDelAlumno(this.alumnoId!, true);
   }
 
   /**

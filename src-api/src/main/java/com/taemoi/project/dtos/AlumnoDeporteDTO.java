@@ -34,6 +34,9 @@ public class AlumnoDeporteDTO {
 
 	// Competitor data (per-sport)
 	private Boolean competidor;
+	private Date fechaAltaCompeticion;
+	private Date fechaAltaCompetidorInicial;
+	private String antiguedadCompetidor; // Tiempo como competidor (calculado from fechaAltaCompetidorInicial)
 	private Double peso;
 	private Date fechaPeso;
 
@@ -90,6 +93,17 @@ public class AlumnoDeporteDTO {
 
 		// Competitor data (per-sport)
 		dto.setCompetidor(alumnoDeporte.getCompetidor());
+		dto.setFechaAltaCompeticion(alumnoDeporte.getFechaAltaCompeticion());
+		dto.setFechaAltaCompetidorInicial(alumnoDeporte.getFechaAltaCompetidorInicial());
+
+		// Calculate antiguedadCompetidor if the student is a competitor
+		if (Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+			Date fechaParaAntiguedadCompetidor = alumnoDeporte.getFechaAltaCompetidorInicial() != null
+				? alumnoDeporte.getFechaAltaCompetidorInicial()
+				: alumnoDeporte.getFechaAltaCompeticion();
+			dto.setAntiguedadCompetidor(calcularAntiguedad(fechaParaAntiguedadCompetidor, null));
+		}
+
 		dto.setPeso(alumnoDeporte.getPeso());
 		dto.setFechaPeso(alumnoDeporte.getFechaPeso());
 
@@ -268,6 +282,30 @@ public class AlumnoDeporteDTO {
 
 	public void setCompetidor(Boolean competidor) {
 		this.competidor = competidor;
+	}
+
+	public Date getFechaAltaCompeticion() {
+		return fechaAltaCompeticion;
+	}
+
+	public void setFechaAltaCompeticion(Date fechaAltaCompeticion) {
+		this.fechaAltaCompeticion = fechaAltaCompeticion;
+	}
+
+	public Date getFechaAltaCompetidorInicial() {
+		return fechaAltaCompetidorInicial;
+	}
+
+	public void setFechaAltaCompetidorInicial(Date fechaAltaCompetidorInicial) {
+		this.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
+	}
+
+	public String getAntiguedadCompetidor() {
+		return antiguedadCompetidor;
+	}
+
+	public void setAntiguedadCompetidor(String antiguedadCompetidor) {
+		this.antiguedadCompetidor = antiguedadCompetidor;
 	}
 
 	public Double getPeso() {

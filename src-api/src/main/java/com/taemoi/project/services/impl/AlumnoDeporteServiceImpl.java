@@ -140,12 +140,22 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			alumnoDeporte.setRolFamiliar(RolFamiliar.valueOf(rolFamiliar));
 		}
 		alumnoDeporte.setGrupoFamiliar(grupoFamiliar);
-		alumnoDeporte.setCompetidor(competidor != null ? competidor : false);
-		alumnoDeporte.setPeso(peso);
-		alumnoDeporte.setFechaPeso(fechaPeso);
+
+		// License must be set before competitor
 		alumnoDeporte.setTieneLicencia(tieneLicencia != null ? tieneLicencia : false);
 		alumnoDeporte.setNumeroLicencia(numeroLicencia);
 		alumnoDeporte.setFechaLicencia(fechaLicencia);
+
+		// Validate and set competitor status
+		boolean esCompetidor = competidor != null ? competidor : false;
+		if (esCompetidor && !Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
+			throw new IllegalArgumentException(
+					"El alumno debe tener una licencia federativa activa para ser marcado como competidor");
+		}
+		alumnoDeporte.setCompetidor(esCompetidor);
+
+		alumnoDeporte.setPeso(peso);
+		alumnoDeporte.setFechaPeso(fechaPeso);
 
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
@@ -394,6 +404,12 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
+		// Check if student has license before allowing them to become a competitor
+		if (Boolean.TRUE.equals(competidor) && !Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
+			throw new IllegalArgumentException(
+					"El alumno debe tener una licencia federativa activa para ser marcado como competidor");
+		}
+
 		alumnoDeporte.setCompetidor(competidor);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
@@ -415,6 +431,26 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 						"El alumno no tiene asignado el deporte: " + deporte));
 
 		alumnoDeporte.setFechaPeso(fechaPeso);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaAltaCompeticion(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompeticion) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaAltaCompeticion(fechaAltaCompeticion);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaAltaCompetidorInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompetidorInicial) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaAltaCompetidorInicial(fechaAltaCompetidorInicial);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 
