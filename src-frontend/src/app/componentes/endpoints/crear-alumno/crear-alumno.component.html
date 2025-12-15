@@ -19,42 +19,273 @@
             <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-trophy"></i>
-                <h4>Información Deportiva</h4>
+                <h4>Deportes del Alumno</h4>
               </div>
 
-              <!-- Selección de deporte -->
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched"
-                    [class.is-valid]="alumnoData.get('deporte')?.valid && alumnoData.get('deporte')?.touched">
-                    <label for="deporte">
-                      <i class="bi bi-trophy"></i>
-                      Deporte Principal
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="deporte" name="deporte" formControlName="deporte"
-                      required (change)="onDeporteChange($event)" aria-label="Seleccionar deporte principal" aria-required="true">
-                      <option value="" disabled selected>Selecciona el deporte principal</option>
-                      <option value="TAEKWONDO">Taekwondo</option>
-                      <option value="KICKBOXING">Kickboxing</option>
-                      <option value="PILATES">Pilates</option>
-                      <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
-                    </select>
-                    @if (alumnoData.get('deporte')?.errors && alumnoData.get('deporte')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El deporte principal es obligatorio
+              <div formArrayName="deportesInicial">
+                @for (deporteForm of deportesFormArray.controls; track $index; let i = $index) {
+                  <div [formGroupName]="i" class="deporte-entry mb-3 p-3 border rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h5 class="mb-0">Deporte {{ i + 1 }}</h5>
+                      <button type="button" class="btn btn-sm btn-danger" (click)="eliminarDeporte(i)"
+                              [disabled]="deportesFormArray.length === 1">
+                        <i class="bi bi-trash"></i> Eliminar
+                      </button>
                     </div>
-                    }
+
+                    <div class="row g-3">
+                      <!-- Deporte dropdown -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'deporte-' + i">
+                            <i class="bi bi-trophy"></i>
+                            Deporte
+                            <span class="required">*</span>
+                          </label>
+                          <select class="admin-form-control form-select" [id]="'deporte-' + i"
+                                  formControlName="deporte"
+                                  (change)="onDeporteChangeEnLista(i)"
+                                  required>
+                            <option value="" disabled selected>Selecciona el deporte</option>
+                            <option value="TAEKWONDO">Taekwondo</option>
+                            <option value="KICKBOXING">Kickboxing</option>
+                            <option value="PILATES">Pilates</option>
+                            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- Grado dropdown (only for Taekwondo and Kickboxing) -->
+                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') {
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'grado-' + i">
+                            <i class="bi bi-award"></i>
+                            Grado Inicial
+                            <span class="required">*</span>
+                          </label>
+                          <select class="admin-form-control form-select" [id]="'grado-' + i"
+                                  formControlName="grado">
+                            <option value="" disabled selected>Selecciona el grado</option>
+                            @for (grado of obtenerGradosFiltradosParaDeporte(i); track grado.id) {
+                              <option [value]="grado.tipoGrado">
+                                {{ grado.tipoGrado | titlecase }}
+                              </option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- Fecha Grado (only for Taekwondo and Kickboxing) -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'fechaGrado-' + i">
+                            <i class="bi bi-calendar"></i>
+                            Fecha de Grado
+                            <span class="required">*</span>
+                          </label>
+                          <input type="date" class="admin-form-control" [id]="'fechaGrado-' + i"
+                                 formControlName="fechaGrado" required />
+                        </div>
+                      </div>
+                      }
+
+                      <!-- Fecha Alta en Deporte -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'fechaAlta-' + i">
+                            <i class="bi bi-calendar-check"></i>
+                            Fecha de Alta en Deporte
+                            <span class="required">*</span>
+                          </label>
+                          <input type="date" class="admin-form-control" [id]="'fechaAlta-' + i"
+                                 formControlName="fechaAlta" required />
+                        </div>
+                      </div>
+
+                      <!-- Fecha Alta Inicial (Antigüedad) -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'fechaAltaInicial-' + i">
+                            <i class="bi bi-calendar-event"></i>
+                            Fecha Alta Inicial (Antigüedad)
+                          </label>
+                          <input type="date" class="admin-form-control" [id]="'fechaAltaInicial-' + i"
+                                 formControlName="fechaAltaInicial" />
+                          <div class="admin-form-help">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Dejarlo vacío usa la Fecha de Alta</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Tarifa per-sport -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'tipoTarifa-' + i">
+                            <i class="bi bi-tags-fill"></i>
+                            Tipo de Tarifa
+                            <span class="required">*</span>
+                          </label>
+                          <select class="admin-form-control form-select" [id]="'tipoTarifa-' + i"
+                                  formControlName="tipoTarifa" required
+                                  (change)="onTipoTarifaChangeEnLista(i)">
+                            <option value="" disabled selected>Selecciona una tarifa</option>
+                            @for (tarifa of obtenerTarifasFiltradas(i); track $index) {
+                              <option [value]="tarifa">{{ tarifa }}</option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- Cuantía Tarifa per-sport -->
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'cuantiaTarifa-' + i">
+                            <i class="bi bi-cash"></i>
+                            Cuantía (€)
+                          </label>
+                          <input type="number" class="admin-form-control" [id]="'cuantiaTarifa-' + i"
+                                 formControlName="cuantiaTarifa" placeholder="Autorrelleno editable" step="0.01" min="0" />
+                        </div>
+                      </div>
+
+                      <!-- Rol Familiar (only for PADRES_HIJOS) -->
+                      @if (deporteForm.get('tipoTarifa')?.value === 'PADRES_HIJOS') {
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'rolFamiliar-' + i">
+                            <i class="bi bi-people-fill"></i>
+                            Rol Familiar
+                            <span class="required">*</span>
+                          </label>
+                          <select class="admin-form-control form-select" [id]="'rolFamiliar-' + i"
+                                  formControlName="rolFamiliar">
+                            <option value="" disabled>Selecciona un rol</option>
+                            @for (rol of rolesFamiliares; track rol) {
+                              <option [value]="rol">{{ rol }}</option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+                      }
+
+                      <!-- Grupo Familiar (only for HERMANOS) -->
+                      @if (deporteForm.get('tipoTarifa')?.value === 'HERMANOS') {
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'grupoFamiliar-' + i">
+                            <i class="bi bi-house-heart-fill"></i>
+                            Grupo Familiar
+                            <span class="required">*</span>
+                          </label>
+                          <input type="text" class="admin-form-control" [id]="'grupoFamiliar-' + i"
+                                 formControlName="grupoFamiliar" placeholder="Ej: FAMILIA_GARCIA" />
+                        </div>
+                      </div>
+                      }
+
+                      <!-- Competidor (only for Taekwondo) -->
+                      <!-- TODO: When Kickboxing competition team is created, change condition to: -->
+                      <!-- @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') { -->
+                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO') {
+                      <div class="col-12">
+                        <div class="admin-form-switch">
+                          <label [for]="'competidor-' + i">
+                            <i class="bi bi-trophy-fill"></i>
+                            ¿Es Competidor?
+                          </label>
+                          <div class="switch">
+                            <input type="checkbox" class="form-check-input" [id]="'competidor-' + i"
+                                   formControlName="competidor" />
+                            <span class="slider"></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Peso (only if competidor is checked) -->
+                      @if (deporteForm.get('competidor')?.value) {
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'peso-' + i">
+                            <i class="bi bi-speedometer"></i>
+                            Peso (kg)
+                          </label>
+                          <input type="number" class="admin-form-control" [id]="'peso-' + i"
+                                 formControlName="peso" placeholder="Peso en kg" />
+                        </div>
+                      </div>
+
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'fechaPeso-' + i">
+                            <i class="bi bi-calendar-check"></i>
+                            Fecha de Peso
+                          </label>
+                          <input type="date" class="admin-form-control" [id]="'fechaPeso-' + i"
+                                 formControlName="fechaPeso" />
+                        </div>
+                      </div>
+                      }
+                      }
+
+                      <!-- Licencia Federativa (only for Taekwondo and Kickboxing) -->
+                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') {
+                      <div class="col-12">
+                        <div class="admin-form-switch">
+                          <label [for]="'tieneLicencia-' + i">
+                            <i class="bi bi-patch-check-fill"></i>
+                            ¿Tiene licencia federativa?
+                          </label>
+                          <div class="switch">
+                            <input type="checkbox" class="form-check-input" [id]="'tieneLicencia-' + i"
+                                   formControlName="tieneLicencia" />
+                            <span class="slider"></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Número y Fecha de Licencia (only if tieneLicencia is checked) -->
+                      @if (deporteForm.get('tieneLicencia')?.value) {
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'numeroLicencia-' + i">
+                            <i class="bi bi-hash"></i>
+                            Número de Licencia
+                          </label>
+                          <input type="number" class="admin-form-control" [id]="'numeroLicencia-' + i"
+                                 formControlName="numeroLicencia" placeholder="Número de licencia" />
+                        </div>
+                      </div>
+
+                      <div class="col-12 col-md-6">
+                        <div class="admin-form-field">
+                          <label [for]="'fechaLicencia-' + i">
+                            <i class="bi bi-calendar-check"></i>
+                            Fecha de Licencia
+                          </label>
+                          <input type="date" class="admin-form-control" [id]="'fechaLicencia-' + i"
+                                 formControlName="fechaLicencia" />
+                        </div>
+                      </div>
+                      }
+                      }
+                    </div>
                   </div>
-                </div>
-                <div class="col-12">
-                  <div class="alert alert-info" role="alert">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>Nota:</strong> Puedes agregar deportes adicionales después de crear el alumno en la página de edición.
-                  </div>
-                </div>
+                }
+              </div>
+
+              <!-- Add Sport Button -->
+              <div class="text-center mt-3">
+                <button type="button" class="btn btn-outline-primary" (click)="agregarDeporte()"
+                        [disabled]="deportesFormArray.length >= 4">
+                  <i class="bi bi-plus-circle"></i> Agregar Otro Deporte
+                </button>
+              </div>
+
+              <div class="alert alert-info mt-3" role="alert">
+                <i class="bi bi-info-circle"></i>
+                <strong>Nota:</strong> Puedes gestionar los deportes del alumno en la página de edición.
               </div>
             </div>
 
@@ -235,209 +466,7 @@
               </div>
             </div>
 
-            <!-- Tarifa y Fecha de Alta (solo si no es PILATES o DEFENSA) -->
-            @if (alumnoData.get('deporte')?.value !== 'PILATES' &&
-            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-cash-coin"></i>
-                <h4>Tarifa y Fecha de Alta</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched"
-                    [class.is-valid]="alumnoData.get('tipoTarifa')?.valid && alumnoData.get('tipoTarifa')?.touched">
-                    <label for="tipoTarifa">
-                      <i class="bi bi-tags-fill"></i>
-                      Tipo de Tarifa / Descuento
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="tipoTarifa" name="tipoTarifa"
-                      formControlName="tipoTarifa" required (change)="onTipoTarifaChange($event)"
-                      aria-label="Tipo de tarifa o descuento" aria-required="true">
-                      <option value="" disabled selected>Selecciona un tipo de tarifa</option>
-                      @for (tarifa of tiposTarifa; track tarifa) {
-                        <option [value]="tarifa">{{ tarifa }}</option>
-                      }
-                    </select>
-                    @if (alumnoData.get('tipoTarifa')?.errors && alumnoData.get('tipoTarifa')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El tipo de tarifa es obligatorio
-                    </div>
-                    }
-                    <div class="admin-form-help">
-                      <i class="bi bi-info-circle"></i>
-                      <span>Selecciona el tipo de tarifa que corresponda al alumno</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Rol Familiar (solo para PADRES_HIJOS) -->
-                @if (alumnoData.get('rolFamiliar')?.enabled) {
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched"
-                    [class.is-valid]="alumnoData.get('rolFamiliar')?.valid && alumnoData.get('rolFamiliar')?.touched">
-                    <label for="rolFamiliar">
-                      <i class="bi bi-people-fill"></i>
-                      Rol Familiar
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="rolFamiliar" name="rolFamiliar"
-                      formControlName="rolFamiliar" aria-label="Rol familiar" aria-required="true">
-                      <option value="" disabled>Selecciona un rol</option>
-                      @for (rol of rolesFamiliares; track rol) {
-                        <option [value]="rol">{{ rol }}</option>
-                      }
-                    </select>
-                    @if (alumnoData.get('rolFamiliar')?.errors && alumnoData.get('rolFamiliar')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El rol familiar es obligatorio para tarifa PADRES_HIJOS
-                    </div>
-                    }
-                    <div class="admin-form-help">
-                      <i class="bi bi-info-circle"></i>
-                      <span>PADRE paga 28€, HIJO paga 26€</span>
-                    </div>
-                  </div>
-                </div>
-                }
-
-                <!-- Grupo Familiar (solo para HERMANOS) -->
-                @if (alumnoData.get('grupoFamiliar')?.enabled) {
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched"
-                    [class.is-valid]="alumnoData.get('grupoFamiliar')?.valid && alumnoData.get('grupoFamiliar')?.touched">
-                    <label for="grupoFamiliar">
-                      <i class="bi bi-house-heart-fill"></i>
-                      Grupo Familiar
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" class="admin-form-control" id="grupoFamiliar" name="grupoFamiliar"
-                      formControlName="grupoFamiliar" placeholder="Ej: FAMILIA_GARCIA" aria-label="Grupo familiar"
-                      aria-required="true" />
-                    @if (alumnoData.get('grupoFamiliar')?.errors && alumnoData.get('grupoFamiliar')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El grupo familiar es obligatorio para tarifa HERMANOS
-                    </div>
-                    }
-                    <div class="admin-form-help">
-                      <i class="bi bi-info-circle"></i>
-                      <span>Los hermanos deben tener el mismo nombre de grupo familiar</span>
-                    </div>
-                  </div>
-                </div>
-                }
-
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
-                    [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
-                    <label for="fechaAlta">
-                      <i class="bi bi-calendar-plus"></i>
-                      Fecha de Alta
-                      <span class="required">*</span>
-                    </label>
-                    <input type="date" class="admin-form-control" id="fechaAlta" name="fechaAlta"
-                      formControlName="fechaAlta" required aria-label="Fecha de alta" aria-required="true" />
-                    @if (alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      La fecha de alta es obligatoria
-                    </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
-
-            <!-- Fecha de Alta (si es PILATES o DEFENSA) -->
-            @if (alumnoData.get('deporte')?.value === 'PILATES' ||
-            alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA') {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-calendar-plus"></i>
-                <h4>Fecha de Alta</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched"
-                    [class.is-valid]="alumnoData.get('fechaAlta')?.valid && alumnoData.get('fechaAlta')?.touched">
-                    <label for="fechaAltaPilates">
-                      <i class="bi bi-calendar-plus"></i>
-                      Fecha de Alta
-                      <span class="required">*</span>
-                    </label>
-                    <input type="date" class="admin-form-control" id="fechaAltaPilates" name="fechaAlta"
-                      formControlName="fechaAlta" required aria-label="Fecha de alta" aria-required="true" />
-                    @if (alumnoData.get('fechaAlta')?.errors && alumnoData.get('fechaAlta')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      La fecha de alta es obligatoria
-                    </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
-
-            <!-- Grado (solo si no es PILATES o DEFENSA) -->
-            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
-            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-award-fill"></i>
-                <h4>Grado del Alumno</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched"
-                    [class.is-valid]="alumnoData.get('grado')?.valid && alumnoData.get('grado')?.touched">
-                    <label for="grado">
-                      <i class="bi bi-star-fill"></i>
-                      Grado / Cinturón
-                      <span class="required">*</span>
-                    </label>
-                    <select class="admin-form-control form-select" id="grado" name="grado" formControlName="grado"
-                      required aria-label="Grado o cinturón del alumno" aria-required="true">
-                      <option value="" disabled selected>Selecciona un grado</option>
-                      @for (grado of grados; track grado.id) {
-                        <option [value]="grado.tipoGrado">
-                          {{ getGradoNombre(grado) }}
-                        </option>
-                      }
-                    </select>
-                    @if (alumnoData.get('grado')?.errors && alumnoData.get('grado')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El grado del alumno es obligatorio
-                    </div>
-                    }
-                    <div class="admin-form-help">
-                      <i class="bi bi-info-circle"></i>
-                      <span>Selecciona el grado o cinturón actual del alumno</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
-
-            <!-- Imagen del Alumno (solo si no es PILATES o DEFENSA PERSONAL FEMENINA) -->
-            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
-            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <!-- Imagen del Alumno -->
             <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-image"></i>
@@ -469,11 +498,8 @@
                 }
               </div>
             </div>
-            }
 
-            <!-- Autorización y Discapacidad (solo si no es PILATES o DEFENSA) -->
-            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
-            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <!-- Autorizaciones y Datos Adicionales -->
             <div class="admin-form-section">
               <div class="section-title">
                 <i class="bi bi-shield-check"></i>
@@ -519,143 +545,6 @@
                 </div>
               </div>
             </div>
-            }
-
-            <!-- Discapacidad solo (si es PILATES o DEFENSA) -->
-            @if ( alumnoData.get('deporte')?.value === 'PILATES' ||
-            alumnoData.get('deporte')?.value === 'DEFENSA_PERSONAL_FEMENINA') {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-shield-check"></i>
-                <h4>Datos Adicionales</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-switch" [class.checked]="alumnoData.get('tieneDiscapacidad')?.value">
-                    <label for="tieneDiscapacidadPilates">
-                      <i class="bi bi-universal-access"></i>
-                      ¿Tiene discapacidad?
-                    </label>
-                    <div class="switch">
-                      <input type="checkbox" class="form-check-input" id="tieneDiscapacidadPilates"
-                        formControlName="tieneDiscapacidad" aria-label="Tiene discapacidad" />
-                      <span class="slider"></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
-
-            <!-- Competición y Licencia -->
-            @if ( alumnoData.get('deporte')?.value !== 'PILATES' &&
-            alumnoData.get('deporte')?.value !== 'DEFENSA_PERSONAL_FEMENINA') {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-award"></i>
-                <h4>Competición y Licencia Federativa</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-switch" [class.checked]="alumnoData.get('competidor')?.value">
-                    <label for="competidor">
-                      <i class="bi bi-trophy-fill"></i>
-                      ¿Es Competidor?
-                    </label>
-                    <div class="switch">
-                      <input type="checkbox" class="form-check-input" id="competidor" formControlName="competidor"
-                        (change)="onCompetidorChange($event)" aria-label="Es competidor" />
-                      <span class="slider"></span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Peso (solo se muestra si es competidor) -->
-                @if (alumnoData.get('competidor')?.value) {
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field">
-                    <label for="peso">
-                      <i class="bi bi-speedometer"></i>
-                      Peso (kg)
-                    </label>
-                    <input type="number" class="admin-form-control" id="peso" formControlName="peso"
-                      placeholder="Peso en kg" aria-label="Peso del alumno en kilogramos" />
-                  </div>
-                </div>
-                }
-
-                <div class="col-12">
-                  <div class="admin-form-switch" [class.checked]="alumnoData.get('tieneLicencia')?.value">
-                    <label for="tieneLicencia">
-                      <i class="bi bi-patch-check-fill"></i>
-                      ¿Tiene licencia federativa?
-                    </label>
-                    <div class="switch">
-                      <input type="checkbox" class="form-check-input" id="tieneLicencia" formControlName="tieneLicencia"
-                        (change)="onLicenciaChange($event)" aria-label="Tiene licencia federativa" />
-                      <span class="slider"></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
-
-            <!-- Número y Fecha de Licencia (solo si la tiene) -->
-            @if (alumnoData.get('tieneLicencia')?.value) {
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-card-checklist"></i>
-                <h4>Datos de la Licencia Federativa</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched"
-                    [class.is-valid]="alumnoData.get('numeroLicencia')?.valid && alumnoData.get('numeroLicencia')?.touched">
-                    <label for="numeroLicencia">
-                      <i class="bi bi-hash"></i>
-                      Número de Licencia
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" class="admin-form-control" id="numeroLicencia" name="numeroLicencia"
-                      formControlName="numeroLicencia" placeholder="Número de licencia federativa"
-                      aria-label="Número de licencia federativa" aria-required="true" />
-                    @if (alumnoData.get('numeroLicencia')?.errors && alumnoData.get('numeroLicencia')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      El número de licencia es obligatorio
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched"
-                    [class.is-valid]="alumnoData.get('fechaLicencia')?.valid && alumnoData.get('fechaLicencia')?.touched">
-                    <label for="fechaLicencia">
-                      <i class="bi bi-calendar-check"></i>
-                      Fecha de Licencia
-                      <span class="required">*</span>
-                    </label>
-                    <input type="date" class="admin-form-control" id="fechaLicencia" name="fechaLicencia"
-                      formControlName="fechaLicencia" aria-label="Fecha de emisión de la licencia"
-                      aria-required="true" />
-                    @if (alumnoData.get('fechaLicencia')?.errors && alumnoData.get('fechaLicencia')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      La fecha de licencia es obligatoria
-                    </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-            }
 
             <!-- Submit Buttons -->
             <div class="admin-form-button-group">

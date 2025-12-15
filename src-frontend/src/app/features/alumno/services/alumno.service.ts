@@ -387,4 +387,221 @@ export class AlumnoService {
       { withCredentials: true }
     );
   }
+
+  /**
+   * Update fechaAltaInicial for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaAltaInicial New initial enrollment date (YYYY-MM-DD format)
+   */
+  actualizarFechaAltaInicialDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaAltaInicial: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-alta-inicial`,
+      { fechaAltaInicial },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update tipo de tarifa for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param tipoTarifa New tarifa type
+   */
+  actualizarTipoTarifaDeporte(
+    alumnoId: number,
+    deporte: string,
+    tipoTarifa: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/tipo-tarifa`,
+      { tipoTarifa },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update cuantia de tarifa for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param cuantiaTarifa New tarifa amount
+   */
+  actualizarCuantiaTarifaDeporte(
+    alumnoId: number,
+    deporte: string,
+    cuantiaTarifa: number
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/cuantia-tarifa`,
+      { cuantiaTarifa },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update rol familiar for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param rolFamiliar New family role
+   */
+  actualizarRolFamiliarDeporte(
+    alumnoId: number,
+    deporte: string,
+    rolFamiliar: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/rol-familiar`,
+      { rolFamiliar },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update grupo familiar for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param grupoFamiliar New family group
+   */
+  actualizarGrupoFamiliarDeporte(
+    alumnoId: number,
+    deporte: string,
+    grupoFamiliar: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/grupo-familiar`,
+      { grupoFamiliar },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update tiene licencia for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param tieneLicencia Has federation license
+   */
+  actualizarTieneLicenciaDeporte(
+    alumnoId: number,
+    deporte: string,
+    tieneLicencia: boolean
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/tiene-licencia`,
+      { tieneLicencia },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update numero de licencia for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param numeroLicencia License number
+   */
+  actualizarNumeroLicenciaDeporte(
+    alumnoId: number,
+    deporte: string,
+    numeroLicencia: number
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/numero-licencia`,
+      { numeroLicencia },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update fecha de licencia for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaLicencia License date (YYYY-MM-DD format)
+   */
+  actualizarFechaLicenciaDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaLicencia: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-licencia`,
+      { fechaLicencia },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update competidor status for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param competidor Is competitor
+   */
+  actualizarCompetidorDeporte(
+    alumnoId: number,
+    deporte: string,
+    competidor: boolean
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/competidor`,
+      { competidor },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update peso for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param peso Weight in kg
+   */
+  actualizarPesoDeporte(
+    alumnoId: number,
+    deporte: string,
+    peso: number
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/peso`,
+      { peso },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update fecha de peso for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaPeso Weight measurement date (YYYY-MM-DD format)
+   */
+  actualizarFechaPesoDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaPeso: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-peso`,
+      { fechaPeso },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update the student's initial enrollment date (fechaAltaInicial)
+   * This date affects the antiguedad calculation for all sports
+   * @deprecated Use actualizarFechaAltaInicialDeporte for per-sport updates
+   *
+   * @param alumnoId Student ID
+   * @param fechaAltaInicial New initial enrollment date (YYYY-MM-DD format)
+   */
+  actualizarFechaAltaInicial(
+    alumnoId: number,
+    fechaAltaInicial: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/fecha-alta-inicial`,
+      { fechaAltaInicial },
+      { withCredentials: true }
+    );
+  }
 }
