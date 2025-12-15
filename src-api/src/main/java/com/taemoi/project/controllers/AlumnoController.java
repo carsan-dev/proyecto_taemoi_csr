@@ -521,11 +521,9 @@ public class AlumnoController {
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
-			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
-			java.util.Date fechaAltaInicial = alumno.getFechaAltaInicial();
 			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
-					.map(ad -> com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(ad, fechaAltaInicial))
+					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
 					.collect(Collectors.toList());
 			return ResponseEntity.ok(deportesDTO);
 		} catch (Exception e) {
@@ -578,8 +576,7 @@ public class AlumnoController {
 			}
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService.agregarDeporteAAlumno(id, deporte, gradoInicial, fechaAlta, fechaGrado);
-			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
-			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -667,8 +664,7 @@ public class AlumnoController {
 			com.taemoi.project.entities.TipoGrado nuevoGrado = com.taemoi.project.entities.TipoGrado.valueOf(nuevoGradoStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.actualizarGradoPorDeporte(id, deporteEnum, nuevoGrado);
-			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
-			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -697,9 +693,8 @@ public class AlumnoController {
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarAptoParaExamen(id, deporteEnum, aptoParaExamen);
-			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
-					.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
+					.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -730,9 +725,8 @@ public class AlumnoController {
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarFechaGrado(id, deporteEnum, fechaGrado);
-			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
-					.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
+					.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
