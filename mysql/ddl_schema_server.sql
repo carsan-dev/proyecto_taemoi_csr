@@ -155,6 +155,8 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_deporte` (
   `rol_familiar` ENUM('PADRE', 'HIJO', 'NINGUNO') NULL DEFAULT NULL,
   `grupo_familiar` VARCHAR(50) NULL DEFAULT NULL,
   `competidor` BIT(1) NOT NULL DEFAULT 0,
+  `fecha_alta_competicion` DATE NULL DEFAULT NULL,
+  `fecha_alta_competidor_inicial` DATE NULL DEFAULT NULL,
   `peso` DOUBLE NULL DEFAULT NULL,
   `tiene_licencia` BIT(1) NOT NULL DEFAULT 0,
   `numero_licencia` INT NULL DEFAULT NULL,
