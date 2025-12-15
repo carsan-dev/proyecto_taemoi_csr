@@ -587,6 +587,42 @@ export class AlumnoService {
   }
 
   /**
+   * Update fecha alta competicion for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaAltaCompeticion Competition registration date (YYYY-MM-DD format)
+   */
+  actualizarFechaAltaCompeticionDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaAltaCompeticion: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-alta-competicion`,
+      { fechaAltaCompeticion },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update fecha alta competidor inicial for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaAltaCompetidorInicial Initial competitor registration date (YYYY-MM-DD format)
+   */
+  actualizarFechaAltaCompetidorInicialDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaAltaCompetidorInicial: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-alta-competidor-inicial`,
+      { fechaAltaCompetidorInicial },
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Update the student's initial enrollment date (fechaAltaInicial)
    * This date affects the antiguedad calculation for all sports
    * @deprecated Use actualizarFechaAltaInicialDeporte for per-sport updates

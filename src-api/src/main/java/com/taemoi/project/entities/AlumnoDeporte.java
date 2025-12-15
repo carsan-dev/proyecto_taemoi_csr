@@ -90,6 +90,12 @@ public class AlumnoDeporte {
 	@NotNull(message = "Si es competidor o no debe ser true o false, no null")
 	private Boolean competidor = false;
 
+	@Temporal(TemporalType.DATE)
+	private Date fechaAltaCompeticion;
+
+	@Temporal(TemporalType.DATE)
+	private Date fechaAltaCompetidorInicial;
+
 	private Double peso;
 
 	@Temporal(TemporalType.DATE)
@@ -233,6 +239,22 @@ public class AlumnoDeporte {
 
 	public void setCompetidor(Boolean competidor) {
 		this.competidor = competidor;
+	}
+
+	public Date getFechaAltaCompeticion() {
+		return fechaAltaCompeticion;
+	}
+
+	public void setFechaAltaCompeticion(Date fechaAltaCompeticion) {
+		this.fechaAltaCompeticion = fechaAltaCompeticion;
+	}
+
+	public Date getFechaAltaCompetidorInicial() {
+		return fechaAltaCompetidorInicial;
+	}
+
+	public void setFechaAltaCompetidorInicial(Date fechaAltaCompetidorInicial) {
+		this.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
 	}
 
 	public Double getPeso() {
