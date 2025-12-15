@@ -70,7 +70,39 @@ public class AlumnoDeporte {
 	private Date fechaAlta;
 
 	@Temporal(TemporalType.DATE)
+	private Date fechaAltaInicial;
+
+	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
+
+	// Per-sport tarifa, competidor, and licencia fields
+	@Enumerated(EnumType.STRING)
+	private TipoTarifa tipoTarifa;
+
+	private Double cuantiaTarifa;
+
+	@Enumerated(EnumType.STRING)
+	private RolFamiliar rolFamiliar;
+
+	private String grupoFamiliar;
+
+	@Column(nullable = false)
+	@NotNull(message = "Si es competidor o no debe ser true o false, no null")
+	private Boolean competidor = false;
+
+	private Double peso;
+
+	@Temporal(TemporalType.DATE)
+	private Date fechaPeso;
+
+	@Column(nullable = false)
+	@NotNull(message = "tieneLicencia debe ser true o false, no null")
+	private Boolean tieneLicencia = false;
+
+	private Integer numeroLicencia;
+
+	@Temporal(TemporalType.DATE)
+	private Date fechaLicencia;
 
 	@OneToMany(mappedBy = "alumnoDeporte", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AlumnoConvocatoria> convocatorias = new ArrayList<>();
@@ -139,6 +171,14 @@ public class AlumnoDeporte {
 		this.fechaAlta = fechaAlta;
 	}
 
+	public Date getFechaAltaInicial() {
+		return fechaAltaInicial;
+	}
+
+	public void setFechaAltaInicial(Date fechaAltaInicial) {
+		this.fechaAltaInicial = fechaAltaInicial;
+	}
+
 	public Date getFechaBaja() {
 		return fechaBaja;
 	}
@@ -153,5 +193,85 @@ public class AlumnoDeporte {
 
 	public void setConvocatorias(List<AlumnoConvocatoria> convocatorias) {
 		this.convocatorias = convocatorias;
+	}
+
+	public TipoTarifa getTipoTarifa() {
+		return tipoTarifa;
+	}
+
+	public void setTipoTarifa(TipoTarifa tipoTarifa) {
+		this.tipoTarifa = tipoTarifa;
+	}
+
+	public Double getCuantiaTarifa() {
+		return cuantiaTarifa;
+	}
+
+	public void setCuantiaTarifa(Double cuantiaTarifa) {
+		this.cuantiaTarifa = cuantiaTarifa;
+	}
+
+	public RolFamiliar getRolFamiliar() {
+		return rolFamiliar;
+	}
+
+	public void setRolFamiliar(RolFamiliar rolFamiliar) {
+		this.rolFamiliar = rolFamiliar;
+	}
+
+	public String getGrupoFamiliar() {
+		return grupoFamiliar;
+	}
+
+	public void setGrupoFamiliar(String grupoFamiliar) {
+		this.grupoFamiliar = grupoFamiliar;
+	}
+
+	public Boolean getCompetidor() {
+		return competidor;
+	}
+
+	public void setCompetidor(Boolean competidor) {
+		this.competidor = competidor;
+	}
+
+	public Double getPeso() {
+		return peso;
+	}
+
+	public void setPeso(Double peso) {
+		this.peso = peso;
+	}
+
+	public Date getFechaPeso() {
+		return fechaPeso;
+	}
+
+	public void setFechaPeso(Date fechaPeso) {
+		this.fechaPeso = fechaPeso;
+	}
+
+	public Boolean getTieneLicencia() {
+		return tieneLicencia;
+	}
+
+	public void setTieneLicencia(Boolean tieneLicencia) {
+		this.tieneLicencia = tieneLicencia;
+	}
+
+	public Integer getNumeroLicencia() {
+		return numeroLicencia;
+	}
+
+	public void setNumeroLicencia(Integer numeroLicencia) {
+		this.numeroLicencia = numeroLicencia;
+	}
+
+	public Date getFechaLicencia() {
+		return fechaLicencia;
+	}
+
+	public void setFechaLicencia(Date fechaLicencia) {
+		this.fechaLicencia = fechaLicencia;
 	}
 }

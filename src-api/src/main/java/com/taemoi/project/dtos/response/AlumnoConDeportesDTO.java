@@ -99,8 +99,9 @@ public class AlumnoConDeportesDTO {
 
 		// Convertir deportes a DTOs
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			Date fechaAltaInicial = alumno.getFechaAltaInicial();
 			dto.setDeportes(alumno.getDeportes().stream()
-					.map(AlumnoDeporteDTO::deAlumnoDeporte)
+					.map(ad -> AlumnoDeporteDTO.deAlumnoDeporte(ad, fechaAltaInicial))
 					.collect(Collectors.toList()));
 		}
 

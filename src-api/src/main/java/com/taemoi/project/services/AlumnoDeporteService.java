@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.entities.TipoTarifa;
 
 public interface AlumnoDeporteService {
 
@@ -20,6 +21,32 @@ public interface AlumnoDeporteService {
 	 * @return AlumnoDeporte creado
 	 */
 	AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, java.util.Date fechaAlta, java.util.Date fechaGrado);
+
+	/**
+	 * Agrega un deporte a un alumno existente con todos los campos per-sport
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a agregar
+	 * @param gradoInicial Grado inicial del alumno en ese deporte (puede ser null para deportes sin grado)
+	 * @param fechaAlta Fecha de alta en el deporte (puede ser null, se asigna fecha actual)
+	 * @param fechaAltaInicial Fecha de alta inicial para calcular antigüedad (puede ser null, se usa fechaAlta)
+	 * @param fechaGrado Fecha de grado (puede ser null, se asigna fecha actual)
+	 * @param tipoTarifa Tipo de tarifa para este deporte (puede ser null)
+	 * @param cuantiaTarifa Cuantía de la tarifa (puede ser null)
+	 * @param rolFamiliar Rol familiar para tarifas PADRES_HIJOS (puede ser null)
+	 * @param grupoFamiliar Grupo familiar para tarifa HERMANOS (puede ser null)
+	 * @param competidor Si es competidor en este deporte (puede ser null, default false)
+	 * @param peso Peso del alumno si es competidor (puede ser null)
+	 * @param fechaPeso Fecha de medición del peso (puede ser null)
+	 * @param tieneLicencia Si tiene licencia federativa para este deporte (puede ser null, default false)
+	 * @param numeroLicencia Número de licencia (puede ser null)
+	 * @param fechaLicencia Fecha de la licencia (puede ser null)
+	 * @return AlumnoDeporte creado
+	 */
+	AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
+		java.util.Date fechaAlta, java.util.Date fechaAltaInicial, java.util.Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
+		String rolFamiliar, String grupoFamiliar, Boolean competidor,
+		Double peso, java.util.Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, java.util.Date fechaLicencia);
 
 	/**
 	 * Desactiva un deporte de un alumno (marca como inactivo pero mantiene todos los datos)
@@ -99,6 +126,120 @@ public interface AlumnoDeporteService {
 	 * @return AlumnoDeporte actualizado
 	 */
 	AlumnoDeporte actualizarFechaGrado(Long alumnoId, Deporte deporte, java.util.Date fechaGrado);
+
+	/**
+	 * Actualiza la fecha de alta inicial de un alumno en un deporte específico
+	 * Esta fecha se usa para calcular la antigüedad en el deporte
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaAltaInicial Nueva fecha de alta inicial
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaAltaInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaInicial);
+
+	/**
+	 * Actualiza el tipo de tarifa de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param tipoTarifa Nuevo tipo de tarifa
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarTipoTarifa(Long alumnoId, Deporte deporte, TipoTarifa tipoTarifa);
+
+	/**
+	 * Actualiza la cuantía de tarifa de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param cuantiaTarifa Nueva cuantía de tarifa
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarCuantiaTarifa(Long alumnoId, Deporte deporte, Double cuantiaTarifa);
+
+	/**
+	 * Actualiza el rol familiar de un alumno en un deporte específico
+	 * Usado para tarifas tipo PADRES_HIJOS
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param rolFamiliar Nuevo rol familiar (PADRE, HIJO, NINGUNO)
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarRolFamiliar(Long alumnoId, Deporte deporte, String rolFamiliar);
+
+	/**
+	 * Actualiza el grupo familiar de un alumno en un deporte específico
+	 * Usado para tarifas tipo HERMANOS
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param grupoFamiliar Nuevo grupo familiar
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarGrupoFamiliar(Long alumnoId, Deporte deporte, String grupoFamiliar);
+
+	/**
+	 * Actualiza si el alumno tiene licencia federativa en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param tieneLicencia Si tiene licencia o no
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarTieneLicencia(Long alumnoId, Deporte deporte, Boolean tieneLicencia);
+
+	/**
+	 * Actualiza el número de licencia de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param numeroLicencia Nuevo número de licencia
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarNumeroLicencia(Long alumnoId, Deporte deporte, Integer numeroLicencia);
+
+	/**
+	 * Actualiza la fecha de licencia de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaLicencia Nueva fecha de licencia
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaLicencia(Long alumnoId, Deporte deporte, java.util.Date fechaLicencia);
+
+	/**
+	 * Actualiza si el alumno es competidor en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param competidor Si es competidor o no
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarCompetidor(Long alumnoId, Deporte deporte, Boolean competidor);
+
+	/**
+	 * Actualiza el peso de un alumno en un deporte específico
+	 * Usado para competidores
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param peso Nuevo peso
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarPeso(Long alumnoId, Deporte deporte, Double peso);
+
+	/**
+	 * Actualiza la fecha de peso de un alumno en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param fechaPeso Nueva fecha de peso
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarFechaPeso(Long alumnoId, Deporte deporte, java.util.Date fechaPeso);
 
 	/**
 	 * Calcula el siguiente grado para un alumno en un deporte específico

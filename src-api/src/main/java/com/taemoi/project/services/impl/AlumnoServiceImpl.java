@@ -318,59 +318,82 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-		nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-		nuevoAlumno.setRolFamiliar(nuevoAlumnoDTO.getRolFamiliar() != null ? nuevoAlumnoDTO.getRolFamiliar() : RolFamiliar.NINGUNO);
-		nuevoAlumno.setGrupoFamiliar(nuevoAlumnoDTO.getGrupoFamiliar());
-		nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
-
-		// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
-		if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
-			nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa(), nuevoAlumno.getRolFamiliar()));
-		} else {
-			nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
-		}
 
 		// Asignar AutorizacionWeb, si no está definida por defecto a true
 		nuevoAlumno.setAutorizacionWeb(
 				nuevoAlumnoDTO.getAutorizacionWeb() != null ? nuevoAlumnoDTO.getAutorizacionWeb() : true);
 
-		// Asignar Competidor, Peso y FechaPeso si es aplicable
-	    nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
-	    if (Boolean.TRUE.equals(nuevoAlumno.getCompetidor())) {
-	        nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
-	        nuevoAlumno.setFechaPeso(new Date());
-	        nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
-	    }
+		// LEGACY CODE: Only set these fields if NOT using multi-sport mode
+		// In multi-sport mode, all these fields are per-sport in AlumnoDeporte
+		boolean isMultiSportMode = nuevoAlumnoDTO.getDeportesInicial() != null && !nuevoAlumnoDTO.getDeportesInicial().isEmpty();
 
-	    // Configurar Licencia
-	    nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
-	    if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
-	        nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
-	        nuevoAlumno.setFechaLicencia(new Date());
-	    }
+		if (!isMultiSportMode) {
+			// Legacy single-sport mode
+			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
+			nuevoAlumno.setRolFamiliar(nuevoAlumnoDTO.getRolFamiliar() != null ? nuevoAlumnoDTO.getRolFamiliar() : RolFamiliar.NINGUNO);
+			nuevoAlumno.setGrupoFamiliar(nuevoAlumnoDTO.getGrupoFamiliar());
+			nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
 
-		if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
-			// Buscar y asignar el grado seleccionado
-			TipoGrado tipoGradoSeleccionado = TipoGrado.valueOf(nuevoAlumnoDTO.getGrado());
-			Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
-			nuevoAlumno.setGrado(gradoSeleccionado);
+			// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
+			if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
+				nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa(), nuevoAlumno.getRolFamiliar()));
+			} else {
+				nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
+			}
+
+			// Asignar Competidor, Peso y FechaPeso si es aplicable
+			nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
+			if (Boolean.TRUE.equals(nuevoAlumno.getCompetidor())) {
+				nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
+				nuevoAlumno.setFechaPeso(new Date());
+				nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
+			}
+
+			// Configurar Licencia
+			nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
+			if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
+				nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
+				nuevoAlumno.setFechaLicencia(new Date());
+			}
+
+			if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
+				// Buscar y asignar el grado seleccionado
+				TipoGrado tipoGradoSeleccionado = TipoGrado.valueOf(nuevoAlumnoDTO.getGrado());
+				Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
+				nuevoAlumno.setGrado(gradoSeleccionado);
+			} else {
+				// Si no se seleccionó un grado, puedes asignar un valor por defecto (ejemplo: Blanco)
+				Grado gradoPorDefecto = gradoRepository.findByTipoGrado(TipoGrado.BLANCO);
+				nuevoAlumno.setGrado(gradoPorDefecto);
+			}
+
+			// **Asignar fecha de grado actual al alumno**
+			nuevoAlumno.setFechaGrado(new Date());
+
+			// Legacy: Calculate aptoParaExamen for single-sport mode
+			if (nuevoAlumnoDTO.getAptoParaExamen() != null) {
+				nuevoAlumno.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen());
+			} else {
+				nuevoAlumno.setAptoParaExamen(esAptoParaExamen(nuevoAlumno));
+			}
 		} else {
-			// Si no se seleccionó un grado, puedes asignar un valor por defecto (ejemplo:
-			// Blanco)
-			Grado gradoPorDefecto = gradoRepository.findByTipoGrado(TipoGrado.BLANCO);
-			nuevoAlumno.setGrado(gradoPorDefecto);
-		}
-
-		// **Asignar fecha de grado actual al alumno**
-		nuevoAlumno.setFechaGrado(new Date());
-
-		if (nuevoAlumnoDTO.getAptoParaExamen() != null) {
-			// Asignar el valor manualmente si está presente en el DTO
-			nuevoAlumno.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen());
-		} else {
-			// Si no está presente, calcular automáticamente si es apto
-			nuevoAlumno.setAptoParaExamen(esAptoParaExamen(nuevoAlumno));
+			// Multi-sport mode: explicitly set all legacy fields to null
+			nuevoAlumno.setTipoTarifa(null);
+			nuevoAlumno.setCuantiaTarifa(null);
+			nuevoAlumno.setRolFamiliar(null);
+			nuevoAlumno.setGrupoFamiliar(null);
+			nuevoAlumno.setDeporte(null);
+			nuevoAlumno.setCompetidor(null);
+			nuevoAlumno.setPeso(null);
+			nuevoAlumno.setFechaPeso(null);
+			nuevoAlumno.setTieneLicencia(null);
+			nuevoAlumno.setNumeroLicencia(null);
+			nuevoAlumno.setFechaLicencia(null);
+			nuevoAlumno.setGrado(null);
+			nuevoAlumno.setFechaGrado(null);
+			nuevoAlumno.setAptoParaExamen(null);
+			// Note: Categoria is set separately for competitors in AlumnoDeporte
 		}
 
 		// Asignar imagen si se proporcionó
@@ -396,11 +419,55 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
-		
+
+		// NEW: Multi-sport support
+		if (nuevoAlumnoDTO.getDeportesInicial() != null && !nuevoAlumnoDTO.getDeportesInicial().isEmpty()) {
+			// Multi-sport mode: crear deportes desde la lista
+			logger.info("Creando alumno con {} deportes", nuevoAlumnoDTO.getDeportesInicial().size());
+
+			for (com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO deporteDTO : nuevoAlumnoDTO.getDeportesInicial()) {
+				TipoGrado gradoTipo = null;
+				if (deporteDTO.getGrado() != null && !deporteDTO.getGrado().isEmpty()) {
+					gradoTipo = TipoGrado.valueOf(deporteDTO.getGrado());
+				}
+
+				Date fechaAltaDeporte = deporteDTO.getFechaAlta() != null ? deporteDTO.getFechaAlta() : new Date();
+				Date fechaAltaInicialDeporte = deporteDTO.getFechaAltaInicial() != null ? deporteDTO.getFechaAltaInicial() : fechaAltaDeporte;
+				Date fechaGradoDeporte = deporteDTO.getFechaGrado() != null ? deporteDTO.getFechaGrado() : new Date();
+
+				// Use the new method that accepts per-sport fields
+				alumnoDeporteService.agregarDeporteAAlumnoCompleto(
+					alumnoGuardado.getId(),
+					deporteDTO.getDeporte(),
+					gradoTipo,
+					fechaAltaDeporte,
+					fechaAltaInicialDeporte,
+					fechaGradoDeporte,
+					deporteDTO.getTipoTarifa(),
+					deporteDTO.getCuantiaTarifa(),
+					deporteDTO.getRolFamiliar(),
+					deporteDTO.getGrupoFamiliar(),
+					deporteDTO.getCompetidor(),
+					deporteDTO.getPeso(),
+					deporteDTO.getFechaPeso(),
+					deporteDTO.getTieneLicencia(),
+					deporteDTO.getNumeroLicencia(),
+					deporteDTO.getFechaLicencia()
+				);
+			}
+		} else if (nuevoAlumnoDTO.getDeporte() != null) {
+			// Backward compatibility: single-sport mode
+			logger.info("Creando alumno con deporte único (modo legacy)");
+			// El deporte único ya está asignado en nuevoAlumno.setDeporte() (línea 324)
+			// No se necesita acción adicional aquí ya que el sistema legacy aún existe
+		} else {
+			throw new IllegalArgumentException("Al menos un deporte debe ser especificado");
+		}
+
 	    if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
 	        productoAlumnoService.crearAltaLicenciaFederativa(alumnoGuardado);
 	    }
-	    
+
 	    asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
 
 		// Verificar si el Usuario ya existe o crear uno nuevo
@@ -1300,5 +1367,32 @@ public class AlumnoServiceImpl implements AlumnoService {
 			com.taemoi.project.entities.Deporte deporte,
 			com.taemoi.project.entities.TipoGrado nuevoGrado) {
 		return alumnoDeporteService.actualizarGradoPorDeporte(alumnoId, deporte, nuevoGrado);
+	}
+
+	@Override
+	@Transactional
+	public Alumno actualizarFechaAltaInicial(@NonNull Long id, Date nuevaFechaAltaInicial) {
+		Alumno alumno = alumnoRepository.findById(id)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
+
+		// Validación opcional: advertir si fecha es posterior a la fecha de alta de algún deporte
+		if (alumno.getDeportes() != null) {
+			for (com.taemoi.project.entities.AlumnoDeporte deporte : alumno.getDeportes()) {
+				if (deporte.getFechaAlta() != null && nuevaFechaAltaInicial.after(deporte.getFechaAlta())) {
+					logger.warn("fechaAltaInicial ({}) is after fechaAlta ({}) for sport {}",
+							nuevaFechaAltaInicial, deporte.getFechaAlta(), deporte.getDeporte());
+					// Permitir pero registrar advertencia
+				}
+			}
+		}
+
+		alumno.setFechaAltaInicial(nuevaFechaAltaInicial);
+		return alumnoRepository.save(alumno);
+	}
+
+	@Override
+	public Alumno buscarAlumno(@NonNull Long id) {
+		return alumnoRepository.findById(id)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 	}
 }

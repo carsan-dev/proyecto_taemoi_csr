@@ -66,20 +66,27 @@ public class Alumno {
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
 
-	@NotNull(message = "El tipo de tarifa no puede ser nulo")
+	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
 	@Enumerated(EnumType.STRING)
-	@Column(length = 50)
+	@Column(length = 50, nullable = true)
 	private TipoTarifa tipoTarifa;
 
-	@NotNull(message = "La cuantía de la tarifa no puede ser nula")
+	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
 	@PositiveOrZero(message = "La cuantía de la tarifa debe ser un valor positivo o cero")
+	@Column(nullable = true)
 	private Double cuantiaTarifa;
 
-	@NotNull(message = "El rol familiar no puede ser nulo")
+	// Note: Nullable for multi-sport mode (rolFamiliar is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
 	@Enumerated(EnumType.STRING)
-	private RolFamiliar rolFamiliar = RolFamiliar.NINGUNO;
+	@Column(nullable = true)
+	private RolFamiliar rolFamiliar;
 
-	@Column(length = 50)
+	// Note: Nullable for multi-sport mode (grupoFamiliar is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
+	@Column(length = 50, nullable = true)
 	private String grupoFamiliar;
 
 	@Temporal(TemporalType.DATE)
@@ -97,20 +104,36 @@ public class Alumno {
 	@NotNull(message = "La autorización web no puede ser nula")
 	private Boolean autorizacionWeb = true;
 
-	@NotNull(message = "Si es competidor o no debe ser true o false, no null")
-	private Boolean competidor = false;
+	// Note: Nullable for multi-sport mode (competidor is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
+	@Column(nullable = true)
+	private Boolean competidor;
 
+	// Note: Nullable for multi-sport mode (peso is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
+	@Column(nullable = true)
 	private Double peso;
 
+	// Note: Nullable for multi-sport mode (fechaPeso is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
 	@Temporal(TemporalType.DATE)
+	@Column(nullable = true)
 	private Date fechaPeso;
 
-	@NotNull(message = "tieneLicencia debe ser true o false, no null")
-	private Boolean tieneLicencia = false;
+	// Note: Nullable for multi-sport mode (tieneLicencia is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
+	@Column(nullable = true)
+	private Boolean tieneLicencia;
 
+	// Note: Nullable for multi-sport mode (numeroLicencia is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
+	@Column(nullable = true)
 	private Integer numeroLicencia;
 
+	// Note: Nullable for multi-sport mode (fechaLicencia is per-sport in AlumnoDeporte)
+	// Only required for legacy single-sport mode
 	@Temporal(TemporalType.DATE)
+	@Column(nullable = true)
 	private Date fechaLicencia;
 
 	private Boolean tieneDiscapacidad = false;
@@ -124,7 +147,9 @@ public class Alumno {
 	private List<Documento> documentos = new ArrayList<>();
 
 	// DEPRECATED: Mantenido temporalmente para migración y rollback
+	// Nullable for multi-sport mode (deporte is per-sport in AlumnoDeporte)
 	@Enumerated(EnumType.STRING)
+	@Column(nullable = true)
 	private Deporte deporte;
 
 	@ManyToOne(fetch = FetchType.EAGER)
@@ -133,16 +158,21 @@ public class Alumno {
 	private Categoria categoria;
 
 	// DEPRECATED: Mantenido temporalmente para migración y rollback
+	// Nullable for multi-sport mode (grado is per-sport in AlumnoDeporte)
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "grado_id")
+	@JoinColumn(name = "grado_id", nullable = true)
 	@JsonManagedReference
 	private Grado grado;
 
 	// DEPRECATED: Mantenido temporalmente para migración y rollback
+	// Nullable for multi-sport mode (fechaGrado is per-sport in AlumnoDeporte)
 	@Temporal(TemporalType.DATE)
+	@Column(nullable = true)
 	private Date fechaGrado;
 
 	// DEPRECATED: Mantenido temporalmente para migración y rollback
+	// Nullable for multi-sport mode (aptoParaExamen is per-sport in AlumnoDeporte)
+	@Column(nullable = true)
 	private Boolean aptoParaExamen;
 
 	// NUEVO: Relación de deportes del alumno (multi-deporte)

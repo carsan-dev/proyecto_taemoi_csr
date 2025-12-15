@@ -521,9 +521,11 @@ public class AlumnoController {
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
+			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
+			java.util.Date fechaAltaInicial = alumno.getFechaAltaInicial();
 			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
-					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
+					.map(ad -> com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(ad, fechaAltaInicial))
 					.collect(Collectors.toList());
 			return ResponseEntity.ok(deportesDTO);
 		} catch (Exception e) {
@@ -576,7 +578,8 @@ public class AlumnoController {
 			}
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService.agregarDeporteAAlumno(id, deporte, gradoInicial, fechaAlta, fechaGrado);
-			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
+			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -664,7 +667,8 @@ public class AlumnoController {
 			com.taemoi.project.entities.TipoGrado nuevoGrado = com.taemoi.project.entities.TipoGrado.valueOf(nuevoGradoStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.actualizarGradoPorDeporte(id, deporteEnum, nuevoGrado);
-			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
+			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -693,8 +697,9 @@ public class AlumnoController {
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarAptoParaExamen(id, deporteEnum, aptoParaExamen);
+			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
-					.deAlumnoDeporte(alumnoDeporte);
+					.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -725,8 +730,9 @@ public class AlumnoController {
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarFechaGrado(id, deporteEnum, fechaGrado);
+			com.taemoi.project.entities.Alumno alumno = alumnoService.buscarAlumno(id);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
-					.deAlumnoDeporte(alumnoDeporte);
+					.deAlumnoDeporte(alumnoDeporte, alumno.getFechaAltaInicial());
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -734,6 +740,386 @@ public class AlumnoController {
 		} catch (Exception e) {
 			logger.error("Error al actualizar fecha de grado", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de grado");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de alta inicial per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta-inicial
+	 * Body: { "fechaAltaInicial": "2020-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-inicial")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaAltaInicialDeporte(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaStr = params.get("fechaAltaInicial");
+			if (fechaStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de alta inicial es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaAltaInicial = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaAltaInicial(id, deporteEnum, fechaAltaInicial);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de alta inicial", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de alta inicial");
+		}
+	}
+
+	/**
+	 * Actualiza el tipo de tarifa per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa
+	 * Body: { "tipoTarifa": "INFANTIL" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/tipo-tarifa")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarTipoTarifa(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String tipoTarifaStr = params.get("tipoTarifa");
+			if (tipoTarifaStr == null) {
+				return ResponseEntity.badRequest().body("El tipo de tarifa es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.TipoTarifa tipoTarifa = com.taemoi.project.entities.TipoTarifa.valueOf(tipoTarifaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarTipoTarifa(id, deporteEnum, tipoTarifa);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar tipo de tarifa", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar tipo de tarifa");
+		}
+	}
+
+	/**
+	 * Actualiza la cuantía de tarifa per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/cuantia-tarifa
+	 * Body: { "cuantiaTarifa": 45.00 }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/cuantia-tarifa")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarCuantiaTarifa(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Object> params) {
+		try {
+			Object cuantiaObj = params.get("cuantiaTarifa");
+			if (cuantiaObj == null) {
+				return ResponseEntity.badRequest().body("La cuantía de tarifa es requerida");
+			}
+
+			Double cuantiaTarifa = Double.valueOf(cuantiaObj.toString());
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarCuantiaTarifa(id, deporteEnum, cuantiaTarifa);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar cuantía de tarifa", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar cuantía de tarifa");
+		}
+	}
+
+	/**
+	 * Actualiza el rol familiar per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/rol-familiar
+	 * Body: { "rolFamiliar": "PADRE" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/rol-familiar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarRolFamiliar(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String rolFamiliar = params.get("rolFamiliar");
+			if (rolFamiliar == null) {
+				return ResponseEntity.badRequest().body("El rol familiar es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarRolFamiliar(id, deporteEnum, rolFamiliar);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar rol familiar", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar rol familiar");
+		}
+	}
+
+	/**
+	 * Actualiza el grupo familiar per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/grupo-familiar
+	 * Body: { "grupoFamiliar": "Familia Garcia" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/grupo-familiar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarGrupoFamiliar(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String grupoFamiliar = params.get("grupoFamiliar");
+			if (grupoFamiliar == null) {
+				return ResponseEntity.badRequest().body("El grupo familiar es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarGrupoFamiliar(id, deporteEnum, grupoFamiliar);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar grupo familiar", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar grupo familiar");
+		}
+	}
+
+	/**
+	 * Actualiza si tiene licencia per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/tiene-licencia
+	 * Body: { "tieneLicencia": true }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/tiene-licencia")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarTieneLicencia(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Boolean> params) {
+		try {
+			Boolean tieneLicencia = params.get("tieneLicencia");
+			if (tieneLicencia == null) {
+				return ResponseEntity.badRequest().body("El campo tieneLicencia es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarTieneLicencia(id, deporteEnum, tieneLicencia);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar tiene licencia", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar tiene licencia");
+		}
+	}
+
+	/**
+	 * Actualiza el número de licencia per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/numero-licencia
+	 * Body: { "numeroLicencia": 12345 }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/numero-licencia")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarNumeroLicencia(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Object> params) {
+		try {
+			Object numeroObj = params.get("numeroLicencia");
+			if (numeroObj == null) {
+				return ResponseEntity.badRequest().body("El número de licencia es requerido");
+			}
+
+			Integer numeroLicencia = Integer.valueOf(numeroObj.toString());
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarNumeroLicencia(id, deporteEnum, numeroLicencia);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar número de licencia", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar número de licencia");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de licencia per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-licencia
+	 * Body: { "fechaLicencia": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-licencia")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaLicencia(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaStr = params.get("fechaLicencia");
+			if (fechaStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de licencia es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaLicencia = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaLicencia(id, deporteEnum, fechaLicencia);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de licencia", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de licencia");
+		}
+	}
+
+	/**
+	 * Actualiza si es competidor per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/competidor
+	 * Body: { "competidor": true }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/competidor")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarCompetidor(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Boolean> params) {
+		try {
+			Boolean competidor = params.get("competidor");
+			if (competidor == null) {
+				return ResponseEntity.badRequest().body("El campo competidor es requerido");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarCompetidor(id, deporteEnum, competidor);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar competidor", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar competidor");
+		}
+	}
+
+	/**
+	 * Actualiza el peso per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/peso
+	 * Body: { "peso": 65.5 }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/peso")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarPeso(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Object> params) {
+		try {
+			Object pesoObj = params.get("peso");
+			if (pesoObj == null) {
+				return ResponseEntity.badRequest().body("El peso es requerido");
+			}
+
+			Double peso = Double.valueOf(pesoObj.toString());
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarPeso(id, deporteEnum, peso);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar peso", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar peso");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de peso per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-peso
+	 * Body: { "fechaPeso": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-peso")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaPeso(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaStr = params.get("fechaPeso");
+			if (fechaStr == null) {
+				return ResponseEntity.badRequest().body("La fecha de peso es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaPeso = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaPeso(id, deporteEnum, fechaPeso);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de peso", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de peso");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de alta inicial del alumno (GENERAL - all sports)
+	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
+	 * PUT /api/alumnos/{id}/fecha-alta-inicial
+	 * Body: { "fechaAltaInicial": "2020-01-15" }
+	 */
+	@PutMapping("/{id}/fecha-alta-inicial")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaAltaInicial(@PathVariable @NonNull Long id,
+			@RequestBody Map<String, String> body) {
+		try {
+			String fechaStr = body.get("fechaAltaInicial");
+			if (fechaStr == null || fechaStr.isEmpty()) {
+				return ResponseEntity.badRequest().body("La fecha de alta inicial es requerida");
+			}
+
+			java.util.Date nuevaFecha = java.sql.Date.valueOf(fechaStr);
+
+			com.taemoi.project.entities.Alumno alumnoActualizado = alumnoService.actualizarFechaAltaInicial(id, nuevaFecha);
+			com.taemoi.project.dtos.AlumnoDTO dto = com.taemoi.project.dtos.AlumnoDTO.deAlumno(alumnoActualizado);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body("Formato de fecha inválido. Use YYYY-MM-DD");
+		} catch (com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de alta inicial", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de alta inicial");
 		}
 	}
 
