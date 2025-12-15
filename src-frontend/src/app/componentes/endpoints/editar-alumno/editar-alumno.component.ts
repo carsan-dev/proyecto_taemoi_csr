@@ -2317,25 +2317,133 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle fecha alta competicion change - updates pending changes
+   * Handle fecha alta competicion change - auto-saves to backend
    */
   onFechaAltaCompeticionChange(deporte: string, event: any): void {
     const fechaAltaCompeticion = event.target.value;
 
+    if (!fechaAltaCompeticion) {
+      return;
+    }
+
+    // Update pending changes immediately for UI feedback
     const pending = this.pendingCompetidorChanges.get(deporte) || {};
     pending.fechaAltaCompeticion = fechaAltaCompeticion;
     this.pendingCompetidorChanges.set(deporte, pending);
+
+    // Auto-save to backend
+    this.alumnoService
+      .actualizarFechaAltaCompeticionDeporte(this.alumnoId!, deporte, fechaAltaCompeticion)
+      .subscribe({
+        next: () => {
+          // Reload deportes data to get updated antiguedad
+          this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId!).subscribe({
+            next: (deportes: AlumnoDeporteDTO[]) => {
+              this.deportesDelAlumno = deportes;
+              // Clear pending change after successful save
+              const currentPending = this.pendingCompetidorChanges.get(deporte);
+              if (currentPending) {
+                delete currentPending.fechaAltaCompeticion;
+                if (Object.keys(currentPending).length === 0) {
+                  this.pendingCompetidorChanges.delete(deporte);
+                }
+              }
+
+              Swal.fire({
+                title: 'Fecha actualizada',
+                text: 'Fecha de alta competición guardada correctamente',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+              });
+            },
+            error: (error) => {
+              console.error('Error reloading deportes:', error);
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error updating fecha alta competicion:', error);
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo guardar la fecha de alta competición',
+            icon: 'error',
+          });
+          // Remove from pending changes on error
+          const currentPending = this.pendingCompetidorChanges.get(deporte);
+          if (currentPending) {
+            delete currentPending.fechaAltaCompeticion;
+            if (Object.keys(currentPending).length === 0) {
+              this.pendingCompetidorChanges.delete(deporte);
+            }
+          }
+        }
+      });
   }
 
   /**
-   * Handle fecha alta competidor inicial change - updates pending changes
+   * Handle fecha alta competidor inicial change - auto-saves to backend
    */
   onFechaAltaCompetidorInicialChange(deporte: string, event: any): void {
     const fechaAltaCompetidorInicial = event.target.value;
 
+    if (!fechaAltaCompetidorInicial) {
+      return;
+    }
+
+    // Update pending changes immediately for UI feedback
     const pending = this.pendingCompetidorChanges.get(deporte) || {};
     pending.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
     this.pendingCompetidorChanges.set(deporte, pending);
+
+    // Auto-save to backend
+    this.alumnoService
+      .actualizarFechaAltaCompetidorInicialDeporte(this.alumnoId!, deporte, fechaAltaCompetidorInicial)
+      .subscribe({
+        next: () => {
+          // Reload deportes data to get updated antiguedad
+          this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId!).subscribe({
+            next: (deportes: AlumnoDeporteDTO[]) => {
+              this.deportesDelAlumno = deportes;
+              // Clear pending change after successful save
+              const currentPending = this.pendingCompetidorChanges.get(deporte);
+              if (currentPending) {
+                delete currentPending.fechaAltaCompetidorInicial;
+                if (Object.keys(currentPending).length === 0) {
+                  this.pendingCompetidorChanges.delete(deporte);
+                }
+              }
+
+              Swal.fire({
+                title: 'Fecha actualizada',
+                text: 'Fecha de alta competidor inicial guardada correctamente',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+              });
+            },
+            error: (error) => {
+              console.error('Error reloading deportes:', error);
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error updating fecha alta competidor inicial:', error);
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo guardar la fecha de alta competidor inicial',
+            icon: 'error',
+          });
+          // Remove from pending changes on error
+          const currentPending = this.pendingCompetidorChanges.get(deporte);
+          if (currentPending) {
+            delete currentPending.fechaAltaCompetidorInicial;
+            if (Object.keys(currentPending).length === 0) {
+              this.pendingCompetidorChanges.delete(deporte);
+            }
+          }
+        }
+      });
   }
 
   // ========== HELPER METHODS TO GET DISPLAYED VALUES ==========

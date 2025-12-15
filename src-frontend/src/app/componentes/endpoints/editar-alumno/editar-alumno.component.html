@@ -576,10 +576,11 @@
                         </div>
                       </div>
 
-                      <!-- Antiguedad display -->
-                      @if (deporteItem.antiguedadCompetidor) {
+                      <!-- Antiguedad and Categoria display -->
+                      @if (deporteItem.antiguedadCompetidor || alumno.categoria) {
                       <div class="row mt-3">
-                        <div class="col-12">
+                        @if (deporteItem.antiguedadCompetidor) {
+                        <div [class]="alumno.categoria ? 'col-md-6' : 'col-12'">
                           <div class="info-item">
                             <span class="info-label">
                               <i class="bi bi-hourglass-split"></i>
@@ -588,6 +589,18 @@
                             <span class="info-value">{{ deporteItem.antiguedadCompetidor }}</span>
                           </div>
                         </div>
+                        }
+                        @if (alumno.categoria) {
+                        <div [class]="deporteItem.antiguedadCompetidor ? 'col-md-6' : 'col-12'">
+                          <div class="info-item">
+                            <span class="info-label">
+                              <i class="bi bi-award"></i>
+                              Categoría
+                            </span>
+                            <span class="info-value">{{ alumno.categoria.nombre }}</span>
+                          </div>
+                        </div>
+                        }
                       </div>
                       }
 
