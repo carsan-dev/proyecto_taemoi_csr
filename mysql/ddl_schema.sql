@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`imagen` (
   `url` VARCHAR(255) NULL DEFAULT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 822
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`categoria` (
   `tipo_categoria` ENUM('CADETE', 'INFANTIL', 'JUNIOR', 'PRECADETE', 'SENIOR') NULL DEFAULT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 11
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`grado` (
   `tipo_grado` ENUM('AMARILLO', 'AMARILLO_NARANJA', 'AZUL', 'AZUL_ROJO', 'BLANCO', 'BLANCO_AMARILLO', 'NARANJA', 'NARANJA_VERDE', 'NEGRO_1_DAN', 'NEGRO_2_DAN', 'NEGRO_3_DAN', 'NEGRO_4_DAN', 'NEGRO_5_DAN', 'ROJO', 'ROJO_NEGRO_1_PUM', 'ROJO_NEGRO_2_PUM', 'ROJO_NEGRO_3_PUM', 'VERDE', 'VERDE_AZUL') NOT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 39
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno` (
     FOREIGN KEY (`grado_id`)
     REFERENCES `taemoidb`.`grado` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 840
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`producto` (
   `precio` DOUBLE NULL DEFAULT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 562
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_deporte` (
     FOREIGN KEY (`grado_id`)
     REFERENCES `taemoidb`.`grado` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 818
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`producto_alumno` (
     FOREIGN KEY (`alumno_deporte_id`)
     REFERENCES `taemoidb`.`alumno_deporte` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 11785
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`convocatoria` (
   `fecha_convocatoria` DATE NOT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 538
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_convocatoria` (
     FOREIGN KEY (`convocatoria_id`)
     REFERENCES `taemoidb`.`convocatoria` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 1144
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -273,7 +273,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`grupo` (
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 21
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -313,7 +313,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`turno` (
     FOREIGN KEY (`grupo_id`)
     REFERENCES `taemoidb`.`grupo` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 39
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -366,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`documento` (
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoidb`.`alumno` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 1798
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -386,7 +386,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`evento` (
     FOREIGN KEY (`foto_evento_id`)
     REFERENCES `taemoidb`.`imagen` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -408,7 +408,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`usuario` (
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoidb`.`alumno` (`id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 29
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
