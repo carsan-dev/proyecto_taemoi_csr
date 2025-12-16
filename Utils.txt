@@ -42,15 +42,15 @@ Comandos para eliminar todo lo existente en docker de cara a deploy limpio
 
 Migrar data para local: 
 
-python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_local.sql" --env local --schema taemoidb
+python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_local.sql" --env local --schema taemoidb
 
 Migrar data para server: 
 
-python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_server.sql" --env server --schema taemoi_db
+python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_server.sql" --env server --schema taemoi_db
 
 Migrar data para docker: 
 
-python migrate_to_mysql_v7.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_docker.sql" --env docker --schema taemoi_db
+python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_docker.sql" --env docker --schema taemoi_db
 
 TODO:
 
@@ -141,4 +141,8 @@ Actualizar precio productos
 
 ✔ Poder añadir personalizada también la antiguedad al crear al alumno y editarla luego
 
-Modificar licencia federativa en la migración o el propio campo para usar la licencia del deporte y no la general o migrarse bien
+✔ Modificar licencia federativa en la migración o el propio campo para usar la licencia del deporte y no la general o migrarse bien
+
+✔ Migrar categoria_id de alumno a alumno_deporte (ya incluido en migrate_to_mysql_v8.py - regenerar migration SQL y aplicar)
+
+✔ Corregir categoria ID mismatch (IDs viejos 6-10 vs nuevos 1-5) - ahora usa asignación por edad en vez de copiar IDs
