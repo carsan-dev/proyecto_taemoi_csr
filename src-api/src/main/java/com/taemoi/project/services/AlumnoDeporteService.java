@@ -262,6 +262,16 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarFechaAltaCompetidorInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompetidorInicial);
 
 	/**
+	 * Actualiza la categoría de un alumno competidor en un deporte específico
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param categoriaNombre Nombre de la nueva categoría (INFANTIL, PRECADETE, CADETE, JUNIOR, SENIOR)
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarCategoria(Long alumnoId, Deporte deporte, String categoriaNombre);
+
+	/**
 	 * Calcula el siguiente grado para un alumno en un deporte específico
 	 *
 	 * @param alumnoDeporte AlumnoDeporte para calcular siguiente grado

@@ -13,6 +13,7 @@ import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Convocatoria;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
@@ -117,7 +118,11 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					Alumno alumno = alumnoConvocatoria.getAlumno();
 					String nombreCompleto = alumno.getNombre() + " " + alumno.getApellidos();
 					Integer edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-					String categoriaNombre = alumno.getCategoria() != null ? alumno.getCategoria().getNombre() : null;
+					// Get categoria from AlumnoDeporte (per-sport)
+					AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
+					String categoriaNombre = alumnoDeporte != null && alumnoDeporte.getCategoria() != null
+							? alumnoDeporte.getCategoria().getNombre()
+							: null;
 
 					return new AlumnoConvocatoriaReporteDTO(
 							alumno.getId(),
