@@ -124,13 +124,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }> = new Map();
   deportesDisponibles: Deporte[] = [];
 
-  // Categorias for Taekwondo competitors
+  // Categorias for Taekwondo competitors (must match database categoria.nombre values)
   categorias = [
-    'INFANTIL',
-    'PRECADETE',
-    'CADETE',
-    'JUNIOR',
-    'SENIOR'
+    'Infantil',
+    'Precadete',
+    'Cadete',
+    'Junior',
+    'Senior'
   ];
   DeporteEnum = Deporte;
   DeporteLabels = DeporteLabels;
