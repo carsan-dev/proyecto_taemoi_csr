@@ -596,8 +596,8 @@
                               Categoría
                             </label>
                             <select [id]="'categoria-' + deporteItem.deporte" class="admin-form-control"
-                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.categoria ?? deporteItem.categoria ?? ''"
-                              (change)="onCategoriaChange(deporteItem.deporte, $event)">
+                              [ngModel]="getCategoriaValue(deporteItem.deporte)"
+                              (ngModelChange)="onCategoriaModelChange(deporteItem.deporte, $event)">
                               <option value="">-- Seleccionar Categoría --</option>
                               @for (cat of categorias; track cat) {
                                 <option [value]="cat">{{ cat }}</option>
