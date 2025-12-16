@@ -740,6 +740,26 @@ def write_alumno_deporte(f, schema: str, stats: Dict):
     f.write(f"FROM `{schema}`.`alumno` a\n")
     f.write("WHERE a.deporte IS NOT NULL;\n\n")
 
+    # Add UPDATE statement to assign categoria based on age
+    # This is better than copying old categoria_id values because categoria IDs may have changed
+    f.write("-- Assign categoria to competitors based on their age\n")
+    f.write("-- This ensures correct categoria assignment even if categoria IDs changed\n")
+    f.write(f"UPDATE `{schema}`.`alumno_deporte` ad\n")
+    f.write(f"INNER JOIN `{schema}`.`alumno` a ON ad.`alumno_id` = a.`id`\n")
+    f.write(f"SET ad.`categoria_id` = CASE\n")
+    f.write(f"  WHEN TIMESTAMPDIFF(YEAR, a.`fecha_nacimiento`, CURDATE()) BETWEEN 8 AND 9 THEN\n")
+    f.write(f"    (SELECT `id` FROM `{schema}`.`categoria` WHERE `nombre` = 'Infantil')\n")
+    f.write(f"  WHEN TIMESTAMPDIFF(YEAR, a.`fecha_nacimiento`, CURDATE()) BETWEEN 10 AND 11 THEN\n")
+    f.write(f"    (SELECT `id` FROM `{schema}`.`categoria` WHERE `nombre` = 'Precadete')\n")
+    f.write(f"  WHEN TIMESTAMPDIFF(YEAR, a.`fecha_nacimiento`, CURDATE()) BETWEEN 12 AND 14 THEN\n")
+    f.write(f"    (SELECT `id` FROM `{schema}`.`categoria` WHERE `nombre` = 'Cadete')\n")
+    f.write(f"  WHEN TIMESTAMPDIFF(YEAR, a.`fecha_nacimiento`, CURDATE()) BETWEEN 15 AND 17 THEN\n")
+    f.write(f"    (SELECT `id` FROM `{schema}`.`categoria` WHERE `nombre` = 'Junior')\n")
+    f.write(f"  ELSE\n")
+    f.write(f"    (SELECT `id` FROM `{schema}`.`categoria` WHERE `nombre` = 'Senior')\n")
+    f.write(f"END\n")
+    f.write(f"WHERE ad.`competidor` = 1 AND ad.`deporte` = 'TAEKWONDO';\n\n")
+
     f.write("-- Migrated alumno_deporte records from deprecated alumno fields\n")
     f.write("-- NOTE: After migration, alumno legacy fields should be set to NULL for multi-sport mode\n\n")
     stats["alumno_deporte"] = {"note": "Generated from alumno SELECT-INSERT with all per-sport fields"}
