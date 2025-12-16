@@ -623,6 +623,24 @@ export class AlumnoService {
   }
 
   /**
+   * Update categoria for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param categoria Categoria name (INFANTIL, PRECADETE, CADETE, JUNIOR, SENIOR)
+   */
+  actualizarCategoriaDeporte(
+    alumnoId: number,
+    deporte: string,
+    categoria: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/categoria`,
+      { categoria },
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Update the student's initial enrollment date (fechaAltaInicial)
    * This date affects the antiguedad calculation for all sports
    * @deprecated Use actualizarFechaAltaInicialDeporte for per-sport updates
