@@ -118,10 +118,20 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     competidor?: boolean;
     fechaAltaCompeticion?: string;
     fechaAltaCompetidorInicial?: string;
+    categoria?: string;
     peso?: number;
     fechaPeso?: string;
   }> = new Map();
   deportesDisponibles: Deporte[] = [];
+
+  // Categorias for Taekwondo competitors
+  categorias = [
+    'INFANTIL',
+    'PRECADETE',
+    'CADETE',
+    'JUNIOR',
+    'SENIOR'
+  ];
   DeporteEnum = Deporte;
   DeporteLabels = DeporteLabels;
 
@@ -2338,6 +2348,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.pendingCompetidorChanges.set(deporte, pending);
   }
 
+  /**
+   * Handle categoria change - updates pending changes
+   */
+  onCategoriaChange(deporte: string, event: any): void {
+    const categoria = event.target.value;
+
+    const pending = this.pendingCompetidorChanges.get(deporte) || {};
+    pending.categoria = categoria;
+    this.pendingCompetidorChanges.set(deporte, pending);
+  }
+
   // ========== HELPER METHODS TO GET DISPLAYED VALUES ==========
 
   /**
@@ -2686,6 +2707,21 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             }
           },
           error: this.handleUpdateError.bind(this, 'fecha alta competidor inicial'),
+        });
+    }
+
+    // Update categoria
+    if (pending.categoria !== undefined) {
+      this.alumnoService
+        .actualizarCategoriaDeporte(this.alumnoId, deporte, pending.categoria)
+        .subscribe({
+          next: () => {
+            updateCount++;
+            if (updateCount === totalUpdates) {
+              this.onAllCompetidorUpdatesComplete(deporte);
+            }
+          },
+          error: this.handleUpdateError.bind(this, 'categoría'),
         });
     }
 
