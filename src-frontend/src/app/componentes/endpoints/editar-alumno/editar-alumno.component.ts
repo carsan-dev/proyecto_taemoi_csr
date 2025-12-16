@@ -2359,6 +2359,24 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.pendingCompetidorChanges.set(deporte, pending);
   }
 
+  /**
+   * Get current categoria value for a deporte (pending or actual)
+   */
+  getCategoriaValue(deporte: string): string {
+    const deporteItem = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    const pending = this.pendingCompetidorChanges.get(deporte);
+    return pending?.categoria ?? deporteItem?.categoria ?? '';
+  }
+
+  /**
+   * Handle categoria change via ngModel
+   */
+  onCategoriaModelChange(deporte: string, categoria: string): void {
+    const pending = this.pendingCompetidorChanges.get(deporte) || {};
+    pending.categoria = categoria;
+    this.pendingCompetidorChanges.set(deporte, pending);
+  }
+
   // ========== HELPER METHODS TO GET DISPLAYED VALUES ==========
 
   /**
