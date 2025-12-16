@@ -15,13 +15,16 @@ import com.taemoi.project.config.ExamEligibilityConfig;
 import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.RolFamiliar;
+import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.utils.FechaUtils;
@@ -38,6 +41,9 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 	@Autowired
 	private GradoRepository gradoRepository;
+
+	@Autowired
+	private CategoriaRepository categoriaRepository;
 
 	@Autowired
 	private GradeProgressionConfig gradeProgressionConfig;
@@ -411,7 +417,42 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		}
 
 		alumnoDeporte.setCompetidor(competidor);
+
+		// Auto-assign categoria for Taekwondo competitors based on age
+		if (Boolean.TRUE.equals(competidor) && deporte == Deporte.TAEKWONDO) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			Categoria categoria = asignarCategoriaSegunEdad(edad);
+			alumnoDeporte.setCategoria(categoria);
+		} else if (Boolean.FALSE.equals(competidor)) {
+			// If unmarking as competitor, remove categoria
+			alumnoDeporte.setCategoria(null);
+		}
+
 		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	/**
+	 * Asigna una categoría según la edad del alumno para competidores de Taekwondo
+	 *
+	 * @param edad La edad del alumno
+	 * @return La categoría asignada
+	 */
+	private Categoria asignarCategoriaSegunEdad(int edad) {
+		TipoCategoria tipoCategoria;
+		if (edad >= 8 && edad <= 9) {
+			tipoCategoria = TipoCategoria.INFANTIL;
+		} else if (edad >= 10 && edad <= 11) {
+			tipoCategoria = TipoCategoria.PRECADETE;
+		} else if (edad >= 12 && edad <= 14) {
+			tipoCategoria = TipoCategoria.CADETE;
+		} else if (edad >= 15 && edad <= 16) {
+			tipoCategoria = TipoCategoria.JUNIOR;
+		} else {
+			tipoCategoria = TipoCategoria.SENIOR;
+		}
+
+		return categoriaRepository.findByNombre(tipoCategoria.getNombre());
 	}
 
 	@Override
@@ -451,6 +492,28 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 						"El alumno no tiene asignado el deporte: " + deporte));
 
 		alumnoDeporte.setFechaAltaCompetidorInicial(fechaAltaCompetidorInicial);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarCategoria(Long alumnoId, Deporte deporte, String categoriaNombre) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Validate categoria name is provided
+		if (categoriaNombre == null || categoriaNombre.isBlank()) {
+			throw new IllegalArgumentException("El nombre de la categoría no puede ser nulo o vacío");
+		}
+
+		// Look up categoria by name
+		Categoria categoria = categoriaRepository.findByNombre(categoriaNombre.trim());
+		if (categoria == null) {
+			throw new IllegalArgumentException("Categoría no encontrada: " + categoriaNombre);
+		}
+
+		// Update categoria
+		alumnoDeporte.setCategoria(categoria);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 

@@ -152,11 +152,7 @@ public class Alumno {
 	@Column(nullable = true)
 	private Deporte deporte;
 
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "categoria_id")
-	@JsonManagedReference
-	private Categoria categoria;
-
+	// DEPRECATED: Categoria moved to AlumnoDeporte for per-sport categories
 	// DEPRECATED: Mantenido temporalmente para migración y rollback
 	// Nullable for multi-sport mode (grado is per-sport in AlumnoDeporte)
 	@ManyToOne(fetch = FetchType.EAGER)
@@ -305,13 +301,14 @@ public class Alumno {
 		this.email = email;
 	}
 
-	public Categoria getCategoria() {
-		return categoria;
-	}
+	// DEPRECATED: Categoria moved to AlumnoDeporte
+	// public Categoria getCategoria() {
+	// 	return categoria;
+	// }
 
-	public void setCategoria(Categoria categoria) {
-		this.categoria = categoria;
-	}
+	// public void setCategoria(Categoria categoria) {
+	// 	this.categoria = categoria;
+	// }
 
 	public Grado getGrado() {
 		return grado;

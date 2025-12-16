@@ -96,6 +96,10 @@ public class AlumnoDeporte {
 	@Temporal(TemporalType.DATE)
 	private Date fechaAltaCompetidorInicial;
 
+	@ManyToOne
+	@JoinColumn(name = "categoria_id")
+	private Categoria categoria;
+
 	private Double peso;
 
 	@Temporal(TemporalType.DATE)
@@ -255,6 +259,14 @@ public class AlumnoDeporte {
 
 	public void setFechaAltaCompetidorInicial(Date fechaAltaCompetidorInicial) {
 		this.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
+	}
+
+	public Categoria getCategoria() {
+		return categoria;
+	}
+
+	public void setCategoria(Categoria categoria) {
+		this.categoria = categoria;
 	}
 
 	public Double getPeso() {

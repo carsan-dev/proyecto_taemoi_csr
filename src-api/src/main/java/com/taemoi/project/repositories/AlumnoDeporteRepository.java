@@ -40,17 +40,21 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	List<AlumnoDeporte> findByDeporteAndActivoTrue(Deporte deporte);
 
 	/**
-	 * Encuentra todos los deportes de un alumno con grado cargado (evita N+1)
+	 * Encuentra todos los deportes de un alumno con grado y categoria cargados (evita N+1)
 	 */
-	@Query("SELECT ad FROM AlumnoDeporte ad LEFT JOIN FETCH ad.grado WHERE ad.alumno.id = :alumnoId")
+	@Query("SELECT ad FROM AlumnoDeporte ad " +
+		   "LEFT JOIN FETCH ad.grado " +
+		   "LEFT JOIN FETCH ad.categoria " +
+		   "WHERE ad.alumno.id = :alumnoId")
 	List<AlumnoDeporte> findByAlumnoIdWithGrado(@Param("alumnoId") Long alumnoId);
 
 	/**
-	 * Encuentra deportes de un alumno con grado y alumno cargados (para conversión a DTO)
+	 * Encuentra deportes de un alumno con grado, alumno y categoria cargados (para conversión a DTO)
 	 */
 	@Query("SELECT ad FROM AlumnoDeporte ad " +
 		   "LEFT JOIN FETCH ad.grado " +
 		   "LEFT JOIN FETCH ad.alumno " +
+		   "LEFT JOIN FETCH ad.categoria " +
 		   "WHERE ad.alumno.id = :alumnoId")
 	List<AlumnoDeporte> findByAlumnoIdWithRelaciones(@Param("alumnoId") Long alumnoId);
 
@@ -60,6 +64,7 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	@Query("SELECT ad FROM AlumnoDeporte ad " +
 		   "LEFT JOIN FETCH ad.grado " +
 		   "LEFT JOIN FETCH ad.alumno " +
+		   "LEFT JOIN FETCH ad.categoria " +
 		   "WHERE ad.deporte = :deporte AND ad.aptoParaExamen = true AND ad.activo = true")
 	List<AlumnoDeporte> findAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
 
@@ -69,6 +74,7 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	@Query("SELECT ad FROM AlumnoDeporte ad " +
 		   "LEFT JOIN FETCH ad.grado " +
 		   "LEFT JOIN FETCH ad.alumno " +
+		   "LEFT JOIN FETCH ad.categoria " +
 		   "WHERE ad.id = :id")
 	Optional<AlumnoDeporte> findByIdWithRelaciones(@Param("id") Long id);
 
@@ -93,6 +99,7 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	@Query("SELECT ad FROM AlumnoDeporte ad " +
 		   "LEFT JOIN FETCH ad.grado " +
 		   "LEFT JOIN FETCH ad.alumno " +
+		   "LEFT JOIN FETCH ad.categoria " +
 		   "WHERE ad.grado IS NOT NULL AND ad.deporte IN :deportes AND ad.activo = true")
 	List<AlumnoDeporte> findByGradoNotNullAndDeporteIn(@Param("deportes") List<Deporte> deportes);
 }
