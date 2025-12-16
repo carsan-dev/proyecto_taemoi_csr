@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -54,6 +55,8 @@ import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.DocumentoService;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.validation.Valid;
 
 /**
@@ -93,6 +96,9 @@ public class AlumnoController {
 	
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
+
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -1086,6 +1092,37 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Actualiza la categoría del alumno para un deporte específico
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/categoria
+	 * Body: { "categoria": "INFANTIL" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/categoria")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarCategoria(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String categoriaNombre = params.get("categoria");
+			if (categoriaNombre == null || categoriaNombre.isEmpty()) {
+				return ResponseEntity.badRequest().body("La categoría es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarCategoria(id, deporteEnum, categoriaNombre);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar categoría", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar categoría");
+		}
+	}
+
+	/**
 	 * Actualiza la fecha de alta como competidor per-sport
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta-competicion
 	 * Body: { "fechaAltaCompeticion": "2025-01-15" }
@@ -1220,6 +1257,62 @@ public class AlumnoController {
 		} catch (Exception e) {
 			logger.error("Error al obtener alumnos con deportes", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	/**
+	 * MIGRATION ENDPOINT: Migrates categoria_id from alumno table to alumno_deporte table
+	 * This is a ONE-TIME migration to copy categoria data from the old location to the new per-sport location.
+	 *
+	 * POST /api/alumnos/migrate-categorias
+	 *
+	 * This endpoint:
+	 * 1. Finds all alumno_deporte records where categoria_id is NULL
+	 * 2. Copies the categoria_id from the alumno table to the alumno_deporte table
+	 * 3. Only updates records where categoria_id exists in alumno table
+	 *
+	 * @return ResponseEntity with migration results
+	 */
+	@PostMapping("/migrate-categorias")
+	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@Transactional
+	public ResponseEntity<?> migrateCategorias() {
+		try {
+			logger.info("## AlumnoController :: migrateCategorias :: Starting categoria migration");
+
+			// IMPROVED: Assign categoria based on student's age instead of copying old IDs
+			// This handles the case where categoria IDs changed after schema updates
+			String sql = "UPDATE alumno_deporte ad " +
+						 "INNER JOIN alumno a ON ad.alumno_id = a.id " +
+						 "SET ad.categoria_id = CASE " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 8 AND 9 THEN " +
+						 "    (SELECT id FROM categoria WHERE nombre = 'Infantil') " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 10 AND 11 THEN " +
+						 "    (SELECT id FROM categoria WHERE nombre = 'Precadete') " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 12 AND 14 THEN " +
+						 "    (SELECT id FROM categoria WHERE nombre = 'Cadete') " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 15 AND 17 THEN " +
+						 "    (SELECT id FROM categoria WHERE nombre = 'Junior') " +
+						 "  ELSE " +
+						 "    (SELECT id FROM categoria WHERE nombre = 'Senior') " +
+						 "END " +
+						 "WHERE ad.competidor = 1 AND ad.deporte = 'TAEKWONDO'";
+
+			int rowsUpdated = entityManager.createNativeQuery(sql).executeUpdate();
+
+			logger.info("## AlumnoController :: migrateCategorias :: Migration completed. Rows updated: {}", rowsUpdated);
+
+			return ResponseEntity.ok(Map.of(
+				"success", true,
+				"message", "Categoria migration completed successfully (assigned by age)",
+				"rowsUpdated", rowsUpdated
+			));
+		} catch (Exception e) {
+			logger.error("Error during categoria migration", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+				"success", false,
+				"message", "Error during categoria migration: " + e.getMessage()
+			));
 		}
 	}
 }

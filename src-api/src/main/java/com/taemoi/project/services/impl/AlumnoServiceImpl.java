@@ -347,7 +347,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			if (Boolean.TRUE.equals(nuevoAlumno.getCompetidor())) {
 				nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
 				nuevoAlumno.setFechaPeso(new Date());
-				nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
+				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
+			// nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
 			}
 
 			// Configurar Licencia
@@ -588,13 +589,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumnoExistente.setPeso(alumnoActualizado.getPeso());
 				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
 
-				// Actualizar la categoría en función de la edad
-				int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
-				Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-				alumnoExistente.setCategoria(nuevaCategoria);
+				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
+				// int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
+				// Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
+				// alumnoExistente.setCategoria(nuevaCategoria);
 			} else {
+				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
 				// Si ya no es competidor, eliminar la categoría
-				alumnoExistente.setCategoria(null);
+				// alumnoExistente.setCategoria(null);
 			}
 
 			// Duplicate code removed - categoria assignment already handled above

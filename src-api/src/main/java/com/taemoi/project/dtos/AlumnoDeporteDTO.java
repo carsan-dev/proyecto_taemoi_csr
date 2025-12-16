@@ -37,6 +37,7 @@ public class AlumnoDeporteDTO {
 	private Date fechaAltaCompeticion;
 	private Date fechaAltaCompetidorInicial;
 	private String antiguedadCompetidor; // Tiempo como competidor (calculado from fechaAltaCompetidorInicial)
+	private String categoria; // Category name for competitors (per-sport)
 	private Double peso;
 	private Date fechaPeso;
 
@@ -103,6 +104,9 @@ public class AlumnoDeporteDTO {
 				: alumnoDeporte.getFechaAltaCompeticion();
 			dto.setAntiguedadCompetidor(calcularAntiguedad(fechaParaAntiguedadCompetidor, null));
 		}
+
+		// Categoria (per-sport)
+		dto.setCategoria(alumnoDeporte.getCategoria() != null ? alumnoDeporte.getCategoria().getNombre() : null);
 
 		dto.setPeso(alumnoDeporte.getPeso());
 		dto.setFechaPeso(alumnoDeporte.getFechaPeso());
@@ -306,6 +310,14 @@ public class AlumnoDeporteDTO {
 
 	public void setAntiguedadCompetidor(String antiguedadCompetidor) {
 		this.antiguedadCompetidor = antiguedadCompetidor;
+	}
+
+	public String getCategoria() {
+		return categoria;
+	}
+
+	public void setCategoria(String categoria) {
+		this.categoria = categoria;
 	}
 
 	public Double getPeso() {

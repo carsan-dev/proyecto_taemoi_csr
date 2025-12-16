@@ -367,7 +367,8 @@ public class AlumnoDTO {
 			return null;
 		}
 
-		String categoriaNombre = alumno.getCategoria() != null ? alumno.getCategoria().getNombre() : null;
+		// Categoria is now per-sport (in AlumnoDeporte), not global
+		String categoriaNombre = null;
 		String gradoTipo = alumno.getGrado() != null && alumno.getGrado().getTipoGrado() != null
 				? alumno.getGrado().getTipoGrado().name()
 				: null;

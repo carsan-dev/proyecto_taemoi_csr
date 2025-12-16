@@ -1,16 +1,11 @@
 package com.taemoi.project.entities;
 
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
@@ -25,9 +20,10 @@ public class Categoria {
 	@NotBlank(message = "El nombre de la categoría no puede estar en blanco")
 	private String nombre;
 
-	@OneToMany(mappedBy = "categoria")
-	@JsonBackReference
-	private List<Alumno> alumnos;
+	// DEPRECATED: Categoria is now per-sport (mapped in AlumnoDeporte, not Alumno)
+	// @OneToMany(mappedBy = "categoria")
+	// @JsonBackReference
+	// private List<Alumno> alumnos;
 
 	public Long getId() {
 		return id;
@@ -53,11 +49,12 @@ public class Categoria {
 		this.nombre = nombre;
 	}
 
-	public List<Alumno> getAlumnos() {
-		return alumnos;
-	}
+	// DEPRECATED: Categoria is now per-sport (mapped in AlumnoDeporte, not Alumno)
+	// public List<Alumno> getAlumnos() {
+	// 	return alumnos;
+	// }
 
-	public void setAlumnos(List<Alumno> alumnos) {
-		this.alumnos = alumnos;
-	}
+	// public void setAlumnos(List<Alumno> alumnos) {
+	// 	this.alumnos = alumnos;
+	// }
 }
