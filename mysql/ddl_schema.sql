@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_deporte` (
   `competidor` BIT(1) NOT NULL DEFAULT 0,
   `fecha_alta_competicion` DATE NULL DEFAULT NULL,
   `fecha_alta_competidor_inicial` DATE NULL DEFAULT NULL,
+  `categoria_id` BIGINT NULL DEFAULT NULL,
   `peso` DOUBLE NULL DEFAULT NULL,
   `tiene_licencia` BIT(1) NOT NULL DEFAULT 0,
   `numero_licencia` INT NULL DEFAULT NULL,
@@ -168,12 +169,16 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_deporte` (
   INDEX `idx_alumno_deporte_deporte` (`deporte` ASC) VISIBLE,
   INDEX `idx_alumno_deporte_apto` (`deporte` ASC, `apto_para_examen` ASC) VISIBLE,
   INDEX `FKirt39noykqeplscbxi32tb786` (`grado_id` ASC) VISIBLE,
+  INDEX `FKcategoria_alumno_deporte` (`categoria_id` ASC) VISIBLE,
   CONSTRAINT `FK9fr1k4ow5l16qts5508vqk9wn`
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoidb`.`alumno` (`id`),
   CONSTRAINT `FKirt39noykqeplscbxi32tb786`
     FOREIGN KEY (`grado_id`)
-    REFERENCES `taemoidb`.`grado` (`id`))
+    REFERENCES `taemoidb`.`grado` (`id`),
+  CONSTRAINT `FKcategoria_alumno_deporte`
+    FOREIGN KEY (`categoria_id`)
+    REFERENCES `taemoidb`.`categoria` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
