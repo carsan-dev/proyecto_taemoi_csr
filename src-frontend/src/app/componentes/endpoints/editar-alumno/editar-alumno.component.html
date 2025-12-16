@@ -576,11 +576,10 @@
                         </div>
                       </div>
 
-                      <!-- Antiguedad and Categoria display -->
-                      @if (deporteItem.antiguedadCompetidor || alumno.categoria) {
+                      <!-- Antiguedad display and Categoria selector -->
                       <div class="row mt-3">
                         @if (deporteItem.antiguedadCompetidor) {
-                        <div [class]="alumno.categoria ? 'col-md-6' : 'col-12'">
+                        <div class="col-md-6">
                           <div class="info-item">
                             <span class="info-label">
                               <i class="bi bi-hourglass-split"></i>
@@ -590,19 +589,23 @@
                           </div>
                         </div>
                         }
-                        @if (alumno.categoria) {
                         <div [class]="deporteItem.antiguedadCompetidor ? 'col-md-6' : 'col-12'">
-                          <div class="info-item">
-                            <span class="info-label">
+                          <div class="admin-form-field">
+                            <label [for]="'categoria-' + deporteItem.deporte">
                               <i class="bi bi-award"></i>
                               Categoría
-                            </span>
-                            <span class="info-value">{{ alumno.categoria.nombre }}</span>
+                            </label>
+                            <select [id]="'categoria-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.categoria ?? deporteItem.categoria ?? ''"
+                              (change)="onCategoriaChange(deporteItem.deporte, $event)">
+                              <option value="">-- Seleccionar Categoría --</option>
+                              @for (cat of categorias; track cat) {
+                                <option [value]="cat">{{ cat }}</option>
+                              }
+                            </select>
                           </div>
                         </div>
-                        }
                       </div>
-                      }
 
                       <!-- Weight fields -->
                       <div class="row mt-3">
