@@ -84,7 +84,7 @@ public class TurnoCortoDTO {
 		turnoDTO.setDiaSemana(turno.getDiaSemana());
 		turnoDTO.setHoraInicio(turno.getHoraInicio());
 		turnoDTO.setHoraFin(turno.getHoraFin());
-		turnoDTO.setGrupoId(turno.getGrupo().getId());
+		turnoDTO.setGrupoId(turno.getGrupo() != null ? turno.getGrupo().getId() : null);
 		turnoDTO.setTipoGrupo(turno.getTipo());
 
 		// Map alumnos to AlumnoDTO
