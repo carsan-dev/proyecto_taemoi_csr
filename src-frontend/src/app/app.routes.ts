@@ -121,11 +121,6 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent)
   },
   {
-    path: 'turnosGrupo/:id',
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/turnos-grupo/turnos-grupo.component').then(m => m.TurnosGrupoComponent),
-    canActivate: [roleGuard],
-  },
-  {
     path: 'turnosListar',
     loadComponent: () => import('./componentes/endpoints/listado-turnos/listado-turnos.component').then(m => m.ListadoTurnosComponent),
     canActivate: [roleGuard],
@@ -133,11 +128,6 @@ export const routes: Routes = [
   {
     path: 'turnosCrear',
     loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
-    canActivate: [roleGuard],
-  },
-  {
-    path: 'seleccionarGrupo/:turnoId',
-    loadComponent: () => import('./componentes/endpoints/listado-turnos/seleccionar-grupo/seleccionar-grupo.component').then(m => m.SeleccionarGrupoComponent),
     canActivate: [roleGuard],
   },
   {

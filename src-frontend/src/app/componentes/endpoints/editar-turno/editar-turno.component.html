@@ -145,6 +145,29 @@
                   </div>
                 </div>
                 }
+
+                <!-- Grupo asignado -->
+                <div class="col-12">
+                  <div class="admin-form-field">
+                    <label for="grupoId">
+                      <i class="bi bi-people-fill"></i>
+                      Grupo
+                    </label>
+                    <select
+                      formControlName="grupoId"
+                      id="grupoId"
+                      class="admin-form-control form-select"
+                      aria-label="Grupo del turno">
+                      <option value="">Sin grupo asignado</option>
+                      @for (grupo of grupos; track grupo.id) {
+                        <option [value]="grupo.id">{{ grupo.nombre }}</option>
+                      }
+                    </select>
+                    <small class="form-text text-muted">
+                      Puedes asignar este turno a un grupo o dejarlo sin grupo
+                    </small>
+                  </div>
+                </div>
               </div>
             </div>
 
