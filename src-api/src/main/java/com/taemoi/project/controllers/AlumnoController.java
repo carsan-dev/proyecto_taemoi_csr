@@ -217,12 +217,49 @@ public class AlumnoController {
 	 */
 	@GetMapping("/{alumnoId}/grupos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
-	public ResponseEntity<?> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
+	public ResponseEntity<List<GrupoResponseDTO>> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
-		if (!gruposDTO.isEmpty()) {
-			return ResponseEntity.ok(gruposDTO);
-		} else {
-			return ResponseEntity.notFound().build();
+		return ResponseEntity.ok(gruposDTO);
+	}
+
+	/**
+	 * Asigna un alumno a un grupo.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param grupoId  El ID del grupo.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@PostMapping("/{alumnoId}/grupos/{grupoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> asignarAlumnoAGrupo(@PathVariable Long alumnoId, @PathVariable Long grupoId) {
+		try {
+			grupoService.agregarAlumnoAGrupo(grupoId, alumnoId);
+			return ResponseEntity.ok(Map.of("message", "Alumno asignado al grupo con éxito"));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
+		}
+	}
+
+	/**
+	 * Remueve a un alumno de un grupo.
+	 *
+	 * @param alumnoId El ID del alumno.
+	 * @param grupoId  El ID del grupo.
+	 * @return ResponseEntity con el estado de la operación.
+	 */
+	@DeleteMapping("/{alumnoId}/grupos/{grupoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> removerAlumnoDeGrupo(@PathVariable Long alumnoId, @PathVariable Long grupoId) {
+		try {
+			grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
+			// Obtener la lista actualizada de grupos
+			List<GrupoResponseDTO> gruposActualizados = grupoService.obtenerGruposDelAlumno(alumnoId);
+			// Retornar la lista actualizada
+			return ResponseEntity.ok(gruposActualizados);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", e.getMessage()));
 		}
 	}
 
