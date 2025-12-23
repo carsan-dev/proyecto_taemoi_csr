@@ -805,9 +805,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-		// Mapeando los turnos asignados al alumno a DTOs
-		return alumno.getTurnos().stream().map(turno -> new TurnoDTO(turno.getId(), turno.getDiaSemana(),
-				turno.getHoraInicio(), turno.getHoraFin(), turno.getTipo())).collect(Collectors.toList());
+		// Mapeando los turnos asignados al alumno a DTOs (incluyendo grupoId y grupoNombre)
+		return alumno.getTurnos().stream().map(turno -> new TurnoDTO(
+				turno.getId(),
+				turno.getDiaSemana(),
+				turno.getHoraInicio(),
+				turno.getHoraFin(),
+				turno.getGrupo() != null ? turno.getGrupo().getId() : null,
+				turno.getGrupo() != null ? turno.getGrupo().getNombre() : null,
+				turno.getTipo()
+		)).collect(Collectors.toList());
 	}
 
 	@Override

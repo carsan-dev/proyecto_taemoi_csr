@@ -463,6 +463,7 @@ public class GrupoServiceImpl implements GrupoService {
 		GrupoConAlumnosDTO grupoDTO = new GrupoConAlumnosDTO();
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
+		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
 
 		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream().map(AlumnoCortoDTO::deAlumno)
 				.collect(Collectors.toList());
@@ -482,6 +483,15 @@ public class GrupoServiceImpl implements GrupoService {
 		Grupo grupo = new Grupo();
 		grupo.setId(grupoDTO.getId());
 		grupo.setNombre(grupoDTO.getNombre());
+
+		// Set deporte from DTO
+		if (grupoDTO.getDeporte() != null && !grupoDTO.getDeporte().isEmpty()) {
+			try {
+				grupo.setDeporte(Deporte.valueOf(grupoDTO.getDeporte()));
+			} catch (IllegalArgumentException e) {
+				// If invalid deporte, leave it null
+			}
+		}
 
 		List<Alumno> alumnos = new ArrayList<>();
 		if (grupoDTO.getAlumnos() != null) {
@@ -508,6 +518,7 @@ public class GrupoServiceImpl implements GrupoService {
 		GrupoResponseDTO grupoDTO = new GrupoResponseDTO();
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
+		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
 		return grupoDTO;
 	}
 }
