@@ -194,6 +194,42 @@ export class EndpointsService {
       });
   }
 
+  // Observable-returning versions for direct use in components
+  obtenerGruposDelAlumnoObservable(alumnoId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/${alumnoId}/grupos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTurnosDelAlumnoObservable(alumnoId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/alumnos/${alumnoId}/turnos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  asignarAlumnoAGrupo(alumnoId: number, grupoId: number): Observable<any> {
+    return this.http
+      .post<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/grupos/${grupoId}`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  removerAlumnoDeGrupo(alumnoId: number, grupoId: number): Observable<any> {
+    return this.http
+      .delete<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/grupos/${grupoId}`,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   crearAlumno(alumnoData: any, imagen: File | null): Observable<any> {
     const formData = new FormData();
     formData.append('nuevo', JSON.stringify(alumnoData));
