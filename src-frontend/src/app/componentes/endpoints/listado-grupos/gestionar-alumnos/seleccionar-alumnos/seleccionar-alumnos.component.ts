@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../../utils/toast.util';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
@@ -112,21 +113,11 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
         .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados)
         .subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Alumnos agregados',
-              text: 'Los alumnos han sido agregados al grupo exitosamente',
-              icon: 'success',
-              timer: 2000,
-            }).then(() => {
-              this.router.navigate(['/gestionarAlumnos', this.grupoId]);
-            });
+            showSuccessToast('Alumnos agregados al grupo');
+            this.router.navigate(['/gestionarAlumnos', this.grupoId]);
           },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error al agregar alumnos',
-              text: 'No hemos podido agregar los alumnos',
-              icon: 'error',
-            });
+          error: () => {
+            showErrorToast('No se pudieron agregar los alumnos');
           },
         });
     }

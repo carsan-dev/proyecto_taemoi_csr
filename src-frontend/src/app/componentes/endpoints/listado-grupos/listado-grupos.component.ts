@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
@@ -68,20 +69,11 @@ export class ListadoGruposComponent implements OnInit {
       if (result.isConfirmed) {
         this.endpointsService.eliminarGrupo(id).subscribe({
           next: () => {
-            Swal.fire({
-              title: '¡Eliminado!',
-              text: 'El grupo ha sido eliminado correctamente.',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Grupo eliminado correctamente');
             this.obtenerGrupos();
           },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error en la petición',
-              text: 'No hemos podido eliminar el grupo',
-              icon: 'error',
-            });
+          error: () => {
+            showErrorToast('No se pudo eliminar el grupo');
           },
         });
       }

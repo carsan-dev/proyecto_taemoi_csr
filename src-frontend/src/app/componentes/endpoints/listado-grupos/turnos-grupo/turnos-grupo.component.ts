@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { skip } from 'rxjs/operators';
@@ -93,21 +94,11 @@ export class TurnosGrupoComponent implements OnInit, OnDestroy {
           .eliminarTurnoDeGrupo(this.grupoId, turnoId)
           .subscribe({
             next: () => {
-              Swal.fire({
-                title: 'Bien',
-                text: '¡Turno eliminado correctamente del grupo!',
-                icon: 'success',
-                timer: 2000,
-              }).then(() => {
-                this.actualizarTurnos();
-              });
+              showSuccessToast('Turno eliminado del grupo');
+              this.actualizarTurnos();
             },
             error: () => {
-              Swal.fire({
-                title: 'Error',
-                text: 'No hemos podido eliminar el turno.',
-                icon: 'error',
-              });
+              showErrorToast('No se pudo eliminar el turno');
             },
           });
       }

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { AlumnoDTO } from '../../../../interfaces/alumno-dto';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -123,22 +124,14 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
           .eliminarAlumnoDeGrupo(this.grupoId, alumnoId)
           .subscribe({
             next: () => {
-              Swal.fire({
-                title: '¡Eliminado!',
-                text: 'Alumno correctamente eliminado del grupo.',
-                icon: 'success',
-                timer: 2000,
-              });
+              showSuccessToast('Alumno eliminado del grupo');
               this.alumnos = this.alumnos.filter(
                 (alumno) => alumno.id !== alumnoId
               );
+              this.filtrarAlumnos();
             },
             error: () => {
-              Swal.fire({
-                title: 'Error al eliminar alumno',
-                text: 'No hemos podido eliminar el alumno',
-                icon: 'error',
-              });
+              showErrorToast('No se pudo eliminar el alumno');
             },
           });
       }

@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -58,12 +59,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     }).then((result) => {
       if (result.isConfirmed) {
         this.endpointsService.eliminarEvento(id);
-        Swal.fire({
-          title: '¡Eliminado!',
-          text: 'El evento ha sido eliminado correctamente.',
-          icon: 'success',
-          timer: 2000,
-        });
+        showSuccessToast('Evento eliminado correctamente');
       }
     });
   }
@@ -109,19 +105,10 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
       if (result.isConfirmed) {
         this.endpointsService.toggleVisibilidadEvento(id).subscribe({
           next: () => {
-            Swal.fire({
-              title: '¡Actualizado!',
-              text: `El evento ahora está ${evento?.visible ? 'oculto' : 'visible'} en la página pública.`,
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast(`Evento ahora ${evento?.visible ? 'oculto' : 'visible'}`);
           },
           error: () => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No se pudo cambiar la visibilidad del evento.',
-              icon: 'error',
-            });
+            showErrorToast('No se pudo cambiar la visibilidad');
           },
         });
       }

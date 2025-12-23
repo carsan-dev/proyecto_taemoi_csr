@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -71,20 +72,11 @@ export class ListadoTurnosComponent implements OnInit {
       if (result.isConfirmed) {
         this.endpointsService.eliminarTurno(turnoId).subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Eliminado',
-              text: 'El turno ha sido eliminado',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Turno eliminado correctamente');
             this.endpointsService.obtenerTurnos(); // Recargar los turnos
           },
           error: () => {
-            Swal.fire({
-              title: 'Error en la eliminación',
-              text: 'No hemos podido eliminar el turno',
-              icon: 'error',
-            });
+            showErrorToast('No se pudo eliminar el turno');
           },
         });
       }

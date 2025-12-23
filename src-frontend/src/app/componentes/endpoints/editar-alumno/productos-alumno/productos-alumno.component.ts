@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { Producto } from '../../../../interfaces/producto';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
@@ -116,19 +117,10 @@ export class ProductosAlumnoComponent implements OnInit {
       .subscribe({
         next: () => {
           this.obtenerProductosAlumno(alumnoId);
-          Swal.fire({
-            title: 'Éxito',
-            text: 'Producto asignado correctamente',
-            icon: 'success',
-            timer: 2000,
-          });
+          showSuccessToast('Producto asignado correctamente');
         },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo asignar el producto',
-            icon: 'error',
-          });
+        error: () => {
+          showErrorToast('No se pudo asignar el producto');
         },
       });
 
@@ -152,19 +144,10 @@ export class ProductosAlumnoComponent implements OnInit {
           .subscribe({
             next: () => {
               this.obtenerProductosAlumno(alumnoId);
-              Swal.fire({
-                title: 'Éxito',
-                text: 'Producto eliminado correctamente',
-                icon: 'success',
-                timer: 2000,
-              });
+              showSuccessToast('Producto eliminado correctamente');
             },
-            error: (error) => {
-              Swal.fire({
-                title: 'Error',
-                text: 'No se pudo eliminar el producto',
-                icon: 'error',
-              });
+            error: () => {
+              showErrorToast('No se pudo eliminar el producto');
             },
           });
       }
@@ -175,22 +158,12 @@ export class ProductosAlumnoComponent implements OnInit {
     this.endpointsService
       .actualizarProductoAlumno(productoAlumno.id, productoAlumno)
       .subscribe({
-        next: (productoActualizado) => {
-          Swal.fire({
-            title: 'Éxito',
-            text: 'Producto actualizado correctamente',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-          });
+        next: () => {
+          showSuccessToast('Producto actualizado correctamente');
           this.obtenerProductosAlumno(alumnoId);
         },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo actualizar el producto',
-            icon: 'error',
-          });
+        error: () => {
+          showErrorToast('No se pudo actualizar el producto');
         },
       });
   }
@@ -209,22 +182,12 @@ export class ProductosAlumnoComponent implements OnInit {
       .actualizarProductoAlumno(productoActualizado.id, productoActualizado)
       .subscribe({
         next: () => {
-          Swal.fire({
-            title: 'Éxito',
-            text: 'Notas actualizadas correctamente',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-          });
+          showSuccessToast('Notas actualizadas correctamente');
           this.obtenerProductosAlumno(this.alumnoId);
           this.cerrarModalNotas();
         },
         error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron actualizar las notas',
-            icon: 'error',
-          });
+          showErrorToast('No se pudieron actualizar las notas');
         },
       });
   }
