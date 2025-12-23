@@ -11,26 +11,34 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-crear-turno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './crear-turno.component.html',
   styleUrl: './crear-turno.component.scss',
 })
 export class CrearTurnoComponent implements OnInit {
   turnoForm!: FormGroup;
   grupos: any[] = [];
+  preselectedGrupoId: number | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    // Check for preselected grupoId from query params
+    const grupoIdParam = this.route.snapshot.queryParamMap.get('grupoId');
+    if (grupoIdParam) {
+      this.preselectedGrupoId = +grupoIdParam;
+    }
+
     this.initForm();
     this.obtenerGrupos();
   }
@@ -55,7 +63,7 @@ export class CrearTurnoComponent implements OnInit {
         ],
         asignarGrupo: [false],
         grupoId: [''],
-        tipoGrupo: ['', Validators.required],  // Añadimos tipoGrupo aquí
+        tipoGrupo: [''],  // Only required when asignarGrupo is true
       },
       { validators: this.horasValidas }
     );
@@ -76,8 +84,20 @@ export class CrearTurnoComponent implements OnInit {
     this.endpointsService.obtenerTodosLosGrupos().subscribe({
       next: (response) => {
         this.grupos = response;
+
+        // If we have a preselected grupoId, enable grupo assignment and select it
+        if (this.preselectedGrupoId) {
+          const grupo = this.grupos.find(g => g.id === this.preselectedGrupoId);
+          if (grupo) {
+            this.turnoForm.patchValue({
+              asignarGrupo: true,
+              grupoId: this.preselectedGrupoId,
+              tipoGrupo: grupo.tipo || ''
+            });
+          }
+        }
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error en la petición',
           text: 'No hemos podido conectar con el servidor para obtener los grupos',
@@ -107,7 +127,7 @@ export class CrearTurnoComponent implements OnInit {
           icon: 'success',
           timer: 2000,
         });
-        this.router.navigate(['/turnosListar']);
+        this.router.navigate(['/gruposListar']);
       },
       error: (error) => {
         Swal.fire({

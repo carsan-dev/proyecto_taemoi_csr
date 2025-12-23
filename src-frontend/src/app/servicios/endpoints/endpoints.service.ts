@@ -680,6 +680,15 @@ export class EndpointsService {
       });
   }
 
+  obtenerTurnosDelGrupoPorId(grupoId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/grupos/${grupoId}/turnos`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   agregarTurnoAGrupo(grupoId: number, turnoId: number): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, null, {
@@ -716,6 +725,15 @@ export class EndpointsService {
   obtenerTurnosDTO(): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/turnos/dto`)
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTodosLosTurnos(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/turnos`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders
+      })
       .pipe(catchError(this.manejarError));
   }
 
