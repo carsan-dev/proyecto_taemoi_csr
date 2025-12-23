@@ -150,3 +150,5 @@ Actualizar precio productos
 ✔ Migrar categoria_id de alumno a alumno_deporte (ya incluido en migrate_to_mysql_v8.py - regenerar migration SQL y aplicar)
 
 ✔ Corregir categoria ID mismatch (IDs viejos 6-10 vs nuevos 1-5) - ahora usa asignación por edad en vez de copiar IDs
+
+A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar.
