@@ -659,6 +659,112 @@
                   </div>
                 </div>
                 }
+
+                <!-- Grupos y Turnos Section -->
+                <div class="row g-4 mt-3">
+                  <div class="col-12">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-people-fill"></i>
+                        Grupos y Turnos
+                      </h5>
+
+                      <!-- Grupos -->
+                      <div class="mb-4">
+                        <label class="form-label fw-bold">
+                          <i class="bi bi-collection"></i>
+                          Grupos
+                        </label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                          @for (grupo of getGruposDelDeporte(deporteItem.deporte); track grupo.id) {
+                          <span class="badge bg-primary d-flex align-items-center gap-1">
+                            {{ grupo.nombre }}
+                            <button type="button" class="btn-close btn-close-white ms-1"
+                              style="font-size: 0.6rem;"
+                              (click)="eliminarGrupoAlumno(grupo.id)"
+                              title="Eliminar grupo">
+                            </button>
+                          </span>
+                          }
+                          @if (getGruposDelDeporte(deporteItem.deporte).length === 0) {
+                          <span class="text-muted fst-italic">Sin grupos asignados</span>
+                          }
+
+                          <!-- Dropdown para añadir grupo -->
+                          @if (getGruposDisponiblesDelDeporte(deporteItem.deporte).length > 0) {
+                          <div class="dropdown">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button"
+                              [id]="'dropdownGrupos-' + deporteItem.deporte" data-bs-toggle="dropdown"
+                              aria-expanded="false">
+                              <i class="bi bi-plus-circle"></i> Añadir
+                            </button>
+                            <ul class="dropdown-menu" [attr.aria-labelledby]="'dropdownGrupos-' + deporteItem.deporte">
+                              @for (grupo of getGruposDisponiblesDelDeporte(deporteItem.deporte); track grupo.id) {
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                  (click)="agregarGrupoAlumno(grupo.id)">
+                                  {{ grupo.nombre }}
+                                </a>
+                              </li>
+                              }
+                            </ul>
+                          </div>
+                          }
+                        </div>
+                      </div>
+
+                      <!-- Turnos -->
+                      <div class="mb-3">
+                        <label class="form-label fw-bold">
+                          <i class="bi bi-clock"></i>
+                          Turnos
+                        </label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                          @for (turno of getTurnosDelDeporte(deporteItem.deporte); track turno.id) {
+                          <span class="badge bg-info d-flex align-items-center gap-1">
+                            {{ formatTurnoNombre(turno) }}
+                            <button type="button" class="btn-close btn-close-white ms-1"
+                              style="font-size: 0.6rem;"
+                              (click)="eliminarTurnoAlumno(turno.id)"
+                              title="Eliminar turno">
+                            </button>
+                          </span>
+                          }
+                          @if (getTurnosDelDeporte(deporteItem.deporte).length === 0) {
+                          <span class="text-muted fst-italic">Sin turnos asignados</span>
+                          }
+
+                          <!-- Dropdown para añadir turno -->
+                          @if (getTurnosDisponiblesDelDeporte(deporteItem.deporte).length > 0) {
+                          <div class="dropdown">
+                            <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button"
+                              [id]="'dropdownTurnos-' + deporteItem.deporte" data-bs-toggle="dropdown"
+                              aria-expanded="false">
+                              <i class="bi bi-plus-circle"></i> Añadir
+                            </button>
+                            <ul class="dropdown-menu" [attr.aria-labelledby]="'dropdownTurnos-' + deporteItem.deporte">
+                              @for (turno of getTurnosDisponiblesDelDeporte(deporteItem.deporte); track turno.id) {
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                  (click)="agregarTurnoAlumno(turno.id)">
+                                  {{ formatTurnoNombre(turno) }}
+                                </a>
+                              </li>
+                              }
+                            </ul>
+                          </div>
+                          }
+                        </div>
+                        @if (getGruposDelDeporte(deporteItem.deporte).length === 0) {
+                        <small class="text-muted d-block mt-1">
+                          <i class="bi bi-info-circle"></i>
+                          Primero debes asignar un grupo para poder añadir turnos
+                        </small>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             }
