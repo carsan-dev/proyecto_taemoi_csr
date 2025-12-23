@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
@@ -536,12 +537,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
               a.click();
               a.remove();
               globalThis.URL.revokeObjectURL(url);
-              Swal.fire({
-                title: 'Descarga Completada',
-                text: 'El archivo CSV se ha descargado correctamente',
-                icon: 'success',
-                timer: 2000,
-              });
+              showSuccessToast('CSV descargado correctamente');
             },
             error: () => {
               Swal.fire(
@@ -664,12 +660,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       if (result.isConfirmed) {
         this.endpointsService.darDeAltaAlumno(alumnoId).subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Alumno dado de alta',
-              text: 'El alumno ha sido dado de alta correctamente.',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Alumno dado de alta correctamente');
             // Reload data using the current pagination mode
             if (this.usandoPaginacionCliente) {
               this.obtenerTodosLosAlumnosConDeportes();
@@ -678,11 +669,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
             }
           },
           error: () => {
-            Swal.fire({
-              title: 'Error al dar de alta',
-              text: 'Ha ocurrido un error al intentar dar de alta al alumno.',
-              icon: 'error',
-            });
+            showErrorToast('Error al dar de alta al alumno');
           },
         });
       }
@@ -703,12 +690,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       if (result.isConfirmed) {
         this.endpointsService.darDeBajaAlumno(alumnoId).subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Alumno dado de baja',
-              text: 'El alumno ha sido dado de baja correctamente.',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Alumno dado de baja correctamente');
             // Reload data using the current pagination mode
             if (this.usandoPaginacionCliente) {
               this.obtenerTodosLosAlumnosConDeportes();
@@ -717,11 +699,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
             }
           },
           error: () => {
-            Swal.fire({
-              title: 'Error al dar de baja',
-              text: 'Ha ocurrido un error al intentar dar de baja al alumno.',
-              icon: 'error',
-            });
+            showErrorToast('Error al dar de baja al alumno');
           },
         });
       }
@@ -756,12 +734,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     serviceCall.subscribe({
       next: () => {
-        Swal.fire({
-          title: 'Éxito',
-          text: `Las mensualidades se han asignado correctamente a ${deporteTexto}.`,
-          icon: 'success',
-          timer: 2000,
-        });
+        showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
         // Reload data using the current pagination mode
         if (this.usandoPaginacionCliente) {
           this.obtenerTodosLosAlumnosConDeportes();
@@ -770,11 +743,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        Swal.fire({
-          title: 'Error',
-          text: 'Ocurrió un error al asignar las mensualidades.',
-          icon: 'error',
-        });
+        showErrorToast('Error al asignar las mensualidades');
       },
     });
   }
@@ -796,12 +765,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          Swal.fire({
-            title: 'Éxito',
-            text: 'Mensualidad cargada correctamente.',
-            icon: 'success',
-            timer: 2000,
-          });
+          showSuccessToast('Mensualidad cargada correctamente');
         },
         error: (error) => {
           if (error.status === 409 && error.error.accion === 'confirmar') {
@@ -842,10 +806,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          Swal.fire('Éxito', 'Mensualidad cargada correctamente.', 'success');
+          showSuccessToast('Mensualidad cargada correctamente');
         },
         error: () => {
-          Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
+          showErrorToast('No se pudo cargar la mensualidad');
         },
       });
   }

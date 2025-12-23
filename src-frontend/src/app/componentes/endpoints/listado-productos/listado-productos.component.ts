@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Producto } from '../../../interfaces/producto';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
@@ -89,21 +90,12 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       if (result.isConfirmed) {
         this.endpointsService.eliminarProducto(id).subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Eliminado',
-              text: 'El producto ha sido eliminado correctamente',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Producto eliminado correctamente');
             // Recargar la lista de productos
             this.obtenerProductos();
           },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No se pudo eliminar el producto',
-              icon: 'error',
-            });
+          error: () => {
+            showErrorToast('No se pudo eliminar el producto');
           },
         });
       }

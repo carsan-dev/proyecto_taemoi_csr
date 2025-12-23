@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../../utils/toast.util';
 import { Turno } from '../../../../../interfaces/turno';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { FormsModule } from '@angular/forms';
@@ -93,25 +94,13 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
         .asignarAlumnoATurno(this.alumnoId, this.turnoSeleccionado)
         .subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Turno asignado',
-              text: 'El turno ha sido asignado al alumno con éxito.',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Turno asignado al alumno');
             this.cargarTurnos();
           },
           error: (err) => {
             console.error('Error al asignar turno:', err);
-            let errorMessage = 'No hemos podido asignar el turno al alumno';
-            if (err.error && typeof err.error === 'object') {
-              errorMessage = err.error.message || errorMessage;
-            }
-            Swal.fire({
-              title: 'Error al asignar turno',
-              text: errorMessage,
-              icon: 'error',
-            });
+            const errorMessage = err.error?.message || 'No hemos podido asignar el turno al alumno';
+            showErrorToast(errorMessage);
           },
         });
     }
@@ -134,20 +123,11 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
           .subscribe({
             next: (turnosActualizados: Turno[]) => {
               this.turnos = turnosActualizados;
-              Swal.fire({
-                title: 'Turno removido',
-                text: 'El turno ha sido removido del alumno con éxito.',
-                icon: 'success',
-                timer: 2000,
-              });
+              showSuccessToast('Turno removido del alumno');
               this.cargarTurnos();
             },
             error: () => {
-              Swal.fire({
-                title: 'Error al remover turno',
-                text: 'No hemos podido remover el turno del alumno',
-                icon: 'error',
-              });
+              showErrorToast('No se pudo remover el turno');
             },
           });
       }
