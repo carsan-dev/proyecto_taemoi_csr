@@ -233,41 +233,30 @@
       </ul>
     </li>
 
-    <!-- Grupos Section -->
+    <!-- Grupos y Turnos Section -->
     <li class="menu-item-expandable">
       <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()" [class.expanded]="expandedSections['grupos']">
         <i class="bi bi-collection"></i>
-        <span>Grupos</span>
+        <span>Grupos y Turnos</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['grupos']">
         <li>
           <a class="submenu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
-            <span>Consultar Grupos</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Turnos Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('turnos'); $event.stopPropagation()" [class.expanded]="expandedSections['turnos']">
-        <i class="bi bi-calendar3"></i>
-        <span>Turnos</span>
-        <i class="bi bi-chevron-down chevron-icon"></i>
-      </div>
-      <ul class="submenu" [class.show]="expandedSections['turnos']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/turnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Consultar Turnos</span>
+            <span>Gestión de Grupos y Turnos</span>
           </a>
         </li>
         <li>
           <a class="submenu-link" [routerLink]="['/turnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
             <i class="bi bi-calendar-plus"></i>
             <span>Crear Turno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/gruposCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-plus-square"></i>
+            <span>Crear Grupo</span>
           </a>
         </li>
       </ul>
