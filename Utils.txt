@@ -1,3 +1,7 @@
+Instalar dependencias en pc nuevos
+
+  # npm install --legacy-peer-deps
+
 Desplegar en el server
 
   # 1. cd /opt/taemoi
