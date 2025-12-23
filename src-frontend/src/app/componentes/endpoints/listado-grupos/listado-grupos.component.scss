@@ -2,4 +2,147 @@
 @use '../../../componentes/admin-shared-styles.scss' as *;
 @use '../../../componentes/admin-mobile-forms.scss' as *;
 
-// Component-specific styles (if any additional customization needed)
+// Component-specific styles
+.turnos-section {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--admin-border-color, #e0e0e0);
+
+  .turnos-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--admin-text-muted, #6c757d);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  .turnos-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .turno-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--admin-info-bg, #e7f3ff);
+    border-radius: 20px;
+    font-size: 0.8rem;
+
+    .turno-info {
+      color: var(--admin-info-text, #0c5460);
+    }
+
+    .btn-edit-turno {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: var(--admin-primary, #0d6efd);
+      cursor: pointer;
+      font-size: 0.75rem;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .btn-remove-turno {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: var(--admin-danger, #dc3545);
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .add-turno-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .form-select {
+      font-size: 0.85rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+    }
+
+    .btn-crear-turno {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      background: transparent;
+      border: 1px dashed var(--admin-primary, #0d6efd);
+      border-radius: 6px;
+      color: var(--admin-primary, #0d6efd);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+
+      &:hover {
+        background: var(--admin-primary, #0d6efd);
+        color: white;
+        border-style: solid;
+      }
+
+      i {
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Turnos sin grupo asignado section
+.turnos-sin-grupo-list {
+  padding: 1rem;
+
+  .turno-sin-grupo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--admin-light-bg, #f8f9fa);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .turno-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+
+      i {
+        color: var(--admin-primary, #0d6efd);
+      }
+    }
+
+    .turno-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+  }
+}

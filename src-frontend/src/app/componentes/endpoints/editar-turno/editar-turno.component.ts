@@ -11,6 +11,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { finalize } from 'rxjs/operators';
 
@@ -34,6 +35,8 @@ export class EditarTurnoComponent implements OnInit {
   ];
   turnoId!: number;
   cargando: boolean = true;
+  grupos: any[] = [];
+  turno: any = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -59,6 +62,7 @@ export class EditarTurnoComponent implements OnInit {
             Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/),
           ],
         ],
+        grupoId: [''],
       },
       { validators: this.horasValidas }
     );
@@ -67,6 +71,18 @@ export class EditarTurnoComponent implements OnInit {
   ngOnInit(): void {
     this.turnoId = +this.route.snapshot.paramMap.get('id')!;
     this.cargarTurno();
+    this.obtenerGrupos();
+  }
+
+  obtenerGrupos(): void {
+    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+      next: (response) => {
+        this.grupos = response;
+      },
+      error: () => {
+        showErrorToast('Error al cargar los grupos');
+      },
+    });
   }
 
   cargarTurno(): void {
@@ -75,13 +91,15 @@ export class EditarTurnoComponent implements OnInit {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (turno) => {
+          this.turno = turno;
           this.turnoForm.patchValue({
             diaSemana: turno.diaSemana,
             horaInicio: turno.horaInicio,
             horaFin: turno.horaFin,
+            grupoId: turno.grupoId || '',
           });
         },
-        error: (error) => {
+        error: () => {
           this.cargando = false;
           Swal.fire({
             title: 'Error en la carga del turno',
@@ -96,30 +114,56 @@ export class EditarTurnoComponent implements OnInit {
     if (this.turnoForm.invalid) {
       return;
     }
-    const { diaSemana, horaInicio, horaFin } = this.turnoForm.value;
+    const { diaSemana, horaInicio, horaFin, grupoId } = this.turnoForm.value;
     const turnoActualizado = { diaSemana, horaInicio, horaFin };
 
     this.endpointsService
       .actualizarTurno(this.turnoId, turnoActualizado)
       .subscribe({
         next: () => {
-          Swal.fire({
-            title: 'Actualizado',
-            text: 'El turno ha sido actualizado',
-            icon: 'success',
-            timer: 2000,
-          }).then(() => {
-            this.router.navigate(['/turnosListar']);
-          });
+          // Check if grupo has changed
+          const newGrupoId = grupoId ? +grupoId : null;
+          const oldGrupoId = this.turno?.grupoId || null;
+
+          if (newGrupoId !== oldGrupoId) {
+            this.actualizarGrupoDelTurno(newGrupoId, oldGrupoId);
+          } else {
+            showSuccessToast('Turno actualizado correctamente');
+            this.router.navigate(['/gruposListar']);
+          }
         },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error en la actualización',
-            text: 'No hemos podido actualizar el turno',
-            icon: 'error',
-          });
+        error: () => {
+          showErrorToast('No hemos podido actualizar el turno');
         },
       });
+  }
+
+  private actualizarGrupoDelTurno(newGrupoId: number | null, oldGrupoId: number | null): void {
+    if (newGrupoId) {
+      // Assigning to a new grupo (or changing grupo)
+      this.endpointsService.agregarTurnoAGrupo(newGrupoId, this.turnoId).subscribe({
+        next: () => {
+          showSuccessToast('Turno actualizado y asignado al grupo');
+          this.router.navigate(['/gruposListar']);
+        },
+        error: () => {
+          showErrorToast('Turno actualizado pero error al asignar grupo');
+          this.router.navigate(['/gruposListar']);
+        },
+      });
+    } else if (oldGrupoId) {
+      // Removing from grupo (newGrupoId is null but had an old grupo)
+      this.endpointsService.eliminarTurnoDeGrupo(oldGrupoId, this.turnoId).subscribe({
+        next: () => {
+          showSuccessToast('Turno actualizado y desvinculado del grupo');
+          this.router.navigate(['/gruposListar']);
+        },
+        error: () => {
+          showErrorToast('Turno actualizado pero error al desvincular grupo');
+          this.router.navigate(['/gruposListar']);
+        },
+      });
+    }
   }
 
   volver() {

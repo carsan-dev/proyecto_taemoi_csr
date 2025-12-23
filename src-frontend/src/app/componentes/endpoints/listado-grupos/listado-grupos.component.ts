@@ -4,14 +4,17 @@ import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-listado-grupos',
   standalone: true,
-  imports: [CommonModule, RouterModule, GrupoAlumnosModalComponent, SkeletonCardComponent],
+  imports: [CommonModule, RouterModule, FormsModule, GrupoAlumnosModalComponent, SkeletonCardComponent],
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss',
 })
@@ -30,6 +33,12 @@ export class ListadoGruposComponent implements OnInit {
   alumnosGrupoModal: any[] = [];
   cargandoAlumnosModal: boolean = false;
 
+  // Turnos por grupo
+  turnosPorGrupo: Map<number, any[]> = new Map();
+
+  // Turnos sin grupo asignado
+  turnosSinGrupo: any[] = [];
+
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
@@ -40,12 +49,13 @@ export class ListadoGruposComponent implements OnInit {
   obtenerGrupos(): void {
     this.cargando = true;
     this.endpointsService.obtenerTodosLosGrupos()
-      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (response) => {
           this.grupos = response;
+          this.cargarTurnosPorGrupo();
         },
-        error: (error) => {
+        error: () => {
+          this.cargando = false;
           Swal.fire({
             title: 'Error en la petición',
             text: 'No hemos podido conectar con el servidor',
@@ -53,6 +63,93 @@ export class ListadoGruposComponent implements OnInit {
           });
         },
       });
+  }
+
+  cargarTurnosPorGrupo(): void {
+    if (this.grupos.length === 0) {
+      this.cargarTurnosSinGrupo();
+      return;
+    }
+
+    const requests = this.grupos.map(grupo =>
+      this.endpointsService.obtenerTurnosDelGrupoPorId(grupo.id).pipe(
+        catchError(() => of([]))
+      )
+    );
+
+    forkJoin(requests)
+      .subscribe({
+        next: (results) => {
+          results.forEach((turnos, index) => {
+            this.turnosPorGrupo.set(this.grupos[index].id, turnos || []);
+          });
+          this.cargarTurnosSinGrupo();
+        },
+      });
+  }
+
+  cargarTurnosSinGrupo(): void {
+    this.endpointsService.obtenerTodosLosTurnos()
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        next: (turnos) => {
+          // Filter turnos that don't have a grupo assigned
+          this.turnosSinGrupo = turnos.filter(t => !t.grupoId && !t.grupoNombre);
+        },
+        error: () => {
+          this.cargando = false;
+        }
+      });
+  }
+
+  asignarTurnoAGrupo(grupoId: number, turnoId: string): void {
+    if (!turnoId) return;
+
+    const turnoIdNum = +turnoId;
+    this.endpointsService.agregarTurnoAGrupo(grupoId, turnoIdNum).subscribe({
+      next: () => {
+        showSuccessToast('Turno asignado al grupo');
+        // Move turno from unassigned to this grupo's list
+        const turno = this.turnosSinGrupo.find(t => t.id === turnoIdNum);
+        if (turno) {
+          this.turnosSinGrupo = this.turnosSinGrupo.filter(t => t.id !== turnoIdNum);
+          const turnosGrupo = this.turnosPorGrupo.get(grupoId) || [];
+          turnosGrupo.push(turno);
+          this.turnosPorGrupo.set(grupoId, turnosGrupo);
+        }
+      },
+      error: () => {
+        showErrorToast('No se pudo asignar el turno al grupo');
+      },
+    });
+  }
+
+  getTurnosDelGrupo(grupoId: number): any[] {
+    return this.turnosPorGrupo.get(grupoId) || [];
+  }
+
+  eliminarTurnoDelGrupo(grupoId: number, turnoId: number): void {
+    Swal.fire({
+      title: '¿Eliminar turno del grupo?',
+      text: 'El turno seguirá existiendo pero sin grupo asignado',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarTurnoDeGrupo(grupoId, turnoId).subscribe({
+          next: () => {
+            showSuccessToast('Turno eliminado del grupo');
+            const turnos = this.turnosPorGrupo.get(grupoId) || [];
+            this.turnosPorGrupo.set(grupoId, turnos.filter(t => t.id !== turnoId));
+          },
+          error: () => {
+            showErrorToast('No se pudo eliminar el turno');
+          },
+        });
+      }
+    });
   }
 
   eliminarGrupo(id: number): void {
