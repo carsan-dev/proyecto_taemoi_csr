@@ -566,6 +566,23 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Obtiene los turnos del alumno que pertenecen a un grupo específico.
+   */
+  getTurnosDelGrupo(grupoId: number): any[] {
+    return this.turnosDelAlumno.filter((t) => t.grupoId === grupoId);
+  }
+
+  /**
+   * Obtiene los turnos disponibles para añadir de un grupo específico.
+   */
+  getTurnosDisponiblesDelGrupo(grupoId: number): any[] {
+    const turnosAsignados = this.getTurnosDelGrupo(grupoId).map((t) => t.id);
+    return this.todosLosTurnos.filter(
+      (t) => t.grupoId === grupoId && !turnosAsignados.includes(t.id)
+    );
+  }
+
+  /**
    * Añade un grupo al alumno.
    */
   agregarGrupoAlumno(grupoId: number): void {
