@@ -72,7 +72,6 @@
     </div>
 
     <div class="d-flex flex-column flex-wrap justify-content-center align-items-center">
-      @if (!mostrarFormulario) {
       <div class="py-3 w-100">
         <!-- Action Bar -->
         <div class="admin-action-bar mb-4">
@@ -85,13 +84,6 @@
               aria-label="Alternar vista de inactivos">
               <i class="bi bi-funnel"></i>
               <span>{{ mostrarInactivos ? 'Solo activos' : 'Mostrar todos' }}</span>
-            </button>
-          </div>
-          <div class="action-bar-end">
-            <button class="admin-btn admin-btn-primary" (click)="alternarFormulario(alumno)"
-              aria-label="Editar información del alumno">
-              <i class="bi bi-pencil-square"></i>
-              <span>Editar Información</span>
             </button>
           </div>
         </div>
@@ -763,66 +755,125 @@
           <!-- Información Personal -->
           <div class="col-lg-6 col-md-12 mb-4">
             <div class="admin-card">
-              <div class="info-card-header">
+              <div class="info-card-header d-flex justify-content-between align-items-center">
                 <h5 class="info-card-title">
                   <i class="bi bi-person-fill"></i>
                   Información Personal
                 </h5>
+                <button class="admin-btn admin-btn-sm"
+                        [class.admin-btn-primary]="!editingBasicInfo"
+                        [class.admin-btn-outline]="editingBasicInfo"
+                        (click)="toggleEditBasicInfo()">
+                  <i class="bi" [class.bi-pencil]="!editingBasicInfo" [class.bi-x-lg]="editingBasicInfo"></i>
+                  <span>{{ editingBasicInfo ? 'Cancelar' : 'Editar' }}</span>
+                </button>
               </div>
               <div class="info-card-body">
-                <div class="info-item">
-                  <span class="info-label">
+                <!-- Nombre -->
+                <div class="admin-form-field mb-3">
+                  <label for="nombre">
                     <i class="bi bi-person"></i>
                     Nombre
-                  </span>
-                  <span class="info-value">{{ alumno.nombre }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="nombre" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('nombre')"
+                           (input)="onBasicInfoChange('nombre', $event)"
+                           placeholder="Nombre del alumno" />
+                  } @else {
+                    <span class="info-value">{{ alumno.nombre }}</span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Apellidos -->
+                <div class="admin-form-field mb-3">
+                  <label for="apellidos">
                     <i class="bi bi-person"></i>
                     Apellidos
-                  </span>
-                  <span class="info-value">{{ alumno.apellidos }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="apellidos" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('apellidos')"
+                           (input)="onBasicInfoChange('apellidos', $event)"
+                           placeholder="Apellidos del alumno" />
+                  } @else {
+                    <span class="info-value">{{ alumno.apellidos }}</span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Dirección -->
+                <div class="admin-form-field mb-3">
+                  <label for="direccion">
                     <i class="bi bi-house"></i>
                     Dirección
-                  </span>
-                  <span class="info-value">{{ alumno.direccion }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="direccion" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('direccion')"
+                           (input)="onBasicInfoChange('direccion', $event)"
+                           placeholder="Dirección completa" />
+                  } @else {
+                    <span class="info-value">{{ alumno.direccion }}</span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Fecha de Nacimiento -->
+                <div class="admin-form-field mb-3">
+                  <label for="fechaNacimiento">
                     <i class="bi bi-calendar"></i>
                     Fecha de Nacimiento
-                  </span>
-                  <span class="info-value">{{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="date" id="fechaNacimiento" class="admin-form-control"
+                           [value]="alumno.fechaNacimiento | date:'yyyy-MM-dd'"
+                           (change)="onBasicInfoChange('fechaNacimiento', $event)" />
+                  } @else {
+                    <span class="info-value">{{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- DNI -->
+                <div class="admin-form-field mb-3">
+                  <label for="nif">
                     <i class="bi bi-card-text"></i>
                     DNI
-                  </span>
-                  <span class="info-value">{{ alumno.nif }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="nif" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('nif')"
+                           (input)="onBasicInfoChange('nif', $event)"
+                           placeholder="12345678A" />
+                  } @else {
+                    <span class="info-value">{{ alumno.nif }}</span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Discapacidad -->
+                <div class="admin-form-field mb-3">
+                  <label>
                     <i class="bi bi-universal-access"></i>
                     Discapacidad
-                  </span>
-                  <span class="info-value">
-                    @if (alumno.tieneDiscapacidad) {
-                    <span class="badge-yes">
-                      <i class="bi bi-check-circle-fill"></i> Sí
+                  </label>
+                  @if (editingBasicInfo) {
+                    <div class="admin-form-switch" [class.checked]="pendingBasicInfoChanges.tieneDiscapacidad ?? alumno.tieneDiscapacidad">
+                      <div class="switch">
+                        <input type="checkbox" class="form-check-input" id="tieneDiscapacidad"
+                               [checked]="pendingBasicInfoChanges.tieneDiscapacidad ?? alumno.tieneDiscapacidad"
+                               (change)="onBasicInfoChange('tieneDiscapacidad', $event)" />
+                        <span class="slider"></span>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="info-value">
+                      @if (alumno.tieneDiscapacidad) {
+                        <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                      } @else {
+                        <span class="badge-no"><i class="bi bi-x-circle"></i> No</span>
+                      }
                     </span>
-                    }
-                    @if (!alumno.tieneDiscapacidad) {
-                    <span class="badge-no">
-                      <i class="bi bi-x-circle"></i> No
-                    </span>
-                    }
-                  </span>
+                  }
                 </div>
+
               </div>
             </div>
           </div>
@@ -922,27 +973,40 @@
                 </h5>
               </div>
               <div class="info-card-body">
-                <div class="info-item">
-                  <span class="info-label">
+                <!-- Email -->
+                <div class="admin-form-field mb-3">
+                  <label for="email">
                     <i class="bi bi-envelope-fill"></i>
                     Email
-                  </span>
-                  <span class="info-value">
-                    <a [href]="'mailto:' + alumno.email" class="contact-link">
-                      {{ alumno.email }}
-                    </a>
-                  </span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="email" id="email" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('email')"
+                           (input)="onBasicInfoChange('email', $event)"
+                           placeholder="correo@ejemplo.com" />
+                  } @else {
+                    <span class="info-value">
+                      <a [href]="'mailto:' + alumno.email" class="contact-link">{{ alumno.email }}</a>
+                    </span>
+                  }
                 </div>
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Teléfono -->
+                <div class="admin-form-field mb-3">
+                  <label for="telefono">
                     <i class="bi bi-telephone-fill"></i>
                     Teléfono
-                  </span>
-                  <span class="info-value">
-                    <a [href]="'tel:' + alumno.telefono" class="contact-link">
-                      {{ alumno.telefono }}
-                    </a>
-                  </span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="tel" id="telefono" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('telefono')"
+                           (input)="onBasicInfoChange('telefono', $event)"
+                           placeholder="123456789" />
+                  } @else {
+                    <span class="info-value">
+                      <a [href]="'tel:' + alumno.telefono" class="contact-link">{{ alumno.telefono }}</a>
+                    </span>
+                  }
                 </div>
               </div>
             </div>
@@ -958,41 +1022,79 @@
                 </h5>
               </div>
               <div class="info-card-body">
-                <div class="info-item">
-                  <span class="info-label">
+                <!-- Deportes Activos (read only) -->
+                <div class="admin-form-field mb-3">
+                  <label>
                     <i class="bi bi-flag"></i>
                     Deportes Activos
-                  </span>
-                  <span class="info-value info-value-highlight">
-                    {{ getDeportesActivosCount() }} deporte(s)
-                  </span>
+                  </label>
+                  <div class="deportes-badges-container">
+                    @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+                      @if (deporteItem.activo !== false) {
+                        <span class="deporte-badge-inline" [ngClass]="{
+                          'taekwondo': deporteItem.deporte === 'TAEKWONDO',
+                          'pilates': deporteItem.deporte === 'PILATES',
+                          'kickboxing': deporteItem.deporte === 'KICKBOXING',
+                          'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
+                        }">
+                          <i class="bi bi-trophy-fill"></i>
+                          {{ getDeporteLabel(deporteItem.deporte) }}
+                        </span>
+                      }
+                    }
+                    @if (getDeportesActivosCount() === 0) {
+                      <span class="text-muted">Sin deportes activos</span>
+                    }
+                  </div>
                 </div>
-                @if (alumno.fechaBaja) {
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Fecha de Baja -->
+                <div class="admin-form-field mb-3">
+                  <label for="fechaBaja">
                     <i class="bi bi-calendar-x"></i>
                     Fecha de Baja General
-                  </span>
-                  <span class="info-value">{{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</span>
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="date" id="fechaBaja" class="admin-form-control"
+                           [value]="alumno.fechaBaja ? (alumno.fechaBaja | date:'yyyy-MM-dd') : ''"
+                           (change)="onBasicInfoChange('fechaBaja', $event)" />
+                    <small class="form-text text-muted">
+                      <i class="bi bi-info-circle"></i>
+                      Fecha en que el alumno dejó completamente la escuela
+                    </small>
+                  } @else {
+                    @if (alumno.fechaBaja) {
+                      <span class="info-value">{{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</span>
+                    } @else {
+                      <span class="info-value text-muted">No establecida</span>
+                    }
+                  }
                 </div>
-                }
-                <div class="info-item">
-                  <span class="info-label">
+
+                <!-- Autorización Web -->
+                <div class="admin-form-field mb-3">
+                  <label>
                     <i class="bi bi-camera"></i>
                     Autorización Web
-                  </span>
-                  <span class="info-value">
-                    @if (alumno.autorizacionWeb) {
-                    <span class="badge-yes">
-                      <i class="bi bi-check-circle-fill"></i> Sí
+                  </label>
+                  @if (editingBasicInfo) {
+                    <div class="admin-form-switch" [class.checked]="pendingBasicInfoChanges.autorizacionWeb ?? alumno.autorizacionWeb">
+                      <div class="switch">
+                        <input type="checkbox" class="form-check-input" id="autorizacionWeb"
+                               [checked]="pendingBasicInfoChanges.autorizacionWeb ?? alumno.autorizacionWeb"
+                               (change)="onBasicInfoChange('autorizacionWeb', $event)" />
+                        <span class="slider"></span>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="info-value">
+                      @if (alumno.autorizacionWeb) {
+                        <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                      } @else {
+                        <span class="badge-no"><i class="bi bi-x-circle"></i> No</span>
+                      }
                     </span>
-                    }
-                    @if (!alumno.autorizacionWeb) {
-                    <span class="badge-no">
-                      <i class="bi bi-x-circle"></i> No
-                    </span>
-                    }
-                  </span>
+                  }
                 </div>
               </div>
             </div>
@@ -1059,322 +1161,31 @@
             </div>
           </div>
         </div>
-      </div>
-      }
 
-      <!-- Formulario de edición -->
-      @if (mostrarFormulario) {
-      <div class="py-5 w-100">
-        <div class="admin-card admin-card-large">
-          <div class="info-card-header mb-4">
-            <h3 class="info-card-title">
-              <i class="bi bi-pencil-square"></i>
-              Editar Información General del Alumno
-            </h3>
-            <p class="text-muted mb-0">
-              <i class="bi bi-info-circle"></i>
-              Para gestionar deportes y grados, usa la sección de deportes en la vista principal
-            </p>
+        <!-- Floating Action Bar for Editing -->
+        @if (editingBasicInfo && hasPendingBasicInfoChanges()) {
+          <div class="floating-action-bar">
+            <div class="floating-action-content">
+              <span class="floating-action-text">
+                <i class="bi bi-pencil-square"></i>
+                Tienes cambios sin guardar
+              </span>
+              <div class="floating-action-buttons">
+                <button type="button" class="admin-btn admin-btn-secondary"
+                        (click)="cancelBasicInfoChanges()">
+                  <i class="bi bi-x-circle"></i>
+                  <span>Cancelar</span>
+                </button>
+                <button type="button" class="admin-btn admin-btn-success"
+                        (click)="applyBasicInfoChanges()">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Guardar Cambios</span>
+                </button>
+              </div>
+            </div>
           </div>
-
-          <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)"
-            method="post">
-
-            <!-- Foto del Alumno -->
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-camera"></i>
-                <h4>Foto del Alumno</h4>
-              </div>
-
-              <div class="image-management-container">
-                <!-- Vista previa de la imagen -->
-                <div class="image-preview-section">
-                  <div class="preview-wrapper">
-                    <img [src]="imagenPreview" alt="Foto del alumno" class="preview-image">
-                  </div>
-                </div>
-
-                <!-- Botones de gestión -->
-                <div class="image-actions">
-                  <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*"
-                    style="display: none;" aria-label="Seleccionar foto del alumno" />
-
-                  @if (alumno.fotoAlumno?.url) {
-                  <button type="button" class="admin-btn admin-btn-primary" (click)="inputFile.click()">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span>Cambiar Imagen</span>
-                  </button>
-                  <button type="button" class="admin-btn admin-btn-danger" (click)="eliminarFoto(alumnoEditado.id)">
-                    <i class="bi bi-trash"></i>
-                    <span>Eliminar Imagen</span>
-                  </button>
-                  } @else {
-                  <button type="button" class="admin-btn admin-btn-primary" (click)="inputFile.click()">
-                    <i class="bi bi-plus-circle"></i>
-                    <span>Añadir Imagen</span>
-                  </button>
-                  }
-
-                  <p class="upload-hint">
-                    <i class="bi bi-info-circle"></i>
-                    Formatos: JPG, PNG, GIF, WebP (máx. 50MB)
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Información Personal -->
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-person"></i>
-                <h4>Información Personal</h4>
-              </div>
-
-              <div class="row g-3">
-                <!-- Nombre y Apellidos -->
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('nombre')?.errors && alumnoForm.get('nombre')?.touched"
-                    [class.is-valid]="alumnoForm.get('nombre')?.valid && alumnoForm.get('nombre')?.touched">
-                    <label for="nombre">
-                      <i class="bi bi-person-fill"></i>
-                      Nombre
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" id="nombre" class="admin-form-control" formControlName="nombre" required
-                      placeholder="Nombre del alumno" aria-label="Nombre" aria-required="true" />
-                    @if (alumnoForm.get('nombre')?.errors && alumnoForm.get('nombre')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      Nombre es requerido
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('apellidos')?.errors && alumnoForm.get('apellidos')?.touched"
-                    [class.is-valid]="alumnoForm.get('apellidos')?.valid && alumnoForm.get('apellidos')?.touched">
-                    <label for="apellidos">
-                      <i class="bi bi-person-fill"></i>
-                      Apellidos
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" id="apellidos" class="admin-form-control" formControlName="apellidos" required
-                      placeholder="Apellidos del alumno" aria-label="Apellidos" aria-required="true" />
-                    @if (alumnoForm.get('apellidos')?.errors && alumnoForm.get('apellidos')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      Apellidos son requeridos
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Dirección -->
-                <div class="col-12">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('direccion')?.errors && alumnoForm.get('direccion')?.touched"
-                    [class.is-valid]="alumnoForm.get('direccion')?.valid && alumnoForm.get('direccion')?.touched">
-                    <label for="direccion">
-                      <i class="bi bi-house"></i>
-                      Dirección
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" id="direccion" class="admin-form-control" formControlName="direccion" required
-                      placeholder="Dirección completa" aria-label="Dirección" aria-required="true" />
-                    @if (alumnoForm.get('direccion')?.errors && alumnoForm.get('direccion')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      Dirección es requerida
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Fecha de Nacimiento y NIF -->
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('fechaNacimiento')?.errors && alumnoForm.get('fechaNacimiento')?.touched"
-                    [class.is-valid]="alumnoForm.get('fechaNacimiento')?.valid && alumnoForm.get('fechaNacimiento')?.touched">
-                    <label for="fechaNacimiento">
-                      <i class="bi bi-calendar"></i>
-                      Fecha de Nacimiento
-                      <span class="required">*</span>
-                    </label>
-                    <input type="date" id="fechaNacimiento" class="admin-form-control" formControlName="fechaNacimiento"
-                      required aria-label="Fecha de nacimiento" aria-required="true" />
-                    @if (alumnoForm.get('fechaNacimiento')?.errors && alumnoForm.get('fechaNacimiento')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      Fecha de nacimiento es requerida
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('nif')?.errors && alumnoForm.get('nif')?.touched"
-                    [class.is-valid]="alumnoForm.get('nif')?.valid && alumnoForm.get('nif')?.touched">
-                    <label for="nif">
-                      <i class="bi bi-card-text"></i>
-                      DNI del Alumno
-                      <span class="required">*</span>
-                    </label>
-                    <input type="text" id="nif" class="admin-form-control" formControlName="nif" required
-                      placeholder="12345678A" aria-label="DNI" aria-required="true" />
-                    @if (alumnoForm.get('nif')?.errors && alumnoForm.get('nif')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      @if (alumnoForm.get('nif')?.errors?.['required']) {
-                      <span>DNI del alumno es requerido</span>
-                      }
-                      @if (alumnoForm.get('nif')?.errors?.['pattern']) {
-                      <div>DNI debe ser un formato válido (8 números
-                        y una letra)</div>
-                      }
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Checkboxes -->
-                <div class="col-12">
-                  <div class="admin-form-check">
-                    <input type="checkbox" class="form-check-input" id="tieneDiscapacidad"
-                      formControlName="tieneDiscapacidad" aria-label="Tiene discapacidad" />
-                    <label class="form-check-label" for="tieneDiscapacidad">
-                      <i class="bi bi-universal-access"></i>
-                      Tiene discapacidad
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Contacto -->
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-envelope"></i>
-                <h4>Información de Contacto</h4>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('email')?.errors && alumnoForm.get('email')?.touched"
-                    [class.is-valid]="alumnoForm.get('email')?.valid && alumnoForm.get('email')?.touched">
-                    <label for="email">
-                      <i class="bi bi-envelope-fill"></i>
-                      Email
-                      <span class="required">*</span>
-                    </label>
-                    <input type="email" id="email" class="admin-form-control" formControlName="email" required
-                      placeholder="correo@ejemplo.com" aria-label="Email" aria-required="true" />
-                    @if (alumnoForm.get('email')?.errors && alumnoForm.get('email')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      @if (alumnoForm.get('email')?.errors?.['required']) {
-                      <span>Email es requerido</span>
-                      }
-                      @if (alumnoForm.get('email')?.errors?.['email']) {
-                      <span>Debe ser un formato de email
-                        válido</span>
-                      }
-                    </div>
-                    }
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field"
-                    [class.is-invalid]="alumnoForm.get('telefono')?.errors && alumnoForm.get('telefono')?.touched"
-                    [class.is-valid]="alumnoForm.get('telefono')?.valid && alumnoForm.get('telefono')?.touched">
-                    <label for="telefono">
-                      <i class="bi bi-telephone-fill"></i>
-                      Teléfono
-                      <span class="required">*</span>
-                    </label>
-                    <input type="tel" id="telefono" class="admin-form-control" formControlName="telefono" required
-                      placeholder="123456789" aria-label="Teléfono" aria-required="true" />
-                    @if (alumnoForm.get('telefono')?.errors && alumnoForm.get('telefono')?.touched) {
-                    <div class="invalid-feedback">
-                      <i class="bi bi-exclamation-circle"></i>
-                      @if (alumnoForm.get('telefono')?.errors?.['required']) {
-                      <span>Teléfono es requerido</span>
-                      }
-                      @if (alumnoForm.get('telefono')?.errors?.['pattern']) {
-                      <div>Debe ser un número de teléfono
-                        válido</div>
-                      }
-                      @if (alumnoForm.get('telefono')?.errors?.['maxlength']) {
-                      <div>No debe tener más de 9
-                        caracteres</div>
-                      }
-                    </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Información Adicional -->
-            <div class="admin-form-section">
-              <div class="section-title">
-                <i class="bi bi-info-circle"></i>
-                <h4>Información Adicional</h4>
-              </div>
-
-              <div class="row g-3">
-                <!-- Fecha de Baja (general - when student leaves entirely) -->
-                <div class="col-12 col-md-6">
-                  <div class="admin-form-field">
-                    <label for="fechaBaja">
-                      <i class="bi bi-calendar-x"></i>
-                      Fecha de Baja General
-                    </label>
-                    <input type="date" id="fechaBaja" class="admin-form-control" formControlName="fechaBaja"
-                      aria-label="Fecha de baja" />
-                    <small class="form-text text-muted">
-                      <i class="bi bi-info-circle"></i>
-                      Fecha en que el alumno dejó completamente la escuela (todos los deportes)
-                    </small>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Info alert for sport management -->
-              <div class="alert alert-info d-flex align-items-start gap-3 mt-3" role="alert">
-                <i class="bi bi-info-circle-fill fs-4"></i>
-                <div>
-                  <strong>Gestión de Deportes y Grados</strong>
-                  <p class="mb-0 mt-1">Los deportes, grados y elegibilidad para exámenes se gestionan en la
-                    <strong>sección "Deportes del Alumno"</strong> en la vista principal. Ahí puedes agregar deportes,
-                    actualizar grados y ver el estado de cada deporte.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Submit Buttons -->
-            <div class="admin-form-button-group">
-              <button type="button" class="admin-btn admin-btn-outline" (click)="alternarFormulario(alumnoEditado)"
-                aria-label="Volver sin guardar cambios">
-                <i class="bi bi-x-circle"></i>
-                <span>Volver</span>
-              </button>
-              <button type="submit" class="admin-btn admin-btn-primary" [disabled]="alumnoForm.invalid"
-                aria-label="Confirmar cambios">
-                <i class="bi bi-check-circle"></i>
-                <span>Confirmar Cambios</span>
-              </button>
-            </div>
-          </form>
-        </div>
+        }
       </div>
-      }
     </div>
   </div>
 
