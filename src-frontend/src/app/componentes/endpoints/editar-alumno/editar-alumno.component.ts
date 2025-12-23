@@ -24,6 +24,7 @@ import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 
 @Component({
   selector: 'app-editar-alumno',
@@ -134,6 +135,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   ];
   DeporteEnum = Deporte;
   DeporteLabels = DeporteLabels;
+
+  // Grupos y Turnos
+  gruposDelAlumno: any[] = [];
+  turnosDelAlumno: any[] = [];
+  todosLosGrupos: any[] = [];
+  todosLosTurnos: any[] = [];
 
   // Para manipular el input file
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
@@ -372,6 +379,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.obtenerProductosAlumno(this.alumnoId);
             this.cargarConvocatoriasDelAlumno(this.alumnoId);
             this.cargarDeportesDelAlumno(this.alumnoId);
+            this.cargarGruposYTurnos(this.alumnoId);
           }
         },
         error: (error) => {
@@ -449,6 +457,178 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.convocatoriasDelAlumno = [];
+      },
+    });
+  }
+
+  // ========== GRUPOS Y TURNOS ==========
+
+  /**
+   * Carga los grupos y turnos del alumno y todos los disponibles.
+   */
+  cargarGruposYTurnos(alumnoId: number): void {
+    // Cargar grupos del alumno
+    this.endpointsService.obtenerGruposDelAlumnoObservable(alumnoId).subscribe({
+      next: (grupos) => {
+        this.gruposDelAlumno = grupos || [];
+      },
+      error: () => {
+        this.gruposDelAlumno = [];
+      },
+    });
+
+    // Cargar turnos del alumno
+    this.endpointsService.obtenerTurnosDelAlumnoObservable(alumnoId).subscribe({
+      next: (turnos) => {
+        this.turnosDelAlumno = turnos || [];
+      },
+      error: () => {
+        this.turnosDelAlumno = [];
+      },
+    });
+
+    // Cargar todos los grupos
+    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+      next: (grupos) => {
+        this.todosLosGrupos = grupos || [];
+      },
+      error: () => {
+        this.todosLosGrupos = [];
+      },
+    });
+
+    // Cargar todos los turnos
+    this.endpointsService.obtenerTurnosDTO().subscribe({
+      next: (turnos) => {
+        this.todosLosTurnos = turnos || [];
+      },
+      error: () => {
+        this.todosLosTurnos = [];
+      },
+    });
+  }
+
+  /**
+   * Obtiene los grupos del alumno filtrados por deporte.
+   */
+  getGruposDelDeporte(deporte: string): any[] {
+    return this.gruposDelAlumno.filter((g) => g.deporte === deporte);
+  }
+
+  /**
+   * Obtiene los turnos del alumno filtrados por deporte.
+   */
+  getTurnosDelDeporte(deporte: string): any[] {
+    const gruposDelDeporte = this.getGruposDelDeporte(deporte);
+    const gruposIds = gruposDelDeporte.map((g) => g.id);
+    return this.turnosDelAlumno.filter(
+      (t) => t.grupoId && gruposIds.includes(t.grupoId)
+    );
+  }
+
+  /**
+   * Obtiene los grupos disponibles para añadir (no asignados al alumno) filtrados por deporte.
+   */
+  getGruposDisponiblesDelDeporte(deporte: string): any[] {
+    const gruposAsignados = this.getGruposDelDeporte(deporte).map((g) => g.id);
+    return this.todosLosGrupos.filter(
+      (g) => g.deporte === deporte && !gruposAsignados.includes(g.id)
+    );
+  }
+
+  /**
+   * Obtiene los turnos disponibles para añadir (no asignados al alumno) filtrados por deporte.
+   */
+  getTurnosDisponiblesDelDeporte(deporte: string): any[] {
+    const gruposDelDeporte = this.getGruposDelDeporte(deporte);
+    const gruposIds = gruposDelDeporte.map((g) => g.id);
+    const turnosAsignados = this.getTurnosDelDeporte(deporte).map((t) => t.id);
+
+    // Solo mostrar turnos que pertenecen a grupos del alumno en este deporte
+    return this.todosLosTurnos.filter(
+      (t) =>
+        t.grupoId &&
+        gruposIds.includes(t.grupoId) &&
+        !turnosAsignados.includes(t.id)
+    );
+  }
+
+  /**
+   * Formatea el nombre del turno para mostrar.
+   */
+  formatTurnoNombre(turno: any): string {
+    if (turno.nombre) return turno.nombre;
+    const parts = [];
+    if (turno.diaSemana) parts.push(turno.diaSemana);
+    if (turno.horaInicio) parts.push(turno.horaInicio);
+    if (turno.horaFin) parts.push(`- ${turno.horaFin}`);
+    return parts.join(' ') || `Turno ${turno.id}`;
+  }
+
+  /**
+   * Añade un grupo al alumno.
+   */
+  agregarGrupoAlumno(grupoId: number): void {
+    if (!this.alumnoId || !grupoId) return;
+
+    this.endpointsService.asignarAlumnoAGrupo(this.alumnoId, grupoId).subscribe({
+      next: () => {
+        showSuccessToast('Grupo añadido');
+        this.cargarGruposYTurnos(this.alumnoId!);
+      },
+      error: (error) => {
+        showErrorToast(error.error?.message || 'No se pudo añadir al grupo');
+      },
+    });
+  }
+
+  /**
+   * Elimina un grupo del alumno.
+   */
+  eliminarGrupoAlumno(grupoId: number): void {
+    if (!this.alumnoId || !grupoId) return;
+
+    this.endpointsService.removerAlumnoDeGrupo(this.alumnoId, grupoId).subscribe({
+      next: () => {
+        showSuccessToast('Grupo eliminado');
+        this.cargarGruposYTurnos(this.alumnoId!);
+      },
+      error: (error) => {
+        showErrorToast(error.error?.message || 'No se pudo eliminar del grupo');
+      },
+    });
+  }
+
+  /**
+   * Añade un turno al alumno.
+   */
+  agregarTurnoAlumno(turnoId: number): void {
+    if (!this.alumnoId || !turnoId) return;
+
+    this.endpointsService.asignarAlumnoATurno(this.alumnoId, turnoId).subscribe({
+      next: () => {
+        showSuccessToast('Turno añadido');
+        this.cargarGruposYTurnos(this.alumnoId!);
+      },
+      error: (error) => {
+        showErrorToast(error.error?.message || 'No se pudo añadir al turno');
+      },
+    });
+  }
+
+  /**
+   * Elimina un turno del alumno.
+   */
+  eliminarTurnoAlumno(turnoId: number): void {
+    if (!this.alumnoId || !turnoId) return;
+
+    this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId).subscribe({
+      next: () => {
+        showSuccessToast('Turno eliminado');
+        this.cargarGruposYTurnos(this.alumnoId!);
+      },
+      error: (error) => {
+        showErrorToast(error.error?.message || 'No se pudo eliminar del turno');
       },
     });
   }
