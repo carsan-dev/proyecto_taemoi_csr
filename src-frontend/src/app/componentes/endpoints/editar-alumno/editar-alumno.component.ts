@@ -125,6 +125,21 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }> = new Map();
   deportesDisponibles: Deporte[] = [];
 
+  // Pending changes for basic info (inline editing)
+  pendingBasicInfoChanges: {
+    nombre?: string;
+    apellidos?: string;
+    direccion?: string;
+    fechaNacimiento?: string;
+    nif?: string;
+    email?: string;
+    telefono?: string;
+    tieneDiscapacidad?: boolean;
+    autorizacionWeb?: boolean;
+    fechaBaja?: string;
+  } = {};
+  editingBasicInfo: boolean = false;
+
   // Categorias for Taekwondo competitors (must match database categoria.nombre values)
   categorias = [
     'Infantil',
@@ -3028,5 +3043,118 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       text: error.error || `No se pudo actualizar ${fieldName}`,
       icon: 'error',
     });
+  }
+
+  // ==================== BASIC INFO INLINE EDITING ====================
+
+  /**
+   * Toggle edit mode for basic info section
+   */
+  toggleEditBasicInfo(): void {
+    if (this.editingBasicInfo) {
+      // Exiting edit mode - cancel changes
+      this.cancelBasicInfoChanges();
+    } else {
+      // Entering edit mode - initialize pending changes with current values
+      this.editingBasicInfo = true;
+      this.pendingBasicInfoChanges = {};
+    }
+  }
+
+  /**
+   * Get displayed value for a basic info field (pending or current)
+   */
+  getDisplayedBasicInfo(field: string): any {
+    if (this.pendingBasicInfoChanges.hasOwnProperty(field)) {
+      return (this.pendingBasicInfoChanges as any)[field];
+    }
+    return this.alumno ? this.alumno[field] : '';
+  }
+
+  /**
+   * Handle change for basic info fields
+   */
+  onBasicInfoChange(field: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value: any;
+
+    if (target.type === 'checkbox') {
+      value = target.checked;
+    } else if (target.type === 'date') {
+      value = target.value;
+    } else {
+      value = target.value;
+    }
+
+    (this.pendingBasicInfoChanges as any)[field] = value;
+  }
+
+  /**
+   * Check if there are pending basic info changes
+   */
+  hasPendingBasicInfoChanges(): boolean {
+    return Object.keys(this.pendingBasicInfoChanges).length > 0;
+  }
+
+  /**
+   * Apply pending basic info changes
+   */
+  applyBasicInfoChanges(): void {
+    if (!this.hasPendingBasicInfoChanges() || !this.alumnoId) {
+      return;
+    }
+
+    // Get telefono value - ensure it's a number
+    const telefonoValue = this.pendingBasicInfoChanges.telefono ?? this.alumno.telefono;
+    const telefonoInt = typeof telefonoValue === 'string' ? parseInt(telefonoValue, 10) : telefonoValue;
+
+    // Format fechaBaja - use null if empty string
+    const fechaBajaValue = this.pendingBasicInfoChanges.fechaBaja ?? (this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null);
+    const fechaBaja = fechaBajaValue === '' ? null : fechaBajaValue;
+
+    // Merge pending changes with current alumno data - include ALL required fields for backend validation
+    const updatedData = {
+      // Basic info fields (editable)
+      nombre: this.pendingBasicInfoChanges.nombre ?? this.alumno.nombre,
+      apellidos: this.pendingBasicInfoChanges.apellidos ?? this.alumno.apellidos,
+      direccion: this.pendingBasicInfoChanges.direccion ?? this.alumno.direccion,
+      fechaNacimiento: this.pendingBasicInfoChanges.fechaNacimiento ?? formatDate(this.alumno.fechaNacimiento),
+      nif: this.pendingBasicInfoChanges.nif ?? this.alumno.nif,
+      email: this.pendingBasicInfoChanges.email ?? this.alumno.email,
+      telefono: telefonoInt,
+      tieneDiscapacidad: this.pendingBasicInfoChanges.tieneDiscapacidad ?? this.alumno.tieneDiscapacidad,
+      autorizacionWeb: this.pendingBasicInfoChanges.autorizacionWeb ?? this.alumno.autorizacionWeb,
+      fechaBaja: fechaBaja,
+      // Required fields for backend validation (preserve current values)
+      tipoTarifa: this.alumno.tipoTarifa,
+      fechaAlta: this.alumno.fechaAlta ? formatDate(this.alumno.fechaAlta) : null,
+      cuantiaTarifa: this.alumno.cuantiaTarifa,
+      rolFamiliar: this.alumno.rolFamiliar,
+      grupoFamiliar: this.alumno.grupoFamiliar,
+    };
+
+    const formData = new FormData();
+    formData.append('alumnoEditado', JSON.stringify(updatedData));
+
+    this.endpointsService.actualizarAlumno(this.alumnoId, formData).subscribe({
+      next: () => {
+        showSuccessToast('Información actualizada correctamente');
+        this.pendingBasicInfoChanges = {};
+        this.editingBasicInfo = false;
+        // Reload alumno data
+        this.cargarAlumno(this.alumnoId!);
+      },
+      error: (error) => {
+        showErrorToast('Error al actualizar la información');
+      },
+    });
+  }
+
+  /**
+   * Cancel pending basic info changes
+   */
+  cancelBasicInfoChanges(): void {
+    this.pendingBasicInfoChanges = {};
+    this.editingBasicInfo = false;
   }
 }
