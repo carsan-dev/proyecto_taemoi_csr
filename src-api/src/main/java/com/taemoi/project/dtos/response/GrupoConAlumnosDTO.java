@@ -5,6 +5,7 @@ import java.util.List;
 public class GrupoConAlumnosDTO {
 	private Long id;
 	private String nombre;
+	private String deporte; // Deporte del grupo (TAEKWONDO, KICKBOXING, PILATES, etc.)
 	private List<AlumnoCortoDTO> alumnos;
 
 	public Long getId() {
@@ -21,6 +22,14 @@ public class GrupoConAlumnosDTO {
 
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
+	}
+
+	public String getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(String deporte) {
+		this.deporte = deporte;
 	}
 
 	public List<AlumnoCortoDTO> getAlumnos() {
