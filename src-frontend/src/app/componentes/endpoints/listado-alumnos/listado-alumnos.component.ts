@@ -15,6 +15,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
+import { LoadingService } from '../../../servicios/generales/loading.service';
 
 @Component({
   selector: 'app-listado-alumnos',
@@ -71,8 +72,30 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly alumnoService: AlumnoService
+    private readonly alumnoService: AlumnoService,
+    private readonly loadingService: LoadingService
   ) {}
+
+  /**
+   * Helper method to generate PDF with loading spinner
+   * @param observable$ The Observable that returns the PDF blob
+   * @param errorMessage Error message to show if generation fails
+   */
+  private generarPdfConLoading(
+    observable$: import('rxjs').Observable<Blob>,
+    errorMessage: string
+  ): void {
+    this.loadingService.show();
+    observable$.pipe(finalize(() => this.loadingService.hide())).subscribe({
+      next: (pdfBlob: Blob) => {
+        const fileURL = URL.createObjectURL(pdfBlob);
+        window.open(fileURL, '_blank');
+      },
+      error: () => {
+        Swal.fire('Error', errorMessage, 'error');
+      },
+    });
+  }
 
   ngOnInit(): void {
     // Load saved view preference
@@ -403,136 +426,125 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }): void {
     const { tipo, soloActivos } = event;
 
-    if (tipo === 'general') {
-      this.endpointsService
-        .generarInformeAlumnosPorGrado(soloActivos)
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = URL.createObjectURL(pdfBlob);
-            window.open(fileURL, '_blank');
-          },
-          error: () => {
-            Swal.fire(
-              'Error',
-              'No se pudo generar el informe general',
-              'error'
-            );
-          },
-        });
-    } else if (tipo === 'taekwondo') {
-      this.endpointsService
-        .generarInformeTaekwondoPorGrado(soloActivos)
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = URL.createObjectURL(pdfBlob);
-            window.open(fileURL, '_blank');
-          },
-          error: () => {
-            Swal.fire(
-              'Error',
-              'No se pudo generar el informe de Taekwondo',
-              'error'
-            );
-          },
-        });
-    } else if (tipo === 'kickboxing') {
-      this.endpointsService
-        .generarInformeKickboxingPorGrado(soloActivos)
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = URL.createObjectURL(pdfBlob);
-            window.open(fileURL, '_blank');
-          },
-          error: () => {
-            Swal.fire(
-              'Error',
-              'No se pudo generar el informe de Kickboxing',
-              'error'
-            );
-          },
-        });
-    } else if (tipo === 'licencias') {
-      this.endpointsService
-        .generarInformeLicencias(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'infantiles') {
-      this.endpointsService
-        .generarInformeInfantilesAPromocionar(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'adultos') {
-      this.endpointsService
-        .generarInformeAdultosAPromocionar(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'infantiles-taekwondo') {
-      this.endpointsService
-        .generarInformeInfantilesAPromocionarTaekwondo(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'infantiles-kickboxing') {
-      this.endpointsService
-        .generarInformeInfantilesAPromocionarKickboxing(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'adultos-taekwondo') {
-      this.endpointsService
-        .generarInformeAdultosAPromocionarTaekwondo(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'adultos-kickboxing') {
-      this.endpointsService
-        .generarInformeAdultosAPromocionarKickboxing(soloActivos)
-        .subscribe((blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          window.open(url);
-        });
-    } else if (tipo === 'deudas') {
-      // Show SweetAlert to choose format
-      Swal.fire({
-        title: 'Seleccionar Formato',
-        text: '¿En qué formato deseas generar el informe de deudas?',
-        icon: 'question',
-        showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonText: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-        denyButtonText: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc3545',
-        denyButtonColor: '#28a745',
-        cancelButtonColor: '#6c757d',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          // Generate PDF
-          this.endpointsService.generarInformeDeudas(soloActivos).subscribe({
-            next: (pdfBlob: Blob) => {
-              const fileURL = URL.createObjectURL(pdfBlob);
-              window.open(fileURL, '_blank');
-            },
-            error: () => {
-              Swal.fire(
-                'Error',
-                'No se pudo generar el informe de deudas en PDF',
-                'error'
-              );
-            },
-          });
-        } else if (result.isDenied) {
-          // Generate CSV
-          this.endpointsService.generarInformeDeudasCSV(soloActivos).subscribe({
+    switch (tipo) {
+      case 'general':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeAlumnosPorGrado(soloActivos),
+          'No se pudo generar el informe general'
+        );
+        break;
+      case 'taekwondo':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeTaekwondoPorGrado(soloActivos),
+          'No se pudo generar el informe de Taekwondo'
+        );
+        break;
+      case 'kickboxing':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeKickboxingPorGrado(soloActivos),
+          'No se pudo generar el informe de Kickboxing'
+        );
+        break;
+      case 'licencias':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeLicencias(soloActivos),
+          'No se pudo generar el informe de licencias'
+        );
+        break;
+      case 'infantiles':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeInfantilesAPromocionar(soloActivos),
+          'No se pudo generar el informe de infantiles'
+        );
+        break;
+      case 'adultos':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeAdultosAPromocionar(soloActivos),
+          'No se pudo generar el informe de adultos'
+        );
+        break;
+      case 'infantiles-taekwondo':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeInfantilesAPromocionarTaekwondo(soloActivos),
+          'No se pudo generar el informe de infantiles de Taekwondo'
+        );
+        break;
+      case 'infantiles-kickboxing':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeInfantilesAPromocionarKickboxing(soloActivos),
+          'No se pudo generar el informe de infantiles de Kickboxing'
+        );
+        break;
+      case 'adultos-taekwondo':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeAdultosAPromocionarTaekwondo(soloActivos),
+          'No se pudo generar el informe de adultos de Taekwondo'
+        );
+        break;
+      case 'adultos-kickboxing':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeAdultosAPromocionarKickboxing(soloActivos),
+          'No se pudo generar el informe de adultos de Kickboxing'
+        );
+        break;
+      case 'deudas':
+        this.generarInformeDeudas(soloActivos);
+        break;
+      case 'mensualidades':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeMensualidades(soloActivos),
+          'No se pudo generar el informe de mensualidades'
+        );
+        break;
+      case 'mensualidades-taekwondo':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeMensualidadesTaekwondo(soloActivos),
+          'No se pudo generar el informe de mensualidades de Taekwondo'
+        );
+        break;
+      case 'mensualidades-kickboxing':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos),
+          'No se pudo generar el informe de mensualidades de Kickboxing'
+        );
+        break;
+      case 'competidores':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeCompetidores(),
+          'No se pudo generar el informe de competidores'
+        );
+        break;
+    }
+  }
+
+  /**
+   * Handles deudas report generation with format selection dialog
+   */
+  private generarInformeDeudas(soloActivos: boolean): void {
+    Swal.fire({
+      title: 'Seleccionar Formato',
+      text: '¿En qué formato deseas generar el informe de deudas?',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+      denyButtonText: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      denyButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeDeudas(soloActivos),
+          'No se pudo generar el informe de deudas en PDF'
+        );
+      } else if (result.isDenied) {
+        this.loadingService.show();
+        this.endpointsService
+          .generarInformeDeudasCSV(soloActivos)
+          .pipe(finalize(() => this.loadingService.hide()))
+          .subscribe({
             next: (csvBlob: Blob) => {
               const url = globalThis.URL.createObjectURL(csvBlob);
               const a = document.createElement('a');
@@ -545,76 +557,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
               showSuccessToast('CSV descargado correctamente');
             },
             error: () => {
-              Swal.fire(
-                'Error',
-                'No se pudo generar el informe de deudas en CSV',
-                'error'
-              );
+              Swal.fire('Error', 'No se pudo generar el informe de deudas en CSV', 'error');
             },
           });
-        }
-      });
-    } else if (tipo === 'mensualidades') {
-      this.endpointsService.generarInformeMensualidades(soloActivos).subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de mensualidades',
-            'error'
-          );
-        },
-      });
-    } else if (tipo === 'mensualidades-taekwondo') {
-      this.endpointsService
-        .generarInformeMensualidadesTaekwondo(soloActivos)
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = URL.createObjectURL(pdfBlob);
-            window.open(fileURL, '_blank');
-          },
-          error: () => {
-            Swal.fire(
-              'Error',
-              'No se pudo generar el informe de mensualidades de Taekwondo',
-              'error'
-            );
-          },
-        });
-    } else if (tipo === 'mensualidades-kickboxing') {
-      this.endpointsService
-        .generarInformeMensualidadesKickboxing(soloActivos)
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = URL.createObjectURL(pdfBlob);
-            window.open(fileURL, '_blank');
-          },
-          error: () => {
-            Swal.fire(
-              'Error',
-              'No se pudo generar el informe de mensualidades de Kickboxing',
-              'error'
-            );
-          },
-        });
-    } else if (tipo === 'competidores') {
-      this.endpointsService.generarInformeCompetidores().subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el informe de competidores',
-            'error'
-          );
-        },
-      });
-    }
+      }
+    });
   }
 
   calcularEdad(fechaNacimiento: string): number {
@@ -835,6 +782,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   generarListadoAsistencia() {
     const [year, month] = this.mesAnoAsistencia.split('-').map((v) => +v);
+    this.loadingService.show();
     this.endpointsService
       .descargarAsistencia(
         year,
@@ -842,13 +790,19 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.grupoSeleccionado,
         this.turnoSeleccionado!
       )
-      .subscribe((blob: Blob) => {
-        const url = globalThis.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
-        a.click();
-        globalThis.URL.revokeObjectURL(url);
+      .pipe(finalize(() => this.loadingService.hide()))
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
+          a.click();
+          globalThis.URL.revokeObjectURL(url);
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudo generar el listado de asistencia', 'error');
+        },
       });
   }
 
@@ -858,21 +812,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService
-      .generarListadoMensualidadMensual(this.mesAnoMensualidad, true)
-      .subscribe({
-        next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo generar el listado de mensualidad mensual',
-            'error'
-          );
-        },
-      });
+    this.generarPdfConLoading(
+      this.endpointsService.generarListadoMensualidadMensual(this.mesAnoMensualidad, true),
+      'No se pudo generar el listado de mensualidad mensual'
+    );
   }
 
   private formatearNombreMensualidad(mesAno: string): string {
