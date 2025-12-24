@@ -1,5 +1,5 @@
 // ========================================
-// VARIABLES
+// VARIABLES (matching main site)
 // ========================================
 @use 'sass:color';
 
@@ -15,25 +15,33 @@ $shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
 $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-// Sport Colors
-$taekwondo-color: #667ee6;
-$competicion-color: #e74c3c;
-$pilates-color: #3498db;
-$kickboxing-color: #f39c12;
-$defensa-color: #e91e63;
+// Sport Colors (matching main site)
+$taekwondo-color: #0D47A1;
+$taekwondo-hover: #1976D2;
+$kickboxing-color: #ff4500;
+$kickboxing-hover: #e83e00;
+$pilates-color: #57A2A8;
+$pilates-hover: #468A8F;
+$defensa-color: #c2185b;
+$defensa-hover: #d81b60;
+
+// Availability colors
+$available-color: #4caf50;
+$warning-color: #ff9800;
+$full-color: #f44336;
 
 // ========================================
-// HORARIOS PAGE
+// PAGE LAYOUT
 // ========================================
 .horarios-page {
   min-height: 100vh;
   background: #f8f9fa;
   padding-top: 120px;
-  padding-bottom: 3rem;
+  padding-bottom: 4rem;
 }
 
 // ========================================
-// HERO HEADER
+// HERO HEADER (matching main site style)
 // ========================================
 .hero-header {
   position: relative;
@@ -49,7 +57,7 @@ $defensa-color: #e91e63;
     right: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
     animation: pulse 15s infinite;
   }
 
@@ -67,7 +75,7 @@ $defensa-color: #e91e63;
   .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
   }
 
@@ -109,269 +117,538 @@ $defensa-color: #e91e63;
   padding: 0 2rem;
 
   .content-wrapper {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
   }
+}
 
-  // Schedule Grid
-  .schedule-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-    animation: fadeInUp 0.6s ease 0.3s backwards;
-  }
+// ========================================
+// SPORT LEGEND
+// ========================================
+.sport-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease;
 
-  // Day Card
-  .day-card {
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
     background: $text-light;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: $shadow-md;
+    border-radius: 50px;
+    box-shadow: $shadow-sm;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: $text-dark;
     transition: $transition;
 
     &:hover {
-      transform: translateY(-5px);
-      box-shadow: $shadow-lg;
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
     }
 
-    .day-header {
-      background: linear-gradient(135deg, $primary-color, $primary-dark);
-      color: $text-light;
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      font-weight: 600;
-      font-size: 1.1rem;
-
-      i {
-        font-size: 1.3rem;
-      }
+    .legend-emoji {
+      font-size: 1.25rem;
     }
 
-    .day-content {
-      padding: 1.5rem;
-      min-height: 150px;
+    &.taekwondo { border-left: 4px solid $taekwondo-color; }
+    &.kickboxing { border-left: 4px solid $kickboxing-color; }
+    &.pilates { border-left: 4px solid $pilates-color; }
+    &.defensa { border-left: 4px solid $defensa-color; }
+  }
+}
+
+// ========================================
+// TIMETABLE CONTAINER
+// ========================================
+.timetable-container {
+  background: $text-light;
+  border-radius: 25px;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease 0.2s backwards;
+
+  &.desktop-view {
+    display: block;
+  }
+}
+
+.mobile-view {
+  display: none;
+}
+
+// ========================================
+// TIMETABLE GRID
+// ========================================
+.timetable {
+  width: 100%;
+}
+
+.timetable-header,
+.timetable-row {
+  display: grid;
+  grid-template-columns: 110px repeat(5, 1fr);
+}
+
+.timetable-header {
+  background: linear-gradient(135deg, $dark-bg, $dark-accent);
+
+  .header-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1rem;
+    font-weight: 600;
+    color: $text-light;
+    border-right: 1px solid rgba(255,255,255,0.1);
+
+    &:last-child {
+      border-right: none;
     }
 
-    // Time Slot
-    .time-slot {
-      background: $text-light;
-      padding: 1rem;
-      border-radius: 12px;
-      margin-bottom: 0.75rem;
-      border: 2px solid #e9ecef;
-      transition: $transition;
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 4px;
-        height: 100%;
-        background: $taekwondo-color;
-      }
-
-      &[data-sport="Taekwondo"]::before {
-        background: linear-gradient(180deg, $taekwondo-color, color.adjust($taekwondo-color, $lightness: 15%));
-      }
-
-      &[data-sport="Taekwondo Competición"]::before {
-        background: linear-gradient(180deg, $competicion-color, color.adjust($competicion-color, $lightness: 15%));
-      }
-
-      &[data-sport="Pilates"]::before {
-        background: linear-gradient(180deg, $pilates-color, color.adjust($pilates-color, $lightness: 15%));
-      }
-
-      &[data-sport="Kickboxing"]::before {
-        background: linear-gradient(180deg, $kickboxing-color, color.adjust($kickboxing-color, $lightness: 15%));
-      }
-
-      &[data-sport="Defensa Personal Femenina"]::before {
-        background: linear-gradient(180deg, $defensa-color, color.adjust($defensa-color, $lightness: 15%));
-      }
-
-      &.clickable {
-        cursor: pointer;
-
-        &:hover {
-          border-color: $primary-color;
-          box-shadow: $shadow-md;
-          transform: translateX(5px);
-        }
-
-        &:active {
-          transform: translateX(3px);
-        }
-      }
-
-      &:hover {
-        border-color: $primary-color;
-        box-shadow: $shadow-sm;
-        transform: translateX(3px);
-      }
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .slot-time {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        color: $text-dark;
-        margin-bottom: 0.5rem;
-
-        i {
-          color: $primary-color;
-          font-size: 1rem;
-        }
-
-        span {
-          font-size: 0.95rem;
-        }
-      }
-
-      .slot-category {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: $text-muted;
-        font-size: 0.9rem;
-
-        .category-icon {
-          font-size: 1.2rem;
-        }
-
-        .category-name {
-          font-weight: 500;
-        }
-      }
-
-      .availability-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.3rem 0.6rem;
-        border-radius: 6px;
-        margin-top: 0.5rem;
-
-        i {
-          font-size: 0.85rem;
-        }
-
-        &.available {
-          background: #d4edda;
-          color: #155724;
-          border: 1px solid #c3e6cb;
-        }
-
-        &.warning {
-          background: #fff3cd;
-          color: #856404;
-          border: 1px solid #ffeaa7;
-        }
-
-        &.full {
-          background: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-        }
-      }
+    i {
+      font-size: 1rem;
+      opacity: 0.8;
     }
 
-    // No Slots
-    .no-slots {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      padding: 2rem 1rem;
-      color: $text-muted;
-      text-align: center;
-      font-style: italic;
+    .day-short {
+      display: none;
+    }
+  }
+}
 
-      i {
-        font-size: 2.5rem;
-        opacity: 0.5;
-      }
+.timetable-row {
+  border-bottom: 1px solid #e9ecef;
 
-      span {
-        font-size: 0.95rem;
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:nth-child(even) {
+    background: #fafbfc;
+  }
+}
+
+.time-column {
+  width: 110px;
+}
+
+.time-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  background: linear-gradient(135deg, rgba($primary-color, 0.05), rgba($primary-color, 0.02));
+  border-right: 1px solid #e9ecef;
+  font-weight: 600;
+  color: $text-dark;
+  gap: 0.125rem;
+
+  .time-start,
+  .time-end {
+    font-size: 0.85rem;
+  }
+
+  .time-separator {
+    font-size: 0.7rem;
+    color: $text-muted;
+  }
+}
+
+.day-cell {
+  min-height: 85px;
+  padding: 0.5rem;
+  background: transparent;
+  transition: $transition;
+  cursor: default;
+  border-right: 1px solid #e9ecef;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &.has-class {
+    cursor: pointer;
+
+    &:hover {
+      background: rgba($primary-color, 0.03);
+
+      .class-block {
+        transform: scale(1.03);
+        box-shadow: $shadow-md;
       }
     }
   }
 
-  // Info Section
-  .info-section {
-    animation: fadeInUp 0.6s ease 0.5s backwards;
+  &.empty {
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(0,0,0,0.01) 10px,
+      rgba(0,0,0,0.01) 20px
+    );
+  }
+}
 
-    .info-card {
-      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-      border-left: 4px solid $primary-color;
-      border-radius: 15px;
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: flex-start;
-      gap: 1.5rem;
-      box-shadow: $shadow-sm;
+// ========================================
+// CLASS BLOCK
+// ========================================
+.class-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 100%;
+  min-height: 70px;
+  padding: 0.75rem;
+  border-radius: 15px;
+  position: relative;
+  transition: $transition;
+
+  // Sport-specific styles (matching main site colors)
+  &.taekwondo {
+    background: $taekwondo-color;
+    box-shadow: 0 4px 12px rgba($taekwondo-color, 0.3);
+
+    &:hover {
+      background: $taekwondo-hover;
+    }
+  }
+
+  &.kickboxing {
+    background: $kickboxing-color;
+    box-shadow: 0 4px 12px rgba($kickboxing-color, 0.3);
+
+    &:hover {
+      background: $kickboxing-hover;
+    }
+  }
+
+  &.pilates {
+    background: $pilates-color;
+    box-shadow: 0 4px 12px rgba($pilates-color, 0.3);
+
+    &:hover {
+      background: $pilates-hover;
+    }
+  }
+
+  &.defensa {
+    background: $defensa-color;
+    box-shadow: 0 4px 12px rgba($defensa-color, 0.3);
+
+    &:hover {
+      background: $defensa-hover;
+    }
+  }
+
+  .class-emoji {
+    font-size: 1.4rem;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  }
+
+  .class-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .availability-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+    &.available { background: $available-color; }
+    &.warning { background: $warning-color; }
+    &.full { background: $full-color; }
+  }
+}
+
+// ========================================
+// MOBILE VIEW
+// ========================================
+.day-tabs {
+  display: flex;
+  background: $text-light;
+  border-radius: 50px;
+  padding: 0.375rem;
+  margin-bottom: 1.25rem;
+  box-shadow: $shadow-sm;
+  overflow-x: auto;
+
+  .day-tab {
+    flex: 1;
+    min-width: 55px;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $text-muted;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background: #f1f5f9;
+      color: $text-dark;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, $dark-bg, $dark-accent);
+      color: white;
+    }
+  }
+}
+
+.day-classes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.mobile-class-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: $text-light;
+  border-radius: 20px;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .mobile-card-left {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &.taekwondo .mobile-card-left { background: $taekwondo-color; }
+  &.kickboxing .mobile-card-left { background: $kickboxing-color; }
+  &.pilates .mobile-card-left { background: $pilates-color; }
+  &.defensa .mobile-card-left { background: $defensa-color; }
+
+  .mobile-emoji {
+    font-size: 1.75rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  }
+
+  .mobile-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobile-class-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: $text-dark;
+  }
+
+  .mobile-class-time {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.9rem;
+    color: $text-muted;
+
+    i { font-size: 0.8rem; }
+  }
+
+  .mobile-card-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $text-muted;
+
+    .bi-chevron-right {
+      font-size: 1.25rem;
+    }
+  }
+
+  .availability-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i { font-size: 1.1rem; }
+
+    &.available {
+      color: $available-color;
+      background: rgba($available-color, 0.15);
+    }
+
+    &.warning {
+      color: $warning-color;
+      background: rgba($warning-color, 0.15);
+    }
+
+    &.full {
+      color: $full-color;
+      background: rgba($full-color, 0.15);
+    }
+  }
+}
+
+.no-classes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 1.5rem;
+  background: $text-light;
+  border-radius: 20px;
+  box-shadow: $shadow-sm;
+  color: $text-muted;
+
+  i {
+    font-size: 3rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+}
+
+// ========================================
+// INFO SECTION
+// ========================================
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeInUp 0.6s ease 0.4s backwards;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: $text-light;
+  border-radius: 20px;
+  box-shadow: $shadow-sm;
+  border-left: 4px solid $primary-color;
+  transition: $transition;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-3px);
+  }
+
+  .info-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    i {
+      font-size: 1.75rem;
+      color: $primary-color;
+    }
+  }
+
+  .info-content {
+    h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: $text-dark;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+      color: $text-muted;
+      line-height: 1.6;
+    }
+
+    .contacto-link {
+      color: $primary-color;
+      font-weight: 600;
+      text-decoration: none;
       transition: $transition;
 
       &:hover {
-        box-shadow: $shadow-md;
-        transform: translateY(-2px);
-      }
-
-      i {
-        color: $primary-color;
-        font-size: 2.5rem;
-        flex-shrink: 0;
-        margin-top: 0.25rem;
-      }
-
-      .info-content {
-        h3 {
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: #1565c0;
-          margin: 0 0 0.5rem 0;
-        }
-
-        p {
-          margin: 0;
-          color: #0d47a1;
-          font-size: 1rem;
-          line-height: 1.6;
-
-          .contacto-link {
-            color: $primary-color;
-            text-decoration: none;
-            font-weight: 600;
-            border-bottom: 2px solid transparent;
-            transition: $transition;
-
-            &:hover {
-              border-bottom-color: $primary-color;
-            }
-          }
-        }
+        text-decoration: underline;
       }
     }
   }
 }
 
+.availability-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: $text-light;
+  border-radius: 50px;
+  box-shadow: $shadow-sm;
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.9rem;
+    color: $text-muted;
+    font-weight: 500;
+  }
+
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+
+    &.available { background: $available-color; }
+    &.warning { background: $warning-color; }
+    &.full { background: $full-color; }
+  }
+}
+
 // ========================================
-// MODAL STYLES
+// MODAL (matching main site style)
 // ========================================
 .modal-overlay {
   position: fixed;
@@ -379,216 +656,206 @@ $defensa-color: #e91e63;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
   padding: 1rem;
-  animation: fadeIn 0.3s ease;
-  backdrop-filter: blur(4px);
+  animation: fadeIn 0.25s ease;
 }
 
 .modal-content {
   background: $text-light;
-  border-radius: 20px;
-  max-width: 700px;
+  border-radius: 25px;
+  max-width: 440px;
   width: 100%;
-  max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: $shadow-lg;
   animation: slideUp 0.3s ease;
-  display: flex;
-  flex-direction: column;
+  position: relative;
+
+  .close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: $transition;
+    color: white;
+    font-size: 1.1rem;
+    z-index: 1;
+
+    &:hover {
+      background: rgba(255,255,255,0.3);
+      transform: rotate(90deg);
+    }
+  }
 
   .modal-header {
     padding: 2rem;
-    background: linear-gradient(135deg, $primary-color, $primary-dark);
-    color: $text-light;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    position: relative;
-    overflow: hidden;
+    align-items: center;
+    gap: 1.25rem;
+    background: linear-gradient(135deg, $dark-bg, $dark-accent);
 
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 8px;
-      height: 100%;
-      background: $taekwondo-color;
+    .modal-emoji {
+      font-size: 3.5rem;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
     }
 
-    &[data-sport="Taekwondo"]::before {
-      background: $taekwondo-color;
-    }
-
-    &[data-sport="Taekwondo Competición"]::before {
-      background: $competicion-color;
-    }
-
-    &[data-sport="Pilates"]::before {
-      background: $pilates-color;
-    }
-
-    &[data-sport="Kickboxing"]::before {
-      background: $kickboxing-color;
-    }
-
-    &[data-sport="Defensa Personal Femenina"]::before {
-      background: $defensa-color;
-    }
-
-    .modal-title {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-
-      .category-icon-large {
-        font-size: 3rem;
-      }
-
+    .modal-title-info {
       h2 {
         margin: 0;
         font-size: 1.5rem;
         font-weight: 700;
+        color: white;
+        text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
       }
 
-      .modal-subtitle {
-        margin: 0.25rem 0 0 0;
-        opacity: 0.9;
+      .modal-schedule {
+        margin: 0.5rem 0 0 0;
         font-size: 0.95rem;
-      }
-    }
+        color: rgba(white, 0.85);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
 
-    .close-btn {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: $transition;
-      color: $text-light;
-      font-size: 1.2rem;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: rotate(90deg);
+        i { font-size: 0.85rem; }
+        .separator { opacity: 0.5; }
       }
     }
   }
 
-  .modal-body {
-    padding: 2rem;
-    overflow-y: auto;
-    flex: 1;
+  &[data-sport="taekwondo"] .modal-header {
+    background: linear-gradient(135deg, $taekwondo-color, $taekwondo-hover);
+  }
+  &[data-sport="kickboxing"] .modal-header {
+    background: linear-gradient(135deg, $kickboxing-color, $kickboxing-hover);
+  }
+  &[data-sport="pilates"] .modal-header {
+    background: linear-gradient(135deg, $pilates-color, $pilates-hover);
+  }
+  &[data-sport="defensa"] .modal-header {
+    background: linear-gradient(135deg, $defensa-color, $defensa-hover);
+  }
 
-    .info-row {
-      display: flex;
-      gap: 1rem;
-      padding: 1rem;
-      background: #f8f9fa;
+  .modal-body {
+    padding: 1.75rem 2rem;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba($primary-color, 0.05), rgba($primary-color, 0.02));
+    border-radius: 15px;
+    margin-bottom: 1rem;
+    border-left: 4px solid $primary-color;
+
+    .info-icon-wrapper {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      margin-bottom: 1rem;
+      background: $text-light;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: $shadow-sm;
 
       i {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         color: $primary-color;
-        flex-shrink: 0;
-      }
-
-      h4 {
-        margin: 0 0 0.25rem 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: $text-dark;
-      }
-
-      p {
-        margin: 0;
-        color: $text-muted;
-        font-size: 0.95rem;
-      }
-
-      .badge-available,
-      .badge-warning,
-      .badge-full {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-top: 0.5rem;
-
-        i {
-          font-size: 1rem;
-        }
-      }
-
-      .badge-available {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-      }
-
-      .badge-warning {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-      }
-
-      .badge-full {
-        background: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
       }
     }
 
-    .consultation-message {
-      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-      border-left: 4px solid $primary-color;
-      border-radius: 12px;
-      padding: 1.5rem;
+    .info-text {
+      flex: 1;
       display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-top: 1rem;
+      flex-direction: column;
+      gap: 0.25rem;
 
-      i {
-        color: $primary-color;
-        font-size: 2rem;
-        flex-shrink: 0;
+      .info-label {
+        font-size: 0.8rem;
+        color: $text-muted;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
       }
 
-      p {
-        margin: 0;
-        color: #0d47a1;
+      .info-value {
         font-size: 1.05rem;
         font-weight: 600;
+        color: $text-dark;
       }
+    }
+
+    .availability-status {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 0.875rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 600;
+
+      i { font-size: 0.9rem; }
+
+      &.available {
+        background: rgba($available-color, 0.15);
+        color: $available-color;
+      }
+
+      &.warning {
+        background: rgba($warning-color, 0.15);
+        color: $warning-color;
+      }
+
+      &.full {
+        background: rgba($full-color, 0.15);
+        color: $full-color;
+      }
+    }
+  }
+
+  .capacity-bar {
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 50px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+
+    .capacity-fill {
+      height: 100%;
+      border-radius: 50px;
+      transition: width 0.5s ease;
+
+      &.available { background: $available-color; }
+      &.warning { background: $warning-color; }
+      &.full { background: $full-color; }
     }
   }
 
   .modal-footer {
-    padding: 1.5rem 2rem;
-    background: #f8f9fa;
-    border-top: 1px solid #e9ecef;
+    padding: 1.5rem 2rem 2rem;
 
     .btn-contacto {
       width: 100%;
-      padding: 1rem;
-      background: linear-gradient(135deg, $primary-color, $primary-dark);
-      color: $text-light;
+      padding: 1rem 2rem;
       border: none;
-      border-radius: 12px;
+      border-radius: 50px;
+      background: linear-gradient(135deg, $dark-bg, $dark-accent);
+      color: white;
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
@@ -597,50 +864,71 @@ $defensa-color: #e91e63;
       align-items: center;
       justify-content: center;
       gap: 0.75rem;
+      box-shadow: $shadow-sm;
 
-      i {
-        font-size: 1.2rem;
-      }
+      i { font-size: 1.2rem; }
 
       &:hover {
-        transform: translateY(-2px);
+        transform: translateY(-3px);
         box-shadow: $shadow-md;
+        background: linear-gradient(135deg, $dark-accent, #3a6864);
       }
 
       &:active {
-        transform: translateY(0);
+        transform: translateY(-1px);
       }
     }
   }
 }
 
 // ========================================
-// ANIMATIONS
+// SKELETON LOADING
 // ========================================
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+.timetable-skeleton {
+  padding: 1.5rem;
+}
+
+.skeleton-header,
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-cell {
+  height: 50px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+
+  &.time {
+    width: 100px;
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.skeleton-row .skeleton-cell {
+  height: 75px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ========================================
+// ANIMATIONS
+// ========================================
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px);
   }
   to {
     opacity: 1;
@@ -651,7 +939,18 @@ $defensa-color: #e91e63;
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -671,32 +970,27 @@ $defensa-color: #e91e63;
 // ========================================
 // RESPONSIVE
 // ========================================
-// Large screens - 5 columns fits well
-@media (max-width: 1400px) {
-  .main-content {
-    .content-wrapper {
-      max-width: 100%;
-      padding: 0 1rem;
-    }
+@media (max-width: 1024px) {
+  .timetable-header,
+  .timetable-row {
+    grid-template-columns: 90px repeat(5, 1fr);
   }
-}
 
-// Medium-large screens - 3 columns for better card width
-@media (max-width: 1199px) {
-  .main-content {
-    .schedule-grid {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-    }
+  .time-column {
+    width: 90px;
   }
-}
 
-// Medium screens - 2 columns
-@media (max-width: 992px) {
-  .main-content {
-    .schedule-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
+  .header-cell {
+    .day-full { display: none; }
+    .day-short { display: block; }
+  }
+
+  .class-block {
+    .class-name {
+      font-size: 0.7rem;
+    }
+    .class-emoji {
+      font-size: 1.2rem;
     }
   }
 }
@@ -707,491 +1001,97 @@ $defensa-color: #e91e63;
   }
 
   .hero-header {
-    padding: 2rem 1rem;
-
-    .page-title-section {
-      i {
-        font-size: 2.5rem;
-      }
-
-      h1 {
-        font-size: 2rem;
-      }
-
-      .hero-subtitle {
-        font-size: 1rem;
-      }
-    }
-  }
-
-  .main-content {
-    padding: 0 1rem;
-
-    .schedule-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .info-section {
-      .info-card {
-        flex-direction: column;
-        text-align: center;
-        align-items: center;
-        padding: 1.5rem;
-
-        i {
-          margin-top: 0;
-        }
-      }
-    }
-  }
-
-  // Modal responsive
-  .modal-content {
-    margin: 0.5rem;
-    max-height: 95vh;
-
-    .modal-header {
-      padding: 1.5rem;
-
-      .modal-title {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-
-        .category-icon-large {
-          font-size: 2.5rem;
-        }
-
-        h2 {
-          font-size: 1.25rem;
-        }
-
-        .modal-subtitle {
-          font-size: 0.85rem;
-        }
-      }
-    }
-
-    .modal-body {
-      padding: 1.5rem;
-    }
-
-    .modal-footer {
-      padding: 1rem 1.5rem;
-    }
-  }
-}
-
-// ========================================
-// SKELETON LOADING STYLES
-// ========================================
-.skeleton-card {
-  pointer-events: none;
-
-  .skeleton-shimmer {
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(90deg,
-      #f0f0f0 0%,
-      #e0e0e0 20%,
-      #f0f0f0 40%,
-      #f0f0f0 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-
-  .day-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(90deg, #e8e8e8 0%, #f0f0f0 50%, #e8e8e8 100%);
-    background-size: 200% 100%;
-  }
-
-  .skeleton-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    background: #d0d0d0;
-  }
-
-  .skeleton-icon-small {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    background: #d0d0d0;
-  }
-
-  .skeleton-text {
-    height: 16px;
-    border-radius: 4px;
-    background: #d0d0d0;
-
-    &.skeleton-day {
-      width: 80px;
-    }
-
-    &.skeleton-time {
-      width: 120px;
-    }
-
-    &.skeleton-category {
-      width: 150px;
-    }
-  }
-
-  .skeleton-slot {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid #e0e0e0;
-    margin-bottom: 0.75rem;
-
-    .slot-time,
-    .slot-category {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0;
-      background: transparent;
-    }
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-// ========================================
-// ENHANCED MOBILE IMPROVEMENTS
-// ========================================
-
-// Better touch targets and accessibility
-@media (max-width: 767px) {
-  .time-slot {
-    min-height: 80px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-
-    &.clickable:active {
-      transform: translateX(2px) scale(0.99);
-    }
-
-    .slot-time,
-    .slot-category {
-      font-size: 0.9375rem;
-    }
-  }
-
-  .day-card {
-    -webkit-tap-highlight-color: transparent;
-
-    &:active {
-      transform: scale(0.98);
-    }
-  }
-
-  // Better modal on mobile
-  .modal-overlay {
-    padding: 0.5rem;
-    align-items: flex-end; // Slide up from bottom on mobile
-  }
-
-  .modal-content {
-    border-radius: 16px 16px 0 0;
-    max-height: 85vh;
-    width: 100%;
-    animation: slideUpFromBottom 0.3s ease;
-
-    .close-btn {
-      min-width: 44px;
-      min-height: 44px;
-      width: 44px;
-      height: 44px;
-    }
-
-    .btn-contacto {
-      min-height: 52px;
-      font-size: 1rem;
-    }
-  }
-
-  .info-card {
-    .contacto-link {
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-    }
-  }
-}
-
-// Extra small devices
-@media (max-width: 576px) {
-  .horarios-page {
-    padding-top: 80px;
-    padding-bottom: 2rem;
-  }
-
-  .hero-header {
-    padding: 1.75rem 1rem;
+    padding: 2.5rem 1.5rem;
     margin-bottom: 2rem;
 
     .page-title-section {
       gap: 0.75rem;
 
-      i {
-        font-size: 2.25rem;
-      }
-
-      h1 {
-        font-size: 1.75rem;
-      }
-
-      .hero-subtitle {
-        font-size: 0.9375rem;
-      }
+      i { font-size: 3rem; }
+      h1 { font-size: 2rem; }
+      .hero-subtitle { font-size: 1rem; }
     }
   }
 
   .main-content {
-    padding: 0 0.75rem;
+    padding: 0 1rem;
+  }
 
-    .schedule-grid {
-      gap: 1.25rem;
-    }
+  .sport-legend {
+    gap: 0.625rem;
 
-    .day-card {
-      border-radius: 16px;
+    .legend-item {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
 
-      .day-header {
-        padding: 0.875rem 1.25rem;
-        font-size: 1rem;
-
-        i {
-          font-size: 1.2rem;
-        }
-      }
-
-      .day-content {
-        padding: 1.25rem;
-        min-height: 120px;
-      }
-
-      .time-slot {
-        padding: 0.875rem;
-        margin-bottom: 0.625rem;
-
-        .slot-time {
-          margin-bottom: 0.4rem;
-
-          span {
-            font-size: 0.875rem;
-          }
-        }
-
-        .slot-category {
-          font-size: 0.8125rem;
-
-          .category-icon {
-            font-size: 1.1rem;
-          }
-        }
-
-        .availability-badge {
-          font-size: 0.7rem;
-          padding: 0.25rem 0.5rem;
-        }
-      }
-
-      .no-slots {
-        padding: 1.75rem 1rem;
-
-        i {
-          font-size: 2rem;
-        }
-
-        span {
-          font-size: 0.875rem;
-        }
-      }
-    }
-
-    .info-section {
-      .info-card {
-        padding: 1.25rem;
-        gap: 1rem;
-
-        i {
-          font-size: 2rem;
-        }
-
-        .info-content {
-          h3 {
-            font-size: 1.125rem;
-          }
-
-          p {
-            font-size: 0.9375rem;
-          }
-        }
-      }
+      .legend-emoji { font-size: 1.1rem; }
     }
   }
 
+  // Hide desktop, show mobile
+  .timetable-container.desktop-view {
+    display: none;
+  }
+
+  .mobile-view {
+    display: block;
+  }
+
+  .info-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .availability-legend {
+    gap: 1.25rem;
+    padding: 1rem;
+    border-radius: 20px;
+
+    .legend-item {
+      font-size: 0.85rem;
+    }
+  }
+
+  // Mobile modal
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .modal-content {
-    border-radius: 12px 12px 0 0;
+    border-radius: 25px 25px 0 0;
+    max-height: 90vh;
+    animation: slideUpMobile 0.3s ease;
 
     .modal-header {
-      padding: 1.25rem;
+      padding: 1.75rem 1.5rem;
 
-      .modal-title {
-        gap: 0.5rem;
+      .modal-emoji { font-size: 2.75rem; }
 
-        .category-icon-large {
-          font-size: 2.25rem;
-        }
-
-        h2 {
-          font-size: 1.125rem;
-        }
-
-        .modal-subtitle {
-          font-size: 0.8125rem;
-        }
-      }
-
-      .close-btn {
-        min-width: 40px;
-        min-height: 40px;
-        width: 40px;
-        height: 40px;
+      .modal-title-info h2 {
+        font-size: 1.3rem;
       }
     }
 
-    .modal-body {
-      padding: 1.25rem;
-
-      .info-row {
-        padding: 0.875rem;
-        flex-direction: column;
-        gap: 0.75rem;
-
-        i {
-          font-size: 1.25rem;
-        }
-
-        h4 {
-          font-size: 0.9375rem;
-        }
-
-        p {
-          font-size: 0.875rem;
-        }
-
-        .badge-available,
-        .badge-warning,
-        .badge-full {
-          font-size: 0.8125rem;
-          padding: 0.35rem 0.7rem;
-
-          i {
-            font-size: 0.9375rem;
-          }
-        }
-      }
-
-      .consultation-message {
-        padding: 1.25rem;
-        flex-direction: column;
-        text-align: center;
-
-        i {
-          font-size: 1.75rem;
-        }
-
-        p {
-          font-size: 0.9375rem;
-        }
-      }
-    }
-
+    .modal-body,
     .modal-footer {
-      padding: 1rem 1.25rem;
+      padding: 1.25rem 1.5rem;
+    }
 
-      .btn-contacto {
-        padding: 0.875rem;
-        font-size: 0.9375rem;
-        min-height: 48px;
+    .info-row {
+      flex-wrap: wrap;
+
+      .availability-status {
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
       }
     }
   }
 }
 
-// Extra small devices - very narrow
-@media (max-width: 375px) {
-  .main-content {
-    padding: 0 0.5rem;
-
-    .day-card {
-      .day-header {
-        padding: 0.75rem 1rem;
-        font-size: 0.9375rem;
-      }
-
-      .day-content {
-        padding: 1rem;
-      }
-
-      .time-slot {
-        padding: 0.75rem;
-      }
-    }
-  }
-}
-
-// Landscape mode on mobile
-@media (max-height: 600px) and (orientation: landscape) {
-  .horarios-page {
-    padding-top: 70px;
-  }
-
-  .hero-header {
-    padding: 1.5rem 1rem;
-
-    .page-title-section {
-      i {
-        font-size: 2rem;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      .hero-subtitle {
-        display: none; // Hide subtitle in landscape to save space
-      }
-    }
-  }
-
-  .modal-content {
-    max-height: 90vh;
-    border-radius: 12px; // Full rounded corners in landscape
-
-    .modal-overlay {
-      align-items: center; // Center in landscape
-    }
-  }
-}
-
-// Animation for mobile modal
-@keyframes slideUpFromBottom {
+@keyframes slideUpMobile {
   from {
     opacity: 0;
     transform: translateY(100%);
@@ -1202,32 +1102,58 @@ $defensa-color: #e91e63;
   }
 }
 
-// Reduced motion support
-@media (prefers-reduced-motion: reduce) {
-  .day-card,
-  .time-slot,
-  .info-card,
-  .modal-content {
-    transition: none !important;
-    animation: none !important;
+@media (max-width: 480px) {
+  .horarios-page {
+    padding-top: 80px;
   }
 
-  .time-slot {
-    &:hover,
-    &.clickable:hover {
-      transform: none !important;
+  .hero-header {
+    padding: 2rem 1rem;
+    margin-bottom: 1.5rem;
+
+    .page-title-section {
+      i { font-size: 2rem; }
+      h1 { font-size: 1.75rem; }
+      .hero-subtitle { font-size: 0.95rem; }
     }
+  }
+
+  .sport-legend {
+    .legend-item {
+      .legend-text { display: none; }
+      padding: 0.5rem 0.75rem;
+    }
+  }
+
+  .day-tabs .day-tab {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.85rem;
+    min-width: 50px;
+  }
+
+  .mobile-class-card {
+    padding: 1rem;
+
+    .mobile-card-left {
+      width: 52px;
+      height: 52px;
+    }
+
+    .mobile-emoji { font-size: 1.5rem; }
+    .mobile-class-name { font-size: 1rem; }
+    .mobile-class-time { font-size: 0.85rem; }
   }
 }
 
-// High DPI displays
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .day-card,
-  .time-slot {
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-
-    &:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
+// ========================================
+// REDUCED MOTION
+// ========================================
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
