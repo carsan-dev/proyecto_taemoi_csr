@@ -1,12 +1,12 @@
-﻿<div class="horarios-page">
+<div class="horarios-page">
   <!-- Hero Header -->
   <div class="hero-header">
     <div class="hero-overlay"></div>
     <div class="hero-content">
       <div class="page-title-section">
-        <i class="bi bi-clock-history"></i>
-        <h1>Horarios Disponibles</h1>
-        <p class="hero-subtitle">¡Encuentra el horario perfecto para ti y únete a nuestras clases!</p>
+        <i class="bi bi-calendar-week"></i>
+        <h1>Nuestros Horarios</h1>
+        <p class="hero-subtitle">Encuentra el horario perfecto para ti y reserva tu plaza. ¡Te esperamos en nuestras clases!</p>
       </div>
     </div>
   </div>
@@ -15,103 +15,180 @@
   <div class="main-content">
     <div class="content-wrapper">
 
-      <!-- Weekly Schedule Grid -->
-      <div class="schedule-grid">
-        @if (isLoading) {
-        <!-- Skeleton Loading Cards -->
-        @for (dia of diasSemana; track $index) {
-        <div class="day-card skeleton-card">
-          <div class="day-header skeleton-shimmer">
-            <div class="skeleton-icon"></div>
-            <div class="skeleton-text skeleton-day"></div>
-          </div>
-          <div class="day-content">
-            @for (slot of [1, 2, 3]; track $index) {
-            <div class="time-slot skeleton-slot">
-              <div class="skeleton-shimmer slot-time">
-                <div class="skeleton-icon-small"></div>
-                <div class="skeleton-text skeleton-time"></div>
-              </div>
-              <div class="skeleton-shimmer slot-category">
-                <div class="skeleton-icon-small"></div>
-                <div class="skeleton-text skeleton-category"></div>
-              </div>
-            </div>
-            }
-          </div>
+      <!-- Sport Legend -->
+      <div class="sport-legend">
+        <div class="legend-item taekwondo">
+          <span class="legend-emoji">🥋</span>
+          <span class="legend-text">Taekwondo</span>
         </div>
-        }
-        } @else {
-        <!-- Actual Content -->
-        @for (dia of diasSemana; track $index) {
-        <div class="day-card">
-          <div class="day-header">
-            <i class="bi bi-calendar-week"></i>
-            <span>{{ dia }}</span>
-          </div>
+        <div class="legend-item kickboxing">
+          <span class="legend-emoji">🥊</span>
+          <span class="legend-text">Kickboxing</span>
+        </div>
+        <div class="legend-item pilates">
+          <span class="legend-emoji">🧘</span>
+          <span class="legend-text">Pilates</span>
+        </div>
+        <div class="legend-item defensa">
+          <span class="legend-emoji">🛡️</span>
+          <span class="legend-text">D.P. Femenina</span>
+        </div>
+      </div>
 
-          <div class="day-content">
-            <!-- Time Slots -->
-            @if (obtenerTurnosPorDia(dia).length > 0) {
-            <div>
-              @for (turno of obtenerTurnosPorDia(dia); track turno.id) {
-              <div class="time-slot clickable" [attr.data-sport]="obtenerEtiquetaColor(turno)"
-                (click)="onTurnoClick(turno)">
-                <div class="slot-time">
-                  <i class="bi bi-clock"></i>
-                  <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                </div>
-                <div class="slot-category">
-                  <span class="category-icon">{{ obtenerEmoticonoCategoria(obtenerEtiquetaColor(turno)) }}</span>
-                  <span class="category-name">{{ obtenerNombreMostrado(turno) }}</span>
-                </div>
-                @if (!quedanPocasPlazas(turno) && !estaLleno(turno)) {
-                <div class="availability-badge available">
-                  <i class="bi bi-check-circle"></i>
-                  Plazas disponibles
-                </div>
-                }
-                @if (quedanPocasPlazas(turno)) {
-                <div class="availability-badge warning">
-                  <i class="bi bi-exclamation-circle"></i>
-                  Quedan pocas plazas
-                </div>
-                }
-                @if (estaLleno(turno)) {
-                <div class="availability-badge full">
-                  <i class="bi bi-x-circle"></i>
-                  Completo
-                </div>
-                }
-              </div>
+      @if (isLoading) {
+        <!-- Skeleton Loading -->
+        <div class="timetable-container skeleton">
+          <div class="timetable-skeleton">
+            <div class="skeleton-header">
+              <div class="skeleton-cell time"></div>
+              @for (dia of diasSemana; track $index) {
+                <div class="skeleton-cell day"></div>
               }
             </div>
-            }
-
-            <!-- No Slots Available -->
-            @if (obtenerTurnosPorDia(dia).length === 0) {
-            <div class="no-slots">
-              <i class="bi bi-calendar-x"></i>
-              <span>No hay turnos disponibles</span>
-            </div>
+            @for (row of [1,2,3,4,5]; track $index) {
+              <div class="skeleton-row">
+                <div class="skeleton-cell time"></div>
+                @for (cell of [1,2,3,4,5]; track $index) {
+                  <div class="skeleton-cell"></div>
+                }
+              </div>
             }
           </div>
         </div>
-        }
-        }
-      </div>
+      } @else {
+        <!-- Desktop: Timetable Grid -->
+        <div class="timetable-container desktop-view">
+          <div class="timetable">
+            <!-- Header Row -->
+            <div class="timetable-header">
+              <div class="time-column header-cell">
+                <i class="bi bi-clock"></i>
+                <span>Hora</span>
+              </div>
+              @for (dia of diasSemana; track $index) {
+                <div class="day-column header-cell">
+                  <span class="day-full">{{ dia }}</span>
+                  <span class="day-short">{{ diasCortos[$index] }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Time Slot Rows -->
+            @for (slot of timeSlots; track slot.horaInicio) {
+              <div class="timetable-row">
+                <!-- Time Cell -->
+                <div class="time-column time-cell">
+                  <span class="time-start">{{ slot.horaInicio }}</span>
+                  <span class="time-separator">-</span>
+                  <span class="time-end">{{ slot.horaFin }}</span>
+                </div>
+
+                <!-- Day Cells -->
+                @for (dia of diasSemana; track $index) {
+                  @let celda = getTurnoEnCelda(slot, dia);
+                  <div class="day-column day-cell"
+                       [class.has-class]="celda"
+                       [class.empty]="!celda"
+                       [attr.data-sport]="celda?.sport"
+                       (click)="onCeldaClick(celda)">
+                    @if (celda) {
+                      <div class="class-block" [class]="celda.sport">
+                        <span class="class-emoji">{{ celda.emoji }}</span>
+                        <span class="class-name">{{ celda.displayName }}</span>
+                        <div class="availability-dot" [class]="getAvailabilityClass(celda.turno)"></div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Mobile: Day Tabs + List -->
+        <div class="mobile-view">
+          <!-- Day Tabs -->
+          <div class="day-tabs">
+            @for (dia of diasCortos; track $index) {
+              <button class="day-tab"
+                      [class.active]="selectedDayIndex === $index"
+                      (click)="selectDay($index)">
+                {{ dia }}
+              </button>
+            }
+          </div>
+
+          <!-- Classes for Selected Day -->
+          <div class="day-classes">
+            @let turnosDelDia = getTurnosForDay(diasSemana[selectedDayIndex]);
+            @if (turnosDelDia.length > 0) {
+              @for (celda of turnosDelDia; track celda.turno.id) {
+                <div class="mobile-class-card"
+                     [class]="celda.sport"
+                     (click)="onCeldaClick(celda)">
+                  <div class="mobile-card-left">
+                    <span class="mobile-emoji">{{ celda.emoji }}</span>
+                  </div>
+                  <div class="mobile-card-content">
+                    <span class="mobile-class-name">{{ celda.displayName }}</span>
+                    <span class="mobile-class-time">
+                      <i class="bi bi-clock"></i>
+                      {{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}
+                    </span>
+                  </div>
+                  <div class="mobile-card-right">
+                    <div class="availability-badge" [class]="getAvailabilityClass(celda.turno)">
+                      @if (estaLleno(celda.turno)) {
+                        <i class="bi bi-x-circle-fill"></i>
+                      } @else if (quedanPocasPlazas(celda.turno)) {
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                      } @else {
+                        <i class="bi bi-check-circle-fill"></i>
+                      }
+                    </div>
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="no-classes">
+                <i class="bi bi-calendar-x"></i>
+                <span>No hay clases este día</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <!-- Info Section -->
       <div class="info-section">
         <div class="info-card">
-          <i class="bi bi-info-circle"></i>
+          <div class="info-icon">
+            <i class="bi bi-info-circle"></i>
+          </div>
           <div class="info-content">
             <h3>¿Cómo apuntarte?</h3>
             <p>
-              Haz clic en cualquier horario para ver más información, o
+              Haz clic en cualquier clase para ver más detalles, o
               <a [routerLink]="['/contacto']" class="contacto-link">contacta con nosotros</a>
-              para reservar tu plaza en el horario que prefieras. ¡Te esperamos!
+              para reservar tu plaza.
             </p>
+          </div>
+        </div>
+
+        <!-- Availability Legend -->
+        <div class="availability-legend">
+          <div class="legend-item">
+            <div class="legend-dot available"></div>
+            <span>Plazas disponibles</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot warning"></div>
+            <span>Pocas plazas</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot full"></div>
+            <span>Completo</span>
           </div>
         </div>
       </div>
@@ -121,75 +198,75 @@
 
   <!-- Modal for Turno Details -->
   @if (showModal && selectedTurno) {
-  <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header" [attr.data-sport]="obtenerEtiquetaColor(selectedTurno)">
-        <div class="modal-title">
-          <span class="category-icon-large">{{ obtenerEmoticonoCategoria(obtenerEtiquetaColor(selectedTurno)) }}</span>
-          <div>
-            <h2>{{ obtenerNombreMostrado(selectedTurno) }}</h2>
-            <p class="modal-subtitle">{{ selectedTurno.diaSemana }} - {{ selectedTurno.horaInicio }} - {{
-              selectedTurno.horaFin }}</p>
-          </div>
-        </div>
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" [attr.data-sport]="obtenerEtiquetaColor(selectedTurno)" (click)="$event.stopPropagation()">
         <button class="close-btn" (click)="closeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
-      </div>
 
-      <div class="modal-body">
-        <!-- Age Range -->
-        <div class="info-row">
-          <i class="bi bi-calendar-range"></i>
-          <div>
-            <h4>Rango de edades</h4>
-            <p>{{ obtenerRangoEdades(selectedTurno) }}</p>
+        <div class="modal-header">
+          <span class="modal-emoji">{{ obtenerEmoticonoCategoria(obtenerEtiquetaColor(selectedTurno)) }}</span>
+          <div class="modal-title-info">
+            <h2>{{ obtenerNombreMostrado(selectedTurno) }}</h2>
+            <p class="modal-schedule">
+              <i class="bi bi-calendar3"></i> {{ selectedTurno.diaSemana }}
+              <span class="separator">•</span>
+              <i class="bi bi-clock"></i> {{ selectedTurno.horaInicio }} - {{ selectedTurno.horaFin }}
+            </p>
           </div>
         </div>
 
-        <!-- Availability -->
-        <div class="info-row">
-          <i class="bi bi-people"></i>
-          <div>
-            <h4>Plazas ocupadas</h4>
-            <p>{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }} alumnos</p>
-            @if (!quedanPocasPlazas(selectedTurno) && !estaLleno(selectedTurno)) {
-            <span class="badge-available">
-              <i class="bi bi-check-circle"></i>
-              Plazas disponibles
-            </span>
-            }
-            @if (quedanPocasPlazas(selectedTurno)) {
-            <span class="badge-warning">
-              <i class="bi bi-exclamation-circle"></i>
-              ¡Quedan pocas plazas!
-            </span>
-            }
-            @if (estaLleno(selectedTurno)) {
-            <span class="badge-full">
-              <i class="bi bi-x-circle"></i>
-              Grupo completo
-            </span>
-            }
+        <div class="modal-body">
+          <!-- Age Range -->
+          <div class="info-row">
+            <div class="info-icon-wrapper">
+              <i class="bi bi-people"></i>
+            </div>
+            <div class="info-text">
+              <span class="info-label">Rango de edades</span>
+              <span class="info-value">{{ obtenerRangoEdades(selectedTurno) }}</span>
+            </div>
+          </div>
+
+          <!-- Availability -->
+          <div class="info-row">
+            <div class="info-icon-wrapper">
+              <i class="bi bi-person-check"></i>
+            </div>
+            <div class="info-text">
+              <span class="info-label">Plazas ocupadas</span>
+              <span class="info-value">{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }}</span>
+            </div>
+            <div class="availability-status" [class]="getAvailabilityClass(selectedTurno)">
+              @if (estaLleno(selectedTurno)) {
+                <i class="bi bi-x-circle-fill"></i>
+                <span>Completo</span>
+              } @else if (quedanPocasPlazas(selectedTurno)) {
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>Pocas plazas</span>
+              } @else {
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Disponible</span>
+              }
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="capacity-bar">
+            <div class="capacity-fill"
+                 [style.width.%]="(obtenerNumeroAlumnos(selectedTurno) / limiteTurno) * 100"
+                 [class]="getAvailabilityClass(selectedTurno)">
+            </div>
           </div>
         </div>
 
-        <!-- Consultation Message -->
-        @if (quedanPocasPlazas(selectedTurno) || estaLleno(selectedTurno)) {
-        <div class="consultation-message">
-          <i class="bi bi-info-circle-fill"></i>
-          <p>Consulta para más información</p>
+        <div class="modal-footer">
+          <button class="btn-contacto" (click)="navegarAContacto()">
+            <i class="bi bi-envelope"></i>
+            {{ obtenerTextoBoton(selectedTurno) }}
+          </button>
         </div>
-        }
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-contacto" (click)="navegarAContacto()">
-          <i class="bi bi-envelope"></i>
-          {{ obtenerTextoBoton(selectedTurno) }}
-        </button>
       </div>
     </div>
-  </div>
   }
 </div>
