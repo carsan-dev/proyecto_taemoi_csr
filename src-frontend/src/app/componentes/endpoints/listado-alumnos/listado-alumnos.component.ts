@@ -160,6 +160,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         value: 'mensualidades-kickboxing',
         label: 'Informe de Mensualidades de Kickboxing',
       },
+      {
+        value: 'competidores',
+        label: 'Informe de Competidores',
+      },
     ];
     this.mostrarModalInforme = true;
   }
@@ -596,6 +600,20 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
             );
           },
         });
+    } else if (tipo === 'competidores') {
+      this.endpointsService.generarInformeCompetidores().subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo generar el informe de competidores',
+            'error'
+          );
+        },
+      });
     }
   }
 
