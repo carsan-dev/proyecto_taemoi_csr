@@ -36,6 +36,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.services.PDFService;
@@ -47,6 +48,9 @@ public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+
+	@Autowired
+	private AlumnoDeporteRepository alumnoDeporteRepository;
 
 	@Autowired
 	private GradoRepository gradoRepository;
@@ -2016,6 +2020,164 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			System.err.println("Error generando PDF de mensualidades: " + e.getMessage());
 			e.printStackTrace();
 			throw new RuntimeException("Error al generar el informe PDF de mensualidades", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	@Override
+	public byte[] generarListadoMensualidadMensual(String mesAno, boolean soloActivos) {
+		// Parse mesAno format "YYYY-MM" (e.g., "2025-12")
+		String[] partes = mesAno.split("-");
+		int anio = Integer.parseInt(partes[0]);
+		int mes = Integer.parseInt(partes[1]);
+
+		// Create month name in Spanish
+		String[] mesesEspanol = { "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO",
+				"SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE" };
+		String nombreMes = mesesEspanol[mes - 1];
+
+		// Build concept to search (e.g., "MENSUALIDAD DICIEMBRE 2025")
+		String concepto = "MENSUALIDAD " + nombreMes + " " + anio;
+
+		// Get ALL active AlumnoDeporte for Taekwondo and Kickboxing (can have same alumno multiple times for different sports)
+		List<AlumnoDeporte> alumnoDeportes = alumnoDeporteRepository.findActivosByDeporteIn(
+				Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+
+		// Get mensualidades for this month and create a map for quick lookup (key: alumnoId_deporte)
+		List<com.taemoi.project.entities.ProductoAlumno> mensualidades = productoAlumnoRepository
+				.findMensualidadByConceptoAndDeportes(concepto);
+		Map<String, com.taemoi.project.entities.ProductoAlumno> mensualidadesMap = mensualidades.stream()
+				.filter(pa -> pa.getAlumno() != null)
+				.collect(Collectors.toMap(
+						pa -> pa.getAlumno().getId() + "_" + (pa.getAlumno().getDeporte() != null ? pa.getAlumno().getDeporte().name() : ""),
+						pa -> pa,
+						(p1, p2) -> p1));
+
+		// Build HTML for PDF
+		String fechaGeneracion = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+
+		// Use modern styles with portrait page for more rows per page
+		html.append("@page { size: A4; margin: 12mm 10mm 12mm 10mm; }");
+		html.append(generarEstilosModernos("Listado Mensualidad " + nombreMes + " " + anio, fechaGeneracion));
+		// Additional styles for this report
+		html.append(".deporte-cell { font-weight: 600; }");
+		html.append(".taekwondo { color: #0D47A1; }");
+		html.append(".kickboxing { color: #ff4500; }");
+		html.append(".grado-cell { text-align: center; vertical-align: middle; }");
+		html.append("td { font-size: 9pt; padding: 2mm 1.5mm; }");
+		html.append("th { font-size: 9pt; padding: 2mm 1.5mm; }");
+		html.append("tr { page-break-inside: avoid; }");
+		html.append("table { -fs-table-paginate: paginate; }");
+		html.append("thead { display: table-header-group; }");
+
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		// Header with logo and title below it
+		html.append(generarCabeceraConLogo("Listado Mensualidad " + nombreMes + " " + anio, "#721c24"));
+
+		// Table
+		html.append("<table>");
+		html.append("<thead><tr>");
+		html.append("<th style='width: 30%;'>NOMBRE</th>");
+		html.append("<th style='width: 12%;'>DEPORTE</th>");
+		html.append("<th style='width: 15%;'>DESCUENTO</th>");
+		html.append("<th style='width: 12%;'>CUANTÍA</th>");
+		html.append("<th style='width: 15%;'>GRADO</th>");
+		html.append("<th style='width: 16%;'>FECHA DE PAGO</th>");
+		html.append("</tr></thead>");
+		html.append("<tbody>");
+
+		if (alumnoDeportes.isEmpty()) {
+			html.append("<tr><td colspan='6' style='text-align: center; padding: 10mm; color: #999;'>");
+			html.append("No hay alumnos activos de Taekwondo o Kickboxing");
+			html.append("</td></tr>");
+		} else {
+			for (AlumnoDeporte ad : alumnoDeportes) {
+				Alumno alumno = ad.getAlumno();
+				if (alumno == null) continue;
+
+				// Get mensualidad for this alumno+deporte combination (may be null)
+				String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+				com.taemoi.project.entities.ProductoAlumno pa = mensualidadesMap.get(mapKey);
+
+				html.append("<tr>");
+
+				// NOMBRE
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+
+				// DEPORTE (from AlumnoDeporte)
+				String deporteClass = "";
+				String deporteNombre = "";
+				if (ad.getDeporte() == Deporte.TAEKWONDO) {
+					deporteClass = "taekwondo";
+					deporteNombre = "Taekwondo";
+				} else if (ad.getDeporte() == Deporte.KICKBOXING) {
+					deporteClass = "kickboxing";
+					deporteNombre = "Kickboxing";
+				}
+				html.append("<td class='deporte-cell ").append(deporteClass).append("'>").append(deporteNombre)
+						.append("</td>");
+
+				// DESCUENTO (tipoTarifa from AlumnoDeporte - per sport)
+				String tipoTarifa = ad.getTipoTarifa() != null ? ad.getTipoTarifa().toString().replace("_", " ") : "-";
+				html.append("<td>").append(tipoTarifa).append("</td>");
+
+				// CUANTÍA (from AlumnoDeporte's cuantiaTarifa - per sport)
+				String cuantia = "-";
+				if (ad.getCuantiaTarifa() != null) {
+					cuantia = String.format("%.2f €", ad.getCuantiaTarifa());
+				}
+				html.append("<td>").append(cuantia).append("</td>");
+
+				// GRADO (from AlumnoDeporte - per sport)
+				TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+				html.append("<td class='grado-cell'>");
+				if (tipoGrado != null) {
+					html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
+				} else {
+					html.append("-");
+				}
+				html.append("</td>");
+
+				// FECHA DE PAGO (from ProductoAlumno if exists, otherwise empty)
+				String fechaPago = "";
+				if (pa != null && pa.getFechaPago() != null) {
+					LocalDate fecha = Instant.ofEpochMilli(pa.getFechaPago().getTime()).atZone(ZoneId.systemDefault())
+							.toLocalDate();
+					DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+					fechaPago = fecha.format(dateFormatter);
+				}
+				html.append("<td>").append(fechaPago).append("</td>");
+
+				html.append("</tr>");
+			}
+		}
+
+		html.append("</tbody>");
+		html.append("</table>");
+
+		html.append("</body>");
+		html.append("</html>");
+
+		// Generate PDF
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de listado mensualidad mensual: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el listado mensualidad mensual PDF", e);
 		}
 		return outputStream.toByteArray();
 	}
