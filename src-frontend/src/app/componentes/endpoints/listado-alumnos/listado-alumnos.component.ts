@@ -308,9 +308,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Apply filters to the complete dataset
     let filtrados = this.alumnosCompletos;
 
-    // Filter by inactive status
+    // Filter by inactive status (use 'activo' field, not 'fechaBaja')
     if (!this.mostrarInactivos) {
-      filtrados = filtrados.filter((alumno) => !alumno.fechaBaja);
+      filtrados = filtrados.filter((alumno) => alumno.activo === true);
     }
 
     // Filter by sport
