@@ -121,11 +121,6 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent)
   },
   {
-    path: 'turnosListar',
-    loadComponent: () => import('./componentes/endpoints/listado-turnos/listado-turnos.component').then(m => m.ListadoTurnosComponent),
-    canActivate: [roleGuard],
-  },
-  {
     path: 'turnosCrear',
     loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
     canActivate: [roleGuard],

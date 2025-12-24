@@ -105,27 +105,22 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     ],
   },
   {
-    title: 'GRUPOS',
+    title: 'GRUPOS Y TURNOS',
     items: [
       {
-        label: 'Consultar grupos',
+        label: 'Gestión de grupos y turnos',
         route: '/gruposListar',
         icon: 'bi-people-fill',
       },
-    ],
-  },
-  {
-    title: 'HORARIOS',
-    items: [
       {
-        label: 'Consultar turnos',
-        route: '/turnosListar',
-        icon: 'bi-calendar3',
-      },
-      {
-        label: 'Añadir turnos',
+        label: 'Crear turno',
         route: '/turnosCrear',
         icon: 'bi-calendar-plus',
+      },
+      {
+        label: 'Crear grupo',
+        route: '/gruposCrear',
+        icon: 'bi-collection',
       },
     ],
   },

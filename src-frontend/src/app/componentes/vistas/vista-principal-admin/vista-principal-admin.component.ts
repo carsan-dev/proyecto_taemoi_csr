@@ -24,16 +24,10 @@ export class VistaPrincipalAdminComponent implements OnInit {
       icono: 'bi bi-people',
     },
     {
-      titulo: 'Grupos',
-      descripcion: 'Organiza y administra grupos',
+      titulo: 'Grupos y Turnos',
+      descripcion: 'Organiza grupos y gestiona horarios',
       ruta: '/gruposListar',
       icono: 'bi bi-people-fill',
-    },
-    {
-      titulo: 'Turnos',
-      descripcion: 'Controla y edita turnos disponibles',
-      ruta: '/turnosListar',
-      icono: 'bi bi-calendar3',
     },
     {
       titulo: 'Eventos',
