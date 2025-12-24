@@ -12,7 +12,74 @@
     background-color: rgba($primary-color, 0.03);
   }
 
-  span {
+  .alumno-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .alumno-image-link {
+    text-decoration: none;
+    display: block;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: $transition-fast;
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .alumno-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .alumno-name-link {
+    text-decoration: none;
+    color: inherit;
+    transition: $transition-fast;
+
+    &:hover {
+      color: $primary-color;
+      text-decoration: underline;
+    }
+  }
+
+  .alumno-name {
     font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .alumno-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .list-group-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+
+    .alumno-info {
+      width: 100%;
+    }
+
+    .alumno-actions {
+      width: 100%;
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
   }
 }

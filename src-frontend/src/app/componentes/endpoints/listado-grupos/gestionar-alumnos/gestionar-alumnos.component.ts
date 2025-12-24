@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { AlumnoDTO } from '../../../../interfaces/alumno-dto';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
 import { GrupoDTO } from '../../../../interfaces/grupo-dto';
@@ -15,16 +15,16 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-gestionar-alumnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginacionComponent, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginacionComponent, SkeletonCardComponent, RouterLink],
   templateUrl: './gestionar-alumnos.component.html',
   styleUrl: './gestionar-alumnos.component.scss',
 })
 export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   grupo!: GrupoDTO;
   grupoId!: number;
-  alumnos: AlumnoDTO[] = [];
-  alumnosFiltrados: AlumnoDTO[] = [];
-  alumnosPaginados: AlumnoDTO[] = [];
+  alumnos: any[] = [];
+  alumnosFiltrados: any[] = [];
+  alumnosPaginados: any[] = [];
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
