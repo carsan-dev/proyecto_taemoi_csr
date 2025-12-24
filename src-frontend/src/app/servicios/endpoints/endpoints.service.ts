@@ -1186,6 +1186,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarListadoMensualidadMensual(mesAno: string, soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams()
+      .set('mesAno', mesAno)
+      .set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/listado-mensualidad-mensual`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   descargarAsistencia(
     year: number,
     month: number,
