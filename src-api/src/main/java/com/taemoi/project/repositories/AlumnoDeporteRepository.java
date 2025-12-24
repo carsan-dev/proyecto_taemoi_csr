@@ -112,4 +112,15 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 		   "WHERE ad.deporte IN :deportes AND ad.activo = true AND a.activo = true " +
 		   "ORDER BY a.nombre, a.apellidos")
 	List<AlumnoDeporte> findActivosByDeporteIn(@Param("deportes") List<Deporte> deportes);
+
+	/**
+	 * Encuentra todos los competidores activos en deportes específicos con relaciones cargadas
+	 */
+	@Query("SELECT ad FROM AlumnoDeporte ad " +
+		   "LEFT JOIN FETCH ad.grado " +
+		   "LEFT JOIN FETCH ad.alumno a " +
+		   "LEFT JOIN FETCH ad.categoria " +
+		   "WHERE ad.deporte IN :deportes AND ad.activo = true AND a.activo = true AND ad.competidor = true " +
+		   "ORDER BY ad.deporte, a.nombre, a.apellidos")
+	List<AlumnoDeporte> findCompetidoresActivosByDeporteIn(@Param("deportes") List<Deporte> deportes);
 }

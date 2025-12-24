@@ -2183,6 +2183,265 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	}
 
 	@Override
+	public byte[] generarInformeCompetidores() {
+		// Get all active competitors for Taekwondo and Kickboxing
+		List<AlumnoDeporte> competidores = alumnoDeporteRepository.findCompetidoresActivosByDeporteIn(
+				Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+
+		LocalDate now = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
+		String fechaGeneracion = now.format(formatter);
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Listado de Competidores", fechaGeneracion));
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		// Header with logo
+		html.append(generarCabeceraConLogo("Listado de Competidores"));
+
+		// Separate by sport
+		List<AlumnoDeporte> competidoresTaekwondo = competidores.stream()
+				.filter(ad -> ad.getDeporte() == Deporte.TAEKWONDO)
+				.collect(Collectors.toList());
+
+		List<AlumnoDeporte> competidoresKickboxing = competidores.stream()
+				.filter(ad -> ad.getDeporte() == Deporte.KICKBOXING)
+				.collect(Collectors.toList());
+
+		// Taekwondo section
+		if (!competidoresTaekwondo.isEmpty()) {
+			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
+			html.append("Taekwondo (").append(competidoresTaekwondo.size()).append(" competidores)");
+			html.append("</div>");
+			html.append(generarSeccionCompetidores(competidoresTaekwondo));
+		}
+
+		// Kickboxing section
+		if (!competidoresKickboxing.isEmpty()) {
+			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
+			html.append("Kickboxing (").append(competidoresKickboxing.size()).append(" competidores)");
+			html.append("</div>");
+			html.append(generarSeccionCompetidores(competidoresKickboxing));
+		}
+
+		if (competidores.isEmpty()) {
+			html.append("<p style='text-align: center; color: #999; padding: 20mm;'>No hay competidores activos</p>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de competidores: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe de competidores PDF", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	/**
+	 * Genera el HTML para una sección de competidores, agrupando por grado.
+	 */
+	private String generarSeccionCompetidores(List<AlumnoDeporte> competidores) {
+		StringBuilder html = new StringBuilder();
+
+		// Group by grade
+		Map<Grado, List<AlumnoDeporte>> competidoresPorGrado = competidores.stream()
+				.filter(ad -> ad.getGrado() != null)
+				.collect(Collectors.groupingBy(AlumnoDeporte::getGrado));
+
+		// Sort grades by ordinal (highest first)
+		List<Map.Entry<Grado, List<AlumnoDeporte>>> entradasOrdenadas = new ArrayList<>(competidoresPorGrado.entrySet());
+		entradasOrdenadas.sort((e1, e2) -> {
+			int ordinal1 = e1.getKey().getTipoGrado().ordinal();
+			int ordinal2 = e2.getKey().getTipoGrado().ordinal();
+			return Integer.compare(ordinal2, ordinal1);
+		});
+
+		for (Map.Entry<Grado, List<AlumnoDeporte>> entry : entradasOrdenadas) {
+			Grado grado = entry.getKey();
+			List<AlumnoDeporte> competidoresGrado = entry.getValue();
+			// Sort by name
+			competidoresGrado.sort(Comparator.comparing(ad ->
+					(ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()));
+			TipoGrado tipo = grado.getTipoGrado();
+
+			html.append("<div class='grupo'>");
+			html.append("<div class='encabezado-grupo'>");
+			html.append("<div class='izquierda'>");
+
+			// Draw belt based on grade type
+			if (tipo.name().contains("ROJO_NEGRO")) {
+				String[] parts = tipo.name().split("_");
+				String colorInferior = obtenerColorPorNombre(parts[0]);
+				String colorSuperior = obtenerColorPorNombre(parts[1]);
+				int stripeCount = 0;
+				try {
+					stripeCount = Integer.parseInt(parts[2]);
+				} catch (Exception e) {
+				}
+				html.append("<div class='cinturon doble' style='position: relative;'>");
+				html.append("<div class='superior' style='background-color: ").append(colorSuperior).append("; z-index: 1;'></div>");
+				html.append("<div class='inferior' style='background-color: ").append(colorInferior).append("; z-index: 1;'></div>");
+				int stripeWidth = 6;
+				int gap = 2;
+				int initialMargin = 6;
+				for (int i = 0; i < stripeCount; i++) {
+					int rightOffset = initialMargin + i * (stripeWidth + gap);
+					html.append("<div class='raya' style='right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; z-index: 2;'></div>");
+				}
+				html.append("</div>");
+			} else if (tipo.name().contains("DAN") || (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+				html.append("<div class='cinturon' style='background-color: ").append(obtenerColorCinturon(tipo)).append(";'>");
+				try {
+					int stripeCount = 0;
+					if (tipo.name().contains("DAN")) {
+						String[] parts = tipo.name().split("_");
+						stripeCount = Integer.parseInt(parts[1]);
+					}
+					int stripeWidth = 6;
+					int gap = 2;
+					int initialMargin = 6;
+					for (int i = 0; i < stripeCount; i++) {
+						int rightOffset = initialMargin + i * (stripeWidth + gap);
+						html.append("<div class='raya' style='right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px;'></div>");
+					}
+				} catch (Exception e) {
+				}
+				html.append("</div>");
+			} else if (tipo.name().contains("_")) {
+				String[] parts = tipo.name().split("_");
+				String colorSuperior = obtenerColorPorNombre(parts[1]);
+				String colorInferior = obtenerColorPorNombre(parts[0]);
+				html.append("<div class='cinturon doble'>");
+				html.append("<div class='superior' style='background-color: ").append(colorSuperior).append(";'></div>");
+				html.append("<div class='inferior' style='background-color: ").append(colorInferior).append(";'></div>");
+				html.append("</div>");
+			} else {
+				String cinturonStyle = obtenerEstiloCinturon(tipo);
+				html.append("<div class='cinturon' style='").append(cinturonStyle).append("'></div>");
+			}
+
+			html.append("<span class='grado-nombre'>").append(tipo.getNombre()).append("</span>");
+			html.append("</div>");
+			html.append("<div class='derecha'>");
+			html.append("Competidores: ").append(competidoresGrado.size());
+			html.append("</div>");
+			html.append("</div>");
+
+			// Table with competitor-specific columns
+			html.append("<table>");
+			html.append("<thead><tr>");
+			html.append("<th>Nombre y Apellidos</th>");
+			html.append("<th>Categoría</th>");
+			html.append("<th>Peso</th>");
+			html.append("<th>Fecha Peso</th>");
+			html.append("</tr></thead>");
+			html.append("<tbody>");
+
+			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+			for (AlumnoDeporte ad : competidoresGrado) {
+				Alumno alumno = ad.getAlumno();
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+
+				// Categoría
+				String categoria = ad.getCategoria() != null ? ad.getCategoria().getNombre() : "";
+				html.append("<td>").append(categoria).append("</td>");
+
+				// Peso
+				String peso = ad.getPeso() != null ? String.format("%.1f kg", ad.getPeso()) : "";
+				html.append("<td>").append(peso).append("</td>");
+
+				// Fecha Peso
+				String fechaPeso = "";
+				if (ad.getFechaPeso() != null) {
+					LocalDate fecha = Instant.ofEpochMilli(ad.getFechaPeso().getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+					fechaPeso = fecha.format(dateFormatter);
+				}
+				html.append("<td>").append(fechaPeso).append("</td>");
+
+				html.append("</tr>");
+			}
+
+			html.append("</tbody>");
+			html.append("</table>");
+			html.append("</div>");
+		}
+
+		// Handle competitors without grade
+		List<AlumnoDeporte> sinGrado = competidores.stream()
+				.filter(ad -> ad.getGrado() == null)
+				.sorted(Comparator.comparing(ad -> (ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()))
+				.collect(Collectors.toList());
+
+		if (!sinGrado.isEmpty()) {
+			html.append("<div class='grupo'>");
+			html.append("<div class='encabezado-grupo'>");
+			html.append("<div class='izquierda'>");
+			html.append("<div class='cinturon' style='background-color: #CCCCCC;'></div>");
+			html.append("<span class='grado-nombre'>Sin Grado</span>");
+			html.append("</div>");
+			html.append("<div class='derecha'>");
+			html.append("Competidores: ").append(sinGrado.size());
+			html.append("</div>");
+			html.append("</div>");
+
+			html.append("<table>");
+			html.append("<thead><tr>");
+			html.append("<th>Nombre y Apellidos</th>");
+			html.append("<th>Categoría</th>");
+			html.append("<th>Peso</th>");
+			html.append("<th>Fecha Peso</th>");
+			html.append("</tr></thead>");
+			html.append("<tbody>");
+
+			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+			for (AlumnoDeporte ad : sinGrado) {
+				Alumno alumno = ad.getAlumno();
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+
+				String categoria = ad.getCategoria() != null ? ad.getCategoria().getNombre() : "";
+				html.append("<td>").append(categoria).append("</td>");
+
+				String peso = ad.getPeso() != null ? String.format("%.1f kg", ad.getPeso()) : "";
+				html.append("<td>").append(peso).append("</td>");
+
+				String fechaPeso = "";
+				if (ad.getFechaPeso() != null) {
+					LocalDate fecha = Instant.ofEpochMilli(ad.getFechaPeso().getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+					fechaPeso = fecha.format(dateFormatter);
+				}
+				html.append("<td>").append(fechaPeso).append("</td>");
+
+				html.append("</tr>");
+			}
+
+			html.append("</tbody>");
+			html.append("</table>");
+			html.append("</div>");
+		}
+
+		return html.toString();
+	}
+
+	@Override
 	public byte[] generarInformeConvocatoria(Long convocatoriaId) {
 		// Get convocatoria data
 		com.taemoi.project.entities.Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
