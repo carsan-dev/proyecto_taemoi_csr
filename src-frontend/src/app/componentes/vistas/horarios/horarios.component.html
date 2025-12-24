@@ -59,22 +59,56 @@
 
       @if (isLoading) {
         <!-- Skeleton Loading -->
-        <div class="timetable-container skeleton">
-          <div class="timetable-skeleton">
+        <div class="skeleton-container">
+          <!-- Desktop Timetable Skeleton -->
+          <div class="timetable-skeleton desktop-skeleton">
+            <!-- Header Row -->
             <div class="skeleton-header">
-              <div class="skeleton-cell time"></div>
+              <div class="skeleton-cell time-header"></div>
               @for (dia of diasSemana; track $index) {
-                <div class="skeleton-cell day"></div>
+                <div class="skeleton-cell day-header"></div>
               }
             </div>
-            @for (row of [1,2,3,4,5]; track $index) {
+            <!-- Content Rows -->
+            @for (row of [1,2,3,4,5,6]; track $index) {
               <div class="skeleton-row">
-                <div class="skeleton-cell time"></div>
+                <div class="skeleton-cell time-cell"></div>
                 @for (cell of [1,2,3,4,5]; track $index) {
-                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell class-cell" [class.has-class]="(row + cell) % 3 !== 0">
+                    @if ((row + cell) % 3 !== 0) {
+                      <div class="skeleton-class-content">
+                        <div class="skeleton-emoji"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-badge"></div>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             }
+          </div>
+
+          <!-- Mobile Skeleton -->
+          <div class="mobile-skeleton">
+            <!-- Day Tabs -->
+            <div class="skeleton-day-tabs">
+              @for (dia of diasCortos; track $index) {
+                <div class="skeleton-tab" [class.active]="$index === 0"></div>
+              }
+            </div>
+            <!-- Class Cards -->
+            <div class="skeleton-cards">
+              @for (card of [1,2,3,4]; track $index) {
+                <div class="skeleton-card">
+                  <div class="skeleton-card-emoji"></div>
+                  <div class="skeleton-card-content">
+                    <div class="skeleton-card-title"></div>
+                    <div class="skeleton-card-time"></div>
+                  </div>
+                  <div class="skeleton-card-badge"></div>
+                </div>
+              }
+            </div>
           </div>
         </div>
       } @else {
