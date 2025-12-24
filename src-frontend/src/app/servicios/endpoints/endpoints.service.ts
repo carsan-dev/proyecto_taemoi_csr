@@ -1199,6 +1199,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeCompetidores(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/competidores`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   descargarAsistencia(
     year: number,
     month: number,
