@@ -248,4 +248,15 @@ public class PDFController {
 		response.getOutputStream().flush();
 	}
 
+	@GetMapping("/competidores")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeCompetidores() {
+		byte[] pdfBytes = pdfService.generarInformeCompetidores();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_competidores.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 }

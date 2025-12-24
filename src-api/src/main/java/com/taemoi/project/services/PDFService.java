@@ -40,4 +40,6 @@ public interface PDFService {
 	byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException;
 
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
+
+	byte[] generarInformeCompetidores();
 }
