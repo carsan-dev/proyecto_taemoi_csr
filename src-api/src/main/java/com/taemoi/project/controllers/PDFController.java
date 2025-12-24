@@ -213,6 +213,24 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
+	@GetMapping("/listado-mensualidad-mensual")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarListadoMensualidadMensual(
+			@RequestParam String mesAno,
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarListadoMensualidadMensual(mesAno, soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+
+		// Extract month and year for filename
+		String[] partes = mesAno.split("-");
+		String filename = "listado_mensualidad_" + partes[1] + "_" + partes[0] + ".pdf";
+
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename(filename).build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/asistencia")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
 			@RequestParam(required = false) Deporte deporte,
