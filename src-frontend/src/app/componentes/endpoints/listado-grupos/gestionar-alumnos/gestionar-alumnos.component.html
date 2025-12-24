@@ -44,8 +44,17 @@
         <ul class="mt-4 p-0">
           @for (alumno of alumnosPaginados; track alumno.id) {
             <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
-              <div>
+              <div class="alumno-info">
+                <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-image-link">
+                  <img class="alumno-image"
+                    [src]="(alumno.fotoAlumno && alumno.fotoAlumno.url) ? alumno.fotoAlumno.url : '../../../../../assets/media/default.webp'"
+                    [alt]="'Perfil de ' + alumno.nombre" />
+                </a>
+                <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-name-link">
+                  <span class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+                </a>
+              </div>
+              <div class="alumno-actions">
                 <button class="btn btn-primary btn-sm me-2 rounded-pill" (click)="gestionarTurnos(alumno.id)">
                   <i class="bi bi-clock-history"></i>
                   Gestionar Turnos
