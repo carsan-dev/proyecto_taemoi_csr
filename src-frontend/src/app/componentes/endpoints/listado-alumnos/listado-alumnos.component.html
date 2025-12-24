@@ -377,14 +377,24 @@
                 <h4>Listado de Asistencia</h4>
               </div>
 
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Descripción:</strong> Genera un informe en PDF con el listado de asistencia mensual para un grupo específico.
+                Incluye todos los turnos del día seleccionado con espacio para marcar la asistencia de cada alumno.
+              </div>
+
               <div class="row g-3 align-items-end">
                 <div class="col-12 col-md-6">
-                  <label for="mesAnoAsis" class="form-label fw-semibold mb-2">Mes y Año:</label>
+                  <label for="mesAnoAsis" class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                  </label>
                   <input id="mesAnoAsis" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoAsistencia" />
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <label for="grupoAsis" class="form-label fw-semibold mb-2">Día de la semana:</label>
+                  <label for="grupoAsis" class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar-week me-2"></i>Día de la semana:
+                  </label>
                   <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
                     @for (g of grupos; track g) {
                       <option [value]="g">{{ g | titlecase }}</option>
@@ -396,8 +406,51 @@
               <button class="admin-btn admin-btn-primary w-100 mt-4"
                 [disabled]="!mesAnoAsistencia || !grupoSeleccionado"
                 (click)="generarListadoAsistencia()">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span>Generar PDF de Asistencia (Todos los turnos)</span>
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+                <span>Generar Informe de Asistencia</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Collapsible Listado Mensualidad Mensual Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-calendar2-month"></i>
+        <span>Listado de Mensualidades</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row mt-2">
+          <div class="col-12 col-lg-8 mx-auto">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-calendar2-month"></i>
+                <h4>Listado de Mensualidades</h4>
+              </div>
+
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Descripción:</strong> Genera un informe en PDF con todas las mensualidades de un mes específico.
+                Incluye alumnos activos de <strong>Taekwondo y Kickboxing</strong> con información de: nombre, deporte, descuento, cuantía, grado y fecha de pago.
+              </div>
+
+              <div class="row g-3 align-items-end">
+                <div class="col-12">
+                  <label for="mesAnoMensualidad" class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar3 me-2"></i>Selecciona el Mes y Año:
+                  </label>
+                  <input id="mesAnoMensualidad" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoMensualidad" />
+                </div>
+              </div>
+
+              <button class="admin-btn admin-btn-success w-100 mt-4"
+                [disabled]="!mesAnoMensualidad"
+                (click)="generarListadoMensualidadMensual()">
+                <i class="bi bi-file-earmark-text-fill"></i>
+                <span>Generar Informe de Mensualidades</span>
               </button>
             </div>
           </div>

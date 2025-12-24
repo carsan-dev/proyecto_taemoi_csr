@@ -50,6 +50,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
   mesAnoAsistencia!: string;
+  mesAnoMensualidad!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves'];
   turnosMap: Record<string, string[]> = {
     lunes: ['17:00–18:00', '18:00–19:00'],
@@ -830,6 +831,29 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
         a.click();
         globalThis.URL.revokeObjectURL(url);
+      });
+  }
+
+  generarListadoMensualidadMensual() {
+    if (!this.mesAnoMensualidad) {
+      Swal.fire('Error', 'Debes seleccionar un mes y año', 'error');
+      return;
+    }
+
+    this.endpointsService
+      .generarListadoMensualidadMensual(this.mesAnoMensualidad, true)
+      .subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire(
+            'Error',
+            'No se pudo generar el listado de mensualidad mensual',
+            'error'
+          );
+        },
       });
   }
 
