@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
@@ -7,8 +7,8 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
-import { finalize } from 'rxjs/operators';
-import { forkJoin, of } from 'rxjs';
+import { finalize, filter, take } from 'rxjs/operators';
+import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Component({
@@ -18,9 +18,10 @@ import { catchError } from 'rxjs/operators';
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss',
 })
-export class ListadoGruposComponent implements OnInit {
+export class ListadoGruposComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   cargando: boolean = true; // Local loading state
+  cargandoConteo: boolean = true; // Loading state for alumn count
   gruposMostrar: string[] = [
     'Taekwondo',
     'Taekwondo Competición',
@@ -39,11 +40,31 @@ export class ListadoGruposComponent implements OnInit {
   // Turnos sin grupo asignado
   turnosSinGrupo: any[] = [];
 
+  private conteoSubscription?: Subscription;
+
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.obtenerGrupos();
+    this.cargarConteoAlumnos();
+  }
+
+  ngOnDestroy(): void {
+    this.conteoSubscription?.unsubscribe();
+  }
+
+  private cargarConteoAlumnos(): void {
+    this.cargandoConteo = true;
     this.endpointsService.obtenerConteoAlumnosPorGrupo();
+    // Subscribe to the conteo observable to detect when data arrives
+    this.conteoSubscription = this.endpointsService.conteoAlumnosPorGrupo$
+      .pipe(
+        filter(conteo => Object.keys(conteo).length > 0),
+        take(1)
+      )
+      .subscribe(() => {
+        this.cargandoConteo = false;
+      });
   }
 
   obtenerGrupos(): void {
