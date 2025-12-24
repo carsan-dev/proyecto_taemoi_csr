@@ -52,29 +52,24 @@
     </ul>
     <ul class="list-unstyled mt-5">
       <li class="mx-4">
-        <h2 class="h6 text-white fw-bold">GRUPOS</h2>
+        <h2 class="h6 text-white fw-bold">GRUPOS Y TURNOS</h2>
       </li>
       <li class="mx-4">
         <a (click)="cerrarSidebar()" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-people-fill fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/gruposListar']" routerLinkActive="active">Consultar grupos</span>
-        </a>
-      </li>
-    </ul>
-    <ul class="list-unstyled my-5">
-      <li class="mx-4">
-        <h2 class="h6 text-white fw-bold">HORARIOS</h2>
-      </li>
-      <li class="mx-4">
-        <a (click)="cerrarSidebar()" class="text-white d-flex align-items-center text-decoration-none">
-          <i class="bi bi-calendar3 fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/turnosListar']" routerLinkActive="active">Consultar turnos</span>
+          <span class="nav-link" [routerLink]="['/gruposListar']" routerLinkActive="active">Gestión de grupos y turnos</span>
         </a>
       </li>
       <li class="mx-4">
         <a (click)="cerrarSidebar()" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-calendar-plus fs-4 me-2"></i>
-          <span class="nav-link" [routerLink]="['/turnosCrear']" routerLinkActive="active">Añadir turnos</span>
+          <span class="nav-link" [routerLink]="['/turnosCrear']" routerLinkActive="active">Crear turno</span>
+        </a>
+      </li>
+      <li class="mx-4">
+        <a (click)="cerrarSidebar()" class="text-white d-flex align-items-center text-decoration-none">
+          <i class="bi bi-collection fs-4 me-2"></i>
+          <span class="nav-link" [routerLink]="['/gruposCrear']" routerLinkActive="active">Crear grupo</span>
         </a>
       </li>
     </ul>
