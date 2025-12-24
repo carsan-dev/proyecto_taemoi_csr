@@ -25,8 +25,15 @@
           <div class="stat-icon stat-icon-primary">
             <i class="bi bi-people-fill"></i>
           </div>
-          <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo).active }}</h3>
-          <p class="stat-total">(Total: {{ obtenerConteoAlumnos(tipo).total }})</p>
+          @if (cargandoConteo) {
+            <div class="stat-loading">
+              <div class="stat-value-skeleton"></div>
+              <div class="stat-total-skeleton"></div>
+            </div>
+          } @else {
+            <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo).active }}</h3>
+            <p class="stat-total">(Total: {{ obtenerConteoAlumnos(tipo).total }})</p>
+          }
           <p class="stat-label">{{ tipo }}</p>
         </div>
       }
