@@ -312,7 +312,9 @@
                 <h4>Cargar Mensualidades</h4>
               </div>
               <div class="mb-3">
-                <label for="deporteSeleccionado" class="form-label fw-semibold">Deporte:</label>
+                <label for="deporteSeleccionado" class="form-label fw-semibold mb-2">
+                  <i class="bi bi-trophy me-2"></i>Deporte:
+                </label>
                 <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
                   <option value="TODOS">Todos los Alumnos</option>
                   <option value="TAEKWONDO">Solo Taekwondo</option>
@@ -320,8 +322,10 @@
                 </select>
               </div>
               <div class="mb-3">
-                <label for="mesAno" class="form-label fw-semibold">Mes y Año:</label>
-                <input id="mesAno" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionado" />
+                <label for="mesAno" class="form-label fw-semibold mb-2">
+                  <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                </label>
+                <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
               </div>
               <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
                 <i class="bi bi-cash-stack"></i>
@@ -337,7 +341,9 @@
                 <h4>Cargar Mensualidad Individual</h4>
               </div>
               <div class="mb-3">
-                <label for="alumnoSeleccionado" class="form-label fw-semibold">Seleccionar Alumno:</label>
+                <label for="alumnoSeleccionado" class="form-label fw-semibold mb-2">
+                  <i class="bi bi-person me-2"></i>Seleccionar Alumno:
+                </label>
                 <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
                   @for (alumno of alumnosSeleccionables; track alumno.id) {
                     <option [value]="alumno.id">
@@ -347,8 +353,20 @@
                 </select>
               </div>
               <div class="mb-3">
-                <label for="mesAnoIndividual" class="form-label fw-semibold">Mes y Año:</label>
-                <input id="mesAnoIndividual" type="month" class="admin-form-control" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+                <label for="deporteSeleccionadoIndividual" class="form-label fw-semibold mb-2">
+                  <i class="bi bi-trophy me-2"></i>Deporte:
+                </label>
+                <select id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
+                  <option value="TODOS">Todos los Deportes</option>
+                  <option value="TAEKWONDO">Solo Taekwondo</option>
+                  <option value="KICKBOXING">Solo Kickboxing</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="mesAnoIndividual" class="form-label fw-semibold mb-2">
+                  <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                </label>
+                <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
               </div>
               <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
                 [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">

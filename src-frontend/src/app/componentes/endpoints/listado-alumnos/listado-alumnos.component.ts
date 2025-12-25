@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
@@ -47,6 +47,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   deporteSeleccionado: string = 'TODOS';
   alumnoSeleccionado: number | null = null;
   mesAnoSeleccionadoIndividual: string = '';
+  deporteSeleccionadoIndividual: string = 'TODOS';
   mostrarModalInforme: boolean = false;
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
@@ -104,6 +105,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       this.vistaActual = savedView;
     }
 
+    // Calculate initial page size for cards view BEFORE loading data
+    this.calcularTamanoPaginaInicial();
+
     // Restore pagination state if returning from another page
     this.restaurarEstadoPaginacion();
 
@@ -125,6 +129,53 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.searchSubject.complete();
+  }
+
+  /**
+   * Calculates initial page size for cards view (called once before loading data)
+   */
+  private calcularTamanoPaginaInicial(): void {
+    if (this.vistaActual !== 'cards') {
+      return;
+    }
+    const containerWidth = window.innerWidth - 340;
+    const cardMinWidth = 320;
+    const gap = 24;
+    const cardsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
+    this.tamanoPagina = cardsPerRow * 2;
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (this.vistaActual === 'cards') {
+      this.calcularTamanoPaginaDinamico(true);
+    }
+  }
+
+  /**
+   * Calculates dynamic page size to fill exactly 2 rows of cards
+   * @param reloadData Whether to reload data after changing page size
+   */
+  private calcularTamanoPaginaDinamico(reloadData = false): void {
+    if (this.vistaActual !== 'cards') {
+      return;
+    }
+    const containerWidth = window.innerWidth - 340;
+    const cardMinWidth = 320;
+    const gap = 24;
+    const cardsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
+    const newPageSize = cardsPerRow * 2;
+    if (this.tamanoPagina !== newPageSize) {
+      this.tamanoPagina = newPageSize;
+      if (reloadData) {
+        this.paginaActual = 1;
+        if (this.usandoPaginacionCliente && this.alumnosCompletos.length > 0) {
+          this.actualizarAlumnosPaginadosCliente();
+        } else {
+          this.obtenerAlumnos();
+        }
+      }
+    }
   }
 
   onGrupoChange() {
@@ -368,6 +419,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   cambiarVista(vista: 'cards' | 'table'): void {
     this.vistaActual = vista;
     localStorage.setItem('listadoAlumnosView', vista);
+    // Recalculate page size when switching to cards view
+    if (vista === 'cards') {
+      this.calcularTamanoPaginaDinamico(true);
+    }
   }
 
   /**
@@ -682,6 +737,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Show loading spinner
+    this.loadingService.show();
+
     // Determine which service method to call based on sport selection
     const serviceCall =
       this.deporteSeleccionado === 'TODOS'
@@ -695,10 +753,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     const deporteTexto =
       this.deporteSeleccionado === 'TODOS'
-        ? 'todos los alumnos'
-        : `alumnos de ${this.deporteSeleccionado}`;
+        ? 'todos los alumnos activos'
+        : `alumnos activos de ${this.deporteSeleccionado}`;
 
-    serviceCall.subscribe({
+    serviceCall.pipe(finalize(() => this.loadingService.hide())).subscribe({
       next: () => {
         showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
         // Reload data using the current pagination mode
@@ -724,34 +782,47 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService
-      .cargarMensualidadIndividual(
-        this.alumnoSeleccionado,
-        this.mesAnoSeleccionadoIndividual
-      )
-      .subscribe({
-        next: () => {
-          showSuccessToast('Mensualidad cargada correctamente');
-        },
-        error: (error) => {
-          if (error.status === 409 && error.error.accion === 'confirmar') {
-            Swal.fire({
-              title: 'Atención',
-              text: error.error.mensaje,
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonText: 'Sí, cargar',
-              cancelButtonText: 'No, cancelar',
-            }).then((result) => {
-              if (result.isConfirmed) {
-                this.forzarCargarMensualidad();
-              }
-            });
-          } else {
-            Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
-          }
-        },
-      });
+    // Determine which service method to call based on sport selection
+    const serviceCall =
+      this.deporteSeleccionadoIndividual === 'TODOS'
+        ? this.endpointsService.cargarMensualidadIndividual(
+            this.alumnoSeleccionado,
+            this.mesAnoSeleccionadoIndividual
+          )
+        : this.endpointsService.cargarMensualidadIndividualPorDeporte(
+            this.alumnoSeleccionado,
+            this.mesAnoSeleccionadoIndividual,
+            this.deporteSeleccionadoIndividual
+          );
+
+    const deporteTexto =
+      this.deporteSeleccionadoIndividual === 'TODOS'
+        ? 'todos los deportes'
+        : this.deporteSeleccionadoIndividual;
+
+    serviceCall.subscribe({
+      next: () => {
+        showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
+      },
+      error: (error) => {
+        if (error.status === 409 && error.error.accion === 'confirmar') {
+          Swal.fire({
+            title: 'Atención',
+            text: error.error.mensaje,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cargar',
+            cancelButtonText: 'No, cancelar',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              this.forzarCargarMensualidad();
+            }
+          });
+        } else {
+          Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
+        }
+      },
+    });
   }
 
   forzarCargarMensualidad(): void {
@@ -764,20 +835,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService
-      .cargarMensualidadIndividual(
-        this.alumnoSeleccionado,
-        this.mesAnoSeleccionadoIndividual,
-        true
-      )
-      .subscribe({
-        next: () => {
-          showSuccessToast('Mensualidad cargada correctamente');
-        },
-        error: () => {
-          showErrorToast('No se pudo cargar la mensualidad');
-        },
-      });
+    // Determine which service method to call based on sport selection
+    const serviceCall =
+      this.deporteSeleccionadoIndividual === 'TODOS'
+        ? this.endpointsService.cargarMensualidadIndividual(
+            this.alumnoSeleccionado,
+            this.mesAnoSeleccionadoIndividual,
+            true
+          )
+        : this.endpointsService.cargarMensualidadIndividualPorDeporte(
+            this.alumnoSeleccionado,
+            this.mesAnoSeleccionadoIndividual,
+            this.deporteSeleccionadoIndividual,
+            true
+          );
+
+    const deporteTexto =
+      this.deporteSeleccionadoIndividual === 'TODOS'
+        ? 'todos los deportes'
+        : this.deporteSeleccionadoIndividual;
+
+    serviceCall.subscribe({
+      next: () => {
+        showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
+      },
+      error: () => {
+        showErrorToast('No se pudo cargar la mensualidad');
+      },
+    });
   }
 
   generarListadoAsistencia() {
