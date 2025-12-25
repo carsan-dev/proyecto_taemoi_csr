@@ -290,14 +290,30 @@
                           Fecha de Grado
                         </label>
                         <input type="date" [id]="'fechaGrado-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="deporteItem.fechaGrado | date: 'yyyy-MM-dd'"
-                          (change)="actualizarFechaGrado(deporteItem.deporte, $event)"
+                          [value]="getDisplayedFechaGrado(deporteItem.deporte)"
+                          (change)="onFechaGradoChange(deporteItem.deporte, $event)"
                           [attr.aria-label]="'Fecha de grado para ' + getDeporteLabel(deporteItem.deporte)" />
                         <small class="form-text text-muted">
                           <i class="bi bi-info-circle"></i>
                           Fecha en que obtuvo este grado
                         </small>
                       </div>
+
+                      <!-- Apply/Cancel Buttons for Grado -->
+                      @if (hasPendingGradoChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyGradoChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelGradoChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
 
                       <!-- Apto para Examen Toggle -->
                       <div class="admin-form-switch mt-3" [class.checked]="deporteItem.aptoParaExamen">
@@ -391,14 +407,30 @@
                           Fecha de Alta Inicial
                         </label>
                         <input type="date" [id]="'fechaAltaInicial-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="deporteItem.fechaAltaInicial ? (deporteItem.fechaAltaInicial | date: 'yyyy-MM-dd') : ''"
-                          (change)="actualizarFechaAltaInicial(deporteItem.deporte, $event)"
+                          [value]="getDisplayedFechaAltaInicial(deporteItem.deporte)"
+                          (change)="onFechaAltaInicialChange(deporteItem.deporte, $event)"
                           [attr.aria-label]="'Fecha de alta inicial para ' + getDeporteLabel(deporteItem.deporte)" />
                         <small class="form-text text-muted">
                           <i class="bi bi-info-circle"></i>
                           Fecha para calcular la antigüedad en este deporte
                         </small>
                       </div>
+
+                      <!-- Apply/Cancel Buttons for Estadisticas -->
+                      @if (hasPendingEstadisticasChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -419,8 +451,8 @@
                           Tipo de Tarifa
                         </label>
                         <select [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="getDisplayedTipoTarifa(deporteItem.deporte)"
-                          (change)="onTipoTarifaChange(deporteItem.deporte, $event)">
+                          [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
                           <option value="">Seleccionar tarifa</option>
                           <option value="INFANTIL">Infantil</option>
                           <option value="ADULTO">Adulto</option>
@@ -440,8 +472,8 @@
                         </label>
                         <input type="number" step="0.01" [id]="'cuantiaTarifa-' + deporteItem.deporte"
                           class="admin-form-control"
-                          [value]="getDisplayedCuantiaTarifa(deporteItem.deporte)"
-                          (input)="onCuantiaTarifaChange(deporteItem.deporte, $event)" />
+                          [ngModel]="getDisplayedCuantiaTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
                       </div>
 
                       @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
@@ -451,8 +483,8 @@
                           Rol Familiar
                         </label>
                         <select [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="getDisplayedRolFamiliar(deporteItem.deporte)"
-                          (change)="onRolFamiliarChange(deporteItem.deporte, $event)">
+                          [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
                           <option value="NINGUNO">Ninguno</option>
                           <option value="PADRE">Padre</option>
                           <option value="HIJO">Hijo</option>
@@ -467,8 +499,8 @@
                           Grupo Familiar
                         </label>
                         <input type="text" [id]="'grupoFamiliar-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="getDisplayedGrupoFamiliar(deporteItem.deporte)"
-                          (change)="onGrupoFamiliarChange(deporteItem.deporte, $event)"
+                          [ngModel]="getDisplayedGrupoFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onGrupoFamiliarModelChange(deporteItem.deporte, $event)"
                           placeholder="Ej: Familia García" />
                       </div>
                       }
@@ -499,27 +531,27 @@
                         Información de Licencia Federativa
                       </h5>
 
-                      <div class="admin-form-switch" [class.checked]="pendingLicenciaChanges.get(deporteItem.deporte)?.tieneLicencia ?? deporteItem.tieneLicencia">
+                      <div class="admin-form-switch" [class.checked]="getDisplayedTieneLicencia(deporteItem.deporte)">
                         <label [for]="'tieneLicencia-' + deporteItem.deporte">
                           <i class="bi bi-check-circle"></i>
                           ¿Tiene Licencia Federativa?
                         </label>
                         <div class="switch">
                           <input type="checkbox" class="form-check-input" [id]="'tieneLicencia-' + deporteItem.deporte"
-                            [checked]="pendingLicenciaChanges.get(deporteItem.deporte)?.tieneLicencia ?? deporteItem.tieneLicencia"
+                            [checked]="getDisplayedTieneLicencia(deporteItem.deporte)"
                             (change)="onTieneLicenciaChange(deporteItem.deporte, $event)" />
                           <span class="slider"></span>
                         </div>
                       </div>
 
-                      @if (pendingLicenciaChanges.get(deporteItem.deporte)?.tieneLicencia ?? deporteItem.tieneLicencia) {
+                      @if (getDisplayedTieneLicencia(deporteItem.deporte)) {
                       <div class="admin-form-field mt-3">
                         <label [for]="'numeroLicencia-' + deporteItem.deporte">
                           <i class="bi bi-hash"></i>
                           Número de Licencia
                         </label>
                         <input type="number" [id]="'numeroLicencia-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="pendingLicenciaChanges.get(deporteItem.deporte)?.numeroLicencia ?? deporteItem.numeroLicencia ?? ''"
+                          [value]="getDisplayedNumeroLicencia(deporteItem.deporte) ?? ''"
                           (input)="onNumeroLicenciaChange(deporteItem.deporte, $event)" />
                       </div>
 
@@ -529,7 +561,7 @@
                           Fecha de Licencia
                         </label>
                         <input type="date" [id]="'fechaLicencia-' + deporteItem.deporte" class="admin-form-control"
-                          [value]="pendingLicenciaChanges.get(deporteItem.deporte)?.fechaLicencia ?? (deporteItem.fechaLicencia ? (deporteItem.fechaLicencia | date: 'yyyy-MM-dd') : '')"
+                          [value]="getDisplayedFechaLicencia(deporteItem.deporte)"
                           (change)="onFechaLicenciaChange(deporteItem.deporte, $event)" />
                       </div>
                       }
