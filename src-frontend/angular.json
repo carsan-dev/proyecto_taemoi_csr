@@ -51,7 +51,14 @@
               "includePaths": [
                 "node_modules"
               ]
-            }
+            },
+            "allowedCommonJsDependencies": [
+              "sweetalert2",
+              "leaflet",
+              "leaflet-routing-machine",
+              "leaflet-control-geocoder",
+              "leaflet-minimap"
+            ]
           },
           "configurations": {
             "production": {
