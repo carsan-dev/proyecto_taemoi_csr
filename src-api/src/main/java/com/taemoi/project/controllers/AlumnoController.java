@@ -114,6 +114,7 @@ public class AlumnoController {
 	 */
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
 			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId,
