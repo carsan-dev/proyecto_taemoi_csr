@@ -52,7 +52,8 @@ export class ProductosAlumnoComponent implements OnInit {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (productos) => {
-          this.productosAlumno = productos;
+          // Reverse order to show most recent products first
+          this.productosAlumno = productos.reverse();
           this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
           this.cambiarPagina(1);
         },
