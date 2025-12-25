@@ -223,6 +223,51 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
   }
+
+  // Empty State
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: $text-light;
+    border-radius: 20px;
+    box-shadow: $shadow-md;
+    animation: fadeInUp 0.6s ease;
+
+    .empty-state-icon {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, $dark-bg 0%, $dark-accent 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+
+      i {
+        font-size: 3.5rem;
+        color: $text-light;
+      }
+    }
+
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0 0 1rem 0;
+    }
+
+    .empty-state-text {
+      font-size: 1rem;
+      color: $text-muted;
+      max-width: 400px;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
 }
 
 // ========================================
@@ -333,6 +378,28 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       column-gap: 0.875rem;
     }
 
+    .empty-state {
+      padding: 3rem 1.5rem;
+      border-radius: 16px;
+
+      .empty-state-icon {
+        width: 100px;
+        height: 100px;
+
+        i {
+          font-size: 3rem;
+        }
+      }
+
+      .empty-state-title {
+        font-size: 1.25rem;
+      }
+
+      .empty-state-text {
+        font-size: 0.9375rem;
+      }
+    }
+
     .event-card {
       margin-bottom: 0.875rem;
       border-radius: 16px;
@@ -408,6 +475,28 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     .masonry-grid {
       columns: 1;
       column-gap: 0;
+    }
+
+    .empty-state {
+      padding: 2.5rem 1.25rem;
+      border-radius: 12px;
+
+      .empty-state-icon {
+        width: 80px;
+        height: 80px;
+
+        i {
+          font-size: 2.5rem;
+        }
+      }
+
+      .empty-state-title {
+        font-size: 1.125rem;
+      }
+
+      .empty-state-text {
+        font-size: 0.875rem;
+      }
     }
 
     .event-card {
