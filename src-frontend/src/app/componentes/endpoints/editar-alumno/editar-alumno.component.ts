@@ -439,7 +439,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   obtenerProductosAlumno(alumnoId: number) {
     this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
       next: (productos) => {
-        this.productosAlumno = productos;
+        // Reverse order to show most recent products first
+        this.productosAlumno = productos.reverse();
         this.totalPaginasProductos = Math.ceil(this.productosAlumno.length / this.tamanoPaginaProductos);
         this.cambiarPaginaProductos(1);
       },
@@ -1193,29 +1194,171 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Lógica de reserva de plaza, igual que antes.
+   * Lógica de reserva de plaza con selección de deporte.
    */
   reservarPlaza(alumnoId: number) {
     const anoActual = new Date().getFullYear();
     const proximoAno = anoActual + 1;
+
+    // Build options from alumno's active sports
+    const deportesActivos = this.deportesDelAlumno.filter((d: AlumnoDeporteDTO) => d.activo !== false);
+
+    if (deportesActivos.length === 0) {
+      Swal.fire({
+        title: 'Sin deportes',
+        text: 'El alumno no tiene deportes activos para reservar plaza.',
+        icon: 'warning',
+      });
+      return;
+    }
+
+    // If only one sport, skip selection
+    if (deportesActivos.length === 1) {
+      this.confirmarReservaConDeporte(alumnoId, deportesActivos[0].deporte, anoActual, proximoAno);
+      return;
+    }
+
+    // Build input options for sport selection
+    const inputOptions: Record<string, string> = {
+      'TODOS': 'Todos los deportes'
+    };
+    deportesActivos.forEach((d: AlumnoDeporteDTO) => {
+      inputOptions[d.deporte] = this.getDeporteLabel(d.deporte);
+    });
+
+    Swal.fire({
+      title: '¿Para qué deporte?',
+      text: `Temporada: ${anoActual}/${proximoAno}`,
+      icon: 'question',
+      input: 'select',
+      inputOptions: inputOptions,
+      inputPlaceholder: 'Selecciona un deporte',
+      showCancelButton: true,
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'Debes seleccionar un deporte';
+        }
+        return null;
+      }
+    }).then((resultado) => {
+      if (resultado.isConfirmed && resultado.value) {
+        if (resultado.value === 'TODOS') {
+          // Reserve for all sports
+          this.reservarPlazaTodosDeportes(alumnoId, deportesActivos, anoActual, proximoAno);
+        } else {
+          this.confirmarReservaConDeporte(alumnoId, resultado.value, anoActual, proximoAno);
+        }
+      }
+    });
+  }
+
+  /**
+   * Confirms reservation for a specific sport
+   */
+  private confirmarReservaConDeporte(alumnoId: number, deporte: string, anoActual: number, proximoAno: number): void {
     Swal.fire({
       title: '¿Quiere añadir una reserva de plaza?',
-      text: `Temporada: ${anoActual}/${proximoAno}`,
+      text: `${this.getDeporteLabel(deporte)} - Temporada: ${anoActual}/${proximoAno}`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí',
       cancelButtonText: 'No',
     }).then((resultado) => {
       if (resultado.isConfirmed) {
-        this.confirmarPagoReserva(alumnoId);
+        this.confirmarPagoReservaDeporte(alumnoId, deporte);
       }
     });
   }
 
   /**
-   * Confirma si la reserva ha sido pagada y procede con la creación
+   * Reserves plaza for all active sports
    */
-  private confirmarPagoReserva(alumnoId: number): void {
+  private reservarPlazaTodosDeportes(alumnoId: number, deportes: any[], anoActual: number, proximoAno: number): void {
+    Swal.fire({
+      title: '¿Reservar para todos los deportes?',
+      text: `Se crearán ${deportes.length} reservas - Temporada: ${anoActual}/${proximoAno}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí',
+      cancelButtonText: 'No',
+    }).then((resultado) => {
+      if (resultado.isConfirmed) {
+        this.confirmarPagoReservaTodosDeportes(alumnoId, deportes);
+      }
+    });
+  }
+
+  /**
+   * Confirma pago y crea reservas para todos los deportes
+   */
+  private confirmarPagoReservaTodosDeportes(alumnoId: number, deportes: any[]): void {
+    Swal.fire({
+      title: '¿Han sido abonadas las reservas?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, pagadas',
+      cancelButtonText: 'No',
+    }).then((resultadoPago) => {
+      if (resultadoPago.isConfirmed || resultadoPago.isDismissed) {
+        const pagado = resultadoPago.isConfirmed;
+        this.crearReservasParaDeportes(alumnoId, deportes, pagado);
+      }
+    });
+  }
+
+  /**
+   * Creates reservations for all sports sequentially
+   */
+  private crearReservasParaDeportes(alumnoId: number, deportes: any[], pagado: boolean): void {
+    let completadas = 0;
+    let errores = 0;
+
+    deportes.forEach(d => {
+      this.endpointsService.reservarPlazaPorDeporte(alumnoId, d.deporte, pagado).subscribe({
+        next: () => {
+          completadas++;
+          if (completadas + errores === deportes.length) {
+            this.mostrarResultadoReservasMultiples(completadas, errores);
+            this.obtenerProductosAlumno(alumnoId);
+          }
+        },
+        error: () => {
+          errores++;
+          if (completadas + errores === deportes.length) {
+            this.mostrarResultadoReservasMultiples(completadas, errores);
+            this.obtenerProductosAlumno(alumnoId);
+          }
+        },
+      });
+    });
+  }
+
+  /**
+   * Shows result of multiple reservations
+   */
+  private mostrarResultadoReservasMultiples(completadas: number, errores: number): void {
+    if (errores === 0) {
+      Swal.fire({
+        title: 'Reservas creadas',
+        text: `Se han creado ${completadas} reservas correctamente.`,
+        icon: 'success',
+        timer: 2000,
+      });
+    } else {
+      Swal.fire({
+        title: 'Reservas parciales',
+        text: `Completadas: ${completadas}, Errores: ${errores}`,
+        icon: 'warning',
+      });
+    }
+  }
+
+  /**
+   * Confirma si la reserva ha sido pagada (por deporte)
+   */
+  private confirmarPagoReservaDeporte(alumnoId: number, deporte: string): void {
     Swal.fire({
       title: '¿Ha sido abonada la reserva?',
       icon: 'question',
@@ -1225,62 +1368,62 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }).then((resultadoPago) => {
       if (resultadoPago.isConfirmed || resultadoPago.isDismissed) {
         const pagado = resultadoPago.isConfirmed;
-        this.intentarCrearReserva(alumnoId, pagado);
+        this.intentarCrearReservaDeporte(alumnoId, deporte, pagado);
       }
     });
   }
 
   /**
-   * Intenta crear la reserva y maneja el error de conflicto
+   * Intenta crear la reserva por deporte
    */
-  private intentarCrearReserva(alumnoId: number, pagado: boolean): void {
-    this.endpointsService.reservarPlaza(alumnoId, pagado).subscribe({
+  private intentarCrearReservaDeporte(alumnoId: number, deporte: string, pagado: boolean): void {
+    this.endpointsService.reservarPlazaPorDeporte(alumnoId, deporte, pagado).subscribe({
       next: () => {
-        this.mostrarReservaExitosa();
+        this.mostrarReservaExitosa(deporte);
         this.obtenerProductosAlumno(alumnoId);
       },
       error: (err) => {
-        this.manejarErrorReserva(err, alumnoId, pagado);
+        this.manejarErrorReservaDeporte(err, alumnoId, deporte, pagado);
       },
     });
   }
 
   /**
-   * Maneja errores al crear la reserva
+   * Maneja errores al crear la reserva por deporte
    */
-  private manejarErrorReserva(err: any, alumnoId: number, pagado: boolean): void {
+  private manejarErrorReservaDeporte(err: any, alumnoId: number, deporte: string, pagado: boolean): void {
     if (err.status === 409) {
-      this.confirmarReservaForzada(alumnoId, pagado);
+      this.confirmarReservaForzadaDeporte(alumnoId, deporte, pagado);
     } else {
       this.mostrarErrorReserva();
     }
   }
 
   /**
-   * Confirma si desea forzar la creación de la reserva cuando ya existe una
+   * Confirma si desea forzar la creación de la reserva por deporte
    */
-  private confirmarReservaForzada(alumnoId: number, pagado: boolean): void {
+  private confirmarReservaForzadaDeporte(alumnoId: number, deporte: string, pagado: boolean): void {
     Swal.fire({
       title: 'Reserva existente',
-      text: 'Ya existe una reserva de plaza para esta temporada. ¿Quieres proceder de todas formas?',
+      text: `Ya existe una reserva de plaza para ${this.getDeporteLabel(deporte)}. ¿Quieres proceder de todas formas?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, proceder',
       cancelButtonText: 'No',
     }).then((respuesta) => {
       if (respuesta.isConfirmed) {
-        this.crearReservaForzada(alumnoId, pagado);
+        this.crearReservaForzadaDeporte(alumnoId, deporte, pagado);
       }
     });
   }
 
   /**
-   * Crea la reserva forzada ignorando el conflicto
+   * Crea la reserva forzada por deporte
    */
-  private crearReservaForzada(alumnoId: number, pagado: boolean): void {
-    this.endpointsService.reservarPlaza(alumnoId, pagado, true).subscribe({
+  private crearReservaForzadaDeporte(alumnoId: number, deporte: string, pagado: boolean): void {
+    this.endpointsService.reservarPlazaPorDeporte(alumnoId, deporte, pagado, true).subscribe({
       next: () => {
-        this.mostrarReservaExitosa();
+        this.mostrarReservaExitosa(deporte);
         this.obtenerProductosAlumno(alumnoId);
       },
       error: () => {
@@ -1292,10 +1435,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Muestra mensaje de éxito al crear la reserva
    */
-  private mostrarReservaExitosa(): void {
+  private mostrarReservaExitosa(deporte?: string): void {
+    const texto = deporte
+      ? `La reserva de plaza para ${this.getDeporteLabel(deporte)} ha sido añadida correctamente.`
+      : 'La reserva de plaza ha sido añadida correctamente.';
     Swal.fire({
       title: 'Reserva creada',
-      text: 'La reserva de plaza ha sido añadida correctamente.',
+      text: texto,
       icon: 'success',
       timer: 2000,
     });
