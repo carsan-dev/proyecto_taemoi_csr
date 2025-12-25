@@ -78,6 +78,31 @@ public class ProductoAlumnoController {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
 		}
 	}
+
+	/**
+	 * Reserva plaza para un deporte específico de un alumno
+	 * POST /api/productos-alumno/{alumnoId}/reservar-plaza-deporte
+	 */
+	@PostMapping("/{alumnoId}/reservar-plaza-deporte")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> reservarPlazaPorDeporte(
+			@PathVariable Long alumnoId,
+			@RequestParam String deporte,
+			@RequestParam boolean pagado,
+			@RequestParam(required = false, defaultValue = "false") boolean forzar) {
+		int anoActual = LocalDate.now().getYear();
+		int proximoAno = anoActual + 1;
+		String concepto = "RESERVA DE PLAZA " + anoActual + "/" + proximoAno + " - " + deporte;
+
+		try {
+			ProductoAlumnoDTO reserva = productoAlumnoService.reservarPlazaPorDeporte(alumnoId, deporte, concepto, pagado, forzar);
+			return ResponseEntity.ok(reserva);
+		} catch (IllegalStateException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
+		}
+	}
 	
 	@PostMapping("/mensualidades/general")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")

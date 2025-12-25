@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
@@ -180,23 +181,86 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
+	public ProductoAlumnoDTO reservarPlazaPorDeporte(Long alumnoId, String deporte, String concepto, boolean pagado, boolean forzar) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+
+		// Convert string to Deporte enum
+		com.taemoi.project.entities.Deporte deporteEnum;
+		try {
+			deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no válido: " + deporte);
+		}
+
+		// Find alumnoDeporte for this sport
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporteEnum)
+				.orElseThrow(() -> new IllegalArgumentException(
+					"El alumno no está inscrito en el deporte: " + deporte));
+
+		if (!forzar) {
+			// Check if reservation already exists for this exact concepto (includes year + sport)
+			// Only check this alumno's products, not all products
+			boolean existeReserva = alumno.getProductosAlumno().stream()
+					.anyMatch(pa -> concepto.equals(pa.getConcepto()));
+
+			if (existeReserva) {
+				throw new IllegalStateException("Ya existe una reserva de plaza para " + deporte + " en esta temporada.");
+			}
+		}
+
+		Producto productoReserva = productoRepository.findByConcepto("RESERVA DE PLAZA")
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setAlumnoDeporte(alumnoDeporte);
+		productoAlumno.setProducto(productoReserva);
+		productoAlumno.setConcepto(concepto);
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(productoReserva.getPrecio());
+		productoAlumno.setPagado(pagado);
+		if (pagado) {
+			productoAlumno.setFechaPago(new Date());
+		}
+		productoAlumnoRepository.save(productoAlumno);
+
+		return convertirADTO(productoAlumno);
+	}
+
+	@Override
 	public void cargarMensualidadesGenerales(String mesAno) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
-		List<Alumno> alumnos = alumnoRepository.findAll();
+
+		// Only get active alumnos for better performance
+		List<Alumno> alumnos = alumnoRepository.findAll().stream()
+				.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+				.collect(Collectors.toList());
+
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
-		for (Alumno alumno : alumnos) {
-			boolean yaExiste = alumno.getProductosAlumno().stream()
-					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+		// Get existing mensualidades in batch to avoid N+1 queries
+		List<ProductoAlumno> existingMensualidades = productoAlumnoRepository.findAll().stream()
+				.filter(pa -> nombreMensualidad.equalsIgnoreCase(pa.getConcepto()))
+				.collect(Collectors.toList());
 
-			if (!yaExiste) {
+		// Create a set of alumno IDs that already have mensualidad
+		java.util.Set<Long> alumnosConMensualidad = existingMensualidades.stream()
+				.filter(pa -> pa.getAlumno() != null)
+				.map(pa -> pa.getAlumno().getId())
+				.collect(java.util.stream.Collectors.toSet());
+
+		Date fechaAsignacion = new Date();
+		for (Alumno alumno : alumnos) {
+			if (!alumnosConMensualidad.contains(alumno.getId())) {
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
 				productoAlumno.setProducto(productoMensualidad);
 				productoAlumno.setConcepto(nombreMensualidad);
 				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
 
@@ -218,22 +282,29 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
 		}
 
-		// Get students filtered by sport
-		List<Alumno> alumnos = alumnoRepository.findByDeporte(deporteEnum);
+		// Get only active students filtered by sport
+		List<Alumno> alumnos = alumnoRepository.findByDeporte(deporteEnum).stream()
+				.filter(a -> Boolean.TRUE.equals(a.getActivo()))
+				.collect(Collectors.toList());
+
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
-		for (Alumno alumno : alumnos) {
-			boolean yaExiste = alumno.getProductosAlumno().stream()
-					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+		// Get existing mensualidades in batch to avoid N+1 queries
+		java.util.Set<Long> alumnosConMensualidad = productoAlumnoRepository.findAll().stream()
+				.filter(pa -> nombreMensualidad.equalsIgnoreCase(pa.getConcepto()) && pa.getAlumno() != null)
+				.map(pa -> pa.getAlumno().getId())
+				.collect(java.util.stream.Collectors.toSet());
 
-			if (!yaExiste) {
+		Date fechaAsignacion = new Date();
+		for (Alumno alumno : alumnos) {
+			if (!alumnosConMensualidad.contains(alumno.getId())) {
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
 				productoAlumno.setProducto(productoMensualidad);
 				productoAlumno.setConcepto(nombreMensualidad);
 				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
 

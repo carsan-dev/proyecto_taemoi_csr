@@ -17,6 +17,17 @@ public interface ProductoAlumnoService {
 
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
 
+	/**
+	 * Reserva plaza para un deporte específico de un alumno
+	 * @param alumnoId ID del alumno
+	 * @param deporte Nombre del deporte (TAEKWONDO, KICKBOXING, etc.)
+	 * @param concepto Concepto de la reserva
+	 * @param pagado Si la reserva está pagada
+	 * @param forzar Si true, crea la reserva aunque ya exista
+	 * @return ProductoAlumnoDTO creado
+	 */
+	ProductoAlumnoDTO reservarPlazaPorDeporte(Long alumnoId, String deporte, String concepto, boolean pagado, boolean forzar);
+
 	void cargarMensualidadesGenerales(String mesAno);
 
 	void cargarMensualidadesPorDeporte(String mesAno, String deporte);
