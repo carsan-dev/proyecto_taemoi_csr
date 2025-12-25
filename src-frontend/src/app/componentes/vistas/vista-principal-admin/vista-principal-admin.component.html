@@ -1,30 +1,205 @@
-<div class="admin-page-container">
-  <div class="container">
-    <!-- Page Header -->
-    <div class="admin-page-header text-center">
-      <h1>
-        <i class="bi bi-speedometer2"></i>
-        Panel Principal de Administración
-      </h1>
-      <p>Gestiona todos los aspectos de tu escuela desde un solo lugar</p>
+<div class="admin-dashboard">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div class="welcome-text">
+        <h1><i class="bi bi-speedometer2"></i> Panel de Administración</h1>
+        <p>Bienvenido de nuevo{{ nombreUsuario ? ', ' + nombreUsuario : '' }}. Aquí tienes un resumen de tu escuela.</p>
+      </div>
+      <div class="header-date">
+        <i class="bi bi-calendar3"></i>
+        <span>{{ formatDate(fechaActual) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards Section -->
+  <div class="stats-section">
+    <div class="section-title">
+      <i class="bi bi-graph-up"></i>
+      <h2>Estadísticas Generales</h2>
     </div>
 
-    <!-- Navigation Cards Grid -->
-    <div class="row g-4">
-      @for (seccion of seccionesAdmin; track seccion.ruta) {
-        <div class="col-12 col-md-6 col-lg-4">
-          <a [routerLink]="[seccion.ruta]" class="admin-nav-card">
-            <div class="nav-icon">
-              <i [class]="seccion.icono"></i>
-            </div>
-            <h3>{{ seccion.titulo }}</h3>
-            <p>{{ seccion.descripcion }}</p>
-            <button class="admin-btn admin-btn-primary">
-              <span>Gestionar {{ seccion.titulo }}</span>
-              <i class="bi bi-arrow-right"></i>
-            </button>
-          </a>
+    @if (cargandoEstadisticas) {
+      <div class="loading-stats">
+        <i class="bi bi-hourglass-split spin"></i>
+        <span>Cargando estadísticas...</span>
+      </div>
+    } @else {
+      <div class="stats-grid">
+        <!-- Total Alumnos -->
+        <div class="stat-card primary">
+          <div class="stat-icon">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalAlumnos }}</span>
+            <span class="stat-label">Total Alumnos</span>
+          </div>
+          <div class="stat-detail">
+            <span class="detail-active">
+              <i class="bi bi-check-circle"></i> {{ stats.alumnosActivos }} activos
+            </span>
+            <span class="detail-inactive">
+              <i class="bi bi-pause-circle"></i> {{ stats.alumnosInactivos }} inactivos
+            </span>
+          </div>
         </div>
+
+        <!-- Grupos -->
+        <div class="stat-card success">
+          <div class="stat-icon">
+            <i class="bi bi-collection-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalGrupos }}</span>
+            <span class="stat-label">Grupos</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-clock"></i> {{ stats.totalTurnos }} turnos
+            </span>
+          </div>
+        </div>
+
+        <!-- Eventos -->
+        <div class="stat-card warning">
+          <div class="stat-icon">
+            <i class="bi bi-calendar-event-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalEventos }}</span>
+            <span class="stat-label">Eventos</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-eye"></i> {{ stats.eventosVisibles }} visibles
+            </span>
+          </div>
+        </div>
+
+        <!-- Alumnos Aptos -->
+        <div class="stat-card danger">
+          <div class="stat-icon">
+            <i class="bi bi-award-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.alumnosAptos }}</span>
+            <span class="stat-label">Aptos para Examen</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-trophy"></i> Listos para promover
+            </span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Distribution & Events Row -->
+  <div class="dashboard-row">
+    <!-- Sports Distribution -->
+    <div class="dashboard-card distribution-card">
+      <div class="card-header">
+        <i class="bi bi-pie-chart-fill"></i>
+        <h3>Distribución por Deporte</h3>
+      </div>
+      <div class="card-body">
+        @if (cargandoEstadisticas) {
+          <div class="loading-mini">
+            <i class="bi bi-hourglass-split spin"></i>
+          </div>
+        } @else if (getObjectKeys(stats.alumnosPorDeporte).length > 0) {
+          <div class="distribution-chart">
+            @for (deporte of getObjectKeys(stats.alumnosPorDeporte); track deporte) {
+              <div class="distribution-item">
+                <div class="distribution-header">
+                  <span class="distribution-icon">{{ getDeporteIcon(deporte) }}</span>
+                  <span class="distribution-name">{{ getDeporteLabel(deporte) }}</span>
+                  <span class="distribution-count">{{ stats.alumnosPorDeporte[deporte] }}</span>
+                </div>
+                <div class="distribution-bar-container">
+                  <div class="distribution-bar"
+                       [style.width.%]="getDeportePercentage(stats.alumnosPorDeporte[deporte])"
+                       [style.background]="getDeporteColor(deporte)">
+                  </div>
+                </div>
+                <span class="distribution-percentage">
+                  {{ getDeportePercentage(stats.alumnosPorDeporte[deporte]) | number:'1.0-0' }}%
+                </span>
+              </div>
+            }
+          </div>
+          <div class="distribution-total">
+            <span>Total inscripciones: <strong>{{ getTotalDeportes() }}</strong></span>
+          </div>
+        } @else {
+          <div class="no-data">
+            <i class="bi bi-inbox"></i>
+            <span>No hay datos disponibles</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Upcoming Events -->
+    <div class="dashboard-card events-card">
+      <div class="card-header">
+        <i class="bi bi-calendar-week-fill"></i>
+        <h3>Próximos Eventos</h3>
+        <a [routerLink]="['/eventosListar']" class="card-action">
+          Ver todos <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        @if (stats.proximosEventos.length > 0) {
+          <div class="events-list">
+            @for (evento of stats.proximosEventos; track evento.id) {
+              <div class="event-item">
+                <div class="event-date">
+                  <span class="event-day">{{ formatDate(evento.fecha).split(' ')[0] }}</span>
+                  <span class="event-month">{{ formatDate(evento.fecha).split(' ')[1] }}</span>
+                </div>
+                <div class="event-info">
+                  <span class="event-title">{{ evento.titulo }}</span>
+                  <span class="event-location" *ngIf="evento.ubicacion">
+                    <i class="bi bi-geo-alt"></i> {{ evento.ubicacion }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-data">
+            <i class="bi bi-calendar-x"></i>
+            <span>No hay eventos próximos</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Access Section -->
+  <div class="quick-access-section">
+    <div class="section-title">
+      <i class="bi bi-lightning-fill"></i>
+      <h2>Acceso Rápido</h2>
+    </div>
+    <div class="quick-access-grid">
+      @for (seccion of seccionesAdmin; track seccion.ruta) {
+        <a [routerLink]="[seccion.ruta]" class="quick-access-card" [style.--card-color]="seccion.color">
+          <div class="quick-icon">
+            <i [class]="seccion.icono"></i>
+          </div>
+          <div class="quick-content">
+            <h4>{{ seccion.titulo }}</h4>
+            <p>{{ seccion.descripcion }}</p>
+          </div>
+          <div class="quick-arrow">
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </a>
       }
     </div>
   </div>
