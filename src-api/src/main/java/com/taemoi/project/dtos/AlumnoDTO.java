@@ -51,6 +51,11 @@ public class AlumnoDTO {
 	 */
 	private List<AlumnoDeporteCreacionDTO> deportesInicial = new ArrayList<>();
 
+	/**
+	 * Lista de deportes del alumno (para visualización en dashboard/listados)
+	 */
+	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
+
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
@@ -355,6 +360,14 @@ public class AlumnoDTO {
 		this.deportesInicial = deportesInicial;
 	}
 
+	public List<AlumnoDeporteDTO> getDeportes() {
+		return deportes;
+	}
+
+	public void setDeportes(List<AlumnoDeporteDTO> deportes) {
+		this.deportes = deportes;
+	}
+
 	/**
 	 * Convierte un objeto Alumno en un objeto AlumnoDTO.
 	 *
@@ -381,7 +394,7 @@ public class AlumnoDTO {
 		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
 
-		return new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
+		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
@@ -389,5 +402,15 @@ public class AlumnoDTO {
 				categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
 				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
 				alumno.getAptoParaExamen());
+
+		// Populate deportes list from AlumnoDeporte entities
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			List<AlumnoDeporteDTO> deportesDTOs = alumno.getDeportes().stream()
+					.map(AlumnoDeporteDTO::deAlumnoDeporte)
+					.collect(java.util.stream.Collectors.toList());
+			dto.setDeportes(deportesDTOs);
+		}
+
+		return dto;
 	}
 }
