@@ -515,6 +515,25 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  reservarPlazaPorDeporte(
+    alumnoId: number,
+    deporte: string,
+    pagado: boolean,
+    forzar: boolean = false
+  ): Observable<ProductoAlumnoDTO> {
+    const params = new HttpParams()
+      .set('deporte', deporte)
+      .set('pagado', pagado.toString())
+      .set('forzar', forzar.toString());
+    return this.http
+      .post<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${alumnoId}/reservar-plaza-deporte`,
+        null,
+        { params, withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   cargarMensualidadesGenerales(mesAno: string): Observable<any> {
     return this.http
       .post(`${this.urlBase}/productos-alumno/mensualidades/general`, mesAno, {
@@ -539,6 +558,29 @@ export class EndpointsService {
     return this.http
       .post(
         `${this.urlBase}/productos-alumno/mensualidades/individual?alumnoId=${alumnoId}&forzar=${forzar}`,
+        mesAno,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  cargarMensualidadesMultiDeporte(mesAno: string): Observable<any> {
+    return this.http
+      .post(`${this.urlBase}/productos-alumno/mensualidades/multi-deporte`, mesAno, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  cargarMensualidadIndividualPorDeporte(
+    alumnoId: number,
+    mesAno: string,
+    deporte: string,
+    forzar: boolean = false
+  ): Observable<any> {
+    return this.http
+      .post(
+        `${this.urlBase}/productos-alumno/mensualidades/individual-deporte?alumnoId=${alumnoId}&deporte=${deporte}&forzar=${forzar}`,
         mesAno,
         { withCredentials: true }
       )
