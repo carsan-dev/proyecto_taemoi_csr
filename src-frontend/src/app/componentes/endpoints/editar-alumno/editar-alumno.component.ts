@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { Subscription } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Subscription, concat, of } from 'rxjs';
+import { finalize, catchError, tap } from 'rxjs/operators';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -123,6 +123,15 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     peso?: number;
     fechaPeso?: string;
   }> = new Map();
+
+  pendingGradoChanges: Map<string, {
+    fechaGrado?: string;
+  }> = new Map();
+
+  pendingEstadisticasChanges: Map<string, {
+    fechaAltaInicial?: string;
+  }> = new Map();
+
   deportesDisponibles: Deporte[] = [];
 
   // Pending changes for basic info (inline editing)
@@ -2216,17 +2225,52 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Get current deporte data
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    const currentCuantia = deporteData?.cuantiaTarifa;
     const rolFamiliar = pending.rolFamiliar || deporteData?.rolFamiliar || undefined;
 
-    // Autofill cuantia if it's a standard amount or not set
+    // Always autofill cuantia with the standard amount for the new tipoTarifa
+    // User can manually change it afterwards if they want a custom amount
     const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
+    pending.cuantiaTarifa = cuantiaEstandar;
 
-    // Only autofill if current cuantia matches the old standard amount or is not set
-    // This respects custom amounts
-    if (!currentCuantia || currentCuantia === 0) {
-      pending.cuantiaTarifa = cuantiaEstandar;
+    this.pendingTarifaChanges.set(deporte, pending);
+  }
+
+  /**
+   * Handle tipo tarifa change from ngModel - accepts value directly
+   */
+  onTipoTarifaModelChange(deporte: string, tipoTarifa: string): void {
+    // Skip if empty value (user selected "Seleccionar tarifa")
+    if (!tipoTarifa) {
+      return;
     }
+
+    // Get current deporte data
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+
+    // Skip if same as current value (no actual change)
+    if (deporteData?.tipoTarifa === tipoTarifa) {
+      // Remove from pending if it was previously changed
+      const existing = this.pendingTarifaChanges.get(deporte);
+      if (existing) {
+        delete existing.tipoTarifa;
+        delete existing.cuantiaTarifa;
+        if (Object.keys(existing).length === 0) {
+          this.pendingTarifaChanges.delete(deporte);
+        }
+      }
+      return;
+    }
+
+    // Get or create pending changes for this deporte
+    const pending = this.pendingTarifaChanges.get(deporte) || {};
+    pending.tipoTarifa = tipoTarifa;
+
+    const rolFamiliar = pending.rolFamiliar || deporteData?.rolFamiliar || undefined;
+
+    // Always autofill cuantia with the standard amount for the new tipoTarifa
+    // User can manually change it afterwards if they want a custom amount
+    const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
+    pending.cuantiaTarifa = cuantiaEstandar;
 
     this.pendingTarifaChanges.set(deporte, pending);
   }
@@ -2236,6 +2280,20 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   onCuantiaTarifaChange(deporte: string, event: any): void {
     const cuantiaTarifa = parseFloat(event.target.value);
+    if (isNaN(cuantiaTarifa)) {
+      return;
+    }
+
+    const pending = this.pendingTarifaChanges.get(deporte) || {};
+    pending.cuantiaTarifa = cuantiaTarifa;
+    this.pendingTarifaChanges.set(deporte, pending);
+  }
+
+  /**
+   * Handle cuantia tarifa change from ngModel - accepts value directly
+   */
+  onCuantiaTarifaModelChange(deporte: string, value: number | string): void {
+    const cuantiaTarifa = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(cuantiaTarifa)) {
       return;
     }
@@ -2267,6 +2325,25 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle rol familiar change from ngModel - accepts value directly
+   */
+  onRolFamiliarModelChange(deporte: string, rolFamiliar: string): void {
+    const pending = this.pendingTarifaChanges.get(deporte) || {};
+    pending.rolFamiliar = rolFamiliar;
+
+    // If it's PADRES_HIJOS tarifa, recalculate cuantia based on rol
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    const tipoTarifa = pending.tipoTarifa || deporteData?.tipoTarifa;
+
+    if (tipoTarifa === 'PADRES_HIJOS') {
+      const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
+      pending.cuantiaTarifa = cuantiaEstandar;
+    }
+
+    this.pendingTarifaChanges.set(deporte, pending);
+  }
+
+  /**
    * Handle grupo familiar change - updates pending changes
    */
   onGrupoFamiliarChange(deporte: string, event: any): void {
@@ -2278,37 +2355,34 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle grupo familiar change from ngModel - accepts value directly
+   */
+  onGrupoFamiliarModelChange(deporte: string, grupoFamiliar: string): void {
+    const pending = this.pendingTarifaChanges.get(deporte) || {};
+    pending.grupoFamiliar = grupoFamiliar;
+    this.pendingTarifaChanges.set(deporte, pending);
+  }
+
+  /**
    * Update tiene licencia for a specific sport
    */
-  actualizarTieneLicencia(deporte: string, event: any): void {
-    if (!this.alumnoId) {
-      return;
-    }
-
+  /**
+   * Handle tieneLicencia toggle - now uses pending changes pattern
+   * to allow batch update with numeroLicencia and fechaLicencia
+   */
+  onTieneLicenciaChange(deporte: string, event: any): void {
     const tieneLicencia = event.target.checked;
 
-    this.alumnoService
-      .actualizarTieneLicenciaDeporte(this.alumnoId, deporte, tieneLicencia)
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            title: 'Licencia actualizada',
-            text: `Estado de licencia actualizado en ${getDeporteLabel(deporte)}`,
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false,
-          });
-          this.cargarDeportesDelAlumno(this.alumnoId!, true);
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: error.error || 'No se pudo actualizar el estado de licencia',
-            icon: 'error',
-          });
-          this.cargarDeportesDelAlumno(this.alumnoId!, true);
-        },
-      });
+    const pending = this.pendingLicenciaChanges.get(deporte) || {};
+    pending.tieneLicencia = tieneLicencia;
+    this.pendingLicenciaChanges.set(deporte, pending);
+  }
+
+  /**
+   * @deprecated Use onTieneLicenciaChange instead - kept for backward compatibility
+   */
+  actualizarTieneLicencia(deporte: string, event: any): void {
+    this.onTieneLicenciaChange(deporte, event);
   }
 
   /**
@@ -2617,17 +2691,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   // ========== BATCH UPDATE METHODS FOR PENDING CHANGES ==========
 
   /**
-   * Handle tiene licencia change - updates pending changes
-   */
-  onTieneLicenciaChange(deporte: string, event: any): void {
-    const tieneLicencia = event.target.checked;
-
-    const pending = this.pendingLicenciaChanges.get(deporte) || {};
-    pending.tieneLicencia = tieneLicencia;
-    this.pendingLicenciaChanges.set(deporte, pending);
-  }
-
-  /**
    * Handle numero licencia change - updates pending changes
    */
   onNumeroLicenciaChange(deporte: string, event: any): void {
@@ -2776,26 +2839,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return deporteData?.grupoFamiliar || '';
   }
 
-  /**
-   * Get formatted fecha alta inicial for date input (yyyy-MM-dd format)
-   */
-  getDisplayedFechaAltaInicial(deporte: string): string {
-    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    if (!deporteData?.fechaAltaInicial) {
-      return '';
-    }
-
-    // Handle both Date objects and string ISO dates
-    const fecha = deporteData.fechaAltaInicial;
-    if (fecha instanceof Date) {
-      return fecha.toISOString().split('T')[0];
-    } else if (typeof fecha === 'string') {
-      // If it's already a string, extract just the date part (yyyy-MM-dd)
-      return fecha.split('T')[0];
-    }
-    return '';
-  }
-
   getDisplayedTieneLicencia(deporte: string): boolean {
     const pending = this.pendingLicenciaChanges.get(deporte);
     if (pending?.tieneLicencia !== undefined) {
@@ -2820,11 +2863,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return pending.fechaLicencia;
     }
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    if (!deporteData?.fechaLicencia) {
-      return '';
-    }
-    const date = new Date(deporteData.fechaLicencia);
-    return date.toISOString().split('T')[0]; // Format as yyyy-MM-dd
+    return this.formatDateForInput(deporteData?.fechaLicencia);
   }
 
   getDisplayedCompetidor(deporte: string): boolean {
@@ -2851,11 +2890,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return pending.fechaPeso;
     }
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    if (!deporteData?.fechaPeso) {
-      return '';
-    }
-    const date = new Date(deporteData.fechaPeso);
-    return date.toISOString().split('T')[0]; // Format as yyyy-MM-dd
+    return this.formatDateForInput(deporteData?.fechaPeso);
   }
 
   // ========== CHECK IF THERE ARE PENDING CHANGES ==========
@@ -2876,6 +2911,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   /**
    * Apply pending tarifa changes for a specific deporte
+   * Updates are made SEQUENTIALLY to avoid race conditions where one update
+   * overwrites another's changes on the same entity
    */
   applyTarifaChanges(deporte: string): void {
     if (!this.alumnoId || !this.hasPendingTarifaChanges(deporte)) {
@@ -2883,67 +2920,68 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     const pending = this.pendingTarifaChanges.get(deporte)!;
-    let updateCount = 0;
-    const totalUpdates = Object.keys(pending).length;
+    const updates: any[] = [];
 
-    // Update tipo tarifa
-    if (pending.tipoTarifa !== undefined) {
-      this.alumnoService
-        .actualizarTipoTarifaDeporte(this.alumnoId, deporte, pending.tipoTarifa)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllTarifaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'tipo de tarifa'),
-        });
+    // Build array of sequential updates
+    if (pending.tipoTarifa !== undefined && pending.tipoTarifa !== '') {
+      updates.push(
+        this.alumnoService
+          .actualizarTipoTarifaDeporte(this.alumnoId!, deporte, pending.tipoTarifa)
+          .pipe(
+            tap(() => console.log('tipoTarifa updated successfully')),
+            catchError((error) => {
+              this.handleUpdateError('tipo de tarifa', error);
+              return of(null);
+            })
+          )
+      );
     }
 
-    // Update cuantia tarifa
     if (pending.cuantiaTarifa !== undefined) {
-      this.alumnoService
-        .actualizarCuantiaTarifaDeporte(this.alumnoId, deporte, pending.cuantiaTarifa)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllTarifaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'cuantía de tarifa'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarCuantiaTarifaDeporte(this.alumnoId!, deporte, pending.cuantiaTarifa)
+          .pipe(
+            tap(() => console.log('cuantiaTarifa updated successfully')),
+            catchError((error) => {
+              this.handleUpdateError('cuantía de tarifa', error);
+              return of(null);
+            })
+          )
+      );
     }
 
-    // Update rol familiar
     if (pending.rolFamiliar !== undefined) {
-      this.alumnoService
-        .actualizarRolFamiliarDeporte(this.alumnoId, deporte, pending.rolFamiliar)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllTarifaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'rol familiar'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarRolFamiliarDeporte(this.alumnoId!, deporte, pending.rolFamiliar)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('rol familiar', error);
+              return of(null);
+            })
+          )
+      );
     }
 
-    // Update grupo familiar
     if (pending.grupoFamiliar !== undefined) {
-      this.alumnoService
-        .actualizarGrupoFamiliarDeporte(this.alumnoId, deporte, pending.grupoFamiliar)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllTarifaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'grupo familiar'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarGrupoFamiliarDeporte(this.alumnoId!, deporte, pending.grupoFamiliar)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('grupo familiar', error);
+              return of(null);
+            })
+          )
+      );
+    }
+
+    // Execute updates sequentially using concat
+    if (updates.length > 0) {
+      concat(...updates).pipe(
+        finalize(() => this.onAllTarifaUpdatesComplete(deporte))
+      ).subscribe();
     }
   }
 
@@ -2961,6 +2999,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   /**
    * Apply pending licencia changes for a specific deporte
+   * Updates are made SEQUENTIALLY to avoid race conditions
    */
   applyLicenciaChanges(deporte: string): void {
     if (!this.alumnoId || !this.hasPendingLicenciaChanges(deporte)) {
@@ -2968,52 +3007,53 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     const pending = this.pendingLicenciaChanges.get(deporte)!;
-    let updateCount = 0;
-    const totalUpdates = Object.keys(pending).length;
+    const updates: any[] = [];
 
-    // Update tiene licencia
+    // Build array of sequential updates
     if (pending.tieneLicencia !== undefined) {
-      this.alumnoService
-        .actualizarTieneLicenciaDeporte(this.alumnoId, deporte, pending.tieneLicencia)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllLicenciaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'estado de licencia'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarTieneLicenciaDeporte(this.alumnoId!, deporte, pending.tieneLicencia)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('estado de licencia', error);
+              return of(null);
+            })
+          )
+      );
     }
 
-    // Update numero licencia
     if (pending.numeroLicencia !== undefined) {
-      this.alumnoService
-        .actualizarNumeroLicenciaDeporte(this.alumnoId, deporte, pending.numeroLicencia)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllLicenciaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'número de licencia'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarNumeroLicenciaDeporte(this.alumnoId!, deporte, pending.numeroLicencia)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('número de licencia', error);
+              return of(null);
+            })
+          )
+      );
     }
 
-    // Update fecha licencia
     if (pending.fechaLicencia !== undefined) {
-      this.alumnoService
-        .actualizarFechaLicenciaDeporte(this.alumnoId, deporte, pending.fechaLicencia)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllLicenciaUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'fecha de licencia'),
-        });
+      updates.push(
+        this.alumnoService
+          .actualizarFechaLicenciaDeporte(this.alumnoId!, deporte, pending.fechaLicencia)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('fecha de licencia', error);
+              return of(null);
+            })
+          )
+      );
+    }
+
+    // Execute updates sequentially using concat
+    if (updates.length > 0) {
+      concat(...updates).pipe(
+        finalize(() => this.onAllLicenciaUpdatesComplete(deporte))
+      ).subscribe();
     }
   }
 
@@ -3183,12 +3223,163 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.pendingCompetidorChanges.delete(deporte);
   }
 
+  cancelGradoChanges(deporte: string): void {
+    this.pendingGradoChanges.delete(deporte);
+  }
+
+  cancelEstadisticasChanges(deporte: string): void {
+    this.pendingEstadisticasChanges.delete(deporte);
+  }
+
+  // ========== GRADO PENDING CHANGES ==========
+
+  onFechaGradoChange(deporte: string, event: any): void {
+    const fechaGrado = event.target.value;
+    if (!fechaGrado) {
+      return;
+    }
+
+    const pending = this.pendingGradoChanges.get(deporte) || {};
+    pending.fechaGrado = fechaGrado;
+    this.pendingGradoChanges.set(deporte, pending);
+  }
+
+  getDisplayedFechaGrado(deporte: string): string {
+    const pending = this.pendingGradoChanges.get(deporte);
+    if (pending?.fechaGrado !== undefined) {
+      return pending.fechaGrado;
+    }
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    if (deporteData?.fechaGrado) {
+      return this.formatDateForInput(deporteData.fechaGrado);
+    }
+    return '';
+  }
+
+  hasPendingGradoChanges(deporte: string): boolean {
+    return this.pendingGradoChanges.has(deporte);
+  }
+
+  applyGradoChanges(deporte: string): void {
+    if (!this.alumnoId || !this.hasPendingGradoChanges(deporte)) {
+      return;
+    }
+
+    const pending = this.pendingGradoChanges.get(deporte)!;
+
+    if (pending.fechaGrado !== undefined) {
+      this.alumnoService
+        .actualizarFechaGrado(this.alumnoId, deporte, pending.fechaGrado)
+        .subscribe({
+          next: () => {
+            this.pendingGradoChanges.delete(deporte);
+            Swal.fire({
+              title: 'Fecha de grado actualizada',
+              text: `Fecha de grado actualizada en ${getDeporteLabel(deporte)}`,
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false,
+            });
+            this.cargarDeportesDelAlumno(this.alumnoId!, true);
+          },
+          error: this.handleUpdateError.bind(this, 'fecha de grado'),
+        });
+    }
+  }
+
+  // ========== ESTADISTICAS PENDING CHANGES ==========
+
+  onFechaAltaInicialChange(deporte: string, event: any): void {
+    const fechaAltaInicial = event.target.value;
+    if (!fechaAltaInicial) {
+      return;
+    }
+
+    const pending = this.pendingEstadisticasChanges.get(deporte) || {};
+    pending.fechaAltaInicial = fechaAltaInicial;
+    this.pendingEstadisticasChanges.set(deporte, pending);
+  }
+
+  getDisplayedFechaAltaInicial(deporte: string): string {
+    const pending = this.pendingEstadisticasChanges.get(deporte);
+    if (pending?.fechaAltaInicial !== undefined) {
+      return pending.fechaAltaInicial;
+    }
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    if (deporteData?.fechaAltaInicial) {
+      return this.formatDateForInput(deporteData.fechaAltaInicial);
+    }
+    return '';
+  }
+
+  hasPendingEstadisticasChanges(deporte: string): boolean {
+    return this.pendingEstadisticasChanges.has(deporte);
+  }
+
+  applyEstadisticasChanges(deporte: string): void {
+    if (!this.alumnoId || !this.hasPendingEstadisticasChanges(deporte)) {
+      return;
+    }
+
+    const pending = this.pendingEstadisticasChanges.get(deporte)!;
+
+    if (pending.fechaAltaInicial !== undefined) {
+      this.alumnoService
+        .actualizarFechaAltaInicialDeporte(this.alumnoId, deporte, pending.fechaAltaInicial)
+        .subscribe({
+          next: () => {
+            this.pendingEstadisticasChanges.delete(deporte);
+            Swal.fire({
+              title: 'Fecha actualizada',
+              text: `Fecha de alta inicial actualizada en ${getDeporteLabel(deporte)}`,
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false,
+            });
+            this.cargarDeportesDelAlumno(this.alumnoId!, true);
+          },
+          error: this.handleUpdateError.bind(this, 'fecha de alta inicial'),
+        });
+    }
+  }
+
   private handleUpdateError(fieldName: string, error: any): void {
     Swal.fire({
       title: 'Error',
       text: error.error || `No se pudo actualizar ${fieldName}`,
       icon: 'error',
     });
+  }
+
+  /**
+   * Formats a date for use in input[type="date"] fields (yyyy-MM-dd format)
+   * Handles timezone issues by working with local date components instead of UTC
+   */
+  private formatDateForInput(fecha: Date | string | null | undefined): string {
+    if (!fecha) {
+      return '';
+    }
+
+    // If it's already a string in ISO format, extract just the date part
+    if (typeof fecha === 'string') {
+      // Handle ISO strings like "2025-01-03T00:00:00.000Z" or "2025-01-03"
+      if (fecha.includes('T')) {
+        // Parse without timezone conversion
+        const datePart = fecha.split('T')[0];
+        return datePart;
+      }
+      // Already in yyyy-MM-dd format
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        return fecha;
+      }
+    }
+
+    // For Date objects, use local date components to avoid timezone shifts
+    const date = fecha instanceof Date ? fecha : new Date(fecha);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // ==================== BASIC INFO INLINE EDITING ====================
