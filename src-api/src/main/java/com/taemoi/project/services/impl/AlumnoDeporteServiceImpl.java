@@ -548,9 +548,14 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			return false;
 		}
 
-		// Convertir fecha grado a LocalDate
-		LocalDate fechaGrado = alumnoDeporte.getFechaGrado().toInstant()
-				.atZone(ZoneId.systemDefault()).toLocalDate();
+		// Convertir fecha grado a LocalDate (manejar java.sql.Date que no soporta toInstant())
+		Date fechaGradoDate = alumnoDeporte.getFechaGrado();
+		LocalDate fechaGrado;
+		if (fechaGradoDate instanceof java.sql.Date) {
+			fechaGrado = ((java.sql.Date) fechaGradoDate).toLocalDate();
+		} else {
+			fechaGrado = fechaGradoDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		}
 
 		// Calcular edad y meses requeridos
 		int edad = FechaUtils.calcularEdad(alumnoDeporte.getAlumno().getFechaNacimiento());

@@ -565,12 +565,16 @@ public class AlumnoController {
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
 			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
+			if (deportes == null) {
+				return ResponseEntity.ok(java.util.Collections.emptyList());
+			}
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
 					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
 					.collect(Collectors.toList());
 			return ResponseEntity.ok(deportesDTO);
 		} catch (Exception e) {
-			return ResponseEntity.badRequest().build();
+			logger.error("Error al obtener deportes del alumno {}: {}", id, e.getMessage(), e);
+			return ResponseEntity.ok(java.util.Collections.emptyList());
 		}
 	}
 
