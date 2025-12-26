@@ -222,7 +222,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			@NonNull Pageable pageable) {
 		return alumnoRepository.findAll(
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos),
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false),
+				pageable);
+	}
+
+	@Override
+	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
+			boolean aptoParaExamen, @NonNull Pageable pageable) {
+		return alumnoRepository.findAll(
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen),
 				pageable);
 	}
 
@@ -241,7 +249,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos) {
 		return alumnoRepository.findAll(
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos));
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false));
 	}
 
 	/**
@@ -879,7 +887,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	// Método para obtener alumnos aptos y mapear a AlumnoConGruposDTO
 	public List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO() {
-		List<Alumno> alumnos = alumnoRepository.findByAptoParaExamenTrue(); // Método existente
+		// Busca alumnos activos que tengan al menos un deporte activo con aptoParaExamen = true
+		List<Alumno> alumnos = alumnoRepository.findAlumnosAptosParaExamen();
 
 		// Mapeo a AlumnoConGruposDTO
 		return alumnos.stream().map(AlumnoConGruposDTO::deAlumnoConGrupos) // Reutilizamos el método estático de mapeo
@@ -1300,10 +1309,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param gradoId         Grado ID filter
 	 * @param categoriaId     Categoria ID filter
 	 * @param incluirInactivos Whether to include inactive students
+	 * @param aptoParaExamen  Whether to filter only students eligible for exam
 	 * @return Specification for filtering Alumno
 	 */
 	private org.springframework.data.jpa.domain.Specification<Alumno> buildAlumnoSpecification(
-			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos) {
+			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, boolean aptoParaExamen) {
 		return (root, query, criteriaBuilder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
@@ -1339,6 +1349,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 			if (!incluirInactivos) {
 				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+			}
+
+			// Filter by aptoParaExamen - join with deportes to check if any has aptoParaExamen = true
+			if (aptoParaExamen) {
+				// Use subquery to check if alumno has at least one deporte with aptoParaExamen = true
+				jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
+				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> deporteRoot = subquery.from(com.taemoi.project.entities.AlumnoDeporte.class);
+				subquery.select(deporteRoot.get("alumno").get("id"))
+						.where(criteriaBuilder.and(
+								criteriaBuilder.equal(deporteRoot.get("alumno").get("id"), root.get("id")),
+								criteriaBuilder.equal(deporteRoot.get("aptoParaExamen"), true),
+								criteriaBuilder.equal(deporteRoot.get("activo"), true)
+						));
+				predicates.add(criteriaBuilder.exists(subquery));
 			}
 
 			return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

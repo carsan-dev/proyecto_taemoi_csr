@@ -35,6 +35,9 @@ public interface AlumnoService {
 	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			@NonNull Pageable pageable);
 
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
+			boolean aptoParaExamen, @NonNull Pageable pageable);
+
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 
 	Alumno crearAlumno(@Valid @NonNull Alumno alumno);
