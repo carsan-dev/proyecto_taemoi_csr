@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { Subscription, forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 interface DashboardStats {
   totalAlumnos: number;
@@ -22,7 +23,7 @@ interface DashboardStats {
 @Component({
   selector: 'app-vista-principal-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SkeletonCardComponent],
   templateUrl: './vista-principal-admin.component.html',
   styleUrl: './vista-principal-admin.component.scss',
 })
@@ -30,6 +31,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
   nombreUsuario: string | null = '';
   usuarioLogueado: boolean = false;
   cargandoEstadisticas: boolean = true;
+  cargandoEventos: boolean = true;
   fechaActual: Date = new Date();
   private subscriptions: Subscription = new Subscription();
 
@@ -166,7 +168,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     // Load events separately (uses BehaviorSubject pattern)
     this.endpointsService.obtenerTodosLosEventos();
     const eventosSub = this.endpointsService.eventos$.subscribe(eventos => {
-      if (eventos && eventos.length > 0) {
+      if (eventos) {
         this.stats.totalEventos = eventos.length;
         this.stats.eventosVisibles = eventos.filter((e: any) => e.visible).length;
 
@@ -176,6 +178,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
           .filter((e: any) => new Date(e.fecha) >= now && e.visible)
           .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
           .slice(0, 5);
+
+        this.cargandoEventos = false;
       }
     });
     this.subscriptions.add(eventosSub);
