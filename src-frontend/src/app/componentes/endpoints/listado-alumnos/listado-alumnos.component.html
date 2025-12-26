@@ -68,6 +68,18 @@
             <span>{{ mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos' }}</span>
           </button>
         </div>
+
+        <div class="filter-group">
+          <button
+            class="filter-toggle-btn apto-filter"
+            [class.active]="aptoParaExamenFiltro"
+            (click)="toggleAptoParaExamenFiltro()"
+            [attr.aria-pressed]="aptoParaExamenFiltro"
+            aria-label="Filtrar por alumnos aptos para examen">
+            <i class="bi" [class.bi-award-fill]="aptoParaExamenFiltro" [class.bi-award]="!aptoParaExamenFiltro"></i>
+            <span>{{ aptoParaExamenFiltro ? 'Aptos para examen' : 'Solo aptos' }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Center: Results Count -->
