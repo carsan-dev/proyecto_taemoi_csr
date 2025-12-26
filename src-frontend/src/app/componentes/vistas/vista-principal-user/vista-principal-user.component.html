@@ -120,10 +120,7 @@
         </div>
 
         @if (cargandoDeportes) {
-          <div class="loading-sports">
-            <i class="bi bi-hourglass-split"></i>
-            <p>Cargando deportes...</p>
-          </div>
+          <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
         } @else if (deportesDelAlumno.length > 0) {
           <div class="sports-grid">
             @for (deporteItem of deportesDelAlumno; track deporteItem.id) {

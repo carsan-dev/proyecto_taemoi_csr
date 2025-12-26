@@ -1007,23 +1007,6 @@ $defensa-color: #e91e63;
 // SPORTS SECTION
 // ========================================
 
-.loading-sports {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: $text-muted;
-
-  i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    animation: spin 2s linear infinite;
-  }
-
-  p {
-    font-size: 1.1rem;
-    margin: 0;
-  }
-}
-
 .sports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1162,15 +1145,6 @@ $defensa-color: #e91e63;
   }
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 // Reduced motion support
 @media (prefers-reduced-motion: reduce) {
   .hero-header,
@@ -1179,8 +1153,7 @@ $defensa-color: #e91e63;
   .sports-grid,
   .group-card,
   .sport-card,
-  .no-groups-container,
-  .loading-sports i {
+  .no-groups-container {
     animation: none !important;
   }
 
