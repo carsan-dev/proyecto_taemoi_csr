@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
 import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
@@ -70,11 +70,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   // View mode and filters
   vistaActual: 'cards' | 'table' = 'cards'; // Default to cards view
   deporteFiltro: string = 'TODOS'; // Filter by sport
+  aptoParaExamenFiltro: boolean = false; // Filter for students eligible for exam
 
   constructor(
     private readonly endpointsService: EndpointsService,
     private readonly alumnoService: AlumnoService,
-    private readonly loadingService: LoadingService
+    private readonly loadingService: LoadingService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
 
   /**
@@ -104,6 +107,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (savedView === 'cards' || savedView === 'table') {
       this.vistaActual = savedView;
     }
+
+    // Read query parameters for filters
+    this.route.queryParams.subscribe(params => {
+      if (params['aptoParaExamen'] === 'true') {
+        this.aptoParaExamenFiltro = true;
+      }
+    });
 
     // Calculate initial page size for cards view BEFORE loading data
     this.calcularTamanoPaginaInicial();
@@ -254,7 +264,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.paginaActual,
         this.tamanoPagina,
         this.nombreFiltro,
-        this.mostrarInactivos
+        this.mostrarInactivos,
+        this.aptoParaExamenFiltro
       )
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
@@ -276,6 +287,43 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           });
         },
       });
+  }
+
+  /**
+   * Toggle the aptoParaExamen filter and reload data
+   */
+  toggleAptoParaExamenFiltro(): void {
+    this.aptoParaExamenFiltro = !this.aptoParaExamenFiltro;
+    this.paginaActual = 1;
+
+    // Update URL query params without navigation
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.aptoParaExamenFiltro ? { aptoParaExamen: 'true' } : {},
+      queryParamsHandling: this.aptoParaExamenFiltro ? 'merge' : ''
+    });
+
+    this.obtenerAlumnos();
+    this.cargarTodosLosAlumnos();
+  }
+
+  /**
+   * Clear the aptoParaExamen filter
+   */
+  limpiarFiltroAptoParaExamen(): void {
+    if (this.aptoParaExamenFiltro) {
+      this.aptoParaExamenFiltro = false;
+      this.paginaActual = 1;
+
+      // Remove query param from URL
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {}
+      });
+
+      this.obtenerAlumnos();
+      this.cargarTodosLosAlumnos();
+    }
   }
 
   /**
