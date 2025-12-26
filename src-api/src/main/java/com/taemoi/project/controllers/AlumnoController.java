@@ -118,20 +118,22 @@ public class AlumnoController {
 	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
 			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId,
-			@RequestParam(required = false) Boolean incluirInactivos) {
+			@RequestParam(required = false) Boolean incluirInactivos,
+			@RequestParam(required = false) Boolean aptoParaExamen) {
 
 		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 		logger.info(
-				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}",
-				page, size, nombre, gradoId, categoriaId);
+				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}, aptoParaExamen: {}",
+				page, size, nombre, gradoId, categoriaId, aptoParaExamen);
 
 		Pageable pageable = (page != null && size != null)
 				? PageRequest.of(page - 1, size, Sort.by("nombre").ascending())
 				: Pageable.unpaged();
 		boolean isPaged = page != null && size != null;
 		boolean incluir = incluirInactivos != null ? incluirInactivos : false;
+		boolean soloAptos = aptoParaExamen != null && aptoParaExamen;
 
-		Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, pageable);
+		Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, soloAptos, pageable);
 
 		if (alumnos.isEmpty()) {
 			logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");

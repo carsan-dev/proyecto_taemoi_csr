@@ -220,8 +220,10 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT COUNT(a) FROM Alumno a JOIN a.grupos g WHERE g.nombre = :nombreGrupo")
 	Long contarAlumnosPorGrupo(@Param("nombreGrupo") String nombreGrupo);
 
-	// Método para obtener todos los alumnos aptos para examen
-	List<Alumno> findByAptoParaExamenTrue();
+	// Método para obtener todos los alumnos activos aptos para examen en al menos un deporte
+	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
+		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true")
+	List<Alumno> findAlumnosAptosParaExamen();
 
 	// Método para obtener alumnos aptos para examen por un deporte específico,
 	// excluyendo competición para taekwondo
