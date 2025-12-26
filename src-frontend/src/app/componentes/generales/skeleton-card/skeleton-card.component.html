@@ -61,3 +61,41 @@
     }
   </div>
 }
+
+<!-- Distribution Chart Skeleton (for sport distribution bars) -->
+@if (type === 'distribution') {
+  <div class="skeleton-distribution">
+    @for (item of items; track $index) {
+      <div class="skeleton-distribution-item">
+        <div class="skeleton-distribution-header">
+          <div class="skeleton-icon"></div>
+          <div class="skeleton-label"></div>
+          <div class="skeleton-count"></div>
+        </div>
+        <div class="skeleton-bar-container">
+          <div class="skeleton-bar" [style.width.%]="getBarWidth($index)"></div>
+        </div>
+        <div class="skeleton-percentage"></div>
+      </div>
+    }
+    <div class="skeleton-total"></div>
+  </div>
+}
+
+<!-- Events List Skeleton (for upcoming events) -->
+@if (type === 'events') {
+  <div class="skeleton-events">
+    @for (item of items; track $index) {
+      <div class="skeleton-event-item">
+        <div class="skeleton-event-date">
+          <div class="skeleton-day"></div>
+          <div class="skeleton-month"></div>
+        </div>
+        <div class="skeleton-event-info">
+          <div class="skeleton-event-title"></div>
+          <div class="skeleton-event-location"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
