@@ -21,14 +21,11 @@
     </div>
 
     @if (cargandoEstadisticas) {
-      <div class="loading-stats">
-        <i class="bi bi-hourglass-split spin"></i>
-        <span>Cargando estadísticas...</span>
-      </div>
+      <app-skeleton-card [type]="'grid'" [count]="4" [columns]="4"></app-skeleton-card>
     } @else {
       <div class="stats-grid">
         <!-- Total Alumnos -->
-        <div class="stat-card primary">
+        <a [routerLink]="['/alumnosListar']" class="stat-card primary clickable">
           <div class="stat-icon">
             <i class="bi bi-people-fill"></i>
           </div>
@@ -44,10 +41,13 @@
               <i class="bi bi-pause-circle"></i> {{ stats.alumnosInactivos }} inactivos
             </span>
           </div>
-        </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
 
         <!-- Grupos -->
-        <div class="stat-card success">
+        <a [routerLink]="['/gruposListar']" class="stat-card success clickable">
           <div class="stat-icon">
             <i class="bi bi-collection-fill"></i>
           </div>
@@ -60,10 +60,13 @@
               <i class="bi bi-clock"></i> {{ stats.totalTurnos }} turnos
             </span>
           </div>
-        </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
 
         <!-- Eventos -->
-        <div class="stat-card warning">
+        <a [routerLink]="['/eventosListar']" class="stat-card warning clickable">
           <div class="stat-icon">
             <i class="bi bi-calendar-event-fill"></i>
           </div>
@@ -76,10 +79,13 @@
               <i class="bi bi-eye"></i> {{ stats.eventosVisibles }} visibles
             </span>
           </div>
-        </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
 
         <!-- Alumnos Aptos -->
-        <div class="stat-card danger">
+        <a [routerLink]="['/alumnosListar']" [queryParams]="{aptoParaExamen: 'true'}" class="stat-card danger clickable">
           <div class="stat-icon">
             <i class="bi bi-award-fill"></i>
           </div>
@@ -92,7 +98,10 @@
               <i class="bi bi-trophy"></i> Listos para promover
             </span>
           </div>
-        </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
       </div>
     }
   </div>
@@ -107,9 +116,7 @@
       </div>
       <div class="card-body">
         @if (cargandoEstadisticas) {
-          <div class="loading-mini">
-            <i class="bi bi-hourglass-split spin"></i>
-          </div>
+          <app-skeleton-card [type]="'distribution'" [count]="4"></app-skeleton-card>
         } @else if (getObjectKeys(stats.alumnosPorDeporte).length > 0) {
           <div class="distribution-chart">
             @for (deporte of getObjectKeys(stats.alumnosPorDeporte); track deporte) {
@@ -153,7 +160,9 @@
         </a>
       </div>
       <div class="card-body">
-        @if (stats.proximosEventos.length > 0) {
+        @if (cargandoEventos) {
+          <app-skeleton-card [type]="'events'" [count]="3"></app-skeleton-card>
+        } @else if (stats.proximosEventos.length > 0) {
           <div class="events-list">
             @for (evento of stats.proximosEventos; track evento.id) {
               <div class="event-item">
