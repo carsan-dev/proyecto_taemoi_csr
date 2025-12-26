@@ -17,7 +17,9 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="content-wrapper">
-      @if (endpointsService.gruposDelAlumno$ | async; as grupos) {
+      @if (cargando) {
+        <app-skeleton-card [type]="'grid'" [count]="4" [columns]="2"></app-skeleton-card>
+      } @else if (endpointsService.gruposDelAlumno$ | async; as grupos) {
         <div>
           <!-- Sports Timetable Section -->
           @if (allTurnos.length > 0) {

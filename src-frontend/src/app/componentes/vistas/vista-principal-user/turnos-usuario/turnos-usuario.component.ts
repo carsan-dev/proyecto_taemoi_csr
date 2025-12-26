@@ -6,16 +6,18 @@ import { Subscription } from 'rxjs/internal/Subscription';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Turno } from '../../../../interfaces/turno';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-turnos-usuario',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SkeletonCardComponent],
   templateUrl: './turnos-usuario.component.html',
   styleUrls: ['./turnos-usuario.component.scss'],
 })
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
+  cargando: boolean = true;
   private readonly subscriptions: Subscription = new Subscription();
   allTurnos: Turno[] = [];
   diasSemana: string[] = [
@@ -50,12 +52,17 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   cargarGruposDelAlumno(): void {
+    this.cargando = true;
     const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
       next: (grupos) => {
         this.grupos = grupos;
-        setTimeout(() => this.cargarTodosTurnos(), 100);
+        setTimeout(() => {
+          this.cargarTodosTurnos();
+          this.cargando = false;
+        }, 100);
       },
       error: () => {
+        this.cargando = false;
         Swal.fire({
           title: 'Error en la petición',
           text: 'Error al obtener los grupos del alumno.',
