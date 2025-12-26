@@ -1,6 +1,38 @@
+// Skeleton layout - ensures footer stays at bottom during page load
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .container-fluid {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
   .row {
     width: 100%;
     margin: auto 0;
+  }
+
+  // Content wrapper should grow to push footer down
+  > .row.flex-grow-1 {
+    flex: 1 0 auto;
+
+    .content-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+
+      #content {
+        flex: 1 0 auto;
+        min-height: calc(100vh - 200px); // Minimum height to prevent footer jump
+      }
+    }
+  }
+
+  // Footer should not shrink
+  > app-footer {
+    flex-shrink: 0;
   }
 }
