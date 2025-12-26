@@ -10,11 +10,12 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-vista-principal-user',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkeletonCardComponent],
   templateUrl: './vista-principal-user.component.html',
   styleUrl: './vista-principal-user.component.scss',
 })
