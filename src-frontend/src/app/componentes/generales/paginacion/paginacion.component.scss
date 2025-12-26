@@ -1,76 +1,215 @@
+// ========================================
+// PAGINATION - Matching Main Website Design
+// ========================================
+
+// Variables (matching main website)
+$primary-color: #007bff;
+$primary-dark: #0056b3;
+$primary-darker: #004494; // darken($primary-dark, 5%)
+$text-light: #ffffff;
+$text-dark: #212529;
+$text-muted: #6c757d;
+$text-muted-light: #adb5bd; // lighten($text-muted, 20%)
+$background-light: #f8f9fa;
+$border-color: #dee2e6;
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ========================================
+// PAGINATION WRAPPER
+// ========================================
 .pagination-wrapper {
-  padding: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1.5rem 1rem;
 
-  @media (max-width: 576px) {
-    padding: 4px;
+  nav {
+    margin: 0 !important;
   }
 }
 
+// ========================================
+// PAGINATION CONTAINER
+// ========================================
 .pagination {
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
   margin: 0;
-  border-radius: 0.5rem;
-  display: flex;
-  flex-wrap: wrap;
-
-  @media (max-width: 576px) {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  background: $text-light;
+  border-radius: 14px;
+  box-shadow: $shadow-md;
 }
 
+// ========================================
+// PAGE ITEMS
+// ========================================
 .page-item {
-  margin: 0 2px;
+  margin: 0;
 
-  @media (max-width: 576px) {
-    margin: 0 1px;
-  }
-
-  &:not(.disabled) .page-link {
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
-    
-    &:hover {
-      background-color: #f0f0f0;
-      border-color: #ced4da;
-      color: #0056b3;
+  // Disabled state
+  &.disabled {
+    .page-link {
+      background: $background-light;
+      color: $text-muted-light;
+      cursor: not-allowed;
+      pointer-events: none;
+      border-color: transparent;
     }
   }
 
-  &.disabled .page-link {
-    background-color: #e9ecef;
-    color: #6c757d;
-    pointer-events: none;
-    cursor: not-allowed;
+  // Active page
+  &.active {
+    .page-link {
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+      color: $text-light;
+      border-color: transparent;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba($primary-color, 0.4);
+
+      &:hover {
+        background: linear-gradient(135deg, $primary-dark, $primary-darker);
+      }
+    }
   }
 
-  &.active .page-link {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
+  // Regular items (not disabled, not active)
+  &:not(.disabled):not(.active) {
+    .page-link {
+      &:hover {
+        background: rgba($primary-color, 0.1);
+        color: $primary-color;
+        border-color: rgba($primary-color, 0.3);
+        transform: translateY(-2px);
+        box-shadow: $shadow-sm;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
   }
 }
 
+// ========================================
+// PAGE LINKS
+// ========================================
 .page-link {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.25rem;
-  border: 1px solid #dee2e6;
-  background-color: #fff;
-  color: #007bff;
-  font-size: 0.8rem;
-  transition: box-shadow 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  color: $text-dark;
+  background: $text-light;
+  border: 2px solid $border-color;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: $transition;
+  text-decoration: none;
+  user-select: none;
 
-  @media (max-width: 576px) {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.75rem;
+  // Icons alignment fix
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  i {
+    font-size: 0.85rem;
+    display: block;
+    text-align: center;
+    width: auto;
+
+    // Fine-tune Bootstrap icon alignment
+    &::before {
+      vertical-align: middle;
+    }
   }
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.25);
+  }
+
+  // Ellipsis style
+  &.disabled {
+    background: transparent;
+    border-color: transparent;
+    color: $text-muted;
+    cursor: default;
+    min-width: 36px;
+  }
+}
+
+// ========================================
+// RESPONSIVE STYLES
+// ========================================
+@media (max-width: 768px) {
+  .pagination-wrapper {
+    padding: 1rem 0.5rem;
+  }
+
+  .pagination {
+    gap: 0.375rem;
+    padding: 0.5rem;
+    border-radius: 12px;
+  }
+
+  .page-link {
+    min-width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+
+    i {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .pagination-wrapper {
+    padding: 0.75rem 0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pagination {
+    gap: 0.25rem;
+    padding: 0.375rem;
+    flex-wrap: nowrap;
+    border-radius: 10px;
+  }
+
+  .page-link {
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 0.85rem;
+    border-width: 1.5px;
+    border-radius: 8px;
+
+    i {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .page-link {
+    transition: none;
+    transform: none !important;
   }
 }
