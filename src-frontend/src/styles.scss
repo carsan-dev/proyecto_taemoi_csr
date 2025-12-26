@@ -53,10 +53,26 @@ body:has(.admin-top-navbar) #content {
 }
 
 // Fix Bootstrap container overflow on mobile
+// Exclude navbar containers to allow dropdowns to overflow
 .container,
 .container-fluid {
   max-width: 100%;
   overflow-x: hidden;
+}
+
+// Allow navbar dropdowns to overflow properly
+.navbar .container-fluid,
+.navbar .container {
+  overflow: visible;
+}
+
+// Ensure fixed headers allow dropdown overflow
+header.fixed-header,
+header.fixed-header .navbar,
+header.fixed-header .navbar-collapse,
+header.fixed-header .navbar-nav,
+header.fixed-header .nav-item.dropdown {
+  overflow: visible !important;
 }
 
 .row {
