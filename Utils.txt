@@ -151,4 +151,10 @@ Actualizar precio productos
 
 ✔ Corregir categoria ID mismatch (IDs viejos 6-10 vs nuevos 1-5) - ahora usa asignación por edad en vez de copiar IDs
 
+✔ Hacer un poco mas visible la disponibilidad de plazas en el horario
+
+✔ Añadir loading a lo que lo necesite
+
+✔ Corregir que algunos alumnos de baja se cuelan en el filtro sólo activos
+
 A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar.
