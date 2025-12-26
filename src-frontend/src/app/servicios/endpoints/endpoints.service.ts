@@ -55,7 +55,8 @@ export class EndpointsService {
     page: number,
     size: number,
     nombre: string = '',
-    incluirInactivos: boolean = false
+    incluirInactivos: boolean = false,
+    aptoParaExamen: boolean = false
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -64,6 +65,10 @@ export class EndpointsService {
 
     if (nombre) {
       params = params.set('nombre', nombre);
+    }
+
+    if (aptoParaExamen) {
+      params = params.set('aptoParaExamen', 'true');
     }
 
     return this.http
