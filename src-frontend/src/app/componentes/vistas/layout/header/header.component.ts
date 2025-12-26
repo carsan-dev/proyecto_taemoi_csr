@@ -19,6 +19,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isUser: boolean = false;
   isHidden: boolean = false;
   adminMenuVisible: boolean = false;
+  isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
   username: string | null = null;
 
@@ -70,6 +71,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (this.authService.comprobarLogueado()) {
       this.usuarioLogueado = true;
       this.comprobarRoles();
+    } else {
+      // Not logged in, auth check complete
+      this.isAuthChecked = true;
     }
 
     // Close admin menu on navigation
@@ -91,6 +95,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = roles.includes('ROLE_ADMIN');
       this.isUser = roles.includes('ROLE_USER');
+      this.isAuthChecked = true;
     });
   }
 

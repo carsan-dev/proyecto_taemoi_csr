@@ -1,3 +1,5 @@
+@use "sass:color";
+
 @font-face {
   font-family: "Osaka-Sans Serif";
   src: url("../../../../../assets/fonts/osaka-re.ttf") format("truetype");
@@ -231,7 +233,7 @@ header.fixed-header {
             left: 50%;
             width: 0;
             height: 2px;
-            background: linear-gradient(90deg, $primary-color, lighten($primary-color, 15%));
+            background: linear-gradient(90deg, $primary-color, color.adjust($primary-color, $lightness: 15%));
             border-radius: 2px;
             transition: $transition;
             transform: translateX(-50%);
@@ -379,23 +381,23 @@ header.fixed-header {
           // Sport-specific colors on hover
           &:nth-child(1):hover {
             background: rgba($taekwondo-color, 0.2);
-            color: lighten($taekwondo-color, 30%);
-            i { color: lighten($taekwondo-color, 20%); }
+            color: color.adjust($taekwondo-color, $lightness: 30%);
+            i { color: color.adjust($taekwondo-color, $lightness: 20%); }
           }
           &:nth-child(2):hover {
             background: rgba($kickboxing-color, 0.2);
-            color: lighten($kickboxing-color, 20%);
+            color: color.adjust($kickboxing-color, $lightness: 20%);
             i { color: $kickboxing-color; }
           }
           &:nth-child(3):hover {
             background: rgba($pilates-color, 0.2);
-            color: lighten($pilates-color, 20%);
+            color: color.adjust($pilates-color, $lightness: 20%);
             i { color: $pilates-color; }
           }
           &:nth-child(4):hover {
             background: rgba($defensa-color, 0.2);
-            color: lighten($defensa-color, 20%);
-            i { color: lighten($defensa-color, 10%); }
+            color: color.adjust($defensa-color, $lightness: 20%);
+            i { color: color.adjust($defensa-color, $lightness: 10%); }
           }
 
           @media (hover: hover) {
@@ -465,7 +467,7 @@ header.fixed-header {
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      background: linear-gradient(135deg, $pilates-color, darken($pilates-color, 10%));
+      background: linear-gradient(135deg, $pilates-color, color.adjust($pilates-color, $lightness: -10%));
       color: $text-light;
       border: none;
       border-radius: $border-radius-pill;
@@ -498,7 +500,7 @@ header.fixed-header {
 
     // Login Button
     .btn-login {
-      background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
       color: $text-light;
       border: none;
       border-radius: $border-radius-pill;
@@ -546,7 +548,7 @@ header.fixed-header {
 
     // My Classes Button (User Header)
     .btn-my-classes {
-      background: linear-gradient(135deg, $pilates-color, darken($pilates-color, 10%));
+      background: linear-gradient(135deg, $pilates-color, color.adjust($pilates-color, $lightness: -10%));
       color: $text-light;
       border: none;
       border-radius: $border-radius-pill;
@@ -622,7 +624,7 @@ header.fixed-header {
 
         &:hover {
           background: rgba($danger-color, 0.15) !important;
-          color: lighten($danger-color, 10%) !important;
+          color: color.adjust($danger-color, $lightness: 10%) !important;
 
           i {
             color: $danger-color !important;
