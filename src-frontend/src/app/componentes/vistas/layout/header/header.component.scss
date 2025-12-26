@@ -31,9 +31,12 @@ header.fixed-header {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
+  right: 0;
+  width: auto;
+  margin: 0 0.5rem;
   z-index: 1000;
   transition: top $transition-speed ease, box-shadow $transition-speed ease;
+  overflow: visible;
 
   &.is-hidden {
     top: -120px;
@@ -45,9 +48,11 @@ header.fixed-header {
     box-shadow: $shadow-md;
     padding: 0.5rem 0;
     background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    overflow: visible;
 
     .container-fluid {
       padding: 0 2rem;
+      overflow: visible !important;
     }
 
     // Logo Styling
@@ -151,6 +156,7 @@ header.fixed-header {
       // On desktop (lg and up), always show with full opacity
       @media (min-width: 992px) {
         opacity: 1 !important;
+        overflow: visible !important;
       }
 
       // On mobile/tablet, apply smooth transitions
@@ -173,6 +179,8 @@ header.fixed-header {
 
     // Navigation Links
     .navbar-nav {
+      overflow: visible;
+
       .nav-item {
         margin: 0 0.25rem;
 
@@ -223,6 +231,7 @@ header.fixed-header {
       // Dropdown Menu
       .dropdown {
         position: relative;
+        overflow: visible;
 
         // Desktop hover behavior (only on non-touch devices)
         @media (min-width: 992px) and (hover: hover) {
@@ -268,6 +277,7 @@ header.fixed-header {
         min-width: 220px;
         top: 100%;
         left: 0;
+        z-index: 1050;
 
         // Bootstrap show class (for mobile click and desktop hover)
         &.show {
