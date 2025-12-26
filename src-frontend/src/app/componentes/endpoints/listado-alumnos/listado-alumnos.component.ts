@@ -148,9 +148,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (this.vistaActual !== 'cards') {
       return;
     }
-    const containerWidth = window.innerWidth - 340;
+    // Offset accounts for page padding and margins (not sidebar - it's outside the container)
+    const containerWidth = window.innerWidth - 120;
     const cardMinWidth = 320;
-    const gap = 24;
+    const gap = 24; // 1.5rem
     const cardsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
     this.tamanoPagina = cardsPerRow * 2;
   }
@@ -170,9 +171,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (this.vistaActual !== 'cards') {
       return;
     }
-    const containerWidth = window.innerWidth - 340;
+    // Offset accounts for page padding and margins (not sidebar - it's outside the container)
+    const containerWidth = window.innerWidth - 120;
     const cardMinWidth = 320;
-    const gap = 24;
+    const gap = 24; // 1.5rem
     const cardsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
     const newPageSize = cardsPerRow * 2;
     if (this.tamanoPagina !== newPageSize) {
