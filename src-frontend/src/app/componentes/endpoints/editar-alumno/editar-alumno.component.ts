@@ -143,6 +143,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     nif?: string;
     email?: string;
     telefono?: string;
+    telefono2?: string;
     tieneDiscapacidad?: boolean;
     autorizacionWeb?: boolean;
     fechaBaja?: string;
@@ -198,6 +199,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           '',
           [
             Validators.required,
+            Validators.pattern('^[0-9]+$'),
+            Validators.maxLength(9),
+          ],
+        ],
+        telefono2: [
+          '',
+          [
             Validators.pattern('^[0-9]+$'),
             Validators.maxLength(9),
           ],
@@ -719,6 +727,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       nif: alumno.nif,
       email: alumno.email,
       telefono: alumno.telefono,
+      telefono2: alumno.telefono2,
       fechaNacimiento,
       deporte: alumno.deporte, // DEPRECATED but kept for compatibility
       fechaBaja,
@@ -3400,6 +3409,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const telefonoValue = this.pendingBasicInfoChanges.telefono ?? this.alumno.telefono;
     const telefonoInt = typeof telefonoValue === 'string' ? parseInt(telefonoValue, 10) : telefonoValue;
 
+    // Get telefono2 value - ensure it's a number or null
+    const telefono2Value = this.pendingBasicInfoChanges.telefono2 ?? this.alumno.telefono2;
+    const telefono2Int = telefono2Value ? (typeof telefono2Value === 'string' ? parseInt(telefono2Value, 10) : telefono2Value) : null;
+
     // Format fechaBaja - use null if empty string
     const fechaBajaValue = this.pendingBasicInfoChanges.fechaBaja ?? (this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null);
     const fechaBaja = fechaBajaValue === '' ? null : fechaBajaValue;
@@ -3414,6 +3427,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       nif: this.pendingBasicInfoChanges.nif ?? this.alumno.nif,
       email: this.pendingBasicInfoChanges.email ?? this.alumno.email,
       telefono: telefonoInt,
+      telefono2: telefono2Int,
       tieneDiscapacidad: this.pendingBasicInfoChanges.tieneDiscapacidad ?? this.alumno.tieneDiscapacidad,
       autorizacionWeb: this.pendingBasicInfoChanges.autorizacionWeb ?? this.alumno.autorizacionWeb,
       fechaBaja: fechaBaja,

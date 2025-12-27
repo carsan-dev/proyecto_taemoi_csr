@@ -409,18 +409,18 @@
                   </div>
                 </div>
 
-                <!-- Teléfono y Email -->
+                <!-- Teléfonos -->
                 <div class="col-12 col-md-6">
                   <div class="admin-form-field"
                     [class.is-invalid]="alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched"
                     [class.is-valid]="alumnoData.get('telefono')?.valid && alumnoData.get('telefono')?.touched">
                     <label for="telefono">
                       <i class="bi bi-telephone-fill"></i>
-                      Teléfono
+                      Teléfono Principal
                       <span class="required">*</span>
                     </label>
                     <input type="tel" class="admin-form-control" id="telefono" name="telefono"
-                      formControlName="telefono" required placeholder="600123456" aria-label="Teléfono de contacto"
+                      formControlName="telefono" required placeholder="600123456" aria-label="Teléfono principal"
                       aria-required="true" />
                     @if (alumnoData.get('telefono')?.errors && alumnoData.get('telefono')?.touched) {
                     <div class="invalid-feedback">
@@ -439,6 +439,31 @@
                   </div>
                 </div>
 
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field"
+                    [class.is-invalid]="alumnoData.get('telefono2')?.errors && alumnoData.get('telefono2')?.touched"
+                    [class.is-valid]="alumnoData.get('telefono2')?.valid && alumnoData.get('telefono2')?.touched && alumnoData.get('telefono2')?.value">
+                    <label for="telefono2">
+                      <i class="bi bi-telephone"></i>
+                      Teléfono Secundario
+                    </label>
+                    <input type="tel" class="admin-form-control" id="telefono2" name="telefono2"
+                      formControlName="telefono2" placeholder="600123456" aria-label="Teléfono secundario" />
+                    @if (alumnoData.get('telefono2')?.errors && alumnoData.get('telefono2')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      @if (alumnoData.get('telefono2')?.errors?.['pattern']) {
+                      <span>Solo números permitidos</span>
+                      }
+                      @if (alumnoData.get('telefono2')?.errors?.['maxlength']) {
+                      <div>Máximo 9 caracteres</div>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Email -->
                 <div class="col-12 col-md-6">
                   <div class="admin-form-field"
                     [class.is-invalid]="alumnoData.get('email')?.errors && alumnoData.get('email')?.touched"
