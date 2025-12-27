@@ -151,6 +151,52 @@
               </div>
             </div>
 
+            <!-- Documentos del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <h4>Documentos del Evento</h4>
+              </div>
+
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="documentosEvento"
+                    name="documentosEvento"
+                    (change)="onDocumentosChange($event)"
+                    multiple
+                    aria-label="Subir documentos del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra archivos o haz clic para seleccionar</p>
+                  <p class="upload-hint">Puedes subir múltiples archivos (PDF, imágenes, documentos)</p>
+                </div>
+
+                <!-- Lista de documentos seleccionados -->
+                @if (documentos.length > 0) {
+                  <div class="documentos-list">
+                    @for (doc of documentos; track doc.name; let i = $index) {
+                      <div class="documento-item">
+                        <i class="bi" [ngClass]="getFileIcon(doc.type)"></i>
+                        <div class="documento-info">
+                          <p class="documento-name">{{ doc.name }}</p>
+                          <p class="documento-size">{{ formatFileSize(doc.size) }}</p>
+                        </div>
+                        <button type="button" class="documento-remove" (click)="removeDocumento(i)">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="admin-form-help">
+                <i class="bi bi-info-circle"></i>
+                <span>Los documentos estarán disponibles públicamente para descarga</span>
+              </div>
+            </div>
+
             <!-- Submit Buttons -->
             <div class="admin-form-button-group">
               <button
