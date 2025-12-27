@@ -22,6 +22,7 @@ public class AlumnoDTO {
 	private String direccion;
 	private String email;
 	private Integer telefono;
+	private Integer telefono2;
 	private Double cuantiaTarifa;
 	private TipoTarifa tipoTarifa;
 	private RolFamiliar rolFamiliar;
@@ -57,7 +58,7 @@ public class AlumnoDTO {
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
-			String nif, String direccion, String email, Integer telefono, Double cuantiaTarifa, TipoTarifa tipoTarifa,
+			String nif, String direccion, String email, Integer telefono, Integer telefono2, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
 			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
 			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
@@ -71,6 +72,7 @@ public class AlumnoDTO {
 		this.direccion = direccion;
 		this.email = email;
 		this.telefono = telefono;
+		this.telefono2 = telefono2;
 		this.cuantiaTarifa = cuantiaTarifa;
 		this.tipoTarifa = tipoTarifa;
 		this.rolFamiliar = rolFamiliar;
@@ -150,6 +152,14 @@ public class AlumnoDTO {
 
 	public void setTelefono(Integer telefono) {
 		this.telefono = telefono;
+	}
+
+	public Integer getTelefono2() {
+		return telefono2;
+	}
+
+	public void setTelefono2(Integer telefono2) {
+		this.telefono2 = telefono2;
 	}
 
 	public TipoTarifa getTipoTarifa() {
@@ -391,11 +401,16 @@ public class AlumnoDTO {
 			telefono = Integer.valueOf(alumno.getTelefono());
 		}
 
+		Integer telefono2 = null;
+		if (alumno.getTelefono2() != null) {
+			telefono2 = Integer.valueOf(alumno.getTelefono2());
+		}
+
 		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
-				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono,
+				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
 				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
 				alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(),
