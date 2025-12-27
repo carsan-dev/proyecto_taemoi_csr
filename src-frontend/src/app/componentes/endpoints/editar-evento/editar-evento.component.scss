@@ -201,3 +201,153 @@
   width: 80px;
   border-radius: 4px;
 }
+
+// ========================================
+// DOCUMENTOS STYLES
+// ========================================
+
+.documentos-existentes,
+.documentos-nuevos {
+  margin-top: 1rem;
+}
+
+.documentos-subtitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.75rem;
+}
+
+.documentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.documento-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  &.documento-existente {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+
+    &:hover {
+      background: #dcfce7;
+    }
+  }
+
+  > .bi {
+    font-size: 1.5rem;
+    color: #64748b;
+
+    &.bi-file-earmark-pdf {
+      color: #dc2626;
+    }
+
+    &.bi-file-earmark-word {
+      color: #2563eb;
+    }
+
+    &.bi-file-earmark-excel {
+      color: #16a34a;
+    }
+
+    &.bi-file-earmark-image {
+      color: #8b5cf6;
+    }
+  }
+
+  .documento-info {
+    flex: 1;
+    min-width: 0;
+
+    .documento-name {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .documento-size {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+  }
+
+  .documento-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .documento-download {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #3b82f6;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+  }
+
+  .documento-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  }
+}
+
+.btn-subir-docs {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

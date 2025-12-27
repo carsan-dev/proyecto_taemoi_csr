@@ -21,7 +21,8 @@ import { CommonModule } from '@angular/common';
 export class CrearEventoComponent implements OnInit {
   eventoForm!: FormGroup;
   imagen: File | null = null;
-  imagePreview: string | null = null; // To store the image preview URL
+  imagePreview: string | null = null;
+  documentos: File[] = [];
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -51,18 +52,16 @@ export class CrearEventoComponent implements OnInit {
       });
       return;
     }
-  
+
     const eventoForm = this.eventoForm.value;
-  
+
     this.endpointsService.crearEvento(eventoForm, this.imagen).subscribe({
-      next: () => {
-        Swal.fire({
-          title: '¡Perfecto!',
-          text: 'Has creado un nuevo evento',
-          icon: 'success',
-          timer: 2000,
-        });
-        this.router.navigate(['/eventosListar']);
+      next: (eventoCreado: any) => {
+        if (this.documentos.length > 0) {
+          this.subirDocumentos(eventoCreado.id);
+        } else {
+          this.mostrarExitoYRedirigir();
+        }
       },
       error: () => {
         Swal.fire({
@@ -72,6 +71,47 @@ export class CrearEventoComponent implements OnInit {
         });
       },
     });
+  }
+
+  private subirDocumentos(eventoId: number): void {
+    let subidos = 0;
+    let errores = 0;
+
+    this.documentos.forEach((doc) => {
+      this.endpointsService.subirDocumentoEvento(eventoId, doc).subscribe({
+        next: () => {
+          subidos++;
+          if (subidos + errores === this.documentos.length) {
+            this.mostrarExitoYRedirigir(errores);
+          }
+        },
+        error: () => {
+          errores++;
+          if (subidos + errores === this.documentos.length) {
+            this.mostrarExitoYRedirigir(errores);
+          }
+        },
+      });
+    });
+  }
+
+  private mostrarExitoYRedirigir(erroresDocumentos: number = 0): void {
+    if (erroresDocumentos > 0) {
+      Swal.fire({
+        title: 'Evento creado',
+        text: `El evento se ha creado, pero ${erroresDocumentos} documento(s) no se pudieron subir.`,
+        icon: 'warning',
+        timer: 3000,
+      });
+    } else {
+      Swal.fire({
+        title: '¡Perfecto!',
+        text: 'Has creado un nuevo evento',
+        icon: 'success',
+        timer: 2000,
+      });
+    }
+    this.router.navigate(['/eventosListar']);
   }
   
 
@@ -101,7 +141,35 @@ export class CrearEventoComponent implements OnInit {
     this.imagePreview = null;
     const fileInput = document.getElementById('fotoEvento') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ''; // Limpiar el valor del input
+      fileInput.value = '';
     }
+  }
+
+  onDocumentosChange(event: any): void {
+    const files: FileList = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+      this.documentos.push(files[i]);
+    }
+    event.target.value = '';
+  }
+
+  removeDocumento(index: number): void {
+    this.documentos.splice(index, 1);
+  }
+
+  getFileIcon(tipo: string): string {
+    if (tipo.includes('pdf')) return 'bi-file-earmark-pdf';
+    if (tipo.includes('word') || tipo.includes('document')) return 'bi-file-earmark-word';
+    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'bi-file-earmark-excel';
+    if (tipo.includes('image')) return 'bi-file-earmark-image';
+    return 'bi-file-earmark';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }
