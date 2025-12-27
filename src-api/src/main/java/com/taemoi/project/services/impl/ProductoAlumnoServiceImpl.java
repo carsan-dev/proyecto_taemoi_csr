@@ -29,6 +29,10 @@ import com.taemoi.project.utils.MensualidadUtils;
 @Service
 public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
+	private static final String TARIFA_COMPETIDOR_TAEKWONDO = "TARIFA COMPETIDOR TAEKWONDO";
+	private static final String TARIFA_COMPETIDOR_KICKBOXING = "TARIFA COMPETIDOR KICKBOXING";
+	private static final Double PRECIO_TARIFA_COMPETIDOR = 20.0;
+
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
 
@@ -265,6 +269,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				productoAlumno.setPagado(false);
 
 				productoAlumnoRepository.save(productoAlumno);
+
+				// Añadir tarifa competidor si es competidor de Taekwondo
+				asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
 			}
 		}
 	}
@@ -309,6 +316,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				productoAlumno.setPagado(false);
 
 				productoAlumnoRepository.save(productoAlumno);
+
+				// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
+				if (deporteEnum == com.taemoi.project.entities.Deporte.TAEKWONDO
+						|| deporteEnum == com.taemoi.project.entities.Deporte.KICKBOXING) {
+					asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
+				}
 			}
 		}
 	}
@@ -328,16 +341,20 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			throw new IllegalStateException("El alumno ya tiene asignada la " + nombreMensualidad);
 		}
 
+		Date fechaAsignacion = new Date();
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(productoMensualidad);
 		productoAlumno.setConcepto(nombreMensualidad);
 		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setFechaAsignacion(fechaAsignacion);
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPagado(false);
 
 		productoAlumnoRepository.save(productoAlumno);
+
+		// Añadir tarifa competidor si es competidor de Taekwondo
+		asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
 	}
 
 	@Override
@@ -504,6 +521,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.filter(ad -> ad.getActivo() != null && ad.getActivo())
 				.collect(Collectors.toList());
 
+		Date fechaAsignacion = new Date();
 		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
 			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
@@ -519,11 +537,18 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				productoAlumno.setAlumnoDeporte(alumnoDeporte);
 				productoAlumno.setConcepto(conceptoCompleto);
 				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-				productoAlumno.setFechaAsignacion(new Date());
+				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
 
 				productoAlumnoRepository.save(productoAlumno);
+
+				// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
+				if ((alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO
+						|| alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING)
+						&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+				}
 			}
 		}
 	}
@@ -562,16 +587,97 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			throw new IllegalStateException("El alumno ya tiene asignada la " + conceptoCompleto);
 		}
 
+		Date fechaAsignacion = new Date();
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(productoMensualidad);
 		productoAlumno.setAlumnoDeporte(alumnoDeporte);
 		productoAlumno.setConcepto(conceptoCompleto);
 		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setFechaAsignacion(fechaAsignacion);
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPagado(false);
 
 		productoAlumnoRepository.save(productoAlumno);
+
+		// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
+		if ((deporteEnum == com.taemoi.project.entities.Deporte.TAEKWONDO
+				|| deporteEnum == com.taemoi.project.entities.Deporte.KICKBOXING)
+				&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+			asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+		}
+	}
+
+	// ===== MÉTODOS AUXILIARES PARA TARIFA COMPETIDOR =====
+
+	/**
+	 * Asigna la tarifa competidor a un alumno si es competidor de Taekwondo o Kickboxing.
+	 * Este método busca los AlumnoDeporte del alumno y asigna la tarifa correspondiente.
+	 */
+	private void asignarTarifaCompetidorSiCorresponde(Alumno alumno, String mesAno, Date fechaAsignacion) {
+		// Buscar si el alumno es competidor de Taekwondo
+		alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumno.getId(),
+				com.taemoi.project.entities.Deporte.TAEKWONDO)
+			.ifPresent(alumnoDeporte -> {
+				if (Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+				}
+			});
+
+		// Buscar si el alumno es competidor de Kickboxing
+		alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumno.getId(),
+				com.taemoi.project.entities.Deporte.KICKBOXING)
+			.ifPresent(alumnoDeporte -> {
+				if (Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+				}
+			});
+	}
+
+	/**
+	 * Asigna la tarifa competidor a un alumno para un deporte específico (Taekwondo o Kickboxing).
+	 */
+	private void asignarTarifaCompetidorPorDeporte(Alumno alumno, AlumnoDeporte alumnoDeporte,
+			String mesAno, Date fechaAsignacion) {
+		// Determinar el nombre del producto según el deporte
+		String nombreProducto;
+		if (alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO) {
+			nombreProducto = TARIFA_COMPETIDOR_TAEKWONDO;
+		} else if (alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING) {
+			nombreProducto = TARIFA_COMPETIDOR_KICKBOXING;
+		} else {
+			// No aplicar tarifa competidor para otros deportes
+			return;
+		}
+
+		String conceptoTarifaCompetidor = nombreProducto + " " +
+				MensualidadUtils.formatearNombreMensualidad(mesAno).replace("MENSUALIDAD ", "");
+
+		// Verificar si ya existe esta tarifa competidor para este mes
+		boolean yaExiste = productoAlumnoRepository.findByAlumnoId(alumno.getId()).stream()
+				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoTarifaCompetidor));
+
+		if (!yaExiste) {
+			Producto productoTarifaCompetidor = productoRepository.findByConcepto(nombreProducto)
+					.orElseGet(() -> {
+						// Crear el producto si no existe
+						Producto nuevo = new Producto();
+						nuevo.setConcepto(nombreProducto);
+						nuevo.setPrecio(PRECIO_TARIFA_COMPETIDOR);
+						return productoRepository.save(nuevo);
+					});
+
+			ProductoAlumno productoAlumno = new ProductoAlumno();
+			productoAlumno.setAlumno(alumno);
+			productoAlumno.setProducto(productoTarifaCompetidor);
+			productoAlumno.setAlumnoDeporte(alumnoDeporte);
+			productoAlumno.setConcepto(conceptoTarifaCompetidor);
+			productoAlumno.setPrecio(PRECIO_TARIFA_COMPETIDOR);
+			productoAlumno.setFechaAsignacion(fechaAsignacion);
+			productoAlumno.setCantidad(1);
+			productoAlumno.setPagado(false);
+
+			productoAlumnoRepository.save(productoAlumno);
+		}
 	}
 }

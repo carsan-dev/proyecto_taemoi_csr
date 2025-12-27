@@ -243,6 +243,8 @@ public class InicializadorDatos implements CommandLineRunner {
 		crearProductoSiNoExiste("MENSUALIDAD", 28.0);
 		crearProductoSiNoExiste("LICENCIA FEDERATIVA", 0.0);
 		crearProductoSiNoExiste("RESERVA DE PLAZA", 10.0);
+		crearProductoSiNoExiste("TARIFA COMPETIDOR TAEKWONDO", 20.0);
+		crearProductoSiNoExiste("TARIFA COMPETIDOR KICKBOXING", 20.0);
 	}
 
 	/**
