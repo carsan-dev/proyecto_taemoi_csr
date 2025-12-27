@@ -641,6 +641,31 @@ export class AlumnoService {
   }
 
   /**
+   * Update all competitor data in a single transaction (avoids race conditions)
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param datosCompetidor Object with all competitor fields
+   */
+  actualizarDatosCompetidor(
+    alumnoId: number,
+    deporte: string,
+    datosCompetidor: {
+      competidor?: boolean;
+      fechaAltaCompeticion?: string;
+      fechaAltaCompetidorInicial?: string;
+      categoria?: string;
+      peso?: number;
+      fechaPeso?: string;
+    }
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/datos-competidor`,
+      datosCompetidor,
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Update the student's initial enrollment date (fechaAltaInicial)
    * This date affects the antiguedad calculation for all sports
    * @deprecated Use actualizarFechaAltaInicialDeporte for per-sport updates
