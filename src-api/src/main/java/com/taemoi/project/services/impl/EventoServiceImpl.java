@@ -13,7 +13,6 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
-import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.repositories.EventoRepository;
 import com.taemoi.project.repositories.ImagenRepository;
 import com.taemoi.project.services.DocumentoService;
@@ -28,9 +27,6 @@ public class EventoServiceImpl implements EventoService {
 
 	@Autowired
 	private ImagenRepository imagenRepository;
-
-	@Autowired
-	private DocumentoRepository documentoRepository;
 
 	@Autowired
 	private ImagenService imagenService;
