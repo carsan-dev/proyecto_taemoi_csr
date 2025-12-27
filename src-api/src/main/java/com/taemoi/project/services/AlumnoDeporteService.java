@@ -272,6 +272,24 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarCategoria(Long alumnoId, Deporte deporte, String categoriaNombre);
 
 	/**
+	 * Actualiza todos los datos de competidor en una sola transacción.
+	 * Evita condiciones de carrera cuando se actualizan múltiples campos.
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a actualizar
+	 * @param competidor Si es competidor o no (puede ser null para no cambiar)
+	 * @param fechaAltaCompeticion Fecha de alta como competidor (puede ser null)
+	 * @param fechaAltaCompetidorInicial Fecha de alta inicial como competidor (puede ser null)
+	 * @param categoriaNombre Nombre de la categoría (puede ser null)
+	 * @param peso Peso del competidor (puede ser null)
+	 * @param fechaPeso Fecha de medición del peso (puede ser null)
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte actualizarDatosCompetidor(Long alumnoId, Deporte deporte, Boolean competidor,
+			java.util.Date fechaAltaCompeticion, java.util.Date fechaAltaCompetidorInicial,
+			String categoriaNombre, Double peso, java.util.Date fechaPeso);
+
+	/**
 	 * Calcula el siguiente grado para un alumno en un deporte específico
 	 *
 	 * @param alumnoDeporte AlumnoDeporte para calcular siguiente grado

@@ -211,6 +211,9 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		alumnoDeporteRepository.save(alumnoDeporte);
 	}
 
+	@Autowired
+	private com.taemoi.project.repositories.ProductoAlumnoRepository productoAlumnoRepository;
+
 	@Override
 	public void removerDeporteDeAlumno(Long alumnoId, Deporte deporte) {
 		// Verificar que el alumno tiene más de un deporte activo
@@ -224,6 +227,14 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Desasociar los ProductoAlumno antes de eliminar (mantiene los productos pero sin referencia al deporte)
+		java.util.List<com.taemoi.project.entities.ProductoAlumno> productosAsociados =
+				productoAlumnoRepository.findByAlumnoDeporteId(alumnoDeporte.getId());
+		for (com.taemoi.project.entities.ProductoAlumno producto : productosAsociados) {
+			producto.setAlumnoDeporte(null);
+			productoAlumnoRepository.save(producto);
+		}
 
 		// Eliminar completamente el registro de la base de datos
 		alumnoDeporteRepository.delete(alumnoDeporte);
@@ -514,6 +525,63 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 		// Update categoria
 		alumnoDeporte.setCategoria(categoria);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarDatosCompetidor(Long alumnoId, Deporte deporte, Boolean competidor,
+			java.util.Date fechaAltaCompeticion, java.util.Date fechaAltaCompetidorInicial,
+			String categoriaNombre, Double peso, java.util.Date fechaPeso) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Validar que tiene licencia antes de marcar como competidor
+		if (Boolean.TRUE.equals(competidor) && !Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
+			throw new IllegalArgumentException(
+					"El alumno debe tener una licencia federativa activa para ser marcado como competidor");
+		}
+
+		// Actualizar todos los campos en una sola transacción
+		if (competidor != null) {
+			alumnoDeporte.setCompetidor(competidor);
+
+			// Auto-assign categoria for Taekwondo competitors based on age if becoming competitor
+			if (Boolean.TRUE.equals(competidor) && deporte == Deporte.TAEKWONDO && categoriaNombre == null) {
+				Alumno alumno = alumnoDeporte.getAlumno();
+				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+				Categoria categoria = asignarCategoriaSegunEdad(edad);
+				alumnoDeporte.setCategoria(categoria);
+			} else if (Boolean.FALSE.equals(competidor)) {
+				// If unmarking as competitor, remove categoria
+				alumnoDeporte.setCategoria(null);
+			}
+		}
+
+		if (fechaAltaCompeticion != null) {
+			alumnoDeporte.setFechaAltaCompeticion(fechaAltaCompeticion);
+		}
+
+		if (fechaAltaCompetidorInicial != null) {
+			alumnoDeporte.setFechaAltaCompetidorInicial(fechaAltaCompetidorInicial);
+		}
+
+		if (categoriaNombre != null && !categoriaNombre.isBlank()) {
+			Categoria categoria = categoriaRepository.findByNombre(categoriaNombre.trim());
+			if (categoria == null) {
+				throw new IllegalArgumentException("Categoría no encontrada: " + categoriaNombre);
+			}
+			alumnoDeporte.setCategoria(categoria);
+		}
+
+		if (peso != null) {
+			alumnoDeporte.setPeso(peso);
+		}
+
+		if (fechaPeso != null) {
+			alumnoDeporte.setFechaPeso(fechaPeso);
+		}
+
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 

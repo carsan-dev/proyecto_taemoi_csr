@@ -1231,6 +1231,59 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Actualiza todos los datos de competidor en una sola transacción.
+	 * Evita condiciones de carrera cuando se actualizan múltiples campos.
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/datos-competidor
+	 * Body: { "competidor": true, "fechaAltaCompeticion": "2025-01-15", ... }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/datos-competidor")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarDatosCompetidor(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, Object> params) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+
+			// Parse optional fields
+			Boolean competidor = params.containsKey("competidor") ? (Boolean) params.get("competidor") : null;
+
+			java.util.Date fechaAltaCompeticion = null;
+			if (params.get("fechaAltaCompeticion") != null && !params.get("fechaAltaCompeticion").toString().isEmpty()) {
+				fechaAltaCompeticion = java.sql.Date.valueOf(params.get("fechaAltaCompeticion").toString());
+			}
+
+			java.util.Date fechaAltaCompetidorInicial = null;
+			if (params.get("fechaAltaCompetidorInicial") != null && !params.get("fechaAltaCompetidorInicial").toString().isEmpty()) {
+				fechaAltaCompetidorInicial = java.sql.Date.valueOf(params.get("fechaAltaCompetidorInicial").toString());
+			}
+
+			String categoriaNombre = params.get("categoria") != null ? params.get("categoria").toString() : null;
+
+			Double peso = null;
+			if (params.get("peso") != null) {
+				peso = Double.valueOf(params.get("peso").toString());
+			}
+
+			java.util.Date fechaPeso = null;
+			if (params.get("fechaPeso") != null && !params.get("fechaPeso").toString().isEmpty()) {
+				fechaPeso = java.sql.Date.valueOf(params.get("fechaPeso").toString());
+			}
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarDatosCompetidor(id, deporteEnum, competidor, fechaAltaCompeticion,
+							fechaAltaCompetidorInicial, categoriaNombre, peso, fechaPeso);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar datos de competidor", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar datos de competidor");
+		}
+	}
+
+	/**
 	 * Actualiza la fecha de alta inicial del alumno (GENERAL - all sports)
 	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
 	 * PUT /api/alumnos/{id}/fecha-alta-inicial
