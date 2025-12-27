@@ -326,6 +326,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
+		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
 		// Asignar AutorizacionWeb, si no está definida por defecto a true
@@ -568,6 +569,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			alumnoExistente.setEmail(alumnoActualizado.getEmail());
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
+			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
 			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
 			alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null ? alumnoActualizado.getRolFamiliar() : RolFamiliar.NINGUNO);
 			alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
