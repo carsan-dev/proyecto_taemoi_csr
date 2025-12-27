@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Evento } from '../../../interfaces/evento';
+import { Documento, Evento } from '../../../interfaces/evento';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
 import { finalize } from 'rxjs/operators';
@@ -28,6 +28,9 @@ export class EditarEventoComponent implements OnInit {
   evento: Evento | null = null;
   imagenPreview: string | null = null;
   cargando: boolean = true;
+  documentosExistentes: Documento[] = [];
+  documentosNuevos: File[] = [];
+  subiendoDocumento: boolean = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -63,10 +66,11 @@ export class EditarEventoComponent implements OnInit {
             descripcion: evento.descripcion,
           });
 
-          // Use `ruta` for image preview, and fallback to default image
           this.imagenPreview = evento.fotoEvento?.url
             ? evento.fotoEvento.url
             : '../../../../assets/media/default.webp';
+
+          this.documentosExistentes = evento.documentos || [];
         },
         error: () => {
           this.cargando = false;
@@ -148,5 +152,123 @@ export class EditarEventoComponent implements OnInit {
 
   volver() {
     this.location.back();
+  }
+
+  // ==================== MÉTODOS DE DOCUMENTOS ====================
+
+  onDocumentosChange(event: any): void {
+    const files: FileList = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+      this.documentosNuevos.push(files[i]);
+    }
+    event.target.value = '';
+  }
+
+  removeDocumentoNuevo(index: number): void {
+    this.documentosNuevos.splice(index, 1);
+  }
+
+  subirDocumentosNuevos(): void {
+    if (this.documentosNuevos.length === 0) return;
+
+    this.subiendoDocumento = true;
+    let subidos = 0;
+    let errores = 0;
+    const total = this.documentosNuevos.length;
+
+    this.documentosNuevos.forEach((doc) => {
+      this.endpointsService.subirDocumentoEvento(this.eventoId, doc).subscribe({
+        next: (documentoGuardado: Documento) => {
+          subidos++;
+          this.documentosExistentes.push(documentoGuardado);
+          if (subidos + errores === total) {
+            this.finalizarSubida(subidos, errores);
+          }
+        },
+        error: () => {
+          errores++;
+          if (subidos + errores === total) {
+            this.finalizarSubida(subidos, errores);
+          }
+        },
+      });
+    });
+  }
+
+  private finalizarSubida(subidos: number, errores: number): void {
+    this.subiendoDocumento = false;
+    this.documentosNuevos = [];
+
+    if (errores > 0) {
+      Swal.fire({
+        title: 'Subida parcial',
+        text: `${subidos} documento(s) subido(s), ${errores} error(es).`,
+        icon: 'warning',
+        timer: 3000,
+      });
+    } else {
+      Swal.fire({
+        title: 'Documentos subidos',
+        text: `${subidos} documento(s) subido(s) correctamente.`,
+        icon: 'success',
+        timer: 2000,
+      });
+    }
+  }
+
+  eliminarDocumentoExistente(documento: Documento): void {
+    Swal.fire({
+      title: '¿Eliminar documento?',
+      text: `¿Estás seguro de eliminar "${documento.nombre}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarDocumentoEvento(this.eventoId, documento.id).subscribe({
+          next: () => {
+            this.documentosExistentes = this.documentosExistentes.filter(
+              (d) => d.id !== documento.id
+            );
+            Swal.fire({
+              title: 'Eliminado',
+              text: 'El documento ha sido eliminado.',
+              icon: 'success',
+              timer: 2000,
+            });
+          },
+          error: () => {
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo eliminar el documento.',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
+  }
+
+  descargarDocumento(documento: Documento): void {
+    window.open(documento.url, '_blank');
+  }
+
+  getFileIcon(tipo: string): string {
+    if (tipo.includes('pdf')) return 'bi-file-earmark-pdf';
+    if (tipo.includes('word') || tipo.includes('document')) return 'bi-file-earmark-word';
+    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'bi-file-earmark-excel';
+    if (tipo.includes('image')) return 'bi-file-earmark-image';
+    return 'bi-file-earmark';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

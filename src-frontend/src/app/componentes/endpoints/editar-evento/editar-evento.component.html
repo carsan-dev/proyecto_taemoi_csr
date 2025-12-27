@@ -154,6 +154,94 @@
               </div>
             </div>
 
+            <!-- Documentos del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <h4>Documentos del Evento</h4>
+              </div>
+
+              <!-- Documentos existentes -->
+              @if (documentosExistentes.length > 0) {
+              <div class="documentos-existentes">
+                <h5 class="documentos-subtitle">Documentos guardados</h5>
+                <div class="documentos-list">
+                  @for (doc of documentosExistentes; track doc.id) {
+                  <div class="documento-item documento-existente">
+                    <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
+                    <div class="documento-info">
+                      <p class="documento-name">{{ doc.nombre }}</p>
+                    </div>
+                    <div class="documento-actions">
+                      <button type="button" class="documento-download" (click)="descargarDocumento(doc)" title="Descargar">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button type="button" class="documento-remove" (click)="eliminarDocumentoExistente(doc)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  }
+                </div>
+              </div>
+              }
+
+              <!-- Subir nuevos documentos -->
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="documentosEvento"
+                    name="documentosEvento"
+                    (change)="onDocumentosChange($event)"
+                    multiple
+                    aria-label="Subir documentos del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra archivos o haz clic para seleccionar</p>
+                  <p class="upload-hint">Puedes subir múltiples archivos (PDF, imágenes, documentos)</p>
+                </div>
+
+                <!-- Lista de documentos nuevos por subir -->
+                @if (documentosNuevos.length > 0) {
+                <div class="documentos-nuevos">
+                  <h5 class="documentos-subtitle">Documentos por subir</h5>
+                  <div class="documentos-list">
+                    @for (doc of documentosNuevos; track doc.name; let i = $index) {
+                    <div class="documento-item documento-nuevo">
+                      <i class="bi" [ngClass]="getFileIcon(doc.type)"></i>
+                      <div class="documento-info">
+                        <p class="documento-name">{{ doc.name }}</p>
+                        <p class="documento-size">{{ formatFileSize(doc.size) }}</p>
+                      </div>
+                      <button type="button" class="documento-remove" (click)="removeDocumentoNuevo(i)">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="admin-btn admin-btn-secondary btn-subir-docs"
+                    (click)="subirDocumentosNuevos()"
+                    [disabled]="subiendoDocumento">
+                    @if (subiendoDocumento) {
+                    <i class="bi bi-arrow-repeat spin"></i>
+                    <span>Subiendo...</span>
+                    } @else {
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>Subir {{ documentosNuevos.length }} documento(s)</span>
+                    }
+                  </button>
+                </div>
+                }
+              </div>
+
+              <div class="admin-form-help">
+                <i class="bi bi-info-circle"></i>
+                <span>Los documentos estarán disponibles públicamente para descarga</span>
+              </div>
+            </div>
+
             <!-- Submit Buttons -->
             <div class="admin-form-button-group">
               <button
