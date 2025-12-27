@@ -839,79 +839,119 @@
               </div>
               <div class="info-card-body">
                 <!-- Nombre -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('nombre')">
                   <label for="nombre">
                     <i class="bi bi-person"></i>
                     Nombre
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="text" id="nombre" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('nombre')"
                            [value]="getDisplayedBasicInfo('nombre')"
                            (input)="onBasicInfoChange('nombre', $event)"
                            placeholder="Nombre del alumno" />
+                    @if (hasBasicInfoError('nombre')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('nombre') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">{{ alumno.nombre }}</span>
                   }
                 </div>
 
                 <!-- Apellidos -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('apellidos')">
                   <label for="apellidos">
                     <i class="bi bi-person"></i>
                     Apellidos
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="text" id="apellidos" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('apellidos')"
                            [value]="getDisplayedBasicInfo('apellidos')"
                            (input)="onBasicInfoChange('apellidos', $event)"
                            placeholder="Apellidos del alumno" />
+                    @if (hasBasicInfoError('apellidos')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('apellidos') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">{{ alumno.apellidos }}</span>
                   }
                 </div>
 
                 <!-- Dirección -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('direccion')">
                   <label for="direccion">
                     <i class="bi bi-house"></i>
                     Dirección
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="text" id="direccion" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('direccion')"
                            [value]="getDisplayedBasicInfo('direccion')"
                            (input)="onBasicInfoChange('direccion', $event)"
                            placeholder="Dirección completa" />
+                    @if (hasBasicInfoError('direccion')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('direccion') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">{{ alumno.direccion }}</span>
                   }
                 </div>
 
                 <!-- Fecha de Nacimiento -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('fechaNacimiento')">
                   <label for="fechaNacimiento">
                     <i class="bi bi-calendar"></i>
                     Fecha de Nacimiento
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="date" id="fechaNacimiento" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('fechaNacimiento')"
                            [value]="alumno.fechaNacimiento | date:'yyyy-MM-dd'"
                            (change)="onBasicInfoChange('fechaNacimiento', $event)" />
+                    @if (hasBasicInfoError('fechaNacimiento')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('fechaNacimiento') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">{{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
                   }
                 </div>
 
                 <!-- DNI -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('nif')">
                   <label for="nif">
                     <i class="bi bi-card-text"></i>
                     DNI
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="text" id="nif" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('nif')"
                            [value]="getDisplayedBasicInfo('nif')"
                            (input)="onBasicInfoChange('nif', $event)"
                            placeholder="12345678A" />
+                    @if (hasBasicInfoError('nif')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('nif') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">{{ alumno.nif }}</span>
                   }
@@ -1043,16 +1083,24 @@
               </div>
               <div class="info-card-body">
                 <!-- Email -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('email')">
                   <label for="email">
                     <i class="bi bi-envelope-fill"></i>
                     Email
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="email" id="email" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('email')"
                            [value]="getDisplayedBasicInfo('email')"
                            (input)="onBasicInfoChange('email', $event)"
                            placeholder="correo@ejemplo.com" />
+                    @if (hasBasicInfoError('email')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('email') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">
                       <a [href]="'mailto:' + alumno.email" class="contact-link">{{ alumno.email }}</a>
@@ -1061,16 +1109,24 @@
                 </div>
 
                 <!-- Teléfono Principal -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('telefono')">
                   <label for="telefono">
                     <i class="bi bi-telephone-fill"></i>
                     Teléfono Principal
+                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="tel" id="telefono" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('telefono')"
                            [value]="getDisplayedBasicInfo('telefono')"
                            (input)="onBasicInfoChange('telefono', $event)"
                            placeholder="123456789" />
+                    @if (hasBasicInfoError('telefono')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('telefono') }}
+                      </div>
+                    }
                   } @else {
                     <span class="info-value">
                       <a [href]="'tel:' + alumno.telefono" class="contact-link">{{ alumno.telefono }}</a>
@@ -1079,16 +1135,23 @@
                 </div>
 
                 <!-- Teléfono Secundario -->
-                <div class="admin-form-field mb-3">
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('telefono2')">
                   <label for="telefono2">
                     <i class="bi bi-telephone"></i>
                     Teléfono Secundario
                   </label>
                   @if (editingBasicInfo) {
                     <input type="tel" id="telefono2" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('telefono2')"
                            [value]="getDisplayedBasicInfo('telefono2')"
                            (input)="onBasicInfoChange('telefono2', $event)"
                            placeholder="123456789" />
+                    @if (hasBasicInfoError('telefono2')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('telefono2') }}
+                      </div>
+                    }
                   } @else {
                     @if (alumno.telefono2) {
                       <span class="info-value">
@@ -1255,11 +1318,16 @@
 
         <!-- Floating Action Bar for Editing -->
         @if (editingBasicInfo && hasPendingBasicInfoChanges()) {
-          <div class="floating-action-bar">
+          <div class="floating-action-bar" [class.has-errors]="hasBasicInfoErrors()">
             <div class="floating-action-content">
               <span class="floating-action-text">
-                <i class="bi bi-pencil-square"></i>
-                Tienes cambios sin guardar
+                @if (hasBasicInfoErrors()) {
+                  <i class="bi bi-exclamation-triangle text-warning"></i>
+                  Corrige los errores antes de guardar
+                } @else {
+                  <i class="bi bi-pencil-square"></i>
+                  Tienes cambios sin guardar
+                }
               </span>
               <div class="floating-action-buttons">
                 <button type="button" class="admin-btn admin-btn-secondary"
@@ -1268,6 +1336,7 @@
                   <span>Cancelar</span>
                 </button>
                 <button type="button" class="admin-btn admin-btn-success"
+                        [disabled]="hasBasicInfoErrors()"
                         (click)="applyBasicInfoChanges()">
                   <i class="bi bi-check-circle"></i>
                   <span>Guardar Cambios</span>
