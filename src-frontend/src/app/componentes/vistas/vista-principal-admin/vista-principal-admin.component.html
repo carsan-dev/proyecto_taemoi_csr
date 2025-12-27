@@ -154,7 +154,7 @@
     <div class="dashboard-card events-card">
       <div class="card-header">
         <i class="bi bi-calendar-week-fill"></i>
-        <h3>Próximos Eventos</h3>
+        <h3>Eventos Activos</h3>
         <a [routerLink]="['/eventosListar']" class="card-action">
           Ver todos <i class="bi bi-arrow-right"></i>
         </a>
@@ -166,15 +166,11 @@
           <div class="events-list">
             @for (evento of stats.proximosEventos; track evento.id) {
               <div class="event-item">
-                <div class="event-date">
-                  <span class="event-day">{{ formatDate(evento.fecha).split(' ')[0] }}</span>
-                  <span class="event-month">{{ formatDate(evento.fecha).split(' ')[1] }}</span>
-                </div>
+                <img class="event-thumbnail"
+                     [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+                     [alt]="evento.titulo">
                 <div class="event-info">
                   <span class="event-title">{{ evento.titulo }}</span>
-                  <span class="event-location" *ngIf="evento.ubicacion">
-                    <i class="bi bi-geo-alt"></i> {{ evento.ubicacion }}
-                  </span>
                 </div>
               </div>
             }
@@ -182,7 +178,7 @@
         } @else {
           <div class="no-data">
             <i class="bi bi-calendar-x"></i>
-            <span>No hay eventos próximos</span>
+            <span>No hay eventos activos</span>
           </div>
         }
       </div>
