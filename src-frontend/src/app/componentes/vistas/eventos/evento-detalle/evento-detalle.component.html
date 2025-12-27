@@ -53,6 +53,27 @@
             </button>
           </div>
         </div>
+
+        <!-- Documentos del Evento -->
+        @if (evento.documentos && evento.documentos.length > 0) {
+        <div class="documents-card">
+          <div class="card-header">
+            <i class="bi bi-file-earmark-arrow-down"></i>
+            <h2>Documentos</h2>
+          </div>
+          <div class="card-body">
+            <div class="documents-list">
+              @for (doc of evento.documentos; track doc.id) {
+              <button class="document-item" (click)="descargarDocumento(doc.url)">
+                <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
+                <span class="document-name">{{ doc.nombre }}</span>
+                <i class="bi bi-download download-icon"></i>
+              </button>
+              }
+            </div>
+          </div>
+        </div>
+        }
       </div>
     </div>
   </div>
