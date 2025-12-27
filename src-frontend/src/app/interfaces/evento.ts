@@ -1,3 +1,11 @@
+export interface Documento {
+  id: number;
+  nombre: string;
+  tipo: string;
+  url: string;
+  ruta: string;
+}
+
 export interface Evento {
   id: number;
   titulo: string;
@@ -9,4 +17,5 @@ export interface Evento {
     nombre: string;
     tipo: string;
   } | null;
+  documentos?: Documento[];
 }
