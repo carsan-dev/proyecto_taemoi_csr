@@ -172,11 +172,9 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         this.stats.totalEventos = eventos.length;
         this.stats.eventosVisibles = eventos.filter((e: any) => e.visible).length;
 
-        // Get upcoming events (next 5 events sorted by date)
-        const now = new Date();
+        // Get visible events (up to 5)
         this.stats.proximosEventos = eventos
-          .filter((e: any) => new Date(e.fecha) >= now && e.visible)
-          .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+          .filter((e: any) => e.visible)
           .slice(0, 5);
 
         this.cargandoEventos = false;
