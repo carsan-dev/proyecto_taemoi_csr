@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.config.FileUtils;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
+import com.taemoi.project.entities.Evento;
 import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.services.DocumentoService;
 import org.slf4j.Logger;
@@ -107,6 +108,55 @@ public class DocumentoServiceImpl implements DocumentoService {
 	}
 
 	@Override
+	public Documento guardarDocumentoEvento(Evento evento, MultipartFile archivo) throws IOException {
+		String os = System.getProperty("os.name").toLowerCase();
+		String directorioDocumentos;
+
+		if (os.contains("win")) {
+			String userProfile = System.getenv("USERPROFILE");
+			if (userProfile == null) {
+				userProfile = System.getProperty("user.home");
+			}
+			directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+		} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+			directorioDocumentos = directorioDocumentosLinux;
+		} else {
+			throw new IllegalStateException("Sistema operativo no soportado: " + os);
+		}
+
+		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Eventos");
+		if (!Files.exists(rutaBaseDocumentos)) {
+			Files.createDirectories(rutaBaseDocumentos);
+		}
+
+		String tituloLimpio = FileUtils.limpiarNombreArchivo(evento.getTitulo());
+		String carpetaEvento = evento.getId() + "_" + tituloLimpio;
+		Path rutaCarpetaEvento = rutaBaseDocumentos.resolve(carpetaEvento);
+
+		if (!Files.exists(rutaCarpetaEvento)) {
+			Files.createDirectories(rutaCarpetaEvento);
+		}
+
+		String nombreOriginalArchivo = archivo.getOriginalFilename();
+		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
+
+		Path rutaArchivoFinal = rutaCarpetaEvento.resolve(nombreOriginalLimpio);
+		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
+
+		String urlAcceso = "%s/documentos/Documentos_Eventos/%s/%s".formatted(baseUrl, carpetaEvento, nombreOriginalLimpio);
+		String rutaRelativa = "Documentos_Eventos/" + carpetaEvento + "/" + nombreOriginalLimpio;
+
+		Documento documento = new Documento();
+		documento.setNombre(nombreOriginalLimpio);
+		documento.setTipo(archivo.getContentType());
+		documento.setUrl(urlAcceso);
+		documento.setRuta(rutaRelativa);
+		documento.setEvento(evento);
+
+		return documentoRepository.save(documento);
+	}
+
+	@Override
 	public void eliminarDocumento(Documento documento) {
 		if (documento != null && documento.getRuta() != null) {
 			String rutaDocumento = documento.getRuta();
@@ -169,20 +219,33 @@ public class DocumentoServiceImpl implements DocumentoService {
 				List<Documento> documentosRestantes = documentoRepository.findByAlumnoId(alumno.getId());
 				if (documentosRestantes.isEmpty()) {
 					Path carpetaAlumno = rutaArchivo.getParent();
-					try {
-						if (Files.isDirectory(carpetaAlumno)) {
-							try (Stream<Path> filesInDir = Files.list(carpetaAlumno)) {
-								boolean estaVacia = filesInDir.findAny().isEmpty();
-								if (estaVacia) {
-									Files.delete(carpetaAlumno);
-								}
-							}
-						}
-					} catch (IOException e) {
-						throw new RuntimeException("Error al eliminar la carpeta del alumno: " + carpetaAlumno, e);
+					limpiarCarpetaVacia(carpetaAlumno, "alumno");
+				}
+			}
+
+			Evento evento = documento.getEvento();
+			if (evento != null) {
+				List<Documento> documentosRestantes = documentoRepository.findByEventoId(evento.getId());
+				if (documentosRestantes.isEmpty()) {
+					Path carpetaEvento = rutaArchivo.getParent();
+					limpiarCarpetaVacia(carpetaEvento, "evento");
+				}
+			}
+		}
+	}
+
+	private void limpiarCarpetaVacia(Path carpeta, String tipo) {
+		try {
+			if (Files.isDirectory(carpeta)) {
+				try (Stream<Path> filesInDir = Files.list(carpeta)) {
+					boolean estaVacia = filesInDir.findAny().isEmpty();
+					if (estaVacia) {
+						Files.delete(carpeta);
 					}
 				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException("Error al eliminar la carpeta del " + tipo + ": " + carpeta, e);
 		}
 	}
 
