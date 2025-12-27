@@ -150,6 +150,18 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   } = {};
   editingBasicInfo: boolean = false;
 
+  // Validation errors for basic info fields
+  basicInfoErrors: {
+    nombre?: string;
+    apellidos?: string;
+    direccion?: string;
+    fechaNacimiento?: string;
+    nif?: string;
+    email?: string;
+    telefono?: string;
+    telefono2?: string;
+  } = {};
+
   // Categorias for Taekwondo competitors (must match database categoria.nombre values)
   categorias = [
     'Infantil',
@@ -3388,6 +3400,91 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     (this.pendingBasicInfoChanges as any)[field] = value;
+    this.validateBasicInfoField(field, value);
+  }
+
+  /**
+   * Validate a basic info field
+   */
+  validateBasicInfoField(field: string, value: any): void {
+    // Clear previous error
+    delete (this.basicInfoErrors as any)[field];
+
+    switch (field) {
+      case 'nombre':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.nombre = 'El nombre es obligatorio';
+        }
+        break;
+      case 'apellidos':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.apellidos = 'Los apellidos son obligatorios';
+        }
+        break;
+      case 'direccion':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.direccion = 'La dirección es obligatoria';
+        }
+        break;
+      case 'fechaNacimiento':
+        if (!value) {
+          this.basicInfoErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
+        }
+        break;
+      case 'nif':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.nif = 'El DNI es obligatorio';
+        } else if (!/^[0-9]{8}[A-Za-z]$/.test(value)) {
+          this.basicInfoErrors.nif = 'Formato inválido (8 números y una letra)';
+        }
+        break;
+      case 'email':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.email = 'El email es obligatorio';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          this.basicInfoErrors.email = 'Formato de email inválido';
+        }
+        break;
+      case 'telefono':
+        if (!value || value.trim() === '') {
+          this.basicInfoErrors.telefono = 'El teléfono es obligatorio';
+        } else if (!/^[0-9]+$/.test(value)) {
+          this.basicInfoErrors.telefono = 'Solo se permiten números';
+        } else if (value.length > 9) {
+          this.basicInfoErrors.telefono = 'Máximo 9 dígitos';
+        }
+        break;
+      case 'telefono2':
+        if (value && value.trim() !== '') {
+          if (!/^[0-9]+$/.test(value)) {
+            this.basicInfoErrors.telefono2 = 'Solo se permiten números';
+          } else if (value.length > 9) {
+            this.basicInfoErrors.telefono2 = 'Máximo 9 dígitos';
+          }
+        }
+        break;
+    }
+  }
+
+  /**
+   * Check if a basic info field has an error
+   */
+  hasBasicInfoError(field: string): boolean {
+    return !!(this.basicInfoErrors as any)[field];
+  }
+
+  /**
+   * Get basic info field error message
+   */
+  getBasicInfoError(field: string): string {
+    return (this.basicInfoErrors as any)[field] || '';
+  }
+
+  /**
+   * Check if there are any validation errors
+   */
+  hasBasicInfoErrors(): boolean {
+    return Object.keys(this.basicInfoErrors).length > 0;
   }
 
   /**
@@ -3402,6 +3499,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   applyBasicInfoChanges(): void {
     if (!this.hasPendingBasicInfoChanges() || !this.alumnoId) {
+      return;
+    }
+
+    // Validate all pending changes before applying
+    if (this.hasBasicInfoErrors()) {
+      showErrorToast('Por favor, corrige los errores antes de guardar');
       return;
     }
 
@@ -3461,6 +3564,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   cancelBasicInfoChanges(): void {
     this.pendingBasicInfoChanges = {};
+    this.basicInfoErrors = {};
     this.editingBasicInfo = false;
   }
 }
