@@ -328,6 +328,112 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
   }
+
+  // Documents Card
+  .documents-card {
+    background: $text-light;
+    border-radius: 20px;
+    box-shadow: $shadow-md;
+    overflow: hidden;
+    margin-top: 2rem;
+    transition: $transition;
+
+    &:hover {
+      box-shadow: $shadow-lg;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      i {
+        font-size: 1.75rem;
+        color: $text-light;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $text-light;
+        margin: 0;
+      }
+    }
+
+    .card-body {
+      padding: 1.5rem 2rem;
+    }
+
+    .documents-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .document-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: $transition;
+      text-align: left;
+
+      &:hover {
+        background: #f0fdf4;
+        border-color: #86efac;
+        transform: translateX(5px);
+
+        .download-icon {
+          color: #059669;
+          transform: translateY(2px);
+        }
+      }
+
+      > .bi:first-child {
+        font-size: 1.5rem;
+        color: #64748b;
+
+        &.bi-file-earmark-pdf {
+          color: #dc2626;
+        }
+
+        &.bi-file-earmark-word {
+          color: #2563eb;
+        }
+
+        &.bi-file-earmark-excel {
+          color: #16a34a;
+        }
+
+        &.bi-file-earmark-image {
+          color: #8b5cf6;
+        }
+      }
+
+      .document-name {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        color: $text-dark;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .download-icon {
+        font-size: 1.25rem;
+        color: #94a3b8;
+        transition: $transition;
+      }
+    }
+  }
 }
 
 // ========================================

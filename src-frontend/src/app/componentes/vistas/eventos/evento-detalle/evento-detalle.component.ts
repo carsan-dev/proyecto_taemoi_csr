@@ -55,6 +55,18 @@ export class EventoDetalleComponent implements OnInit {
 
   cerrarModalImagen(): void {
     this.modalImagenAbierto = false;
-    document.body.style.overflow = ''; // Restaurar scroll del body
+    document.body.style.overflow = '';
+  }
+
+  getFileIcon(tipo: string): string {
+    if (tipo.includes('pdf')) return 'bi-file-earmark-pdf';
+    if (tipo.includes('word') || tipo.includes('document')) return 'bi-file-earmark-word';
+    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'bi-file-earmark-excel';
+    if (tipo.includes('image')) return 'bi-file-earmark-image';
+    return 'bi-file-earmark';
+  }
+
+  descargarDocumento(url: string): void {
+    window.open(url, '_blank');
   }
 }
