@@ -26,4 +26,6 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 
 	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumno a WHERE pa.concepto = :concepto AND (a.deporte = com.taemoi.project.entities.Deporte.TAEKWONDO OR a.deporte = com.taemoi.project.entities.Deporte.KICKBOXING) ORDER BY a.nombre, a.apellidos")
 	List<ProductoAlumno> findMensualidadByConceptoAndDeportes(String concepto);
+
+	List<ProductoAlumno> findByAlumnoDeporteId(Long alumnoDeporteId);
 }
