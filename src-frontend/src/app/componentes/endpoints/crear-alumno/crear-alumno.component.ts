@@ -106,6 +106,13 @@ export class CrearAlumnoComponent implements OnInit {
           Validators.maxLength(9),
         ],
       ],
+      telefono2: [
+        '',
+        [
+          Validators.pattern('^[0-9]+$'),
+          Validators.maxLength(9),
+        ],
+      ],
       email: ['', [Validators.required, Validators.email]],
       autorizacionWeb: [true, Validators.required],
       rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],

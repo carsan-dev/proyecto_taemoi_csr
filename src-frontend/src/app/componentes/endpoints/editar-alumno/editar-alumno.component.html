@@ -1060,11 +1060,11 @@
                   }
                 </div>
 
-                <!-- Teléfono -->
+                <!-- Teléfono Principal -->
                 <div class="admin-form-field mb-3">
                   <label for="telefono">
                     <i class="bi bi-telephone-fill"></i>
-                    Teléfono
+                    Teléfono Principal
                   </label>
                   @if (editingBasicInfo) {
                     <input type="tel" id="telefono" class="admin-form-control"
@@ -1075,6 +1075,28 @@
                     <span class="info-value">
                       <a [href]="'tel:' + alumno.telefono" class="contact-link">{{ alumno.telefono }}</a>
                     </span>
+                  }
+                </div>
+
+                <!-- Teléfono Secundario -->
+                <div class="admin-form-field mb-3">
+                  <label for="telefono2">
+                    <i class="bi bi-telephone"></i>
+                    Teléfono Secundario
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="tel" id="telefono2" class="admin-form-control"
+                           [value]="getDisplayedBasicInfo('telefono2')"
+                           (input)="onBasicInfoChange('telefono2', $event)"
+                           placeholder="123456789" />
+                  } @else {
+                    @if (alumno.telefono2) {
+                      <span class="info-value">
+                        <a [href]="'tel:' + alumno.telefono2" class="contact-link">{{ alumno.telefono2 }}</a>
+                      </span>
+                    } @else {
+                      <span class="info-value text-muted">No establecido</span>
+                    }
                   }
                 </div>
               </div>
