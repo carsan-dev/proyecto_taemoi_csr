@@ -46,6 +46,28 @@
           <div class="card-body">
             <p class="description-text">{{ evento.descripcion }}</p>
           </div>
+
+          <!-- Documentos Adjuntos (integrados en la tarjeta) -->
+          @if (evento.documentos && evento.documentos.length > 0) {
+          <div class="attachments-section">
+            <div class="attachments-header">
+              <i class="bi bi-paperclip"></i>
+              <span>Documentos adjuntos</span>
+            </div>
+            <div class="attachments-list">
+              @for (doc of evento.documentos; track doc.id) {
+              <button class="attachment-item" (click)="descargarDocumento(doc.url)">
+                <div class="attachment-icon">
+                  <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
+                </div>
+                <span class="attachment-name">{{ doc.nombre }}</span>
+                <i class="bi bi-download attachment-download"></i>
+              </button>
+              }
+            </div>
+          </div>
+          }
+
           <div class="card-footer">
             <button class="action-button primary" routerLink="/eventos">
               <i class="bi bi-arrow-left-circle"></i>
@@ -53,27 +75,6 @@
             </button>
           </div>
         </div>
-
-        <!-- Documentos del Evento -->
-        @if (evento.documentos && evento.documentos.length > 0) {
-        <div class="documents-card">
-          <div class="card-header">
-            <i class="bi bi-file-earmark-arrow-down"></i>
-            <h2>Documentos</h2>
-          </div>
-          <div class="card-body">
-            <div class="documents-list">
-              @for (doc of evento.documentos; track doc.id) {
-              <button class="document-item" (click)="descargarDocumento(doc.url)">
-                <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
-                <span class="document-name">{{ doc.nombre }}</span>
-                <i class="bi bi-download download-icon"></i>
-              </button>
-              }
-            </div>
-          </div>
-        </div>
-        }
       </div>
     </div>
   </div>
