@@ -9,11 +9,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
+import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.repositories.EventoRepository;
 import com.taemoi.project.repositories.ImagenRepository;
+import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
 
@@ -27,7 +30,13 @@ public class EventoServiceImpl implements EventoService {
 	private ImagenRepository imagenRepository;
 
 	@Autowired
+	private DocumentoRepository documentoRepository;
+
+	@Autowired
 	private ImagenService imagenService;
+
+	@Autowired
+	private DocumentoService documentoService;
 
 	@Override
 	public List<Evento> obtenerTodosLosEventos() {
@@ -149,6 +158,50 @@ public class EventoServiceImpl implements EventoService {
 
 		evento.setVisible(!Boolean.TRUE.equals(evento.getVisible()));
 		eventoRepository.save(evento);
+	}
+
+	@Override
+	public Documento agregarDocumentoAEvento(@NonNull Long eventoId, MultipartFile archivo) throws IOException {
+		Evento evento = eventoRepository.findById(eventoId)
+				.orElseThrow(() -> new EventoNoEncontradoException("No se encontró el evento con ID: " + eventoId));
+
+		Documento documento = documentoService.guardarDocumentoEvento(evento, archivo);
+		evento.getDocumentos().add(documento);
+		eventoRepository.save(evento);
+
+		return documento;
+	}
+
+	@Override
+	public List<Documento> obtenerDocumentosEvento(@NonNull Long eventoId) {
+		Evento evento = eventoRepository.findById(eventoId)
+				.orElseThrow(() -> new EventoNoEncontradoException("No se encontró el evento con ID: " + eventoId));
+		return evento.getDocumentos();
+	}
+
+	@Override
+	public void eliminarDocumentoDeEvento(@NonNull Long eventoId, @NonNull Long documentoId) {
+		Documento documento = obtenerDocumentoDeEvento(eventoId, documentoId);
+		Evento evento = documento.getEvento();
+
+		documentoService.eliminarDocumento(documento);
+
+		if (evento != null) {
+			evento.getDocumentos().remove(documento);
+			eventoRepository.save(evento);
+		}
+	}
+
+	@Override
+	public Documento obtenerDocumentoDeEvento(@NonNull Long eventoId, @NonNull Long documentoId) {
+		Evento evento = eventoRepository.findById(eventoId)
+				.orElseThrow(() -> new EventoNoEncontradoException("No se encontró el evento con ID: " + eventoId));
+
+		return evento.getDocumentos().stream()
+				.filter(doc -> doc.getId().equals(documentoId))
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException(
+						"El documento con ID " + documentoId + " no pertenece al evento con ID " + eventoId));
 	}
 
 }

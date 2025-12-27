@@ -143,7 +143,7 @@ public class Alumno {
 	private Imagen fotoAlumno;
 	
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
-	@JsonManagedReference
+	@JsonManagedReference("alumno-documentos")
 	private List<Documento> documentos = new ArrayList<>();
 
 	// DEPRECATED: Mantenido temporalmente para migración y rollback

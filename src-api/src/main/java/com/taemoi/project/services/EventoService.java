@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.lang.NonNull;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 
@@ -26,4 +27,12 @@ public interface EventoService {
 	void eliminarImagenEvento(@NonNull Long id);
 
 	void toggleVisibilidad(@NonNull Long id);
+
+	Documento agregarDocumentoAEvento(@NonNull Long eventoId, MultipartFile archivo) throws IOException;
+
+	List<Documento> obtenerDocumentosEvento(@NonNull Long eventoId);
+
+	void eliminarDocumentoDeEvento(@NonNull Long eventoId, @NonNull Long documentoId);
+
+	Documento obtenerDocumentoDeEvento(@NonNull Long eventoId, @NonNull Long documentoId);
 }
