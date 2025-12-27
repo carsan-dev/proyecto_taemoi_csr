@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
+import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
 
@@ -37,6 +41,9 @@ public class EventoController {
 
 	@Autowired
 	private ImagenService imagenService;
+
+	@Autowired
+	private DocumentoService documentoService;
 
 	@GetMapping
 	public List<Evento> obtenerEventosVisibles() {
@@ -139,6 +146,72 @@ public class EventoController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(Map.of("error", "Error al cambiar la visibilidad del evento: " + e.getMessage()));
+		}
+	}
+
+	// ==================== ENDPOINTS DE DOCUMENTOS ====================
+
+	@GetMapping("/{eventoId}/documentos")
+	public ResponseEntity<List<Documento>> obtenerDocumentosDelEvento(@PathVariable @NonNull Long eventoId) {
+		try {
+			List<Documento> documentos = eventoService.obtenerDocumentosEvento(eventoId);
+			return ResponseEntity.ok(documentos);
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@GetMapping("/{eventoId}/documentos/{documentoId}/descargar")
+	public ResponseEntity<Resource> descargarDocumento(
+			@PathVariable @NonNull Long eventoId,
+			@PathVariable @NonNull Long documentoId) {
+		try {
+			Documento documento = eventoService.obtenerDocumentoDeEvento(eventoId, documentoId);
+			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+			return ResponseEntity.ok()
+					.contentType(MediaType.parseMediaType(documento.getTipo()))
+					.header(HttpHeaders.CONTENT_DISPOSITION,
+							"attachment; filename=\"" + documento.getNombre() + "\"")
+					.body(recurso);
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@PostMapping("/{eventoId}/documentos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> subirDocumento(
+			@PathVariable @NonNull Long eventoId,
+			@RequestParam("archivo") MultipartFile archivo) {
+		try {
+			Documento documento = eventoService.agregarDocumentoAEvento(eventoId, archivo);
+			return new ResponseEntity<>(documento, HttpStatus.CREATED);
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(Map.of("error", "El evento no fue encontrado."));
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Error al guardar el documento: " + e.getMessage()));
+		}
+	}
+
+	@DeleteMapping("/{eventoId}/documentos/{documentoId}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> eliminarDocumento(
+			@PathVariable @NonNull Long eventoId,
+			@PathVariable @NonNull Long documentoId) {
+		try {
+			eventoService.eliminarDocumentoDeEvento(eventoId, documentoId);
+			return ResponseEntity.ok().build();
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(Map.of("error", "El evento no fue encontrado."));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Error al eliminar el documento: " + e.getMessage()));
 		}
 	}
 

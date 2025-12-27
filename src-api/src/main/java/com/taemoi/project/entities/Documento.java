@@ -33,8 +33,13 @@ public class Documento {
 
 	@ManyToOne
 	@JoinColumn(name = "alumno_id")
-	@JsonBackReference
+	@JsonBackReference("alumno-documentos")
 	private Alumno alumno;
+
+	@ManyToOne
+	@JoinColumn(name = "evento_id")
+	@JsonBackReference("evento-documentos")
+	private Evento evento;
 
 	public Documento() {
 	}
@@ -92,6 +97,14 @@ public class Documento {
 
 	public void setAlumno(Alumno alumno) {
 		this.alumno = alumno;
+	}
+
+	public Evento getEvento() {
+		return evento;
+	}
+
+	public void setEvento(Evento evento) {
+		this.evento = evento;
 	}
 
 }

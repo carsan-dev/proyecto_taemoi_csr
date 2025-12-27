@@ -8,4 +8,5 @@ import com.taemoi.project.entities.Documento;
 
 public interface DocumentoRepository extends JpaRepository<Documento, Long>{
 	List<Documento> findByAlumnoId(Long alumnoId);
+	List<Documento> findByEventoId(Long eventoId);
 }
