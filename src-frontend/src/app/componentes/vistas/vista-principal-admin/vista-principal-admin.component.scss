@@ -372,29 +372,12 @@
     background: #edf2f7;
   }
 
-  .event-date {
-    min-width: 56px;
+  .event-thumbnail {
+    width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #4a90d9, #63b3ed);
     border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-
-    .event-day {
-      font-size: 1.25rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .event-month {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      font-weight: 500;
-      opacity: 0.9;
-    }
+    object-fit: cover;
+    flex-shrink: 0;
   }
 
   .event-info {
@@ -604,17 +587,9 @@
   .event-item {
     padding: 0.875rem;
 
-    .event-date {
-      min-width: 48px;
+    .event-thumbnail {
+      width: 48px;
       height: 48px;
-
-      .event-day {
-        font-size: 1.1rem;
-      }
-
-      .event-month {
-        font-size: 0.6rem;
-      }
     }
 
     .event-info .event-title {
