@@ -63,6 +63,10 @@ public class Alumno {
 	@Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
 	private Integer telefono;
 
+	@Min(value = 100000000, message = "El teléfono secundario debe tener 9 dígitos")
+	@Max(value = 999999999, message = "El teléfono secundario debe tener 9 dígitos")
+	private Integer telefono2;
+
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
 
@@ -291,6 +295,14 @@ public class Alumno {
 
 	public void setTelefono(Integer telefono) {
 		this.telefono = telefono;
+	}
+
+	public Integer getTelefono2() {
+		return telefono2;
+	}
+
+	public void setTelefono2(Integer telefono2) {
+		this.telefono2 = telefono2;
 	}
 
 	public String getEmail() {
