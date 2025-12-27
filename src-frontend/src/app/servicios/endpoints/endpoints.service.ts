@@ -937,6 +937,44 @@ export class EndpointsService {
       );
   }
 
+  // ==================== DOCUMENTOS DE EVENTOS ====================
+
+  obtenerDocumentosEvento(eventoId: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.urlBase}/eventos/${eventoId}/documentos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  subirDocumentoEvento(eventoId: number, archivo: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+
+    return this.http
+      .post<any>(`${this.urlBase}/eventos/${eventoId}/documentos`, formData, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  eliminarDocumentoEvento(eventoId: number, documentoId: number): Observable<any> {
+    return this.http
+      .delete(`${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  descargarDocumentoEvento(eventoId: number, documentoId: number): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}/descargar`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerConvocatorias(deporte?: string): Observable<any[]> {
     let params = new HttpParams();
     if (deporte) {
