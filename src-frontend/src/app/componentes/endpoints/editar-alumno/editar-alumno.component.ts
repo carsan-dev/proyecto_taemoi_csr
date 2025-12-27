@@ -3071,6 +3071,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   /**
    * Apply pending competidor changes for a specific deporte
+   * Uses a single endpoint to update all fields in one transaction (avoids race conditions)
    */
   applyCompetidorChanges(deporte: string): void {
     if (!this.alumnoId || !this.hasPendingCompetidorChanges(deporte)) {
@@ -3078,98 +3079,52 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     const pending = this.pendingCompetidorChanges.get(deporte)!;
-    let updateCount = 0;
-    const totalUpdates = Object.keys(pending).length;
 
-    // Update competidor
+    // Build the request object with all pending changes
+    const datosCompetidor: {
+      competidor?: boolean;
+      fechaAltaCompeticion?: string;
+      fechaAltaCompetidorInicial?: string;
+      categoria?: string;
+      peso?: number;
+      fechaPeso?: string;
+    } = {};
+
     if (pending.competidor !== undefined) {
-      this.alumnoService
-        .actualizarCompetidorDeporte(this.alumnoId, deporte, pending.competidor)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'estado de competidor'),
-        });
+      datosCompetidor.competidor = pending.competidor;
     }
-
-    // Update fecha alta competicion
     if (pending.fechaAltaCompeticion !== undefined) {
-      this.alumnoService
-        .actualizarFechaAltaCompeticionDeporte(this.alumnoId, deporte, pending.fechaAltaCompeticion)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'fecha alta competición'),
-        });
+      datosCompetidor.fechaAltaCompeticion = pending.fechaAltaCompeticion;
     }
-
-    // Update fecha alta competidor inicial
     if (pending.fechaAltaCompetidorInicial !== undefined) {
-      this.alumnoService
-        .actualizarFechaAltaCompetidorInicialDeporte(this.alumnoId, deporte, pending.fechaAltaCompetidorInicial)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'fecha alta competidor inicial'),
-        });
+      datosCompetidor.fechaAltaCompetidorInicial = pending.fechaAltaCompetidorInicial;
     }
-
-    // Update categoria
     if (pending.categoria !== undefined) {
-      this.alumnoService
-        .actualizarCategoriaDeporte(this.alumnoId, deporte, pending.categoria)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'categoría'),
-        });
+      datosCompetidor.categoria = pending.categoria;
     }
-
-    // Update peso
     if (pending.peso !== undefined) {
-      this.alumnoService
-        .actualizarPesoDeporte(this.alumnoId, deporte, pending.peso)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'peso'),
-        });
+      datosCompetidor.peso = pending.peso;
+    }
+    if (pending.fechaPeso !== undefined) {
+      datosCompetidor.fechaPeso = pending.fechaPeso;
     }
 
-    // Update fecha peso
-    if (pending.fechaPeso !== undefined) {
-      this.alumnoService
-        .actualizarFechaPesoDeporte(this.alumnoId, deporte, pending.fechaPeso)
-        .subscribe({
-          next: () => {
-            updateCount++;
-            if (updateCount === totalUpdates) {
-              this.onAllCompetidorUpdatesComplete(deporte);
-            }
-          },
-          error: this.handleUpdateError.bind(this, 'fecha de peso'),
-        });
-    }
+    // Single request to update all fields
+    this.alumnoService
+      .actualizarDatosCompetidor(this.alumnoId, deporte, datosCompetidor)
+      .subscribe({
+        next: () => {
+          this.onAllCompetidorUpdatesComplete(deporte);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudieron actualizar los datos de competidor',
+            icon: 'error',
+          });
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
+        },
+      });
   }
 
   private onAllCompetidorUpdatesComplete(deporte: string): void {
