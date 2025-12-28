@@ -1766,11 +1766,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
 
 		if (deporteFiltro == null) {
-			// Get all mensualidades
-			todasMensualidades = productoAlumnoRepository.findAllMensualidadesWithAlumno();
+			// Get all mensualidades + tarifas competidor
+			todasMensualidades = productoAlumnoRepository.findAllMensualidadesYTarifasCompetidorWithAlumno();
 		} else {
-			// Get mensualidades filtered by sport
-			todasMensualidades = productoAlumnoRepository.findMensualidadesByDeporteWithAlumno(deporteFiltro);
+			// Get mensualidades + tarifas competidor filtered by sport
+			todasMensualidades = productoAlumnoRepository.findMensualidadesYTarifasCompetidorByDeporteWithAlumno(deporteFiltro);
 		}
 
 		// Filter by active status if requested
@@ -2037,21 +2037,22 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		String nombreMes = mesesEspanol[mes - 1];
 
 		// Build concept to search (e.g., "MENSUALIDAD DICIEMBRE 2025")
-		String concepto = "MENSUALIDAD " + nombreMes + " " + anio;
+		String conceptoBase = "MENSUALIDAD " + nombreMes + " " + anio;
+		String mesAnoConcepto = nombreMes + " " + anio; // Para buscar tarifas competidor
 
 		// Get ALL active AlumnoDeporte for Taekwondo and Kickboxing (can have same alumno multiple times for different sports)
 		List<AlumnoDeporte> alumnoDeportes = alumnoDeporteRepository.findActivosByDeporteIn(
 				Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
 
-		// Get mensualidades for this month and create a map for quick lookup (key: alumnoId_deporte)
-		List<com.taemoi.project.entities.ProductoAlumno> mensualidades = productoAlumnoRepository
-				.findMensualidadByConceptoAndDeportes(concepto);
-		Map<String, com.taemoi.project.entities.ProductoAlumno> mensualidadesMap = mensualidades.stream()
-				.filter(pa -> pa.getAlumno() != null)
-				.collect(Collectors.toMap(
-						pa -> pa.getAlumno().getId() + "_" + (pa.getAlumno().getDeporte() != null ? pa.getAlumno().getDeporte().name() : ""),
-						pa -> pa,
-						(p1, p2) -> p1));
+		// Get mensualidades AND tarifas competidor for this month
+		List<com.taemoi.project.entities.ProductoAlumno> productosDelMes = productoAlumnoRepository
+				.findMensualidadesYTarifasCompetidorByMes(conceptoBase, mesAnoConcepto);
+
+		// Group products by alumno+deporte, collecting all products (mensualidad + tarifa competidor)
+		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes.stream()
+				.filter(pa -> pa.getAlumno() != null && pa.getAlumnoDeporte() != null)
+				.collect(Collectors.groupingBy(
+						pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte().name()));
 
 		// Build HTML for PDF
 		String fechaGeneracion = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -2104,9 +2105,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				Alumno alumno = ad.getAlumno();
 				if (alumno == null) continue;
 
-				// Get mensualidad for this alumno+deporte combination (may be null)
+				// Get all products for this alumno+deporte combination (mensualidad + tarifa competidor)
 				String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
-				com.taemoi.project.entities.ProductoAlumno pa = mensualidadesMap.get(mapKey);
+				List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
 
 				html.append("<tr>");
 
@@ -2130,9 +2131,18 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				String tipoTarifa = ad.getTipoTarifa() != null ? ad.getTipoTarifa().toString().replace("_", " ") : "-";
 				html.append("<td>").append(tipoTarifa).append("</td>");
 
-				// CUANTÍA (from AlumnoDeporte's cuantiaTarifa - per sport)
+				// CUANTÍA (suma de mensualidad + tarifa competidor si existe)
 				String cuantia = "-";
-				if (ad.getCuantiaTarifa() != null) {
+				double totalCuantia = 0.0;
+				if (productosAlumno != null && !productosAlumno.isEmpty()) {
+					// Sumar todos los productos (mensualidad + tarifa competidor)
+					totalCuantia = productosAlumno.stream()
+							.filter(p -> p.getPrecio() != null)
+							.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
+							.sum();
+					cuantia = String.format("%.2f €", totalCuantia);
+				} else if (ad.getCuantiaTarifa() != null) {
+					// Fallback to AlumnoDeporte's tarifa if no products found
 					cuantia = String.format("%.2f €", ad.getCuantiaTarifa());
 				}
 				html.append("<td>").append(cuantia).append("</td>");
@@ -2147,13 +2157,26 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				}
 				html.append("</td>");
 
-				// FECHA DE PAGO (from ProductoAlumno if exists, otherwise empty)
+				// FECHA DE PAGO (from ProductoAlumno - all products must be paid)
 				String fechaPago = "";
-				if (pa != null && pa.getFechaPago() != null) {
-					LocalDate fecha = Instant.ofEpochMilli(pa.getFechaPago().getTime()).atZone(ZoneId.systemDefault())
-							.toLocalDate();
-					DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-					fechaPago = fecha.format(dateFormatter);
+				if (productosAlumno != null && !productosAlumno.isEmpty()) {
+					// Check if all products are paid
+					boolean todosPagados = productosAlumno.stream()
+							.allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
+					if (todosPagados) {
+						// Get the latest payment date
+						Date ultimaFechaPago = productosAlumno.stream()
+								.filter(p -> p.getFechaPago() != null)
+								.map(com.taemoi.project.entities.ProductoAlumno::getFechaPago)
+								.max(Date::compareTo)
+								.orElse(null);
+						if (ultimaFechaPago != null) {
+							LocalDate fecha = Instant.ofEpochMilli(ultimaFechaPago.getTime()).atZone(ZoneId.systemDefault())
+									.toLocalDate();
+							DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+							fechaPago = fecha.format(dateFormatter);
+						}
+					}
 				}
 				html.append("<td>").append(fechaPago).append("</td>");
 
