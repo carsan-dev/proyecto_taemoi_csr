@@ -7,8 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.ProductoService;
 
@@ -17,6 +20,9 @@ public class ProductoServiceImpl implements ProductoService {
 
 	@Autowired
 	private ProductoRepository productoRepository;
+
+	@Autowired
+	private ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Override
 	public List<Producto> obtenerTodosLosProductos() {
@@ -61,7 +67,16 @@ public class ProductoServiceImpl implements ProductoService {
 	}
 
 	@Override
+	@Transactional
 	public void eliminarProducto(Long id) {
+		// Desvincular todos los ProductoAlumno asociados antes de eliminar
+		// Esto mantiene el historial de pagos pero sin referencia al producto eliminado
+		List<ProductoAlumno> productosAlumno = productoAlumnoRepository.findByProductoId(id);
+		for (ProductoAlumno pa : productosAlumno) {
+			pa.setProducto(null);
+			productoAlumnoRepository.save(pa);
+		}
+
 		productoRepository.deleteById(id);
 	}
 }
