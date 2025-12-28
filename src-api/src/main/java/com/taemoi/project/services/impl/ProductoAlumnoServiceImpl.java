@@ -681,30 +681,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	// ===== MÉTODOS AUXILIARES PARA TARIFA COMPETIDOR =====
 
 	/**
-	 * Asigna la tarifa competidor a un alumno si es competidor de Taekwondo o Kickboxing.
-	 * Este método busca los AlumnoDeporte del alumno y asigna la tarifa correspondiente.
-	 */
-	private void asignarTarifaCompetidorSiCorresponde(Alumno alumno, String mesAno, Date fechaAsignacion) {
-		// Buscar si el alumno es competidor de Taekwondo
-		alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumno.getId(),
-				com.taemoi.project.entities.Deporte.TAEKWONDO)
-			.ifPresent(alumnoDeporte -> {
-				if (Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
-					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
-				}
-			});
-
-		// Buscar si el alumno es competidor de Kickboxing
-		alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumno.getId(),
-				com.taemoi.project.entities.Deporte.KICKBOXING)
-			.ifPresent(alumnoDeporte -> {
-				if (Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
-					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
-				}
-			});
-	}
-
-	/**
 	 * Asigna la tarifa competidor a un alumno para un deporte específico (Taekwondo o Kickboxing).
 	 */
 	private void asignarTarifaCompetidorPorDeporte(Alumno alumno, AlumnoDeporte alumnoDeporte,
