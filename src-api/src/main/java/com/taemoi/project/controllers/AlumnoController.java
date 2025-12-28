@@ -788,6 +788,73 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Actualiza la fecha de alta per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta
+	 * Body: { "fechaAlta": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-alta")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaAltaDeporte(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			String fechaAltaStr = params.get("fechaAlta");
+			if (fechaAltaStr == null || fechaAltaStr.isBlank()) {
+				return ResponseEntity.badRequest().body("La fecha de alta es requerida");
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			java.util.Date fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
+
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaAlta(id, deporteEnum, fechaAlta);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de alta", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de alta");
+		}
+	}
+
+	/**
+	 * Actualiza la fecha de baja per-sport
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-baja
+	 * Body: { "fechaBaja": "2025-01-15" }
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/fecha-baja")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarFechaBajaDeporte(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody Map<String, String> params) {
+		try {
+			if (!params.containsKey("fechaBaja")) {
+				return ResponseEntity.badRequest().body("El campo fechaBaja es requerido");
+			}
+
+			String fechaBajaStr = params.get("fechaBaja");
+			java.util.Date fechaBaja = null;
+			if (fechaBajaStr != null && !fechaBajaStr.isBlank()) {
+				fechaBaja = java.sql.Date.valueOf(fechaBajaStr);
+			}
+
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.actualizarFechaBaja(id, deporteEnum, fechaBaja);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al actualizar fecha de baja", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar fecha de baja");
+		}
+	}
+
+	/**
 	 * Actualiza la fecha de alta inicial per-sport
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta-inicial
 	 * Body: { "fechaAltaInicial": "2020-01-15" }
