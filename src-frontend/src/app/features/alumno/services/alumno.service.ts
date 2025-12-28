@@ -407,6 +407,42 @@ export class AlumnoService {
   }
 
   /**
+   * Update fechaAlta for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaAlta Enrollment date (YYYY-MM-DD format)
+   */
+  actualizarFechaAltaDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaAlta: string
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-alta`,
+      { fechaAlta },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Update fechaBaja for a specific sport
+   * @param alumnoId Student ID
+   * @param deporte Sport name
+   * @param fechaBaja Leave date (YYYY-MM-DD format) or null to clear
+   */
+  actualizarFechaBajaDeporte(
+    alumnoId: number,
+    deporte: string,
+    fechaBaja: string | null
+  ): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-baja`,
+      { fechaBaja },
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Update tipo de tarifa for a specific sport
    * @param alumnoId Student ID
    * @param deporte Sport name
