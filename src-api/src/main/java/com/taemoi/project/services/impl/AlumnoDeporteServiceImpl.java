@@ -324,6 +324,26 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
+	public AlumnoDeporte actualizarFechaAlta(Long alumnoId, Deporte deporte, java.util.Date fechaAlta) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaAlta(fechaAlta);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
+	public AlumnoDeporte actualizarFechaBaja(Long alumnoId, Deporte deporte, java.util.Date fechaBaja) {
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		alumnoDeporte.setFechaBaja(fechaBaja);
+		return alumnoDeporteRepository.save(alumnoDeporte);
+	}
+
+	@Override
 	public AlumnoDeporte actualizarFechaAltaInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaInicial) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
