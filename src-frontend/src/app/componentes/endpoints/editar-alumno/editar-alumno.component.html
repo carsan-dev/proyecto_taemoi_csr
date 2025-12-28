@@ -358,16 +358,21 @@
                         Estadísticas del Deporte
                       </h5>
 
-                      <!-- Fecha de Alta -->
-                      @if (deporteItem.fechaAlta) {
-                      <div class="info-item-horizontal">
-                        <span class="info-label">
+                      <!-- Fecha de Alta (Editable) -->
+                      <div class="admin-form-field">
+                        <label [for]="'fechaAlta-' + deporteItem.deporte">
                           <i class="bi bi-calendar-plus"></i>
                           Fecha de Alta
-                        </span>
-                        <span class="info-value">{{ deporteItem.fechaAlta | date: 'dd/MM/yyyy' }}</span>
+                        </label>
+                        <input type="date" [id]="'fechaAlta-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAlta(deporteItem.deporte)"
+                          (change)="onFechaAltaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha de inscripcion en el deporte
+                        </small>
                       </div>
-                      }
 
                       <!-- Antigüedad -->
                       @if (deporteItem.antiguedad) {
@@ -398,6 +403,22 @@
                           </span>
                           }
                         </span>
+                      </div>
+
+                      <!-- Fecha de Baja (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaBajaDeporte-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-x"></i>
+                          Fecha de Baja
+                        </label>
+                        <input type="date" [id]="'fechaBajaDeporte-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaBaja(deporteItem.deporte)"
+                          (change)="onFechaBajaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de baja para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Dejar vacio si no hay baja registrada
+                        </small>
                       </div>
 
                       <!-- Fecha Alta Inicial (Editable) -->
