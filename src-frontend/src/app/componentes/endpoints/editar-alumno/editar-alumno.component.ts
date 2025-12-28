@@ -129,6 +129,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }> = new Map();
 
   pendingEstadisticasChanges: Map<string, {
+    fechaAlta?: string;
+    fechaBaja?: string;
     fechaAltaInicial?: string;
   }> = new Map();
 
@@ -3265,6 +3267,48 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   // ========== ESTADISTICAS PENDING CHANGES ==========
 
+  onFechaAltaChange(deporte: string, event: any): void {
+    const fechaAlta = event.target.value;
+    if (!fechaAlta) {
+      return;
+    }
+
+    const pending = this.pendingEstadisticasChanges.get(deporte) || {};
+    pending.fechaAlta = fechaAlta;
+    this.pendingEstadisticasChanges.set(deporte, pending);
+  }
+
+  getDisplayedFechaAlta(deporte: string): string {
+    const pending = this.pendingEstadisticasChanges.get(deporte);
+    if (pending?.fechaAlta !== undefined) {
+      return pending.fechaAlta;
+    }
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    if (deporteData?.fechaAlta) {
+      return this.formatDateForInput(deporteData.fechaAlta);
+    }
+    return '';
+  }
+
+  onFechaBajaChange(deporte: string, event: any): void {
+    const fechaBaja = event.target.value;
+    const pending = this.pendingEstadisticasChanges.get(deporte) || {};
+    pending.fechaBaja = fechaBaja;
+    this.pendingEstadisticasChanges.set(deporte, pending);
+  }
+
+  getDisplayedFechaBaja(deporte: string): string {
+    const pending = this.pendingEstadisticasChanges.get(deporte);
+    if (pending?.fechaBaja !== undefined) {
+      return pending.fechaBaja;
+    }
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    if (deporteData?.fechaBaja) {
+      return this.formatDateForInput(deporteData.fechaBaja);
+    }
+    return '';
+  }
+
   onFechaAltaInicialChange(deporte: string, event: any): void {
     const fechaAltaInicial = event.target.value;
     if (!fechaAltaInicial) {
@@ -3299,24 +3343,65 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     const pending = this.pendingEstadisticasChanges.get(deporte)!;
 
-    if (pending.fechaAltaInicial !== undefined) {
-      this.alumnoService
-        .actualizarFechaAltaInicialDeporte(this.alumnoId, deporte, pending.fechaAltaInicial)
-        .subscribe({
-          next: () => {
-            this.pendingEstadisticasChanges.delete(deporte);
-            Swal.fire({
-              title: 'Fecha actualizada',
-              text: `Fecha de alta inicial actualizada en ${getDeporteLabel(deporte)}`,
-              icon: 'success',
-              timer: 1500,
-              showConfirmButton: false,
-            });
-            this.cargarDeportesDelAlumno(this.alumnoId!, true);
-          },
-          error: this.handleUpdateError.bind(this, 'fecha de alta inicial'),
-        });
+    const updates: any[] = [];
+
+    if (pending.fechaAlta !== undefined) {
+      updates.push(
+        this.alumnoService
+          .actualizarFechaAltaDeporte(this.alumnoId, deporte, pending.fechaAlta)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('fecha de alta', error);
+              return of(null);
+            })
+          )
+      );
     }
+
+    if (pending.fechaBaja !== undefined) {
+      const fechaBajaValue = pending.fechaBaja === '' ? null : pending.fechaBaja;
+      updates.push(
+        this.alumnoService
+          .actualizarFechaBajaDeporte(this.alumnoId, deporte, fechaBajaValue)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('fecha de baja', error);
+              return of(null);
+            })
+          )
+      );
+    }
+
+    if (pending.fechaAltaInicial !== undefined) {
+      updates.push(
+        this.alumnoService
+          .actualizarFechaAltaInicialDeporte(this.alumnoId, deporte, pending.fechaAltaInicial)
+          .pipe(
+            catchError((error) => {
+              this.handleUpdateError('fecha de alta inicial', error);
+              return of(null);
+            })
+          )
+      );
+    }
+
+    if (updates.length > 0) {
+      concat(...updates)
+        .pipe(finalize(() => this.onAllEstadisticasUpdatesComplete(deporte)))
+        .subscribe();
+    }
+  }
+
+  private onAllEstadisticasUpdatesComplete(deporte: string): void {
+    this.pendingEstadisticasChanges.delete(deporte);
+    Swal.fire({
+      title: 'Fechas actualizadas',
+      text: `Estadísticas actualizadas en ${getDeporteLabel(deporte)}`,
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+    this.cargarDeportesDelAlumno(this.alumnoId!, true);
   }
 
   private handleUpdateError(fieldName: string, error: any): void {
