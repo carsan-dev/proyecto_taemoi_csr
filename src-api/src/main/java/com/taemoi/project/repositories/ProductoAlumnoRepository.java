@@ -28,4 +28,6 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	List<ProductoAlumno> findMensualidadByConceptoAndDeportes(String concepto);
 
 	List<ProductoAlumno> findByAlumnoDeporteId(Long alumnoDeporteId);
+
+	List<ProductoAlumno> findByProductoId(Long productoId);
 }
