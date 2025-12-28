@@ -237,41 +237,52 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	public void cargarMensualidadesGenerales(String mesAno) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 
-		// Only get active alumnos for better performance
-		List<Alumno> alumnos = alumnoRepository.findAll().stream()
-				.filter(a -> Boolean.TRUE.equals(a.getActivo()))
-				.collect(Collectors.toList());
-
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
-		// Get existing mensualidades in batch to avoid N+1 queries
-		List<ProductoAlumno> existingMensualidades = productoAlumnoRepository.findAll().stream()
-				.filter(pa -> nombreMensualidad.equalsIgnoreCase(pa.getConcepto()))
+		// Obtener todos los AlumnoDeporte activos
+		List<AlumnoDeporte> alumnosDeportes = alumnoDeporteRepository.findAll().stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
 				.collect(Collectors.toList());
 
-		// Create a set of alumno IDs that already have mensualidad
-		java.util.Set<Long> alumnosConMensualidad = existingMensualidades.stream()
-				.filter(pa -> pa.getAlumno() != null)
-				.map(pa -> pa.getAlumno().getId())
+		// Get existing mensualidades in batch to avoid N+1 queries
+		// Ahora buscamos por concepto que contenga el nombreMensualidad (puede tener sufijo de deporte)
+		java.util.Set<String> conceptosExistentes = productoAlumnoRepository.findAll().stream()
+				.filter(pa -> pa.getConcepto() != null && pa.getConcepto().startsWith(nombreMensualidad))
+				.map(pa -> pa.getAlumno().getId() + "-" + pa.getConcepto())
 				.collect(java.util.stream.Collectors.toSet());
 
 		Date fechaAsignacion = new Date();
-		for (Alumno alumno : alumnos) {
-			if (!alumnosConMensualidad.contains(alumno.getId())) {
+		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
+			String claveUnica = alumno.getId() + "-" + conceptoCompleto;
+
+			// Verificar si ya existe esta mensualidad para este alumno y deporte
+			if (!conceptosExistentes.contains(claveUnica)) {
+				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
+						? alumnoDeporte.getCuantiaTarifa()
+						: alumno.getCuantiaTarifa();
+
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
 				productoAlumno.setProducto(productoMensualidad);
-				productoAlumno.setConcepto(nombreMensualidad);
-				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setAlumnoDeporte(alumnoDeporte);
+				productoAlumno.setConcepto(conceptoCompleto);
+				productoAlumno.setPrecio(precioMensualidad);
 				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
 
 				productoAlumnoRepository.save(productoAlumno);
 
-				// Añadir tarifa competidor si es competidor de Taekwondo
-				asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
+				// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
+				if ((alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO
+						|| alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING)
+						&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+				}
 			}
 		}
 	}
@@ -289,28 +300,38 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
 		}
 
-		// Get only active students filtered by sport
-		List<Alumno> alumnos = alumnoRepository.findByDeporte(deporteEnum).stream()
-				.filter(a -> Boolean.TRUE.equals(a.getActivo()))
-				.collect(Collectors.toList());
-
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
+		// Obtener todos los AlumnoDeporte activos del deporte especificado
+		List<AlumnoDeporte> alumnosDeportes = alumnoDeporteRepository.findAll().stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && ad.getDeporte() == deporteEnum)
+				.collect(Collectors.toList());
+
+		String conceptoCompleto = nombreMensualidad + " - " + deporteEnum.name();
+
 		// Get existing mensualidades in batch to avoid N+1 queries
 		java.util.Set<Long> alumnosConMensualidad = productoAlumnoRepository.findAll().stream()
-				.filter(pa -> nombreMensualidad.equalsIgnoreCase(pa.getConcepto()) && pa.getAlumno() != null)
+				.filter(pa -> conceptoCompleto.equalsIgnoreCase(pa.getConcepto()) && pa.getAlumno() != null)
 				.map(pa -> pa.getAlumno().getId())
 				.collect(java.util.stream.Collectors.toSet());
 
 		Date fechaAsignacion = new Date();
-		for (Alumno alumno : alumnos) {
+		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+
 			if (!alumnosConMensualidad.contains(alumno.getId())) {
+				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
+						? alumnoDeporte.getCuantiaTarifa()
+						: alumno.getCuantiaTarifa();
+
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
 				productoAlumno.setProducto(productoMensualidad);
-				productoAlumno.setConcepto(nombreMensualidad);
-				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setAlumnoDeporte(alumnoDeporte);
+				productoAlumno.setConcepto(conceptoCompleto);
+				productoAlumno.setPrecio(precioMensualidad);
 				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
@@ -318,9 +339,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				productoAlumnoRepository.save(productoAlumno);
 
 				// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
-				if (deporteEnum == com.taemoi.project.entities.Deporte.TAEKWONDO
-						|| deporteEnum == com.taemoi.project.entities.Deporte.KICKBOXING) {
-					asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
+				if ((deporteEnum == com.taemoi.project.entities.Deporte.TAEKWONDO
+						|| deporteEnum == com.taemoi.project.entities.Deporte.KICKBOXING)
+						&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
 				}
 			}
 		}
@@ -334,27 +356,65 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
-		boolean yaExiste = alumno.getProductosAlumno().stream()
-				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(nombreMensualidad));
+		// Obtener todos los deportes activos del alumno
+		List<AlumnoDeporte> deportesActivos = alumnoDeporteRepository.findByAlumnoId(alumnoId).stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+				.collect(Collectors.toList());
 
-		if (yaExiste && !forzar) {
-			throw new IllegalStateException("El alumno ya tiene asignada la " + nombreMensualidad);
+		if (deportesActivos.isEmpty()) {
+			throw new IllegalStateException("El alumno no tiene deportes activos asignados");
 		}
 
 		Date fechaAsignacion = new Date();
-		ProductoAlumno productoAlumno = new ProductoAlumno();
-		productoAlumno.setAlumno(alumno);
-		productoAlumno.setProducto(productoMensualidad);
-		productoAlumno.setConcepto(nombreMensualidad);
-		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
-		productoAlumno.setFechaAsignacion(fechaAsignacion);
-		productoAlumno.setCantidad(1);
-		productoAlumno.setPagado(false);
+		boolean algunoCreado = false;
+		StringBuilder mensajesExistentes = new StringBuilder();
 
-		productoAlumnoRepository.save(productoAlumno);
+		// Crear una mensualidad por cada deporte activo
+		for (AlumnoDeporte alumnoDeporte : deportesActivos) {
+			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
 
-		// Añadir tarifa competidor si es competidor de Taekwondo
-		asignarTarifaCompetidorSiCorresponde(alumno, mesAno, fechaAsignacion);
+			// Verificar si ya existe esta mensualidad para este deporte
+			boolean yaExiste = alumno.getProductosAlumno().stream()
+					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
+
+			if (yaExiste && !forzar) {
+				if (mensajesExistentes.length() > 0) {
+					mensajesExistentes.append(", ");
+				}
+				mensajesExistentes.append(alumnoDeporte.getDeporte().name());
+				continue;
+			}
+
+			// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
+			Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
+					? alumnoDeporte.getCuantiaTarifa()
+					: alumno.getCuantiaTarifa();
+
+			ProductoAlumno productoAlumno = new ProductoAlumno();
+			productoAlumno.setAlumno(alumno);
+			productoAlumno.setProducto(productoMensualidad);
+			productoAlumno.setAlumnoDeporte(alumnoDeporte);
+			productoAlumno.setConcepto(conceptoCompleto);
+			productoAlumno.setPrecio(precioMensualidad);
+			productoAlumno.setFechaAsignacion(fechaAsignacion);
+			productoAlumno.setCantidad(1);
+			productoAlumno.setPagado(false);
+
+			productoAlumnoRepository.save(productoAlumno);
+			algunoCreado = true;
+
+			// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
+			if ((alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO
+					|| alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING)
+					&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+				asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
+			}
+		}
+
+		// Si no se creó ninguna mensualidad y había existentes, lanzar excepción
+		if (!algunoCreado && mensajesExistentes.length() > 0) {
+			throw new IllegalStateException("El alumno ya tiene asignada la mensualidad para: " + mensajesExistentes);
+		}
 	}
 
 	@Override
@@ -531,12 +591,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
 
 			if (!yaExiste) {
+				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
+						? alumnoDeporte.getCuantiaTarifa()
+						: alumno.getCuantiaTarifa();
+
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
 				productoAlumno.setProducto(productoMensualidad);
 				productoAlumno.setAlumnoDeporte(alumnoDeporte);
 				productoAlumno.setConcepto(conceptoCompleto);
-				productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+				productoAlumno.setPrecio(precioMensualidad);
 				productoAlumno.setFechaAsignacion(fechaAsignacion);
 				productoAlumno.setCantidad(1);
 				productoAlumno.setPagado(false);
@@ -587,13 +652,18 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			throw new IllegalStateException("El alumno ya tiene asignada la " + conceptoCompleto);
 		}
 
+		// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
+		Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
+				? alumnoDeporte.getCuantiaTarifa()
+				: alumno.getCuantiaTarifa();
+
 		Date fechaAsignacion = new Date();
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(productoMensualidad);
 		productoAlumno.setAlumnoDeporte(alumnoDeporte);
 		productoAlumno.setConcepto(conceptoCompleto);
-		productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+		productoAlumno.setPrecio(precioMensualidad);
 		productoAlumno.setFechaAsignacion(fechaAsignacion);
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPagado(false);
