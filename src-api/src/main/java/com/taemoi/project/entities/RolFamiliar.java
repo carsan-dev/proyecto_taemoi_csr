@@ -9,6 +9,8 @@ package com.taemoi.project.entities;
  */
 public enum RolFamiliar {
 	PADRE,
+	MADRE,
 	HIJO,
+	HIJA,
 	NINGUNO
 }
