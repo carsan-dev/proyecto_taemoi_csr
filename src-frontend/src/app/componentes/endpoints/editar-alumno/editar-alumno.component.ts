@@ -1138,7 +1138,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
-    if (!file) {
+    if (!file || !this.alumnoId || !this.alumno) {
       return;
     }
     this.alumnoEditado.fotoAlumno = file;
@@ -1148,7 +1148,55 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.imagenPreview = e.target.result;
     };
     reader.readAsDataURL(file);
-    showSuccessToast('Imagen actualizada en el formulario');
+
+    const formData = new FormData();
+    formData.append('alumnoEditado', JSON.stringify(this.buildAlumnoUpdatePayloadForImage()));
+    formData.append('file', file);
+
+    this.endpointsService.actualizarAlumno(this.alumnoId, formData).subscribe({
+      next: () => {
+        showSuccessToast('Imagen actualizada');
+        this.cargarAlumno(this.alumnoId!);
+      },
+      error: () => {
+        this.imagenPreview = this.alumno?.fotoAlumno?.url
+          ? this.alumno.fotoAlumno.url
+          : '../../../../assets/media/default.webp';
+        showErrorToast('No se pudo actualizar la imagen');
+      },
+    });
+  }
+
+  private buildAlumnoUpdatePayloadForImage(): any {
+    return {
+      nombre: this.alumno.nombre,
+      apellidos: this.alumno.apellidos,
+      fechaNacimiento: this.alumno.fechaNacimiento ? formatDate(this.alumno.fechaNacimiento) : null,
+      nif: this.alumno.nif,
+      direccion: this.alumno.direccion,
+      email: this.alumno.email,
+      telefono: this.alumno.telefono,
+      telefono2: this.alumno.telefono2,
+      tipoTarifa: this.alumno.tipoTarifa,
+      cuantiaTarifa: this.alumno.cuantiaTarifa,
+      rolFamiliar: this.alumno.rolFamiliar,
+      grupoFamiliar: this.alumno.grupoFamiliar,
+      fechaAlta: this.alumno.fechaAlta ? formatDate(this.alumno.fechaAlta) : null,
+      fechaAltaInicial: this.alumno.fechaAltaInicial ? formatDate(this.alumno.fechaAltaInicial) : null,
+      fechaBaja: this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null,
+      autorizacionWeb: this.alumno.autorizacionWeb,
+      deporte: this.alumno.deporte,
+      tieneLicencia: this.alumno.tieneLicencia,
+      numeroLicencia: this.alumno.numeroLicencia,
+      fechaLicencia: this.alumno.fechaLicencia ? formatDate(this.alumno.fechaLicencia) : null,
+      tieneDiscapacidad: this.alumno.tieneDiscapacidad,
+      competidor: this.alumno.competidor,
+      peso: this.alumno.peso,
+      fechaPeso: this.alumno.fechaPeso ? formatDate(this.alumno.fechaPeso) : null,
+      aptoParaExamen: this.alumno.aptoParaExamen,
+      grado: this.alumno.grado,
+      fechaGrado: this.alumno.fechaGrado ? formatDate(this.alumno.fechaGrado) : null,
+    };
   }
 
   /**
