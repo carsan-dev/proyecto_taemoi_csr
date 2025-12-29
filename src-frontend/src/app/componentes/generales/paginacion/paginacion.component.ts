@@ -18,6 +18,7 @@ export class PaginacionComponent implements OnChanges {
   @Input() paginaActual: number = 1;
   @Input() totalPaginas: number = 0;
   @Input() tamanoPagina: number = 10;
+  @Input() deshabilitado: boolean = false;
   @Output() pageChange = new EventEmitter<number>();
   mostrarPaginas: number[] = [];
 
@@ -26,6 +27,9 @@ export class PaginacionComponent implements OnChanges {
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (this.deshabilitado) {
+      return;
+    }
     if (
       pageNumber < 1 ||
       pageNumber > this.totalPaginas ||
