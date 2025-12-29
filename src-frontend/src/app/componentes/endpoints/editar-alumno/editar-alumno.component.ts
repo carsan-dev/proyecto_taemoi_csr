@@ -99,6 +99,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   fechaGradoDeporte: string = '';
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
+  fechaGradoActualizar: string = '';
   deporteParaConvocatoria: string = '';
   convocatoriasFiltradasPorDeporte: any[] = [];
 
@@ -2078,6 +2079,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.deporteParaActualizarGrado = deporte;
     const deporteActual = this.deportesDelAlumno.find(d => d.deporte === deporte);
     this.nuevoGradoActualizar = deporteActual?.grado || 'BLANCO';
+    this.fechaGradoActualizar =
+      this.formatDateForInput(deporteActual?.fechaGrado) || this.formatDateForInput(new Date());
     this.mostrarModalActualizarGrado = true;
   }
 
@@ -2088,6 +2091,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.mostrarModalActualizarGrado = false;
     this.deporteParaActualizarGrado = '';
     this.nuevoGradoActualizar = '';
+    this.fechaGradoActualizar = '';
   }
 
   /**
@@ -2098,28 +2102,49 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.alumnoService
-      .actualizarGradoPorDeporte(this.alumnoId, this.deporteParaActualizarGrado, this.nuevoGradoActualizar)
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            title: '¡Grado actualizado!',
-            text: `El grado para ${getDeporteLabel(this.deporteParaActualizarGrado)} ha sido actualizado a ${this.nuevoGradoActualizar}`,
-            icon: 'success',
-            timer: 2000,
-          });
-          this.cerrarModalActualizarGrado();
-          // Reload sports data while preserving the current active tab
-          this.cargarDeportesDelAlumno(this.alumnoId!, true);
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: error.error || 'No se pudo actualizar el grado',
-            icon: 'error',
-          });
-        },
-      });
+    const updates = [
+      this.alumnoService.actualizarGradoPorDeporte(
+        this.alumnoId,
+        this.deporteParaActualizarGrado,
+        this.nuevoGradoActualizar
+      ),
+    ];
+
+    if (this.fechaGradoActualizar) {
+      updates.push(
+        this.alumnoService.actualizarFechaGrado(
+          this.alumnoId,
+          this.deporteParaActualizarGrado,
+          this.fechaGradoActualizar
+        )
+      );
+    }
+
+    concat(...updates).subscribe({
+      complete: () => {
+        const deporteLabel = getDeporteLabel(this.deporteParaActualizarGrado);
+        const mensaje = this.fechaGradoActualizar
+          ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${this.nuevoGradoActualizar}`
+          : `El grado para ${deporteLabel} ha sido actualizado a ${this.nuevoGradoActualizar}`;
+
+        Swal.fire({
+          title: '¡Grado actualizado!',
+          text: mensaje,
+          icon: 'success',
+          timer: 2000,
+        });
+        this.cerrarModalActualizarGrado();
+        // Reload sports data while preserving the current active tab
+        this.cargarDeportesDelAlumno(this.alumnoId!, true);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error || 'No se pudo actualizar el grado o la fecha',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   /**
