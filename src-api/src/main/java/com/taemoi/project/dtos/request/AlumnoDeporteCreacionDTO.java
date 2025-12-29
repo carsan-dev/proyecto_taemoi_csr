@@ -58,9 +58,24 @@ public class AlumnoDeporteCreacionDTO {
     private String grupoFamiliar;
 
     /**
+     * Categoria para competidores (Infantil, Precadete, Cadete, Junior, Senior)
+     */
+    private String categoria;
+
+    /**
      * Si es competidor en este deporte (solo para Taekwondo y Kickboxing)
      */
     private Boolean competidor;
+
+    /**
+     * Fecha de alta en competicion (solo competidores)
+     */
+    private Date fechaAltaCompeticion;
+
+    /**
+     * Fecha de alta inicial como competidor (solo competidores)
+     */
+    private Date fechaAltaCompetidorInicial;
 
     /**
      * Peso del competidor (si aplica)
@@ -173,12 +188,36 @@ public class AlumnoDeporteCreacionDTO {
         this.grupoFamiliar = grupoFamiliar;
     }
 
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+    }
+
     public Boolean getCompetidor() {
         return competidor;
     }
 
     public void setCompetidor(Boolean competidor) {
         this.competidor = competidor;
+    }
+
+    public Date getFechaAltaCompeticion() {
+        return fechaAltaCompeticion;
+    }
+
+    public void setFechaAltaCompeticion(Date fechaAltaCompeticion) {
+        this.fechaAltaCompeticion = fechaAltaCompeticion;
+    }
+
+    public Date getFechaAltaCompetidorInicial() {
+        return fechaAltaCompetidorInicial;
+    }
+
+    public void setFechaAltaCompetidorInicial(Date fechaAltaCompetidorInicial) {
+        this.fechaAltaCompetidorInicial = fechaAltaCompetidorInicial;
     }
 
     public Double getPeso() {

@@ -96,7 +96,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Override
 	public AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
 			Date fechaAlta, Date fechaAltaInicial, Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
-			String rolFamiliar, String grupoFamiliar, Boolean competidor, Double peso,
+			String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
+			Date fechaAltaCompeticion, Date fechaAltaCompetidorInicial, Double peso,
 			Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia) {
 		// Verificar que el alumno existe
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -124,7 +125,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		Date fechaAltaFinal = fechaAlta != null ? fechaAlta : new Date();
 		alumnoDeporte.setFechaAlta(fechaAltaFinal);
 		// Use provided fechaAltaInicial or default to fechaAlta
-		alumnoDeporte.setFechaAltaInicial(fechaAltaInicial != null ? fechaAltaInicial : fechaAltaFinal);
+		Date fechaAltaInicialFinal = fechaAltaInicial != null ? fechaAltaInicial : fechaAltaFinal;
+		alumnoDeporte.setFechaAltaInicial(fechaAltaInicialFinal);
 		alumnoDeporte.setAptoParaExamen(false);
 
 		// Asignar grado si se proporcionó (deportes como Pilates no tienen grado)
@@ -159,6 +161,29 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 					"El alumno debe tener una licencia federativa activa para ser marcado como competidor");
 		}
 		alumnoDeporte.setCompetidor(esCompetidor);
+		if (esCompetidor) {
+			Date fechaCompeticionFinal = fechaAltaCompeticion != null ? fechaAltaCompeticion : fechaAltaFinal;
+			Date fechaCompetidorInicialFinal = fechaAltaCompetidorInicial != null
+					? fechaAltaCompetidorInicial
+					: fechaAltaInicialFinal;
+			alumnoDeporte.setFechaAltaCompeticion(fechaCompeticionFinal);
+			alumnoDeporte.setFechaAltaCompetidorInicial(fechaCompetidorInicialFinal);
+		} else {
+			alumnoDeporte.setFechaAltaCompeticion(null);
+			alumnoDeporte.setFechaAltaCompetidorInicial(null);
+		}
+
+		if (categoria != null && !categoria.isBlank()) {
+			Categoria categoriaEntity = categoriaRepository.findByNombre(categoria.trim());
+			if (categoriaEntity == null) {
+				throw new IllegalArgumentException("Categoria no encontrada: " + categoria);
+			}
+			alumnoDeporte.setCategoria(categoriaEntity);
+		} else if (esCompetidor && deporte == Deporte.TAEKWONDO) {
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			Categoria categoriaEntity = asignarCategoriaSegunEdad(edad);
+			alumnoDeporte.setCategoria(categoriaEntity);
+		}
 
 		alumnoDeporte.setPeso(peso);
 		alumnoDeporte.setFechaPeso(fechaPeso);
@@ -471,13 +496,13 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	 */
 	private Categoria asignarCategoriaSegunEdad(int edad) {
 		TipoCategoria tipoCategoria;
-		if (edad >= 8 && edad <= 9) {
+		if (edad <= 9) {
 			tipoCategoria = TipoCategoria.INFANTIL;
-		} else if (edad >= 10 && edad <= 11) {
+		} else if (edad <= 11) {
 			tipoCategoria = TipoCategoria.PRECADETE;
-		} else if (edad >= 12 && edad <= 14) {
+		} else if (edad <= 13) {
 			tipoCategoria = TipoCategoria.CADETE;
-		} else if (edad >= 15 && edad <= 16) {
+		} else if (edad <= 16) {
 			tipoCategoria = TipoCategoria.JUNIOR;
 		} else {
 			tipoCategoria = TipoCategoria.SENIOR;
@@ -600,6 +625,15 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 		if (fechaPeso != null) {
 			alumnoDeporte.setFechaPeso(fechaPeso);
+		}
+
+		Boolean competidorFinal = competidor != null ? competidor : alumnoDeporte.getCompetidor();
+		if (Boolean.TRUE.equals(competidorFinal)
+				&& deporte == Deporte.TAEKWONDO
+				&& alumnoDeporte.getCategoria() == null) {
+			int edad = FechaUtils.calcularEdad(alumnoDeporte.getAlumno().getFechaNacimiento());
+			Categoria categoria = asignarCategoriaSegunEdad(edad);
+			alumnoDeporte.setCategoria(categoria);
 		}
 
 		return alumnoDeporteRepository.save(alumnoDeporte);
