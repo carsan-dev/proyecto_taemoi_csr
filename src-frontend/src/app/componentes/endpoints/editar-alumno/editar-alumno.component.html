@@ -1611,7 +1611,21 @@
           </select>
           <small class="form-text text-muted mt-2">
             <i class="bi bi-info-circle"></i>
-            La fecha de grado se actualizará automáticamente
+            Selecciona el nuevo grado
+          </small>
+        </div>
+
+        <div class="admin-form-field mt-3">
+          <label for="fechaGradoActualizar">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Grado
+            <span class="required">*</span>
+          </label>
+          <input type="date" id="fechaGradoActualizar" class="admin-form-control"
+            [(ngModel)]="fechaGradoActualizar" aria-label="Fecha de grado" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Selecciona la fecha del grado
           </small>
         </div>
       </div>
@@ -1621,7 +1635,7 @@
           <span>Cancelar</span>
         </button>
         <button type="button" class="admin-btn admin-btn-success" (click)="actualizarGradoDeporte()"
-          [disabled]="!nuevoGradoActualizar">
+          [disabled]="!nuevoGradoActualizar || !fechaGradoActualizar">
           <i class="bi bi-check-circle"></i>
           <span>Actualizar Grado</span>
         </button>
