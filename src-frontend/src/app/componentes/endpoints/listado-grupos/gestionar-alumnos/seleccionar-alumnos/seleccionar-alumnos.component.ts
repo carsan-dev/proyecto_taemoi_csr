@@ -133,6 +133,9 @@ export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
+    }
     this.paginaActual = pageNumber;
     this.cargarAlumnos();
   }

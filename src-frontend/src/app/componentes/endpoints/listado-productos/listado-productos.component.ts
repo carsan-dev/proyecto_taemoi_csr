@@ -107,6 +107,9 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   }
 
   cambiarPagina(pagina: number): void {
+    if (this.cargando || pagina === this.paginaActual) {
+      return;
+    }
     this.paginaActual = pagina;
     this.obtenerProductos();
   }

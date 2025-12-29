@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-eliminar-alumno',
@@ -21,6 +21,7 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   totalPaginas: number = 0;
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  cargando: boolean = true;
   private searchSubject = new Subject<string>();
 
   constructor(private readonly endpointsService: EndpointsService) {}
@@ -43,6 +44,7 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   obtenerAlumnos() {
+    this.cargando = true;
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -50,6 +52,7 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
         this.nombreFiltro,
         this.mostrarInactivos
       )
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (response) => {
           this.alumnos = response.content.map((alumno: any) => ({
@@ -69,6 +72,9 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
+    }
     this.paginaActual = pageNumber;
     this.obtenerAlumnos();
   }
