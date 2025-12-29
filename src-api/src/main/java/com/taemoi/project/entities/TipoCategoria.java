@@ -1,7 +1,7 @@
 package com.taemoi.project.entities;
 
 public enum TipoCategoria {
-	INFANTIL("Infantil", 8, 9), PRECADETE("Precadete", 10, 11), CADETE("Cadete", 12, 14), JUNIOR("Junior", 15, 16),
+	INFANTIL("Infantil", 8, 9), PRECADETE("Precadete", 10, 11), CADETE("Cadete", 12, 13), JUNIOR("Junior", 14, 16),
 	SENIOR("Senior", 17, Integer.MAX_VALUE);
 
 	private final String nombre;
