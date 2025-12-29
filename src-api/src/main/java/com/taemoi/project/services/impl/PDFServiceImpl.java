@@ -1165,12 +1165,17 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException {
 		// Find all alumnos with turnos on the specified day
-		List<Alumno> allAlumnos = alumnoRepository.findAll().stream().filter(a -> Boolean.TRUE.equals(a.getActivo())) // Only
-																														// active
-																														// alumnos
-				.filter(a -> deporte == null || a.getDeporte() == deporte) // Filter by sport if specified
-				.filter(a -> a.getFechaNacimiento() != null && a.getTurnos() != null && !a.getTurnos().isEmpty())
-				.filter(a -> a.getTurnos().stream()
+		List<Deporte> deportesFiltrar = deporte != null
+				? Collections.singletonList(deporte)
+				: Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
+						Deporte.DEFENSA_PERSONAL_FEMENINA);
+
+		List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar).stream()
+				.filter(ad -> ad.getAlumno() != null)
+				.filter(ad -> ad.getAlumno().getFechaNacimiento() != null
+						&& ad.getAlumno().getTurnos() != null
+						&& !ad.getAlumno().getTurnos().isEmpty())
+				.filter(ad -> ad.getAlumno().getTurnos().stream()
 						.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
 				.collect(Collectors.toList());
 
@@ -1178,9 +1183,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		// Create a data structure: Map<Deporte, List<TurnoWithAlumnos>>
 		class TurnoWithAlumnos {
 			com.taemoi.project.entities.Turno turno;
-			List<Alumno> alumnos;
+			List<AlumnoDeporte> alumnos;
 
-			TurnoWithAlumnos(com.taemoi.project.entities.Turno turno, List<Alumno> alumnos, Deporte deporte) {
+			TurnoWithAlumnos(com.taemoi.project.entities.Turno turno, List<AlumnoDeporte> alumnos) {
 				this.turno = turno;
 				this.alumnos = alumnos;
 			}
@@ -1190,29 +1195,35 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		Map<Deporte, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
 
 		// Process each alumno to build the turno-alumno-deporte relationships
-		for (Alumno alumno : allAlumnos) {
-			Deporte alumnoDeporte = alumno.getDeporte();
-			if (alumnoDeporte == null)
-				continue; // Skip alumnos without a deporte
+		for (AlumnoDeporte alumnoDeporte : allAlumnosDeporte) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+			Deporte alumnoDeporteEnum = alumnoDeporte.getDeporte();
+			if (alumno == null || alumnoDeporteEnum == null) {
+				continue;
+			}
 
 			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
-				if (turno.getDiaSemana() != null && turno.getDiaSemana().equalsIgnoreCase(grupo)) {
-					turnosByDeporte.computeIfAbsent(alumnoDeporte, k -> new ArrayList<>());
+				if (turno.getDiaSemana() == null || !turno.getDiaSemana().equalsIgnoreCase(grupo)) {
+					continue;
+				}
+				if (turno.getGrupo() == null || turno.getGrupo().getDeporte() == null) {
+					continue;
+				}
+				if (turno.getGrupo().getDeporte() != alumnoDeporteEnum) {
+					continue;
+				}
 
-					// Find or create TurnoWithAlumnos for this turno and deporte
-					TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporte).stream()
-							.filter(twa -> twa.turno.getId().equals(turno.getId())).findFirst().orElse(null);
+				turnosByDeporte.computeIfAbsent(alumnoDeporteEnum, k -> new ArrayList<>());
 
-					if (existing == null) {
-						List<Alumno> alumnosForTurno = new ArrayList<>();
-						alumnosForTurno.add(alumno);
-						turnosByDeporte.get(alumnoDeporte)
-								.add(new TurnoWithAlumnos(turno, alumnosForTurno, alumnoDeporte));
-					} else {
-						if (!existing.alumnos.contains(alumno)) {
-							existing.alumnos.add(alumno);
-						}
-					}
+				TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporteEnum).stream()
+						.filter(twa -> twa.turno.getId().equals(turno.getId())).findFirst().orElse(null);
+
+				if (existing == null) {
+					List<AlumnoDeporte> alumnosForTurno = new ArrayList<>();
+					alumnosForTurno.add(alumnoDeporte);
+					turnosByDeporte.get(alumnoDeporteEnum).add(new TurnoWithAlumnos(turno, alumnosForTurno));
+				} else if (!existing.alumnos.contains(alumnoDeporte)) {
+					existing.alumnos.add(alumnoDeporte);
 				}
 			}
 		}
@@ -1307,9 +1318,12 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		// Generate pages organized by sport, then by turno
 		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
 				Deporte.DEFENSA_PERSONAL_FEMENINA);
+		List<Deporte> deportesReporte = deportesOrdenados.stream()
+				.filter(deportesFiltrar::contains)
+				.collect(Collectors.toList());
 		boolean firstPage = true;
 
-		for (Deporte deporteActual : deportesOrdenados) {
+		for (Deporte deporteActual : deportesReporte) {
 			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
 			if (turnosDeporte == null || turnosDeporte.isEmpty())
 				continue;
@@ -1321,9 +1335,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				}
 				firstPage = false;
 
-				List<Alumno> alumnos = twa.alumnos;
+				List<AlumnoDeporte> alumnos = twa.alumnos;
 				// Sort alumnos by nombre
-				alumnos.sort(Comparator.comparing(Alumno::getNombre));
+				alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
 
 				int totalAlumnos = alumnos.size();
 				String turnoStr = twa.turno.getHoraInicio() + " a " + twa.turno.getHoraFin();
@@ -1356,28 +1370,30 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 						"<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
 				html.append("</tr></thead><tbody>");
 
-				for (Alumno a : alumnos) {
+				for (AlumnoDeporte ad : alumnos) {
+					Alumno a = ad.getAlumno();
 					LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
 							.atZone(ZoneId.systemDefault()).toLocalDate();
 					int edad = Period.between(nac, LocalDate.now()).getYears();
-					boolean licOk = Boolean.TRUE.equals(a.getTieneLicencia()) && a.getNumeroLicencia() != null;
-					String lic = licOk ? a.getNumeroLicencia().toString() : "NO";
+					boolean licOk = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
+					String lic = licOk ? ad.getNumeroLicencia().toString() : "NO";
 					String licClass = licOk ? "licencia-ok" : "licencia-no";
 
 					// Calculate months with current grade
 					int mesesConGrado = 0;
-					if (a.getFechaGrado() != null) {
-						LocalDate fechaGrado = Instant.ofEpochMilli(a.getFechaGrado().getTime())
+					if (ad.getFechaGrado() != null) {
+						LocalDate fechaGrado = Instant.ofEpochMilli(ad.getFechaGrado().getTime())
 								.atZone(ZoneId.systemDefault()).toLocalDate();
 						mesesConGrado = (int) Period.between(fechaGrado, LocalDate.now()).toTotalMonths();
 					}
-					boolean aptoExamen = Boolean.TRUE.equals(a.getAptoParaExamen());
+					boolean aptoExamen = Boolean.TRUE.equals(ad.getAptoParaExamen());
 					String aptoClass = aptoExamen ? "apto-examen" : "no-apto-examen";
 					String aptoText = mesesConGrado + "m";
 
 					html.append("<tr>");
 					html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
-					html.append(generateBeltCellHtml(a.getGrado().getTipoGrado()));
+					TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+					html.append(generateBeltCellHtml(tipoGrado));
 					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 					html.append("<td>").append(edad).append("</td>");
 					html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");

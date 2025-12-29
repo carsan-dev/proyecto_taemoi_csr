@@ -18,12 +18,14 @@ import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
@@ -49,6 +51,9 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+
+	@Autowired
+	private AlumnoDeporteRepository alumnoDeporteRepository;
 
 	/**
 	 * Inyección del repositorio de turno.
@@ -223,42 +228,33 @@ public class GrupoServiceImpl implements GrupoService {
 				"Defensa Personal Femenina");
 
 		for (String tipo : tipos) {
-			List<Alumno> alumnos;
+			String tipoUpper = tipo.toUpperCase();
+			boolean esCompeticion = tipoUpper.contains("COMPET");
+			Deporte deporte;
 
-			if (tipo.equalsIgnoreCase("Taekwondo Competición")) {
-				// For Taekwondo Competición: only TAEKWONDO students with esCompetidor = true
-				alumnos = alumnoRepository.findByDeporte(Deporte.TAEKWONDO).stream()
-					.filter(a -> a.getCompetidor() != null && a.getCompetidor())
-					.collect(Collectors.toList());
+			if (tipoUpper.contains("TAEKWONDO")) {
+				deporte = Deporte.TAEKWONDO;
+			} else if (tipoUpper.contains("KICKBOXING")) {
+				deporte = Deporte.KICKBOXING;
+			} else if (tipoUpper.contains("PILATES")) {
+				deporte = Deporte.PILATES;
+			} else if (tipoUpper.contains("DEFENSA")) {
+				deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
 			} else {
-				// Map tipo string to Deporte enum
-				Deporte deporte;
-				String tipoUpper = tipo.toUpperCase();
-
-				if (tipoUpper.contains("TAEKWONDO")) {
-					deporte = Deporte.TAEKWONDO;
-				} else if (tipoUpper.contains("KICKBOXING")) {
-					deporte = Deporte.KICKBOXING;
-				} else if (tipoUpper.contains("PILATES")) {
-					deporte = Deporte.PILATES;
-				} else if (tipoUpper.contains("DEFENSA")) {
-					deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
-				} else {
-					continue;
-				}
-
-				// Get all students by deporte
-				alumnos = alumnoRepository.findByDeporte(deporte);
+				continue;
 			}
 
-			// Count active students
-			long activeCount = alumnos.stream()
-				.filter(a -> a.getActivo() != null && a.getActivo())
-				.count();
+			long totalCount;
+			long activeCount;
 
-			long totalCount = alumnos.size();
+			if (esCompeticion) {
+				totalCount = alumnoDeporteRepository.countCompetidoresByDeporte(deporte);
+				activeCount = alumnoDeporteRepository.countCompetidoresActivosByDeporte(deporte);
+			} else {
+				totalCount = alumnoDeporteRepository.countByDeporteAndActivoTrue(deporte);
+				activeCount = alumnoDeporteRepository.countActivosByDeporte(deporte);
+			}
 
-			// Create inner map with active and total counts
 			Map<String, Long> counts = new HashMap<>();
 			counts.put("active", activeCount);
 			counts.put("total", totalCount);
@@ -271,46 +267,35 @@ public class GrupoServiceImpl implements GrupoService {
 
 	@Override
 	public List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo) {
-		List<Alumno> alumnos;
+		String tipoUpper = tipo.toUpperCase();
+		boolean esCompeticion = tipoUpper.contains("COMPET");
+		Deporte deporte;
+		List<AlumnoDeporte> alumnosDeporte;
 
-		if (tipo.equalsIgnoreCase("Taekwondo Competición")) {
-			// For Taekwondo Competición: only TAEKWONDO students with esCompetidor = true
-			alumnos = alumnoRepository.findByDeporte(Deporte.TAEKWONDO).stream()
-				.filter(a -> a.getCompetidor() != null && a.getCompetidor())
-				.collect(Collectors.toList());
+		if (tipoUpper.contains("TAEKWONDO")) {
+			deporte = Deporte.TAEKWONDO;
+		} else if (tipoUpper.contains("KICKBOXING")) {
+			deporte = Deporte.KICKBOXING;
+		} else if (tipoUpper.contains("PILATES")) {
+			deporte = Deporte.PILATES;
+		} else if (tipoUpper.contains("DEFENSA")) {
+			deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
 		} else {
-			// Map grupo tipo to Deporte enum
-			Deporte deporte;
-			String tipoUpper = tipo.toUpperCase();
-
-			if (tipoUpper.contains("TAEKWONDO")) {
-				deporte = Deporte.TAEKWONDO;
-			} else if (tipoUpper.contains("KICKBOXING")) {
-				deporte = Deporte.KICKBOXING;
-			} else if (tipoUpper.contains("PILATES")) {
-				deporte = Deporte.PILATES;
-			} else if (tipoUpper.contains("DEFENSA")) {
-				deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
-			} else {
-				throw new GrupoNoEncontradoException("Deporte no válido: " + tipo);
-			}
-
-			// Get all students by deporte field, not just those in groups
-			alumnos = alumnoRepository.findByDeporte(deporte);
+			throw new GrupoNoEncontradoException("Deporte no válido: " + tipo);
 		}
 
-		return alumnos.stream()
-			.map(AlumnoCortoDTO::deAlumno)
+		if (esCompeticion) {
+			alumnosDeporte = alumnoDeporteRepository.findCompetidoresByDeporteWithAlumno(deporte);
+		} else {
+			alumnosDeporte = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte);
+		}
+
+		return alumnosDeporte.stream()
+			.filter(ad -> ad.getAlumno() != null)
+			.map(ad -> AlumnoCortoDTO.deAlumno(ad.getAlumno()))
 			.collect(Collectors.toList());
 	}
 
-	/**
-	 * Elimina un alumno de un grupo.
-	 *
-	 * @param grupoId  El ID del grupo.
-	 * @param alumnoId El ID del alumno.
-	 * @throws GrupoNoEncontradoException Si el grupo o el alumno no existen.
-	 */
 	@Override
 	@Transactional
 	public void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId) {
