@@ -145,13 +145,27 @@
           </div>
 
           <div class="profile-content">
-            <div class="profile-image-wrapper" (click)="abrirModal(alumno.fotoAlumno?.url)" style="cursor: pointer;">
+            <div class="profile-image-wrapper" (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)" style="cursor: pointer;">
               <img class="profile-image"
-                [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                [src]="imagenPreview || (alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp')"
                 [alt]="'Foto de perfil de ' + alumno.nombre + ' ' + alumno.apellidos" />
               <div class="profile-image-overlay">
                 <i class="bi bi-zoom-in"></i>
               </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="inputFile.click()"
+                aria-label="Editar imagen del alumno">
+                <i class="bi bi-pencil"></i>
+                <span>Editar Imagen</span>
+              </button>
+              <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarFoto(alumno.id)"
+                [disabled]="!alumno.fotoAlumno?.url" aria-label="Eliminar imagen del alumno">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar Imagen</span>
+              </button>
+              <input #inputFile type="file" id="inputFile" (change)="onFileSelected($event)" accept="image/*"
+                style="display: none;" aria-label="Seleccionar nueva imagen del alumno" />
             </div>
 
             <div class="profile-header">

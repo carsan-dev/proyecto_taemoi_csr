@@ -859,13 +859,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.alumnoEditado.fotoAlumno = null;
         this.imagenPreview = '../../../../assets/media/default.webp';
         this.cargarAlumno(id);
+        showSuccessToast('Imagen eliminada');
       },
       error: () => {
-        Swal.fire({
-          title: 'Error al actualizar',
-          text: 'Error al actualizar al alumno',
-          icon: 'error',
-        });
+        showErrorToast('No se pudo eliminar la imagen');
       },
     });
   }
@@ -1141,6 +1138,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
+    if (!file) {
+      return;
+    }
     this.alumnoEditado.fotoAlumno = file;
 
     const reader = new FileReader();
@@ -1148,6 +1148,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.imagenPreview = e.target.result;
     };
     reader.readAsDataURL(file);
+    showSuccessToast('Imagen actualizada en el formulario');
   }
 
   /**
