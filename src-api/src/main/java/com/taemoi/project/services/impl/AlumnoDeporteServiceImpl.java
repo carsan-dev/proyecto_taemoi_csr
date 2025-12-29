@@ -680,13 +680,17 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		}
 
 		// Calcular edad y meses requeridos
-		int edad = FechaUtils.calcularEdad(alumnoDeporte.getAlumno().getFechaNacimiento());
-		long mesesRequeridos = examEligibilityConfig.obtenerMesesRequeridos(edad,
-				alumnoDeporte.getGrado().getTipoGrado());
+		Date fechaNacimiento = alumnoDeporte.getAlumno().getFechaNacimiento();
+		int edad = FechaUtils.calcularEdad(fechaNacimiento);
+		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(fechaNacimiento));
+		Long mesesRequeridos = (esMenor
+				? examEligibilityConfig.obtenerMesesRequeridosMenores()
+				: examEligibilityConfig.obtenerMesesRequeridosMayores())
+				.get(alumnoDeporte.getGrado().getTipoGrado());
 
-		// Verificar si es elegible para examen (no para cinturones negros 5º DAN)
-		if (mesesRequeridos == -1) {
-			return false; // No es elegible para más exámenes
+		// Verificar si es elegible para examen (sin periodo definido)
+		if (mesesRequeridos == null || mesesRequeridos == Long.MAX_VALUE) {
+			return false;
 		}
 
 		// Calcular fecha posible de examen
@@ -733,7 +737,16 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	 * Verifica si el alumno cumple 14 años en el año actual
 	 */
 	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-		LocalDate fechaNac = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		if (fechaNacimiento == null) {
+			return false;
+		}
+
+		LocalDate fechaNac;
+		if (fechaNacimiento instanceof java.sql.Date date) {
+			fechaNac = date.toLocalDate();
+		} else {
+			fechaNac = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		}
 		int anioNacimiento = fechaNac.getYear();
 		int anioActual = LocalDate.now().getYear();
 		int edadEsteAnio = anioActual - anioNacimiento;
