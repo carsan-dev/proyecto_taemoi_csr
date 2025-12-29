@@ -928,22 +928,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(Deporte deporte) {
-		List<Alumno> todosAlumnos = alumnoRepository.findAll();
+		List<Alumno> alumnosElegibles = alumnoRepository.findAlumnosAptosParaExamenPorDeporte(deporte);
 
-		// Filter alumnos that have the specific sport active and are eligible for exam
-		List<Alumno> alumnosElegibles = todosAlumnos.stream()
-				.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo())) // Only active alumnos
-				.filter(alumno -> alumno.getDeportes() != null && !alumno.getDeportes().isEmpty())
-				.filter(alumno -> {
-					// Check if alumno has the specific deporte active and is eligible for exam
-					return alumno.getDeportes().stream()
-							.anyMatch(ad -> ad.getDeporte() == deporte
-									&& Boolean.TRUE.equals(ad.getActivo())
-									&& Boolean.TRUE.equals(ad.getAptoParaExamen()));
-				})
-				.collect(Collectors.toList());
-
-		// Map to DTO
 		return alumnosElegibles.stream()
 				.map(AlumnoConGruposDTO::deAlumnoConGrupos)
 				.collect(Collectors.toList());
