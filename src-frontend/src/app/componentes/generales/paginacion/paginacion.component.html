@@ -2,7 +2,7 @@
   <nav aria-label="Navegación de páginas" class="mt-4 rounded">
     <ul class="pagination">
       <!-- Botón: Primera página -->
-      <li class="page-item" [class.disabled]="paginaActual === 1">
+      <li class="page-item" [class.disabled]="deshabilitado || paginaActual === 1">
         <a
           class="page-link"
           (click)="cambiarPagina(1)"
@@ -16,7 +16,7 @@
       </li>
 
       <!-- Botón: Página anterior -->
-      <li class="page-item" [class.disabled]="paginaActual === 1">
+      <li class="page-item" [class.disabled]="deshabilitado || paginaActual === 1">
         <a
           class="page-link"
           (click)="cambiarPagina(paginaActual - 1)"
@@ -32,7 +32,7 @@
       <!-- Números de página -->
       @if (totalPaginas <= 5) {
         @for (page of mostrarPaginas; track $index) {
-          <li class="page-item" [class.active]="paginaActual === page">
+          <li class="page-item" [class.active]="paginaActual === page" [class.disabled]="deshabilitado">
             <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
               {{ page }}
             </a>
@@ -42,7 +42,7 @@
 
       @if (totalPaginas > 5) {
         @for (page of mostrarPaginas; track $index) {
-          <li class="page-item" [class.active]="paginaActual === page">
+          <li class="page-item" [class.active]="paginaActual === page" [class.disabled]="deshabilitado">
             <a class="page-link" (click)="cambiarPagina(page)" tabindex="0">
               {{ page }}
             </a>
@@ -57,7 +57,7 @@
       }
 
       <!-- Botón: Página siguiente -->
-      <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+      <li class="page-item" [class.disabled]="deshabilitado || paginaActual === totalPaginas">
         <a
           class="page-link"
           (click)="cambiarPagina(paginaActual + 1)"
@@ -71,7 +71,7 @@
       </li>
 
       <!-- Botón: Última página -->
-      <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+      <li class="page-item" [class.disabled]="deshabilitado || paginaActual === totalPaginas">
         <a
           class="page-link"
           (click)="cambiarPagina(totalPaginas)"
