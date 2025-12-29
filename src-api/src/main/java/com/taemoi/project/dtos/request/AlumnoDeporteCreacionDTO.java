@@ -48,7 +48,7 @@ public class AlumnoDeporteCreacionDTO {
     private Double cuantiaTarifa;
 
     /**
-     * Rol familiar para tarifas PADRES_HIJOS (PADRE o HIJO)
+     * Rol familiar para tarifas PADRES_HIJOS (PADRE, MADRE, HIJO, HIJA)
      */
     private String rolFamiliar;
 

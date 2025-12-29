@@ -88,7 +88,7 @@ public class TarifaConfig {
 	 * varía según si el alumno es el padre (28€) o el hijo (26€).
 	 *
 	 * @param tipoTarifa El tipo de tarifa.
-	 * @param rolFamiliar El rol familiar del alumno (PADRE, HIJO, NINGUNO).
+	 * @param rolFamiliar El rol familiar del alumno (PADRE, MADRE, HIJO, HIJA, NINGUNO).
 	 * @return La cuantía correspondiente.
 	 * @throws IllegalArgumentException si tipoTarifa es null.
 	 */
@@ -101,8 +101,10 @@ public class TarifaConfig {
 		if (tipoTarifa == TipoTarifa.PADRES_HIJOS && rolFamiliar != null) {
 			switch (rolFamiliar) {
 				case PADRE:
+				case MADRE:
 					return 28.0; // Precio para el padre
 				case HIJO:
+				case HIJA:
 					return 26.0; // Precio para el hijo
 				case NINGUNO:
 				default:
