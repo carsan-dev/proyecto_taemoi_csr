@@ -61,7 +61,7 @@ public class TarifaConfig {
 		cuantias.put(TipoTarifa.ADULTO, 30.0);
 		cuantias.put(TipoTarifa.KICKBOXING, 30.0);
 		cuantias.put(TipoTarifa.PILATES, 30.0);
-		cuantias.put(TipoTarifa.DEFENSA_PERSONAL_FEMENINA, 30.0);
+		cuantias.put(TipoTarifa.DEFENSA_PERSONAL_FEMENINA, 25.0);
 
 		// Hacer el mapa inmutable para prevenir modificaciones accidentales
 		cuantias = Collections.unmodifiableMap(cuantias);

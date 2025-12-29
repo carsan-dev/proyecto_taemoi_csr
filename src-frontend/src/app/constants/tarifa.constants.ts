@@ -12,7 +12,7 @@ export const TARIFAS_ESTANDAR: { [key: string]: number } = {
   ADULTO: 30.0,
   KICKBOXING: 30.0,
   PILATES: 30.0,
-  DEFENSA_PERSONAL_FEMENINA: 30.0,
+  DEFENSA_PERSONAL_FEMENINA: 25.0,
 };
 
 /**
