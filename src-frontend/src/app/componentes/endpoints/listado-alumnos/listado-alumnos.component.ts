@@ -678,6 +678,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
+    }
     this.paginaActual = pageNumber;
     this.guardarEstadoPaginacion(); // Save state when changing pages
 
