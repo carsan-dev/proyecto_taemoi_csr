@@ -1659,9 +1659,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       case TipoTarifa.PADRES_HIJOS:
         // For PADRES_HIJOS, the price depends on the rol
         { const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
-        if (rolFamiliar === RolFamiliar.PADRE) {
+        if (rolFamiliar === RolFamiliar.PADRE || rolFamiliar === RolFamiliar.MADRE) {
           return 28;
-        } else if (rolFamiliar === RolFamiliar.HIJO) {
+        } else if (rolFamiliar === RolFamiliar.HIJO || rolFamiliar === RolFamiliar.HIJA) {
           return 26;
         }
         return 0; }

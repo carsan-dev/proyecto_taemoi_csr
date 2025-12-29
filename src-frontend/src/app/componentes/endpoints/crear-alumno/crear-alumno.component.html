@@ -163,7 +163,7 @@
                                   formControlName="rolFamiliar">
                             <option value="" disabled>Selecciona un rol</option>
                             @for (rol of rolesFamiliares; track rol) {
-                              <option [value]="rol">{{ rol }}</option>
+                              <option [value]="rol">{{ rol | titlecase }}</option>
                             }
                           </select>
                         </div>
