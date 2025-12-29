@@ -106,6 +106,9 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
+						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/deportes")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
