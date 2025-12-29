@@ -184,7 +184,7 @@ public interface AlumnoDeporteService {
 	 *
 	 * @param alumnoId ID del alumno
 	 * @param deporte Deporte a actualizar
-	 * @param rolFamiliar Nuevo rol familiar (PADRE, HIJO, NINGUNO)
+	 * @param rolFamiliar Nuevo rol familiar (PADRE, MADRE, HIJO, HIJA, NINGUNO)
 	 * @return AlumnoDeporte actualizado
 	 */
 	AlumnoDeporte actualizarRolFamiliar(Long alumnoId, Deporte deporte, String rolFamiliar);
