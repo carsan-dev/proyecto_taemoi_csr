@@ -133,6 +133,9 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   cambiarPaginaConvocatorias(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActualConvocatorias) {
+      return;
+    }
     this.paginaActualConvocatorias = pageNumber;
   }
 

@@ -458,6 +458,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * @param pageNumber The page number (1-indexed)
    */
   cambiarPagina(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
+    }
     if (pageNumber < 1 || pageNumber > this.totalPaginas) {
       return; // Invalid page number
     }
