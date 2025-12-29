@@ -16,6 +16,8 @@ import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Deporte } from '../../../enums/deporte';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
+import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
+import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 
 /**
  * Interface for sport entry in the form
@@ -30,7 +32,10 @@ interface DeporteEntry {
   cuantiaTarifa: number | null;
   rolFamiliar: string;
   grupoFamiliar: string;
+  categoria: string;
   competidor: boolean;
+  fechaAltaCompeticion: string | null;
+  fechaAltaCompetidorInicial: string | null;
   peso: number | null;
   fechaPeso: string;
   tieneLicencia: boolean;
@@ -54,20 +59,7 @@ export class CrearAlumnoComponent implements OnInit {
   tiposGrado: TipoGrado[] = [];
   grados: any[] = [];
   todosLosGrados: any[] = [];
-
-  // Default cuantías for each TipoTarifa (matching backend TarifaConfig)
-  private readonly cuantiasPorTarifa: Map<string, number> = new Map([
-    ['FAMILIAR', 0],
-    ['PADRES_HIJOS', 0],
-    ['ADULTO_GRUPO', 20],
-    ['INFANTIL_GRUPO', 20],
-    ['HERMANOS', 26],
-    ['INFANTIL', 28],
-    ['ADULTO', 30],
-    ['KICKBOXING', 30],
-    ['PILATES', 30],
-    ['DEFENSA_PERSONAL_FEMENINA', 30],
-  ]);
+  categorias = ['Infantil', 'Precadete', 'Cadete', 'Junior', 'Senior'];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -84,6 +76,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
       if (valor) {
         this.obtenerGradosDisponibles(valor);
+        this.actualizarCategoriasPorEdad();
       }
     });
   }
@@ -137,7 +130,10 @@ export class CrearAlumnoComponent implements OnInit {
       cuantiaTarifa: [null],
       rolFamiliar: [{ value: '', disabled: true }],  // For PADRES_HIJOS tarifa, disabled by default
       grupoFamiliar: [{ value: '', disabled: true }],  // For HERMANOS tarifa, disabled by default
+      categoria: [''],
       competidor: [false],
+      fechaAltaCompeticion: [''],
+      fechaAltaCompetidorInicial: [''],
       peso: [null],
       fechaPeso: [this.obtenerFechaHoy()],
       tieneLicencia: [false],
@@ -295,7 +291,8 @@ export class CrearAlumnoComponent implements OnInit {
 
     if (tipoTarifaControl?.value) {
       // Set default cuantía
-      const cuantiaDefault = this.cuantiasPorTarifa.get(tipoTarifaControl.value) || 0;
+      const rolFamiliar = rolFamiliarControl?.value || undefined;
+      const cuantiaDefault = obtenerCuantiaTarifaEstandar(tipoTarifaControl.value, rolFamiliar);
       cuantiaTarifaControl?.setValue(cuantiaDefault);
 
       // Handle PADRES_HIJOS tarifa - needs rolFamiliar
@@ -327,6 +324,19 @@ export class CrearAlumnoComponent implements OnInit {
       rolFamiliarControl?.updateValueAndValidity();
       grupoFamiliarControl?.updateValueAndValidity();
     }
+  }
+
+  onRolFamiliarChangeEnLista(index: number, event: any): void {
+    const deporteForm = this.deportesFormArray.at(index);
+    const tipoTarifa = deporteForm.get('tipoTarifa')?.value;
+    if (tipoTarifa !== 'PADRES_HIJOS') {
+      return;
+    }
+
+    const rolFamiliar = event.target.value;
+    const cuantiaTarifaControl = deporteForm.get('cuantiaTarifa');
+    const cuantiaDefault = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
+    cuantiaTarifaControl?.setValue(cuantiaDefault);
   }
 
   cargarGrados(): void {
@@ -395,6 +405,82 @@ export class CrearAlumnoComponent implements OnInit {
     this.grados = gradosFiltrados;
   }
 
+  private obtenerCategoriaPorEdadActual(): string {
+    return calcularCategoriaPorEdad(this.alumnoData.get('fechaNacimiento')?.value || null);
+  }
+
+  private actualizarCategoriasPorEdad(): void {
+    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
+    this.deportesFormArray.controls.forEach((control) => {
+      const competidor = control.get('competidor')?.value;
+      const categoriaControl = control.get('categoria');
+      if (!categoriaControl) {
+        return;
+      }
+
+      if (competidor) {
+        if (!categoriaControl.value || !categoriaControl.dirty) {
+          categoriaControl.setValue(categoriaPorEdad, { emitEvent: false });
+        }
+      } else if (categoriaControl.value) {
+        categoriaControl.setValue('', { emitEvent: false });
+      }
+    });
+  }
+
+  onCompetidorChangeEnLista(index: number): void {
+    const deporteForm = this.deportesFormArray.at(index);
+    const competidor = deporteForm.get('competidor')?.value;
+    const categoriaControl = deporteForm.get('categoria');
+    const fechaAltaCompeticionControl = deporteForm.get('fechaAltaCompeticion');
+    const fechaAltaCompetidorInicialControl = deporteForm.get('fechaAltaCompetidorInicial');
+    if (!categoriaControl) {
+      return;
+    }
+
+    if (competidor) {
+      const fechaAlta = deporteForm.get('fechaAlta')?.value || this.obtenerFechaHoy();
+      const fechaAltaInicial = deporteForm.get('fechaAltaInicial')?.value || fechaAlta;
+      const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
+      if (categoriaPorEdad && (!categoriaControl.value || !categoriaControl.dirty)) {
+        categoriaControl.setValue(categoriaPorEdad);
+      }
+      if (fechaAltaCompeticionControl && !fechaAltaCompeticionControl.value) {
+        fechaAltaCompeticionControl.setValue(fechaAlta);
+      }
+      if (fechaAltaCompetidorInicialControl && !fechaAltaCompetidorInicialControl.value) {
+        fechaAltaCompetidorInicialControl.setValue(fechaAltaInicial);
+      }
+    } else {
+      categoriaControl.setValue('');
+      if (fechaAltaCompeticionControl) {
+        fechaAltaCompeticionControl.setValue('');
+      }
+      if (fechaAltaCompetidorInicialControl) {
+        fechaAltaCompetidorInicialControl.setValue('');
+      }
+    }
+  }
+
+  onTieneLicenciaChangeEnLista(index: number): void {
+    const deporteForm = this.deportesFormArray.at(index);
+    const tieneLicencia = deporteForm.get('tieneLicencia')?.value;
+    if (tieneLicencia) {
+      return;
+    }
+
+    deporteForm.patchValue(
+      {
+        competidor: false,
+        categoria: '',
+        fechaAltaCompeticion: '',
+        fechaAltaCompetidorInicial: '',
+        peso: null,
+      },
+      { emitEvent: false }
+    );
+  }
+
   onTipoTarifaChange(event: any): void {
     const tipoTarifa = event.target.value;
 
@@ -430,12 +516,38 @@ export class CrearAlumnoComponent implements OnInit {
     }
 
     const alumnoData = this.alumnoData.getRawValue();
+    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
 
     // For each sport, set fechaAltaInicial to fechaAlta if not provided
     if (alumnoData.deportesInicial) {
       alumnoData.deportesInicial.forEach((deporte: any) => {
         if (!deporte.fechaAltaInicial) {
           deporte.fechaAltaInicial = deporte.fechaAlta;
+        }
+        if (!deporte.tieneLicencia) {
+          deporte.competidor = false;
+        }
+        if (deporte.competidor) {
+          if (!deporte.fechaAltaCompeticion) {
+            deporte.fechaAltaCompeticion = deporte.fechaAlta || this.obtenerFechaHoy();
+          }
+          if (!deporte.fechaAltaCompetidorInicial) {
+            deporte.fechaAltaCompetidorInicial =
+              deporte.fechaAltaInicial || deporte.fechaAlta || this.obtenerFechaHoy();
+          }
+          if (!deporte.categoria) {
+            deporte.categoria = categoriaPorEdad;
+          }
+          if (deporte.peso === '' || deporte.peso === null || deporte.peso === undefined) {
+            deporte.peso = null;
+          } else {
+            deporte.peso = Number(deporte.peso);
+          }
+        } else {
+          deporte.categoria = '';
+          deporte.fechaAltaCompeticion = null;
+          deporte.fechaAltaCompetidorInicial = null;
+          deporte.peso = null;
         }
       });
     }
