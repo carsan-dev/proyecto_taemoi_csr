@@ -18,6 +18,7 @@ import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.LoginAttemptService;
+import com.taemoi.project.utils.EmailUtils;
 
 /**
  * Implementación del servicio de autenticación que proporciona funcionalidades
@@ -53,14 +54,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	 */
 	@Override
 	public JwtAuthenticationResponse signup(RegistroRequest request) {
-		if (usuarioRepository.existsByEmail(request.getEmail())) {
+		String normalizedEmail = EmailUtils.normalizeEmail(request.getEmail());
+		if (usuarioRepository.existsByEmailIgnoreCase(normalizedEmail)) {
 			throw new IllegalArgumentException("Email ya está en uso.");
 		}
 
 		Usuario user = new Usuario();
 		user.setNombre(request.getNombre());
 		user.setApellidos(request.getApellidos());
-		user.setEmail(request.getEmail());
+		user.setEmail(normalizedEmail);
 		user.setContrasena(passwordEncoder.encode(request.getContrasena()));
 		user.getRoles().add(Roles.ROLE_USER);
 		usuarioRepository.save(user);
@@ -79,7 +81,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	 */
 	@Override
 	public JwtAuthenticationResponse signin(LoginRequest request) {
-		String email = request.getEmail();
+		String email = EmailUtils.normalizeEmail(request.getEmail());
 		if (loginAttemptService.isBlocked(email)) {
 			throw new LockedException("La cuenta está temporalmente bloqueada debido a múltiples intentos fallidos.");
 		}

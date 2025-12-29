@@ -66,6 +66,7 @@ import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
 
 import jakarta.persistence.criteria.Expression;
@@ -324,7 +325,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
 		nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
-		nuevoAlumno.setEmail(nuevoAlumnoDTO.getEmail());
+		String normalizedEmail = EmailUtils.normalizeEmail(nuevoAlumnoDTO.getEmail());
+		nuevoAlumno.setEmail(normalizedEmail);
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
@@ -484,12 +486,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
 
 		// Verificar si el Usuario ya existe o crear uno nuevo
-		Usuario usuarioExistente = usuarioRepository.findByEmail(nuevoAlumnoDTO.getEmail()).orElse(null);
+		Usuario usuarioExistente = usuarioRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
 		if (usuarioExistente == null) {
 			usuarioExistente = new Usuario();
 			usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
 			usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
-			usuarioExistente.setEmail(nuevoAlumnoDTO.getEmail());
+			usuarioExistente.setEmail(normalizedEmail);
 
 			// Generar y asignar contraseña al Usuario
 			String contrasena = generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());

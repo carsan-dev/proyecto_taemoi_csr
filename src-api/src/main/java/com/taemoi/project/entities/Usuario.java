@@ -3,6 +3,7 @@ package com.taemoi.project.entities;
 import java.io.Serial;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -121,7 +122,7 @@ public class Usuario implements UserDetails {
 	}
 
 	public void setEmail(String email) {
-		this.email = email;
+		this.email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
 	}
 
 	public String getContrasena() {
