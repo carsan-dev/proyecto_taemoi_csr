@@ -47,6 +47,9 @@ Comandos para eliminar todo lo existente en docker de cara a deploy limpio
   # 5. Delete all the other volumes
   sudo docker volume rm volumen1 volumen2 ... (sudo docker volume rm taemoi_db_data taemoi_nginx_cache)
 
+Hacer copia de seguridad de la base de datos en el servidor
+
+  sudo /usr/local/bin/mysql_backup_usb.sh
 
 Migrar data para local: 
 
@@ -168,5 +171,9 @@ Actualizar precio productos
 ✔ Los datos de competidor no se actualizan bien
 
 ✔ Arreglar representación de los documentos en los eventos
+
+✔ Añadir categoría automática por edad al competidor
+
+Al pasar de página rápido en la paginación del listado-alumnos, me da error porque intenta cargar demasiado rápido
 
 A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar.
