@@ -4,7 +4,7 @@
  */
 export const TARIFAS_ESTANDAR: { [key: string]: number } = {
   FAMILIAR: 0.0,
-  PADRES_HIJOS: 0.0, // Varía según rol (PADRE: 28.0, HIJO: 26.0)
+  PADRES_HIJOS: 0.0, // Varia segun rol (PADRE/MADRE: 28.0, HIJO/HIJA: 26.0)
   ADULTO_GRUPO: 20.0,
   INFANTIL_GRUPO: 20.0,
   HERMANOS: 26.0,
@@ -25,9 +25,9 @@ export function obtenerCuantiaTarifaEstandar(
 ): number {
   // Para PADRES_HIJOS, considerar el rol familiar
   if (tipoTarifa === 'PADRES_HIJOS' && rolFamiliar) {
-    if (rolFamiliar === 'PADRE') {
+    if (rolFamiliar === 'PADRE' || rolFamiliar === 'MADRE') {
       return 28.0;
-    } else if (rolFamiliar === 'HIJO') {
+    } else if (rolFamiliar === 'HIJO' || rolFamiliar === 'HIJA') {
       return 26.0;
     }
   }
