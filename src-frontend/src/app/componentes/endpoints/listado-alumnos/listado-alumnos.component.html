@@ -304,7 +304,7 @@
 
 
     <!-- Pagination -->
-    <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
+    <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando"
       (pageChange)="cambiarPagina($event)" class="mt-4">
     </app-paginacion>
 
