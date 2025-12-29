@@ -231,6 +231,11 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true")
 	List<Alumno> findAlumnosAptosParaExamen();
 
+	// Mゼtodo para obtener alumnos activos aptos para examen por deporte (multi-deporte)
+	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
+		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.deporte = :deporte")
+	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
+
 	// Método para obtener alumnos aptos para examen por un deporte específico,
 	// excluyendo competición para taekwondo
 	@Query("SELECT a FROM Alumno a JOIN a.grupos g WHERE a.aptoParaExamen = true AND g.nombre LIKE %:deporte% AND g.nombre NOT LIKE %:exclusion%")
