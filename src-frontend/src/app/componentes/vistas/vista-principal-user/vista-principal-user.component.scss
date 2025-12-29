@@ -176,6 +176,7 @@ $defensa-color: #e91e63;
       transition: $transition;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 0.8rem;
       box-shadow: 0 4px 15px rgba($primary-color, 0.25);
       text-transform: uppercase;
