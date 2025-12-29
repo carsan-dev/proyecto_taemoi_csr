@@ -21,6 +21,7 @@ import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import Swal from 'sweetalert2';
@@ -2809,7 +2810,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   getCategoriaValue(deporte: string): string {
     const deporteItem = this.deportesDelAlumno.find(d => d.deporte === deporte);
     const pending = this.pendingCompetidorChanges.get(deporte);
-    return pending?.categoria ?? deporteItem?.categoria ?? '';
+    const categoriaActual = pending?.categoria ?? deporteItem?.categoria ?? '';
+    if (!categoriaActual && deporteItem?.deporte === 'TAEKWONDO') {
+      const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+      return categoriaPorEdad || '';
+    }
+    return categoriaActual;
+  }
+
+  private obtenerCategoriaPorEdad(): string {
+    return calcularCategoriaPorEdad(this.alumno?.fechaNacimiento ?? null);
   }
 
   /**
@@ -3102,6 +3112,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     const pending = this.pendingCompetidorChanges.get(deporte)!;
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
 
     // Build the request object with all pending changes
     const datosCompetidor: {
@@ -3130,6 +3141,20 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
     if (pending.fechaPeso !== undefined) {
       datosCompetidor.fechaPeso = pending.fechaPeso;
+    }
+
+    const competidorActual =
+      pending.competidor !== undefined ? pending.competidor : deporteData?.competidor;
+    const categoriaActual =
+      pending.categoria !== undefined ? pending.categoria : deporteData?.categoria;
+    const categoriaVacia =
+      !categoriaActual || (typeof categoriaActual === 'string' && categoriaActual.trim() === '');
+
+    if (competidorActual && categoriaVacia && deporte === 'TAEKWONDO') {
+      const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+      if (categoriaPorEdad) {
+        datosCompetidor.categoria = categoriaPorEdad;
+      }
     }
 
     // Single request to update all fields
