@@ -35,7 +35,10 @@ public interface AlumnoDeporteService {
 	 * @param cuantiaTarifa Cuantía de la tarifa (puede ser null)
 	 * @param rolFamiliar Rol familiar para tarifas PADRES_HIJOS (puede ser null)
 	 * @param grupoFamiliar Grupo familiar para tarifa HERMANOS (puede ser null)
+	 * @param categoria Categoria para competidores (puede ser null)
 	 * @param competidor Si es competidor en este deporte (puede ser null, default false)
+	 * @param fechaAltaCompeticion Fecha de alta en competicion (puede ser null)
+	 * @param fechaAltaCompetidorInicial Fecha de alta inicial como competidor (puede ser null)
 	 * @param peso Peso del alumno si es competidor (puede ser null)
 	 * @param fechaPeso Fecha de medición del peso (puede ser null)
 	 * @param tieneLicencia Si tiene licencia federativa para este deporte (puede ser null, default false)
@@ -45,7 +48,8 @@ public interface AlumnoDeporteService {
 	 */
 	AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
 		java.util.Date fechaAlta, java.util.Date fechaAltaInicial, java.util.Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
-		String rolFamiliar, String grupoFamiliar, Boolean competidor,
+		String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
+		java.util.Date fechaAltaCompeticion, java.util.Date fechaAltaCompetidorInicial,
 		Double peso, java.util.Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, java.util.Date fechaLicencia);
 
 	/**

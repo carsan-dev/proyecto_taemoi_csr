@@ -457,7 +457,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 					deporteDTO.getCuantiaTarifa(),
 					deporteDTO.getRolFamiliar(),
 					deporteDTO.getGrupoFamiliar(),
+					deporteDTO.getCategoria(),
 					deporteDTO.getCompetidor(),
+					deporteDTO.getFechaAltaCompeticion(),
+					deporteDTO.getFechaAltaCompetidorInicial(),
 					deporteDTO.getPeso(),
 					deporteDTO.getFechaPeso(),
 					deporteDTO.getTieneLicencia(),
@@ -979,13 +982,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Categoria asignarCategoriaSegunEdad(int edad) {
 		TipoCategoria tipoCategoria;
-		if (edad >= 8 && edad <= 9) {
+		if (edad <= 9) {
 			tipoCategoria = TipoCategoria.INFANTIL;
-		} else if (edad >= 10 && edad <= 11) {
+		} else if (edad <= 11) {
 			tipoCategoria = TipoCategoria.PRECADETE;
-		} else if (edad >= 12 && edad <= 14) {
+		} else if (edad <= 13) {
 			tipoCategoria = TipoCategoria.CADETE;
-		} else if (edad >= 15 && edad <= 16) {
+		} else if (edad <= 16) {
 			tipoCategoria = TipoCategoria.JUNIOR;
 		} else {
 			tipoCategoria = TipoCategoria.SENIOR;

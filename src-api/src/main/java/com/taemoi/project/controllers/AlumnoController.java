@@ -1449,13 +1449,13 @@ public class AlumnoController {
 			String sql = "UPDATE alumno_deporte ad " +
 						 "INNER JOIN alumno a ON ad.alumno_id = a.id " +
 						 "SET ad.categoria_id = CASE " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 8 AND 9 THEN " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 9 THEN " +
 						 "    (SELECT id FROM categoria WHERE nombre = 'Infantil') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 10 AND 11 THEN " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 11 THEN " +
 						 "    (SELECT id FROM categoria WHERE nombre = 'Precadete') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 12 AND 14 THEN " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 13 THEN " +
 						 "    (SELECT id FROM categoria WHERE nombre = 'Cadete') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) BETWEEN 15 AND 17 THEN " +
+						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 16 THEN " +
 						 "    (SELECT id FROM categoria WHERE nombre = 'Junior') " +
 						 "  ELSE " +
 						 "    (SELECT id FROM categoria WHERE nombre = 'Senior') " +
