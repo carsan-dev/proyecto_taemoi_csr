@@ -14,6 +14,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.OAuth2UserService;
+import com.taemoi.project.utils.EmailUtils;
 
 /**
  * Implementación del servicio OAuth2UserService que gestiona la autenticación
@@ -52,7 +53,7 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	@Override
 	@Transactional
 	public Usuario processOAuth2Login(OAuth2User oauth2User, String registrationId) {
-		String email = oauth2User.getAttribute("email");
+		String email = EmailUtils.normalizeEmail(oauth2User.getAttribute("email"));
 		String nombre = oauth2User.getAttribute("given_name");
 		String apellidos = oauth2User.getAttribute("family_name");
 
@@ -61,13 +62,13 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		}
 
 		// Verificar si ya existe un usuario con este email
-		Optional<Usuario> existingUser = usuarioRepository.findByEmail(email);
+		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
 			return existingUser.get();
 		}
 
 		// Buscar TODOS los alumnos con este email (puede haber múltiples)
-		List<Alumno> alumnos = alumnoRepository.findAllByEmail(email);
+		List<Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCase(email);
 		if (alumnos.isEmpty()) {
 			// No hay ningún alumno con este email, no se puede crear usuario
 			throw new IllegalArgumentException(

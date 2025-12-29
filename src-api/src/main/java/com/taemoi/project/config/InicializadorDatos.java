@@ -22,6 +22,7 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.utils.EmailUtils;
 
 /**
  * Componente encargado de inicializar datos esenciales en la base de datos al arrancar la aplicación.
@@ -188,11 +189,12 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
 	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {
-		if (usuarioRepository.findByEmail(email).isEmpty()) {
+		String normalizedEmail = EmailUtils.normalizeEmail(email);
+		if (usuarioRepository.findByEmailIgnoreCase(normalizedEmail).isEmpty()) {
 			Usuario usuario = new Usuario();
 			usuario.setNombre(nombre);
 			usuario.setApellidos(apellidos);
-			usuario.setEmail(email);
+			usuario.setEmail(normalizedEmail);
 			usuario.setContrasena(passwordEncoder.encode(contrasena));
 			usuario.getRoles().add(rol);
 			usuarioRepository.save(usuario);

@@ -33,6 +33,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.utils.EmailUtils;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -78,7 +79,8 @@ public class AuthenticationController {
 	 */
 	@PostMapping("/signup")
 	public ResponseEntity<JwtAuthenticationResponse> signup(@Valid @RequestBody RegistroRequest request) {
-		if (usuarioRepository.existsByEmail(request.getEmail())) {
+		String normalizedEmail = EmailUtils.normalizeEmail(request.getEmail());
+		if (usuarioRepository.existsByEmailIgnoreCase(normalizedEmail)) {
 			logger.warn("Intento de registro con email ya existente: {}", request.getEmail());
 			throw new IllegalArgumentException("Credenciales inválidas.");
 		}
@@ -215,7 +217,7 @@ public class AuthenticationController {
 		String email = authentication.getName();
 
 		// Buscar todos los alumnos con el email del usuario
-		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository.findAllByEmail(email);
+		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCase(EmailUtils.normalizeEmail(email));
 
 		// Convertir a DTOs
 		List<AlumnoParaUsuarioDTO> alumnosDTO = alumnos.stream()
