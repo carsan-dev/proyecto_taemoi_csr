@@ -613,6 +613,48 @@ header.fixed-header {
       }
     }
 
+    .user-menu-toggle.user-info {
+      cursor: default;
+      pointer-events: none;
+      background: rgba($text-light, 0.12);
+      border-color: rgba($text-light, 0.25);
+      box-shadow: none;
+
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+
+    .btn-logout-user {
+      background: linear-gradient(135deg, $danger-color, color.adjust($danger-color, $lightness: -10%));
+      color: $text-light;
+      border: none;
+      border-radius: $border-radius-pill;
+      padding: 0.6rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba($danger-color, 0.3);
+      transition: $transition;
+
+      i {
+        font-size: 1rem;
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba($danger-color, 0.4);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
     // User Dropdown Menu
     .dropdown-menu-end {
       right: 0;
@@ -763,7 +805,8 @@ header.fixed-header {
 
       .btn-login,
       .btn-my-classes,
-      .btn-my-classes-mobile {
+      .btn-my-classes-mobile,
+      .btn-logout-user {
         min-height: 48px;
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
@@ -802,6 +845,15 @@ header.fixed-header {
       }
 
       .btn-my-classes {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.75rem;
+
+        i {
+          font-size: 0.9rem;
+        }
+      }
+
+      .btn-logout-user {
         padding: 0.5rem 0.8rem;
         font-size: 0.75rem;
 
