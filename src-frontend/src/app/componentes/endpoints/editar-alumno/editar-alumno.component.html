@@ -196,7 +196,7 @@
           </div>
 
           <!-- Pagination Component -->
-          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas"
+          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [deshabilitado]="cargando"
             (pageChange)="cambiarPagina($event)">
           </app-paginacion>
         </div>
@@ -1090,7 +1090,7 @@
                 <!-- Pagination for productos -->
                 @if (totalPaginasProductos > 1) {
                 <app-paginacion [paginaActual]="paginaActualProductos" [totalPaginas]="totalPaginasProductos"
-                  [tamanoPagina]="tamanoPaginaProductos" (pageChange)="cambiarPaginaProductos($event)" class="mt-3">
+                  [tamanoPagina]="tamanoPaginaProductos" [deshabilitado]="cargando" (pageChange)="cambiarPaginaProductos($event)" class="mt-3">
                 </app-paginacion>
                 }
 

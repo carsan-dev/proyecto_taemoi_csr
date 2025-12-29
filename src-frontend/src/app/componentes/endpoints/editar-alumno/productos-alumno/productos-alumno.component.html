@@ -111,6 +111,7 @@
       <app-paginacion
         [paginaActual]="paginaActual"
         [totalPaginas]="totalPaginas"
+        [deshabilitado]="cargando"
         (pageChange)="cambiarPagina($event)"
         class="mt-4">
       </app-paginacion>

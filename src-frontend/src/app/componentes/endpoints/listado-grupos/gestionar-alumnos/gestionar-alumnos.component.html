@@ -77,6 +77,7 @@
           <app-paginacion
             [paginaActual]="paginaActual"
             [totalPaginas]="totalPaginas"
+            [deshabilitado]="cargando"
             (pageChange)="cambiarPagina($event)">
           </app-paginacion>
         }

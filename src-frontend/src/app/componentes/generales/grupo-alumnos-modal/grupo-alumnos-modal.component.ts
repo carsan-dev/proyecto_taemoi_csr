@@ -120,6 +120,9 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy, OnChanges 
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
+    }
     if (pageNumber >= 1 && pageNumber <= this.totalPaginas) {
       this.paginaActual = pageNumber;
     }
