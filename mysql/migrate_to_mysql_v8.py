@@ -376,9 +376,9 @@ def map_rol_familiar(rol: Optional[Any]) -> str:
 
     mapping = {
         "PADRE": "PADRE",
-        "MADRE": "PADRE",  # Map MADRE to PADRE (parent role)
+        "MADRE": "MADRE",
         "HIJO": "HIJO",
-        "HIJA": "HIJO",  # Map HIJA to HIJO (child role)
+        "HIJA": "HIJA",
         "NINGUNO": "NINGUNO",
     }
 
