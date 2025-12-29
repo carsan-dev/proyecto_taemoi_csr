@@ -3,6 +3,7 @@ package com.taemoi.project.entities;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -310,7 +311,7 @@ public class Alumno {
 	}
 
 	public void setEmail(String email) {
-		this.email = email;
+		this.email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
 	}
 
 	// DEPRECATED: Categoria moved to AlumnoDeporte

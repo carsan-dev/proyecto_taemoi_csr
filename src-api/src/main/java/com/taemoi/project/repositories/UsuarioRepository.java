@@ -25,6 +25,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	 */
 	Optional<Usuario> findByEmail(String email);
 
+	Optional<Usuario> findByEmailIgnoreCase(String email);
+
 	/**
 	 * Recupera un usuario de la base de datos por su identificador único.
 	 * 
@@ -45,4 +47,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	 *         false de lo contrario.
 	 */
 	Boolean existsByEmail(String email);
+
+	Boolean existsByEmailIgnoreCase(String email);
 }

@@ -14,6 +14,7 @@ import com.taemoi.project.dtos.UsuarioDTO;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.utils.EmailUtils;
 
 /**
  * Implementación del servicio de usuario que proporciona operaciones
@@ -38,7 +39,8 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		return usuarioRepository.findByEmail(email)
+		String normalizedEmail = EmailUtils.normalizeEmail(email);
+		return usuarioRepository.findByEmailIgnoreCase(normalizedEmail)
 				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
 	}
 
@@ -61,7 +63,8 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Override
 	public Optional<Usuario> encontrarPorEmail(String email) {
-		return usuarioRepository.findByEmail(email);
+		String normalizedEmail = EmailUtils.normalizeEmail(email);
+		return usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
 	}
 
 	/**
@@ -94,7 +97,8 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Override
 	public boolean existePorEmail(String email) {
-		return usuarioRepository.existsByEmail(email);
+		String normalizedEmail = EmailUtils.normalizeEmail(email);
+		return usuarioRepository.existsByEmailIgnoreCase(normalizedEmail);
 	}
 
 	/**
