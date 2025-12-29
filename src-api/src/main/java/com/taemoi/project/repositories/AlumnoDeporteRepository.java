@@ -69,6 +69,48 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	List<AlumnoDeporte> findAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
 
 	/**
+	 * Cuenta alumnos por deporte con deporte activo
+	 */
+	long countByDeporteAndActivoTrue(Deporte deporte);
+
+	/**
+	 * Cuenta alumnos activos por deporte (deporte activo y alumno activo)
+	 */
+	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad JOIN ad.alumno a " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true AND a.activo = true")
+	long countActivosByDeporte(@Param("deporte") Deporte deporte);
+
+	/**
+	 * Cuenta competidores por deporte (solo deporte activo)
+	 */
+	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true AND ad.competidor = true")
+	long countCompetidoresByDeporte(@Param("deporte") Deporte deporte);
+
+	/**
+	 * Cuenta competidores activos por deporte (deporte activo y alumno activo)
+	 */
+	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad JOIN ad.alumno a " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true AND ad.competidor = true AND a.activo = true")
+	long countCompetidoresActivosByDeporte(@Param("deporte") Deporte deporte);
+
+	/**
+	 * Encuentra deportes activos por deporte con alumno cargado
+	 */
+	@Query("SELECT ad FROM AlumnoDeporte ad " +
+	       "LEFT JOIN FETCH ad.alumno a " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true")
+	List<AlumnoDeporte> findActivosByDeporteWithAlumno(@Param("deporte") Deporte deporte);
+
+	/**
+	 * Encuentra competidores activos por deporte con alumno cargado
+	 */
+	@Query("SELECT ad FROM AlumnoDeporte ad " +
+	       "LEFT JOIN FETCH ad.alumno a " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true AND ad.competidor = true")
+	List<AlumnoDeporte> findCompetidoresByDeporteWithAlumno(@Param("deporte") Deporte deporte);
+
+	/**
 	 * Encuentra un AlumnoDeporte específico con todas las relaciones cargadas
 	 */
 	@Query("SELECT ad FROM AlumnoDeporte ad " +
