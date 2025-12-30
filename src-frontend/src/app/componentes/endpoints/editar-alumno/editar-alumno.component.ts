@@ -100,6 +100,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
   fechaGradoActualizar: string = '';
+  private readonly deportesSinGrado = new Set(['PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
   deporteParaConvocatoria: string = '';
   convocatoriasFiltradasPorDeporte: any[] = [];
 
@@ -1886,6 +1887,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.fechaAltaDeporte = todayFormatted;
     this.fechaGradoDeporte = todayFormatted;
+    this.onNuevoDeporteChange(this.nuevoDeporte);
     this.mostrarModalAgregarDeporte = true;
   }
 
@@ -1900,13 +1902,47 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.fechaGradoDeporte = '';
   }
 
+  esDeporteSinGrado(deporte?: string | null): boolean {
+    if (!deporte) {
+      return false;
+    }
+    return this.deportesSinGrado.has(deporte);
+  }
+
+  requiereGradoNuevoDeporte(): boolean {
+    return !this.esDeporteSinGrado(this.nuevoDeporte);
+  }
+
+  onNuevoDeporteChange(deporte: string): void {
+    if (this.esDeporteSinGrado(deporte)) {
+      this.gradoInicialDeporte = '';
+      this.fechaGradoDeporte = '';
+      return;
+    }
+
+    if (!this.gradoInicialDeporte) {
+      this.gradoInicialDeporte = 'BLANCO';
+    }
+
+    if (!this.fechaGradoDeporte) {
+      this.fechaGradoDeporte = this.fechaAltaDeporte || this.getFechaActual();
+    }
+  }
+
   /**
    * Add a new sport to the alumno
    */
   agregarDeporte(): void {
-    if (!this.nuevoDeporte || !this.gradoInicialDeporte || !this.fechaAltaDeporte || !this.fechaGradoDeporte || !this.alumnoId) {
+    const requiereGrado = this.requiereGradoNuevoDeporte();
+    if (!this.nuevoDeporte || !this.fechaAltaDeporte || !this.alumnoId) {
       return;
     }
+    if (requiereGrado && (!this.gradoInicialDeporte || !this.fechaGradoDeporte)) {
+      return;
+    }
+
+    const gradoInicial = requiereGrado ? this.gradoInicialDeporte : null;
+    const fechaGrado = requiereGrado ? this.fechaGradoDeporte : null;
 
     // Save the new sport to switch to it after adding
     const deporteToActivate = this.nuevoDeporte;
@@ -1915,9 +1951,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .agregarDeporteAAlumno(
         this.alumnoId,
         this.nuevoDeporte,
-        this.gradoInicialDeporte,
+        gradoInicial,
         this.fechaAltaDeporte,
-        this.fechaGradoDeporte
+        fechaGrado
       )
       .subscribe({
         next: () => {
