@@ -12,7 +12,7 @@ import {
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
 import { MapaComponent } from '../../generales/mapa/mapa.component';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 
 @Component({
@@ -33,13 +33,18 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
 
   constructor(
     @Inject(PLATFORM_ID) private readonly platformId: Object,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
     this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado) => {
       this.usuarioLogueado = estado;
+      this.redirigirSiAdmin(this.authService.getRolesActuales());
+    });
+    this.authService.rolesCambio.subscribe((roles) => {
+      this.redirigirSiAdmin(roles);
     });
   }
 
@@ -88,6 +93,18 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
     const mapSection = document.getElementById('map-section');
     if (mapSection) {
       mapSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  private redirigirSiAdmin(roles: string[]): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (!this.usuarioLogueado) {
+      return;
+    }
+    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+      this.router.navigate(['/adminpage']);
     }
   }
 }
