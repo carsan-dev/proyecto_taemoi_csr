@@ -2166,6 +2166,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(".deporte-taekwondo { color: #0D47A1; }");
 		html.append(".deporte-kickboxing { color: #ff4500; }");
 		html.append(".grado-cell { text-align: center; }");
+		html.append(".comp-cell { text-align: center; }");
 		html.append(".nombre-cell { vertical-align: middle; }");
 		html.append(".line-item { margin: 0; padding: 0; }");
 		html.append(".line-item + .line-item { margin-top: 1mm; }");
@@ -2189,17 +2190,18 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		// Table
 		html.append("<table>");
 		html.append("<thead><tr>");
-		html.append("<th style='width: 30%;'>NOMBRE</th>");
+		html.append("<th style='width: 28%;'>NOMBRE</th>");
 		html.append("<th style='width: 12%;'>DEPORTE</th>");
-		html.append("<th style='width: 15%;'>DESCUENTO</th>");
+		html.append("<th style='width: 14%;'>DESCUENTO</th>");
 		html.append("<th style='width: 12%;'>CUANTÍA</th>");
-		html.append("<th style='width: 15%;'>GRADO</th>");
-		html.append("<th style='width: 16%;'>FECHA DE PAGO</th>");
+		html.append("<th style='width: 8%;'>COMP</th>");
+		html.append("<th style='width: 12%;'>GRADO</th>");
+		html.append("<th style='width: 14%;'>FECHA DE PAGO</th>");
 		html.append("</tr></thead>");
 		html.append("<tbody>");
 
 		if (alumnoDeportes.isEmpty()) {
-			html.append("<tr><td colspan='6' style='text-align: center; padding: 10mm; color: #999;'>");
+			html.append("<tr><td colspan='7' style='text-align: center; padding: 10mm; color: #999;'>");
 			html.append("No hay alumnos activos de Taekwondo o Kickboxing");
 			html.append("</td></tr>");
 		} else {
@@ -2299,6 +2301,30 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			            cuantia = String.format("%.2f EUR", ad.getCuantiaTarifa());
 			        }
 			        html.append("<div class='line-item'>").append(cuantia).append("</div>");
+			    }
+			    html.append("</td>");
+
+			    // COMP
+			    html.append("<td class='comp-cell'>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
+			        String comp = "-";
+			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
+			            double competidorCuantia = productosAlumno.stream()
+			                    .filter(p -> {
+			                        String concepto = p.getConcepto();
+			                        return concepto != null
+			                                && concepto.toUpperCase(Locale.ROOT).startsWith("TARIFA COMPETIDOR");
+			                    })
+			                    .filter(p -> p.getPrecio() != null)
+			                    .mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
+			                    .sum();
+			            if (competidorCuantia > 0) {
+			                comp = String.format("%.2f", competidorCuantia);
+			            }
+			        }
+			        html.append("<div class='line-item'>").append(comp).append("</div>");
 			    }
 			    html.append("</td>");
 
