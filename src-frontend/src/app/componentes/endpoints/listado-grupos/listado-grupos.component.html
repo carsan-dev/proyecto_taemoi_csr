@@ -51,6 +51,7 @@
             <div class="item-header">
               <div class="item-title">
                 <h4>{{ grupo.nombre }}</h4>
+                <p class="group-age-range">Rango edad: {{ formatearRangoEdad(grupo) }}</p>
               </div>
             </div>
 
@@ -105,6 +106,10 @@
             </div>
 
             <div class="item-footer">
+              <button class="admin-btn admin-btn-outline admin-btn-sm" (click)="editarRangoEdad(grupo)">
+                <i class="bi bi-people"></i>
+                <span>Rango edad</span>
+              </button>
               <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/gestionarAlumnos', grupo.id]">
                 <i class="bi bi-person-lines-fill"></i>
                 <span>Alumnos</span>
