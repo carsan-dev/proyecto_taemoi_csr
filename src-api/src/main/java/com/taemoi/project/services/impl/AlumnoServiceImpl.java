@@ -572,7 +572,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 			// Actualizar otros campos del alumno
 			alumnoExistente.setNif(alumnoActualizado.getNif());
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
-			alumnoExistente.setEmail(alumnoActualizado.getEmail());
+			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
+			String currentEmail = EmailUtils.normalizeEmail(alumnoExistente.getEmail());
+			if (normalizedEmail != null && !normalizedEmail.equals(currentEmail)) {
+				Usuario usuario = alumnoExistente.getUsuario();
+				if (usuario != null) {
+					Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
+					if (usuarioConEmail.isPresent() && !usuarioConEmail.get().getId().equals(usuario.getId())) {
+						throw new IllegalArgumentException("El correo electronico ya esta asociado a otro usuario.");
+					}
+					usuario.setEmail(normalizedEmail);
+					usuarioRepository.save(usuario);
+				}
+			}
+			alumnoExistente.setEmail(normalizedEmail);
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
 			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
 
