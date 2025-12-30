@@ -25,6 +25,8 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtServiceImpl implements JwtService {
 
+	private static final long DEFAULT_EXPIRATION_MILLIS = 1000L * 60 * 60 * 10;
+
 	@Value("${jwt.secret}")
 	private String jwtSigningKey;
 
@@ -47,7 +49,12 @@ public class JwtServiceImpl implements JwtService {
 	 */
 	@Override
 	public String generateToken(UserDetails userDetails) {
-		return generateToken(new HashMap<>(), userDetails);
+		return generateToken(new HashMap<>(), userDetails, DEFAULT_EXPIRATION_MILLIS);
+	}
+
+	@Override
+	public String generateToken(UserDetails userDetails, long expirationMillis) {
+		return generateToken(new HashMap<>(), userDetails, expirationMillis);
 	}
 
 	// Generar un token de refresco con mayor duración
@@ -97,10 +104,10 @@ public class JwtServiceImpl implements JwtService {
 	 * @param userDetails Detalles del usuario para el token JWT.
 	 * @return El token JWT generado.
 	 */
-	private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+	private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, long expirationMillis) {
 		return Jwts.builder().claims(extraClaims).subject(userDetails.getUsername())
 				.issuedAt(new Date(System.currentTimeMillis()))
-				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Token expira en 10 horas
+				.expiration(new Date(System.currentTimeMillis() + expirationMillis))
 				.signWith(getSigningKey()).compact();
 	}
 

@@ -102,13 +102,18 @@ public class AuthenticationController {
 
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
+		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
 		// Crear la cookie HTTP-Only
 		Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
 		jwtCookie.setHttpOnly(true); // No accesible desde JavaScript
 		jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
 		jwtCookie.setPath("/"); // Disponible para todo el dominio
-		jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas de validez
+		if (rememberMe) {
+			jwtCookie.setMaxAge(60 * 60 * 24 * 30); // 30 dias de validez
+		} else {
+			jwtCookie.setMaxAge(-1); // Sesion hasta cerrar el navegador
+		}
 		if (isProduction) {
 			jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
 		}
