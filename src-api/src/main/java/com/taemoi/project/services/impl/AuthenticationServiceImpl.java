@@ -82,6 +82,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	@Override
 	public JwtAuthenticationResponse signin(LoginRequest request) {
 		String email = EmailUtils.normalizeEmail(request.getEmail());
+		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 		if (loginAttemptService.isBlocked(email)) {
 			throw new LockedException("La cuenta está temporalmente bloqueada debido a múltiples intentos fallidos.");
 		}
@@ -94,7 +95,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			loginAttemptService.loginSucceeded(email);
 
 			Usuario user = (Usuario) authentication.getPrincipal();
-			String jwt = jwtService.generateToken(user);
+			long expirationMillis = rememberMe ? 1000L * 60 * 60 * 24 * 30 : 1000L * 60 * 60 * 10;
+			String jwt = jwtService.generateToken(user, expirationMillis);
 			return new JwtAuthenticationResponse(jwt);
 		} catch (BadCredentialsException e) {
 			loginAttemptService.loginFailed(email);
