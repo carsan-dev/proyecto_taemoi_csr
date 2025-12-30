@@ -9,7 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { GrupoDTO } from '../../../interfaces/grupo-dto';
-import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { CommonModule, Location } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 
@@ -34,6 +34,8 @@ export class EditarGrupoComponent implements OnInit {
   ) {
     this.grupoForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(50)]],
+      rangoEdadMin: [null],
+      rangoEdadMax: [null],
     });
   }
 
@@ -51,15 +53,15 @@ export class EditarGrupoComponent implements OnInit {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (grupo: GrupoDTO) => {
-          this.grupoForm.patchValue({ nombre: grupo.nombre });
+          this.grupoForm.patchValue({
+            nombre: grupo.nombre,
+            rangoEdadMin: grupo.rangoEdadMin ?? null,
+            rangoEdadMax: grupo.rangoEdadMax ?? null,
+          });
         },
         error: () => {
           this.cargando = false;
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo cargar el grupo',
-            icon: 'error',
-          });
+          showErrorToast('No se pudo cargar el grupo');
         }
       });
   }
@@ -70,20 +72,11 @@ export class EditarGrupoComponent implements OnInit {
         .actualizarGrupo(this.grupoId, this.grupoForm.value)
         .subscribe({
           next: (response) => {
-            Swal.fire({
-              title: 'Perfecto!',
-              text: 'Has creado un nuevo grupo!',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('El grupo se ha actualizado correctamente');
             this.router.navigate(['/gruposListar']);
           },
           error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: 'Error al actualizar el grupo',
-              icon: 'error',
-            });
+            showErrorToast('Error al actualizar el grupo');
           },
           complete: () => {},
         });
