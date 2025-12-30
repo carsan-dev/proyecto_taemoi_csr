@@ -292,7 +292,7 @@ public class GrupoServiceImpl implements GrupoService {
 
 		return alumnosDeporte.stream()
 			.filter(ad -> ad.getAlumno() != null)
-			.map(ad -> AlumnoCortoDTO.deAlumno(ad.getAlumno()))
+			.map(AlumnoCortoDTO::deAlumnoDeporte)
 			.collect(Collectors.toList());
 	}
 
@@ -450,7 +450,20 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setNombre(grupo.getNombre());
 		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
 
-		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream().map(AlumnoCortoDTO::deAlumno)
+		Deporte deporteGrupo = grupo.getDeporte();
+		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
+				.map(alumno -> {
+					if (deporteGrupo != null && alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+						AlumnoDeporte alumnoDeporte = alumno.getDeportes().stream()
+								.filter(ad -> ad.getDeporte() == deporteGrupo)
+								.findFirst()
+								.orElse(null);
+						if (alumnoDeporte != null) {
+							return AlumnoCortoDTO.deAlumnoDeporte(alumnoDeporte);
+						}
+					}
+					return AlumnoCortoDTO.deAlumno(alumno);
+				})
 				.collect(Collectors.toList());
 		grupoDTO.setAlumnos(alumnosDTO);
 

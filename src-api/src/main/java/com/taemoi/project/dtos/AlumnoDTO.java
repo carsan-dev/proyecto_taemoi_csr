@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
@@ -390,11 +391,29 @@ public class AlumnoDTO {
 			return null;
 		}
 
+		AlumnoDeporte deportePrincipal = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			deportePrincipal = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(alumno.getDeportes().get(0));
+		}
+
+		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
+		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();
+		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : alumno.getRolFamiliar();
+		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : alumno.getGrupoFamiliar();
+
 		// Categoria is now per-sport (in AlumnoDeporte), not global
-		String categoriaNombre = null;
-		String gradoTipo = alumno.getGrado() != null && alumno.getGrado().getTipoGrado() != null
-				? alumno.getGrado().getTipoGrado().name()
+		String categoriaNombre = deportePrincipal != null && deportePrincipal.getCategoria() != null
+				? deportePrincipal.getCategoria().getNombre()
 				: null;
+		String gradoTipo = null;
+		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
+			gradoTipo = deportePrincipal.getGrado().getTipoGrado().name();
+		} else if (alumno.getGrado() != null) {
+			gradoTipo = alumno.getGrado().getTipoGrado().name();
+		}
 
 		Integer telefono = null;
 		if (alumno.getTelefono() != null) {
@@ -409,14 +428,33 @@ public class AlumnoDTO {
 		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
 
+		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : alumno.getCompetidor();
+		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : alumno.getPeso();
+		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : alumno.getFechaPeso();
+		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : alumno.getDeporte();
+		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : alumno.getFechaGrado();
+		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : alumno.getTieneLicencia();
+		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : alumno.getNumeroLicencia();
+		Date fechaLicencia = deportePrincipal != null ? deportePrincipal.getFechaLicencia() : alumno.getFechaLicencia();
+		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : alumno.getAptoParaExamen();
+
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
-				alumno.getCuantiaTarifa(), alumno.getTipoTarifa(), alumno.getRolFamiliar(), alumno.getGrupoFamiliar(),
+				cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
-				alumno.getAutorizacionWeb(), alumno.getCompetidor(), alumno.getPeso(), alumno.getFechaPeso(), alumno.getDeporte(),
-				categoriaNombre, gradoTipo, alumno.getFechaGrado(), alumno.getFotoAlumno(), alumno.getTieneLicencia(),
-				alumno.getNumeroLicencia(), alumno.getFechaLicencia(), alumno.getTieneDiscapacidad(),
-				alumno.getAptoParaExamen());
+				alumno.getAutorizacionWeb(),
+				competidor,
+				peso,
+				fechaPeso,
+				deporte,
+				categoriaNombre, gradoTipo,
+				fechaGrado,
+				alumno.getFotoAlumno(),
+				tieneLicencia,
+				numeroLicencia,
+				fechaLicencia,
+				alumno.getTieneDiscapacidad(),
+				aptoParaExamen);
 
 		// Populate deportes list from AlumnoDeporte entities
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
