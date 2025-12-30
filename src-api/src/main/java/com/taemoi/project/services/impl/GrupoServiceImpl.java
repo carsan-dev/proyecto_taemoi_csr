@@ -117,6 +117,8 @@ public class GrupoServiceImpl implements GrupoService {
 		if (grupoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
 			grupo.setNombre(grupoDTO.getNombre());
+			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
+			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
 			grupo = grupoRepository.save(grupo);
 
 			return convertirEntidadADTO(grupo);
@@ -450,6 +452,8 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
 		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
+		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
+		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
 
 		Deporte deporteGrupo = grupo.getDeporte();
 		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
@@ -488,6 +492,8 @@ public class GrupoServiceImpl implements GrupoService {
 		Grupo grupo = new Grupo();
 		grupo.setId(grupoDTO.getId());
 		grupo.setNombre(grupoDTO.getNombre());
+		grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
+		grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
 
 		// Set deporte from DTO
 		if (grupoDTO.getDeporte() != null && !grupoDTO.getDeporte().isEmpty()) {
@@ -524,6 +530,8 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
 		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
+		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
+		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
 		return grupoDTO;
 	}
 }
