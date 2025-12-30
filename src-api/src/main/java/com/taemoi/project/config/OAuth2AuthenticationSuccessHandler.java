@@ -49,8 +49,21 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			// Procesar el login OAuth2 y crear/obtener el usuario
 			Usuario usuario = oauth2UserService.processOAuth2Login(oauth2User, "google");
 
+			boolean rememberMe = false;
+			jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+			if (cookies != null) {
+				for (jakarta.servlet.http.Cookie cookie : cookies) {
+					if ("rememberMe".equals(cookie.getName())) {
+						String value = cookie.getValue();
+						rememberMe = "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
+						break;
+					}
+				}
+			}
+
 			// Generar JWT token
-			String jwt = jwtService.generateToken(usuario);
+			long expirationMillis = rememberMe ? 1000L * 60 * 60 * 24 * 30 : 1000L * 60 * 60 * 10;
+			String jwt = jwtService.generateToken(usuario, expirationMillis);
 
 			// Determinar si usar Secure basado en el perfil activo
 			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
@@ -60,13 +73,25 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			jwtCookie.setHttpOnly(true);
 			jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
 			jwtCookie.setPath("/");
-			jwtCookie.setMaxAge(60 * 60 * 10); // 10 horas
+			if (rememberMe) {
+				jwtCookie.setMaxAge(60 * 60 * 24 * 30); // 30 dias
+			} else {
+				jwtCookie.setMaxAge(-1); // Sesion hasta cerrar el navegador
+			}
 			if (isProduction) {
 				jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
 			}
 
 			// Agregar la cookie a la respuesta HTTP
 			response.addCookie(jwtCookie);
+			jakarta.servlet.http.Cookie rememberMeCookie = new jakarta.servlet.http.Cookie("rememberMe", null);
+			rememberMeCookie.setPath("/");
+			rememberMeCookie.setMaxAge(0);
+			rememberMeCookie.setSecure(isProduction);
+			if (isProduction) {
+				rememberMeCookie.setAttribute("SameSite", "Lax");
+			}
+			response.addCookie(rememberMeCookie);
 
 			// Redirigir al frontend basado en el rol del usuario
 			String redirectPath;

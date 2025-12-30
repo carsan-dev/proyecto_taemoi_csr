@@ -3,6 +3,7 @@ package com.taemoi.project.dtos.request;
 public class LoginRequest {
 	private String email;
 	private String contrasena;
+	private Boolean rememberMe;
 
 	public LoginRequest() {
 	}
@@ -26,6 +27,14 @@ public class LoginRequest {
 
 	public void setContrasena(String contrasena) {
 		this.contrasena = contrasena;
+	}
+
+	public Boolean getRememberMe() {
+		return rememberMe;
+	}
+
+	public void setRememberMe(Boolean rememberMe) {
+		this.rememberMe = rememberMe;
 	}
 
 }
