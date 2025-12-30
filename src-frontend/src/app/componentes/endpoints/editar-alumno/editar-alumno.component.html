@@ -1758,6 +1758,20 @@
           </small>
         </div>
 
+        <!-- Fecha de Alta Inicial (Opcional) -->
+        <div class="admin-form-field mb-3">
+          <label for="fechaAltaInicialDeporte">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Alta Inicial (opcional)
+          </label>
+          <input type="date" id="fechaAltaInicialDeporte" class="admin-form-control"
+            [(ngModel)]="fechaAltaInicialDeporte" aria-label="Fecha de alta inicial en el deporte" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Si no se indica, se usará la fecha de alta
+          </small>
+        </div>
+
         @if (!esDeporteSinGrado(nuevoDeporte)) {
         <!-- Fecha de Grado -->
         <div class="admin-form-field">

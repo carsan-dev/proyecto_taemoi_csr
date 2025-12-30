@@ -96,6 +96,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   nuevoDeporte: string = '';
   gradoInicialDeporte: string = '';
   fechaAltaDeporte: string = '';
+  fechaAltaInicialDeporte: string = '';
   fechaGradoDeporte: string = '';
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
@@ -1886,6 +1887,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const todayFormatted = `${yyyy}-${mm}-${dd}`;
 
     this.fechaAltaDeporte = todayFormatted;
+    this.fechaAltaInicialDeporte = '';
     this.fechaGradoDeporte = todayFormatted;
     this.onNuevoDeporteChange(this.nuevoDeporte);
     this.mostrarModalAgregarDeporte = true;
@@ -1899,6 +1901,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.nuevoDeporte = '';
     this.gradoInicialDeporte = '';
     this.fechaAltaDeporte = '';
+    this.fechaAltaInicialDeporte = '';
     this.fechaGradoDeporte = '';
   }
 
@@ -1943,6 +1946,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     const gradoInicial = requiereGrado ? this.gradoInicialDeporte : null;
     const fechaGrado = requiereGrado ? this.fechaGradoDeporte : null;
+    const fechaAltaInicial = this.fechaAltaInicialDeporte || null;
 
     // Save the new sport to switch to it after adding
     const deporteToActivate = this.nuevoDeporte;
@@ -1953,7 +1957,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.nuevoDeporte,
         gradoInicial,
         this.fechaAltaDeporte,
-        fechaGrado
+        fechaGrado,
+        fechaAltaInicial
       )
       .subscribe({
         next: () => {
