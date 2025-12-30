@@ -76,6 +76,17 @@
             </div>
           </div>
 
+          <!-- Remember Me -->
+          <div class="form-group remember-group">
+            <label class="remember-label">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                [(ngModel)]="credenciales.rememberMe" />
+              <span>Recordarme 30 dias</span>
+            </label>
+          </div>
+
           <!-- Submit Button -->
           <div class="form-actions">
             <button type="submit" class="btn btn-login">
