@@ -52,7 +52,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	private ExamEligibilityConfig examEligibilityConfig;
 
 	@Override
-	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, Date fechaAlta, Date fechaGrado) {
+	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, Date fechaAlta,
+			Date fechaAltaInicial, Date fechaGrado) {
 		// Verificar que el alumno existe
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
@@ -76,7 +77,11 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		alumnoDeporte.setDeporte(deporte);
 		alumnoDeporte.setActivo(true);
 		// Use provided fechaAlta or default to current date
-		alumnoDeporte.setFechaAlta(fechaAlta != null ? fechaAlta : new Date());
+		Date fechaAltaFinal = fechaAlta != null ? fechaAlta : new Date();
+		alumnoDeporte.setFechaAlta(fechaAltaFinal);
+		// Use provided fechaAltaInicial or default to fechaAlta
+		Date fechaAltaInicialFinal = fechaAltaInicial != null ? fechaAltaInicial : fechaAltaFinal;
+		alumnoDeporte.setFechaAltaInicial(fechaAltaInicialFinal);
 		alumnoDeporte.setAptoParaExamen(false);
 
 		// Asignar grado si se proporcionó (deportes como Pilates no tienen grado)

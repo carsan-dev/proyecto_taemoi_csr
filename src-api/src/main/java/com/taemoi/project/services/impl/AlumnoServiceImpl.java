@@ -1459,8 +1459,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 			com.taemoi.project.entities.Deporte deporte,
 			com.taemoi.project.entities.TipoGrado gradoInicial,
 			java.util.Date fechaAlta,
+			java.util.Date fechaAltaInicial,
 			java.util.Date fechaGrado) {
-		return alumnoDeporteService.agregarDeporteAAlumno(alumnoId, deporte, gradoInicial, fechaAlta, fechaGrado);
+		return alumnoDeporteService.agregarDeporteAAlumno(
+				alumnoId,
+				deporte,
+				gradoInicial,
+				fechaAlta,
+				fechaAltaInicial,
+				fechaGrado
+		);
 	}
 
 	@Override
