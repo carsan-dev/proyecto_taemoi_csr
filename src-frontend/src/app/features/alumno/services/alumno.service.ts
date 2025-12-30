@@ -287,11 +287,18 @@ export class AlumnoService {
     deporte: string,
     gradoInicial: string | null,
     fechaAlta: string,
-    fechaGrado: string | null
+    fechaGrado: string | null,
+    fechaAltaInicial: string | null
   ): Observable<any> {
     return this.http.post<any>(
       `${this.urlBase}/${alumnoId}/deportes`,
-      { deporte, gradoInicial: gradoInicial ?? null, fechaAlta, fechaGrado: fechaGrado ?? null },
+      {
+        deporte,
+        gradoInicial: gradoInicial ?? null,
+        fechaAlta,
+        fechaGrado: fechaGrado ?? null,
+        fechaAltaInicial: fechaAltaInicial ?? null,
+      },
       { withCredentials: true }
     );
   }
