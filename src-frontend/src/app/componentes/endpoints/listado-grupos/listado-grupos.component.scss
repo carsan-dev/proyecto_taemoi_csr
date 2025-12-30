@@ -121,6 +121,12 @@
   overflow: visible;
 }
 
+.group-age-range {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--admin-text-muted, #6c757d);
+}
+
 // Turnos sin grupo asignado section
 .turnos-sin-grupo-list {
   padding: 1rem;

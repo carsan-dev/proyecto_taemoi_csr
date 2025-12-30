@@ -238,4 +238,77 @@ export class ListadoGruposComponent implements OnInit, OnDestroy {
   cerrarModalAlumnos() {
     this.mostrarModalAlumnos = false;
   }
+
+  formatearRangoEdad(grupo: any): string {
+    const min = grupo?.rangoEdadMin;
+    const max = grupo?.rangoEdadMax;
+    if (min == null && max == null) {
+      return 'Sin rango';
+    }
+    if (min != null && max != null) {
+      return `${min} - ${max} años`;
+    }
+    if (min != null) {
+      return `Desde ${min} años`;
+    }
+    return `Hasta ${max} años`;
+  }
+
+  editarRangoEdad(grupo: any): void {
+    const minActual = grupo?.rangoEdadMin ?? '';
+    const maxActual = grupo?.rangoEdadMax ?? '';
+    Swal.fire({
+      title: 'Rango de edad del grupo',
+      html:
+        '<div class="swal2-form">' +
+        '<input id="rangoEdadMin" type="number" min="0" class="swal2-input" placeholder="Edad minima" value="' + minActual + '">' +
+        '<input id="rangoEdadMax" type="number" min="0" class="swal2-input" placeholder="Edad maxima" value="' + maxActual + '">' +
+        '</div>',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const minInput = document.getElementById('rangoEdadMin') as HTMLInputElement | null;
+        const maxInput = document.getElementById('rangoEdadMax') as HTMLInputElement | null;
+        const minValue = minInput && minInput.value !== '' ? Number(minInput.value) : null;
+        const maxValue = maxInput && maxInput.value !== '' ? Number(maxInput.value) : null;
+
+        if (minValue != null && (Number.isNaN(minValue) || minValue < 0)) {
+          Swal.showValidationMessage('La edad minima debe ser un numero valido.');
+          return;
+        }
+        if (maxValue != null && (Number.isNaN(maxValue) || maxValue < 0)) {
+          Swal.showValidationMessage('La edad maxima debe ser un numero valido.');
+          return;
+        }
+        if (minValue != null && maxValue != null && minValue > maxValue) {
+          Swal.showValidationMessage('La edad minima no puede ser mayor que la maxima.');
+          return;
+        }
+
+        return { minValue, maxValue };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const payload: any = {
+          id: grupo.id,
+          nombre: grupo.nombre,
+          deporte: grupo.deporte,
+          rangoEdadMin: result.value.minValue,
+          rangoEdadMax: result.value.maxValue,
+        };
+        this.endpointsService.actualizarGrupo(grupo.id, payload).subscribe({
+          next: () => {
+            grupo.rangoEdadMin = result.value.minValue;
+            grupo.rangoEdadMax = result.value.maxValue;
+            showSuccessToast('Rango de edad actualizado');
+          },
+          error: () => {
+            showErrorToast('No se pudo actualizar el rango de edad');
+          },
+        });
+      }
+    });
+  }
 }
