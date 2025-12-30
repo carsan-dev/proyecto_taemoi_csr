@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.taemoi.project.dtos.AlumnoDeporteDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
@@ -61,6 +62,18 @@ public class AlumnoConDeportesDTO {
 		}
 
 		AlumnoConDeportesDTO dto = new AlumnoConDeportesDTO();
+		AlumnoDeporte deportePrincipal = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			deportePrincipal = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(alumno.getDeportes().get(0));
+		}
+
+		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
+		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();
+		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : alumno.getRolFamiliar();
+		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : alumno.getGrupoFamiliar();
 
 		// Datos básicos
 		dto.setId(alumno.getId());
@@ -74,10 +87,10 @@ public class AlumnoConDeportesDTO {
 		dto.setEmail(alumno.getEmail());
 
 		// Tarifa
-		dto.setTipoTarifa(alumno.getTipoTarifa());
-		dto.setCuantiaTarifa(alumno.getCuantiaTarifa());
-		dto.setRolFamiliar(alumno.getRolFamiliar());
-		dto.setGrupoFamiliar(alumno.getGrupoFamiliar());
+		dto.setTipoTarifa(tipoTarifa);
+		dto.setCuantiaTarifa(cuantiaTarifa);
+		dto.setRolFamiliar(rolFamiliar);
+		dto.setGrupoFamiliar(grupoFamiliar);
 
 		// Fechas y estado
 		dto.setFechaAlta(alumno.getFechaAlta());
@@ -87,12 +100,12 @@ public class AlumnoConDeportesDTO {
 
 		// Otros campos
 		dto.setAutorizacionWeb(alumno.getAutorizacionWeb());
-		dto.setCompetidor(alumno.getCompetidor());
-		dto.setPeso(alumno.getPeso());
-		dto.setFechaPeso(alumno.getFechaPeso());
-		dto.setTieneLicencia(alumno.getTieneLicencia());
-		dto.setNumeroLicencia(alumno.getNumeroLicencia());
-		dto.setFechaLicencia(alumno.getFechaLicencia());
+		dto.setCompetidor(deportePrincipal != null ? deportePrincipal.getCompetidor() : alumno.getCompetidor());
+		dto.setPeso(deportePrincipal != null ? deportePrincipal.getPeso() : alumno.getPeso());
+		dto.setFechaPeso(deportePrincipal != null ? deportePrincipal.getFechaPeso() : alumno.getFechaPeso());
+		dto.setTieneLicencia(deportePrincipal != null ? deportePrincipal.getTieneLicencia() : alumno.getTieneLicencia());
+		dto.setNumeroLicencia(deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : alumno.getNumeroLicencia());
+		dto.setFechaLicencia(deportePrincipal != null ? deportePrincipal.getFechaLicencia() : alumno.getFechaLicencia());
 		dto.setTieneDiscapacidad(alumno.getTieneDiscapacidad());
 		dto.setTieneDerechoExamen(alumno.getTieneDerechoExamen());
 		dto.setFotoAlumno(alumno.getFotoAlumno());

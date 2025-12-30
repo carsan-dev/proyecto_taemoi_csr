@@ -430,9 +430,19 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto productoLicencia = optionalProducto.get();
 
-		Date fechaLicencia = alumno.getFechaLicencia();
-		if (fechaLicencia == null) {
-			throw new IllegalArgumentException("La fecha de licencia del alumno no puede ser nula.");
+		List<AlumnoDeporte> deportesConLicencia = alumno.getDeportes().stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getFechaLicencia() != null)
+				.collect(Collectors.toList());
+
+		AlumnoDeporte deporteBase = null;
+		Date fechaLicencia = null;
+		if (!deportesConLicencia.isEmpty()) {
+			deporteBase = deportesConLicencia.get(0);
+			fechaLicencia = deporteBase.getFechaLicencia();
+		} else if (Boolean.TRUE.equals(alumno.getTieneLicencia()) && alumno.getFechaLicencia() != null) {
+			fechaLicencia = alumno.getFechaLicencia();
+		} else {
+			return;
 		}
 		LocalDate fechaLicenciaLocal = fechaLicencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		String mesEnEspanol = fechaLicenciaLocal.getMonth().getDisplayName(TextStyle.FULL, Locale.of("es", "ES"))
@@ -455,6 +465,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
+		if (deporteBase != null) {
+			productoAlumno.setAlumnoDeporte(deporteBase);
+		}
 		productoAlumno.setProducto(productoLicencia);
 		productoAlumno.setConcepto("ALTA LICENCIA FEDERATIVA " + mesAnio);
 		productoAlumno.setCantidad(1);
@@ -501,10 +514,30 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 		productoAlumno.setPagado(true);
 
+		List<AlumnoDeporte> deportesActualizar = alumno.getDeportes().stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && Boolean.TRUE.equals(ad.getTieneLicencia()))
+				.collect(Collectors.toList());
+		if (deportesActualizar.isEmpty()) {
+			deportesActualizar = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.limit(1)
+					.collect(Collectors.toList());
+		}
+
+		if (!deportesActualizar.isEmpty()) {
+			productoAlumno.setAlumnoDeporte(deportesActualizar.get(0));
+		}
+
 		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-		alumno.setFechaLicencia(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-		alumnoRepository.save(alumno);
+		Date nuevaFechaLicencia = Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		for (AlumnoDeporte alumnoDeporte : deportesActualizar) {
+			if (!Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
+				alumnoDeporte.setTieneLicencia(true);
+			}
+			alumnoDeporte.setFechaLicencia(nuevaFechaLicencia);
+			alumnoDeporteRepository.save(alumnoDeporte);
+		}
 
 		return convertirADTO(savedProductoAlumno);
 	}
@@ -512,7 +545,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
 		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
 		dto.setId(productoAlumno.getId());
-		dto.setAlumnoId(productoAlumno.getAlumno().getId());
+		Alumno alumno = productoAlumno.getAlumno();
+		if (alumno == null && productoAlumno.getAlumnoDeporte() != null) {
+			alumno = productoAlumno.getAlumnoDeporte().getAlumno();
+		}
+		if (alumno != null) {
+			dto.setAlumnoId(alumno.getId());
+		}
 		dto.setProductoId(productoAlumno.getProducto().getId());
 		dto.setConcepto(productoAlumno.getConcepto());
 		dto.setPrecio(productoAlumno.getPrecio());
