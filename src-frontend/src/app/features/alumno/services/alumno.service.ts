@@ -285,13 +285,13 @@ export class AlumnoService {
   agregarDeporteAAlumno(
     alumnoId: number,
     deporte: string,
-    gradoInicial: string,
+    gradoInicial: string | null,
     fechaAlta: string,
-    fechaGrado: string
+    fechaGrado: string | null
   ): Observable<any> {
     return this.http.post<any>(
       `${this.urlBase}/${alumnoId}/deportes`,
-      { deporte, gradoInicial, fechaAlta, fechaGrado },
+      { deporte, gradoInicial: gradoInicial ?? null, fechaAlta, fechaGrado: fechaGrado ?? null },
       { withCredentials: true }
     );
   }
