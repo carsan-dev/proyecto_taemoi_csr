@@ -1,6 +1,7 @@
 package com.taemoi.project.services.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -129,6 +130,7 @@ public class EventoServiceImpl implements EventoService {
 		if (optionalEvento.isPresent()) {
 			Evento evento = optionalEvento.get();
 			Imagen imagen = evento.getFotoEvento();
+			List<Documento> documentos = new ArrayList<>(evento.getDocumentos());
 
 			// Desvincular la imagen del evento
 			if (imagen != null) {
@@ -139,6 +141,11 @@ public class EventoServiceImpl implements EventoService {
 				imagenService.eliminarImagenDeSistema(imagen); // Eliminar la imagen del sistema de archivos
 				imagenRepository.delete(imagen); // Eliminar la imagen de la base de datos
 			}
+
+			for (Documento documento : documentos) {
+				documentoService.eliminarDocumento(documento);
+			}
+			evento.getDocumentos().clear();
 
 			// Finalmente eliminar el evento
 			eventoRepository.delete(evento); // Eliminar el evento
