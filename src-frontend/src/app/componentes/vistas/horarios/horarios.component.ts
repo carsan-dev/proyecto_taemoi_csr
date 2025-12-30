@@ -225,6 +225,18 @@ export class HorariosComponent implements OnInit {
   }
 
   obtenerRangoEdades(turno: any): string {
+    const rangoMin = turno?.rangoEdadMin;
+    const rangoMax = turno?.rangoEdadMax;
+    if (rangoMin != null || rangoMax != null) {
+      if (rangoMin != null && rangoMax != null) {
+        return `${rangoMin} - ${rangoMax} años`;
+      }
+      if (rangoMin != null) {
+        return `Desde ${rangoMin} años`;
+      }
+      return `Hasta ${rangoMax} años`;
+    }
+
     if (!turno.alumnos || turno.alumnos.length === 0) {
       return 'Sin alumnos';
     }
