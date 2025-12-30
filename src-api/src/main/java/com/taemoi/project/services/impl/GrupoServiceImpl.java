@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -452,18 +453,24 @@ public class GrupoServiceImpl implements GrupoService {
 
 		Deporte deporteGrupo = grupo.getDeporte();
 		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
+				.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo()))
 				.map(alumno -> {
 					if (deporteGrupo != null && alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
 						AlumnoDeporte alumnoDeporte = alumno.getDeportes().stream()
-								.filter(ad -> ad.getDeporte() == deporteGrupo)
+								.filter(ad -> ad.getDeporte() == deporteGrupo && Boolean.TRUE.equals(ad.getActivo()))
 								.findFirst()
 								.orElse(null);
 						if (alumnoDeporte != null) {
 							return AlumnoCortoDTO.deAlumnoDeporte(alumnoDeporte);
 						}
+						return null;
+					}
+					if (deporteGrupo != null && alumno.getDeporte() != null && !alumno.getDeporte().equals(deporteGrupo)) {
+						return null;
 					}
 					return AlumnoCortoDTO.deAlumno(alumno);
 				})
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		grupoDTO.setAlumnos(alumnosDTO);
 
