@@ -14,6 +14,8 @@ public class TurnoCortoDTO {
 	private String horaFin;
 	private Long grupoId;
 	private String tipoGrupo;
+	private Integer rangoEdadMin;
+	private Integer rangoEdadMax;
 	private List<AlumnoDTO> alumnos;
 
 	public TurnoCortoDTO() {
@@ -59,6 +61,22 @@ public class TurnoCortoDTO {
 		this.tipoGrupo = tipoGrupo;
 	}
 
+	public Integer getRangoEdadMin() {
+		return rangoEdadMin;
+	}
+
+	public void setRangoEdadMin(Integer rangoEdadMin) {
+		this.rangoEdadMin = rangoEdadMin;
+	}
+
+	public Integer getRangoEdadMax() {
+		return rangoEdadMax;
+	}
+
+	public void setRangoEdadMax(Integer rangoEdadMax) {
+		this.rangoEdadMax = rangoEdadMax;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -87,6 +105,8 @@ public class TurnoCortoDTO {
 		turnoDTO.setHoraFin(turno.getHoraFin());
 		turnoDTO.setGrupoId(turno.getGrupo() != null ? turno.getGrupo().getId() : null);
 		turnoDTO.setTipoGrupo(turno.getTipo());
+		turnoDTO.setRangoEdadMin(turno.getGrupo() != null ? turno.getGrupo().getRangoEdadMin() : null);
+		turnoDTO.setRangoEdadMax(turno.getGrupo() != null ? turno.getGrupo().getRangoEdadMax() : null);
 
 		// Map alumnos to AlumnoDTO
 		if (turno.getAlumnos() != null) {

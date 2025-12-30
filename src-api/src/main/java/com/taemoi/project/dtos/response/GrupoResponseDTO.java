@@ -4,6 +4,8 @@ public class GrupoResponseDTO {
 	private Long id;
 	private String nombre;
 	private String deporte; // Deporte del grupo (TAEKWONDO, KICKBOXING, PILATES, etc.)
+	private Integer rangoEdadMin;
+	private Integer rangoEdadMax;
 
 	public GrupoResponseDTO() {
 		// TODO Auto-generated constructor stub
@@ -42,6 +44,22 @@ public class GrupoResponseDTO {
 
 	public void setDeporte(String deporte) {
 		this.deporte = deporte;
+	}
+
+	public Integer getRangoEdadMin() {
+		return rangoEdadMin;
+	}
+
+	public void setRangoEdadMin(Integer rangoEdadMin) {
+		this.rangoEdadMin = rangoEdadMin;
+	}
+
+	public Integer getRangoEdadMax() {
+		return rangoEdadMax;
+	}
+
+	public void setRangoEdadMax(Integer rangoEdadMax) {
+		this.rangoEdadMax = rangoEdadMax;
 	}
 
 }

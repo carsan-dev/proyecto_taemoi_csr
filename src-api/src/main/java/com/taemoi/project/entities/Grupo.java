@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,6 +38,13 @@ public class Grupo {
 	@Enumerated(EnumType.STRING)
 	@NotNull(message = "El deporte del grupo no puede ser nulo")
 	private Deporte deporte;
+
+	// Rango de edad personalizado (opcional)
+	@Column(name = "rango_edad_min")
+	private Integer rangoEdadMin;
+
+	@Column(name = "rango_edad_max")
+	private Integer rangoEdadMax;
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
@@ -77,6 +85,22 @@ public class Grupo {
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+	}
+
+	public Integer getRangoEdadMin() {
+		return rangoEdadMin;
+	}
+
+	public void setRangoEdadMin(Integer rangoEdadMin) {
+		this.rangoEdadMin = rangoEdadMin;
+	}
+
+	public Integer getRangoEdadMax() {
+		return rangoEdadMax;
+	}
+
+	public void setRangoEdadMax(Integer rangoEdadMax) {
+		this.rangoEdadMax = rangoEdadMax;
 	}
 
 	public List<Alumno> getAlumnos() {
