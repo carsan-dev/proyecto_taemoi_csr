@@ -1,11 +1,14 @@
 package com.taemoi.project.controllers;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,6 +39,9 @@ import com.taemoi.project.services.ImagenService;
 @RequestMapping("/api/eventos")
 public class EventoController {
 
+	@Value("${app.base.url}")
+	private String baseUrl;
+
 	@Autowired
 	private EventoService eventoService;
 
@@ -47,13 +53,17 @@ public class EventoController {
 
 	@GetMapping
 	public List<Evento> obtenerEventosVisibles() {
-		return eventoService.obtenerEventosVisibles();
+		List<Evento> eventos = eventoService.obtenerEventosVisibles();
+		aplicarUrlImagenPublica(eventos);
+		return eventos;
 	}
 
 	@GetMapping("/admin/todos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public List<Evento> obtenerTodosLosEventos() {
-		return eventoService.obtenerTodosLosEventos();
+		List<Evento> eventos = eventoService.obtenerTodosLosEventos();
+		aplicarUrlImagenPublica(eventos);
+		return eventos;
 	}
 
 	@GetMapping("/{eventoId}")
@@ -61,6 +71,7 @@ public class EventoController {
 	public ResponseEntity<Evento> obtenerEventoPorId(@PathVariable @NonNull Long eventoId) {
 		try {
 			Evento evento = eventoService.obtenerEventoPorId(eventoId);
+			aplicarUrlImagenPublica(evento);
 			return ResponseEntity.ok(evento);
 		} catch (TurnoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
@@ -77,6 +88,7 @@ public class EventoController {
 
 			// Guardar el evento y la imagen (si existe)
 			Evento eventoCreado = eventoService.guardarEvento(nuevoEvento, file);
+			aplicarUrlImagenPublica(eventoCreado);
 			return new ResponseEntity<>(eventoCreado, HttpStatus.CREATED);
 
 		} catch (IOException e) {
@@ -102,10 +114,49 @@ public class EventoController {
 
 			// Actualizar el evento en la base de datos, incluyendo la nueva imagen
 			Evento evento = eventoService.actualizarEvento(id, eventoActualizado, nuevaImagen);
+			aplicarUrlImagenPublica(evento);
 			return new ResponseEntity<>(evento, HttpStatus.OK);
 
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@GetMapping("/{eventoId}/imagen")
+	public ResponseEntity<Resource> obtenerImagenEvento(@PathVariable @NonNull Long eventoId) {
+		try {
+			Evento evento = eventoService.obtenerEventoPorId(eventoId);
+			Imagen imagen = evento.getFotoEvento();
+
+			if (imagen == null || imagen.getRuta() == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			Path rutaArchivo = Path.of(imagen.getRuta());
+			Resource recurso = new UrlResource(rutaArchivo.toUri());
+
+			if (!recurso.exists()) {
+				return ResponseEntity.notFound().build();
+			}
+
+			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+			if (imagen.getTipo() != null) {
+				try {
+					mediaType = MediaType.parseMediaType(imagen.getTipo());
+				} catch (Exception e) {
+					mediaType = MediaType.APPLICATION_OCTET_STREAM;
+				}
+			}
+
+			return ResponseEntity.ok()
+					.contentType(mediaType)
+					.header(HttpHeaders.CONTENT_DISPOSITION,
+							"inline; filename=\"" + imagen.getNombre() + "\"")
+					.body(recurso);
+		} catch (EventoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 
@@ -212,6 +263,25 @@ public class EventoController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(Map.of("error", "Error al eliminar el documento: " + e.getMessage()));
+		}
+	}
+
+	private void aplicarUrlImagenPublica(Evento evento) {
+		if (evento == null || evento.getId() == null) {
+			return;
+		}
+		Imagen imagen = evento.getFotoEvento();
+		if (imagen != null) {
+			imagen.setUrl(baseUrl + "/api/eventos/" + evento.getId() + "/imagen");
+		}
+	}
+
+	private void aplicarUrlImagenPublica(List<Evento> eventos) {
+		if (eventos == null) {
+			return;
+		}
+		for (Evento evento : eventos) {
+			aplicarUrlImagenPublica(evento);
 		}
 	}
 
