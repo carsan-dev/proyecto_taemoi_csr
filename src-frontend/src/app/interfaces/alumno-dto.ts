@@ -9,4 +9,7 @@ export interface AlumnoDTO {
     tipo: string;
     datos: string;
   };
+  numeroExpediente?: number;
+  grado?: string;
+  activo?: boolean;
 }

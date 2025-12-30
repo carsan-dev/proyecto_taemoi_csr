@@ -65,8 +65,9 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (grupo: GrupoDTO) => {
           this.grupo = grupo;
-          this.alumnos = grupo.alumnos;
-          this.alumnosFiltrados = grupo.alumnos;
+          const alumnosActivos = (grupo.alumnos || []).filter(alumno => alumno.activo !== false);
+          this.alumnos = alumnosActivos;
+          this.alumnosFiltrados = alumnosActivos;
           this.totalPaginas = Math.ceil(this.alumnosFiltrados.length / this.tamanoPagina);
           this.cambiarPagina(1);
         },
