@@ -21,6 +21,11 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: #f8f9fa;
   padding-top: 120px;
   padding-bottom: 3rem;
+  box-sizing: border-box;
+}
+
+.evento-detalle-page * {
+  box-sizing: border-box;
 }
 
 // ========================================
@@ -136,6 +141,11 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     animation: fadeInUp 0.6s ease 0.3s backwards;
+    width: 100%;
+
+    > * {
+      min-width: 0;
+    }
   }
 }
 
@@ -236,6 +246,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 .event-description-section {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 
   .description-card {
     background: $text-light;
@@ -245,6 +256,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     transition: $transition;
+    min-width: 0;
 
     &:hover {
       box-shadow: $shadow-lg;
@@ -333,6 +345,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-top: 1px solid #e9ecef;
     padding: 1.5rem 2.5rem;
     background: #fafbfc;
+    min-width: 0;
 
     .attachments-header {
       display: flex;
@@ -361,6 +374,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       align-items: center;
       gap: 0.75rem;
       width: 100%;
+      max-width: 100%;
       padding: 0.75rem 1rem;
       background: $text-light;
       border: 1px solid #e2e8f0;
@@ -368,6 +382,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       transition: $transition;
       text-align: left;
+      min-width: 0;
 
       &:hover {
         background: #f8fafc;
@@ -420,6 +435,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 0;
       }
 
       .attachment-download {
