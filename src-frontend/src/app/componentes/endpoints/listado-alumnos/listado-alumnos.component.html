@@ -157,13 +157,13 @@
               <div class="item-field">
                 <i class="bi bi-calendar-plus"></i>
                 <strong>Alta:</strong>
-                <span>{{ alumno.fechaAlta | date: 'dd/MM/yyyy' }}</span>
+                <span>{{ (alumno.fechaAltaInicial || alumno.fechaAlta) | date: 'dd/MM/yyyy' }}</span>
               </div>
-              @if (alumno.antiguedad) {
+              @if (getAntiguedadAlumno(alumno)) {
                 <div class="item-field">
                   <i class="bi bi-clock-history"></i>
                   <strong>Antigüedad:</strong>
-                  <span>{{ alumno.antiguedad }}</span>
+                  <span>{{ getAntiguedadAlumno(alumno) }}</span>
                 </div>
               }
               <div class="item-field">
@@ -272,7 +272,7 @@
                   </div>
                 </td>
                 <td>{{ alumno.categoria || 'N/A' }}</td>
-                <td>{{ alumno.fechaAlta | date: 'dd/MM/yy' }}</td>
+                <td>{{ (alumno.fechaAltaInicial || alumno.fechaAlta) | date: 'dd/MM/yy' }}</td>
                 @if (mostrarInactivos) {
                   <td [class.text-danger]="alumno.activo === false">
                     {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yy') : '-' }}

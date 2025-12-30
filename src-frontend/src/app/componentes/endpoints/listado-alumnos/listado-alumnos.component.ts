@@ -463,6 +463,67 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     return getDeporteLabel(deporte);
   }
 
+  getAntiguedadAlumno(alumno: any): string | null {
+    if (!alumno) {
+      return null;
+    }
+
+    const deportes = this.getDeportesDeAlumno(alumno.id);
+    if (deportes.length > 0) {
+      const deportesOrdenados = [...deportes].sort((a, b) => {
+        const fechaA = a.fechaAltaInicial || a.fechaAlta;
+        const fechaB = b.fechaAltaInicial || b.fechaAlta;
+        const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
+        const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
+        return timeA - timeB;
+      });
+      const deportePrincipal = deportesOrdenados[0];
+      if (deportePrincipal?.antiguedad) {
+        return deportePrincipal.antiguedad;
+      }
+    }
+
+    const fechaBase = alumno.fechaAltaInicial || alumno.fechaAlta;
+    if (!fechaBase) {
+      return null;
+    }
+
+    const fechaInicio = new Date(fechaBase);
+    if (Number.isNaN(fechaInicio.getTime())) {
+      return null;
+    }
+
+    const hoy = new Date();
+    let anios = hoy.getFullYear() - fechaInicio.getFullYear();
+    let meses = hoy.getMonth() - fechaInicio.getMonth();
+
+    if (hoy.getDate() < fechaInicio.getDate()) {
+      meses -= 1;
+    }
+    if (meses < 0) {
+      anios -= 1;
+      meses += 12;
+    }
+    if (anios < 0) {
+      anios = 0;
+      meses = 0;
+    }
+
+    const aniosStr = anios === 1 ? '1 año' : `${anios} años`;
+    const mesesStr = meses === 1 ? '1 mes' : `${meses} meses`;
+
+    if (anios > 0 && meses > 0) {
+      return `${aniosStr} y ${mesesStr}`;
+    }
+    if (anios > 0) {
+      return aniosStr;
+    }
+    if (meses > 0) {
+      return mesesStr;
+    }
+    return '0 meses';
+  }
+
   /**
    * Toggle between cards and table view
    */
