@@ -730,8 +730,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   configurarFormulario(alumno: any): void {
     const fechaNacimiento = formatDate(alumno.fechaNacimiento);
     const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
-    const grado = alumno.grado || '';
-    const aptoParaExamen = alumno.aptoParaExamen ?? false;
 
     // Cargar grados disponibles en base a la fecha de nacimiento
     if (fechaNacimiento) {
@@ -748,14 +746,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       telefono: alumno.telefono,
       telefono2: alumno.telefono2,
       fechaNacimiento,
-      deporte: alumno.deporte, // DEPRECATED but kept for compatibility
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
-      grado, // DEPRECATED but kept for compatibility
-      aptoParaExamen, // DEPRECATED but kept for compatibility
       tieneDiscapacidad: alumno.tieneDiscapacidad,
     });
-    this.onDeporteChange(alumno.deporte);
 
     // Per-sport fields (tarifa, licencia, fechaAlta, etc.) are now managed in sport tabs
   }
@@ -1188,17 +1182,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       fechaAltaInicial: this.alumno.fechaAltaInicial ? formatDate(this.alumno.fechaAltaInicial) : null,
       fechaBaja: this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null,
       autorizacionWeb: this.alumno.autorizacionWeb,
-      deporte: this.alumno.deporte,
-      tieneLicencia: this.alumno.tieneLicencia,
-      numeroLicencia: this.alumno.numeroLicencia,
-      fechaLicencia: this.alumno.fechaLicencia ? formatDate(this.alumno.fechaLicencia) : null,
       tieneDiscapacidad: this.alumno.tieneDiscapacidad,
-      competidor: this.alumno.competidor,
-      peso: this.alumno.peso,
-      fechaPeso: this.alumno.fechaPeso ? formatDate(this.alumno.fechaPeso) : null,
-      aptoParaExamen: this.alumno.aptoParaExamen,
-      grado: this.alumno.grado,
-      fechaGrado: this.alumno.fechaGrado ? formatDate(this.alumno.fechaGrado) : null,
     };
   }
 
@@ -1580,7 +1564,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   cargarConvocatoriasDisponibles(alumno: any): void {
-    const deporte = alumno.deporte;
+    const deporte = this.deporteParaConvocatoria || this.deporteActivo || this.deportesDelAlumno[0]?.deporte;
+    if (!deporte) {
+      this.convocatoriasDisponibles = [];
+      return;
+    }
     this.endpointsService.obtenerConvocatorias(deporte).subscribe({
       next: (convocatorias) => {
         const hoy = new Date();
@@ -1823,6 +1811,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
         this.deportesDelAlumno = deportes;
+        const deportesActivos = deportes.filter(d => d.activo !== false);
+        const deportesPreferidos = deportesActivos.length > 0 ? deportesActivos : deportes;
+        const deportePorDefecto = deportesPreferidos[0]?.deporte;
 
         // Set active sport
         if (deportes.length > 0) {
@@ -1832,22 +1823,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             if (stillExists) {
               this.deporteActivo = currentActiveDeporte;
             } else {
-              // Current tab no longer exists, fall back to first or primary
-              if (this.alumno.deporte) {
-                const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
-                this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
-              } else {
-                this.deporteActivo = deportes[0].deporte;
-              }
+              // Current tab no longer exists, fall back to first available
+              this.deporteActivo = deportePorDefecto;
             }
           } else {
-            // Default behavior: set to primary sport or first
-            if (this.alumno.deporte) {
-              const primaryDeporte = deportes.find(d => d.deporte === this.alumno.deporte);
-              this.deporteActivo = primaryDeporte ? primaryDeporte.deporte : deportes[0].deporte;
-            } else {
-              this.deporteActivo = deportes[0].deporte;
-            }
+            // Default behavior: set to first available
+            this.deporteActivo = deportePorDefecto;
           }
         }
 
