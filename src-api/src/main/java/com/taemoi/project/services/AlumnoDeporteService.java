@@ -20,7 +20,8 @@ public interface AlumnoDeporteService {
 	 * @param fechaGrado Fecha de grado (puede ser null, se asigna fecha actual)
 	 * @return AlumnoDeporte creado
 	 */
-	AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, java.util.Date fechaAlta, java.util.Date fechaGrado);
+	AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
+			java.util.Date fechaAlta, java.util.Date fechaAltaInicial, java.util.Date fechaGrado);
 
 	/**
 	 * Agrega un deporte a un alumno existente con todos los campos per-sport

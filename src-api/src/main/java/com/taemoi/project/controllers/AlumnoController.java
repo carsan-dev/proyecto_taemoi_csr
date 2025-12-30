@@ -584,7 +584,7 @@ public class AlumnoController {
 	/**
 	 * Agrega un deporte a un alumno
 	 * POST /api/alumnos/{id}/deportes
-	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO", "fechaAlta": "2024-01-15", "fechaGrado": "2024-01-15" }
+	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO", "fechaAlta": "2024-01-15", "fechaAltaInicial": "2024-01-15", "fechaGrado": "2024-01-15" }
 	 */
 	@PostMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -594,6 +594,7 @@ public class AlumnoController {
 			String deporteStr = params.get("deporte");
 			String gradoStr = params.get("gradoInicial");
 			String fechaAltaStr = params.get("fechaAlta");
+			String fechaAltaInicialStr = params.get("fechaAltaInicial");
 			String fechaGradoStr = params.get("fechaGrado");
 
 			if (deporteStr == null) {
@@ -607,6 +608,7 @@ public class AlumnoController {
 
 			// Parse dates if provided (format: YYYY-MM-DD)
 			java.util.Date fechaAlta = null;
+			java.util.Date fechaAltaInicial = null;
 			java.util.Date fechaGrado = null;
 
 			if (fechaAltaStr != null && !fechaAltaStr.isEmpty()) {
@@ -614,6 +616,14 @@ public class AlumnoController {
 					fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
 				} catch (Exception e) {
 					return ResponseEntity.badRequest().body("Formato de fecha de alta inválido. Use YYYY-MM-DD");
+				}
+			}
+
+			if (fechaAltaInicialStr != null && !fechaAltaInicialStr.isEmpty()) {
+				try {
+					fechaAltaInicial = java.sql.Date.valueOf(fechaAltaInicialStr);
+				} catch (Exception e) {
+					return ResponseEntity.badRequest().body("Formato de fecha de alta inicial inválido. Use YYYY-MM-DD");
 				}
 			}
 
@@ -625,7 +635,13 @@ public class AlumnoController {
 				}
 			}
 
-			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService.agregarDeporteAAlumno(id, deporte, gradoInicial, fechaAlta, fechaGrado);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService.agregarDeporteAAlumno(
+					id,
+					deporte,
+					gradoInicial,
+					fechaAlta,
+					fechaAltaInicial,
+					fechaGrado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);

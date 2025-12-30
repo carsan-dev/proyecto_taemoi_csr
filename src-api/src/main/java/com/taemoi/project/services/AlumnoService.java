@@ -120,6 +120,7 @@ public interface AlumnoService {
 			com.taemoi.project.entities.Deporte deporte,
 			com.taemoi.project.entities.TipoGrado gradoInicial,
 			java.util.Date fechaAlta,
+			java.util.Date fechaAltaInicial,
 			java.util.Date fechaGrado);
 
 	/**
