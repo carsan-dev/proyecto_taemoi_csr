@@ -97,6 +97,8 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Public images - eventos, etc. (must come after specific rules)
 						.requestMatchers("/imagenes/**").permitAll()
+						// Public event documents
+						.requestMatchers(HttpMethod.GET, "/documentos/Documentos_Eventos/**").permitAll()
 						// Document access - requires ADMIN or MANAGER role
 						.requestMatchers("/documentos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
@@ -153,6 +155,7 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/eventos").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/imagen").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/eventos/**")
