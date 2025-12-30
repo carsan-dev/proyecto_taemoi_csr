@@ -53,12 +53,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   opcionesInforme: Array<{ value: string; label: string }> = [];
   mesAnoAsistencia!: string;
   mesAnoMensualidad!: string;
-  grupos = ['lunes', 'martes', 'miércoles', 'jueves'];
+  grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
   turnosMap: Record<string, string[]> = {
     lunes: ['17:00–18:00', '18:00–19:00'],
     martes: ['17:30–18:30', '18:30–19:30'],
     miércoles: ['16:00–17:00', '17:00–18:00'],
     jueves: ['19:00–20:00', '20:00–21:00'],
+    viernes: ['18:30–19:30'],
   };
   turnosDisponibles: string[] = [];
   grupoSeleccionado!: string;
