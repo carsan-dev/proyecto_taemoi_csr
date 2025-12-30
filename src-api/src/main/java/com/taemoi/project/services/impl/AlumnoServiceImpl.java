@@ -272,28 +272,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
 		alumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
 
-		// Set a default tarifa amount if it's not set or invalid
-		if (alumno.getCuantiaTarifa() == null || alumno.getCuantiaTarifa() <= 0) {
-			RolFamiliar rolFamiliar = alumno.getRolFamiliar() != null ? alumno.getRolFamiliar() : RolFamiliar.NINGUNO;
-			alumno.setCuantiaTarifa(asignarCuantiaTarifa(alumno.getTipoTarifa(), rolFamiliar));
-		}
+		boolean usaLegacy = alumno.getDeportes() == null || alumno.getDeportes().isEmpty();
+		if (usaLegacy) {
+			// Set the current weight date if the student is a competitor
+			if (Boolean.TRUE.equals(alumno.getCompetidor())) {
+				alumno.setFechaPeso(new Date());
+			}
 
-		// Set web authorization default if not set
-		if (alumno.getAutorizacionWeb() == null) {
-			alumno.setAutorizacionWeb(true);
-		}
+			if (Boolean.TRUE.equals(alumno.getTieneLicencia())) {
+				alumno.setFechaLicencia(new Date());
+			}
 
-		// Set the current weight date if the student is a competitor
-		if (Boolean.TRUE.equals(alumno.getCompetidor())) {
-			alumno.setFechaPeso(new Date());
-		}
-
-		if (Boolean.TRUE.equals(alumno.getTieneLicencia())) {
-			alumno.setFechaLicencia(new Date());
-		}
-
-		if (alumno.getGrado() != null) {
-			alumno.setFechaGrado(new Date()); // Fecha de grado específica para el alumno
+			if (alumno.getGrado() != null) {
+				alumno.setFechaGrado(new Date()); // Fecha de grado especifica para el alumno
+			}
 		}
 
 		// Save Alumno entity first
@@ -479,7 +471,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new IllegalArgumentException("Al menos un deporte debe ser especificado");
 		}
 
-	    if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
+	    boolean tieneLicencia = Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia());
+	    if (!tieneLicencia && alumnoGuardado.getDeportes() != null) {
+	    	tieneLicencia = alumnoGuardado.getDeportes().stream()
+	    			.anyMatch(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()));
+	    }
+	    if (tieneLicencia) {
 	        productoAlumnoService.crearAltaLicenciaFederativa(alumnoGuardado);
 	    }
 
@@ -550,23 +547,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 		if (optionalAlumno.isPresent()) {
 			Alumno alumnoExistente = optionalAlumno.get();
+			boolean usaLegacy = alumnoExistente.getDeportes() == null || alumnoExistente.getDeportes().isEmpty();
 
 			// Actualizar datos generales del alumno
 			alumnoExistente.setNombre(alumnoActualizado.getNombre());
 			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
 			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
 
-			// Obtener el grado actual
-			Grado gradoActual = alumnoExistente.getGrado();
+			if (usaLegacy) {
+				// Obtener el grado actual
+				Grado gradoActual = alumnoExistente.getGrado();
 
-			// Buscar el nuevo grado (si se actualiza)
-			Grado nuevoGrado = gradoRepository.findByTipoGrado(
-					alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
+				// Buscar el nuevo grado (si se actualiza)
+				Grado nuevoGrado = gradoRepository.findByTipoGrado(
+						alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
 
-			// **Si el grado cambia, actualizar la fecha de grado**
-			if (nuevoGrado != null && !nuevoGrado.equals(gradoActual)) {
-				alumnoExistente.setGrado(nuevoGrado);
-				alumnoExistente.setFechaGrado(new Date()); // Fecha actual si el grado cambia
+				// Si el grado cambia, actualizar la fecha de grado
+				if (nuevoGrado != null && !nuevoGrado.equals(gradoActual)) {
+					alumnoExistente.setGrado(nuevoGrado);
+					alumnoExistente.setFechaGrado(new Date());
+				}
 			}
 
 			// Actualizar otros campos del alumno
@@ -575,10 +575,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setEmail(alumnoActualizado.getEmail());
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
 			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
-			alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
-			alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null ? alumnoActualizado.getRolFamiliar() : RolFamiliar.NINGUNO);
-			alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
-			alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+
+			if (usaLegacy) {
+				alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
+				alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null
+						? alumnoActualizado.getRolFamiliar()
+						: RolFamiliar.NINGUNO);
+				alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
+				alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
+			}
+
+			if (alumnoActualizado.getFechaAlta() != null) {
+				alumnoExistente.setFechaAlta(alumnoActualizado.getFechaAlta());
+			}
 
 			// Actualizar fechaAltaInicial solo si se proporciona un valor
 			if (alumnoActualizado.getFechaAltaInicial() != null) {
@@ -587,40 +596,34 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
-			alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
 
-			alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
-			if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
-				alumnoExistente.setNumeroLicencia(alumnoActualizado.getNumeroLicencia());
-				alumnoExistente.setFechaLicencia(alumnoActualizado.getFechaLicencia());
+			if (usaLegacy) {
+				alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
+				if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
+					alumnoExistente.setNumeroLicencia(alumnoActualizado.getNumeroLicencia());
+					alumnoExistente.setFechaLicencia(alumnoActualizado.getFechaLicencia());
+				}
 			}
-			
+
 			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
 
-			// Actualizar los campos relacionados con "competidor"
-			alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
-			if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-				// Si es competidor, actualizar el peso y la fecha de peso
-				alumnoExistente.setPeso(alumnoActualizado.getPeso());
-				alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
-
-				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
-				// int nuevaEdad = FechaUtils.calcularEdad(nuevaFechaNacimiento);
-				// Categoria nuevaCategoria = asignarCategoriaSegunEdad(nuevaEdad);
-				// alumnoExistente.setCategoria(nuevaCategoria);
-			} else {
-				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
-				// Si ya no es competidor, eliminar la categoría
-				// alumnoExistente.setCategoria(null);
+			if (usaLegacy) {
+				// Actualizar los campos relacionados con "competidor"
+				alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
+				if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
+					// Si es competidor, actualizar el peso y la fecha de peso
+					alumnoExistente.setPeso(alumnoActualizado.getPeso());
+					alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
+				}
 			}
 
-			// Duplicate code removed - categoria assignment already handled above
-
-			if (alumnoActualizado.getAptoParaExamen() != null) {
-				alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
-			} else {
-				// Si no se asignó manualmente, calcular si es apto automáticamente
-				alumnoExistente.setAptoParaExamen(esAptoParaExamen(alumnoExistente));
+			if (usaLegacy) {
+				if (alumnoActualizado.getAptoParaExamen() != null) {
+					alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
+				} else {
+					// Si no se asigna manualmente, calcular si es apto automaticamente
+					alumnoExistente.setAptoParaExamen(esAptoParaExamen(alumnoExistente));
+				}
 			}
 
 			// Manejo de la imagen del alumno
@@ -651,18 +654,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 				throw new RuntimeException("Error al procesar la imagen", e);
 			}
 
-			// Si no se especifica una cuantía de tarifa o es inválida, se asigna una por
-			// defecto
-			if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
-				alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa(), alumnoExistente.getRolFamiliar()));
-			} else {
-				alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
+			if (usaLegacy) {
+				// Si no se especifica una cuantia de tarifa o es invalida, se asigna una por defecto
+				if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
+					alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa(), alumnoExistente.getRolFamiliar()));
+				} else {
+					alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
+				}
 			}
 
 			// Guardar los cambios en el alumno en la base de datos
 			return alumnoRepository.save(alumnoExistente);
 		} else {
-			throw new RuntimeException("No se encontró el alumno con ID: " + id);
+			throw new RuntimeException("No se encontro el alumno con ID: " + id);
 		}
 	}
 
@@ -897,41 +901,72 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Busca alumnos activos que tengan al menos un deporte activo con aptoParaExamen = true
 		List<Alumno> alumnos = alumnoRepository.findAlumnosAptosParaExamen();
 
-		// Mapeo a AlumnoConGruposDTO
-		return alumnos.stream().map(AlumnoConGruposDTO::deAlumnoConGrupos) // Reutilizamos el método estático de mapeo
+		return alumnos.stream()
+				.map(alumno -> {
+					AlumnoDeporte alumnoDeporte = null;
+					if (alumno.getDeportes() != null) {
+						alumnoDeporte = alumno.getDeportes().stream()
+								.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && Boolean.TRUE.equals(ad.getAptoParaExamen()))
+								.findFirst()
+								.orElse(null);
+					}
+					return AlumnoConGruposDTO.deAlumnoConGrupos(alumno, alumnoDeporte);
+				})
 				.collect(Collectors.toList());
 	}
-
 	// Servicio para obtener alumnos aptos para examen por deporte, excluyendo
 	// "competición"
 	@Override
 	public List<AlumnoConGruposDTO> obtenerAlumnosAptosPorDeporte(String deporte, String exclusion) {
-		List<Alumno> alumnos = alumnoRepository.findAptosParaExamenPorDeporte(deporte, exclusion);
+		Deporte deporteEnum;
+		try {
+			deporteEnum = Deporte.valueOf(deporte.trim().toUpperCase().replace(" ", "_"));
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no válido: " + deporte);
+		}
 
-		// Mapeamos la lista de alumnos a AlumnoConGruposDTO
-		return alumnos.stream().map(AlumnoConGruposDTO::deAlumnoConGrupos) // Reutilizamos el método de mapeo
+		List<AlumnoDeporte> alumnosDeporte = alumnoDeporteService.obtenerAptosParaExamenPorDeporte(deporteEnum);
+
+		return alumnosDeporte.stream()
+				.filter(ad -> ad.getAlumno() != null)
+				.map(ad -> AlumnoConGruposDTO.deAlumnoConGrupos(ad.getAlumno(), ad))
 				.collect(Collectors.toList());
 	}
-
 	// Servicio para obtener un alumno apto para examen por su ID
 	@Override
 	public Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id) {
-		Optional<Alumno> alumno = alumnoRepository.findAptoParaExamenById(id);
+		Optional<Alumno> alumno = alumnoRepository.findById(id);
 
-		// Convertimos el alumno a AlumnoConGruposDTO si está presente
-		return alumno.map(AlumnoConGruposDTO::deAlumnoConGrupos);
+		if (alumno.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Alumno alumnoEntity = alumno.get();
+		AlumnoDeporte alumnoDeporte = null;
+		if (alumnoEntity.getDeportes() != null) {
+			alumnoDeporte = alumnoEntity.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && Boolean.TRUE.equals(ad.getAptoParaExamen()))
+					.findFirst()
+					.orElse(null);
+		}
+
+		if (alumnoDeporte == null) {
+			return Optional.empty();
+		}
+
+		return Optional.ofNullable(AlumnoConGruposDTO.deAlumnoConGrupos(alumnoEntity, alumnoDeporte));
 	}
-
 	/**
 	 * Obtiene alumnos elegibles para una convocatoria específica
 	 * basándose en el deporte y el estado de aptoParaExamen en AlumnoDeporte
 	 */
 	@Override
 	public List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(Deporte deporte) {
-		List<Alumno> alumnosElegibles = alumnoRepository.findAlumnosAptosParaExamenPorDeporte(deporte);
+		List<AlumnoDeporte> alumnosDeporte = alumnoDeporteService.obtenerAptosParaExamenPorDeporte(deporte);
 
-		return alumnosElegibles.stream()
-				.map(AlumnoConGruposDTO::deAlumnoConGrupos)
+		return alumnosDeporte.stream()
+				.filter(ad -> ad.getAlumno() != null)
+				.map(ad -> AlumnoConGruposDTO.deAlumnoConGrupos(ad.getAlumno(), ad))
 				.collect(Collectors.toList());
 	}
 
@@ -1041,8 +1076,27 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
-		TipoGrado gradoActual = alumno.getGrado().getTipoGrado();
-		Deporte deporte = alumno.getDeporte();
+		AlumnoDeporte deportePrincipal = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			deportePrincipal = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(alumno.getDeportes().get(0));
+		}
+
+		TipoGrado gradoActual = null;
+		Deporte deporte = null;
+		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
+			gradoActual = deportePrincipal.getGrado().getTipoGrado();
+			deporte = deportePrincipal.getDeporte();
+		} else if (alumno.getGrado() != null && alumno.getDeporte() != null) {
+			gradoActual = alumno.getGrado().getTipoGrado();
+			deporte = alumno.getDeporte();
+		}
+		if (gradoActual == null || deporte == null) {
+			return null;
+		}
+
 		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
 
@@ -1050,7 +1104,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-		LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		if (fechaNacimiento == null) {
+			return false;
+		}
+		LocalDate fechaNacimientoLocal;
+		if (fechaNacimiento instanceof java.sql.Date date) {
+			fechaNacimientoLocal = date.toLocalDate();
+		} else {
+			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		}
 		LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
 		int anioActual = LocalDate.now().getYear();
 		return fechaCumple14.getYear() == anioActual;
@@ -1211,6 +1273,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean esAptoParaExamen(Alumno alumno) {
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			return alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.anyMatch(ad -> Boolean.TRUE.equals(ad.getAptoParaExamen()));
+		}
+
 		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
 			return false; // Si no hay grado o fecha de grado, no es apto
 		}
@@ -1332,12 +1400,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
 			}
 
-			if (gradoId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("grado").get("id"), gradoId));
-			}
+			if (gradoId != null || categoriaId != null) {
+				jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
+				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> deporteRoot = subquery.from(com.taemoi.project.entities.AlumnoDeporte.class);
+				List<Predicate> deportePredicates = new ArrayList<>();
 
-			if (categoriaId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("categoria").get("id"), categoriaId));
+				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("alumno").get("id"), root.get("id")));
+				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("activo"), true));
+
+				if (gradoId != null) {
+					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("grado").get("id"), gradoId));
+				}
+				if (categoriaId != null) {
+					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("categoria").get("id"), categoriaId));
+				}
+
+				subquery.select(deporteRoot.get("alumno").get("id"))
+						.where(criteriaBuilder.and(deportePredicates.toArray(new Predicate[0])));
+				predicates.add(criteriaBuilder.exists(subquery));
 			}
 
 			if (!incluirInactivos) {

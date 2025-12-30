@@ -1,6 +1,7 @@
 package com.taemoi.project.dtos.response;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Imagen;
 
 public class AlumnoCortoDTO {
@@ -84,7 +85,39 @@ public class AlumnoCortoDTO {
 			return null;
 		}
 
-		String grado = alumno.getGrado() != null ? alumno.getGrado().getTipoGrado().getNombre() : null;
+		String grado = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			AlumnoDeporte principal = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(alumno.getDeportes().get(0));
+			if (principal != null && principal.getGrado() != null) {
+				grado = principal.getGrado().getTipoGrado().getNombre();
+			}
+		} else if (alumno.getGrado() != null) {
+			grado = alumno.getGrado().getTipoGrado().getNombre();
+		}
+		return new AlumnoCortoDTO(
+			alumno.getId(),
+			alumno.getNombre(),
+			alumno.getApellidos(),
+			alumno.getFotoAlumno(),
+			alumno.getNumeroExpediente(),
+			grado,
+			alumno.getActivo()
+		);
+	}
+
+	public static AlumnoCortoDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
+		if (alumnoDeporte == null || alumnoDeporte.getAlumno() == null) {
+			return null;
+		}
+
+		Alumno alumno = alumnoDeporte.getAlumno();
+		String grado = alumnoDeporte.getGrado() != null
+				? alumnoDeporte.getGrado().getTipoGrado().getNombre()
+				: null;
+
 		return new AlumnoCortoDTO(
 			alumno.getId(),
 			alumno.getNombre(),

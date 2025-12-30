@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 
 public class AlumnoConGruposDTO {
 	private Long id;
@@ -92,8 +93,37 @@ public class AlumnoConGruposDTO {
 		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
 				.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
 
+		String grado = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			AlumnoDeporte principal = alumno.getDeportes().stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(alumno.getDeportes().get(0));
+			if (principal != null && principal.getGrado() != null) {
+				grado = principal.getGrado().getTipoGrado().name();
+			}
+		} else if (alumno.getGrado() != null) {
+			grado = alumno.getGrado().getTipoGrado().name();
+		}
+
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
-				alumno.getFechaNacimiento(), alumno.getNumeroExpediente(),
-				alumno.getGrado() != null ? alumno.getGrado().getTipoGrado().name() : null, gruposDTO);
+				alumno.getFechaNacimiento(), alumno.getNumeroExpediente(), grado, gruposDTO);
+	}
+
+	// MǸtodo para convertir usando datos por deporte
+	public static AlumnoConGruposDTO deAlumnoConGrupos(Alumno alumno, AlumnoDeporte alumnoDeporte) {
+		if (alumno == null) {
+			return null;
+		}
+
+		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
+				.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
+
+		String grado = alumnoDeporte != null && alumnoDeporte.getGrado() != null
+				? alumnoDeporte.getGrado().getTipoGrado().name()
+				: null;
+
+		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
+				alumno.getFechaNacimiento(), alumno.getNumeroExpediente(), grado, gruposDTO);
 	}
 }

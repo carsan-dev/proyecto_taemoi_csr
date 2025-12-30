@@ -24,7 +24,6 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
-import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.utils.FechaUtils;
 
@@ -42,9 +41,6 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
-
-	@Autowired
-	private AlumnoService alumnoService;
 
 	@Autowired
 	private GradoRepository gradoRepository;
@@ -118,20 +114,28 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					Alumno alumno = alumnoConvocatoria.getAlumno();
 					String nombreCompleto = alumno.getNombre() + " " + alumno.getApellidos();
 					Integer edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-					// Get categoria from AlumnoDeporte (per-sport)
+					// Get per-sport data from AlumnoDeporte
 					AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
+					if (alumnoDeporte == null && alumno != null) {
+						alumnoDeporte = alumno.getDeportes().stream()
+								.filter(ad -> ad.getDeporte() == convocatoria.getDeporte())
+								.findFirst()
+								.orElse(null);
+					}
 					String categoriaNombre = alumnoDeporte != null && alumnoDeporte.getCategoria() != null
 							? alumnoDeporte.getCategoria().getNombre()
 							: null;
+					Integer numeroLicencia = alumnoDeporte != null ? alumnoDeporte.getNumeroLicencia() : null;
+					Double peso = alumnoDeporte != null ? alumnoDeporte.getPeso() : null;
 
 					return new AlumnoConvocatoriaReporteDTO(
 							alumno.getId(),
 							nombreCompleto,
 							alumno.getNumeroExpediente(),
-							alumno.getNumeroLicencia(),
+							numeroLicencia,
 							edad,
 							categoriaNombre,
-							alumno.getPeso(),
+							peso,
 							alumnoConvocatoria.getPagado(),
 							alumnoConvocatoria.getGradoActual(),
 							alumnoConvocatoria.getGradoSiguiente()
@@ -170,36 +174,34 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
 	    for (AlumnoConvocatoria ac : convocatoria.getAlumnosConvocatoria()) {
-	        // Verificar si existe AlumnoDeporte (multi-sport)
-	        if (ac.getAlumnoDeporte() != null) {
-	            // MULTI-SPORT: Actualizar grado en AlumnoDeporte
-	            com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = ac.getAlumnoDeporte();
-	            TipoGrado nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
+	        AlumnoDeporte alumnoDeporte = ac.getAlumnoDeporte();
+	        if (alumnoDeporte == null && ac.getAlumno() != null) {
+	        	alumnoDeporte = alumnoDeporteService.obtenerDeportesDelAlumno(ac.getAlumno().getId()).stream()
+	        			.filter(ad -> ad.getDeporte() == convocatoria.getDeporte())
+	        			.findFirst()
+	        			.orElse(null);
+	        }
 
-	            if (nuevoTipo != null) {
-	                Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-	                if (nuevoGrado != null) {
-	                    alumnoDeporteService.actualizarGradoPorDeporte(
-	                        alumnoDeporte.getAlumno().getId(),
-	                        alumnoDeporte.getDeporte(),
-	                        nuevoTipo
-	                    );
-	                }
-	            }
-	        } else {
-	            // LEGACY: Actualizar grado directamente en Alumno (backward compatibility)
-	            Alumno alumno = ac.getAlumno();
-	            TipoGrado nuevoTipo = alumnoService.calcularSiguienteGrado(alumno);
-	            if (nuevoTipo != null) {
-	                Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-	                if (nuevoGrado != null) {
-	                    alumno.setGrado(nuevoGrado);
-	                    alumno.setFechaGrado(new Date());
-	                    alumno.setAptoParaExamen(alumnoService.esAptoParaExamen(alumno));
-	                    alumno.setTieneDerechoExamen(false);
-	                    alumnoRepository.save(alumno);
-	                }
-	            }
+	        if (alumnoDeporte == null) {
+	        	continue;
+	        }
+
+	        TipoGrado nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
+	        if (nuevoTipo != null) {
+	        	Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
+	        	if (nuevoGrado != null) {
+	        		alumnoDeporteService.actualizarGradoPorDeporte(
+	        				alumnoDeporte.getAlumno().getId(),
+	        				alumnoDeporte.getDeporte(),
+	        				nuevoTipo
+	        		);
+	        	}
+	        }
+
+	        Alumno alumno = alumnoDeporte.getAlumno();
+	        if (alumno != null) {
+	        	alumno.setTieneDerechoExamen(false);
+	        	alumnoRepository.save(alumno);
 	        }
 	    }
 	}
@@ -221,20 +223,34 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 
 		Alumno alumno = alumnoConvocatoria.getAlumno();
-
-		if (alumno.getFechaGrado() == null) {
-			alumno.setFechaGrado(new Date());
+		AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
+		if (alumnoDeporte == null && alumno != null) {
+			alumnoDeporte = alumnoDeporteService.obtenerDeportesDelAlumno(alumno.getId()).stream()
+					.filter(ad -> ad.getDeporte() == alumnoConvocatoria.getConvocatoria().getDeporte())
+					.findFirst()
+					.orElse(null);
 		}
 
-		productoAlumnoRepository.findByAlumnoIdAndProductoId(alumno.getId(),
-				alumnoConvocatoria.getProductoAlumno().getProducto().getId()).ifPresent(productoAlumno -> {
-					productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
-					productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
-					productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
-					productoAlumnoRepository.save(productoAlumno);
-				});
-	    alumno.setTieneDerechoExamen(alumnoConvocatoriaDTO.getPagado());
-	    alumnoRepository.save(alumno);
+		if (alumnoDeporte != null && alumnoDeporte.getFechaGrado() == null) {
+			alumnoDeporteService.actualizarFechaGrado(
+					alumnoDeporte.getAlumno().getId(),
+					alumnoDeporte.getDeporte(),
+					new Date()
+			);
+		}
+
+		ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
+		if (productoAlumno != null) {
+			productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+			productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
+			productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
+			productoAlumnoRepository.save(productoAlumno);
+		}
+
+		if (alumno != null) {
+			alumno.setTieneDerechoExamen(alumnoConvocatoriaDTO.getPagado());
+			alumnoRepository.save(alumno);
+		}
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {

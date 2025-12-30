@@ -235,11 +235,13 @@ public class PDFServiceImpl implements PDFService {
 	 * solicitan ambos deportes, se generan secciones separadas para cada uno.
 	 */
 	private byte[] generarInformePorGrado(List<Deporte> deportes, boolean soloActivos) {
-		List<Alumno> alumnos = alumnoRepository.findByGradoNotNullAndDeporteIn(deportes);
+		List<AlumnoDeporte> alumnos = alumnoDeporteRepository.findByGradoNotNullAndDeporteIn(deportes);
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			alumnos = alumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo())).collect(Collectors.toList());
+			alumnos = alumnos.stream()
+					.filter(ad -> ad.getAlumno() != null && Boolean.TRUE.equals(ad.getAlumno().getActivo()))
+					.collect(Collectors.toList());
 		}
 
 		LocalDate now = LocalDate.now();
@@ -261,14 +263,14 @@ public class PDFServiceImpl implements PDFService {
 		if (deportes.size() == 2 && deportes.contains(Deporte.TAEKWONDO) && deportes.contains(Deporte.KICKBOXING)) {
 			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
 
-			List<Alumno> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
+			List<AlumnoDeporte> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
 					.collect(Collectors.toList());
 			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
 			html.append("Taekwondo");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
 
-			List<Alumno> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
+			List<AlumnoDeporte> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
 					.collect(Collectors.toList());
 			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
 			html.append("Kickboxing");
@@ -302,21 +304,28 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Genera el HTML para una sección del informe, agrupando alumnos por grado.
 	 */
-	private String generarSeccion(List<Alumno> alumnos) {
+	private String generarSeccion(List<AlumnoDeporte> alumnos) {
 		StringBuilder html = new StringBuilder();
-		Map<Grado, List<Alumno>> alumnosPorGrado = alumnos.stream().collect(Collectors.groupingBy(Alumno::getGrado));
+		Map<Grado, List<AlumnoDeporte>> alumnosPorGrado = alumnos.stream()
+				.collect(Collectors.groupingBy(AlumnoDeporte::getGrado));
 
-		List<Map.Entry<Grado, List<Alumno>>> entradasOrdenadas = new ArrayList<>(alumnosPorGrado.entrySet());
+		List<Map.Entry<Grado, List<AlumnoDeporte>>> entradasOrdenadas = new ArrayList<>(alumnosPorGrado.entrySet());
 		entradasOrdenadas.sort((e1, e2) -> {
 			int ordinal1 = e1.getKey().getTipoGrado().ordinal();
 			int ordinal2 = e2.getKey().getTipoGrado().ordinal();
 			return Integer.compare(ordinal2, ordinal1);
 		});
 
-		for (Map.Entry<Grado, List<Alumno>> entry : entradasOrdenadas) {
+		for (Map.Entry<Grado, List<AlumnoDeporte>> entry : entradasOrdenadas) {
 			Grado grado = entry.getKey();
-			List<Alumno> alumnosGrado = entry.getValue();
-			alumnosGrado.sort(Comparator.comparing(a -> (a.getNombre() + " " + a.getApellidos()).toLowerCase()));
+			List<AlumnoDeporte> alumnosGrado = entry.getValue();
+			alumnosGrado.sort(Comparator.comparing(ad -> {
+				Alumno alumno = ad.getAlumno();
+				if (alumno == null) {
+					return "";
+				}
+				return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
+			}));
 			TipoGrado tipo = grado.getTipoGrado();
 
 			html.append("<div class='grupo'>");
@@ -393,14 +402,18 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<th>Fecha del Grado</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
-			for (Alumno alumno : alumnosGrado) {
+			for (AlumnoDeporte alumnoDeporte : alumnosGrado) {
+				Alumno alumno = alumnoDeporte.getAlumno();
+				if (alumno == null) {
+					continue;
+				}
 				html.append("<tr>");
 				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 						.append("</td>");
 				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
-				String licencia = alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia().toString() : "N/A";
+				String licencia = alumnoDeporte.getNumeroLicencia() != null ? alumnoDeporte.getNumeroLicencia().toString() : "N/A";
 				html.append("<td>").append(licencia).append("</td>");
-				String fechaGrado = alumno.getFechaGrado() != null ? alumno.getFechaGrado().toString() : "N/A";
+				String fechaGrado = alumnoDeporte.getFechaGrado() != null ? alumnoDeporte.getFechaGrado().toString() : "N/A";
 				html.append("<td>").append(fechaGrado).append("</td>");
 				html.append("</tr>");
 			}
@@ -499,32 +512,36 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeLicencias(boolean soloActivos) {
-		List<Alumno> alumnos = alumnoRepository.findAll();
+		List<AlumnoDeporte> alumnos = alumnoDeporteRepository.findAll();
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			alumnos = alumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo())).collect(Collectors.toList());
+			alumnos = alumnos.stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo())
+							&& ad.getAlumno() != null
+							&& Boolean.TRUE.equals(ad.getAlumno().getActivo()))
+					.collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
-		List<Alumno> licenciasVigor = new ArrayList<>();
-		List<Alumno> licenciasCaducadas = new ArrayList<>();
-		List<Alumno> sinLicencia = new ArrayList<>();
+		List<AlumnoDeporte> licenciasVigor = new ArrayList<>();
+		List<AlumnoDeporte> licenciasCaducadas = new ArrayList<>();
+		List<AlumnoDeporte> sinLicencia = new ArrayList<>();
 
-		for (Alumno alumno : alumnos) {
-			if (alumno.getTieneLicencia() != null && alumno.getTieneLicencia() && alumno.getFechaLicencia() != null) {
-				LocalDate fechaLicencia = Instant.ofEpochMilli(alumno.getFechaLicencia().getTime())
+		for (AlumnoDeporte alumnoDeporte : alumnos) {
+			if (Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia()) && alumnoDeporte.getFechaLicencia() != null) {
+				LocalDate fechaLicencia = Instant.ofEpochMilli(alumnoDeporte.getFechaLicencia().getTime())
 						.atZone(ZoneId.systemDefault()).toLocalDate();
 				if (fechaLicencia.plusYears(1).isAfter(today)) {
-					licenciasVigor.add(alumno);
+					licenciasVigor.add(alumnoDeporte);
 				} else {
-					licenciasCaducadas.add(alumno);
+					licenciasCaducadas.add(alumnoDeporte);
 				}
 			} else {
-				sinLicencia.add(alumno);
+				sinLicencia.add(alumnoDeporte);
 			}
 		}
 
@@ -585,27 +602,32 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Método auxiliar que genera una tabla HTML con la información del alumno.
 	 */
-	private String generarTablaAlumnos(List<Alumno> alumnos) {
+	private String generarTablaAlumnos(List<AlumnoDeporte> alumnos) {
 		StringBuilder html = new StringBuilder();
 		html.append("<table>");
 		html.append("<thead><tr>");
 		html.append("<th>Nombre y Apellidos</th>");
+		html.append("<th>Deporte</th>");
 		html.append("<th>N&#186; Expediente</th>");
 		html.append("<th>N&#186; Licencia</th>");
 		html.append("<th>Fecha de Licencia</th>");
 		html.append("<th>Grado</th>");
 		html.append("</tr></thead>");
 		html.append("<tbody>");
-		for (Alumno alumno : alumnos) {
+		for (AlumnoDeporte alumnoDeporte : alumnos) {
+			Alumno alumno = alumnoDeporte.getAlumno();
 			html.append("<tr>");
 			html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
+			html.append("<td>").append(getDeporteNombre(alumnoDeporte.getDeporte())).append("</td>");
 			html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
-			String numLicencia = (alumno.getNumeroLicencia() != null) ? alumno.getNumeroLicencia().toString() : "N/A";
+			String numLicencia = (alumnoDeporte.getNumeroLicencia() != null)
+					? alumnoDeporte.getNumeroLicencia().toString()
+					: "N/A";
 			html.append("<td>").append(numLicencia).append("</td>");
-			String fechaLic = (alumno.getFechaLicencia() != null) ? alumno.getFechaLicencia().toString() : "N/A";
+			String fechaLic = (alumnoDeporte.getFechaLicencia() != null) ? alumnoDeporte.getFechaLicencia().toString() : "N/A";
 			html.append("<td>").append(fechaLic).append("</td>");
-			String nombreGrado = (alumno.getGrado() != null && alumno.getGrado().getTipoGrado().getNombre() != null)
-					? alumno.getGrado().getTipoGrado().getNombre()
+			String nombreGrado = (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado().getNombre() != null)
+					? alumnoDeporte.getGrado().getTipoGrado().getNombre()
 					: "N/A";
 			html.append("<td>").append(nombreGrado).append("</td>");
 			html.append("</tr>");
@@ -1156,7 +1178,12 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		if (fechaNacimiento == null) {
 			return false;
 		}
-		LocalDate fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		LocalDate fechaNacimientoLocal;
+		if (fechaNacimiento instanceof java.sql.Date date) {
+			fechaNacimientoLocal = date.toLocalDate();
+		} else {
+			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		}
 		LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
 		int anioActual = LocalDate.now().getYear();
 		return fechaCumple14.getYear() == anioActual;
@@ -1780,19 +1807,28 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	 */
 	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro, boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
-
-		if (deporteFiltro == null) {
-			// Get all mensualidades + tarifas competidor
-			todasMensualidades = productoAlumnoRepository.findAllMensualidadesYTarifasCompetidorWithAlumno();
+		if (deporteFiltro != null) {
+			todasMensualidades = productoAlumnoRepository
+					.findMensualidadesYTarifasCompetidorByDeporteOrConcepto(deporteFiltro, deporteFiltro.name());
 		} else {
-			// Get mensualidades + tarifas competidor filtered by sport
-			todasMensualidades = productoAlumnoRepository.findMensualidadesYTarifasCompetidorByDeporteWithAlumno(deporteFiltro);
+			todasMensualidades = productoAlumnoRepository.findAllMensualidadesYTarifasCompetidorWithAlumno();
 		}
 
 		// Filter by active status if requested
 		if (soloActivos) {
 			todasMensualidades = todasMensualidades.stream()
-					.filter(pa -> pa.getAlumno() != null && Boolean.TRUE.equals(pa.getAlumno().getActivo()))
+					.filter(pa -> {
+						Alumno alumno = pa.getAlumnoDeporte() != null
+								? pa.getAlumnoDeporte().getAlumno()
+								: pa.getAlumno();
+						if (alumno == null || !Boolean.TRUE.equals(alumno.getActivo())) {
+							return false;
+						}
+						if (pa.getAlumnoDeporte() != null && !Boolean.TRUE.equals(pa.getAlumnoDeporte().getActivo())) {
+							return false;
+						}
+						return true;
+					})
 					.collect(Collectors.toList());
 		}
 
@@ -1800,9 +1836,38 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
-		// Group mensualidades by student
-		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> mensualidadesPorAlumno = todasMensualidades
-				.stream().collect(Collectors.groupingBy(com.taemoi.project.entities.ProductoAlumno::getAlumno));
+		class MensualidadGroup {
+			private final Alumno alumno;
+			private final Deporte deporte;
+			private final List<com.taemoi.project.entities.ProductoAlumno> mensualidades = new ArrayList<>();
+
+			MensualidadGroup(Alumno alumno, Deporte deporte) {
+				this.alumno = alumno;
+				this.deporte = deporte;
+			}
+		}
+
+		Map<String, MensualidadGroup> mensualidadesPorAlumno = new java.util.LinkedHashMap<>();
+		for (com.taemoi.project.entities.ProductoAlumno pa : todasMensualidades) {
+			AlumnoDeporte alumnoDeporte = pa.getAlumnoDeporte();
+			Alumno alumno = alumnoDeporte != null ? alumnoDeporte.getAlumno() : pa.getAlumno();
+			if (alumno == null) {
+				continue;
+			}
+			Deporte deporte = alumnoDeporte != null ? alumnoDeporte.getDeporte() : alumno.getDeporte();
+			if (deporte == null) {
+				deporte = inferDeporteFromConcepto(pa.getConcepto());
+			}
+			Deporte deporteFinal = deporte;
+			String deporteKey = deporteFinal != null ? deporteFinal.name() : "SIN_DEPORTE";
+			String key = alumno.getId() + "_" + deporteKey;
+			MensualidadGroup group = mensualidadesPorAlumno.get(key);
+			if (group == null) {
+				group = new MensualidadGroup(alumno, deporteFinal);
+				mensualidadesPorAlumno.put(key, group);
+			}
+			group.mensualidades.add(pa);
+		}
 
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
@@ -1900,17 +1965,20 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			html.append(tituloSeccion);
 			html.append("</div>");
 
-			// Sort by student name
-			List<Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>>> sortedEntries = mensualidadesPorAlumno
-					.entrySet().stream().sorted((e1, e2) -> {
-						String nombre1 = e1.getKey().getNombre() + " " + e1.getKey().getApellidos();
-						String nombre2 = e2.getKey().getNombre() + " " + e2.getKey().getApellidos();
+			// Sort by student name (and sport)
+			List<MensualidadGroup> sortedGroups = mensualidadesPorAlumno.values().stream()
+					.sorted((g1, g2) -> {
+						String nombre1 = (g1.alumno != null ? g1.alumno.getNombre() + " " + g1.alumno.getApellidos() : "")
+								+ " " + (g1.deporte != null ? g1.deporte.name() : "");
+						String nombre2 = (g2.alumno != null ? g2.alumno.getNombre() + " " + g2.alumno.getApellidos() : "")
+								+ " " + (g2.deporte != null ? g2.deporte.name() : "");
 						return nombre1.compareTo(nombre2);
 					}).collect(Collectors.toList());
 
-			for (Map.Entry<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> entry : sortedEntries) {
-				Alumno alumno = entry.getKey();
-				List<com.taemoi.project.entities.ProductoAlumno> mensualidades = entry.getValue();
+			for (MensualidadGroup group : sortedGroups) {
+				Alumno alumno = group.alumno;
+				Deporte deporte = group.deporte;
+				List<com.taemoi.project.entities.ProductoAlumno> mensualidades = group.mensualidades;
 
 				int pagas = (int) mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
 				int pendientes = mensualidades.size() - pagas;
@@ -1927,14 +1995,18 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				// Determine color based on student's sport (for general PDF with all sports)
 				String colorAlumno = "#007bff"; // Default
 				String deporteNombre = "";
-				if (deporteFiltro == null && alumno.getDeporte() != null) {
-					// In general PDF, color-code by student's sport
-					if (alumno.getDeporte() == Deporte.TAEKWONDO) {
+				if (deporteFiltro == null) {
+					// In general PDF, color-code by sport
+					if (deporte == Deporte.TAEKWONDO) {
 						colorAlumno = "#0D47A1"; // Blue
 						deporteNombre = " <span style='color: #0D47A1; font-weight: bold;'>[Taekwondo]</span>";
-					} else if (alumno.getDeporte() == Deporte.KICKBOXING) {
+					} else if (deporte == Deporte.KICKBOXING) {
 						colorAlumno = "#ff4500"; // Orange
 						deporteNombre = " <span style='color: #ff4500; font-weight: bold;'>[Kickboxing]</span>";
+					} else if (deporte != null) {
+						deporteNombre = " <span style='font-weight: bold;'>[" + getDeporteNombre(deporte) + "]</span>";
+					} else {
+						deporteNombre = " <span style='font-weight: bold;'>[Sin deporte]</span>";
 					}
 				}
 
@@ -2056,9 +2128,16 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		String conceptoBase = "MENSUALIDAD " + nombreMes + " " + anio;
 		String mesAnoConcepto = nombreMes + " " + anio; // Para buscar tarifas competidor
 
-		// Get ALL active AlumnoDeporte for Taekwondo and Kickboxing (can have same alumno multiple times for different sports)
-		List<AlumnoDeporte> alumnoDeportes = alumnoDeporteRepository.findActivosByDeporteIn(
-				Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+		// Get AlumnoDeporte for Taekwondo and Kickboxing (active only if requested)
+		List<Deporte> deportesFiltrados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING);
+		List<AlumnoDeporte> alumnoDeportes;
+		if (soloActivos) {
+			alumnoDeportes = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrados);
+		} else {
+			alumnoDeportes = alumnoDeporteRepository.findAll().stream()
+					.filter(ad -> ad.getDeporte() != null && deportesFiltrados.contains(ad.getDeporte()))
+					.collect(Collectors.toList());
+		}
 
 		// Get mensualidades AND tarifas competidor for this month
 		List<com.taemoi.project.entities.ProductoAlumno> productosDelMes = productoAlumnoRepository
@@ -2084,10 +2163,17 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(generarEstilosModernos("Listado Mensualidad " + nombreMes + " " + anio, fechaGeneracion));
 		// Additional styles for this report
 		html.append(".deporte-cell { font-weight: 600; }");
-		html.append(".taekwondo { color: #0D47A1; }");
-		html.append(".kickboxing { color: #ff4500; }");
-		html.append(".grado-cell { text-align: center; vertical-align: middle; }");
-		html.append("td { font-size: 9pt; padding: 2mm 1.5mm; }");
+		html.append(".deporte-taekwondo { color: #0D47A1; }");
+		html.append(".deporte-kickboxing { color: #ff4500; }");
+		html.append(".grado-cell { text-align: center; }");
+		html.append(".nombre-cell { vertical-align: middle; }");
+		html.append(".line-item { margin: 0; padding: 0; }");
+		html.append(".line-item + .line-item { margin-top: 1mm; }");
+		html.append(".grado-cell .line-item { display: flex; justify-content: center; align-items: center; }");
+		html.append(".grado-cell .line-item + .line-item { margin-top: 2mm; }");
+		html.append(".grado-cell .line-item:first-child { margin-top: 1mm; }");
+		html.append(".grado-cell .line-item:last-child { margin-bottom: 1mm; }");
+		html.append("td { font-size: 9pt; padding: 2mm 1.5mm; vertical-align: middle; }");
 		html.append("th { font-size: 9pt; padding: 2mm 1.5mm; }");
 		html.append("tr { page-break-inside: avoid; }");
 		html.append("table { -fs-table-paginate: paginate; }");
@@ -2117,88 +2203,149 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			html.append("No hay alumnos activos de Taekwondo o Kickboxing");
 			html.append("</td></tr>");
 		} else {
-			for (AlumnoDeporte ad : alumnoDeportes) {
-				Alumno alumno = ad.getAlumno();
-				if (alumno == null) continue;
 
-				// Get all products for this alumno+deporte combination (mensualidad + tarifa competidor)
-				String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
-				List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
+			Comparator<AlumnoDeporte> ordenPorAlumno = Comparator
+			        .comparing((AlumnoDeporte ad) -> {
+			            Alumno alumno = ad.getAlumno();
+			            if (alumno == null) {
+			                return "";
+			            }
+			            return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
+			        })
+			        .thenComparing(ad -> {
+			            if (ad.getDeporte() == Deporte.TAEKWONDO) {
+			                return 0;
+			            }
+			            if (ad.getDeporte() == Deporte.KICKBOXING) {
+			                return 1;
+			            }
+			            return 2;
+			        });
 
-				html.append("<tr>");
+			List<AlumnoDeporte> alumnoDeportesOrdenados = alumnoDeportes.stream()
+			        .filter(ad -> ad.getAlumno() != null)
+			        .sorted(ordenPorAlumno)
+			        .collect(Collectors.toList());
 
-				// NOMBRE
-				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
-
-				// DEPORTE (from AlumnoDeporte)
-				String deporteClass = "";
-				String deporteNombre = "";
-				if (ad.getDeporte() == Deporte.TAEKWONDO) {
-					deporteClass = "taekwondo";
-					deporteNombre = "Taekwondo";
-				} else if (ad.getDeporte() == Deporte.KICKBOXING) {
-					deporteClass = "kickboxing";
-					deporteNombre = "Kickboxing";
-				}
-				html.append("<td class='deporte-cell ").append(deporteClass).append("'>").append(deporteNombre)
-						.append("</td>");
-
-				// DESCUENTO (tipoTarifa from AlumnoDeporte - per sport)
-				String tipoTarifa = ad.getTipoTarifa() != null ? ad.getTipoTarifa().toString().replace("_", " ") : "-";
-				html.append("<td>").append(tipoTarifa).append("</td>");
-
-				// CUANTÍA (suma de mensualidad + tarifa competidor si existe)
-				String cuantia = "-";
-				double totalCuantia = 0.0;
-				if (productosAlumno != null && !productosAlumno.isEmpty()) {
-					// Sumar todos los productos (mensualidad + tarifa competidor)
-					totalCuantia = productosAlumno.stream()
-							.filter(p -> p.getPrecio() != null)
-							.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
-							.sum();
-					cuantia = String.format("%.2f €", totalCuantia);
-				} else if (ad.getCuantiaTarifa() != null) {
-					// Fallback to AlumnoDeporte's tarifa if no products found
-					cuantia = String.format("%.2f €", ad.getCuantiaTarifa());
-				}
-				html.append("<td>").append(cuantia).append("</td>");
-
-				// GRADO (from AlumnoDeporte - per sport)
-				TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
-				html.append("<td class='grado-cell'>");
-				if (tipoGrado != null) {
-					html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
-				} else {
-					html.append("-");
-				}
-				html.append("</td>");
-
-				// FECHA DE PAGO (from ProductoAlumno - all products must be paid)
-				String fechaPago = "";
-				if (productosAlumno != null && !productosAlumno.isEmpty()) {
-					// Check if all products are paid
-					boolean todosPagados = productosAlumno.stream()
-							.allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
-					if (todosPagados) {
-						// Get the latest payment date
-						Date ultimaFechaPago = productosAlumno.stream()
-								.filter(p -> p.getFechaPago() != null)
-								.map(com.taemoi.project.entities.ProductoAlumno::getFechaPago)
-								.max(Date::compareTo)
-								.orElse(null);
-						if (ultimaFechaPago != null) {
-							LocalDate fecha = Instant.ofEpochMilli(ultimaFechaPago.getTime()).atZone(ZoneId.systemDefault())
-									.toLocalDate();
-							DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-							fechaPago = fecha.format(dateFormatter);
-						}
-					}
-				}
-				html.append("<td>").append(fechaPago).append("</td>");
-
-				html.append("</tr>");
+			Map<Long, List<AlumnoDeporte>> deportesPorAlumno = new java.util.LinkedHashMap<>();
+			for (AlumnoDeporte ad : alumnoDeportesOrdenados) {
+			    Long alumnoId = ad.getAlumno().getId();
+			    List<AlumnoDeporte> lista = deportesPorAlumno.get(alumnoId);
+			    if (lista == null) {
+			        lista = new ArrayList<>();
+			        deportesPorAlumno.put(alumnoId, lista);
+			    }
+			    lista.add(ad);
 			}
-		}
+
+			for (List<AlumnoDeporte> deportesAlumno : deportesPorAlumno.values()) {
+			    if (deportesAlumno.isEmpty()) {
+			        continue;
+			    }
+			    Alumno alumno = deportesAlumno.get(0).getAlumno();
+			    if (alumno == null) {
+			        continue;
+			    }
+
+			    html.append("<tr>");
+
+			    // NOMBRE
+			    html.append("<td class='nombre-cell'>").append(alumno.getNombre()).append(" ")
+			            .append(alumno.getApellidos()).append("</td>");
+
+			    // DEPORTE
+			    html.append("<td class='deporte-cell'>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        String deporteClass = "";
+			        String deporteNombre = "";
+			        if (ad.getDeporte() == Deporte.TAEKWONDO) {
+			            deporteClass = "deporte-taekwondo";
+			            deporteNombre = "Taekwondo";
+			        } else if (ad.getDeporte() == Deporte.KICKBOXING) {
+			            deporteClass = "deporte-kickboxing";
+			            deporteNombre = "Kickboxing";
+			        } else if (ad.getDeporte() != null) {
+			            deporteNombre = getDeporteNombre(ad.getDeporte());
+			        }
+			        html.append("<div class='line-item " + deporteClass + "'>")
+			                .append(deporteNombre.isEmpty() ? "-" : deporteNombre)
+			                .append("</div>");
+			    }
+			    html.append("</td>");
+
+			    // DESCUENTO
+			    html.append("<td>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        String tipoTarifa = ad.getTipoTarifa() != null
+			                ? ad.getTipoTarifa().toString().replace("_", " ")
+			                : "-";
+			        html.append("<div class='line-item'>").append(tipoTarifa).append("</div>");
+			    }
+			    html.append("</td>");
+
+			    // CUANTIA
+			    html.append("<td>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
+			        String cuantia = "-";
+			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
+			            double totalCuantia = productosAlumno.stream()
+			                    .filter(p -> p.getPrecio() != null)
+			                    .mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
+			                    .sum();
+			            cuantia = String.format("%.2f EUR", totalCuantia);
+			        } else if (ad.getCuantiaTarifa() != null) {
+			            cuantia = String.format("%.2f EUR", ad.getCuantiaTarifa());
+			        }
+			        html.append("<div class='line-item'>").append(cuantia).append("</div>");
+			    }
+			    html.append("</td>");
+
+			    // GRADO
+			    html.append("<td class='grado-cell'>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+			        html.append("<div class='line-item'>");
+			        if (tipoGrado != null) {
+			            html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
+			        } else {
+			            html.append("-");
+			        }
+			        html.append("</div>");
+			    }
+			    html.append("</td>");
+
+			    // FECHA DE PAGO
+			    html.append("<td>");
+			    for (AlumnoDeporte ad : deportesAlumno) {
+			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
+			        String fechaPago = "-";
+			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
+			            boolean todosPagados = productosAlumno.stream()
+			                    .allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
+			            if (todosPagados) {
+			                Date ultimaFechaPago = productosAlumno.stream()
+			                        .filter(p -> p.getFechaPago() != null)
+			                        .map(com.taemoi.project.entities.ProductoAlumno::getFechaPago)
+			                        .max(Date::compareTo)
+			                        .orElse(null);
+			                if (ultimaFechaPago != null) {
+			                    LocalDate fecha = Instant.ofEpochMilli(ultimaFechaPago.getTime())
+			                            .atZone(ZoneId.systemDefault()).toLocalDate();
+			                    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+			                    fechaPago = fecha.format(dateFormatter);
+			                }
+			            }
+			        }
+			        html.append("<div class='line-item'>").append(fechaPago).append("</div>");
+			    }
+			    html.append("</td>");
+
+			    html.append("</tr>");
+			}
+}
 
 		html.append("</tbody>");
 		html.append("</table>");
@@ -2755,6 +2902,26 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		default:
 			return deporte.name();
 		}
+	}
+
+	private Deporte inferDeporteFromConcepto(String concepto) {
+		if (concepto == null || concepto.isBlank()) {
+			return null;
+		}
+		String upper = concepto.toUpperCase(Locale.ROOT);
+		if (upper.contains("KICKBOXING")) {
+			return Deporte.KICKBOXING;
+		}
+		if (upper.contains("TAEKWONDO")) {
+			return Deporte.TAEKWONDO;
+		}
+		if (upper.contains("PILATES")) {
+			return Deporte.PILATES;
+		}
+		if (upper.contains("DEFENSA")) {
+			return Deporte.DEFENSA_PERSONAL_FEMENINA;
+		}
+		return null;
 	}
 
 	/**
