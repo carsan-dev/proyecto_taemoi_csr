@@ -270,6 +270,202 @@
                   </div>
                 </div>
 
+                @if (esDeporteSinGrado(deporteItem.deporte)) {
+                <div class="row g-4">
+                  <!-- Left Column: Sport Statistics -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Estadísticas del Deporte
+                      </h5>
+
+                      <!-- Fecha de Alta (Editable) -->
+                      <div class="admin-form-field">
+                        <label [for]="'fechaAlta-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-plus"></i>
+                          Fecha de Alta
+                        </label>
+                        <input type="date" [id]="'fechaAlta-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAlta(deporteItem.deporte)"
+                          (change)="onFechaAltaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha de inscripcion en el deporte
+                        </small>
+                      </div>
+
+                      <!-- Antigüedad -->
+                      @if (deporteItem.antiguedad) {
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-clock-history"></i>
+                          Antigüedad en este deporte
+                        </span>
+                        <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
+                      </div>
+                      }
+
+                      <!-- Estado -->
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-info-circle"></i>
+                          Estado
+                        </span>
+                        <span class="info-value">
+                          @if (deporteItem.activo) {
+                          <span class="status-badge status-active">
+                            <i class="bi bi-check-circle-fill"></i> Activo
+                          </span>
+                          }
+                          @if (!deporteItem.activo) {
+                          <span class="status-badge status-inactive">
+                            <i class="bi bi-x-circle-fill"></i> Inactivo
+                          </span>
+                          }
+                        </span>
+                      </div>
+
+                      <!-- Fecha de Baja (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaBajaDeporte-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-x"></i>
+                          Fecha de Baja
+                        </label>
+                        <input type="date" [id]="'fechaBajaDeporte-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaBaja(deporteItem.deporte)"
+                          (change)="onFechaBajaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de baja para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Dejar vacio si no hay baja registrada
+                        </small>
+                      </div>
+
+                      <!-- Fecha Alta Inicial (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaAltaInicial-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Alta Inicial
+                        </label>
+                        <input type="date" [id]="'fechaAltaInicial-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAltaInicial(deporteItem.deporte)"
+                          (change)="onFechaAltaInicialChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta inicial para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha para calcular la antigüedad en este deporte
+                        </small>
+                      </div>
+
+                      <!-- Apply/Cancel Buttons for Estadisticas -->
+                      @if (hasPendingEstadisticasChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Right Column: Tarifa Section -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-cash-coin"></i>
+                        Información de Tarifa
+                      </h5>
+
+                      <div class="admin-form-field">
+                        <label [for]="'tipoTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-tag"></i>
+                          Tipo de Tarifa
+                        </label>
+                        <select [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
+                          <option value="">Seleccionar tarifa</option>
+                          <option value="INFANTIL">Infantil</option>
+                          <option value="ADULTO">Adulto</option>
+                          <option value="ADULTO_GRUPO">Adulto Grupo</option>
+                          <option value="PADRES_HIJOS">Padres e Hijos</option>
+                          <option value="HERMANOS">Hermanos</option>
+                          <option value="PILATES">Pilates</option>
+                          <option value="KICKBOXING">Kickboxing</option>
+                          <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                        </select>
+                      </div>
+
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'cuantiaTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-currency-euro"></i>
+                          Cuantía de Tarifa (€)
+                        </label>
+                        <input type="number" step="0.01" [id]="'cuantiaTarifa-' + deporteItem.deporte"
+                          class="admin-form-control"
+                          [ngModel]="getDisplayedCuantiaTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
+                      </div>
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'rolFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Rol Familiar
+                        </label>
+                        <select [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
+                          <option value="NINGUNO">Ninguno</option>
+                          <option value="PADRE">Padre</option>
+                          <option value="MADRE">Madre</option>
+                          <option value="HIJO">Hijo</option>
+                          <option value="HIJA">Hija</option>
+                        </select>
+                      </div>
+                      }
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'HERMANOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'grupoFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Grupo Familiar
+                        </label>
+                        <input type="text" [id]="'grupoFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedGrupoFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onGrupoFamiliarModelChange(deporteItem.deporte, $event)"
+                          placeholder="Ej: Familia García" />
+                      </div>
+                      }
+
+                      <!-- Apply/Cancel Buttons for Tarifa -->
+                      @if (hasPendingTarifaChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+                } @else {
                 <div class="row g-4">
                   <!-- Left Column: Grade Management -->
                   <div class="col-lg-6">
@@ -621,7 +817,7 @@
                     </div>
                   </div>
                 </div>
-
+                }
                 <!-- Competitor Section (Only for Taekwondo and Kickboxing) -->
                 @if (deporteItem.deporte === 'TAEKWONDO' || deporteItem.deporte === 'KICKBOXING') {
                 <div class="row g-4 mt-3">
@@ -1519,13 +1715,15 @@
             Deporte
             <span class="required">*</span>
           </label>
-          <select id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte">
+          <select id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte"
+            (ngModelChange)="onNuevoDeporteChange($event)">
             @for (deporte of deportesDisponibles; track deporte) {
             <option [value]="deporte">{{ getDeporteLabel(deporte) }}</option>
             }
           </select>
         </div>
 
+        @if (!esDeporteSinGrado(nuevoDeporte)) {
         <!-- Grado Inicial -->
         <div class="admin-form-field mb-3">
           <label for="gradoInicialDeporte">
@@ -1543,6 +1741,7 @@
             Selecciona el grado con el que comenzará en este deporte
           </small>
         </div>
+        }
 
         <!-- Fecha de Alta -->
         <div class="admin-form-field mb-3">
@@ -1559,6 +1758,7 @@
           </small>
         </div>
 
+        @if (!esDeporteSinGrado(nuevoDeporte)) {
         <!-- Fecha de Grado -->
         <div class="admin-form-field">
           <label for="fechaGradoDeporte">
@@ -1573,6 +1773,7 @@
             Fecha en que obtuvo el grado inicial
           </small>
         </div>
+        }
       </div>
       <div class="modal-footer">
         <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalAgregarDeporte()">
@@ -1580,7 +1781,7 @@
           <span>Cancelar</span>
         </button>
         <button type="button" class="admin-btn admin-btn-primary" (click)="agregarDeporte()"
-          [disabled]="!nuevoDeporte || !gradoInicialDeporte || !fechaAltaDeporte || !fechaGradoDeporte">
+          [disabled]="!nuevoDeporte || !fechaAltaDeporte || (requiereGradoNuevoDeporte() && (!gradoInicialDeporte || !fechaGradoDeporte))">
           <i class="bi bi-check-circle"></i>
           <span>Agregar Deporte</span>
         </button>
