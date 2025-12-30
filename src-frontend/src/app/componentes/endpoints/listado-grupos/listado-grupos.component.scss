@@ -112,6 +112,15 @@
   }
 }
 
+// Avoid the group cards getting visually clipped at the bottom
+.admin-cards-grid {
+  padding-bottom: 1rem;
+}
+
+.admin-item-card {
+  overflow: visible;
+}
+
 // Turnos sin grupo asignado section
 .turnos-sin-grupo-list {
   padding: 1rem;
