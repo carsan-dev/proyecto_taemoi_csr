@@ -8,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { Router } from '@angular/router';
 
 @Component({
@@ -43,20 +43,11 @@ export class CrearGrupoComponent implements OnInit {
 
     this.endpointsService.crearGrupo(grupoForm).subscribe({
       next: (response) => {
-        Swal.fire({
-          title: 'Perfecto!',
-          text: 'Has creado un nuevo grupo!',
-          icon: 'success',
-          timer: 2000,
-        });
+        showSuccessToast('Has creado un nuevo grupo');
         this.router.navigate(['/gruposListar']);
       },
       error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
-          icon: 'error',
-        });
+        showErrorToast('No has completado todos los campos requeridos');
       },
       complete: () => {},
     });

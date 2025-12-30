@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
 import {
@@ -98,11 +98,7 @@ export class CrearTurnoComponent implements OnInit {
         }
       },
       error: () => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor para obtener los grupos',
-          icon: 'error',
-        });
+        showErrorToast('No hemos podido conectar con el servidor para obtener los grupos');
       },
     });
   }
@@ -121,20 +117,11 @@ export class CrearTurnoComponent implements OnInit {
 
     turnoRequest.subscribe({
       next: (response) => {
-        Swal.fire({
-          title: 'Perfecto!',
-          text: 'Has creado un nuevo turno!',
-          icon: 'success',
-          timer: 2000,
-        });
+        showSuccessToast('Has creado un nuevo turno');
         this.router.navigate(['/gruposListar']);
       },
       error: (error) => {
-        Swal.fire({
-          title: 'Error en la petición',
-          text: 'No has completado todos los campos requeridos',
-          icon: 'error',
-        });
+        showErrorToast('No has completado todos los campos requeridos');
       },
       complete: () => {},
     });
