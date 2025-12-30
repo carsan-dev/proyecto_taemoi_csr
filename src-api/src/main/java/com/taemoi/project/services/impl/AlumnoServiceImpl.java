@@ -573,10 +573,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setNif(alumnoActualizado.getNif());
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
-			String currentEmail = EmailUtils.normalizeEmail(alumnoExistente.getEmail());
-			if (normalizedEmail != null && !normalizedEmail.equals(currentEmail)) {
-				Usuario usuario = alumnoExistente.getUsuario();
-				if (usuario != null) {
+			Usuario usuario = alumnoExistente.getUsuario();
+			if (usuario != null && normalizedEmail != null) {
+				String usuarioEmail = usuario.getEmail();
+				if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
 					Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
 					if (usuarioConEmail.isPresent() && !usuarioConEmail.get().getId().equals(usuario.getId())) {
 						throw new IllegalArgumentException("El correo electronico ya esta asociado a otro usuario.");
