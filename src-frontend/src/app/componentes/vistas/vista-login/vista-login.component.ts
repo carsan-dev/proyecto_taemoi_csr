@@ -15,7 +15,7 @@ import { environment } from '../../../../environments/environment';
   styleUrls: ['./vista-login.component.scss'],
 })
 export class VistaLoginComponent implements OnInit {
-  credenciales: LoginInterface = { email: '', contrasena: '' };
+  credenciales: LoginInterface = { email: '', contrasena: '', rememberMe: false };
   passwordFieldType: string = 'password';
   passwordToggleIcon: string = 'bi bi-eye-fill';
   nombreUsuario: string | null = '';
@@ -122,6 +122,7 @@ export class VistaLoginComponent implements OnInit {
 
   loginWithGoogle() {
     // Redirect to Google OAuth2 authorization endpoint
+    this.setRememberMeCookie();
     const baseUrl = environment.apiUrl.replaceAll('/api', '');
     globalThis.location.href = `${baseUrl}/oauth2/authorization/google`;
   }
@@ -137,5 +138,18 @@ export class VistaLoginComponent implements OnInit {
     } else {
       this.router.navigate(['/inicio']);
     }
+  }
+
+  private setRememberMeCookie(): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const maxAge = this.credenciales.rememberMe ? 60 * 5 : 0;
+    const value = this.credenciales.rememberMe ? 'true' : '';
+    let cookie = `rememberMe=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    if (globalThis.location?.protocol === 'https:') {
+      cookie += '; Secure';
+    }
+    document.cookie = cookie;
   }
 }

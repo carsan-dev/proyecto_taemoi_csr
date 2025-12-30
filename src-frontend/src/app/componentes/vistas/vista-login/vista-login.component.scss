@@ -291,6 +291,76 @@ $transition-speed: 0.3s;
         }
       }
 
+      .remember-group {
+        margin-top: -0.5rem;
+      }
+
+      .remember-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        background: rgba($primary-color, 0.06);
+        border: 1px solid $border-color;
+        color: $text-muted;
+        font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
+        transition: all $transition-speed ease;
+
+        &:hover {
+          border-color: $primary-color;
+          background: rgba($primary-color, 0.1);
+          box-shadow: 0 4px 12px rgba($primary-color, 0.12);
+        }
+
+        span {
+          font-weight: 500;
+        }
+
+        input {
+          width: 20px;
+          height: 20px;
+          border: 2px solid $primary-color;
+          border-radius: 6px;
+          background: $text-light;
+          position: relative;
+          transition: all $transition-speed ease;
+          appearance: none;
+          -webkit-appearance: none;
+
+          &::after {
+            content: '';
+            width: 10px;
+            height: 6px;
+            border: 2px solid $text-light;
+            border-top: none;
+            border-right: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -55%) rotate(-45deg) scale(0);
+            transition: transform $transition-speed ease;
+          }
+
+          &:checked {
+            background: linear-gradient(135deg, $primary-color, $primary-hover);
+            border-color: $primary-hover;
+            box-shadow: 0 2px 6px rgba($primary-color, 0.25);
+
+            &::after {
+              transform: translate(-50%, -55%) rotate(-45deg) scale(1);
+            }
+          }
+
+          &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba($primary-color, 0.2);
+          }
+        }
+      }
+
       .form-actions {
         margin-top: 2rem;
 
