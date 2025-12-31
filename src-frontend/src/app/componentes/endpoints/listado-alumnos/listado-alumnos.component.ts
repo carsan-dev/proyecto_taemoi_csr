@@ -17,6 +17,14 @@ import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 
+type ResumenAlumno = {
+  totalDeportes: number;
+  tarifaPrincipal: string;
+  antiguedadPrincipal: string | null;
+  licenciaTexto: string;
+  licenciaClase: string;
+};
+
 @Component({
   selector: 'app-listado-alumnos',
   standalone: true,
@@ -464,6 +472,69 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     return getDeporteLabel(deporte);
   }
 
+  getResumenAlumno(alumnoId: number): ResumenAlumno {
+    const deportes = this.getDeportesDeAlumno(alumnoId);
+    const totalDeportes = deportes.length;
+    const deportePrincipal = this.getDeportePrincipalDeLista(deportes);
+    const tarifaPrincipal = deportePrincipal?.tipoTarifa || 'Sin tarifa';
+    const antiguedadPrincipal = deportePrincipal
+      ? this.getAntiguedadDeporte(deportePrincipal)
+      : null;
+
+    let licenciaTexto = 'Sin deportes';
+    let licenciaClase = 'licencia-none';
+    if (deportePrincipal) {
+      if (!deportePrincipal.tieneLicencia) {
+        licenciaTexto = 'Sin licencia';
+        licenciaClase = 'licencia-off';
+      } else if (this.licenciaEnVigor(deportePrincipal.fechaLicencia)) {
+        licenciaTexto = 'Con licencia';
+        licenciaClase = 'licencia-ok';
+      } else {
+        licenciaTexto = 'Caducada';
+        licenciaClase = 'licencia-expired';
+      }
+    }
+
+    return {
+      totalDeportes,
+      tarifaPrincipal,
+      antiguedadPrincipal,
+      licenciaTexto,
+      licenciaClase,
+    };
+  }
+
+  private getDeportePrincipalDeLista(
+    deportes: AlumnoDeporteDTO[]
+  ): AlumnoDeporteDTO | null {
+    if (!deportes || deportes.length === 0) {
+      return null;
+    }
+    const deportesOrdenados = [...deportes].sort((a, b) => {
+      const fechaA = a.fechaAltaInicial || a.fechaAlta;
+      const fechaB = b.fechaAltaInicial || b.fechaAlta;
+      const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
+      const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
+      return timeA - timeB;
+    });
+    return deportesOrdenados[0];
+  }
+
+  private licenciaEnVigor(
+    fechaLicencia: Date | string | null | undefined
+  ): boolean {
+    if (!fechaLicencia) {
+      return false;
+    }
+    const fechaActual = new Date();
+    const fechaLicenciaDate = new Date(fechaLicencia);
+    if (Number.isNaN(fechaLicenciaDate.getTime())) {
+      return false;
+    }
+    return fechaLicenciaDate.getFullYear() >= fechaActual.getFullYear();
+  }
+
   getAntiguedadAlumno(alumno: any): string | null {
     if (!alumno) {
       return null;
@@ -471,20 +542,33 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     const deportes = this.getDeportesDeAlumno(alumno.id);
     if (deportes.length > 0) {
-      const deportesOrdenados = [...deportes].sort((a, b) => {
-        const fechaA = a.fechaAltaInicial || a.fechaAlta;
-        const fechaB = b.fechaAltaInicial || b.fechaAlta;
-        const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
-        const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
-        return timeA - timeB;
-      });
-      const deportePrincipal = deportesOrdenados[0];
-      if (deportePrincipal?.antiguedad) {
-        return deportePrincipal.antiguedad;
+      const deportePrincipal = this.getDeportePrincipalDeLista(deportes);
+      const antiguedadPrincipal = deportePrincipal
+        ? this.getAntiguedadDeporte(deportePrincipal)
+        : null;
+      if (antiguedadPrincipal) {
+        return antiguedadPrincipal;
       }
     }
 
-    const fechaBase = alumno.fechaAltaInicial || alumno.fechaAlta;
+    return this.calcularAntiguedadDesdeFecha(alumno.fechaAltaInicial || alumno.fechaAlta);
+  }
+
+  getAntiguedadDeporte(deporte: AlumnoDeporteDTO): string | null {
+    if (!deporte) {
+      return null;
+    }
+    if (deporte.antiguedad) {
+      return deporte.antiguedad;
+    }
+    return this.calcularAntiguedadDesdeFecha(
+      deporte.fechaAltaInicial || deporte.fechaAlta
+    );
+  }
+
+  private calcularAntiguedadDesdeFecha(
+    fechaBase: Date | string | null | undefined
+  ): string | null {
     if (!fechaBase) {
       return null;
     }
@@ -510,7 +594,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       meses = 0;
     }
 
-    const aniosStr = anios === 1 ? '1 año' : `${anios} años`;
+    const aniosStr = anios === 1 ? '1 a\u00f1o' : `${anios} a\u00f1os`;
     const mesesStr = meses === 1 ? '1 mes' : `${meses} meses`;
 
     if (anios > 0 && meses > 0) {

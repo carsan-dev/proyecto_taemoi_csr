@@ -121,7 +121,7 @@
       <app-skeleton-card type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
     }
 
-    <!-- Cards View -->
+        <!-- Cards View -->
     @if (!cargando && vistaActual === 'cards') {
       <div class="admin-cards-grid mb-4">
         @for (alumno of alumnosFiltrados; track alumno.id) {
@@ -134,62 +134,86 @@
               </a>
               <div class="item-title">
                 <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
-                <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
+                <p>N&ordm; Expediente: {{ alumno.numeroExpediente }}</p>
               </div>
             </div>
-
+            
             <div class="item-body">
-              <div class="item-field">
-                <i class="bi bi-cake2"></i>
-                <strong>Edad:</strong>
-                <span>{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
-              </div>
-              <div class="item-field">
-                <i class="bi bi-telephone"></i>
-                <strong>Teléfono:</strong>
-                <span>{{ alumno.telefono }}</span>
-              </div>
-              <div class="item-field">
-                <i class="bi bi-cash-coin"></i>
-                <strong>Tarifa:</strong>
-                <span>{{ alumno.tipoTarifa }}</span>
-              </div>
-              <div class="item-field">
-                <i class="bi bi-calendar-plus"></i>
-                <strong>Alta:</strong>
-                <span>{{ (alumno.fechaAltaInicial || alumno.fechaAlta) | date: 'dd/MM/yyyy' }}</span>
-              </div>
-              @if (getAntiguedadAlumno(alumno)) {
-                <div class="item-field">
-                  <i class="bi bi-clock-history"></i>
-                  <strong>Antigüedad:</strong>
-                  <span>{{ getAntiguedadAlumno(alumno) }}</span>
+              <div class="item-field-full resumen-card">
+                <div class="resumen-header">
+                  <i class="bi bi-clipboard-check"></i>
+                  <strong>Resumen</strong>
                 </div>
-              }
-              <div class="item-field">
-                <i class="bi bi-trophy"></i>
-                <strong>Categoría:</strong>
-                <span>{{ alumno.categoria || 'N/A' }}</span>
+                <div class="resumen-grid" *ngIf="getResumenAlumno(alumno.id) as resumen">
+                  <div class="resumen-item">
+                    <span class="resumen-label">N&ordm; deportes</span>
+                    <span class="resumen-value">{{ resumen.totalDeportes }}</span>
+                  </div>
+                  <div class="resumen-item">
+                    <span class="resumen-label">Edad</span>
+                    <span class="resumen-value">{{ calcularEdad(alumno.fechaNacimiento) }} a&ntilde;os</span>
+                  </div>
+                  <div class="resumen-item resumen-item-full">
+                    <span class="resumen-label">Tarifa principal</span>
+                    <span class="resumen-value">{{ resumen.tarifaPrincipal }}</span>
+                  </div>
+                  <div class="resumen-item resumen-item-full">
+                    <span class="resumen-label">Antig&uuml;edad principal</span>
+                    <span class="resumen-value">{{ resumen.antiguedadPrincipal || '-' }}</span>
+                  </div>
+                  <div class="resumen-item resumen-item-full">
+                    <span class="resumen-label">Licencia</span>
+                    <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                  </div>
+                </div>
               </div>
               <div class="item-field-full">
                 <div class="deportes-header">
                   <i class="bi bi-award"></i>
                   <strong>Deportes:</strong>
                 </div>
-                <div class="deportes-badges">
-                  @if (getDeportesDeAlumno(alumno.id).length === 0) {
-                    <span class="badge-loading">Cargando...</span>
-                  }
-                  @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
-                    <span class="deporte-badge" [class]="deporteItem.deporte.toLowerCase()">
-                      <i class="bi bi-trophy-fill"></i>
-                      <span class="deporte-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
-                      <span class="deporte-grado" [style]="getGradoStyle(deporteItem.grado || '')">
-                        {{ deporteItem.grado || 'Sin grado' }}
-                      </span>
-                    </span>
-                  }
-                </div>
+                <details class="deportes-collapsible">
+                  <summary class="deportes-summary">
+                    <span class="summary-closed">Ver detalles</span>
+                    <span class="summary-open">Ocultar detalles</span>
+                    <i class="bi bi-chevron-down"></i>
+                  </summary>
+                  <div class="deportes-detalles">
+                    @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                      <span class="badge-loading">Cargando...</span>
+                    }
+                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                      <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
+                        <div class="deporte-detalle-header">
+                          <span class="deporte-detalle-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                          <span class="deporte-detalle-grado" [style]="getGradoStyle(deporteItem.grado || '')">
+                            {{ deporteItem.grado || 'Sin grado' }}
+                          </span>
+                        </div>
+                        <div class="deporte-detalle-grid">
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Tarifa</span>
+                            <span class="detalle-valor">{{ deporteItem.tipoTarifa || 'Sin tarifa' }}</span>
+                          </div>
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Alta</span>
+                            <span class="detalle-valor">
+                              {{ ((deporteItem.fechaAltaInicial || deporteItem.fechaAlta) | date: 'dd/MM/yyyy') || '-' }}
+                            </span>
+                          </div>
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Antig&uuml;edad</span>
+                            <span class="detalle-valor">{{ getAntiguedadDeporte(deporteItem) || '-' }}</span>
+                          </div>
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Categor&iacute;a</span>
+                            <span class="detalle-valor">{{ deporteItem.categoria || 'N/A' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </details>
               </div>
               @if (mostrarInactivos && alumno.fechaBaja) {
                 <div class="item-field">
@@ -199,7 +223,7 @@
                 </div>
               }
             </div>
-
+            
             <div class="item-footer">
               <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
                 <i class="bi bi-pencil-square"></i>
@@ -231,13 +255,12 @@
             <tr>
               <th>Foto</th>
               <th>Nombre</th>
-              <th>Nº Exp.</th>
+              <th>N&ordm; Exp.</th>
               <th>Edad</th>
-              <th>Teléfono</th>
-              <th>Tarifa</th>
               <th>Deportes</th>
-              <th>Categoría</th>
-              <th>Alta</th>
+              <th>Tarifa principal</th>
+              <th>Antig&uuml;edad principal</th>
+              <th class="table-licencia-header">Licencia</th>
               @if (mostrarInactivos) {
                 <th>Baja</th>
               }
@@ -246,62 +269,67 @@
           </thead>
           <tbody>
             @for (alumno of alumnosFiltrados; track alumno.id) {
-              <tr [class.inactive-row]="alumno.activo === false">
-                <td>
-                  <a [routerLink]="['/alumnosEditar', alumno.id]">
-                    <img class="table-avatar"
-                      [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                      [alt]="'Perfil de ' + alumno.nombre" />
-                  </a>
-                </td>
-                <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>
-                <td>{{ alumno.numeroExpediente }}</td>
-                <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
-                <td>{{ alumno.telefono }}</td>
-                <td>{{ alumno.tipoTarifa }}</td>
-                <td>
-                  <div class="table-deportes-badges">
-                    @if (getDeportesDeAlumno(alumno.id).length === 0) {
-                      <span class="badge-loading-small">...</span>
-                    }
-                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
-                      <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="getDeporteLabel(deporteItem.deporte) + ': ' + (deporteItem.grado || 'Sin grado')">
-                        {{ getDeporteLabel(deporteItem.deporte).substring(0, 3) }}
-                      </span>
-                    }
-                  </div>
-                </td>
-                <td>{{ alumno.categoria || 'N/A' }}</td>
-                <td>{{ (alumno.fechaAltaInicial || alumno.fechaAlta) | date: 'dd/MM/yy' }}</td>
-                @if (mostrarInactivos) {
-                  <td [class.text-danger]="alumno.activo === false">
-                    {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yy') : '-' }}
+              @if (getResumenAlumno(alumno.id); as resumen) {
+                <tr [class.inactive-row]="alumno.activo === false">
+                  <td>
+                    <a [routerLink]="['/alumnosEditar', alumno.id]">
+                      <img class="table-avatar"
+                        [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                        [alt]="'Perfil de ' + alumno.nombre" />
+                    </a>
                   </td>
-                }
-                <td>
-                  <div class="table-actions">
-                    <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
-                      <i class="bi bi-pencil-square"></i>
-                    </button>
-                    @if (alumno.activo === false) {
-                      <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
-                        <i class="bi bi-check-circle"></i>
+                  <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>
+                  <td>{{ alumno.numeroExpediente }}</td>
+                  <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
+                  <td>
+                    <div class="table-deportes">
+                      <span class="deporte-count" [title]="resumen.totalDeportes + ' deportes'">{{ resumen.totalDeportes }}</span>
+                      <div class="table-deportes-badges">
+                        @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                          <span class="badge-loading-small">...</span>
+                        }
+                        @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                          <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="getDeporteLabel(deporteItem.deporte) + ': ' + (deporteItem.grado || 'Sin grado')">
+                            {{ getDeporteLabel(deporteItem.deporte).substring(0, 3) }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+                  <td class="table-tarifa">{{ resumen.tarifaPrincipal }}</td>
+                  <td class="table-antiguedad">{{ resumen.antiguedadPrincipal || '-' }}</td>
+                  <td class="table-licencia">
+                    <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                  </td>
+                  @if (mostrarInactivos) {
+                    <td [class.text-danger]="alumno.activo === false">
+                      {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yy') : '-' }}
+                    </td>
+                  }
+                  <td>
+                    <div class="table-actions">
+                      <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
+                        <i class="bi bi-pencil-square"></i>
                       </button>
-                    }
-                    @if (alumno.activo !== false) {
-                      <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)" title="Dar de Baja">
-                        <i class="bi bi-x-circle"></i>
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
+                      @if (alumno.activo === false) {
+                        <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
+                          <i class="bi bi-check-circle"></i>
+                        </button>
+                      }
+                      @if (alumno.activo !== false) {
+                        <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)" title="Dar de Baja">
+                          <i class="bi bi-x-circle"></i>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>
       </div>
     }
-
 
     <!-- Pagination -->
     <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando"
