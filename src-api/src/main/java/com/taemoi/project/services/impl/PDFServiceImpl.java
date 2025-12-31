@@ -199,7 +199,7 @@ public class PDFServiceImpl implements PDFService {
 				+ "  border-top-left-radius: 0.5mm;" + "  border-top-right-radius: 0.5mm;" + "}"
 				+ ".cinturon.doble .inferior {" + "  bottom: 0;" + "  border-bottom-left-radius: 0.5mm;"
 				+ "  border-bottom-right-radius: 0.5mm;" + "}" + ".grado-nombre {" + "  display: inline-block;"
-				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;" + "}"
+				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;" + "  white-space: nowrap;" + "}"
 				+ ".raya {" + "  position: absolute;" + "  top: 50%;" + "  transform: translateY(-50%);"
 				+ "  height: 80%;" + "  background-color: #FFD700;" + "  z-index: 10;" + "}" + "table {"
 				+ "  width: 100%;" + "  border-collapse: collapse;" + "  margin-top: 2mm;" + "  border-radius: 2mm;"
@@ -2695,7 +2695,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(
 				".student-count { text-align: center; font-size: 10pt; color: #666; font-weight: 600; vertical-align: middle; }");
 		html.append(".belt-with-text { vertical-align: middle; }");
-		html.append(".belt-text { margin-left: 3mm; vertical-align: middle; }");
+		html.append(".belt-text { margin-left: 3mm; vertical-align: middle; white-space: nowrap; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
