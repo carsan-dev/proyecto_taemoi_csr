@@ -491,3 +491,131 @@ app-paginacion {
     }
   }
 }
+
+.admin-card.has-pending-bar {
+  padding-bottom: 5rem;
+}
+
+.pending-delete {
+  opacity: 0.6;
+  background: #f1f3f5;
+}
+
+.pending-assignments {
+  background: #f8f9fa;
+  border: 1px solid #e2e6ea;
+  border-radius: 12px;
+  padding: 1rem;
+
+  .pending-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: $text-dark;
+  }
+
+  .pending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pending-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: $shadow-sm;
+  }
+
+  .pending-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .pending-name {
+    font-weight: 600;
+  }
+
+  .pending-price {
+    color: $text-muted;
+    font-size: 0.9rem;
+  }
+}
+
+.floating-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, $primary-dark 0%, #003d82 100%);
+  padding: 1rem 2rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+
+  .floating-action-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .floating-action-text {
+    color: $text-light;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      font-size: 1.25rem;
+    }
+  }
+
+  .floating-action-buttons {
+    display: flex;
+    gap: 0.75rem;
+
+    .admin-btn {
+      padding: 0.625rem 1.25rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.75rem 1rem;
+
+    .floating-action-content {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .floating-action-text {
+      font-size: 0.9rem;
+    }
+
+    .floating-action-buttons {
+      width: 100%;
+      justify-content: center;
+
+      .admin-btn {
+        flex: 1;
+        padding: 0.5rem 1rem;
+      }
+    }
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
