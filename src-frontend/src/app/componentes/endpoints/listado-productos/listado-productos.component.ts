@@ -29,10 +29,12 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   order: string = 'asc';
   cargando: boolean = true; // Local loading state
   private searchSubject = new Subject<string>();
+  private readonly storageKey = 'listadoProductosEstado';
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
+    this.restaurarEstadoPaginacion();
     this.obtenerProductos();
 
     // Setup debounced search
@@ -41,6 +43,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       distinctUntilChanged() // Only trigger if value actually changed
     ).subscribe(() => {
       this.paginaActual = 1;
+      this.guardarEstadoPaginacion();
       this.obtenerProductos();
     });
   }
@@ -62,9 +65,18 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (page: any) => {
-          this.productos = page.content;
-          this.totalPaginas = page.totalPages;
-          this.totalElementos = page.totalElements;
+          this.productos = page.content || [];
+          this.totalPaginas = page.totalPages || 0;
+          this.totalElementos = page.totalElements || 0;
+
+          if (this.totalPaginas > 0 && this.paginaActual > this.totalPaginas) {
+            this.paginaActual = this.totalPaginas;
+            this.guardarEstadoPaginacion();
+            this.obtenerProductos();
+            return;
+          }
+
+          this.guardarEstadoPaginacion();
         },
         error: (error) => {
           Swal.fire({
@@ -111,6 +123,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       return;
     }
     this.paginaActual = pagina;
+    this.guardarEstadoPaginacion();
     this.obtenerProductos();
   }
 
@@ -121,6 +134,35 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       this.orderBy = campo;
       this.order = 'asc';
     }
+    this.guardarEstadoPaginacion();
     this.obtenerProductos();
+  }
+
+  private guardarEstadoPaginacion(): void {
+    const estado = {
+      paginaActual: this.paginaActual,
+      tamanoPagina: this.tamanoPagina,
+      conceptoFiltro: this.conceptoFiltro,
+      orderBy: this.orderBy,
+      order: this.order,
+    };
+    sessionStorage.setItem(this.storageKey, JSON.stringify(estado));
+  }
+
+  private restaurarEstadoPaginacion(): void {
+    const estadoGuardado = sessionStorage.getItem(this.storageKey);
+    if (!estadoGuardado) {
+      return;
+    }
+    try {
+      const estado = JSON.parse(estadoGuardado);
+      this.paginaActual = estado.paginaActual || 1;
+      this.tamanoPagina = estado.tamanoPagina || this.tamanoPagina;
+      this.conceptoFiltro = estado.conceptoFiltro || '';
+      this.orderBy = estado.orderBy || 'id';
+      this.order = estado.order || 'asc';
+    } catch (error) {
+      console.error('Error parsing saved pagination state:', error);
+    }
   }
 }

@@ -95,6 +95,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosCargadosCompletamente = false;
 
   alumnoSeleccionado: number | null = null;
+  private readonly storageKey = 'listadoConvocatoriasEstado';
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -102,6 +103,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.restaurarEstadoPaginacion();
     this.obtenerConvocatorias();
   }
 
@@ -114,7 +116,13 @@ export class ListadoConvocatoriasComponent implements OnInit {
         next: (data) => {
           this.convocatorias = data.map((conv: any) => ({ ...conv, expanded: false }));
           this.totalPaginasConvocatorias = Math.ceil(this.convocatorias.length / this.tamanoPaginaConvocatorias);
-          this.paginaActualConvocatorias = 1;
+          if (this.totalPaginasConvocatorias > 0 && this.paginaActualConvocatorias > this.totalPaginasConvocatorias) {
+            this.paginaActualConvocatorias = this.totalPaginasConvocatorias;
+          }
+          if (this.totalPaginasConvocatorias === 0) {
+            this.paginaActualConvocatorias = 1;
+          }
+          this.guardarEstadoPaginacion();
         },
         error: () => {
           Swal.fire({
@@ -124,6 +132,12 @@ export class ListadoConvocatoriasComponent implements OnInit {
           });
         },
       });
+  }
+
+  onDeporteChange(): void {
+    this.paginaActualConvocatorias = 1;
+    this.guardarEstadoPaginacion();
+    this.obtenerConvocatorias();
   }
 
   get convocatoriasPaginadas(): any[] {
@@ -137,6 +151,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
       return;
     }
     this.paginaActualConvocatorias = pageNumber;
+    this.guardarEstadoPaginacion();
   }
 
   getGradoStyle(tipoGrado: string): string {
@@ -572,5 +587,29 @@ export class ListadoConvocatoriasComponent implements OnInit {
         });
       },
     });
+  }
+
+  private guardarEstadoPaginacion(): void {
+    const estado = {
+      paginaActualConvocatorias: this.paginaActualConvocatorias,
+      tamanoPaginaConvocatorias: this.tamanoPaginaConvocatorias,
+      deporteSeleccionado: this.deporteSeleccionado,
+    };
+    sessionStorage.setItem(this.storageKey, JSON.stringify(estado));
+  }
+
+  private restaurarEstadoPaginacion(): void {
+    const estadoGuardado = sessionStorage.getItem(this.storageKey);
+    if (!estadoGuardado) {
+      return;
+    }
+    try {
+      const estado = JSON.parse(estadoGuardado);
+      this.paginaActualConvocatorias = estado.paginaActualConvocatorias || 1;
+      this.tamanoPaginaConvocatorias = estado.tamanoPaginaConvocatorias || this.tamanoPaginaConvocatorias;
+      this.deporteSeleccionado = estado.deporteSeleccionado || this.deporteSeleccionado;
+    } catch (error) {
+      console.error('Error parsing saved pagination state:', error);
+    }
   }
 }

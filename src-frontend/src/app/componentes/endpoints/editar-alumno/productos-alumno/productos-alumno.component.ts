@@ -30,6 +30,7 @@ export class ProductosAlumnoComponent implements OnInit {
   products: Producto[] = [];
   selectedProductoId: number | null = null;
   cargando: boolean = true;
+  private storageKey = '';
 
   mostrarModalNotas = false;
   productoSeleccionado!: ProductoAlumnoDTO;
@@ -42,6 +43,8 @@ export class ProductosAlumnoComponent implements OnInit {
 
   ngOnInit(): void {
     this.alumnoId = +this.route.snapshot.paramMap.get('id')!;
+    this.storageKey = `productosAlumnoEstado_${this.alumnoId}`;
+    this.restaurarEstadoPaginacion();
     this.obtenerProductosAlumno(this.alumnoId);
     this.obtenerProductos();
   }
@@ -55,7 +58,16 @@ export class ProductosAlumnoComponent implements OnInit {
           // Reverse order to show most recent products first
           this.productosAlumno = productos.reverse();
           this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
-          this.cambiarPagina(1);
+          if (this.totalPaginas === 0) {
+            this.paginaActual = 1;
+            this.productosPaginados = [];
+            this.guardarEstadoPaginacion();
+            return;
+          }
+          if (this.paginaActual > this.totalPaginas) {
+            this.paginaActual = this.totalPaginas;
+          }
+          this.cambiarPagina(this.paginaActual);
         },
         error: (error) => {
           this.cargando = false;
@@ -69,10 +81,14 @@ export class ProductosAlumnoComponent implements OnInit {
   }
 
   cambiarPagina(pageNumber: number): void {
+    if (pageNumber < 1 || pageNumber > this.totalPaginas) {
+      return;
+    }
     this.paginaActual = pageNumber;
     const startIndex = (pageNumber - 1) * this.tamanoPagina;
     const endIndex = startIndex + this.tamanoPagina;
     this.productosPaginados = this.productosAlumno.slice(startIndex, endIndex);
+    this.guardarEstadoPaginacion();
   }
 
   obtenerProductos() {
@@ -199,5 +215,33 @@ export class ProductosAlumnoComponent implements OnInit {
 
   volver() {
     this.location.back();
+  }
+
+  private guardarEstadoPaginacion(): void {
+    if (!this.storageKey) {
+      return;
+    }
+    const estado = {
+      paginaActual: this.paginaActual,
+      tamanoPagina: this.tamanoPagina,
+    };
+    sessionStorage.setItem(this.storageKey, JSON.stringify(estado));
+  }
+
+  private restaurarEstadoPaginacion(): void {
+    if (!this.storageKey) {
+      return;
+    }
+    const estadoGuardado = sessionStorage.getItem(this.storageKey);
+    if (!estadoGuardado) {
+      return;
+    }
+    try {
+      const estado = JSON.parse(estadoGuardado);
+      this.paginaActual = estado.paginaActual || 1;
+      this.tamanoPagina = estado.tamanoPagina || this.tamanoPagina;
+    } catch (error) {
+      console.error('Error parsing saved pagination state:', error);
+    }
   }
 }
