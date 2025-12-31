@@ -23,10 +23,12 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   mostrarInactivos: boolean = false;
   cargando: boolean = true;
   private searchSubject = new Subject<string>();
+  private readonly storageKey = 'eliminarAlumnoEstado';
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
+    this.restaurarEstadoPaginacion();
     this.obtenerAlumnos();
 
     // Setup debounced search
@@ -35,6 +37,7 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
       distinctUntilChanged() // Only trigger if value actually changed
     ).subscribe(() => {
       this.paginaActual = 1;
+      this.guardarEstadoPaginacion();
       this.obtenerAlumnos();
     });
   }
@@ -60,6 +63,15 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
             activo: alumno.activo ?? true,
           }));
           this.totalPaginas = response.totalPages;
+
+          if (this.totalPaginas > 0 && this.paginaActual > this.totalPaginas) {
+            this.paginaActual = this.totalPaginas;
+            this.guardarEstadoPaginacion();
+            this.obtenerAlumnos();
+            return;
+          }
+
+          this.guardarEstadoPaginacion();
         },
         error: () => {
           Swal.fire({
@@ -76,6 +88,7 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
     this.paginaActual = pageNumber;
+    this.guardarEstadoPaginacion();
     this.obtenerAlumnos();
   }
 
@@ -267,6 +280,8 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
 
   alternarInactivos(): void {
     this.mostrarInactivos = !this.mostrarInactivos;
+    this.paginaActual = 1;
+    this.guardarEstadoPaginacion();
     this.obtenerAlumnos();
   }
 
@@ -281,5 +296,31 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
 
   get allAlumnosSelected(): boolean {
     return this.alumnos.length > 0 && this.alumnos.every(alumno => alumno.selected);
+  }
+
+  private guardarEstadoPaginacion(): void {
+    const estado = {
+      paginaActual: this.paginaActual,
+      tamanoPagina: this.tamanoPagina,
+      nombreFiltro: this.nombreFiltro,
+      mostrarInactivos: this.mostrarInactivos,
+    };
+    sessionStorage.setItem(this.storageKey, JSON.stringify(estado));
+  }
+
+  private restaurarEstadoPaginacion(): void {
+    const estadoGuardado = sessionStorage.getItem(this.storageKey);
+    if (!estadoGuardado) {
+      return;
+    }
+    try {
+      const estado = JSON.parse(estadoGuardado);
+      this.paginaActual = estado.paginaActual || 1;
+      this.tamanoPagina = estado.tamanoPagina || this.tamanoPagina;
+      this.nombreFiltro = estado.nombreFiltro || '';
+      this.mostrarInactivos = estado.mostrarInactivos || false;
+    } catch (error) {
+      console.error('Error parsing saved pagination state:', error);
+    }
   }
 }

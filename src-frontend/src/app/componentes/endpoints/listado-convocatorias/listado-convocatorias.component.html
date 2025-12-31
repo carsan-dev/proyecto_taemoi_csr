@@ -35,7 +35,7 @@
             <i class="bi bi-funnel-fill me-2"></i>Filtrar por Deporte:
           </label>
           <select id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
-            (change)="obtenerConvocatorias()">
+            (change)="onDeporteChange()">
             @for (deporte of deportes; track deporte) {
               <option [value]="deporte">{{ deporte }}</option>
             }
