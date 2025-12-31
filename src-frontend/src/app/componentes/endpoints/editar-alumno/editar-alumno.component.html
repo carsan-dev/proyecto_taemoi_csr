@@ -1259,6 +1259,7 @@
                           {{ calcularTotal(producto.precio, producto.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
                         </td>
                         <td>
+                          <div class="producto-status">
                           @if (producto.pagado) {
                           <span class="status-badge status-paid">
                             <i class="bi bi-check-circle-fill"></i> Pagado
@@ -1268,7 +1269,14 @@
                           <span class="status-badge status-unpaid">
                             <i class="bi bi-exclamation-circle-fill"></i> Pendiente
                           </span>
+                          <button type="button" class="admin-btn admin-btn-success admin-btn-icon"
+                            (click)="pagarProducto(producto)" [disabled]="isPagandoProducto(producto.id)"
+                            [attr.title]="isPagandoProducto(producto.id) ? 'Marcando...' : 'Marcar pagado'"
+                            aria-label="Marcar producto como pagado">
+                            <i class="bi bi-cash-coin"></i>
+                          </button>
                           }
+                          </div>
                         </td>
                       </tr>
                       }
