@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 
 interface Usuario {
   id: number;
@@ -21,7 +23,7 @@ interface RoleSelection {
 @Component({
   selector: 'app-configuracion-sistema',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginacionComponent],
   templateUrl: './configuracion-sistema.component.html',
   styleUrls: ['./configuracion-sistema.component.scss']
 })
@@ -33,10 +35,15 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   usuarios: Usuario[] = [];
   rolesSeleccionados: Map<number, RoleSelection> = new Map();
+  paginaActualUsuarios: number = 1;
+  tamanoPaginaUsuarios: number = 5;
+  totalPaginasUsuarios: number = 0;
+  private readonly storageKeyUsuarios = 'configuracionSistemaUsuariosEstado';
 
   constructor(private endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
+    this.restaurarEstadoUsuarios();
     this.cargarConfiguracion();
     this.cargarUsuarios();
   }
@@ -51,11 +58,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar la configuración:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo cargar la configuración del sistema'
-        });
+        showErrorToast('No se pudo cargar la configuración del sistema');
         this.cargando = false;
       }
     });
@@ -83,21 +86,11 @@ export class ConfiguracionSistemaComponent implements OnInit {
         this.endpointsService.actualizarLimiteTurno(this.limiteTurno).subscribe({
           next: () => {
             this.limiteTurnoOriginal = this.limiteTurno;
-            Swal.fire({
-              icon: 'success',
-              title: 'Guardado',
-              text: 'La configuración se ha actualizado correctamente',
-              timer: 2000,
-              showConfirmButton: false
-            });
+            showSuccessToast('La configuración se ha actualizado correctamente');
           },
           error: (error) => {
             console.error('Error al guardar la configuración:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo guardar la configuración'
-            });
+            showErrorToast('No se pudo guardar la configuración');
           }
         });
       }
@@ -119,15 +112,12 @@ export class ConfiguracionSistemaComponent implements OnInit {
       next: (usuarios) => {
         this.usuarios = usuarios;
         this.inicializarRoles();
+        this.actualizarPaginacionUsuarios();
         this.cargandoRoles = false;
       },
       error: () => {
         this.cargandoRoles = false;
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los usuarios.',
-          icon: 'error',
-        });
+        showErrorToast('No se pudieron cargar los usuarios.');
       },
     });
   }
@@ -137,6 +127,33 @@ export class ConfiguracionSistemaComponent implements OnInit {
       const roles = this.parseRoles(usuario.rol);
       this.rolesSeleccionados.set(usuario.id, roles);
     });
+  }
+
+  get usuariosPaginados(): Usuario[] {
+    const start = (this.paginaActualUsuarios - 1) * this.tamanoPaginaUsuarios;
+    const end = start + this.tamanoPaginaUsuarios;
+    return this.usuarios.slice(start, end);
+  }
+
+  cambiarPaginaUsuarios(pageNumber: number): void {
+    if (this.cargandoRoles || pageNumber === this.paginaActualUsuarios) {
+      return;
+    }
+    if (pageNumber < 1 || pageNumber > this.totalPaginasUsuarios) {
+      return;
+    }
+    this.paginaActualUsuarios = pageNumber;
+    this.guardarEstadoUsuarios();
+  }
+
+  private actualizarPaginacionUsuarios(): void {
+    this.totalPaginasUsuarios = Math.ceil(this.usuarios.length / this.tamanoPaginaUsuarios);
+    if (this.totalPaginasUsuarios === 0) {
+      this.paginaActualUsuarios = 1;
+    } else if (this.paginaActualUsuarios > this.totalPaginasUsuarios) {
+      this.paginaActualUsuarios = this.totalPaginasUsuarios;
+    }
+    this.guardarEstadoUsuarios();
   }
 
   parseRoles(rolString: string): RoleSelection {
@@ -188,20 +205,11 @@ export class ConfiguracionSistemaComponent implements OnInit {
       if (result.isConfirmed) {
         this.endpointsService.actualizarRolesUsuario(usuario.id, rolesArray).subscribe({
           next: () => {
-            Swal.fire({
-              title: '¡Actualizado!',
-              text: 'Los roles del usuario se han actualizado correctamente.',
-              icon: 'success',
-              timer: 2000,
-            });
+            showSuccessToast('Los roles del usuario se han actualizado correctamente.');
             this.cargarUsuarios();
           },
           error: () => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No se pudieron actualizar los roles del usuario.',
-              icon: 'error',
-            });
+            showErrorToast('No se pudieron actualizar los roles del usuario.');
           },
         });
       }
@@ -257,5 +265,25 @@ export class ConfiguracionSistemaComponent implements OnInit {
       currentRoles.ROLE_MANAGER !== originalRoles.ROLE_MANAGER ||
       currentRoles.ROLE_ADMIN !== originalRoles.ROLE_ADMIN
     );
+  }
+
+  private guardarEstadoUsuarios(): void {
+    const estado = {
+      paginaActualUsuarios: this.paginaActualUsuarios,
+    };
+    sessionStorage.setItem(this.storageKeyUsuarios, JSON.stringify(estado));
+  }
+
+  private restaurarEstadoUsuarios(): void {
+    const estadoGuardado = sessionStorage.getItem(this.storageKeyUsuarios);
+    if (!estadoGuardado) {
+      return;
+    }
+    try {
+      const estado = JSON.parse(estadoGuardado);
+      this.paginaActualUsuarios = estado.paginaActualUsuarios || 1;
+    } catch (error) {
+      console.error('Error parsing saved pagination state:', error);
+    }
   }
 }
