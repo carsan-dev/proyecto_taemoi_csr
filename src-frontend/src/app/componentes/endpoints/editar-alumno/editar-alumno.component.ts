@@ -79,6 +79,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   paginaActualProductos = 1;
   tamanoPaginaProductos = 4;
   totalPaginasProductos = 0;
+  pagandoProductos = new Set<number>();
 
   // Convocatorias
   convocatoriasDisponibles: any[] = [];
@@ -499,6 +500,112 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       const end = start + this.tamanoPaginaProductos;
       this.productosPaginados = this.productosAlumno.slice(start, end);
     }
+  }
+
+  pagarProducto(producto: ProductoAlumnoDTO): void {
+    if (producto.pagado || this.pagandoProductos.has(producto.id)) {
+      return;
+    }
+
+    const scrollPositions = this.captureScrollPositions();
+
+    Swal.fire({
+      title: 'Marcar como pagado',
+      text: `¿Quieres marcar como pagado "${producto.concepto}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, marcar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      focusConfirm: false,
+      returnFocus: false,
+      didOpen: () => this.restoreScrollPositions(scrollPositions),
+      didClose: () => this.restoreScrollPositions(scrollPositions),
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      this.pagandoProductos.add(producto.id);
+      const productoActualizado: ProductoAlumnoDTO = {
+        ...producto,
+        pagado: true,
+        fechaPago: producto.fechaPago ?? new Date(),
+      };
+
+      this.endpointsService
+        .actualizarProductoAlumno(producto.id, productoActualizado)
+        .pipe(finalize(() => this.pagandoProductos.delete(producto.id)))
+        .subscribe({
+          next: (respuesta) => {
+            this.actualizarProductoEnListas(respuesta ?? productoActualizado);
+            showSuccessToast('Producto marcado como pagado');
+          },
+          error: () => {
+            showErrorToast('No se pudo marcar como pagado');
+          },
+        });
+    });
+  }
+
+  isPagandoProducto(productoId: number): boolean {
+    return this.pagandoProductos.has(productoId);
+  }
+
+  private actualizarProductoEnListas(productoActualizado: ProductoAlumnoDTO): void {
+    const index = this.productosAlumno.findIndex((item) => item.id === productoActualizado.id);
+    if (index !== -1) {
+      this.productosAlumno[index] = productoActualizado;
+    }
+    const indexPaginado = this.productosPaginados.findIndex((item) => item.id === productoActualizado.id);
+    if (indexPaginado !== -1) {
+      this.productosPaginados[indexPaginado] = productoActualizado;
+    }
+  }
+
+  private captureScrollPositions(): {
+    windowY: number;
+    scrollingElementY: number;
+    documentElementY: number;
+    bodyY: number;
+    contentY: number;
+  } {
+    const doc = document;
+    const content = doc.getElementById('content');
+    const scrollingElement = doc.scrollingElement as HTMLElement | null;
+    return {
+      windowY: window.scrollY || 0,
+      scrollingElementY: scrollingElement?.scrollTop ?? 0,
+      documentElementY: doc.documentElement?.scrollTop ?? 0,
+      bodyY: doc.body?.scrollTop ?? 0,
+      contentY: content?.scrollTop ?? 0,
+    };
+  }
+
+  private restoreScrollPositions(positions: {
+    windowY: number;
+    scrollingElementY: number;
+    documentElementY: number;
+    bodyY: number;
+    contentY: number;
+  }): void {
+    const doc = document;
+    const content = doc.getElementById('content');
+    const scrollingElement = doc.scrollingElement as HTMLElement | null;
+
+    if (scrollingElement) {
+      scrollingElement.scrollTop = positions.scrollingElementY;
+    }
+    if (doc.documentElement) {
+      doc.documentElement.scrollTop = positions.documentElementY;
+    }
+    if (doc.body) {
+      doc.body.scrollTop = positions.bodyY;
+    }
+    if (content) {
+      content.scrollTop = positions.contentY;
+    }
+    window.scrollTo({ top: positions.windowY, left: 0 });
   }
 
   /**

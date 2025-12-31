@@ -490,6 +490,31 @@
     margin-bottom: 0;
     background: white;
   }
+
+  .producto-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+
+    i {
+      display: block;
+      font-size: 1.1rem;
+      line-height: 1;
+      transform: translate(-1px, 2px);
+    }
+  }
 }
 
 // ========================================
