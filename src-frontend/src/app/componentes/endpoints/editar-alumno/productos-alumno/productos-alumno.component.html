@@ -15,7 +15,7 @@
     </div>
 
     <!-- Admin Card -->
-    <div class="admin-card">
+    <div class="admin-card" [class.has-pending-bar]="hasPendingChanges()">
       <!-- Skeleton Loading -->
       @if (cargando) {
       <app-skeleton-card type="table" [count]="tamanoPagina"></app-skeleton-card>
@@ -41,20 +41,25 @@
             </thead>
             <tbody>
               @for (productoAlumno of productosPaginados; track productoAlumno.id) {
-              <tr>
-                <td><strong>{{ productoAlumno.concepto }}</strong></td>
+              <tr [class.pending-delete]="isPendingDelete(productoAlumno.id)">
+                <td>
+                  <strong>{{ productoAlumno.concepto }}</strong>
+                  @if (isPendingDelete(productoAlumno.id)) {
+                  <span class="badge bg-secondary ms-2">Pendiente de eliminar</span>
+                  }
+                </td>
                 <td>{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
                 <td>
                   <input type="number" class="admin-form-control admin-form-control-sm cantidad-input"
                     [(ngModel)]="productoAlumno.cantidad"
-                    (change)="actualizarProducto(alumnoId, productoAlumno)" min="1"
-                    title="Cantidad" />
+                    (change)="onProductoChange(productoAlumno)" min="1"
+                    [disabled]="isPendingDelete(productoAlumno.id)" title="Cantidad" />
                 </td>
                 <td>
                   <input type="number" class="admin-form-control admin-form-control-sm precio-input"
                     [(ngModel)]="productoAlumno.precio"
-                    (change)="actualizarProducto(alumnoId, productoAlumno)"
-                    min="0" step="0.01" title="Editar precio" />
+                    (change)="onProductoChange(productoAlumno)"
+                    min="0" step="0.01" [disabled]="isPendingDelete(productoAlumno.id)" title="Editar precio" />
                 </td>
                 <td>
                   <span class="total-badge" [ngClass]="{
@@ -68,7 +73,8 @@
                   <div class="form-check d-flex justify-content-center">
                     <input type="checkbox" class="form-check-input"
                       [(ngModel)]="productoAlumno.pagado"
-                      (change)="actualizarProducto(alumnoId, productoAlumno)" />
+                      (change)="onProductoChange(productoAlumno)"
+                      [disabled]="isPendingDelete(productoAlumno.id)" />
                   </div>
                 </td>
                 <td>{{ productoAlumno.fechaPago ? (productoAlumno.fechaPago | date: 'dd/MM/yyyy') : '-' }}</td>
@@ -78,16 +84,23 @@
                       {{ productoAlumno.notas || '-' }}
                     </span>
                     <button type="button" class="admin-btn admin-btn-link admin-btn-sm"
-                      (click)="abrirModalNotas(productoAlumno)" title="Editar notas">
+                      (click)="abrirModalNotas(productoAlumno)" [disabled]="isPendingDelete(productoAlumno.id)" title="Editar notas">
                       <i class="bi bi-pencil-square"></i>
                     </button>
                   </div>
                 </td>
                 <td>
+                  @if (!isPendingDelete(productoAlumno.id)) {
                   <button type="button" class="admin-btn admin-btn-danger admin-btn-sm"
-                    (click)="eliminarProducto(alumnoId, productoAlumno.id)" title="Eliminar producto">
+                    (click)="marcarProductoParaEliminar(productoAlumno.id)" title="Marcar para eliminar">
                     <i class="bi bi-trash"></i>
                   </button>
+                  } @else {
+                  <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                    (click)="deshacerEliminarProducto(productoAlumno.id)" title="Deshacer eliminacion">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                  }
                 </td>
               </tr>
               }
@@ -137,13 +150,62 @@
         </div>
         <div class="col-sm-12 col-md-4 col-lg-3">
           <button type="button" class="admin-btn admin-btn-success w-100"
-            (click)="asignarProducto(alumnoId)" [disabled]="!selectedProductoId">
+            (click)="asignarProducto()" [disabled]="!selectedProductoId">
             <i class="bi bi-plus-circle"></i>
             <span>Asignar Producto</span>
           </button>
         </div>
       </div>
+
+      @if (pendingAsignaciones.length > 0) {
+      <div class="pending-assignments mt-3">
+        <h6 class="pending-title">Pendientes de asignar</h6>
+        <div class="pending-list">
+          @for (productoId of pendingAsignaciones; track $index) {
+          <div class="pending-item">
+            <div class="pending-info">
+              <span class="pending-name">
+                {{ getProductoPendiente(productoId)?.concepto || ('Producto #' + productoId) }}
+              </span>
+              @if (getProductoPendiente(productoId)?.precio !== undefined) {
+              <span class="pending-price">
+                {{ getProductoPendiente(productoId)?.precio | currency: 'EUR':'symbol':'1.2-2' }}
+              </span>
+              }
+            </div>
+            <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+              (click)="removePendingAsignacion($index)" title="Quitar de pendientes">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+      }
     </div>
+
+    @if (hasPendingChanges()) {
+    <div class="floating-action-bar">
+      <div class="floating-action-content">
+        <span class="floating-action-text">
+          <i class="bi bi-pencil-square"></i>
+          Tienes cambios pendientes
+        </span>
+        <div class="floating-action-buttons">
+          <button type="button" class="admin-btn admin-btn-secondary"
+            (click)="cancelarCambiosPendientes()" [disabled]="cargando">
+            <i class="bi bi-x-circle"></i>
+            <span>Cancelar</span>
+          </button>
+          <button type="button" class="admin-btn admin-btn-success"
+            (click)="confirmarCambiosPendientes()" [disabled]="cargando">
+            <i class="bi bi-check-circle"></i>
+            <span>Confirmar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    }
 
     @if (mostrarModalNotas) {
     <app-productos-alumno-notas [productoAlumno]="productoSeleccionado"

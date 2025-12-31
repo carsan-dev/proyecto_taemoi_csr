@@ -11,7 +11,8 @@ import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
 import { ProductosAlumnoNotasComponent } from '../../../generales/productos-alumno-notas/productos-alumno-notas.component';
 import { PaginacionComponent } from '../../../generales/paginacion/paginacion.component';
 import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
-import { finalize } from 'rxjs/operators';
+import { Observable, concat, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-productos-alumno',
@@ -31,6 +32,10 @@ export class ProductosAlumnoComponent implements OnInit {
   selectedProductoId: number | null = null;
   cargando: boolean = true;
   private storageKey = '';
+  private productosSnapshot = new Map<number, string>();
+  private pendingUpdates = new Set<number>();
+  private pendingDeletes = new Set<number>();
+  pendingAsignaciones: number[] = [];
 
   mostrarModalNotas = false;
   productoSeleccionado!: ProductoAlumnoDTO;
@@ -57,6 +62,11 @@ export class ProductosAlumnoComponent implements OnInit {
         next: (productos) => {
           // Reverse order to show most recent products first
           this.productosAlumno = productos.reverse();
+          this.resetPendingChanges();
+          this.productosSnapshot.clear();
+          this.productosAlumno.forEach((producto) => {
+            this.productosSnapshot.set(producto.id, this.getProductoSnapshot(producto));
+          });
           this.totalPaginas = Math.ceil(this.productosAlumno.length / this.tamanoPagina);
           if (this.totalPaginas === 0) {
             this.paginaActual = 1;
@@ -106,7 +116,7 @@ export class ProductosAlumnoComponent implements OnInit {
     });
   }
 
-  asignarProducto(alumnoId: number) {
+  asignarProducto() {
     if (this.selectedProductoId == null) {
       Swal.fire({
         title: 'Error',
@@ -115,74 +125,21 @@ export class ProductosAlumnoComponent implements OnInit {
       });
       return;
     }
-
-    const detalles: ProductoAlumnoDTO = {
-      id: 0,
-      productoId: this.selectedProductoId,
-      alumnoId: alumnoId,
-      concepto: '',
-      fechaAsignacion: new Date(),
-      cantidad: 1,
-      precio: 0,
-      pagado: false,
-      fechaPago: null,
-      notas: '',
-    };
-
-    this.endpointsService
-      .asignarProductoAAlumno(alumnoId, this.selectedProductoId, detalles)
-      .subscribe({
-        next: () => {
-          this.obtenerProductosAlumno(alumnoId);
-          showSuccessToast('Producto asignado correctamente');
-        },
-        error: () => {
-          showErrorToast('No se pudo asignar el producto');
-        },
-      });
-
+    this.pendingAsignaciones.push(this.selectedProductoId);
     this.selectedProductoId = null;
   }
 
-  eliminarProducto(alumnoId: number, productoAlumnoId: number) {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'Esta acción no se puede deshacer',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Si, eliminar',
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.endpointsService
-          .eliminarProductoAlumno(productoAlumnoId)
-          .subscribe({
-            next: () => {
-              this.obtenerProductosAlumno(alumnoId);
-              showSuccessToast('Producto eliminado correctamente');
-            },
-            error: () => {
-              showErrorToast('No se pudo eliminar el producto');
-            },
-          });
-      }
-    });
+  marcarProductoParaEliminar(productoAlumnoId: number) {
+    this.pendingDeletes.add(productoAlumnoId);
+    this.pendingUpdates.delete(productoAlumnoId);
   }
 
-  actualizarProducto(alumnoId: number, productoAlumno: ProductoAlumnoDTO) {
-    this.endpointsService
-      .actualizarProductoAlumno(productoAlumno.id, productoAlumno)
-      .subscribe({
-        next: () => {
-          showSuccessToast('Producto actualizado correctamente');
-          this.obtenerProductosAlumno(alumnoId);
-        },
-        error: () => {
-          showErrorToast('No se pudo actualizar el producto');
-        },
-      });
+  deshacerEliminarProducto(productoAlumnoId: number) {
+    this.pendingDeletes.delete(productoAlumnoId);
+    const producto = this.productosAlumno.find((item) => item.id === productoAlumnoId);
+    if (producto) {
+      this.onProductoChange(producto);
+    }
   }
 
   abrirModalNotas(productoAlumno: ProductoAlumnoDTO) {
@@ -195,18 +152,12 @@ export class ProductosAlumnoComponent implements OnInit {
   }
 
   guardarNotas(productoActualizado: ProductoAlumnoDTO) {
-    this.endpointsService
-      .actualizarProductoAlumno(productoActualizado.id, productoActualizado)
-      .subscribe({
-        next: () => {
-          showSuccessToast('Notas actualizadas correctamente');
-          this.obtenerProductosAlumno(this.alumnoId);
-          this.cerrarModalNotas();
-        },
-        error: () => {
-          showErrorToast('No se pudieron actualizar las notas');
-        },
-      });
+    const producto = this.productosAlumno.find((item) => item.id === productoActualizado.id);
+    if (producto) {
+      producto.notas = productoActualizado.notas;
+      this.onProductoChange(producto);
+    }
+    this.cerrarModalNotas();
   }
 
   calcularTotal(precio: number, cantidad: number): number {
@@ -215,6 +166,142 @@ export class ProductosAlumnoComponent implements OnInit {
 
   volver() {
     this.location.back();
+  }
+
+  onProductoChange(productoAlumno: ProductoAlumnoDTO): void {
+    if (this.pendingDeletes.has(productoAlumno.id)) {
+      return;
+    }
+    const snapshot = this.productosSnapshot.get(productoAlumno.id);
+    const currentSnapshot = this.getProductoSnapshot(productoAlumno);
+    if (snapshot && snapshot !== currentSnapshot) {
+      this.pendingUpdates.add(productoAlumno.id);
+    } else {
+      this.pendingUpdates.delete(productoAlumno.id);
+    }
+  }
+
+  isPendingDelete(productoAlumnoId: number): boolean {
+    return this.pendingDeletes.has(productoAlumnoId);
+  }
+
+  removePendingAsignacion(index: number): void {
+    this.pendingAsignaciones.splice(index, 1);
+  }
+
+  hasPendingChanges(): boolean {
+    return (
+      this.pendingUpdates.size > 0 ||
+      this.pendingDeletes.size > 0 ||
+      this.pendingAsignaciones.length > 0
+    );
+  }
+
+  confirmarCambiosPendientes(): void {
+    if (!this.hasPendingChanges()) {
+      return;
+    }
+
+    const operaciones: Array<Observable<unknown>> = [];
+    let hasErrors = false;
+
+    const actualizaciones = Array.from(this.pendingUpdates).filter(
+      (productoId) => !this.pendingDeletes.has(productoId)
+    );
+
+    actualizaciones.forEach((productoId) => {
+      const producto = this.productosAlumno.find((item) => item.id === productoId);
+      if (!producto) {
+        return;
+      }
+      operaciones.push(
+        this.endpointsService.actualizarProductoAlumno(producto.id, producto).pipe(
+          catchError(() => {
+            hasErrors = true;
+            showErrorToast('No se pudo actualizar un producto');
+            return of(null);
+          })
+        )
+      );
+    });
+
+    this.pendingDeletes.forEach((productoId) => {
+      operaciones.push(
+        this.endpointsService.eliminarProductoAlumno(productoId).pipe(
+          catchError(() => {
+            hasErrors = true;
+            showErrorToast('No se pudo eliminar un producto');
+            return of(null);
+          })
+        )
+      );
+    });
+
+    this.pendingAsignaciones.forEach((productoId) => {
+      const detalles: ProductoAlumnoDTO = {
+        id: 0,
+        productoId: productoId,
+        alumnoId: this.alumnoId,
+        concepto: '',
+        fechaAsignacion: new Date(),
+        cantidad: 1,
+        precio: 0,
+        pagado: false,
+        fechaPago: null,
+        notas: '',
+      };
+      operaciones.push(
+        this.endpointsService.asignarProductoAAlumno(this.alumnoId, productoId, detalles).pipe(
+          catchError(() => {
+            hasErrors = true;
+            showErrorToast('No se pudo asignar un producto');
+            return of(null);
+          })
+        )
+      );
+    });
+
+    if (operaciones.length === 0) {
+      return;
+    }
+
+    this.cargando = true;
+    concat(...operaciones)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
+        complete: () => {
+          this.obtenerProductosAlumno(this.alumnoId);
+          if (!hasErrors) {
+            showSuccessToast('Cambios aplicados correctamente');
+          }
+        },
+      });
+  }
+
+  cancelarCambiosPendientes(): void {
+    this.resetPendingChanges();
+    this.obtenerProductosAlumno(this.alumnoId);
+    this.selectedProductoId = null;
+  }
+
+  getProductoPendiente(productoId: number): Producto | undefined {
+    return this.products.find((item) => item.id === productoId);
+  }
+
+  private resetPendingChanges(): void {
+    this.pendingUpdates.clear();
+    this.pendingDeletes.clear();
+    this.pendingAsignaciones = [];
+  }
+
+  private getProductoSnapshot(producto: ProductoAlumnoDTO): string {
+    return JSON.stringify({
+      cantidad: producto.cantidad,
+      precio: producto.precio,
+      pagado: producto.pagado,
+      fechaPago: producto.fechaPago,
+      notas: producto.notas ?? '',
+    });
   }
 
   private guardarEstadoPaginacion(): void {
