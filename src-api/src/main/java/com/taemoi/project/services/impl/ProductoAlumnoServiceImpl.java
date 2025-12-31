@@ -552,7 +552,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (alumno != null) {
 			dto.setAlumnoId(alumno.getId());
 		}
-		dto.setProductoId(productoAlumno.getProducto().getId());
+		Producto producto = productoAlumno.getProducto();
+		if (producto != null) {
+			dto.setProductoId(producto.getId());
+		} else {
+			dto.setProductoId(null);
+		}
 		dto.setConcepto(productoAlumno.getConcepto());
 		dto.setPrecio(productoAlumno.getPrecio());
 		dto.setCantidad(productoAlumno.getCantidad());

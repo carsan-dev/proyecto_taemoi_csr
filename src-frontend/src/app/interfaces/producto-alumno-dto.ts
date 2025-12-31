@@ -1,6 +1,6 @@
 export interface ProductoAlumnoDTO {
     id: number;
-    productoId: number;
+    productoId: number | null;
     alumnoId: number;
     concepto: string;
     fechaAsignacion: Date;
