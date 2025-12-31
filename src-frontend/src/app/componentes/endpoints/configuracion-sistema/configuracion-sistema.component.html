@@ -123,7 +123,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (usuario of usuarios; track usuario.id) {
+                @for (usuario of usuariosPaginados; track usuario.id) {
                 <tr>
                   <td>
                     <div class="user-info">
@@ -190,6 +190,16 @@
               </tbody>
             </table>
           </div>
+          @if (totalPaginasUsuarios > 1) {
+          <app-paginacion
+            [paginaActual]="paginaActualUsuarios"
+            [totalPaginas]="totalPaginasUsuarios"
+            [tamanoPagina]="tamanoPaginaUsuarios"
+            [deshabilitado]="cargandoRoles"
+            (pageChange)="cambiarPaginaUsuarios($event)"
+            class="mt-4">
+          </app-paginacion>
+          }
           }
         </div>
         }
