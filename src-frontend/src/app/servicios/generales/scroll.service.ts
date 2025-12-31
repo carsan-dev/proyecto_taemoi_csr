@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
 @Injectable({
@@ -7,11 +7,10 @@ import { filter } from 'rxjs/operators';
 })
 export class ScrollService {
   constructor(private router: Router) {
-    // Automatically scroll to top on route changes
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
-        this.scrollToTop();
+        this.scrollToTopInstant();
       });
   }
 
@@ -19,7 +18,20 @@ export class ScrollService {
    * Scrolls to the top of the window smoothly
    */
   scrollToTop(behavior: ScrollBehavior = 'smooth'): void {
-    window.scrollTo({
+    const doc = document;
+    const win = window;
+    const scrollingElement = doc.scrollingElement as HTMLElement | null;
+
+    this.scrollElementToTop(scrollingElement, behavior);
+    this.scrollElementToTop(doc.documentElement, behavior);
+    this.scrollElementToTop(doc.body, behavior);
+
+    const content = doc.getElementById('content');
+    if (content) {
+      this.scrollElementToTop(content, behavior);
+    }
+
+    win.scrollTo({
       top: 0,
       left: 0,
       behavior: behavior,
@@ -52,5 +64,17 @@ export class ScrollService {
       left: 0,
       behavior: behavior,
     });
+  }
+
+  private scrollElementToTop(element: HTMLElement | null, behavior: ScrollBehavior): void {
+    if (!element) {
+      return;
+    }
+
+    if (typeof element.scrollTo === 'function') {
+      element.scrollTo({ top: 0, left: 0, behavior });
+    } else {
+      element.scrollTop = 0;
+    }
   }
 }
