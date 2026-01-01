@@ -637,6 +637,16 @@ public class PDFServiceImpl implements PDFService {
 		return html.toString();
 	}
 
+	private String generarCeldaGrado(TipoGrado tipoGrado, String texto) {
+		String textoSeguro = (texto == null || texto.trim().isEmpty()) ? "N/A" : texto;
+		if (tipoGrado == null) {
+			return "<td class='grado-cell'><div class='grado-text'>" + textoSeguro + "</div></td>";
+		}
+		String cinturon = generarCinturonInlineHTML(tipoGrado, 70, 16);
+		return "<td class='grado-cell'><div class='grado-belt'>" + cinturon + "</div><div class='grado-text'>"
+				+ textoSeguro + "</div></td>";
+	}
+
 @Override
 public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
     List<Alumno> todosAlumnos = alumnoRepository.findAll();
@@ -700,6 +710,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
     html.append(".promotion-group { margin-bottom: 8mm; }");
     html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
     html.append(".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+    html.append(".promotion-table { table-layout: fixed; }");
+    html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
+    html.append(".grado-cell { text-align: center; }");
+    html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
+    html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
     html.append("</style>");
     html.append("</head>");
     html.append("<body>");
@@ -729,11 +744,12 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
                 html.append("<div class='promotion-group'>");
                 html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
 
-                html.append("<table>");
+                html.append("<table class='promotion-table'>");
                 html.append("<thead><tr>");
                 html.append("<th>Nombre y Apellidos</th>");
                 html.append("<th>N&#186; Expediente</th>");
                 html.append("<th>Grado Actual</th>");
+                html.append("<th>Grado a Promocionar</th>");
                 html.append("<th>Edad</th>");
                 html.append("</tr></thead>");
                 html.append("<tbody>");
@@ -753,14 +769,19 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
                             .append(alumno.getNumeroExpediente())
                             .append("</td>");
 
-                    // Grado Actual with belt
-                    if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
-                        TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
-                        String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
-                        html.append("<td>").append(cinturonActual).append("</td>");
-                    } else {
-                        html.append("<td>N/A</td>");
-                    }
+                    TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
+							? alumnoDeporte.getGrado().getTipoGrado()
+							: null;
+					String gradoActualNombre = gradoActualTipo != null ? gradoActualTipo.getNombre() : "N/A";
+					html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
+
+					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
+							alumnoDeporte.getDeporte(),
+							FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
+									|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
+											&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+							gradoActualTipo);
+					html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
                     int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
                     html.append("<td>").append(edad).append("</td>");
@@ -855,6 +876,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
 		html.append(
 				".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+		html.append(".promotion-table { table-layout: fixed; }");
+		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
+		html.append(".grado-cell { text-align: center; }");
+		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
+		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
@@ -881,7 +907,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 					html.append("<div class='promotion-group'>");
 					html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
-					html.append("<table>");
+					html.append("<table class='promotion-table'>");
 					html.append("<thead><tr>");
 					html.append("<th>Nombre y Apellidos</th>");
 					html.append("<th>N&#186; Expediente</th>");
@@ -899,16 +925,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 								.append("</td>");
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						// Grado Actual with belt
-						if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
-							TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
-							String gradoActualNombre = gradoActualTipo.getNombre();
-							String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
-							html.append("<td>").append(cinturonActual).append(" ").append(gradoActualNombre)
-									.append("</td>");
-						} else {
-							html.append("<td>N/A</td>");
-						}
+						TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
+								? alumnoDeporte.getGrado().getTipoGrado()
+								: null;
+						String gradoActualNombre = gradoActualTipo != null ? gradoActualTipo.getNombre() : "N/A";
+						html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
 
 						// Grado a Promocionar with belt
 						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
@@ -917,13 +938,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 										|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
 												&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
 								alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-						if (gradoPromocionTipo != null) {
-							String cinturonPromocion = generarCinturonInlineHTML(gradoPromocionTipo, 80, 20);
-							html.append("<td>").append(cinturonPromocion).append(" ").append(promotionGrade)
-									.append("</td>");
-						} else {
-							html.append("<td>").append(promotionGrade).append("</td>");
-						}
+						html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 						html.append("<td>").append(edad).append("</td>");
@@ -1052,6 +1067,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(generarEstilosModernos("Alumnos " + categoriaTexto + " a Promocionar - " + deporteTexto,
 				fechaGeneracion));
 		html.append(".promotion-group { margin-bottom: 8mm; }");
+		html.append(".promotion-table { table-layout: fixed; }");
+		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
+		html.append(".grado-cell { text-align: center; }");
+		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
+		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
@@ -1073,7 +1093,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 				html.append("<div class='promotion-group'>");
 				html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
-				html.append("<table>");
+				html.append("<table class='promotion-table'>");
 				html.append("<thead><tr>");
 				html.append("<th>Nombre y Apellidos</th>");
 				html.append("<th>N&#186; Expediente</th>");
@@ -1091,16 +1111,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 							.append("</td>");
 					html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-					// Grado Actual with belt
-					if (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado() != null) {
-						TipoGrado gradoActualTipo = alumnoDeporte.getGrado().getTipoGrado();
-						String gradoActualNombre = gradoActualTipo.getNombre();
-						String cinturonActual = generarCinturonInlineHTML(gradoActualTipo, 80, 20);
-						html.append("<td>").append(cinturonActual).append(" ").append(gradoActualNombre)
-								.append("</td>");
-					} else {
-						html.append("<td>N/A</td>");
-					}
+					TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
+							? alumnoDeporte.getGrado().getTipoGrado()
+							: null;
+					String gradoActualNombre = gradoActualTipo != null ? gradoActualTipo.getNombre() : "N/A";
+					html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
 
 					// Grado a Promocionar with belt
 					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
@@ -1109,13 +1124,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 									|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
 											&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
 							alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-					if (gradoPromocionTipo != null) {
-						String cinturonPromocion = generarCinturonInlineHTML(gradoPromocionTipo, 80, 20);
-						html.append("<td>").append(cinturonPromocion).append(" ").append(promotionGrade)
-								.append("</td>");
-					} else {
-						html.append("<td>").append(promotionGrade).append("</td>");
-					}
+					html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 					html.append("<td>").append(edad).append("</td>");
