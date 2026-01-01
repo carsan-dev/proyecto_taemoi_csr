@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.UsuarioDTO;
+import com.taemoi.project.dtos.request.PasswordResetAdminRequest;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
@@ -33,6 +35,8 @@ import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.UsuarioService;
+
+import jakarta.validation.Valid;
 
 /**
  * Controlador REST que maneja las operaciones relacionadas con administración.
@@ -154,6 +158,23 @@ public class AdminController {
 		// Convertir a DTO y devolver
 		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuarioActualizado);
 		return ResponseEntity.ok(usuarioDTO);
+	}
+
+	@PutMapping("/users/{userId}/password")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<UsuarioDTO> actualizarContrasenaUsuario(@PathVariable Long userId,
+			@Valid @RequestBody PasswordResetAdminRequest request) {
+		logger.info("## AdminController :: actualizarContrasenaUsuario - userId: {}", userId);
+
+		Usuario usuario = usuarioService.encontrarPorId(userId)
+				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
+
+		if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
+			throw new IllegalArgumentException("Las cuentas de Google no permiten restablecer contrasena manualmente.");
+		}
+
+		Usuario actualizado = usuarioService.actualizarContrasena(userId, request.getNuevaContrasena());
+		return ResponseEntity.ok(UsuarioDTO.deUsuario(actualizado));
 	}
 
 	/**

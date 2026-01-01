@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.UsuarioDTO;
@@ -28,6 +29,9 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	/**
 	 * Carga los detalles del usuario por su nombre de usuario (email) para
@@ -120,5 +124,13 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	@Override
 	public void eliminarUsuario(Long id) {
 		usuarioRepository.deleteById(id);
+	}
+
+	@Override
+	public Usuario actualizarContrasena(Long userId, String nuevaContrasena) {
+		Usuario usuario = usuarioRepository.findById(userId)
+				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con ID: " + userId));
+		usuario.setContrasena(passwordEncoder.encode(nuevaContrasena));
+		return usuarioRepository.save(usuario);
 	}
 }
