@@ -1,12 +1,34 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { forkJoin, Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
-import { Subscription } from 'rxjs/internal/Subscription';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { Turno } from '../../../../interfaces/turno';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
+
+interface TimeSlot {
+  horaInicio: string;
+  horaFin: string;
+  display: string;
+}
+
+interface TurnoEnCelda {
+  turno: Turno;
+  sportKey: string;
+  emoji: string;
+  color: string;
+  displayName: string;
+}
+
+interface DeporteInfo {
+  key: string;
+  nombre: string;
+  nombreCorto: string;
+  emoji: string;
+  color: string;
+}
 
 @Component({
   selector: 'app-turnos-usuario',
@@ -18,7 +40,6 @@ import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   cargando: boolean = true;
-  private readonly subscriptions: Subscription = new Subscription();
   allTurnos: Turno[] = [];
   diasSemana: string[] = [
     'Lunes',
@@ -26,10 +47,14 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     'Miércoles',
     'Jueves',
     'Viernes',
-    'Sábado',
-    'Domingo',
   ];
+  diasCortos: string[] = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+  timeSlots: TimeSlot[] = [];
+  timetableGrid: Map<string, Map<string, TurnoEnCelda[]>> = new Map();
+  selectedDayIndex: number = 0;
   alumnoId!: number;
+
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,
@@ -41,124 +66,138 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     const alumnoId = this.authService.getAlumnoId();
     if (alumnoId) {
       this.alumnoId = alumnoId;
-      this.cargarGruposDelAlumno();
-    } else {
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo obtener el ID del alumno autenticado.',
-        icon: 'error',
-      });
+      this.cargarHorariosDelAlumno();
+      return;
     }
-  }
 
-  cargarGruposDelAlumno(): void {
-    this.cargando = true;
-    const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
-      next: (grupos) => {
-        this.grupos = grupos;
-        setTimeout(() => {
-          this.cargarTodosTurnos();
-          this.cargando = false;
-        }, 100);
+    const usuarioSubscription = this.authService.obtenerUsuarioAutenticado().subscribe({
+      next: (usuario) => {
+        const resolvedId = usuario?.alumnoDTO?.id ?? this.authService.getAlumnoId();
+        if (resolvedId) {
+          this.alumnoId = resolvedId;
+          this.cargarHorariosDelAlumno();
+          return;
+        }
+        this.cargando = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo obtener el ID del alumno autenticado.',
+          icon: 'error',
+        });
       },
       error: () => {
         this.cargando = false;
         Swal.fire({
-          title: 'Error en la petición',
-          text: 'Error al obtener los grupos del alumno.',
+          title: 'Error',
+          text: 'No se pudo obtener el ID del alumno autenticado.',
           icon: 'error',
         });
       },
     });
 
-    this.subscriptions.add(gruposSubscription);
-    this.endpointsService.obtenerGruposDelAlumno(this.alumnoId);
+    this.subscriptions.add(usuarioSubscription);
   }
 
-  obtenerTurnosPorDia(turnos: Turno[], diaSemana: string): Turno[] {
-    return turnos.filter((turno) => turno.diaSemana === diaSemana);
+  cargarHorariosDelAlumno(): void {
+    this.cargando = true;
+    const grupos$ = this.endpointsService.obtenerGruposDelAlumnoObservable(this.alumnoId);
+    const turnos$ = this.endpointsService.obtenerTurnosDelAlumnoObservable(this.alumnoId);
+
+    const subscription = forkJoin({ grupos: grupos$, turnos: turnos$ }).subscribe({
+      next: ({ grupos, turnos }) => {
+        this.grupos = Array.isArray(grupos) ? grupos : [];
+        this.allTurnos = this.normalizarTurnos(Array.isArray(turnos) ? turnos : []);
+        this.buildTimetable();
+        this.selectedDayIndex = this.obtenerPrimerDiaConTurnos();
+        this.cargando = false;
+      },
+      error: () => {
+        this.cargando = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron obtener los horarios del alumno.',
+          icon: 'error',
+        });
+      },
+    });
+
+    this.subscriptions.add(subscription);
   }
 
-  cargarTodosTurnos(): void {
-    const alumnoId = this.authService.getAlumnoId();
-    if (!alumnoId) return;
+  getDeportesUnicos(): DeporteInfo[] {
+    const deportesMap = new Map<string, DeporteInfo>();
+    this.allTurnos.forEach((turno) => {
+      const info = this.getDeporteInfo(turno.tipoGrupo);
+      if (!deportesMap.has(info.key)) {
+        deportesMap.set(info.key, info);
+      }
+    });
 
-    this.grupos.forEach((grupo) => {
-      const turnosSubscription = this.endpointsService.turnosDelGrupo$.subscribe({
-        next: (response) => {
-          response.forEach((turno) => {
-            if (
-              !this.allTurnos.find(
-                (t) =>
-                  t.diaSemana === turno.diaSemana &&
-                  t.horaInicio === turno.horaInicio &&
-                  t.horaFin === turno.horaFin &&
-                  t.tipoGrupo === turno.tipoGrupo
-              )
-            ) {
-              this.allTurnos.push(turno);
-            }
-          });
-        },
+    return Array.from(deportesMap.values()).sort((a, b) =>
+      a.nombre.localeCompare(b.nombre)
+    );
+  }
+
+  buildTimetable(): void {
+    const timeSlotSet = new Map<string, TimeSlot>();
+
+    this.allTurnos.forEach((turno) => {
+      if (!turno) return;
+      const key = `${turno.horaInicio}-${turno.horaFin}`;
+      if (!timeSlotSet.has(key)) {
+        timeSlotSet.set(key, {
+          horaInicio: turno.horaInicio,
+          horaFin: turno.horaFin,
+          display: `${turno.horaInicio} - ${turno.horaFin}`,
+        });
+      }
+    });
+
+    this.timeSlots = Array.from(timeSlotSet.values()).sort((a, b) =>
+      a.horaInicio.localeCompare(b.horaInicio)
+    );
+
+    this.timetableGrid = new Map();
+
+    this.timeSlots.forEach((slot) => {
+      const slotKey = `${slot.horaInicio}-${slot.horaFin}`;
+      const dayMap = new Map<string, TurnoEnCelda[]>();
+
+      this.diasSemana.forEach((dia) => {
+        const diaKey = this.normalizarDia(dia);
+        const celdas = this.allTurnos
+          .filter(
+            (turno) =>
+              this.normalizarDia(turno.diaSemana) === diaKey &&
+              turno.horaInicio === slot.horaInicio &&
+              turno.horaFin === slot.horaFin
+          )
+          .map((turno) => this.mapTurnoToCelda(turno))
+          .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+        dayMap.set(dia, celdas);
       });
-      this.subscriptions.add(turnosSubscription);
-      this.endpointsService.obtenerTurnosDelAlumnoEnGrupo(grupo.id, alumnoId);
+
+      this.timetableGrid.set(slotKey, dayMap);
     });
   }
 
-  getDeportesUnicos(): string[] {
-    const deportesSet = new Set(this.allTurnos.map((turno) => this.normalizarDeporte(turno.tipoGrupo)));
-    return Array.from(deportesSet).sort();
+  getTurnosEnCelda(slot: TimeSlot, dia: string): TurnoEnCelda[] {
+    const slotKey = `${slot.horaInicio}-${slot.horaFin}`;
+    const dayMap = this.timetableGrid.get(slotKey);
+    return dayMap?.get(dia) || [];
   }
 
-  getTurnosPorDeporte(deporte: string): Turno[] {
-    return this.allTurnos
-      .filter((turno) => this.normalizarDeporte(turno.tipoGrupo) === deporte)
-      .sort((a, b) => {
-        const diaOrder = this.diasSemana.indexOf(a.diaSemana) - this.diasSemana.indexOf(b.diaSemana);
-        if (diaOrder !== 0) return diaOrder;
-        return a.horaInicio.localeCompare(b.horaInicio);
-      });
-  }
-
-  getDeporteInfo(tipoGrupo: string): any {
-    const key = this.normalizarDeporte(tipoGrupo);
-    if (key.includes('competici')) {
-      return {
-        nombre: 'Taekwondo Competición',
-        nombreCorto: 'Taekwondo Competición',
-        icono: 'bi bi-trophy-fill',
-        emoji: '🏆',
-        color: '#f28b8b',
-      };
-    }
-    if (key.includes('taekwondo')) {
-      return { nombre: 'Taekwondo', nombreCorto: 'Taekwondo', icono: 'bi bi-shield-shaded', emoji: '🥋', color: '#a6bfe3' };
-    }
-    if (key.includes('kickboxing')) {
-      return { nombre: 'Kickboxing', nombreCorto: 'Kickboxing', icono: 'bi bi-lightning-charge-fill', emoji: '🥊', color: '#ffa573' };
-    }
-    if (key.includes('pilates')) {
-      return { nombre: 'Pilates', nombreCorto: 'Pilates', icono: 'bi bi-peace-fill', emoji: '🧘', color: '#a8d2d4' };
-    }
-    if (key.includes('defensa personal')) {
-      return {
-        nombre: 'Defensa Personal Femenina',
-        nombreCorto: 'D.P. Femenina',
-        icono: 'bi bi-shield-lock-fill',
-        emoji: '🛡️',
-        color: '#f8bbd0',
-      };
-    }
-    return { nombre: tipoGrupo, nombreCorto: tipoGrupo, icono: 'bi bi-star-fill', emoji: '⭐', color: '#6c757d' };
-  }
-
-  getTurnosSorted(): Turno[] {
-    return this.allTurnos.sort((a, b) => {
-      const diaOrder = this.diasSemana.indexOf(a.diaSemana) - this.diasSemana.indexOf(b.diaSemana);
-      if (diaOrder !== 0) return diaOrder;
-      return a.horaInicio.localeCompare(b.horaInicio);
+  getTurnosForDay(dia: string): TurnoEnCelda[] {
+    const result: TurnoEnCelda[] = [];
+    this.timeSlots.forEach((slot) => {
+      result.push(...this.getTurnosEnCelda(slot, dia));
     });
+    return result;
+  }
+
+  selectDay(index: number): void {
+    this.selectedDayIndex = index;
   }
 
   volver(): void {
@@ -169,7 +208,117 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  private obtenerPrimerDiaConTurnos(): number {
+    for (let i = 0; i < this.diasSemana.length; i += 1) {
+      if (this.getTurnosForDay(this.diasSemana[i]).length > 0) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  private normalizarTurnos(turnos: Turno[]): Turno[] {
+    const seen = new Set<number>();
+    const resultado: Turno[] = [];
+
+    turnos.forEach((turno) => {
+      if (!turno) return;
+      if (!this.esDiaVisible(turno.diaSemana)) return;
+      if (turno.id != null) {
+        if (seen.has(turno.id)) return;
+        seen.add(turno.id);
+      }
+      resultado.push(turno);
+    });
+
+    return resultado;
+  }
+
+  private mapTurnoToCelda(turno: Turno): TurnoEnCelda {
+    const info = this.getDeporteInfo(turno.tipoGrupo);
+    return {
+      turno,
+      sportKey: info.key,
+      emoji: info.emoji,
+      color: info.color,
+      displayName: info.nombreCorto || info.nombre,
+    };
+  }
+
+  private getDeporteInfo(tipoGrupo: string): DeporteInfo {
+    const key = this.normalizarDeporte(tipoGrupo);
+
+    if (key.includes('competici')) {
+      return {
+        key: 'competicion',
+        nombre: 'Taekwondo Competición',
+        nombreCorto: 'Tkd. Competición',
+        emoji: '🏆',
+        color: '#7b1fa2',
+      };
+    }
+    if (key.includes('taekwondo')) {
+      return {
+        key: 'taekwondo',
+        nombre: 'Taekwondo',
+        nombreCorto: 'Taekwondo',
+        emoji: '🥋',
+        color: '#0D47A1',
+      };
+    }
+    if (key.includes('kickboxing')) {
+      return {
+        key: 'kickboxing',
+        nombre: 'Kickboxing',
+        nombreCorto: 'Kickboxing',
+        emoji: '🥊',
+        color: '#ff4500',
+      };
+    }
+    if (key.includes('pilates')) {
+      return {
+        key: 'pilates',
+        nombre: 'Pilates',
+        nombreCorto: 'Pilates',
+        emoji: '🧘',
+        color: '#57A2A8',
+      };
+    }
+    if (key.includes('defensa personal') || key.includes('defensa')) {
+      return {
+        key: 'defensa',
+        nombre: 'Defensa Personal Femenina',
+        nombreCorto: 'D.P. Femenina',
+        emoji: '🛡️',
+        color: '#c2185b',
+      };
+    }
+
+    const fallbackName = (tipoGrupo || 'Clase').toString().trim() || 'Clase';
+    return {
+      key: key || 'otro',
+      nombre: fallbackName,
+      nombreCorto: fallbackName,
+      emoji: '📌',
+      color: '#6c757d',
+    };
+  }
+
   private normalizarDeporte(valor: string): string {
     return (valor || '').toString().toLowerCase().trim();
+  }
+
+  private normalizarDia(valor: string): string {
+    return (valor || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  private esDiaVisible(dia: string): boolean {
+    const diaKey = this.normalizarDia(dia);
+    return this.diasSemana.some((item) => this.normalizarDia(item) === diaKey);
   }
 }

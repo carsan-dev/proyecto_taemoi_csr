@@ -77,6 +77,16 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.cargarDeportesDelAlumno(alumno.id);
   }
 
+  scrollToSection(sectionId: string): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const target = document.getElementById(sectionId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
