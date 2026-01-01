@@ -180,6 +180,6 @@ Actualizar precio productos
 
 ✔ Modificar correo del usuario del alumno en caso de modificar el correo del alumno
 
-Modificar listado de asistencia para poder seleccionar los dias a sacar en vez de sacar de uno en uno
+✔ Modificar listado de asistencia para poder seleccionar los dias a sacar en vez de sacar de uno en uno
 
 A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar (50% completado)
