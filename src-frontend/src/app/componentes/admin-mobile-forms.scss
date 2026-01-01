@@ -91,6 +91,16 @@
       background-repeat: no-repeat;
       background-position: right 1rem center;
       padding-right: 2.5rem;
+      background-clip: padding-box;
+      background-origin: padding-box;
+    }
+
+    select.admin-form-control.form-select {
+      background-position: right 0.85rem center;
+      background-size: 14px 10px;
+      padding-right: 2.75rem;
+      min-height: 52px;
+      line-height: 1.2;
     }
 
     // Checkboxes and radios
