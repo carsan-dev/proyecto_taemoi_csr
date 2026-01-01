@@ -27,6 +27,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 	Optional<Usuario> findByEmailIgnoreCase(String email);
 
+	Optional<Usuario> findByResetTokenHash(String resetTokenHash);
+
 	/**
 	 * Recupera un usuario de la base de datos por su identificador único.
 	 * 

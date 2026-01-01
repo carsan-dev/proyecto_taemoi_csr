@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -25,13 +26,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.LoginRequest;
+import com.taemoi.project.dtos.request.PasswordResetEmailRequest;
+import com.taemoi.project.dtos.request.PasswordResetUpdateRequest;
+import com.taemoi.project.dtos.request.RegistroConfirmacionRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
+import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.dtos.response.AlumnoParaUsuarioDTO;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
+import com.taemoi.project.services.PasswordResetService;
+import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -69,6 +76,12 @@ public class AuthenticationController {
 
 	@Autowired
 	private com.taemoi.project.repositories.AlumnoRepository alumnoRepository;
+
+	@Autowired
+	private PasswordResetService passwordResetService;
+
+	@Autowired
+	private RegistroService registroService;
 
 	/**
 	 * Registra un nuevo usuario en el sistema.
@@ -123,6 +136,40 @@ public class AuthenticationController {
 
 		// Retornar la respuesta con el cuerpo
 		return ResponseEntity.ok(jwtResponse);
+	}
+
+	@PostMapping("/password/forgot")
+	public ResponseEntity<Void> solicitarResetContrasena(
+			@Valid @RequestBody PasswordResetEmailRequest request) {
+		passwordResetService.solicitarResetContrasena(request.getEmail());
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/password/reset")
+	public ResponseEntity<Void> resetearContrasena(
+			@Valid @RequestBody PasswordResetUpdateRequest request) {
+		passwordResetService.resetearContrasena(request.getToken(), request.getNuevaContrasena());
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/register/request")
+	public ResponseEntity<?> solicitarRegistro(@Valid @RequestBody RegistroSolicitudRequest request) {
+		try {
+			registroService.solicitarRegistro(request);
+			return ResponseEntity.ok(Map.of("mensaje", "Si el email existe, enviaremos un enlace de verificacion."));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
+		}
+	}
+
+	@PostMapping("/register/confirm")
+	public ResponseEntity<?> confirmarRegistro(@Valid @RequestBody RegistroConfirmacionRequest request) {
+		try {
+			registroService.confirmarRegistro(request.getToken());
+			return ResponseEntity.ok(Map.of("mensaje", "Registro confirmado."));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
+		}
 	}
 
 	@PostMapping("/logout")

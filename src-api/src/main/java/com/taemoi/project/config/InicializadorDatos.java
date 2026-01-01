@@ -11,6 +11,7 @@ import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
@@ -196,6 +197,7 @@ public class InicializadorDatos implements CommandLineRunner {
 			usuario.setApellidos(apellidos);
 			usuario.setEmail(normalizedEmail);
 			usuario.setContrasena(passwordEncoder.encode(contrasena));
+			usuario.setAuthProvider(AuthProvider.LOCAL);
 			usuario.getRoles().add(rol);
 			usuarioRepository.save(usuario);
 		}

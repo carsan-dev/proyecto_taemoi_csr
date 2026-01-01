@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
+import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -64,6 +65,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		user.setApellidos(request.getApellidos());
 		user.setEmail(normalizedEmail);
 		user.setContrasena(passwordEncoder.encode(request.getContrasena()));
+		user.setAuthProvider(AuthProvider.LOCAL);
 		user.getRoles().add(Roles.ROLE_USER);
 		usuarioRepository.save(user);
 		String jwt = jwtService.generateToken(user);

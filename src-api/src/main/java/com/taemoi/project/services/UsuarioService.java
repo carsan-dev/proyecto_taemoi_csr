@@ -57,4 +57,13 @@ public interface UsuarioService extends UserDetailsService {
 	 * @return El usuario guardado.
 	 */
 	Usuario guardarUsuario(Usuario usuario);
+
+	/**
+	 * Actualiza la contrasena de un usuario.
+	 *
+	 * @param userId ID del usuario.
+	 * @param nuevaContrasena Nueva contrasena en texto plano.
+	 * @return Usuario actualizado.
+	 */
+	Usuario actualizarContrasena(Long userId, String nuevaContrasena);
 }
