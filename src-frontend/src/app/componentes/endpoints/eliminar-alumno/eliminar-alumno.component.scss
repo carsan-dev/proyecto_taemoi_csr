@@ -34,9 +34,15 @@
   }
 }
 .table-profile-image {
+  display: block;
   border-radius: 50%;
   width: 50px;
   height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  max-width: 50px;
+  max-height: 50px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   box-shadow: $shadow-sm;
   transition: $transition;
