@@ -408,10 +408,36 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`usuario` (
   `email` VARCHAR(255) NOT NULL,
   `nombre` VARCHAR(50) NOT NULL,
   `alumno_id` BIGINT NULL DEFAULT NULL,
+  `auth_provider` VARCHAR(20) NULL DEFAULT NULL,
+  `reset_token_hash` VARCHAR(64) NULL DEFAULT NULL,
+  `reset_token_expires_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `UK5171l57faosmj8myawaucatdw` (`email` ASC) VISIBLE,
   UNIQUE INDEX `UKiwqbs97sir17hipge3olmu6i6` (`alumno_id` ASC) VISIBLE,
   CONSTRAINT `FKs2jdpk0wmqgyj2i2jer600y8b`
+    FOREIGN KEY (`alumno_id`)
+    REFERENCES `taemoi_db`.`alumno` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `taemoi_db`.`registro_pendiente`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taemoi_db`.`registro_pendiente` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(255) NOT NULL,
+  `alumno_id` BIGINT NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `token_hash` VARCHAR(64) NOT NULL,
+  `token_expires_at` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `UK_registro_pendiente_email` (`email` ASC) VISIBLE,
+  INDEX `IDX_registro_pendiente_token` (`token_hash` ASC) VISIBLE,
+  INDEX `FK_registro_pendiente_alumno` (`alumno_id` ASC) VISIBLE,
+  CONSTRAINT `FK_registro_pendiente_alumno`
     FOREIGN KEY (`alumno_id`)
     REFERENCES `taemoi_db`.`alumno` (`id`))
 ENGINE = InnoDB
