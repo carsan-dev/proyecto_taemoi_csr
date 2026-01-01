@@ -1,0 +1,26 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Confirmar registro</h1>
+      @if (estado === 'loading') {
+        <p>Estamos confirmando tu cuenta...</p>
+      }
+      @if (estado === 'success') {
+        <p>Tu cuenta ya está activa. Puedes iniciar sesión.</p>
+      }
+      @if (estado === 'error' || estado === 'invalid') {
+        <p>No se pudo confirmar el registro.</p>
+      }
+    </div>
+
+    @if (estado === 'error' || estado === 'invalid') {
+      <div class="auth-error">
+        {{ mensajeError }}
+      </div>
+    }
+
+    <div class="auth-footer">
+      <button type="button" class="link-button" (click)="volverAlLogin()">Ir al login</button>
+    </div>
+  </div>
+</div>

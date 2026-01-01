@@ -43,6 +43,23 @@
           }
         </div>
 
+        <div class="mode-switch" role="tablist" aria-label="Selector de acceso">
+          <button
+            type="button"
+            class="switch-tab"
+            [class.active]="!mostrarRegistro"
+            (click)="mostrarRegistro = false">
+            Iniciar sesión
+          </button>
+          <button
+            type="button"
+            class="switch-tab"
+            [class.active]="mostrarRegistro"
+            (click)="mostrarRegistro = true">
+            Crear cuenta
+          </button>
+        </div>
+
         <div class="form-panel" [class.show-register]="mostrarRegistro">
           <form (ngSubmit)="login()" class="login-form form-view login-view">
             <!-- Email Field -->
@@ -270,12 +287,6 @@
           </form>
         </div>
 
-        <div class="mode-switch">
-          <span>{{ mostrarRegistro ? 'Ya tienes cuenta?' : 'No tienes cuenta?' }}</span>
-          <button type="button" class="switch-btn" (click)="toggleRegistro()">
-            {{ mostrarRegistro ? 'Volver al login' : 'Crear cuenta' }}
-          </button>
-        </div>
       </div>
     </div>
   </div>

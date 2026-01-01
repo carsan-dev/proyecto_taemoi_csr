@@ -6,6 +6,7 @@ import { LoginInterface } from '../../../interfaces/login-interface';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
+import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 
 @Component({
   selector: 'app-vista-login',
@@ -19,6 +20,15 @@ export class VistaLoginComponent implements OnInit {
   passwordFieldType: string = 'password';
   passwordToggleIcon: string = 'bi bi-eye-fill';
   nombreUsuario: string | null = '';
+  mostrarRegistro: boolean = false;
+  registro = {
+    email: '',
+    fechaNacimiento: '',
+    contrasena: '',
+    confirmarContrasena: '',
+  };
+  registroEnviando: boolean = false;
+  registroMostrarContrasena: boolean = false;
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -71,8 +81,8 @@ export class VistaLoginComponent implements OnInit {
           this.authService.obtenerNombreUsuario().subscribe((nombreUsuario) => {
             if (nombreUsuario) {  // Evitar mostrar "null"
               Swal.fire({
-                title: 'Atención',
-                text: `Ya estás logueado, ${nombreUsuario}`,
+              title: 'Atención',
+              text: `Ya estás logueado, ${nombreUsuario}`,
                 icon: 'warning',
                 timer: 2000,
               });
@@ -92,6 +102,64 @@ export class VistaLoginComponent implements OnInit {
       this.passwordFieldType = 'password';
       this.passwordToggleIcon = 'bi bi-eye-fill';
     }
+  }
+
+  get registroTipoContrasena(): string {
+    return this.registroMostrarContrasena ? 'text' : 'password';
+  }
+
+  get registroPasswordToggleIcon(): string {
+    return this.registroMostrarContrasena ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+  }
+
+  get registroTieneMinimo(): boolean {
+    return this.registro.contrasena.length >= 8;
+  }
+
+  get registroTieneMayuscula(): boolean {
+    return /[A-Z]/.test(this.registro.contrasena);
+  }
+
+  get registroTieneMinuscula(): boolean {
+    return /[a-z]/.test(this.registro.contrasena);
+  }
+
+  get registroTieneNumero(): boolean {
+    return /\d/.test(this.registro.contrasena);
+  }
+
+  get registroContrasenaValida(): boolean {
+    return (
+      this.registroTieneMinimo &&
+      this.registroTieneMayuscula &&
+      this.registroTieneMinuscula &&
+      this.registroTieneNumero
+    );
+  }
+
+  get registroContrasenasCoinciden(): boolean {
+    return (
+      this.registro.contrasena.length > 0 &&
+      this.registro.contrasena === this.registro.confirmarContrasena
+    );
+  }
+
+  get registroPuedeEnviar(): boolean {
+    return (
+      !this.registroEnviando &&
+      !!this.registro.email &&
+      !!this.registro.fechaNacimiento &&
+      this.registroContrasenaValida &&
+      this.registroContrasenasCoinciden
+    );
+  }
+
+  toggleRegistroPasswordVisibility(): void {
+    this.registroMostrarContrasena = !this.registroMostrarContrasena;
+  }
+
+  toggleRegistro(): void {
+    this.mostrarRegistro = !this.mostrarRegistro;
   }
 
   login() {
@@ -116,6 +184,45 @@ export class VistaLoginComponent implements OnInit {
           text: 'No hemos podido conectar con el servidor',
           icon: 'error',
         });
+      },
+    });
+  }
+
+  solicitarRegistro(): void {
+    if (this.registroEnviando) {
+      return;
+    }
+    if (!this.registro.email || !this.registro.fechaNacimiento) {
+      showErrorToast('Completa el correo y la fecha de nacimiento.');
+      return;
+    }
+    if (!this.registroContrasenaValida) {
+      showErrorToast('La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).');
+      return;
+    }
+    if (!this.registroContrasenasCoinciden) {
+      showErrorToast('Las contraseñas no coinciden.');
+      return;
+    }
+
+    this.registroEnviando = true;
+    const payload = {
+      email: this.registro.email.trim(),
+      fechaNacimiento: this.registro.fechaNacimiento,
+      contrasena: this.registro.contrasena,
+    };
+    this.authService.solicitarRegistro(payload).subscribe({
+      next: (response) => {
+        this.registroEnviando = false;
+        const mensaje = response?.mensaje || 'Si el correo existe, enviaremos un enlace de verificación.';
+        showSuccessToast(mensaje);
+        this.registro = { email: '', fechaNacimiento: '', contrasena: '', confirmarContrasena: '' };
+        this.mostrarRegistro = false;
+      },
+      error: (error) => {
+        this.registroEnviando = false;
+        const mensaje = error?.error?.mensaje || 'No se pudo solicitar el registro.';
+        showErrorToast(mensaje);
       },
     });
   }

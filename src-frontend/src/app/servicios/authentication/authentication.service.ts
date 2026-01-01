@@ -90,6 +90,30 @@ export class AuthenticationService {
       );
   }
 
+  solicitarResetContrasena(email: string): Observable<void> {
+    return this.http
+      .post<void>(`${this.urlBase}/password/forgot`, { email }, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  resetearContrasena(token: string, nuevaContrasena: string): Observable<void> {
+    return this.http
+      .post<void>(`${this.urlBase}/password/reset`, { token, nuevaContrasena }, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  solicitarRegistro(payload: { email: string; fechaNacimiento: string; contrasena: string }): Observable<any> {
+    return this.http
+      .post<any>(`${this.urlBase}/register/request`, payload, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  confirmarRegistro(token: string): Observable<any> {
+    return this.http
+      .post<any>(`${this.urlBase}/register/confirm`, { token }, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
   logout(): void {
     this.http
       .post(`${this.urlBase}/logout`, {}, { withCredentials: true })

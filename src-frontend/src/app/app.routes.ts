@@ -47,6 +47,18 @@ export const routes: Routes = [
     component: VistaLoginComponent // Eager-load login page for better UX
   },
   {
+    path: 'recuperar-contrasena',
+    loadComponent: () => import('./componentes/vistas/recuperar-contrasena/recuperar-contrasena.component').then(m => m.RecuperarContrasenaComponent)
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./componentes/vistas/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
+  },
+  {
+    path: 'registro-confirmar',
+    loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
+  },
+  {
     path: 'adminpage',
     loadComponent: () => import('./componentes/vistas/vista-principal-admin/vista-principal-admin.component').then(m => m.VistaPrincipalAdminComponent),
     canActivate: [roleGuard],
