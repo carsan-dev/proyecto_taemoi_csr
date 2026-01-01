@@ -267,7 +267,7 @@ public class AlumnoController {
 	}
 
 	/**
-	 * Crea un nuevo alumno y le crea un usuario automáticamente.
+	 * Crea un nuevo alumno.
 	 *
 	 * @param nuevoAlumnoDTO Datos del nuevo alumno a crear en formato JSON.
 	 * @param file           Archivo de imagen opcional del alumno.
@@ -294,7 +294,7 @@ public class AlumnoController {
 				nuevoAlumnoDTO.setFotoAlumno(img); // Asignar la imagen al DTO
 			}
 
-			// Delegar al servicio para crear el Alumno y Usuario asociado
+			// Delegar al servicio para crear el Alumno
 			Alumno creado = alumnoService.crearAlumnoDesdeDTO(nuevoAlumnoDTO);
 
 			// Convertir el Alumno creado a DTO para la respuesta
