@@ -1332,6 +1332,14 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  actualizarContrasenaUsuario(userId: number, nuevaContrasena: string): Observable<any> {
+    return this.http
+      .put<any>(`${this.urlBase}/admin/users/${userId}/password`, { nuevaContrasena }, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerLimiteTurno(): Observable<number> {
     return this.http
       .get<number>(`${this.urlBase}/turnos/limite`)
