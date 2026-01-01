@@ -288,6 +288,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
         const nuevaInput = document.getElementById('nueva-contrasena') as HTMLInputElement | null;
         const confirmarInput = document.getElementById('confirmar-contrasena') as HTMLInputElement | null;
         const toggleButtons = document.querySelectorAll('.taemoi-password-toggle');
+        let mostrarContrasena = false;
 
         const setRule = (id: string, ok: boolean) => {
           const item = document.getElementById(id);
@@ -314,18 +315,25 @@ export class ConfiguracionSistemaComponent implements OnInit {
         confirmarInput?.addEventListener('input', actualizar);
         actualizar();
 
-        toggleButtons.forEach((button) => {
-          button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            if (!targetId) return;
-            const targetInput = document.getElementById(targetId) as HTMLInputElement | null;
-            if (!targetInput) return;
-            const isPassword = targetInput.type === 'password';
-            targetInput.type = isPassword ? 'text' : 'password';
+        const actualizarVisibilidad = () => {
+          if (nuevaInput) {
+            nuevaInput.type = mostrarContrasena ? 'text' : 'password';
+          }
+          if (confirmarInput) {
+            confirmarInput.type = mostrarContrasena ? 'text' : 'password';
+          }
+          toggleButtons.forEach((button) => {
             const icon = button.querySelector('i');
             if (icon) {
-              icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+              icon.className = mostrarContrasena ? 'bi bi-eye-slash' : 'bi bi-eye';
             }
+          });
+        };
+
+        toggleButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            mostrarContrasena = !mostrarContrasena;
+            actualizarVisibilidad();
           });
         });
       },
