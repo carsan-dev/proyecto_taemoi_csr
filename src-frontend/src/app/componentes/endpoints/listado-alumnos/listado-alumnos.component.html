@@ -134,7 +134,7 @@
               </a>
               <div class="item-title">
                 <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
-                <p>N&ordm; Expediente: {{ alumno.numeroExpediente }}</p>
+                <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
               </div>
             </div>
             
@@ -144,28 +144,30 @@
                   <i class="bi bi-clipboard-check"></i>
                   <strong>Resumen</strong>
                 </div>
-                <div class="resumen-grid" *ngIf="getResumenAlumno(alumno.id) as resumen">
-                  <div class="resumen-item">
-                    <span class="resumen-label">N&ordm; deportes</span>
-                    <span class="resumen-value">{{ resumen.totalDeportes }}</span>
+                @if (getResumenAlumno(alumno.id); as resumen) {
+                  <div class="resumen-grid">
+                    <div class="resumen-item">
+                      <span class="resumen-label">Nº deportes</span>
+                      <span class="resumen-value">{{ resumen.totalDeportes }}</span>
+                    </div>
+                    <div class="resumen-item">
+                      <span class="resumen-label">Edad</span>
+                      <span class="resumen-value">{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
+                    </div>
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Tarifa principal</span>
+                      <span class="resumen-value">{{ resumen.tarifaPrincipal }}</span>
+                    </div>
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Antigüedad principal</span>
+                      <span class="resumen-value">{{ resumen.antiguedadPrincipal || '-' }}</span>
+                    </div>
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Licencia</span>
+                      <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                    </div>
                   </div>
-                  <div class="resumen-item">
-                    <span class="resumen-label">Edad</span>
-                    <span class="resumen-value">{{ calcularEdad(alumno.fechaNacimiento) }} a&ntilde;os</span>
-                  </div>
-                  <div class="resumen-item resumen-item-full">
-                    <span class="resumen-label">Tarifa principal</span>
-                    <span class="resumen-value">{{ resumen.tarifaPrincipal }}</span>
-                  </div>
-                  <div class="resumen-item resumen-item-full">
-                    <span class="resumen-label">Antig&uuml;edad principal</span>
-                    <span class="resumen-value">{{ resumen.antiguedadPrincipal || '-' }}</span>
-                  </div>
-                  <div class="resumen-item resumen-item-full">
-                    <span class="resumen-label">Licencia</span>
-                    <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
-                  </div>
-                </div>
+                }
               </div>
               <div class="item-field-full">
                 <div class="deportes-header">
@@ -202,11 +204,11 @@
                             </span>
                           </div>
                           <div class="deporte-detalle-item">
-                            <span class="detalle-label">Antig&uuml;edad</span>
+                            <span class="detalle-label">Antigüedad</span>
                             <span class="detalle-valor">{{ getAntiguedadDeporte(deporteItem) || '-' }}</span>
                           </div>
                           <div class="deporte-detalle-item">
-                            <span class="detalle-label">Categor&iacute;a</span>
+                            <span class="detalle-label">Categoría</span>
                             <span class="detalle-valor">{{ deporteItem.categoria || 'N/A' }}</span>
                           </div>
                         </div>
@@ -255,11 +257,11 @@
             <tr>
               <th>Foto</th>
               <th>Nombre</th>
-              <th>N&ordm; Exp.</th>
+              <th>Nº Exp.</th>
               <th>Edad</th>
               <th>Deportes</th>
               <th>Tarifa principal</th>
-              <th>Antig&uuml;edad principal</th>
+              <th>Antigüedad principal</th>
               <th class="table-licencia-header">Licencia</th>
               @if (mostrarInactivos) {
                 <th>Baja</th>
@@ -437,11 +439,11 @@
 
               <div class="alert alert-info mb-4">
                 <i class="bi bi-info-circle-fill me-2"></i>
-                <strong>Descripción:</strong> Genera un informe en PDF con el listado de asistencia mensual para un grupo específico.
-                Incluye todos los turnos del día seleccionado con espacio para marcar la asistencia de cada alumno.
+                <strong>Descripción:</strong> Genera un informe en PDF por cada día seleccionado.
+                Incluye todos los turnos de cada día con espacio para marcar la asistencia de cada alumno.
               </div>
 
-              <div class="row g-3 align-items-end">
+              <div class="row g-3 align-items-start">
                 <div class="col-12 col-md-6">
                   <label for="mesAnoAsis" class="form-label fw-semibold mb-2">
                     <i class="bi bi-calendar3 me-2"></i>Mes y Año:
@@ -450,19 +452,23 @@
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <label for="grupoAsis" class="form-label fw-semibold mb-2">
-                    <i class="bi bi-calendar-week me-2"></i>Día de la semana:
+                  <label class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar-week me-2"></i>Días de la semana:
                   </label>
-                  <select id="grupoAsis" class="admin-form-control form-select" [(ngModel)]="grupoSeleccionado">
+                  <div class="dias-semana-grid" role="group" aria-label="Días de la semana">
                     @for (g of grupos; track g) {
-                      <option [value]="g">{{ g | titlecase }}</option>
+                      <label class="dia-chip" [class.active]="gruposSeleccionados.includes(g)">
+                        <input type="checkbox" class="dia-checkbox" [checked]="gruposSeleccionados.includes(g)"
+                          (change)="toggleGrupoSeleccionado(g)" />
+                        <span>{{ g | titlecase }}</span>
+                      </label>
                     }
-                  </select>
+                  </div>
                 </div>
               </div>
 
               <button class="admin-btn admin-btn-primary w-100 mt-4"
-                [disabled]="!mesAnoAsistencia || !grupoSeleccionado"
+                [disabled]="!mesAnoAsistencia || gruposSeleccionados.length === 0"
                 (click)="generarListadoAsistencia()">
                 <i class="bi bi-file-earmark-pdf-fill"></i>
                 <span>Generar Informe de Asistencia</span>

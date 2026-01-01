@@ -801,6 +801,66 @@
 }
 
 // ========================================
+// LISTADO ASISTENCIA
+// ========================================
+
+.dias-semana-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dia-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid $background-light;
+  background: $text-light;
+  color: $text-muted;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: $transition;
+  user-select: none;
+
+  &:hover {
+    border-color: rgba($primary-color, 0.6);
+    color: $primary-color;
+  }
+
+  &.active {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+    box-shadow: $shadow-sm;
+  }
+
+  &:focus-within {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+}
+
+.dia-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+@media (min-width: 1200px) {
+  .dias-semana-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+// ========================================
 // COLLAPSIBLE SECTIONS
 // ========================================
 
@@ -1002,13 +1062,22 @@
         span {
           display: none; // Hide text on mobile, only show icons
         }
-      }
     }
+  }
 
-    .results-count {
-      font-size: 0.85rem;
-      padding: 0.375rem 0.75rem;
-    }
+  .dias-semana-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dia-chip {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .results-count {
+    font-size: 0.85rem;
+    padding: 0.375rem 0.75rem;
+  }
 
     .view-toggle-buttons {
       .view-toggle-btn {
