@@ -72,7 +72,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
 		String resetUrl = frontendBaseUrl + "/reset-password?token=" + token;
 		String htmlContent = buildResetEmailHtml(usuario.getNombre(), resetUrl, resetTokenHours);
-		emailService.sendEmail(usuario.getEmail(), "Restablecer contrasena", htmlContent);
+		emailService.sendEmail(usuario.getEmail(), "Restablecer contraseña", htmlContent);
 	}
 
 	@Override
@@ -124,22 +124,54 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 	}
 
 	private String buildResetEmailHtml(String nombre, String resetUrl, long tokenHours) {
-		String safeNombre = nombre == null || nombre.isBlank() ? "hola" : nombre;
+		String saludo = (nombre == null || nombre.isBlank()) ? "Hola," : "Hola " + nombre + ",";
 		return """
-			<div style="font-family: Arial, sans-serif; background-color: #f6f6f6; padding: 24px;">
-			  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 24px;">
-			    <h2 style="margin-top: 0; color: #222222;">Restablecer contrasena</h2>
-			    <p>Hola %s,</p>
-			    <p>Hemos recibido una solicitud para cambiar tu contrasena. Haz clic en el boton para continuar:</p>
-			    <p style="text-align: center; margin: 24px 0;">
-			      <a href="%s" style="background: #1d4ed8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 6px; display: inline-block;">
-			        Cambiar contrasena
-			      </a>
-			    </p>
-			    <p>Este enlace caduca en %d hora(s).</p>
-			    <p>Si no has solicitado este cambio, puedes ignorar este mensaje.</p>
-			  </div>
-			</div>
-			""".formatted(safeNombre, resetUrl, tokenHours);
+			<!doctype html>
+			<html lang="es">
+			<head>
+			  <meta charset="UTF-8">
+			  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+			</head>
+			<body style="margin:0;padding:0;background-color:#f5f7fa;">
+			  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f5f7fa;padding:24px 12px;">
+			    <tr>
+			      <td align="center">
+			        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+			          <tr>
+			            <td style="background:#1b2b2e;color:#ffffff;padding:24px 28px;">
+			              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">Club Moiskimdo Taekwondo</div>
+			              <h1 style="margin:10px 0 0;font-size:22px;font-weight:700;">Restablecer contraseña</h1>
+			            </td>
+			          </tr>
+			          <tr>
+			            <td style="padding:28px;color:#1f2933;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;">
+			              <p style="margin:0 0 16px;">%s</p>
+			              <p style="margin:0 0 18px;">Hemos recibido una solicitud para cambiar tu contraseña. Haz clic en el botón para continuar:</p>
+			              <div style="text-align:center;margin:24px 0;">
+			                <a href="%s" style="background:#0d47a1;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:999px;display:inline-block;font-weight:600;">
+			                  Cambiar contraseña
+			                </a>
+			              </div>
+			              <p style="margin:0 0 12px;">Este enlace caduca en %d hora(s).</p>
+			              <p style="margin:18px 0 6px;font-size:13px;color:#6b7280;">Si el botón no funciona, copia y pega este enlace:</p>
+			              <p style="margin:0 0 18px;word-break:break-all;">
+			                <a href="%s" style="color:#0d47a1;text-decoration:none;">%s</a>
+			              </p>
+			              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+			              <p style="margin:0;font-size:12px;color:#9aa2a9;">
+			                Si no has solicitado este cambio, puedes ignorar este mensaje.
+			              </p>
+			            </td>
+			          </tr>
+			        </table>
+			        <div style="font-size:11px;color:#9aa2a9;margin-top:16px;">
+			          © Club Moiskimdo Taekwondo
+			        </div>
+			      </td>
+			    </tr>
+			  </table>
+			</body>
+			</html>
+			""".formatted(saludo, resetUrl, tokenHours, resetUrl, resetUrl);
 	}
 }
