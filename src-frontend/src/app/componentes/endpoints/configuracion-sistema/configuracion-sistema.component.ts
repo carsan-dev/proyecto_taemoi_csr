@@ -233,32 +233,38 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   resetearContrasena(usuario: Usuario): void {
     if (this.esCuentaGoogle(usuario)) {
-      showErrorToast('Las cuentas de Google no permiten restablecer contrasena.');
+      showErrorToast('Las cuentas de Google no permiten restablecer contraseña.');
       return;
     }
 
     Swal.fire({
-      title: 'Restablecer contrasena',
+      title: 'Restablecer contraseña',
       html: `
-        <input id="nueva-contrasena" type="password" class="swal2-input" placeholder="Nueva contrasena">
+        <div style="position: relative; margin: 0.5rem 0 0.75rem;">
+          <input id="nueva-contrasena" type="password" class="swal2-input" placeholder="Nueva contraseña" style="margin: 0; padding-right: 3rem;">
+          <button type="button" class="taemoi-password-toggle" data-target="nueva-contrasena" aria-label="Mostrar contraseña"
+            style="position: absolute; top: 50%; right: 0.85rem; transform: translateY(-50%); border: none; background: transparent; color: #6c757d; font-size: 1.2rem; cursor: pointer;">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
         <div style="text-align: left; margin: 0.5rem 0 0.75rem; font-size: 0.85rem;">
           <div style="font-weight: 600; margin-bottom: 0.35rem;">Requisitos:</div>
           <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem;">
             <li id="rule-length" style="display: flex; align-items: center; gap: 0.5rem;">
               <i id="rule-length-icon" class="bi bi-x-circle"></i>
-              Minimo 8 caracteres
+              Mínimo 8 caracteres
             </li>
             <li id="rule-upper" style="display: flex; align-items: center; gap: 0.5rem;">
               <i id="rule-upper-icon" class="bi bi-x-circle"></i>
-              Al menos 1 mayuscula
+              Al menos 1 mayúscula
             </li>
             <li id="rule-lower" style="display: flex; align-items: center; gap: 0.5rem;">
               <i id="rule-lower-icon" class="bi bi-x-circle"></i>
-              Al menos 1 minuscula
+              Al menos 1 minúscula
             </li>
             <li id="rule-number" style="display: flex; align-items: center; gap: 0.5rem;">
               <i id="rule-number-icon" class="bi bi-x-circle"></i>
-              Al menos 1 numero
+              Al menos 1 número
             </li>
             <li id="rule-match" style="display: flex; align-items: center; gap: 0.5rem;">
               <i id="rule-match-icon" class="bi bi-x-circle"></i>
@@ -266,7 +272,13 @@ export class ConfiguracionSistemaComponent implements OnInit {
             </li>
           </ul>
         </div>
-        <input id="confirmar-contrasena" type="password" class="swal2-input" placeholder="Confirmar contrasena">
+        <div style="position: relative; margin: 0.75rem 0 0.5rem;">
+          <input id="confirmar-contrasena" type="password" class="swal2-input" placeholder="Confirmar contraseña" style="margin: 0; padding-right: 3rem;">
+          <button type="button" class="taemoi-password-toggle" data-target="confirmar-contrasena" aria-label="Mostrar contraseña"
+            style="position: absolute; top: 50%; right: 0.85rem; transform: translateY(-50%); border: none; background: transparent; color: #6c757d; font-size: 1.2rem; cursor: pointer;">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
       `,
       focusConfirm: false,
       showCancelButton: true,
@@ -275,6 +287,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       didOpen: () => {
         const nuevaInput = document.getElementById('nueva-contrasena') as HTMLInputElement | null;
         const confirmarInput = document.getElementById('confirmar-contrasena') as HTMLInputElement | null;
+        const toggleButtons = document.querySelectorAll('.taemoi-password-toggle');
 
         const setRule = (id: string, ok: boolean) => {
           const item = document.getElementById(id);
@@ -300,16 +313,31 @@ export class ConfiguracionSistemaComponent implements OnInit {
         nuevaInput?.addEventListener('input', actualizar);
         confirmarInput?.addEventListener('input', actualizar);
         actualizar();
+
+        toggleButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target');
+            if (!targetId) return;
+            const targetInput = document.getElementById(targetId) as HTMLInputElement | null;
+            if (!targetInput) return;
+            const isPassword = targetInput.type === 'password';
+            targetInput.type = isPassword ? 'text' : 'password';
+            const icon = button.querySelector('i');
+            if (icon) {
+              icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+            }
+          });
+        });
       },
       preConfirm: () => {
         const nueva = (document.getElementById('nueva-contrasena') as HTMLInputElement | null)?.value || '';
         const confirmar = (document.getElementById('confirmar-contrasena') as HTMLInputElement | null)?.value || '';
         if (!this.contrasenaCumpleReglas(nueva)) {
-          Swal.showValidationMessage('La contrasena debe tener mayusculas, minusculas y numeros (minimo 8).');
+          Swal.showValidationMessage('La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).');
           return;
         }
         if (nueva !== confirmar) {
-          Swal.showValidationMessage('Las contrasenas no coinciden');
+          Swal.showValidationMessage('Las contraseñas no coinciden');
           return;
         }
         return nueva;
@@ -318,10 +346,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
       if (result.isConfirmed && result.value) {
         this.endpointsService.actualizarContrasenaUsuario(usuario.id, result.value).subscribe({
           next: () => {
-            showSuccessToast('Contrasena actualizada correctamente.');
+            showSuccessToast('Contraseña actualizada correctamente.');
           },
           error: (error) => {
-            const mensaje = error?.error?.message || 'No se pudo actualizar la contrasena.';
+            const mensaje = error?.error?.message || 'No se pudo actualizar la contraseña.';
             showErrorToast(mensaje);
           },
         });
