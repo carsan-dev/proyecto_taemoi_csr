@@ -1296,13 +1296,20 @@ export class EndpointsService {
   descargarAsistencia(
     year: number,
     month: number,
-    grupo: string,
+    grupo: string | string[],
     deporte?: string
   ): Observable<Blob> {
     let params = new HttpParams()
       .set('year', year.toString())
-      .set('month', month.toString())
-      .set('grupo', grupo);
+      .set('month', month.toString());
+
+    if (Array.isArray(grupo)) {
+      grupo.forEach((dia) => {
+        params = params.append('grupos', dia);
+      });
+    } else {
+      params = params.set('grupo', grupo);
+    }
 
     if (deporte) {
       params = params.set('deporte', deporte);
