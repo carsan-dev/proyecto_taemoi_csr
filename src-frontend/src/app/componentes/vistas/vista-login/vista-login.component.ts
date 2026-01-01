@@ -192,7 +192,8 @@ export class VistaLoginComponent implements OnInit {
     if (this.registroEnviando) {
       return;
     }
-    if (!this.registro.email || !this.registro.fechaNacimiento) {
+    const fechaNacimiento = this.normalizarFechaNacimiento(this.registro.fechaNacimiento);
+    if (!this.registro.email || !fechaNacimiento) {
       showErrorToast('Completa el correo y la fecha de nacimiento.');
       return;
     }
@@ -208,7 +209,7 @@ export class VistaLoginComponent implements OnInit {
     this.registroEnviando = true;
     const payload = {
       email: this.registro.email.trim(),
-      fechaNacimiento: this.registro.fechaNacimiento,
+      fechaNacimiento,
       contrasena: this.registro.contrasena,
     };
     this.authService.solicitarRegistro(payload).subscribe({
@@ -258,5 +259,26 @@ export class VistaLoginComponent implements OnInit {
       cookie += '; Secure';
     }
     document.cookie = cookie;
+  }
+
+  private normalizarFechaNacimiento(valor: string | Date): string {
+    if (!valor) {
+      return '';
+    }
+    if (valor instanceof Date) {
+      if (Number.isNaN(valor.getTime())) {
+        return '';
+      }
+      return valor.toISOString().slice(0, 10);
+    }
+    let texto = valor.toString().trim();
+    if (!texto) {
+      return '';
+    }
+    if (texto.startsWith('"') && texto.endsWith('"') && texto.length > 1) {
+      texto = texto.slice(1, -1);
+    }
+    const indexT = texto.indexOf('T');
+    return indexT > 0 ? texto.slice(0, indexT) : texto;
   }
 }
