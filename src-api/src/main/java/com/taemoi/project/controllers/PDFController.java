@@ -1,6 +1,8 @@
 package com.taemoi.project.controllers;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
@@ -232,14 +234,28 @@ public class PDFController {
 	}
 
 	@GetMapping("/asistencia")
-	public void generarAsistencia(@RequestParam int year, @RequestParam int month, @RequestParam String grupo,
+	public void generarAsistencia(@RequestParam int year, @RequestParam int month,
+			@RequestParam(required = false) String grupo,
+			@RequestParam(required = false) List<String> grupos,
 			@RequestParam(required = false) Deporte deporte,
 			HttpServletResponse response) throws IOException {
 
-		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, grupo, deporte);
+		List<String> gruposSeleccionados = (grupos != null && !grupos.isEmpty())
+				? grupos
+				: (grupo != null && !grupo.isBlank())
+						? Collections.singletonList(grupo)
+						: Collections.emptyList();
 
+		if (gruposSeleccionados.isEmpty()) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Debes seleccionar al menos un día");
+			return;
+		}
+
+		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte);
+
+		String grupoSuffix = gruposSeleccionados.size() == 1 ? gruposSeleccionados.get(0) : "varios-dias";
 		String deporteSuffix = deporte != null ? "_" + deporte.name() : "";
-		String filename = "Asistencia-%s%s-%d-%02d.pdf".formatted(grupo, deporteSuffix, year, month);
+		String filename = "Asistencia-%s%s-%d-%02d.pdf".formatted(grupoSuffix, deporteSuffix, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
