@@ -252,6 +252,14 @@ $transition-speed: 0.3s;
             transition: all $transition-speed ease;
             outline: none;
 
+            &[type='date'] {
+              text-align: left;
+
+              &::-webkit-date-and-time-value {
+                text-align: left;
+              }
+            }
+
             &::placeholder {
               color: transparent;
             }
