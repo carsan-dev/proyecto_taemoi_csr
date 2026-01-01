@@ -78,12 +78,8 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
 
           this.guardarEstadoPaginacion();
         },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron cargar los productos',
-            icon: 'error',
-          });
+        error: () => {
+          showErrorToast('No se pudieron cargar los productos');
         },
       });
   }
