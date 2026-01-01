@@ -293,7 +293,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
           setRule('rule-length', nueva.length >= 8);
           setRule('rule-upper', /[A-Z]/.test(nueva));
           setRule('rule-lower', /[a-z]/.test(nueva));
-          setRule('rule-number', /\\d/.test(nueva));
+          setRule('rule-number', /\d/.test(nueva));
           setRule('rule-match', nueva.length > 0 && nueva === confirmar);
         };
 
@@ -337,7 +337,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
     return contrasena.length >= 8
       && /[A-Z]/.test(contrasena)
       && /[a-z]/.test(contrasena)
-      && /\\d/.test(contrasena);
+      && /\d/.test(contrasena);
   }
 
   getRoleBadgeClass(role: string): string {
