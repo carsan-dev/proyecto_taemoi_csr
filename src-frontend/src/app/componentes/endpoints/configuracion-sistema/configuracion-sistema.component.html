@@ -95,6 +95,16 @@
             </h5>
             <p class="mb-0 text-muted">Administra los permisos y roles de los usuarios del sistema</p>
           </div>
+          <div class="roles-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar por nombre o correo"
+              [(ngModel)]="filtroUsuarios"
+              (ngModelChange)="aplicarFiltroUsuarios()"
+              autocomplete="off" />
+          </div>
         </div>
         @if (cargandoRoles) {
         <div class="p-3">
@@ -179,11 +189,19 @@
                     </div>
                   </td>
                   <td class="text-center">
-                    <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
-                      [disabled]="!hasChanges(usuario)">
-                      <i class="bi bi-save"></i>
-                      <span>Guardar</span>
-                    </button>
+                    <div class="action-buttons">
+                      <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
+                        [disabled]="!hasChanges(usuario)">
+                        <i class="bi bi-save"></i>
+                        <span>Guardar</span>
+                      </button>
+                      <button class="admin-btn admin-btn-outline admin-btn-sm" (click)="resetearContrasena(usuario)"
+                        [disabled]="esCuentaGoogle(usuario)"
+                        [title]="esCuentaGoogle(usuario) ? 'Cuenta Google: no permite restablecer contrasena' : 'Restablecer contrasena'">
+                        <i class="bi bi-key"></i>
+                        <span>Restablecer</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 }

@@ -12,6 +12,7 @@ interface Usuario {
   apellidos: string;
   email: string;
   rol: string;
+  authProvider?: string;
 }
 
 interface RoleSelection {
@@ -34,6 +35,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   cargandoRoles: boolean = true;
 
   usuarios: Usuario[] = [];
+  filtroUsuarios: string = '';
   rolesSeleccionados: Map<number, RoleSelection> = new Map();
   paginaActualUsuarios: number = 1;
   tamanoPaginaUsuarios: number = 5;
@@ -129,10 +131,23 @@ export class ConfiguracionSistemaComponent implements OnInit {
     });
   }
 
+  get usuariosFiltrados(): Usuario[] {
+    const filtro = this.normalizarTexto(this.filtroUsuarios);
+    if (!filtro) {
+      return this.usuarios;
+    }
+
+    return this.usuarios.filter((usuario) => {
+      const nombreCompleto = this.normalizarTexto(`${usuario.nombre} ${usuario.apellidos}`);
+      const email = this.normalizarTexto(usuario.email);
+      return nombreCompleto.includes(filtro) || email.includes(filtro);
+    });
+  }
+
   get usuariosPaginados(): Usuario[] {
     const start = (this.paginaActualUsuarios - 1) * this.tamanoPaginaUsuarios;
     const end = start + this.tamanoPaginaUsuarios;
-    return this.usuarios.slice(start, end);
+    return this.usuariosFiltrados.slice(start, end);
   }
 
   cambiarPaginaUsuarios(pageNumber: number): void {
@@ -147,7 +162,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   private actualizarPaginacionUsuarios(): void {
-    this.totalPaginasUsuarios = Math.ceil(this.usuarios.length / this.tamanoPaginaUsuarios);
+    this.totalPaginasUsuarios = Math.ceil(this.usuariosFiltrados.length / this.tamanoPaginaUsuarios);
     if (this.totalPaginasUsuarios === 0) {
       this.paginaActualUsuarios = 1;
     } else if (this.paginaActualUsuarios > this.totalPaginasUsuarios) {
@@ -214,6 +229,115 @@ export class ConfiguracionSistemaComponent implements OnInit {
         });
       }
     });
+  }
+
+  resetearContrasena(usuario: Usuario): void {
+    if (this.esCuentaGoogle(usuario)) {
+      showErrorToast('Las cuentas de Google no permiten restablecer contrasena.');
+      return;
+    }
+
+    Swal.fire({
+      title: 'Restablecer contrasena',
+      html: `
+        <input id="nueva-contrasena" type="password" class="swal2-input" placeholder="Nueva contrasena">
+        <div style="text-align: left; margin: 0.5rem 0 0.75rem; font-size: 0.85rem;">
+          <div style="font-weight: 600; margin-bottom: 0.35rem;">Requisitos:</div>
+          <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 0.3rem;">
+            <li id="rule-length" style="display: flex; align-items: center; gap: 0.5rem;">
+              <i id="rule-length-icon" class="bi bi-x-circle"></i>
+              Minimo 8 caracteres
+            </li>
+            <li id="rule-upper" style="display: flex; align-items: center; gap: 0.5rem;">
+              <i id="rule-upper-icon" class="bi bi-x-circle"></i>
+              Al menos 1 mayuscula
+            </li>
+            <li id="rule-lower" style="display: flex; align-items: center; gap: 0.5rem;">
+              <i id="rule-lower-icon" class="bi bi-x-circle"></i>
+              Al menos 1 minuscula
+            </li>
+            <li id="rule-number" style="display: flex; align-items: center; gap: 0.5rem;">
+              <i id="rule-number-icon" class="bi bi-x-circle"></i>
+              Al menos 1 numero
+            </li>
+            <li id="rule-match" style="display: flex; align-items: center; gap: 0.5rem;">
+              <i id="rule-match-icon" class="bi bi-x-circle"></i>
+              Coinciden
+            </li>
+          </ul>
+        </div>
+        <input id="confirmar-contrasena" type="password" class="swal2-input" placeholder="Confirmar contrasena">
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      didOpen: () => {
+        const nuevaInput = document.getElementById('nueva-contrasena') as HTMLInputElement | null;
+        const confirmarInput = document.getElementById('confirmar-contrasena') as HTMLInputElement | null;
+
+        const setRule = (id: string, ok: boolean) => {
+          const item = document.getElementById(id);
+          const icon = document.getElementById(`${id}-icon`);
+          if (item) {
+            item.style.color = ok ? '#1b7f3c' : '#b02a37';
+          }
+          if (icon) {
+            icon.className = `bi ${ok ? 'bi-check-circle-fill' : 'bi-x-circle'}`;
+          }
+        };
+
+        const actualizar = () => {
+          const nueva = nuevaInput?.value || '';
+          const confirmar = confirmarInput?.value || '';
+          setRule('rule-length', nueva.length >= 8);
+          setRule('rule-upper', /[A-Z]/.test(nueva));
+          setRule('rule-lower', /[a-z]/.test(nueva));
+          setRule('rule-number', /\\d/.test(nueva));
+          setRule('rule-match', nueva.length > 0 && nueva === confirmar);
+        };
+
+        nuevaInput?.addEventListener('input', actualizar);
+        confirmarInput?.addEventListener('input', actualizar);
+        actualizar();
+      },
+      preConfirm: () => {
+        const nueva = (document.getElementById('nueva-contrasena') as HTMLInputElement | null)?.value || '';
+        const confirmar = (document.getElementById('confirmar-contrasena') as HTMLInputElement | null)?.value || '';
+        if (!this.contrasenaCumpleReglas(nueva)) {
+          Swal.showValidationMessage('La contrasena debe tener mayusculas, minusculas y numeros (minimo 8).');
+          return;
+        }
+        if (nueva !== confirmar) {
+          Swal.showValidationMessage('Las contrasenas no coinciden');
+          return;
+        }
+        return nueva;
+      },
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.endpointsService.actualizarContrasenaUsuario(usuario.id, result.value).subscribe({
+          next: () => {
+            showSuccessToast('Contrasena actualizada correctamente.');
+          },
+          error: (error) => {
+            const mensaje = error?.error?.message || 'No se pudo actualizar la contrasena.';
+            showErrorToast(mensaje);
+          },
+        });
+      }
+    });
+  }
+
+  esCuentaGoogle(usuario: Usuario): boolean {
+    return usuario.authProvider === 'GOOGLE';
+  }
+
+  private contrasenaCumpleReglas(contrasena: string): boolean {
+    return contrasena.length >= 8
+      && /[A-Z]/.test(contrasena)
+      && /[a-z]/.test(contrasena)
+      && /\\d/.test(contrasena);
   }
 
   getRoleBadgeClass(role: string): string {
@@ -285,5 +409,19 @@ export class ConfiguracionSistemaComponent implements OnInit {
     } catch (error) {
       console.error('Error parsing saved pagination state:', error);
     }
+  }
+
+  aplicarFiltroUsuarios(): void {
+    this.paginaActualUsuarios = 1;
+    this.actualizarPaginacionUsuarios();
+  }
+
+  private normalizarTexto(valor: string): string {
+    return (valor || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
   }
 }
