@@ -7,6 +7,8 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +80,7 @@ public class RegistroServiceImpl implements RegistroService {
 			throw new IllegalArgumentException("No se encontraron alumnos con ese email.");
 		}
 
-		LocalDate fechaNacimiento = request.getFechaNacimiento();
+		LocalDate fechaNacimiento = parseFechaNacimiento(request.getFechaNacimiento());
 		Alumno alumno = alumnos.stream()
 				.filter(a -> fechaNacimiento.equals(toLocalDate(a.getFechaNacimiento())))
 				.findFirst()
@@ -156,6 +158,34 @@ public class RegistroServiceImpl implements RegistroService {
 		return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 	}
 
+	private LocalDate parseFechaNacimiento(String fechaNacimiento) {
+		if (fechaNacimiento == null || fechaNacimiento.isBlank()) {
+			throw new IllegalArgumentException("La fecha de nacimiento no puede estar vacia.");
+		}
+
+		String valor = fechaNacimiento.trim();
+		if (valor.startsWith("\"") && valor.endsWith("\"") && valor.length() > 1) {
+			valor = valor.substring(1, valor.length() - 1);
+		}
+		int indexT = valor.indexOf('T');
+		if (indexT > 0) {
+			valor = valor.substring(0, indexT);
+		}
+		DateTimeFormatter[] formatos = {
+				DateTimeFormatter.ISO_LOCAL_DATE,
+				DateTimeFormatter.ofPattern("dd/MM/uuuu")
+		};
+		for (DateTimeFormatter formatter : formatos) {
+			try {
+				return LocalDate.parse(valor, formatter);
+			} catch (DateTimeParseException ignored) {
+				// Intentar con el siguiente formato soportado.
+			}
+		}
+
+		throw new IllegalArgumentException("La fecha de nacimiento no es valida. Usa AAAA-MM-DD.");
+	}
+
 	private String generarToken() {
 		byte[] bytes = new byte[TOKEN_BYTES];
 		secureRandom.nextBytes(bytes);
@@ -178,7 +208,7 @@ public class RegistroServiceImpl implements RegistroService {
 
 	private String buildRegistroEmailHtml(String nombre, String urlConfirmacion, long horas) {
 		String saludo = (nombre == null || nombre.isBlank()) ? "Hola," : "Hola " + nombre + ",";
-		return """
+		String template = """
 			<!doctype html>
 			<html lang="es">
 			<head>
@@ -198,17 +228,17 @@ public class RegistroServiceImpl implements RegistroService {
 			          </tr>
 			          <tr>
 			            <td style="padding:28px;color:#1f2933;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;">
-			              <p style="margin:0 0 16px;">%s</p>
+			              <p style="margin:0 0 16px;">{{SALUDO}}</p>
 			              <p style="margin:0 0 18px;">Has solicitado crear una cuenta. Pulsa el botón para confirmar:</p>
 			              <div style="text-align:center;margin:24px 0;">
-			                <a href="%s" style="background:#0d47a1;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:999px;display:inline-block;font-weight:600;">
+			                <a href="{{URL_CONFIRMACION}}" style="background:#0d47a1;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:999px;display:inline-block;font-weight:600;">
 			                  Confirmar registro
 			                </a>
 			              </div>
-			              <p style="margin:0 0 12px;">Este enlace caduca en %d hora(s).</p>
+			              <p style="margin:0 0 12px;">Este enlace caduca en {{HORAS}} hora(s).</p>
 			              <p style="margin:18px 0 6px;font-size:13px;color:#6b7280;">Si el botón no funciona, copia y pega este enlace:</p>
 			              <p style="margin:0 0 18px;word-break:break-all;">
-			                <a href="%s" style="color:#0d47a1;text-decoration:none;">%s</a>
+			                <a href="{{URL_CONFIRMACION}}" style="color:#0d47a1;text-decoration:none;">{{URL_CONFIRMACION}}</a>
 			              </p>
 			              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
 			              <p style="margin:0;font-size:12px;color:#9aa2a9;">
@@ -225,6 +255,10 @@ public class RegistroServiceImpl implements RegistroService {
 			  </table>
 			</body>
 			</html>
-			""".formatted(saludo, urlConfirmacion, horas, urlConfirmacion, urlConfirmacion);
+			""";
+		return template
+				.replace("{{SALUDO}}", saludo)
+				.replace("{{URL_CONFIRMACION}}", urlConfirmacion)
+				.replace("{{HORAS}}", Long.toString(horas));
 	}
 }

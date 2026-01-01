@@ -1,12 +1,7 @@
 package com.taemoi.project.dtos.request;
 
-import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -15,9 +10,8 @@ public class RegistroSolicitudRequest {
 	@Email(message = "Debe proporcionar un email valido.")
 	private String email;
 
-	@NotNull(message = "La fecha de nacimiento no puede estar vacia")
-	@JsonFormat(pattern = "yyyy-MM-dd")
-	private LocalDate fechaNacimiento;
+	@NotBlank(message = "La fecha de nacimiento no puede estar vacia")
+	private String fechaNacimiento;
 
 	@NotBlank(message = "La contrasena no puede estar en blanco")
 	@Size(min = 8, message = "La contrasena debe tener al menos 8 caracteres.")
@@ -33,11 +27,11 @@ public class RegistroSolicitudRequest {
 		this.email = email;
 	}
 
-	public LocalDate getFechaNacimiento() {
+	public String getFechaNacimiento() {
 		return fechaNacimiento;
 	}
 
-	public void setFechaNacimiento(LocalDate fechaNacimiento) {
+	public void setFechaNacimiento(String fechaNacimiento) {
 		this.fechaNacimiento = fechaNacimiento;
 	}
 

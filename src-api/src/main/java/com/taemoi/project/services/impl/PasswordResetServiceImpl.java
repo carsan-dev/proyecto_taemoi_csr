@@ -125,7 +125,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
 	private String buildResetEmailHtml(String nombre, String resetUrl, long tokenHours) {
 		String saludo = (nombre == null || nombre.isBlank()) ? "Hola," : "Hola " + nombre + ",";
-		return """
+		String template = """
 			<!doctype html>
 			<html lang="es">
 			<head>
@@ -145,17 +145,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			          </tr>
 			          <tr>
 			            <td style="padding:28px;color:#1f2933;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;">
-			              <p style="margin:0 0 16px;">%s</p>
+			              <p style="margin:0 0 16px;">{{SALUDO}}</p>
 			              <p style="margin:0 0 18px;">Hemos recibido una solicitud para cambiar tu contraseña. Haz clic en el botón para continuar:</p>
 			              <div style="text-align:center;margin:24px 0;">
-			                <a href="%s" style="background:#0d47a1;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:999px;display:inline-block;font-weight:600;">
+			                <a href="{{RESET_URL}}" style="background:#0d47a1;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:999px;display:inline-block;font-weight:600;">
 			                  Cambiar contraseña
 			                </a>
 			              </div>
-			              <p style="margin:0 0 12px;">Este enlace caduca en %d hora(s).</p>
+			              <p style="margin:0 0 12px;">Este enlace caduca en {{HORAS}} hora(s).</p>
 			              <p style="margin:18px 0 6px;font-size:13px;color:#6b7280;">Si el botón no funciona, copia y pega este enlace:</p>
 			              <p style="margin:0 0 18px;word-break:break-all;">
-			                <a href="%s" style="color:#0d47a1;text-decoration:none;">%s</a>
+			                <a href="{{RESET_URL}}" style="color:#0d47a1;text-decoration:none;">{{RESET_URL}}</a>
 			              </p>
 			              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
 			              <p style="margin:0;font-size:12px;color:#9aa2a9;">
@@ -172,6 +172,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			  </table>
 			</body>
 			</html>
-			""".formatted(saludo, resetUrl, tokenHours, resetUrl, resetUrl);
+			""";
+		return template
+				.replace("{{SALUDO}}", saludo)
+				.replace("{{RESET_URL}}", resetUrl)
+				.replace("{{HORAS}}", Long.toString(tokenHours));
 	}
 }
