@@ -8,11 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +39,6 @@ import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoTarifa;
@@ -481,34 +478,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    }
 
 	    asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
-
-		// Verificar si el Usuario ya existe o crear uno nuevo
-		Usuario usuarioExistente = usuarioRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
-		if (usuarioExistente == null) {
-			usuarioExistente = new Usuario();
-			usuarioExistente.setNombre(nuevoAlumnoDTO.getNombre());
-			usuarioExistente.setApellidos(nuevoAlumnoDTO.getApellidos());
-			usuarioExistente.setEmail(normalizedEmail);
-
-			// Generar y asignar contraseña al Usuario
-			String contrasena = generarContrasena(nuevoAlumnoDTO.getNombre(), nuevoAlumnoDTO.getApellidos());
-			usuarioExistente.setContrasena(contrasena);
-
-			// Asignar roles de usuario
-			Set<Roles> roles = new HashSet<>();
-			roles.add(Roles.ROLE_USER);
-			usuarioExistente.setRoles(roles);
-
-			// Asignar Alumno guardado al Usuario
-			usuarioExistente.setAlumno(alumnoGuardado);
-
-			// Guardar el Usuario
-			usuarioRepository.save(usuarioExistente);
-		} else {
-			// Si el Usuario ya existe, asegurar que esté asociado con el Alumno guardado
-			usuarioExistente.setAlumno(alumnoGuardado);
-			usuarioRepository.save(usuarioExistente);
-		}
 
 		// Finalmente, retornar el Alumno guardado
 		return alumnoGuardado;
