@@ -1252,6 +1252,7 @@ $info-hover: #0b7dda;
 
   label {
     flex: 1;
+    min-width: 0;
     cursor: pointer;
     margin: 0;
     font-weight: 600;
@@ -1264,6 +1265,9 @@ $info-hover: #0b7dda;
     position: relative;
     width: 56px;
     height: 28px;
+    flex: 0 0 auto;
+    min-width: 56px;
+    min-height: 28px;
 
     input {
       opacity: 0;
