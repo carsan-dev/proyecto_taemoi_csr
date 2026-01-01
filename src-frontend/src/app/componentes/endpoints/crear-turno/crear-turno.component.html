@@ -35,7 +35,6 @@
                       formControlName="diaSemana"
                       id="diaSemana"
                       class="admin-form-control form-select"
-                      aria-label="Día de la semana"
                       aria-required="true">
                       <option value="" disabled selected>Selecciona un día...</option>
                       <option value="Lunes">Lunes</option>
@@ -68,7 +67,6 @@
                       formControlName="horaInicio"
                       id="horaInicio"
                       class="admin-form-control"
-                      aria-label="Hora de inicio"
                       aria-required="true">
                     @if (turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched) {
                     <div class="invalid-feedback">
@@ -96,7 +94,6 @@
                       formControlName="horaFin"
                       id="horaFin"
                       class="admin-form-control"
-                      aria-label="Hora de fin"
                       aria-required="true">
                     @if (turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched) {
                     <div class="invalid-feedback">
@@ -144,8 +141,7 @@
                         type="checkbox"
                         class="form-check-input"
                         id="asignarGrupo"
-                        formControlName="asignarGrupo"
-                        aria-label="Asignar a un grupo">
+                        formControlName="asignarGrupo">
                       <span class="slider"></span>
                     </div>
                   </div>
@@ -166,8 +162,7 @@
                     <select
                       formControlName="grupoId"
                       id="grupo"
-                      class="admin-form-control form-select"
-                      aria-label="Seleccionar grupo">
+                      class="admin-form-control form-select">
                       <option value="" disabled selected>Selecciona un grupo...</option>
                       @for (grupo of grupos; track grupo.id) {
                       <option [value]="grupo.id">{{ grupo.nombre }}</option>
@@ -189,7 +184,6 @@
                       formControlName="tipoGrupo"
                       id="tipoGrupo"
                       class="admin-form-control form-select"
-                      aria-label="Tipo de grupo"
                       aria-required="true">
                       <option value="" disabled selected>Selecciona un tipo...</option>
                       <option value="Taekwondo Infantil">Taekwondo Infantil</option>
@@ -217,16 +211,14 @@
               <button
                 type="button"
                 class="admin-btn admin-btn-outline"
-                routerLink="/gruposListar"
-                aria-label="Cancelar y volver al listado">
+                routerLink="/gruposListar">
                 <i class="bi bi-x-circle"></i>
                 <span>Cancelar</span>
               </button>
               <button
                 type="submit"
                 class="admin-btn admin-btn-primary"
-                [disabled]="turnoForm.invalid"
-                aria-label="Crear nuevo turno">
+                [disabled]="turnoForm.invalid">
                 <i class="bi bi-check-circle"></i>
                 <span>Crear Turno</span>
               </button>
