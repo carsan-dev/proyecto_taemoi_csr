@@ -8,8 +8,8 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
-import { Subject, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs/operators';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
@@ -62,16 +62,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   mesAnoAsistencia!: string;
   mesAnoMensualidad!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
-  turnosMap: Record<string, string[]> = {
-    lunes: ['17:00–18:00', '18:00–19:00'],
-    martes: ['17:30–18:30', '18:30–19:30'],
-    miércoles: ['16:00–17:00', '17:00–18:00'],
-    jueves: ['19:00–20:00', '20:00–21:00'],
-    viernes: ['18:30–19:30'],
-  };
-  turnosDisponibles: string[] = [];
-  grupoSeleccionado!: string;
-  turnoSeleccionado: string | null = null;
+  gruposSeleccionados: string[] = [];
 
   // Multi-sport data
   deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
@@ -199,9 +190,18 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     }
   }
 
-  onGrupoChange() {
-    this.turnosDisponibles = this.turnosMap[this.grupoSeleccionado] || [];
-    this.turnoSeleccionado = null;
+  toggleGrupoSeleccionado(grupo: string): void {
+    const index = this.gruposSeleccionados.indexOf(grupo);
+    if (index >= 0) {
+      this.gruposSeleccionados.splice(index, 1);
+    } else {
+      this.gruposSeleccionados.push(grupo);
+    }
+    this.gruposSeleccionados = this.ordenarGruposSeleccionados(this.gruposSeleccionados);
+  }
+
+  private ordenarGruposSeleccionados(grupos: string[]): string[] {
+    return [...grupos].sort((a, b) => this.grupos.indexOf(a) - this.grupos.indexOf(b));
   }
 
   abrirModalInforme(): void {
@@ -1064,25 +1064,47 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     });
   }
 
-  generarListadoAsistencia() {
-    const [year, month] = this.mesAnoAsistencia.split('-').map((v) => +v);
-    this.loadingService.show();
-    this.endpointsService
-      .descargarAsistencia(
-        year,
-        month,
-        this.grupoSeleccionado,
-        this.turnoSeleccionado!
+  generarListadoAsistencia(): void {
+    if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
+      Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error');
+      return;
+    }
+
+    const [year, month] = this.mesAnoAsistencia.split('-').map((v) => Number(v));
+    const grupos = this.ordenarGruposSeleccionados(this.gruposSeleccionados);
+    const solicitudes = grupos.map((grupo) =>
+      this.endpointsService.descargarAsistencia(year, month, grupo).pipe(
+        map((blob) => ({ grupo, blob })),
+        catchError(() => of({ grupo, blob: null as Blob | null }))
       )
+    );
+
+    this.loadingService.show();
+    forkJoin(solicitudes)
       .pipe(finalize(() => this.loadingService.hide()))
       .subscribe({
-        next: (blob: Blob) => {
-          const url = globalThis.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Asistencia-${this.grupoSeleccionado}-${this.mesAnoAsistencia}.pdf`;
-          a.click();
-          globalThis.URL.revokeObjectURL(url);
+        next: (resultados) => {
+          const fallidos: string[] = [];
+          resultados.forEach((resultado) => {
+            if (!resultado.blob) {
+              fallidos.push(resultado.grupo);
+              return;
+            }
+            const url = globalThis.URL.createObjectURL(resultado.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Asistencia-${resultado.grupo}-${this.mesAnoAsistencia}.pdf`;
+            a.click();
+            globalThis.URL.revokeObjectURL(url);
+          });
+
+          if (fallidos.length > 0) {
+            Swal.fire(
+              'Aviso',
+              `No se pudo generar el PDF para: ${fallidos.join(', ')}`,
+              'warning'
+            );
+          }
         },
         error: () => {
           Swal.fire('Error', 'No se pudo generar el listado de asistencia', 'error');
