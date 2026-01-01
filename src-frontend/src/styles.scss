@@ -143,3 +143,13 @@ app-skeleton {
 main#content {
   flex: 1 0 auto;
 }
+
+// Ensure SweetAlert2 toasts are above fixed headers
+.swal2-container.swal2-top-end,
+.swal2-container.swal2-top-start,
+.swal2-container.swal2-top,
+.swal2-container.swal2-top-left,
+.swal2-container.swal2-top-right,
+.swal2-container.swal2-top-center {
+  z-index: 9999 !important;
+}
