@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { CommonModule, Location } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 
@@ -45,13 +45,9 @@ export class EditarProductoComponent implements OnInit {
         next: (producto) => {
           this.productoForm.patchValue(producto);
         },
-        error: (error) => {
+        error: () => {
           this.cargando = false;
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo cargar el producto',
-            icon: 'error',
-          });
+          showErrorToast('No se pudo cargar el producto');
           this.router.navigate(['/productosListar']);
         },
       });
@@ -59,36 +55,23 @@ export class EditarProductoComponent implements OnInit {
 
   onSubmit(): void {
     if (this.productoForm.invalid) {
-      Swal.fire({
-        title: 'Formulario inválido',
-        text: 'Por favor, complete todos los campos requeridos correctamente',
-        icon: 'error',
-      });
+      showErrorToast('Formulario inválido. Completa los campos requeridos.');
       return;
     }
 
     const productoActualizado = this.productoForm.value;
 
     this.endpointsService.actualizarProducto(this.productoId, productoActualizado).subscribe({
-      next: (producto) => {
-        Swal.fire({
-          title: '¡Producto actualizado!',
-          text: 'El producto se ha actualizado exitosamente',
-          icon: 'success',
-          timer: 2000,
-        }).then(() => {
-          this.router.navigate(['/productosListar']);
-        });
+      next: () => {
+        showSuccessToast('Producto actualizado correctamente');
+        this.router.navigate(['/productosListar']);
       },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo actualizar el producto',
-          icon: 'error',
-        });
+      error: () => {
+        showErrorToast('No se pudo actualizar el producto');
       },
     });
   }
+
 
   volver() {
     this.location.back();
