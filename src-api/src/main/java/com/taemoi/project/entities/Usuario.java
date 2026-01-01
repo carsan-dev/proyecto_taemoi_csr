@@ -1,6 +1,7 @@
 package com.taemoi.project.entities;
 
 import java.io.Serial;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
@@ -53,7 +54,17 @@ public class Usuario implements UserDetails {
 
 	@NotBlank(message = "La contraseña no puede estar en blanco")
 	@Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
-	private String contrasena;
+private String contrasena;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "auth_provider")
+	private AuthProvider authProvider = AuthProvider.LOCAL;
+
+	@Column(name = "reset_token_hash", length = 64)
+	private String resetTokenHash;
+
+	@Column(name = "reset_token_expires_at")
+	private LocalDateTime resetTokenExpiresAt;
 
 	@ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
 	@Enumerated(EnumType.STRING)
@@ -147,6 +158,30 @@ public class Usuario implements UserDetails {
 
 	public void setAlumno(Alumno alumno) {
 		this.alumno = alumno;
+	}
+
+	public AuthProvider getAuthProvider() {
+		return authProvider == null ? AuthProvider.LOCAL : authProvider;
+	}
+
+	public void setAuthProvider(AuthProvider authProvider) {
+		this.authProvider = authProvider;
+	}
+
+	public String getResetTokenHash() {
+		return resetTokenHash;
+	}
+
+	public void setResetTokenHash(String resetTokenHash) {
+		this.resetTokenHash = resetTokenHash;
+	}
+
+	public LocalDateTime getResetTokenExpiresAt() {
+		return resetTokenExpiresAt;
+	}
+
+	public void setResetTokenExpiresAt(LocalDateTime resetTokenExpiresAt) {
+		this.resetTokenExpiresAt = resetTokenExpiresAt;
 	}
 
 	public Long getId() {

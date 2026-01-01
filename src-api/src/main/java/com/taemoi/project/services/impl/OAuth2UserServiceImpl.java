@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -64,7 +65,12 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		// Verificar si ya existe un usuario con este email
 		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
-			return existingUser.get();
+			Usuario usuario = existingUser.get();
+			if (usuario.getAuthProvider() != AuthProvider.GOOGLE) {
+				usuario.setAuthProvider(AuthProvider.GOOGLE);
+				usuarioRepository.save(usuario);
+			}
+			return usuario;
 		}
 
 		// Buscar TODOS los alumnos con este email (puede haber múltiples)
@@ -91,6 +97,7 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		nuevoUsuario.setNombre(nombre != null ? nombre : primerAlumno.getNombre());
 		nuevoUsuario.setApellidos(apellidos != null ? apellidos : primerAlumno.getApellidos());
 		nuevoUsuario.setEmail(email);
+		nuevoUsuario.setAuthProvider(AuthProvider.GOOGLE);
 
 		// Generar una contraseña aleatoria (no se usará para OAuth2, pero es requerida)
 		String randomPassword = java.util.UUID.randomUUID().toString();
