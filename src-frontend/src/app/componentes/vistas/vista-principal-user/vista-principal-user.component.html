@@ -38,14 +38,14 @@
         <button
           type="button"
           class="btn-my-classes"
-          [routerLink]="['/userpage/turnos']">
+          (click)="scrollToSection('mis-grupos')">
           <i class="bi bi-collection-play-fill"></i>
           <span>Mis clases</span>
         </button>
         <button
           type="button"
           class="btn-schedule"
-          [routerLink]="['/horarios']">
+          [routerLink]="['/userpage/turnos']">
           <i class="bi bi-calendar-check-fill"></i>
           <span>Ver horarios</span>
         </button>
@@ -57,7 +57,7 @@
   <div class="main-content">
     <div class="content-wrapper">
       <!-- Section Title -->
-      <div class="section-header">
+      <div class="section-header" id="mis-grupos">
         <div class="section-title-box">
           <i class="bi bi-collection-fill"></i>
           <h2>Mis Grupos</h2>

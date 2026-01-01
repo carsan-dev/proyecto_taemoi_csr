@@ -1,5 +1,4 @@
 <div class="turnos-page">
-  <!-- Hero Header -->
   <div class="hero-header">
     <div class="hero-overlay"></div>
     <div class="hero-content">
@@ -14,144 +13,122 @@
     </div>
   </div>
 
-  <!-- Main Content -->
   <div class="main-content">
     <div class="content-wrapper">
       @if (cargando) {
         <app-skeleton-card [type]="'grid'" [count]="4" [columns]="2"></app-skeleton-card>
-      } @else if (endpointsService.gruposDelAlumno$ | async; as grupos) {
-        <div>
-          <!-- Sports Timetable Section -->
-          @if (allTurnos.length > 0) {
-            <div class="sports-timetable-section">
-          <h2 class="section-title">
-            <i class="bi bi-grid-3x3-gap-fill"></i>
-            Horarios por Deporte
-          </h2>
-
-          <!-- Sport Timetables -->
-          <div class="sport-timetables-container">
-            @for (deporte of getDeportesUnicos(); track deporte) {
-              <div class="sport-timetable-wrapper">
-                <div class="sport-timetable-header" [style.background]="getDeporteInfo(deporte).color">
-                  <span class="sport-emoji">{{ getDeporteInfo(deporte).emoji }}</span>
-                  <h3 class="sport-timetable-name">{{ getDeporteInfo(deporte).nombreCorto || getDeporteInfo(deporte).nombre }}</h3>
-                </div>
-
-                <div class="sport-week-grid">
-                  @for (dia of diasSemana; track $index) {
-                    <div class="sport-day-card">
-                      <div class="sport-day-header">
-                        <i class="bi bi-calendar-day"></i>
-                        <span>{{ dia }}</span>
-                      </div>
-                      <div class="sport-day-content">
-                        @if (obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia).length > 0) {
-                          <div>
-                            @for (turno of obtenerTurnosPorDia(getTurnosPorDeporte(deporte), dia); track turno.id) {
-                              <div class="sport-time-slot"
-                                   [style.border-left-color]="getDeporteInfo(deporte).color">
-                                <i class="bi bi-clock-fill"></i>
-                                <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                              </div>
-                            }
-                          </div>
-                        } @else {
-                          <div class="no-sport-turns">
-                            <i class="bi bi-dash-circle"></i>
-                            <span>Sin clases</span>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
+      } @else if (allTurnos.length > 0) {
+        @let deportesUnicos = getDeportesUnicos();
+        @if (deportesUnicos.length > 0) {
+          <div class="sport-legend">
+            @for (deporte of deportesUnicos; track deporte.key) {
+              <div class="legend-item {{ deporte.key }}">
+                <span class="legend-emoji">{{ deporte.emoji }}</span>
+                <span class="legend-text">{{ deporte.nombre }}</span>
               </div>
             }
           </div>
-            </div>
-          }
+        }
 
-        <!-- All Turns Calendar Section -->
-          @if (allTurnos.length > 0) {
-            <div class="all-turns-section">
-              <h2 class="section-title">
-                <i class="bi bi-calendar-week"></i>
-                Todos Mis Horarios
-              </h2>
-              <div class="calendar-grid">
+        <div class="timetable-container desktop-view">
+          <div class="timetable">
+            <div class="timetable-header">
+              <div class="time-column header-cell">
+                <i class="bi bi-clock"></i>
+                <span>Hora</span>
+              </div>
+              @for (dia of diasSemana; track $index) {
+                <div class="day-column header-cell">
+                  <span class="day-full">{{ dia }}</span>
+                  <span class="day-short">{{ diasCortos[$index] }}</span>
+                </div>
+              }
+            </div>
+
+            @for (slot of timeSlots; track slot.horaInicio) {
+              <div class="timetable-row">
+                <div class="time-column time-cell">
+                  <span class="time-start">{{ slot.horaInicio }}</span>
+                  <span class="time-separator">-</span>
+                  <span class="time-end">{{ slot.horaFin }}</span>
+                </div>
                 @for (dia of diasSemana; track $index) {
-                  <div class="calendar-day-card">
-                    <div class="calendar-day-header">
-                      <i class="bi bi-calendar3"></i>
-                      <span>{{ dia }}</span>
-                    </div>
-                    <div class="calendar-day-content">
-                      @if (obtenerTurnosPorDia(allTurnos, dia).length > 0) {
-                        <div>
-                          @for (turno of obtenerTurnosPorDia(allTurnos, dia); track turno.id) {
-                            <div class="calendar-turn-slot"
-                                 [style.border-left-color]="getDeporteInfo(turno.tipoGrupo).color">
-                              <div class="turn-sport-badge" [style.background]="getDeporteInfo(turno.tipoGrupo).color">
-                                <span class="sport-label">{{ getDeporteInfo(turno.tipoGrupo).emoji }} {{ getDeporteInfo(turno.tipoGrupo).nombreCorto || getDeporteInfo(turno.tipoGrupo).nombre }}</span>
-                              </div>
-                              <div class="turn-time-info">
-                                <i class="bi bi-clock-fill"></i>
-                                <span>{{ turno.horaInicio }} - {{ turno.horaFin }}</span>
-                              </div>
-                            </div>
-                          }
-                        </div>
-                      } @else {
-                        <div class="no-turns-day">
-                          <i class="bi bi-dash-circle"></i>
-                          <span>Sin clases</span>
-                        </div>
-                      }
-                    </div>
+                  @let celdas = getTurnosEnCelda(slot, dia);
+                  <div class="day-column day-cell"
+                       [class.has-class]="celdas.length > 0"
+                       [class.empty]="celdas.length === 0">
+                    @if (celdas.length > 0) {
+                      <div class="class-stack">
+                        @for (celda of celdas; track celda.turno.id) {
+                          <div [class]="'class-block ' + celda.sportKey">
+                            <span class="class-emoji">{{ celda.emoji }}</span>
+                            <span class="class-name">{{ celda.displayName }}</span>
+                            <span class="class-time">{{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
                 }
               </div>
-            </div>
-          }
+            }
+          </div>
+        </div>
 
-        <!-- Groups Summary Section (Compact) -->
-          @if (grupos.length > 0) {
-            <div class="groups-summary-section">
-              <h2 class="section-title">
-                <i class="bi bi-people-fill"></i>
-                Mis Grupos
-              </h2>
-              <div class="groups-compact-grid">
-                @for (grupo of grupos; track grupo.id) {
-                  <div class="group-compact-card">
-                    <div class="group-compact-icon">
-                      <i class="bi bi-collection-fill"></i>
-                    </div>
-                    <div class="group-compact-info">
-                      <h3 class="group-compact-name">{{ grupo.nombre }}</h3>
-                      @if (grupo.deporte) {
-                        <p class="group-compact-meta">
-                          <span class="sport-badge" [style.background]="getDeporteInfo(grupo.deporte).color">
-                            {{ getDeporteInfo(grupo.deporte).emoji }} {{ getDeporteInfo(grupo.deporte).nombre }}
-                          </span>
-                        </p>
-                      }
-                    </div>
+        <div class="mobile-view">
+          <div class="day-tabs">
+            @for (dia of diasCortos; track $index) {
+              <button class="day-tab"
+                      [class.active]="selectedDayIndex === $index"
+                      (click)="selectDay($index)">
+                {{ dia }}
+              </button>
+            }
+          </div>
+
+          <div class="day-classes">
+            @let turnosDelDia = getTurnosForDay(diasSemana[selectedDayIndex]);
+            @if (turnosDelDia.length > 0) {
+              @for (celda of turnosDelDia; track celda.turno.id) {
+                <div [class]="'mobile-class-card ' + celda.sportKey">
+                  <div class="mobile-card-left">
+                    <span class="mobile-emoji">{{ celda.emoji }}</span>
                   </div>
-                }
+                  <div class="mobile-card-content">
+                    <span class="mobile-class-name">{{ celda.displayName }}</span>
+                    <span class="mobile-class-time">
+                      <i class="bi bi-clock"></i>
+                      {{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}
+                    </span>
+                  </div>
+                  <div class="mobile-card-right">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="no-classes">
+                <i class="bi bi-calendar-x"></i>
+                <span>No hay clases este día</span>
               </div>
-            </div>
-          }
+            }
+          </div>
+        </div>
+      } @else if (grupos.length > 0) {
+        <div class="no-groups-container">
+          <div class="no-groups-icon">
+            <i class="bi bi-calendar-x"></i>
+          </div>
+          <h3 class="no-groups-title">No tienes horarios asignados</h3>
+          <p class="no-groups-text">Si crees que esto es un error, contacta con la escuela.</p>
         </div>
       } @else {
-        <!-- No groups template -->
         <div class="no-groups-container">
           <div class="no-groups-icon">
             <i class="bi bi-inbox"></i>
           </div>
           <h3 class="no-groups-title">No tienes grupos asignados</h3>
-          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios</p>
+          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios.</p>
         </div>
       }
     </div>
