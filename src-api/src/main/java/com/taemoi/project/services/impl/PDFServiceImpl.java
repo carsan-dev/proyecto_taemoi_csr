@@ -1191,23 +1191,36 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException {
-		// Find all alumnos with turnos on the specified day
+		return generarListadoAsistencia(year, month, Collections.singletonList(grupo), deporte);
+	}
+
+	@Override
+	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, Deporte deporte) throws IOException {
+		List<String> gruposFiltrados = grupos == null
+				? Collections.emptyList()
+				: grupos.stream()
+						.filter(g -> g != null && !g.isBlank())
+						.map(String::trim)
+						.distinct()
+						.collect(Collectors.toList());
+
+		if (gruposFiltrados.isEmpty()) {
+			throw new IllegalArgumentException("Debe seleccionar al menos un grupo");
+		}
+
+		gruposFiltrados.sort(Comparator.comparing(g -> DiaSemanaUtils.mapGrupoToDayOfWeek(g).getValue()));
+
 		List<Deporte> deportesFiltrar = deporte != null
 				? Collections.singletonList(deporte)
 				: Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
 						Deporte.DEFENSA_PERSONAL_FEMENINA);
 
-		List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar).stream()
-				.filter(ad -> ad.getAlumno() != null)
-				.filter(ad -> ad.getAlumno().getFechaNacimiento() != null
-						&& ad.getAlumno().getTurnos() != null
-						&& !ad.getAlumno().getTurnos().isEmpty())
-				.filter(ad -> ad.getAlumno().getTurnos().stream()
-						.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
+		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
+				Deporte.DEFENSA_PERSONAL_FEMENINA);
+		List<Deporte> deportesReporte = deportesOrdenados.stream()
+				.filter(deportesFiltrar::contains)
 				.collect(Collectors.toList());
 
-		// Get all unique turnos for this day, grouped by deporte
-		// Create a data structure: Map<Deporte, List<TurnoWithAlumnos>>
 		class TurnoWithAlumnos {
 			com.taemoi.project.entities.Turno turno;
 			List<AlumnoDeporte> alumnos;
@@ -1216,59 +1229,6 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				this.turno = turno;
 				this.alumnos = alumnos;
 			}
-		}
-
-		// Collect all turnos with their alumnos, grouped by deporte
-		Map<Deporte, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
-
-		// Process each alumno to build the turno-alumno-deporte relationships
-		for (AlumnoDeporte alumnoDeporte : allAlumnosDeporte) {
-			Alumno alumno = alumnoDeporte.getAlumno();
-			Deporte alumnoDeporteEnum = alumnoDeporte.getDeporte();
-			if (alumno == null || alumnoDeporteEnum == null) {
-				continue;
-			}
-
-			for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
-				if (turno.getDiaSemana() == null || !turno.getDiaSemana().equalsIgnoreCase(grupo)) {
-					continue;
-				}
-				if (turno.getGrupo() == null || turno.getGrupo().getDeporte() == null) {
-					continue;
-				}
-				if (turno.getGrupo().getDeporte() != alumnoDeporteEnum) {
-					continue;
-				}
-
-				turnosByDeporte.computeIfAbsent(alumnoDeporteEnum, k -> new ArrayList<>());
-
-				TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporteEnum).stream()
-						.filter(twa -> twa.turno.getId().equals(turno.getId())).findFirst().orElse(null);
-
-				if (existing == null) {
-					List<AlumnoDeporte> alumnosForTurno = new ArrayList<>();
-					alumnosForTurno.add(alumnoDeporte);
-					turnosByDeporte.get(alumnoDeporteEnum).add(new TurnoWithAlumnos(turno, alumnosForTurno));
-				} else if (!existing.alumnos.contains(alumnoDeporte)) {
-					existing.alumnos.add(alumnoDeporte);
-				}
-			}
-		}
-
-		// Sort turnos within each deporte by time
-		for (List<TurnoWithAlumnos> turnos : turnosByDeporte.values()) {
-			turnos.sort(Comparator.comparing(twa -> twa.turno.getHoraInicio()));
-		}
-
-		// Calculate dates for the month
-		DayOfWeek dow = DiaSemanaUtils.mapGrupoToDayOfWeek(grupo);
-		LocalDate inicio = LocalDate.of(year, month, 1);
-		LocalDate finMes = inicio.with(TemporalAdjusters.lastDayOfMonth());
-		List<LocalDate> fechas = new ArrayList<>();
-		LocalDate actual = inicio.with(TemporalAdjusters.nextOrSame(dow));
-		while (!actual.isAfter(finMes)) {
-			fechas.add(actual);
-			actual = actual.plusWeeks(1);
 		}
 
 		String logoPng = getLogoPngBase64();
@@ -1342,117 +1302,176 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append("</style>");
 		html.append("</head><body>");
 
-		// Generate pages organized by sport, then by turno
-		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
-				Deporte.DEFENSA_PERSONAL_FEMENINA);
-		List<Deporte> deportesReporte = deportesOrdenados.stream()
-				.filter(deportesFiltrar::contains)
-				.collect(Collectors.toList());
 		boolean firstPage = true;
 
-		for (Deporte deporteActual : deportesReporte) {
-			List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
-			if (turnosDeporte == null || turnosDeporte.isEmpty())
-				continue;
+		for (String grupo : gruposFiltrados) {
+			List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar).stream()
+					.filter(ad -> ad.getAlumno() != null)
+					.filter(ad -> ad.getAlumno().getFechaNacimiento() != null
+							&& ad.getAlumno().getTurnos() != null
+							&& !ad.getAlumno().getTurnos().isEmpty())
+					.filter(ad -> ad.getAlumno().getTurnos().stream()
+							.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
+					.collect(Collectors.toList());
 
-			for (TurnoWithAlumnos twa : turnosDeporte) {
-				// Add page break before each page except the first
-				if (!firstPage) {
-					html.append("<div class='page-break'></div>");
+			// Collect all turnos with their alumnos, grouped by deporte
+			Map<Deporte, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
+
+			// Process each alumno to build the turno-alumno-deporte relationships
+			for (AlumnoDeporte alumnoDeporte : allAlumnosDeporte) {
+				Alumno alumno = alumnoDeporte.getAlumno();
+				Deporte alumnoDeporteEnum = alumnoDeporte.getDeporte();
+				if (alumno == null || alumnoDeporteEnum == null) {
+					continue;
 				}
-				firstPage = false;
 
-				List<AlumnoDeporte> alumnos = twa.alumnos;
-				// Sort alumnos by nombre
-				alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
+				for (com.taemoi.project.entities.Turno turno : alumno.getTurnos()) {
+					if (turno.getDiaSemana() == null || !turno.getDiaSemana().equalsIgnoreCase(grupo)) {
+						continue;
+					}
+					if (turno.getGrupo() == null || turno.getGrupo().getDeporte() == null) {
+						continue;
+					}
+					if (turno.getGrupo().getDeporte() != alumnoDeporteEnum) {
+						continue;
+					}
 
-				int totalAlumnos = alumnos.size();
-				String turnoStr = twa.turno.getHoraInicio() + " a " + twa.turno.getHoraFin();
+					turnosByDeporte.computeIfAbsent(alumnoDeporteEnum, k -> new ArrayList<>());
 
-				// Header
-				html.append("<div class='header-section'>");
-				if (!logoPng.isEmpty()) {
-					html.append("<div class='logo-container'><img src='").append(logoPng)
-							.append("' alt='Logo' /></div>");
+					TurnoWithAlumnos existing = turnosByDeporte.get(alumnoDeporteEnum).stream()
+							.filter(twa -> twa.turno.getId().equals(turno.getId())).findFirst().orElse(null);
+
+					if (existing == null) {
+						List<AlumnoDeporte> alumnosForTurno = new ArrayList<>();
+						alumnosForTurno.add(alumnoDeporte);
+						turnosByDeporte.get(alumnoDeporteEnum).add(new TurnoWithAlumnos(turno, alumnosForTurno));
+					} else if (!existing.alumnos.contains(alumnoDeporte)) {
+						existing.alumnos.add(alumnoDeporte);
+					}
 				}
-				html.append("<div class='header-titles'>");
-				html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
-				html.append("<p class='sub'>Tae Kwon Do</p>");
-				html.append("</div>");
-				html.append("<h2>LISTADO DE ASISTENCIA - ")
-						.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
-						.append(" ").append(year).append("</h2>");
-				html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " ")).append("</p>");
-				html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
-				html.append("<p class='info'>").append(grupo.toUpperCase()).append(" - Turno de ").append(turnoStr)
-						.append("</p>");
-				html.append("</div>");
+			}
 
-				// Tables
-				html.append("<div class='table-wrapper'>");
-				html.append("<div class='table-cell' style='width: 65%;'>");
-				html.append("<table class='main-table'>");
-				html.append("<thead><tr>");
-				html.append(
-						"<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
-				html.append("</tr></thead><tbody>");
+			// Sort turnos within each deporte by time
+			for (List<TurnoWithAlumnos> turnos : turnosByDeporte.values()) {
+				turnos.sort(Comparator.comparing(twa -> twa.turno.getHoraInicio()));
+			}
 
-				for (AlumnoDeporte ad : alumnos) {
-					Alumno a = ad.getAlumno();
-					LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
-							.atZone(ZoneId.systemDefault()).toLocalDate();
-					int edad = Period.between(nac, LocalDate.now()).getYears();
-					boolean licOk = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
-					String lic = licOk ? ad.getNumeroLicencia().toString() : "NO";
-					String licClass = licOk ? "licencia-ok" : "licencia-no";
+			// Calculate dates for the month
+			DayOfWeek dow = DiaSemanaUtils.mapGrupoToDayOfWeek(grupo);
+			LocalDate inicio = LocalDate.of(year, month, 1);
+			LocalDate finMes = inicio.with(TemporalAdjusters.lastDayOfMonth());
+			List<LocalDate> fechas = new ArrayList<>();
+			LocalDate actual = inicio.with(TemporalAdjusters.nextOrSame(dow));
+			while (!actual.isAfter(finMes)) {
+				fechas.add(actual);
+				actual = actual.plusWeeks(1);
+			}
 
-					// Calculate months with current grade
-					int mesesConGrado = 0;
-					if (ad.getFechaGrado() != null) {
-						LocalDate fechaGrado = Instant.ofEpochMilli(ad.getFechaGrado().getTime())
+			for (Deporte deporteActual : deportesReporte) {
+				List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
+				if (turnosDeporte == null || turnosDeporte.isEmpty()) {
+					continue;
+				}
+
+				for (TurnoWithAlumnos twa : turnosDeporte) {
+					// Add page break before each page except the first
+					if (!firstPage) {
+						html.append("<div class='page-break'></div>");
+					}
+					firstPage = false;
+
+					List<AlumnoDeporte> alumnos = twa.alumnos;
+					// Sort alumnos by nombre
+					alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
+
+					int totalAlumnos = alumnos.size();
+					String turnoStr = twa.turno.getHoraInicio() + " a " + twa.turno.getHoraFin();
+
+					// Header
+					html.append("<div class='header-section'>");
+					if (!logoPng.isEmpty()) {
+						html.append("<div class='logo-container'><img src='").append(logoPng)
+								.append("' alt='Logo' /></div>");
+					}
+					html.append("<div class='header-titles'>");
+					html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
+					html.append("<p class='sub'>Tae Kwon Do</p>");
+					html.append("</div>");
+					html.append("<h2>LISTADO DE ASISTENCIA - ")
+							.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
+							.append(" ").append(year).append("</h2>");
+					html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " ")).append("</p>");
+					html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
+					html.append("<p class='info'>").append(grupo.toUpperCase()).append(" - Turno de ").append(turnoStr)
+							.append("</p>");
+					html.append("</div>");
+
+					// Tables
+					html.append("<div class='table-wrapper'>");
+					html.append("<div class='table-cell' style='width: 65%;'>");
+					html.append("<table class='main-table'>");
+					html.append("<thead><tr>");
+					html.append(
+							"<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+					html.append("</tr></thead><tbody>");
+
+					for (AlumnoDeporte ad : alumnos) {
+						Alumno a = ad.getAlumno();
+						LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
 								.atZone(ZoneId.systemDefault()).toLocalDate();
-						mesesConGrado = (int) Period.between(fechaGrado, LocalDate.now()).toTotalMonths();
+						int edad = Period.between(nac, LocalDate.now()).getYears();
+						boolean licOk = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
+						String lic = licOk ? ad.getNumeroLicencia().toString() : "NO";
+						String licClass = licOk ? "licencia-ok" : "licencia-no";
+
+						// Calculate months with current grade
+						int mesesConGrado = 0;
+						if (ad.getFechaGrado() != null) {
+							LocalDate fechaGrado = Instant.ofEpochMilli(ad.getFechaGrado().getTime())
+									.atZone(ZoneId.systemDefault()).toLocalDate();
+							mesesConGrado = (int) Period.between(fechaGrado, LocalDate.now()).toTotalMonths();
+						}
+						boolean aptoExamen = Boolean.TRUE.equals(ad.getAptoParaExamen());
+						String aptoClass = aptoExamen ? "apto-examen" : "no-apto-examen";
+						String aptoText = mesesConGrado + "m";
+
+						html.append("<tr>");
+						html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
+						TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+						html.append(generateBeltCellHtml(tipoGrado));
+						html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
+						html.append("<td>").append(edad).append("</td>");
+						html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");
+						html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
+						html.append("</tr>");
 					}
-					boolean aptoExamen = Boolean.TRUE.equals(ad.getAptoParaExamen());
-					String aptoClass = aptoExamen ? "apto-examen" : "no-apto-examen";
-					String aptoText = mesesConGrado + "m";
 
-					html.append("<tr>");
-					html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
-					TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
-					html.append(generateBeltCellHtml(tipoGrado));
-					html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
-					html.append("<td>").append(edad).append("</td>");
-					html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");
-					html.append("<td>").append(a.getNumeroExpediente()).append("</td>");
-					html.append("</tr>");
-				}
+					html.append("</tbody></table>");
+					html.append("</div>");
 
-				html.append("</tbody></table>");
-				html.append("</div>");
-
-				// Attendance grid
-				html.append("<div class='table-cell' style='width: 35%;'>");
-				html.append("<table class='side-table'><thead><tr>");
-				for (LocalDate f : fechas) {
-					html.append("<th>").append(f.getDayOfMonth()).append("</th>");
-				}
-				html.append("</tr></thead><tbody>");
-				for (int i = 0; i < totalAlumnos; i++) {
-					html.append("<tr>");
-					for (@SuppressWarnings("unused")
-					LocalDate f : fechas) {
-						html.append("<td></td>");
+					// Attendance grid
+					html.append("<div class='table-cell' style='width: 35%;'>");
+					html.append("<table class='side-table'><thead><tr>");
+					for (LocalDate f : fechas) {
+						html.append("<th>").append(f.getDayOfMonth()).append("</th>");
 					}
-					html.append("</tr>");
+					html.append("</tr></thead><tbody>");
+					for (int i = 0; i < totalAlumnos; i++) {
+						html.append("<tr>");
+						for (@SuppressWarnings("unused")
+						LocalDate f : fechas) {
+							html.append("<td></td>");
+						}
+						html.append("</tr>");
+					}
+					html.append("</tbody><tfoot><tr>");
+					for (LocalDate f : fechas) {
+						html.append("<td>").append(f.getDayOfMonth()).append("</td>");
+					}
+					html.append("</tr></tfoot></table>");
+					html.append("</div>");
+					html.append("</div>");
 				}
-				html.append("</tbody><tfoot><tr>");
-				for (LocalDate f : fechas) {
-					html.append("<td>").append(f.getDayOfMonth()).append("</td>");
-				}
-				html.append("</tr></tfoot></table>");
-				html.append("</div>");
-				html.append("</div>");
 			}
 		}
 
@@ -1472,6 +1491,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		}
 		return os.toByteArray();
 	}
+
 
 	/**
 	 * Generates HTML content for the belt color cell in the attendance list. Shows
