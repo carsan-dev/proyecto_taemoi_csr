@@ -75,16 +75,15 @@ export class AuthenticationService {
           this.emailSubject.next(email); // Actualizar email
 
           // Solo llamamos a obtenerRoles si los roles no han sido cargados
-          if (!this.rolesCargados) {
-            return this.obtenerRoles().pipe(
-              tap(() => {
-                // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
-                return this.usuarioLogueadoSubject.next(true);
-              })
-            );
-          } else {
+          if (this.rolesCargados) {
             return of(this.rolesSubject.value);
           }
+          return this.obtenerRoles().pipe(
+            tap(() => {
+              // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
+              return this.usuarioLogueadoSubject.next(true);
+            })
+          );
         }),
         catchError(this.manejarError)
       );
@@ -127,8 +126,8 @@ export class AuthenticationService {
           this.rolesCargados = false; // Reiniciar roles cargados
 
           // Limpiar la bandera de mensaje de bienvenida
-          if (typeof window !== 'undefined' && window.sessionStorage) {
-            sessionStorage.removeItem('welcomeShown');
+          if (globalThis.window?.sessionStorage) {
+            globalThis.window.sessionStorage.removeItem('welcomeShown');
           }
         },
         error: (error) => {
@@ -215,8 +214,8 @@ export class AuthenticationService {
   // Método para guardar el alumnoId
   private guardarAlumnoId(alumnoId: number): void {
     this.alumnoIdSubject.next(alumnoId);
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      sessionStorage.setItem('alumnoId', alumnoId.toString()); // Guardar en sessionStorage
+    if (globalThis.window?.sessionStorage) {
+      globalThis.window.sessionStorage.setItem('alumnoId', alumnoId.toString()); // Guardar en sessionStorage
     }
   }
 
@@ -226,11 +225,12 @@ export class AuthenticationService {
     
     if (alumnoId) {
       return alumnoId;
-    } else if (typeof window !== 'undefined' && window.sessionStorage) {
-      const storedAlumnoId = sessionStorage.getItem('alumnoId');
-      return storedAlumnoId ? parseInt(storedAlumnoId, 10) : null;
     }
-    
+    if (globalThis.window?.sessionStorage) {
+      const storedAlumnoId = globalThis.window.sessionStorage.getItem('alumnoId');
+      return storedAlumnoId ? Number.parseInt(storedAlumnoId, 10) : null;
+    }
+
     return null;
   }
 
@@ -255,9 +255,10 @@ export class AuthenticationService {
             });
 
             // Solo llamamos a obtenerRoles si los roles no han sido cargados
-            if (!this.rolesCargados) {
-              this.obtenerRoles().subscribe();
+            if (this.rolesCargados) {
+              return;
             }
+            this.obtenerRoles().subscribe();
           } else {
             this.actualizarEstadoLogueado(false);
             this.usernameSubject.next(null);

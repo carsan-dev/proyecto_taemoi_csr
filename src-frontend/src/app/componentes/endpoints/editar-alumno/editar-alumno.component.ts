@@ -168,6 +168,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     telefono?: string;
     telefono2?: string;
   } = {};
+  private readonly basicInfoValidators: Record<string, (value: any) => string | null> = {
+    nombre: (value) => (this.isBlank(value) ? 'El nombre es obligatorio' : null),
+    apellidos: (value) => (this.isBlank(value) ? 'Los apellidos son obligatorios' : null),
+    direccion: (value) => (this.isBlank(value) ? 'La dirección es obligatoria' : null),
+    fechaNacimiento: (value) => (value ? null : 'La fecha de nacimiento es obligatoria'),
+    nif: (value) => this.validateNif(value),
+    email: (value) => this.validateEmail(value),
+    telefono: (value) => this.validateTelefono(value, true),
+    telefono2: (value) => this.validateTelefono(value, false),
+  };
 
   // Categorias for Taekwondo competitors (must match database categoria.nombre values)
   categorias = [
@@ -211,21 +221,21 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         fechaNacimiento: ['', Validators.required],
         nif: [
           '',
-          [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
+          [Validators.required, Validators.pattern(String.raw`^\d{8}[A-Za-z]$`)],
         ],
         email: ['', [Validators.required, Validators.email]],
         telefono: [
           '',
           [
             Validators.required,
-            Validators.pattern('^[0-9]+$'),
+            Validators.pattern(String.raw`^\d+$`),
             Validators.maxLength(9),
           ],
         ],
         telefono2: [
           '',
           [
-            Validators.pattern('^[0-9]+$'),
+            Validators.pattern(String.raw`^\d+$`),
             Validators.maxLength(9),
           ],
         ],
@@ -479,7 +489,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerProductosDelAlumno(alumnoId).subscribe({
       next: (productos) => {
         // Reverse order to show most recent products first
-        this.productosAlumno = productos.reverse();
+        const productosOrdenados = [...productos].reverse();
+        this.productosAlumno = productosOrdenados;
         this.totalPaginasProductos = Math.ceil(this.productosAlumno.length / this.tamanoPaginaProductos);
         this.cambiarPaginaProductos(1);
       },
@@ -681,9 +692,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   getTurnosDelDeporte(deporte: string): any[] {
     const gruposDelDeporte = this.getGruposDelDeporte(deporte);
-    const gruposIds = gruposDelDeporte.map((g) => g.id);
+    const gruposIds = new Set(gruposDelDeporte.map((g) => g.id));
     return this.turnosDelAlumno.filter(
-      (t) => t.grupoId && gruposIds.includes(t.grupoId)
+      (t) => t.grupoId && gruposIds.has(t.grupoId)
     );
   }
 
@@ -691,9 +702,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Obtiene los grupos disponibles para añadir (no asignados al alumno) filtrados por deporte.
    */
   getGruposDisponiblesDelDeporte(deporte: string): any[] {
-    const gruposAsignados = this.getGruposDelDeporte(deporte).map((g) => g.id);
+    const gruposAsignados = new Set(this.getGruposDelDeporte(deporte).map((g) => g.id));
     return this.todosLosGrupos.filter(
-      (g) => g.deporte === deporte && !gruposAsignados.includes(g.id)
+      (g) => g.deporte === deporte && !gruposAsignados.has(g.id)
     );
   }
 
@@ -702,15 +713,15 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   getTurnosDisponiblesDelDeporte(deporte: string): any[] {
     const gruposDelDeporte = this.getGruposDelDeporte(deporte);
-    const gruposIds = gruposDelDeporte.map((g) => g.id);
-    const turnosAsignados = this.getTurnosDelDeporte(deporte).map((t) => t.id);
+    const gruposIds = new Set(gruposDelDeporte.map((g) => g.id));
+    const turnosAsignados = new Set(this.getTurnosDelDeporte(deporte).map((t) => t.id));
 
     // Solo mostrar turnos que pertenecen a grupos del alumno en este deporte
     return this.todosLosTurnos.filter(
       (t) =>
         t.grupoId &&
-        gruposIds.includes(t.grupoId) &&
-        !turnosAsignados.includes(t.id)
+        gruposIds.has(t.grupoId) &&
+        !turnosAsignados.has(t.id)
     );
   }
 
@@ -737,9 +748,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Obtiene los turnos disponibles para añadir de un grupo específico.
    */
   getTurnosDisponiblesDelGrupo(grupoId: number): any[] {
-    const turnosAsignados = this.getTurnosDelGrupo(grupoId).map((t) => t.id);
+    const turnosAsignados = new Set(this.getTurnosDelGrupo(grupoId).map((t) => t.id));
     return this.todosLosTurnos.filter(
-      (t) => t.grupoId === grupoId && !turnosAsignados.includes(t.id)
+      (t) => t.grupoId === grupoId && !turnosAsignados.has(t.id)
     );
   }
 
@@ -1416,10 +1427,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Continuar',
       cancelButtonText: 'Cancelar',
       inputValidator: (value) => {
-        if (!value) {
-          return 'Debes seleccionar un deporte';
+        if (value) {
+          return null;
         }
-        return null;
+        return 'Debes seleccionar un deporte';
       }
     }).then((resultado) => {
       if (resultado.isConfirmed && resultado.value) {
@@ -1959,8 +1970,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Get list of sports available to add (not already assigned)
    */
   getDeportesDisponiblesParaAgregar(): Deporte[] {
-    const deportesAsignados = this.deportesDelAlumno.map(d => d.deporte);
-    return Object.values(Deporte).filter(d => !deportesAsignados.includes(d));
+    const deportesAsignados = new Set(this.deportesDelAlumno.map(d => d.deporte));
+    return Object.values(Deporte).filter(d => !deportesAsignados.has(d));
   }
 
   /**
@@ -2509,8 +2520,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Handle cuantia tarifa change - updates pending changes
    */
   onCuantiaTarifaChange(deporte: string, event: any): void {
-    const cuantiaTarifa = parseFloat(event.target.value);
-    if (isNaN(cuantiaTarifa)) {
+    const cuantiaTarifa = Number.parseFloat(event.target.value);
+    if (Number.isNaN(cuantiaTarifa)) {
       return;
     }
 
@@ -2523,8 +2534,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Handle cuantia tarifa change from ngModel - accepts value directly
    */
   onCuantiaTarifaModelChange(deporte: string, value: number | string): void {
-    const cuantiaTarifa = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(cuantiaTarifa)) {
+    const cuantiaTarifa = typeof value === 'string' ? Number.parseFloat(value) : value;
+    if (Number.isNaN(cuantiaTarifa)) {
       return;
     }
 
@@ -2623,8 +2634,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const numeroLicencia = parseInt(event.target.value, 10);
-    if (isNaN(numeroLicencia)) {
+    const numeroLicencia = Number.parseInt(event.target.value, 10);
+    if (Number.isNaN(numeroLicencia)) {
       return;
     }
 
@@ -2731,8 +2742,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const peso = parseFloat(event.target.value);
-    if (isNaN(peso)) {
+    const peso = Number.parseFloat(event.target.value);
+    if (Number.isNaN(peso)) {
       return;
     }
 
@@ -2924,12 +2935,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Handle numero licencia change - updates pending changes
    */
   onNumeroLicenciaChange(deporte: string, event: any): void {
-    const numeroLicencia = parseInt(event.target.value, 10);
-    if (!isNaN(numeroLicencia)) {
-      const pending = this.pendingLicenciaChanges.get(deporte) || {};
-      pending.numeroLicencia = numeroLicencia;
-      this.pendingLicenciaChanges.set(deporte, pending);
+    const numeroLicencia = Number.parseInt(event.target.value, 10);
+    if (Number.isNaN(numeroLicencia)) {
+      return;
     }
+    const pending = this.pendingLicenciaChanges.get(deporte) || {};
+    pending.numeroLicencia = numeroLicencia;
+    this.pendingLicenciaChanges.set(deporte, pending);
   }
 
   /**
@@ -2951,6 +2963,18 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     const pending = this.pendingCompetidorChanges.get(deporte) || {};
     pending.competidor = competidor;
+    if (competidor) {
+      const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+      const categoriaActual = pending.categoria ?? deporteData?.categoria;
+      const categoriaVacia =
+        !categoriaActual || (typeof categoriaActual === 'string' && categoriaActual.trim() === '');
+      if (categoriaVacia) {
+        const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+        if (categoriaPorEdad) {
+          pending.categoria = categoriaPorEdad;
+        }
+      }
+    }
     this.pendingCompetidorChanges.set(deporte, pending);
   }
 
@@ -2958,12 +2982,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Handle peso change - updates pending changes
    */
   onPesoChange(deporte: string, event: any): void {
-    const peso = parseFloat(event.target.value);
-    if (!isNaN(peso)) {
-      const pending = this.pendingCompetidorChanges.get(deporte) || {};
-      pending.peso = peso;
-      this.pendingCompetidorChanges.set(deporte, pending);
+    const peso = Number.parseFloat(event.target.value);
+    if (Number.isNaN(peso)) {
+      return;
     }
+    const pending = this.pendingCompetidorChanges.get(deporte) || {};
+    pending.peso = peso;
+    this.pendingCompetidorChanges.set(deporte, pending);
   }
 
   /**
@@ -3017,7 +3042,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const deporteItem = this.deportesDelAlumno.find(d => d.deporte === deporte);
     const pending = this.pendingCompetidorChanges.get(deporte);
     const categoriaActual = pending?.categoria ?? deporteItem?.categoria ?? '';
-    if (!categoriaActual && deporteItem?.deporte === 'TAEKWONDO') {
+    if (!categoriaActual) {
       const categoriaPorEdad = this.obtenerCategoriaPorEdad();
       return categoriaPorEdad || '';
     }
@@ -3154,7 +3179,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * overwrites another's changes on the same entity
    */
   applyTarifaChanges(deporte: string): void {
-    if (!this.alumnoId || !this.hasPendingTarifaChanges(deporte)) {
+    const alumnoId = this.alumnoId;
+    if (!alumnoId || !this.hasPendingTarifaChanges(deporte)) {
       return;
     }
 
@@ -3165,7 +3191,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.tipoTarifa !== undefined && pending.tipoTarifa !== '') {
       updates.push(
         this.alumnoService
-          .actualizarTipoTarifaDeporte(this.alumnoId!, deporte, pending.tipoTarifa)
+          .actualizarTipoTarifaDeporte(alumnoId, deporte, pending.tipoTarifa)
           .pipe(
             tap(() => console.log('tipoTarifa updated successfully')),
             catchError((error) => {
@@ -3179,7 +3205,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.cuantiaTarifa !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarCuantiaTarifaDeporte(this.alumnoId!, deporte, pending.cuantiaTarifa)
+          .actualizarCuantiaTarifaDeporte(alumnoId, deporte, pending.cuantiaTarifa)
           .pipe(
             tap(() => console.log('cuantiaTarifa updated successfully')),
             catchError((error) => {
@@ -3193,7 +3219,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.rolFamiliar !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarRolFamiliarDeporte(this.alumnoId!, deporte, pending.rolFamiliar)
+          .actualizarRolFamiliarDeporte(alumnoId, deporte, pending.rolFamiliar)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('rol familiar', error);
@@ -3206,7 +3232,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.grupoFamiliar !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarGrupoFamiliarDeporte(this.alumnoId!, deporte, pending.grupoFamiliar)
+          .actualizarGrupoFamiliarDeporte(alumnoId, deporte, pending.grupoFamiliar)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('grupo familiar', error);
@@ -3233,7 +3259,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       timer: 1500,
       showConfirmButton: false,
     });
-    this.cargarDeportesDelAlumno(this.alumnoId!, true);
+    const alumnoId = this.alumnoId;
+    if (alumnoId) {
+      this.cargarDeportesDelAlumno(alumnoId, true);
+    }
   }
 
   /**
@@ -3241,7 +3270,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Updates are made SEQUENTIALLY to avoid race conditions
    */
   applyLicenciaChanges(deporte: string): void {
-    if (!this.alumnoId || !this.hasPendingLicenciaChanges(deporte)) {
+    const alumnoId = this.alumnoId;
+    if (!alumnoId || !this.hasPendingLicenciaChanges(deporte)) {
       return;
     }
 
@@ -3252,7 +3282,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.tieneLicencia !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarTieneLicenciaDeporte(this.alumnoId!, deporte, pending.tieneLicencia)
+          .actualizarTieneLicenciaDeporte(alumnoId, deporte, pending.tieneLicencia)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('estado de licencia', error);
@@ -3265,7 +3295,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.numeroLicencia !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarNumeroLicenciaDeporte(this.alumnoId!, deporte, pending.numeroLicencia)
+          .actualizarNumeroLicenciaDeporte(alumnoId, deporte, pending.numeroLicencia)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('número de licencia', error);
@@ -3278,7 +3308,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (pending.fechaLicencia !== undefined) {
       updates.push(
         this.alumnoService
-          .actualizarFechaLicenciaDeporte(this.alumnoId!, deporte, pending.fechaLicencia)
+          .actualizarFechaLicenciaDeporte(alumnoId, deporte, pending.fechaLicencia)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('fecha de licencia', error);
@@ -3305,7 +3335,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       timer: 1500,
       showConfirmButton: false,
     });
-    this.cargarDeportesDelAlumno(this.alumnoId!, true);
+    const alumnoId = this.alumnoId;
+    if (alumnoId) {
+      this.cargarDeportesDelAlumno(alumnoId, true);
+    }
   }
 
   /**
@@ -3313,7 +3346,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Uses a single endpoint to update all fields in one transaction (avoids race conditions)
    */
   applyCompetidorChanges(deporte: string): void {
-    if (!this.alumnoId || !this.hasPendingCompetidorChanges(deporte)) {
+    const alumnoId = this.alumnoId;
+    if (!alumnoId || !this.hasPendingCompetidorChanges(deporte)) {
       return;
     }
 
@@ -3349,10 +3383,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       datosCompetidor.fechaPeso = pending.fechaPeso;
     }
 
-    const competidorActual =
-      pending.competidor !== undefined ? pending.competidor : deporteData?.competidor;
-    const categoriaActual =
-      pending.categoria !== undefined ? pending.categoria : deporteData?.categoria;
+    const competidorActual = pending.competidor ?? deporteData?.competidor;
+    const categoriaActual = pending.categoria ?? deporteData?.categoria;
     const categoriaVacia =
       !categoriaActual || (typeof categoriaActual === 'string' && categoriaActual.trim() === '');
 
@@ -3365,7 +3397,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Single request to update all fields
     this.alumnoService
-      .actualizarDatosCompetidor(this.alumnoId, deporte, datosCompetidor)
+      .actualizarDatosCompetidor(alumnoId, deporte, datosCompetidor)
       .subscribe({
         next: () => {
           this.onAllCompetidorUpdatesComplete(deporte);
@@ -3376,7 +3408,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             text: error.error || 'No se pudieron actualizar los datos de competidor',
             icon: 'error',
           });
-          this.cargarDeportesDelAlumno(this.alumnoId!, true);
+          this.cargarDeportesDelAlumno(alumnoId, true);
         },
       });
   }
@@ -3726,62 +3758,56 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Clear previous error
     delete (this.basicInfoErrors as any)[field];
 
-    switch (field) {
-      case 'nombre':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.nombre = 'El nombre es obligatorio';
-        }
-        break;
-      case 'apellidos':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.apellidos = 'Los apellidos son obligatorios';
-        }
-        break;
-      case 'direccion':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.direccion = 'La dirección es obligatoria';
-        }
-        break;
-      case 'fechaNacimiento':
-        if (!value) {
-          this.basicInfoErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
-        }
-        break;
-      case 'nif':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.nif = 'El DNI es obligatorio';
-        } else if (!/^[0-9]{8}[A-Za-z]$/.test(value)) {
-          this.basicInfoErrors.nif = 'Formato inválido (8 números y una letra)';
-        }
-        break;
-      case 'email':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.email = 'El email es obligatorio';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          this.basicInfoErrors.email = 'Formato de email inválido';
-        }
-        break;
-      case 'telefono':
-        if (!value || value.trim() === '') {
-          this.basicInfoErrors.telefono = 'El teléfono es obligatorio';
-        } else if (!/^[0-9]+$/.test(value)) {
-          this.basicInfoErrors.telefono = 'Solo se permiten números';
-        } else if (value.length > 9) {
-          this.basicInfoErrors.telefono = 'Máximo 9 dígitos';
-        }
-        break;
-      case 'telefono2':
-        if (value && value.trim() !== '') {
-          if (!/^[0-9]+$/.test(value)) {
-            this.basicInfoErrors.telefono2 = 'Solo se permiten números';
-          } else if (value.length > 9) {
-            this.basicInfoErrors.telefono2 = 'Máximo 9 dígitos';
-          }
-        }
-        break;
+    const validator = this.basicInfoValidators[field];
+    if (!validator) {
+      return;
+    }
+
+    const errorMessage = validator(value);
+    if (errorMessage) {
+      (this.basicInfoErrors as any)[field] = errorMessage;
     }
   }
 
+  private isBlank(value: any): boolean {
+    return !value || (typeof value === 'string' && value.trim() === '');
+  }
+
+  private validateNif(value: any): string | null {
+    if (this.isBlank(value)) {
+      return 'El DNI es obligatorio';
+    }
+    const nifValue = String(value).trim();
+    if (!/^\d{8}[A-Za-z]$/.test(nifValue)) {
+      return 'Formato inválido (8 números y una letra)';
+    }
+    return null;
+  }
+
+  private validateEmail(value: any): string | null {
+    if (this.isBlank(value)) {
+      return 'El email es obligatorio';
+    }
+    const emailValue = String(value).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      return 'Formato de email inválido';
+    }
+    return null;
+  }
+
+  private validateTelefono(value: any, required: boolean): string | null {
+    if (this.isBlank(value)) {
+      return required ? 'El teléfono es obligatorio' : null;
+    }
+    const telefonoValue = String(value).trim();
+    if (!/^\d+$/.test(telefonoValue)) {
+      return 'Solo se permiten números';
+    }
+    if (telefonoValue.length > 9) {
+      return 'Máximo 9 dígitos';
+    }
+    return null;
+  }
   /**
    * Check if a basic info field has an error
    */
@@ -3826,11 +3852,20 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Get telefono value - ensure it's a number
     const telefonoValue = this.pendingBasicInfoChanges.telefono ?? this.alumno.telefono;
-    const telefonoInt = typeof telefonoValue === 'string' ? parseInt(telefonoValue, 10) : telefonoValue;
+    const telefonoInt = typeof telefonoValue === 'string'
+      ? Number.parseInt(telefonoValue, 10)
+      : telefonoValue;
 
     // Get telefono2 value - ensure it's a number or null
     const telefono2Value = this.pendingBasicInfoChanges.telefono2 ?? this.alumno.telefono2;
-    const telefono2Int = telefono2Value ? (typeof telefono2Value === 'string' ? parseInt(telefono2Value, 10) : telefono2Value) : null;
+    let telefono2Int: number | null = null;
+    if (telefono2Value !== null && telefono2Value !== undefined && telefono2Value !== '') {
+      const telefono2Number =
+        typeof telefono2Value === 'string'
+          ? Number.parseInt(telefono2Value, 10)
+          : Number(telefono2Value);
+      telefono2Int = Number.isNaN(telefono2Number) ? null : telefono2Number;
+    }
 
     // Format fechaBaja - use null if empty string
     const fechaBajaValue = this.pendingBasicInfoChanges.fechaBaja ?? (this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null);

@@ -42,7 +42,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   totalPaginasUsuarios: number = 0;
   private readonly storageKeyUsuarios = 'configuracionSistemaUsuariosEstado';
 
-  constructor(private endpointsService: EndpointsService) {}
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.restaurarEstadoUsuarios();
@@ -174,11 +174,12 @@ export class ConfiguracionSistemaComponent implements OnInit {
   parseRoles(rolString: string): RoleSelection {
     const cleanString = rolString.replaceAll(/[[\]]/g, '');
     const rolesArray = cleanString.split(',').map((r) => r.trim());
+    const rolesSet = new Set(rolesArray);
 
     return {
-      ROLE_USER: rolesArray.includes('ROLE_USER'),
-      ROLE_MANAGER: rolesArray.includes('ROLE_MANAGER'),
-      ROLE_ADMIN: rolesArray.includes('ROLE_ADMIN'),
+      ROLE_USER: rolesSet.has('ROLE_USER'),
+      ROLE_MANAGER: rolesSet.has('ROLE_MANAGER'),
+      ROLE_ADMIN: rolesSet.has('ROLE_ADMIN'),
     };
   }
 
@@ -457,7 +458,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       .toString()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replaceAll(/[\u0300-\u036f]/g, '')
       .trim();
   }
 }

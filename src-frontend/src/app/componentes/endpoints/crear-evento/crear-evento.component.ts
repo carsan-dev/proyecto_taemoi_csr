@@ -147,8 +147,8 @@ export class CrearEventoComponent implements OnInit {
 
   onDocumentosChange(event: any): void {
     const files: FileList = event.target.files;
-    for (let i = 0; i < files.length; i++) {
-      this.documentos.push(files[i]);
+    for (const file of Array.from(files)) {
+      this.documentos.push(file);
     }
     event.target.value = '';
   }
@@ -170,6 +170,6 @@ export class CrearEventoComponent implements OnInit {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
-import { Deporte } from '../../../enums/deporte';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
@@ -438,20 +437,7 @@ export class CrearAlumnoComponent implements OnInit {
       return;
     }
 
-    if (competidor) {
-      const fechaAlta = deporteForm.get('fechaAlta')?.value || this.obtenerFechaHoy();
-      const fechaAltaInicial = deporteForm.get('fechaAltaInicial')?.value || fechaAlta;
-      const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
-      if (categoriaPorEdad && (!categoriaControl.value || !categoriaControl.dirty)) {
-        categoriaControl.setValue(categoriaPorEdad);
-      }
-      if (fechaAltaCompeticionControl && !fechaAltaCompeticionControl.value) {
-        fechaAltaCompeticionControl.setValue(fechaAlta);
-      }
-      if (fechaAltaCompetidorInicialControl && !fechaAltaCompetidorInicialControl.value) {
-        fechaAltaCompetidorInicialControl.setValue(fechaAltaInicial);
-      }
-    } else {
+    if (!competidor) {
       categoriaControl.setValue('');
       if (fechaAltaCompeticionControl) {
         fechaAltaCompeticionControl.setValue('');
@@ -459,6 +445,20 @@ export class CrearAlumnoComponent implements OnInit {
       if (fechaAltaCompetidorInicialControl) {
         fechaAltaCompetidorInicialControl.setValue('');
       }
+      return;
+    }
+
+    const fechaAlta = deporteForm.get('fechaAlta')?.value || this.obtenerFechaHoy();
+    const fechaAltaInicial = deporteForm.get('fechaAltaInicial')?.value || fechaAlta;
+    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
+    if (categoriaPorEdad && (!categoriaControl.value || !categoriaControl.dirty)) {
+      categoriaControl.setValue(categoriaPorEdad);
+    }
+    if (fechaAltaCompeticionControl && !fechaAltaCompeticionControl.value) {
+      fechaAltaCompeticionControl.setValue(fechaAlta);
+    }
+    if (fechaAltaCompetidorInicialControl && !fechaAltaCompetidorInicialControl.value) {
+      fechaAltaCompetidorInicialControl.setValue(fechaAltaInicial);
     }
   }
 
