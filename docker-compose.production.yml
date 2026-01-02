@@ -115,8 +115,9 @@ networks:
     ipam:
       config:
         - subnet: 192.168.1.0/24
-          gateway: 192.168.1.1
           ip_range: 192.168.1.192/26  # Rango de IPs: 192.168.1.192-255 para contenedores
+          aux_addresses:
+            host: 192.168.1.29  # IP del servidor host para evitar conflictos
 
 volumes:
   db_data:
