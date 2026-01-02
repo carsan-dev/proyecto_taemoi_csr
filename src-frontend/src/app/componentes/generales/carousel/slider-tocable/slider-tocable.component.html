@@ -1,33 +1,91 @@
-@if (endpointsService.eventos$ | async; as eventos) {
-  <div>
-    <div id="carouselSlider" class="carousel slide" data-bs-ride="carousel">
-      <div class="carousel-inner">
-        <!-- Iteramos sobre los eventos y mostramos solo 5 imágenes -->
-        @for (evento of (eventos.length ? eventos.slice(0, 5) : defaultFotos); track evento.id || $index; let i = $index) {
-          <div
-            class="carousel-item"
-            [ngClass]="{ 'active': i === 0 }"
-          >
+@if (isLoading) {
+  <div class="carousel-skeleton-container">
+    <div class="carousel-skeleton-track">
+      @for (item of [1,2,3]; track $index) {
+        <div class="skeleton-event-slide">
+          <div class="skeleton-slide-image"></div>
+          <div class="skeleton-slide-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-desc"></div>
+            <div class="skeleton-line skeleton-desc short"></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+} @else {
+  <div
+    class="modern-carousel-container"
+    (mouseenter)="pauseAutoPlay()"
+    (mouseleave)="resumeAutoPlay()"
+  >
+    <div
+      class="carousel-track"
+      #carouselTrack
+      (mousedown)="onMouseDown($event)"
+      (mousemove)="onMouseMove($event)"
+      (mouseup)="onMouseUp()"
+      (mouseleave)="onMouseUp()"
+    >
+      @for (evento of eventos; track evento.id || $index; let i = $index) {
+        <div
+          class="event-slide"
+          [class.active]="i === currentIndex"
+        >
+          <div class="event-slide-image-wrapper">
             <img
-              [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+              [src]="getImageUrl(evento)"
               [alt]="evento.titulo"
-              class="d-block w-100 img-fluid event-img"
+              class="event-slide-image"
             />
-            <div class="carousel-caption">
-              <p class="fw-bold h2">{{ evento.titulo }}</p>
-              <p>{{ evento.descripcion }}</p>
+            <div class="image-gradient-overlay"></div>
+          </div>
+          <div class="event-slide-content">
+            <h3 class="event-slide-title">{{ evento.titulo }}</h3>
+            <p class="event-slide-description">{{ evento.descripcion }}</p>
+            <div class="event-slide-footer">
+              <button
+                class="event-slide-btn"
+                routerLink="/eventos"
+              >
+                <i class="bi bi-arrow-right-circle-fill"></i>
+                <span>Ver detalles</span>
+              </button>
             </div>
           </div>
-        }
-      </div>
-      <button class="carousel-control-prev" type="button" data-bs-target="#carouselSlider" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Anterior</span>
-      </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#carouselSlider" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Siguiente</span>
-      </button>
+        </div>
+      }
+    </div>
+
+    <!-- Navigation Controls -->
+    <button
+      class="carousel-control prev"
+      (click)="prevSlide()"
+      [disabled]="currentIndex === 0"
+      aria-label="Evento anterior"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <button
+      class="carousel-control next"
+      (click)="nextSlide()"
+      [disabled]="currentIndex === eventos.length - 1"
+      aria-label="Siguiente evento"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- Indicators -->
+    <div class="carousel-indicators">
+      @for (evento of eventos; track evento.id || $index; let i = $index) {
+        <button
+          class="indicator-dot"
+          [class.active]="i === currentIndex"
+          (click)="goToSlide(i)"
+          [attr.aria-label]="'Ir al evento ' + (i + 1)"
+        ></button>
+      }
     </div>
   </div>
 }
