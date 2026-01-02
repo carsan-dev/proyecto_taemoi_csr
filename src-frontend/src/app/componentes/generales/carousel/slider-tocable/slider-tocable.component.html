@@ -1,16 +1,14 @@
 @if (isLoading) {
   <div class="carousel-skeleton-container">
     <div class="carousel-skeleton-track">
-      @for (item of [1,2,3]; track $index) {
-        <div class="skeleton-event-slide">
-          <div class="skeleton-slide-image"></div>
-          <div class="skeleton-slide-content">
-            <div class="skeleton-line skeleton-title"></div>
-            <div class="skeleton-line skeleton-desc"></div>
-            <div class="skeleton-line skeleton-desc short"></div>
-          </div>
+      <div class="skeleton-event-slide">
+        <div class="skeleton-slide-image"></div>
+        <div class="skeleton-slide-content">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-desc"></div>
+          <div class="skeleton-line skeleton-desc short"></div>
         </div>
-      }
+      </div>
     </div>
   </div>
 } @else {
@@ -21,11 +19,7 @@
   >
     <div
       class="carousel-track"
-      #carouselTrack
-      (mousedown)="onMouseDown($event)"
-      (mousemove)="onMouseMove($event)"
-      (mouseup)="onMouseUp()"
-      (mouseleave)="onMouseUp()"
+      [class.single-event]="eventos.length === 1"
     >
       @for (evento of eventos; track evento.id || $index; let i = $index) {
         <div
@@ -46,7 +40,7 @@
             <div class="event-slide-footer">
               <button
                 class="event-slide-btn"
-                routerLink="/eventos"
+                [routerLink]="['/eventos', evento.id]"
               >
                 <i class="bi bi-arrow-right-circle-fill"></i>
                 <span>Ver detalles</span>
@@ -58,34 +52,37 @@
     </div>
 
     <!-- Navigation Controls -->
-    <button
-      class="carousel-control prev"
-      (click)="prevSlide()"
-      [disabled]="currentIndex === 0"
-      aria-label="Evento anterior"
-    >
-      <i class="bi bi-chevron-left"></i>
-    </button>
+    @if (eventos.length > 1) {
+      <button
+        class="carousel-control prev"
+        (click)="prevSlide()"
+        [disabled]="currentIndex === 0"
+        aria-label="Evento anterior"
+      >
+        <i class="bi bi-chevron-left"></i>
+      </button>
 
-    <button
-      class="carousel-control next"
-      (click)="nextSlide()"
-      [disabled]="currentIndex === eventos.length - 1"
-      aria-label="Siguiente evento"
-    >
-      <i class="bi bi-chevron-right"></i>
-    </button>
+      <button
+        class="carousel-control next"
+        (click)="nextSlide()"
+        [disabled]="currentIndex === eventos.length - 1"
+        aria-label="Siguiente evento"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </button>
 
-    <!-- Indicators -->
-    <div class="carousel-indicators">
-      @for (evento of eventos; track evento.id || $index; let i = $index) {
-        <button
-          class="indicator-dot"
-          [class.active]="i === currentIndex"
-          (click)="goToSlide(i)"
-          [attr.aria-label]="'Ir al evento ' + (i + 1)"
-        ></button>
-      }
-    </div>
+      <!-- Thumbnail Indicators -->
+      <div class="carousel-indicators">
+        @for (evento of eventos; track evento.id || $index; let i = $index) {
+          <button
+            class="indicator-dot"
+            [class.active]="i === currentIndex"
+            [style.background-image]="'url(' + getImageUrl(evento) + ')'"
+            (click)="goToSlide(i)"
+            [attr.aria-label]="'Ir al evento ' + (i + 1)"
+          ></button>
+        }
+      </div>
+    }
   </div>
 }
