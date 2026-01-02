@@ -1296,6 +1296,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(".cinturon-half-inferior { position: absolute; width: 100%; height: 50%; bottom: 0; left: 0; }");
 		html.append(".licencia-no { color: #dc3545; font-weight: 700; }");
 		html.append(".licencia-ok { color: #28a745; font-weight: 600; }");
+		html.append(".licencia-caducada { color: #ffc107; font-weight: 600; }");
 		html.append(
 				".apto-examen { background-color: #d4edda; color: #155724; font-weight: 700; font-size: 7pt; vertical-align: middle; }");
 		html.append(
@@ -1429,9 +1430,29 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 						LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
 								.atZone(ZoneId.systemDefault()).toLocalDate();
 						int edad = Period.between(nac, LocalDate.now()).getYears();
-						boolean licOk = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
-						String lic = licOk ? ad.getNumeroLicencia().toString() : "NO";
-						String licClass = licOk ? "licencia-ok" : "licencia-no";
+
+						// Determinar estado de licencia
+						boolean tieneLicencia = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
+						String lic;
+						String licClass;
+
+						if (!tieneLicencia) {
+							// No tiene licencia
+							lic = "NO";
+							licClass = "licencia-no";
+						} else {
+							// Tiene licencia, verificar si está caducada
+							boolean licenciaCaducada = false;
+							if (ad.getFechaLicencia() != null) {
+								LocalDate fechaLicencia = Instant.ofEpochMilli(ad.getFechaLicencia().getTime())
+										.atZone(ZoneId.systemDefault()).toLocalDate();
+								LocalDate fechaVencimiento = fechaLicencia.plusYears(1);
+								licenciaCaducada = LocalDate.now().isAfter(fechaVencimiento);
+							}
+
+							lic = ad.getNumeroLicencia().toString();
+							licClass = licenciaCaducada ? "licencia-caducada" : "licencia-ok";
+						}
 
 						// Calculate months with current grade
 						int mesesConGrado = 0;
