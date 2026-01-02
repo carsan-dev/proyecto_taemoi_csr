@@ -1284,7 +1284,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(
 				".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 10mm; font-size: 7.5pt; }");
-		html.append(".cinturon-blanco { background: #ffffff; border: 0.5px solid #dee2e6; }");
+		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #dee2e6; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
 		html.append(".cinturon-naranja { background: #ff9800; }");
 		html.append(".cinturon-verde { background: #4caf50; }");
@@ -1566,7 +1566,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			String color2 = getBeltColorHex(parts[0]);
 			// Add subtle border for entire belt to make white portions visible
 			boolean tieneBlanco = parts[0].equals("BLANCO") || parts[1].equals("BLANCO");
-			String borderStyle = tieneBlanco ? "border: 0.5px solid #dee2e6;" : "";
+			String borderStyle = tieneBlanco ? "border: 1px solid #dee2e6;" : "";
 			return "<td><div class='cinturon-split' style='height: 6.5mm; " + borderStyle + "'>"
 					+ "<div class='cinturon-half-superior' style='background-color: " + color1 + ";'></div>"
 					+ "<div class='cinturon-half-inferior' style='background-color: " + color2 + ";'></div></div></td>";
