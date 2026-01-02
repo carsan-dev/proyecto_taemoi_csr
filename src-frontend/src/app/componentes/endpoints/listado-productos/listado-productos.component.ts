@@ -25,7 +25,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
   totalElementos: number = 0;
-  orderBy: string = 'id';
+  orderBy: string = 'concepto';
   order: string = 'asc';
   cargando: boolean = true; // Local loading state
   private searchSubject = new Subject<string>();
@@ -155,7 +155,7 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       this.paginaActual = estado.paginaActual || 1;
       this.tamanoPagina = estado.tamanoPagina || this.tamanoPagina;
       this.conceptoFiltro = estado.conceptoFiltro || '';
-      this.orderBy = estado.orderBy || 'id';
+      this.orderBy = estado.orderBy || 'concepto';
       this.order = estado.order || 'asc';
     } catch (error) {
       console.error('Error parsing saved pagination state:', error);
