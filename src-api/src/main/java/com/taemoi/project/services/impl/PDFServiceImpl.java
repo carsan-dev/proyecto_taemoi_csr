@@ -1284,7 +1284,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append(
 				".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 10mm; font-size: 7.5pt; }");
-		html.append(".cinturon-blanco { background: #ffffff; border: 1px solid #495057; }");
+		html.append(".cinturon-blanco { background: #ffffff; border: 0.5px solid #dee2e6; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
 		html.append(".cinturon-naranja { background: #ff9800; }");
 		html.append(".cinturon-verde { background: #4caf50; }");
@@ -1422,7 +1422,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 					html.append("<table class='main-table'>");
 					html.append("<thead><tr>");
 					html.append(
-							"<th>Apto</th><th></th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
+							"<th>Apto</th><th>Grado</th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
 					html.append("</tr></thead><tbody>");
 
 					for (AlumnoDeporte ad : alumnos) {
@@ -1564,16 +1564,12 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
 			String color1 = getBeltColorHex(parts[1]);
 			String color2 = getBeltColorHex(parts[0]);
-			String borderTop = parts[1].equals("BLANCO")
-					? "border-top: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;"
-					: "";
-			String borderBottom = parts[0].equals("BLANCO")
-					? "border-bottom: 1px solid #495057; border-left: 1px solid #495057; border-right: 1px solid #495057;"
-					: "";
-			return "<td><div class='cinturon-split' style='height: 6.5mm;'>"
-					+ "<div class='cinturon-half-superior' style='background-color: " + color1 + "; " + borderTop
-					+ "'></div>" + "<div class='cinturon-half-inferior' style='background-color: " + color2 + "; "
-					+ borderBottom + "'></div></div></td>";
+			// Add subtle border for entire belt to make white portions visible
+			boolean tieneBlanco = parts[0].equals("BLANCO") || parts[1].equals("BLANCO");
+			String borderStyle = tieneBlanco ? "border: 0.5px solid #dee2e6;" : "";
+			return "<td><div class='cinturon-split' style='height: 6.5mm; " + borderStyle + "'>"
+					+ "<div class='cinturon-half-superior' style='background-color: " + color1 + ";'></div>"
+					+ "<div class='cinturon-half-inferior' style='background-color: " + color2 + ";'></div></div></td>";
 		}
 
 		// Single color belt
