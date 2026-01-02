@@ -1446,8 +1446,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 							if (ad.getFechaLicencia() != null) {
 								LocalDate fechaLicencia = Instant.ofEpochMilli(ad.getFechaLicencia().getTime())
 										.atZone(ZoneId.systemDefault()).toLocalDate();
-								LocalDate fechaVencimiento = fechaLicencia.plusYears(1);
-								licenciaCaducada = LocalDate.now().isAfter(fechaVencimiento);
+								// La lógica debe coincidir con listado-alumnos.component.ts:
+								// Una licencia es válida si su año >= año actual
+								int añoLicencia = fechaLicencia.getYear();
+								int añoActual = LocalDate.now().getYear();
+								licenciaCaducada = añoLicencia < añoActual;
 							}
 
 							lic = ad.getNumeroLicencia().toString();
