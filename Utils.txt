@@ -47,6 +47,11 @@ Comandos para eliminar todo lo existente en docker de cara a deploy limpio
   # 5. Delete all the other volumes
   sudo docker volume rm volumen1 volumen2 ... (sudo docker volume rm taemoi_db_data taemoi_nginx_cache)
 
+Corregir fallo caída server (ERR_CONNECTION_TIMEOUT):
+
+  sudo conntrack -F
+  sudo docker-compose -f docker-compose.production.yml restart frontend
+
 Hacer copia de seguridad de la base de datos en el servidor
 
   sudo /usr/local/bin/mysql_backup_usb.sh
