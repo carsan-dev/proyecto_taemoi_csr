@@ -51,12 +51,22 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
   ngAfterViewInit(): void {
     const video: HTMLVideoElement = this.videoPresentacion.nativeElement;
 
+    // Asegurar que el video esté muted ANTES de cualquier reproducción
+    video.muted = true;
+    video.defaultMuted = true;
+    video.volume = 0;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('disablepictureinpicture', 'true');
+
     video.addEventListener('canplaythrough', () => {
+      // Asegurar nuevamente que está muted antes de reproducir
       video.muted = true;
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.setAttribute('disablepictureinpicture', 'true');
-      video.play();
+      video.volume = 0;
+      video.play().catch(error => {
+        // Si falla el autoplay, intentar reproducir después de interacción del usuario
+        console.log('Autoplay prevented:', error);
+      });
     });
 
     if (isPlatformBrowser(this.platformId)) {
