@@ -99,3 +99,22 @@
     }
   </div>
 }
+
+<!-- Masonry Events Skeleton (for eventos page) -->
+@if (type === 'masonry') {
+  <div class="skeleton-masonry" [style.columns]="columns">
+    @for (item of items; track $index) {
+      <div class="skeleton-event-card">
+        <div class="skeleton-event-image"></div>
+        <div class="skeleton-event-content">
+          <div class="skeleton-line skeleton-event-title-line"></div>
+          <div class="skeleton-line skeleton-event-desc-line"></div>
+          <div class="skeleton-line skeleton-event-desc-line short"></div>
+          <div class="skeleton-line skeleton-event-desc-line shorter"></div>
+          <div class="skeleton-event-divider"></div>
+          <div class="skeleton-event-action"></div>
+        </div>
+      </div>
+    }
+  </div>
+}

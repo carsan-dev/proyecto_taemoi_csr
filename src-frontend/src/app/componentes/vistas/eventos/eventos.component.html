@@ -14,7 +14,10 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="content-wrapper">
-      @if (eventos.length > 0) {
+      @if (isLoading) {
+        <!-- Loading Skeleton -->
+        <app-skeleton-card type="masonry" [count]="8" [columns]="4"></app-skeleton-card>
+      } @else if (eventos.length > 0) {
         <!-- Masonry Grid -->
         <div class="masonry-grid">
           @for (evento of eventos; track evento.id) {
