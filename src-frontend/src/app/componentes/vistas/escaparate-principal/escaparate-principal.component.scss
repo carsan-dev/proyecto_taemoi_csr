@@ -1,3 +1,5 @@
+@use "sass:color";
+
 // ========================================
 // VARIABLES
 // ========================================
@@ -232,19 +234,37 @@ $defensa-hover: #d81b60;
       padding: 0 2rem;
 
       .card-content {
-        background: $text-light;
-        border-radius: 25px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 20px;
         overflow: hidden;
-        box-shadow: $shadow-lg;
+        box-shadow: $shadow-md;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0;
-        transition: $transition;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         animation: fadeInUp 0.6s ease;
+        position: relative;
+
+        // Subtle top border accent
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, $primary-color, $pilates-color, $kickboxing-color);
+          border-radius: 20px 20px 0 0;
+        }
 
         &:hover {
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-          transform: translateY(-5px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+          transform: translateY(-8px);
+
+          .text-content .section-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 8px 24px rgba($primary-color, 0.3);
+          }
         }
 
         &.reverse {
@@ -266,15 +286,22 @@ $defensa-hover: #d81b60;
           .section-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.25rem;
             margin-bottom: 2rem;
 
             .section-icon {
-              font-size: 3rem;
-              color: $primary-color;
-              background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
-              padding: 1rem;
-              border-radius: 15px;
+              font-size: 2.5rem;
+              color: $text-light;
+              background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 15%));
+              padding: 1.125rem;
+              border-radius: 16px;
+              box-shadow: 0 4px 16px rgba($primary-color, 0.25);
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 68px;
+              min-height: 68px;
             }
 
             .section-title {
@@ -283,6 +310,19 @@ $defensa-hover: #d81b60;
               color: $text-dark;
               margin: 0;
               line-height: 1.2;
+              position: relative;
+
+              // Decorative underline
+              &::after {
+                content: '';
+                position: absolute;
+                bottom: -8px;
+                left: 0;
+                width: 60px;
+                height: 4px;
+                background: linear-gradient(90deg, $primary-color, transparent);
+                border-radius: 2px;
+              }
             }
           }
 
@@ -299,17 +339,31 @@ $defensa-hover: #d81b60;
 
           .features-list {
             margin-bottom: 2.5rem;
+            background: rgba($primary-color, 0.03);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border-left: 3px solid $primary-color;
 
             .feature-item {
               display: flex;
               align-items: center;
               gap: 1rem;
               padding: 0.75rem 0;
+              transition: $transition;
+
+              &:hover {
+                padding-left: 0.5rem;
+
+                i {
+                  transform: scale(1.15);
+                }
+              }
 
               i {
                 font-size: 1.5rem;
                 color: #4caf50;
                 flex-shrink: 0;
+                transition: $transition;
               }
 
               span {
@@ -335,8 +389,8 @@ $defensa-hover: #d81b60;
               height: 100%;
               object-fit: cover;
               display: block;
-              filter: grayscale(100%);
-              transition: all 0.8s ease;
+              filter: grayscale(80%) brightness(0.95);
+              transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
               opacity: 1;
               transform: scale(1);
 
@@ -350,7 +404,7 @@ $defensa-hover: #d81b60;
             @keyframes imageZoom {
               from {
                 opacity: 0;
-                transform: scale(1.1);
+                transform: scale(1.05);
               }
               to {
                 opacity: 1;
@@ -364,17 +418,22 @@ $defensa-hover: #d81b60;
               left: 0;
               width: 100%;
               height: 100%;
-              background: linear-gradient(135deg, rgba($primary-color, 0.2), rgba($primary-dark, 0.3));
-              opacity: 0.5;
-              transition: opacity 0.3s ease;
+              background: linear-gradient(
+                135deg,
+                rgba($primary-color, 0.15) 0%,
+                rgba($dark-accent, 0.2) 100%
+              );
+              opacity: 0.6;
+              transition: opacity 0.4s ease;
             }
 
             &:hover img {
-              filter: grayscale(0%);
+              filter: grayscale(0%) brightness(1);
+              transform: scale(1.05);
             }
 
             &:hover .image-overlay {
-              opacity: 0.3;
+              opacity: 0.2;
             }
           }
         }
@@ -942,28 +1001,46 @@ $defensa-hover: #d81b60;
         padding: 0 1rem;
 
         .card-content {
-          border-radius: 20px;
+          border-radius: 16px;
+
+          &::before {
+            border-radius: 16px 16px 0 0;
+          }
 
           .text-content {
             padding: 2.5rem 1.5rem;
 
             .section-header {
               margin-bottom: 1.5rem;
+              gap: 1rem;
 
               .section-icon {
                 font-size: 2rem;
-                padding: 0.75rem;
+                padding: 0.875rem;
+                min-width: 56px;
+                min-height: 56px;
+                border-radius: 12px;
               }
 
               .section-title {
                 font-size: 1.5rem;
+
+                &::after {
+                  width: 50px;
+                  height: 3px;
+                  bottom: -6px;
+                }
               }
             }
 
             .features-list {
               margin-bottom: 2rem;
+              padding: 1rem;
+              border-radius: 10px;
 
               .feature-item {
+                padding: 0.6rem 0;
+
                 i {
                   font-size: 1.3rem;
                 }
@@ -1105,8 +1182,34 @@ $defensa-hover: #d81b60;
     .info-div {
       .info-card {
         .card-content {
+          border-radius: 12px;
+
+          &::before {
+            border-radius: 12px 12px 0 0;
+          }
+
           .text-content {
             padding: 2rem 1.25rem;
+
+            .section-header {
+              .section-icon {
+                font-size: 1.75rem;
+                padding: 0.75rem;
+                min-width: 52px;
+                min-height: 52px;
+                border-radius: 10px;
+              }
+
+              .section-title {
+                &::after {
+                  width: 45px;
+                }
+              }
+            }
+
+            .features-list {
+              padding: 0.875rem;
+            }
           }
 
           .img-content {
@@ -1259,21 +1362,45 @@ $defensa-hover: #d81b60;
     .info-div {
       .info-card {
         .card-content {
+          border-radius: 10px;
+
+          &::before {
+            border-radius: 10px 10px 0 0;
+            height: 2px;
+          }
+
           .text-content {
             padding: 1.75rem 1rem;
 
             .section-header {
+              gap: 0.875rem;
+
               .section-icon {
-                font-size: 1.75rem;
+                font-size: 1.5rem;
+                padding: 0.625rem;
+                min-width: 48px;
+                min-height: 48px;
+                border-radius: 8px;
               }
 
               .section-title {
                 font-size: 1.25rem;
+
+                &::after {
+                  width: 40px;
+                  height: 3px;
+                  bottom: -5px;
+                }
               }
             }
 
             .section-description {
               font-size: 0.9375rem;
+            }
+
+            .features-list {
+              padding: 0.75rem;
+              border-radius: 8px;
             }
           }
         }
