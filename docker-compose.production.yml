@@ -88,8 +88,7 @@ services:
       - ./certbot/www:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx
     networks:
-      taemoi-network:
-        ipv4_address: 192.168.1.200  # IP estática para el frontend
+      - taemoi-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
@@ -109,15 +108,7 @@ services:
 
 networks:
   taemoi-network:
-    driver: macvlan
-    driver_opts:
-      parent: enp2s0
-    ipam:
-      config:
-        - subnet: 192.168.1.0/24
-          ip_range: 192.168.1.192/26  # Rango de IPs: 192.168.1.192-255 para contenedores
-          aux_addresses:
-            host: 192.168.1.29  # IP del servidor host para evitar conflictos
+    driver: bridge
 
 volumes:
   db_data:
