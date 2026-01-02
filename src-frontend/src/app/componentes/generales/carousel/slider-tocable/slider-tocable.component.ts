@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, PLATFORM_ID, Inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, Inject, HostListener } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -14,15 +14,12 @@ import { Subscription } from 'rxjs/internal/Subscription';
   styleUrl: './slider-tocable.component.scss',
 })
 export class SliderTocableComponent implements OnInit, OnDestroy {
-  @ViewChild('carouselTrack') carouselTrack!: ElementRef<HTMLElement>;
-
   eventos: any[] = [];
   isLoading: boolean = true;
   currentIndex: number = 0;
   autoPlayInterval: any;
-  isDragging: boolean = false;
-  startX: number = 0;
-  scrollLeft: number = 0;
+  userInteracted: boolean = false;
+  isHovered: boolean = false;
 
   defaultFotos: any[] = [
     {
@@ -49,22 +46,6 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
         datos: '../../../../assets/media/default.webp',
       },
     },
-    {
-      titulo: 'Evento 4',
-      descripcion: 'Descripción del evento 4',
-      fotoEvento: {
-        tipo: 'image/webp',
-        datos: '../../../../assets/media/default.webp',
-      },
-    },
-    {
-      titulo: 'Evento 5',
-      descripcion: 'Descripción del evento 5',
-      fotoEvento: {
-        tipo: 'image/webp',
-        datos: '../../../../assets/media/default.webp',
-      },
-    },
   ];
   private readonly subscriptions: Subscription = new Subscription();
 
@@ -78,8 +59,10 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
       next: (eventos) => {
         this.eventos = eventos.length ? eventos.slice(0, 5) : this.defaultFotos;
         this.isLoading = false;
-        if (isPlatformBrowser(this.platformId)) {
+        // Solo iniciar autoplay si hay más de 1 evento
+        if (isPlatformBrowser(this.platformId) && this.eventos.length > 1) {
           this.startAutoPlay();
+          this.setupVisibilityListener();
         }
       },
       error: (error) => {
@@ -100,85 +83,86 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.stopAutoPlay();
+    if (isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
 
+  // Page Visibility API - pausar cuando el tab no está visible
+  private setupVisibilityListener(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    }
+  }
+
+  private handleVisibilityChange = (): void => {
+    if (document.hidden) {
+      this.stopAutoPlay();
+    } else if (!this.userInteracted && !this.isHovered && this.eventos.length > 1) {
+      this.startAutoPlay();
+    }
+  };
+
   nextSlide(): void {
+    this.userInteracted = true;
+    this.stopAutoPlay();
     if (this.currentIndex < this.eventos.length - 1) {
       this.currentIndex++;
-      this.scrollToSlide();
+    } else {
+      this.currentIndex = 0;
     }
   }
 
   prevSlide(): void {
+    this.userInteracted = true;
+    this.stopAutoPlay();
     if (this.currentIndex > 0) {
       this.currentIndex--;
-      this.scrollToSlide();
+    } else {
+      this.currentIndex = this.eventos.length - 1;
     }
   }
 
   goToSlide(index: number): void {
+    this.userInteracted = true;
+    this.stopAutoPlay();
     this.currentIndex = index;
-    this.scrollToSlide();
-  }
-
-  scrollToSlide(): void {
-    if (isPlatformBrowser(this.platformId) && this.carouselTrack) {
-      const track = this.carouselTrack.nativeElement;
-      const slideWidth = track.children[0]?.clientWidth || 0;
-      const gap = 24; // 1.5rem gap
-      track.scrollTo({
-        left: (slideWidth + gap) * this.currentIndex,
-        behavior: 'smooth'
-      });
-    }
   }
 
   startAutoPlay(): void {
+    // Limpiar cualquier interval existente primero
+    this.stopAutoPlay();
+
     this.autoPlayInterval = setInterval(() => {
-      if (this.currentIndex < this.eventos.length - 1) {
-        this.currentIndex++;
-      } else {
-        this.currentIndex = 0;
+      // Solo avanzar si no hay interacción del usuario y no está en hover
+      if (!this.userInteracted && !this.isHovered) {
+        if (this.currentIndex < this.eventos.length - 1) {
+          this.currentIndex++;
+        } else {
+          this.currentIndex = 0;
+        }
       }
-      this.scrollToSlide();
-    }, 5000);
+    }, 8000); // 8 segundos - más tiempo para leer
   }
 
   stopAutoPlay(): void {
     if (this.autoPlayInterval) {
       clearInterval(this.autoPlayInterval);
+      this.autoPlayInterval = null;
     }
   }
 
   pauseAutoPlay(): void {
+    this.isHovered = true;
     this.stopAutoPlay();
   }
 
   resumeAutoPlay(): void {
-    if (isPlatformBrowser(this.platformId)) {
+    this.isHovered = false;
+    // Solo reanudar si el usuario NO ha interactuado manualmente
+    if (isPlatformBrowser(this.platformId) && !this.userInteracted && this.eventos.length > 1) {
       this.startAutoPlay();
     }
-  }
-
-  onMouseDown(event: MouseEvent): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    this.isDragging = true;
-    this.startX = event.pageX - this.carouselTrack.nativeElement.offsetLeft;
-    this.scrollLeft = this.carouselTrack.nativeElement.scrollLeft;
-    this.pauseAutoPlay();
-  }
-
-  onMouseMove(event: MouseEvent): void {
-    if (!this.isDragging || !isPlatformBrowser(this.platformId)) return;
-    event.preventDefault();
-    const x = event.pageX - this.carouselTrack.nativeElement.offsetLeft;
-    const walk = (x - this.startX) * 2;
-    this.carouselTrack.nativeElement.scrollLeft = this.scrollLeft - walk;
-  }
-
-  onMouseUp(): void {
-    this.isDragging = false;
-    this.resumeAutoPlay();
   }
 
   getImageUrl(evento: any): string {
