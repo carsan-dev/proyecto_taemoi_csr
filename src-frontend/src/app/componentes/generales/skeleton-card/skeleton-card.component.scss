@@ -289,6 +289,79 @@
   }
 }
 
+// Masonry Events Skeleton (for eventos page)
+.skeleton-masonry {
+  column-gap: 1.5rem;
+  animation: fadeInUp 0.6s ease 0.3s backwards;
+
+  .skeleton-event-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+    width: 100%;
+
+    .skeleton-event-image {
+      @include skeleton-shimmer;
+      width: 100%;
+      height: 250px;
+      border-radius: 0;
+    }
+
+    .skeleton-event-content {
+      padding: 1.5rem;
+
+      .skeleton-event-title-line {
+        height: 20px;
+        width: 75%;
+        margin-bottom: 0.75rem;
+      }
+
+      .skeleton-event-desc-line {
+        height: 15px;
+        width: 100%;
+        margin-bottom: 0.5rem;
+
+        &.short {
+          width: 85%;
+        }
+
+        &.shorter {
+          width: 60%;
+          margin-bottom: 1rem;
+        }
+      }
+
+      .skeleton-event-divider {
+        height: 1px;
+        background: #e9ecef;
+        margin: 1rem 0;
+      }
+
+      .skeleton-event-action {
+        @include skeleton-shimmer;
+        height: 16px;
+        width: 120px;
+        border-radius: 4px;
+      }
+    }
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .skeleton-grid {
@@ -301,6 +374,34 @@
 
     .skeleton-line:nth-child(n+3) {
       display: none;
+    }
+  }
+
+  .skeleton-masonry {
+    .skeleton-event-card {
+      margin-bottom: 1rem;
+      border-radius: 16px;
+
+      .skeleton-event-image {
+        height: 200px;
+      }
+
+      .skeleton-event-content {
+        padding: 1.125rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .skeleton-masonry {
+    .skeleton-event-card {
+      margin-bottom: 1.25rem;
+      border-radius: 12px;
+
+      .skeleton-event-content {
+        padding: 1.25rem;
+      }
     }
   }
 }

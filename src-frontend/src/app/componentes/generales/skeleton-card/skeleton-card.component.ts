@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./skeleton-card.component.scss'],
 })
 export class SkeletonCardComponent {
-  @Input() type: 'list' | 'grid' | 'table' | 'distribution' | 'events' = 'list';
+  @Input() type: 'list' | 'grid' | 'table' | 'distribution' | 'events' | 'masonry' = 'list';
   @Input() count: number = 5;
   @Input() columns: number = 3; // For grid layout
 
