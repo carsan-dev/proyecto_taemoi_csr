@@ -48,7 +48,8 @@ header.fixed-header {
   overflow: visible;
 
   &.is-hidden {
-    transform: translateY(-150%);
+    transform: translateY(-200%);
+    pointer-events: none;
   }
 
   nav {

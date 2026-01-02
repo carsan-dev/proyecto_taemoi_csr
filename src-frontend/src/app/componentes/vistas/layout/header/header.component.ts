@@ -1,9 +1,8 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
 import { NavigationStart, Router, RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -13,7 +12,7 @@ import Swal from 'sweetalert2';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
-export class HeaderComponent implements OnInit, OnDestroy {
+export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioLogueado: boolean = false;
   isAdmin: boolean = false;
   isUser: boolean = false;
@@ -21,7 +20,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   adminMenuVisible: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
+  private scrollThreshold: number = 100;
   username: string | null = null;
+  private documentScrollHandler?: (event: Event) => void;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -34,20 +35,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
   };
 
   // Scroll optimization
-  private scrollSubject = new Subject<number>();
   private subscriptions = new Subscription();
 
   constructor(
     private readonly authService: AuthenticationService,
-    private readonly router: Router
-  ) {
-    // Debounce scroll events for better performance
-    this.subscriptions.add(
-      this.scrollSubject.pipe(debounceTime(10)).subscribe((scrollTop) => {
-        this.handleScroll(scrollTop);
-      })
-    );
-  }
+    private readonly router: Router,
+    private readonly zone: NgZone
+  ) {}
 
   ngOnInit(): void {
     // Subscribe to authentication state changes
@@ -86,9 +80,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngAfterViewInit(): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    // Listen to document scroll events (same as botonscroll)
+    this.documentScrollHandler = (event: Event) => {
+      this.zone.run(() => this.handleScrollEvent(event));
+    };
+    document.addEventListener('scroll', this.documentScrollHandler, true);
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.scrollSubject.complete();
+
+    // Clean up document scroll listener
+    if (this.documentScrollHandler && typeof document !== 'undefined') {
+      document.removeEventListener('scroll', this.documentScrollHandler, true);
+      this.documentScrollHandler = undefined;
+    }
   }
 
   comprobarRoles() {
@@ -116,11 +127,48 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
-    const currentScrollTop = window.scrollY || document.documentElement.scrollTop;
-    this.scrollSubject.next(currentScrollTop);
+    this.handleScrollEvent();
+  }
+
+  private handleScrollEvent(event?: Event): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const currentScrollTop = this.getEffectiveScrollTop(event);
+
+    // Siempre mostrar header en la parte superior
+    if (currentScrollTop <= this.scrollThreshold) {
+      this.isHidden = false;
+      this.lastScrollTop = currentScrollTop;
+    }
+    // Scroll hacia abajo: ocultar
+    else if (currentScrollTop > this.lastScrollTop && currentScrollTop > this.scrollThreshold) {
+      this.isHidden = true;
+    }
+    // Scroll hacia arriba: mostrar
+    else if (currentScrollTop < this.lastScrollTop) {
+      this.isHidden = false;
+    }
+
+    this.lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
 
     // Collapse navbar when scrolling
     this.collapseNavbar();
+  }
+
+  private getEffectiveScrollTop(event?: Event): number {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return 0;
+    }
+
+    const target = event?.target;
+    const targetScrollTop = target instanceof HTMLElement ? target.scrollTop : 0;
+    const scrollingElement = document.scrollingElement as HTMLElement | null;
+    const scrollingElementTop = scrollingElement?.scrollTop ?? 0;
+    const windowScrollTop = window.scrollY || document.documentElement.scrollTop || document.body?.scrollTop || 0;
+
+    return Math.max(targetScrollTop, scrollingElementTop, windowScrollTop);
   }
 
   @HostListener('document:click', ['$event'])
@@ -193,15 +241,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
         navbarCollapse.classList.remove('show');
       }
     }
-  }
-
-  private handleScroll(currentScrollTop: number): void {
-    if (currentScrollTop > this.lastScrollTop && currentScrollTop > 100) {
-      this.isHidden = true;
-    } else {
-      this.isHidden = false;
-    }
-    this.lastScrollTop = currentScrollTop;
   }
 
   cerrarSesion(): void {
