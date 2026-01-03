@@ -151,6 +151,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
 
+	@Autowired
+	private com.taemoi.project.repositories.AlumnoDeporteRepository alumnoDeporteRepository;
+
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
 	 *
@@ -777,8 +780,21 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 		if (optionalAlumno.isPresent()) {
 			Alumno alumno = optionalAlumno.get();
+			Date fechaBajaHoy = new Date();
+
+			// Desactivar todos los deportes del alumno
+			List<AlumnoDeporte> deportesDelAlumno = alumnoDeporteRepository.findByAlumnoId(id);
+			for (AlumnoDeporte alumnoDeporte : deportesDelAlumno) {
+				if (Boolean.TRUE.equals(alumnoDeporte.getActivo())) {
+					alumnoDeporte.setActivo(false);
+					alumnoDeporte.setFechaBaja(fechaBajaHoy);
+					alumnoDeporteRepository.save(alumnoDeporte);
+				}
+			}
+
+			// Marcar al alumno como inactivo
 			alumno.setActivo(false);
-			alumno.setFechaBaja(new Date());
+			alumno.setFechaBaja(fechaBajaHoy);
 			return alumnoRepository.save(alumno);
 		} else {
 			throw new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id);
@@ -790,10 +806,36 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 		if (optionalAlumno.isPresent()) {
 			Alumno alumno = optionalAlumno.get();
+			Date fechaAltaHoy = new Date();
+
+			// Activar automáticamente el primer deporte inactivo (si existe)
+			List<AlumnoDeporte> deportesDelAlumno = alumnoDeporteRepository.findByAlumnoId(id);
+			List<AlumnoDeporte> deportesInactivos = deportesDelAlumno.stream()
+					.filter(d -> Boolean.FALSE.equals(d.getActivo()))
+					.sorted((a, b) -> {
+						// Ordenar por fechaAltaInicial para activar el deporte más antiguo
+						Date fechaA = a.getFechaAltaInicial() != null ? a.getFechaAltaInicial() : a.getFechaAlta();
+						Date fechaB = b.getFechaAltaInicial() != null ? b.getFechaAltaInicial() : b.getFechaAlta();
+						if (fechaA == null) return 1;
+						if (fechaB == null) return -1;
+						return fechaA.compareTo(fechaB);
+					})
+					.toList();
+
+			// Si hay deportes inactivos, activar el primero (el más antiguo)
+			if (!deportesInactivos.isEmpty()) {
+				AlumnoDeporte deporteAActivar = deportesInactivos.get(0);
+				deporteAActivar.setActivo(true);
+				deporteAActivar.setFechaBaja(null);
+				deporteAActivar.setFechaAlta(fechaAltaHoy);
+				// fechaAltaInicial se mantiene sin cambios
+				alumnoDeporteRepository.save(deporteAActivar);
+			}
+
+			// Marcar al alumno como activo
 			alumno.setActivo(true);
 			alumno.setFechaBaja(null);
-			// Actualizar fechaAlta a la fecha actual al reactivar
-			alumno.setFechaAlta(new Date());
+			alumno.setFechaAlta(fechaAltaHoy);
 			// fechaAltaInicial se mantiene sin cambios (conserva la fecha original de alta)
 			return alumnoRepository.save(alumno);
 		} else {
