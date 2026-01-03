@@ -236,7 +236,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		// Reactivar (preserva todos los datos: grado, fechaGrado, aptoParaExamen, etc.)
 		alumnoDeporte.setActivo(true);
 		alumnoDeporte.setFechaBaja(null);
-		// NO se actualiza fechaAlta para preservar la fecha original
+		alumnoDeporte.setFechaAlta(new Date()); // Actualizar fecha de alta a hoy
+		// fechaAltaInicial se mantiene sin cambios (conserva la fecha original de alta)
 		// NO se resetea aptoParaExamen ni grado - se mantienen como estaban
 		alumnoDeporteRepository.save(alumnoDeporte);
 	}
