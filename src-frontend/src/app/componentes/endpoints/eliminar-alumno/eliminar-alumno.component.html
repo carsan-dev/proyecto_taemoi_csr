@@ -104,11 +104,11 @@
                       </button>
                     }
                     @if (!alumno.activo) {
-                      <span class="admin-btn admin-btn-secondary admin-btn-sm disabled"
-                        title="Este alumno ya está inactivo">
-                        <i class="bi bi-ban"></i>
-                        <span class="d-none d-lg-inline">Inactivo</span>
-                      </span>
+                      <button class="admin-btn admin-btn-success admin-btn-sm"
+                        (click)="darDeAltaAlumno(alumno.id)" title="Dar de alta">
+                        <i class="bi bi-check-circle"></i>
+                        <span class="d-none d-lg-inline">Alta</span>
+                      </button>
                     }
                     <button class="admin-btn admin-btn-danger admin-btn-sm"
                       (click)="eliminarAlumno(alumno.id)" title="Eliminar permanentemente">

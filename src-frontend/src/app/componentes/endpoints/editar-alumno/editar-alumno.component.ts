@@ -2122,75 +2122,106 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
-      title: '¿Qué deseas hacer?',
-      html: `
-        <p>Selecciona una opción para el deporte <strong>${getDeporteLabel(deporte)}</strong>:</p>
-        <ul style="text-align: left; margin-top: 1rem;">
-          <li><strong>Desactivar:</strong> Mantiene todos los datos (grado, historial) pero marca el deporte como inactivo</li>
-          <li><strong>Eliminar:</strong> Elimina completamente el deporte y todos sus datos (irreversible)</li>
-        </ul>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonText: 'Desactivar',
-      denyButtonText: 'Eliminar completamente',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ffa500',
-      denyButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      if (result.isConfirmed && this.alumnoId) {
-        // Desactivar (soft delete)
-        this.alumnoService.desactivarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
-          next: () => {
-            Swal.fire({
-              title: '¡Desactivado!',
-              text: 'El deporte ha sido desactivado. Puedes reactivarlo cuando quieras.',
-              icon: 'success',
-              timer: 2000,
-            });
-            this.cargarDeportesDelAlumno(this.alumnoId!);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: error.error || 'No se pudo desactivar el deporte',
-              icon: 'error',
-            });
-          },
-        });
-      } else if (result.isDenied && this.alumnoId) {
-        // Eliminar completamente (hard delete)
-        this.alumnoService.removerDeporteDeAlumno(this.alumnoId, deporte).subscribe({
-          next: () => {
-            Swal.fire({
-              title: '¡Eliminado!',
-              text: 'El deporte ha sido eliminado completamente',
-              icon: 'success',
-              timer: 2000,
-            });
+    // Verificar si el deporte está activo o inactivo
+    const deporteItem = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    const estaInactivo = deporteItem?.activo === false;
 
-            // If we removed the active sport, switch to the first remaining one
-            if (this.deporteActivo === deporte && this.deportesDelAlumno.length > 1) {
-              const otherDeporte = this.deportesDelAlumno.find(d => d.deporte !== deporte);
-              if (otherDeporte) {
-                this.deporteActivo = otherDeporte.deporte;
-              }
-            }
+    if (estaInactivo) {
+      // Si ya está inactivo, solo mostrar opción de eliminar completamente
+      Swal.fire({
+        title: '¿Eliminar deporte?',
+        html: `
+          <p>El deporte <strong>${getDeporteLabel(deporte)}</strong> será eliminado completamente.</p>
+          <p style="color: #d33; margin-top: 1rem;"><strong>Esta acción es irreversible</strong> y eliminará todos los datos asociados (grado, historial, etc.).</p>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+      }).then((result) => {
+        if (result.isConfirmed && this.alumnoId) {
+          this.ejecutarEliminacionDeporte(deporte);
+        }
+      });
+    } else {
+      // Si está activo, mostrar opciones de desactivar o eliminar
+      Swal.fire({
+        title: '¿Qué deseas hacer?',
+        html: `
+          <p>Selecciona una opción para el deporte <strong>${getDeporteLabel(deporte)}</strong>:</p>
+          <ul style="text-align: left; margin-top: 1rem;">
+            <li><strong>Desactivar:</strong> Mantiene todos los datos (grado, historial) pero marca el deporte como inactivo</li>
+            <li><strong>Eliminar:</strong> Elimina completamente el deporte y todos sus datos (irreversible)</li>
+          </ul>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Desactivar',
+        denyButtonText: 'Eliminar completamente',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#ffa500',
+        denyButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+      }).then((result) => {
+        if (result.isConfirmed && this.alumnoId) {
+          // Desactivar (soft delete)
+          this.alumnoService.desactivarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
+            next: () => {
+              Swal.fire({
+                title: '¡Desactivado!',
+                text: 'El deporte ha sido desactivado. Puedes reactivarlo cuando quieras.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.cargarAlumno(this.alumnoId!);
+              this.cargarDeportesDelAlumno(this.alumnoId!);
+            },
+            error: (error) => {
+              Swal.fire({
+                title: 'Error',
+                text: error.error || 'No se pudo desactivar el deporte',
+                icon: 'error',
+              });
+            },
+          });
+        } else if (result.isDenied && this.alumnoId) {
+          this.ejecutarEliminacionDeporte(deporte);
+        }
+      });
+    }
+  }
 
-            this.cargarDeportesDelAlumno(this.alumnoId!);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: error.error || 'No se pudo eliminar el deporte',
-              icon: 'error',
-            });
-          },
+  private ejecutarEliminacionDeporte(deporte: string): void {
+    this.alumnoService.removerDeporteDeAlumno(this.alumnoId!, deporte).subscribe({
+      next: () => {
+        Swal.fire({
+          title: '¡Eliminado!',
+          text: 'El deporte ha sido eliminado completamente',
+          icon: 'success',
+          timer: 2000,
         });
-      }
+
+        // If we removed the active sport, switch to the first remaining one
+        if (this.deporteActivo === deporte && this.deportesDelAlumno.length > 1) {
+          const otherDeporte = this.deportesDelAlumno.find(d => d.deporte !== deporte);
+          if (otherDeporte) {
+            this.deporteActivo = otherDeporte.deporte;
+          }
+        }
+
+        this.cargarAlumno(this.alumnoId!);
+        this.cargarDeportesDelAlumno(this.alumnoId!);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error || 'No se pudo eliminar el deporte',
+          icon: 'error',
+        });
+      },
     });
   }
 
@@ -2221,12 +2252,65 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
               icon: 'success',
               timer: 2000,
             });
+            this.cargarAlumno(this.alumnoId!);
             this.cargarDeportesDelAlumno(this.alumnoId!);
           },
           error: (error) => {
             Swal.fire({
               title: 'Error',
               text: error.error || 'No se pudo activar el deporte',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Deactivate a sport (soft delete - keeps all data but marks as inactive)
+   */
+  desactivarDeporte(deporte: string): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    // Verificar que hay más de un deporte activo
+    if (this.getDeportesActivosCount() <= 1) {
+      Swal.fire({
+        title: 'No se puede desactivar',
+        text: 'No se puede desactivar el último deporte activo del alumno.',
+        icon: 'warning',
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Desactivar deporte?',
+      text: `¿Deseas desactivar el deporte ${getDeporteLabel(deporte)}? Se mantendrán todos los datos (grado, historial, etc.) y podrás reactivarlo cuando quieras.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, desactivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ffa500',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed && this.alumnoId) {
+        this.alumnoService.desactivarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
+          next: () => {
+            Swal.fire({
+              title: '¡Desactivado!',
+              text: 'El deporte ha sido desactivado. Puedes reactivarlo cuando quieras.',
+              icon: 'success',
+              timer: 2000,
+            });
+            this.cargarAlumno(this.alumnoId!);
+            this.cargarDeportesDelAlumno(this.alumnoId!);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: error.error || 'No se pudo desactivar el deporte',
               icon: 'error',
             });
           },
@@ -2479,52 +2563,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Activar el deporte seleccionado
+    // Activar el deporte seleccionado - el backend ya actualiza el alumno automáticamente
     this.alumnoService.activarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
       next: () => {
-        // Actualizar el alumno: establecer nueva fechaAlta y limpiar fechaBaja
-        const fechaAltaHoy = new Date().toISOString().split('T')[0];
-        const formData = new FormData();
-        formData.append('alumnoEditado', JSON.stringify({
-          nombre: this.alumno.nombre,
-          apellidos: this.alumno.apellidos,
-          fechaNacimiento: this.alumno.fechaNacimiento ? formatDate(this.alumno.fechaNacimiento) : null,
-          nif: this.alumno.nif,
-          direccion: this.alumno.direccion,
-          email: this.alumno.email,
-          telefono: this.alumno.telefono,
-          telefono2: this.alumno.telefono2,
-          tipoTarifa: this.alumno.tipoTarifa,
-          cuantiaTarifa: this.alumno.cuantiaTarifa,
-          rolFamiliar: this.alumno.rolFamiliar,
-          grupoFamiliar: this.alumno.grupoFamiliar,
-          fechaAlta: fechaAltaHoy, // Establecer nueva fecha de alta
-          fechaAltaInicial: this.alumno.fechaAltaInicial ? formatDate(this.alumno.fechaAltaInicial) : null, // Mantener fecha de alta inicial
-          fechaBaja: null, // Limpiar fechaBaja general
-          activo: true,
-          autorizacionWeb: this.alumno.autorizacionWeb,
-          tieneDiscapacidad: this.alumno.tieneDiscapacidad,
-        }));
-
-        this.endpointsService.actualizarAlumno(this.alumnoId!, formData).subscribe({
-          next: () => {
-            Swal.fire({
-              title: '¡Dado de alta!',
-              text: `El alumno ha sido dado de alta en ${getDeporteLabel(deporte)}.`,
-              icon: 'success',
-              timer: 3000,
-            });
-            this.cargarAlumno(this.alumnoId!);
-            this.cargarDeportesDelAlumno(this.alumnoId!);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: error.error?.message || 'No se pudo actualizar la fecha de baja general',
-              icon: 'error',
-            });
-          },
+        Swal.fire({
+          title: '¡Dado de alta!',
+          text: `El alumno ha sido dado de alta en ${getDeporteLabel(deporte)}.`,
+          icon: 'success',
+          timer: 3000,
         });
+        this.cargarAlumno(this.alumnoId!);
+        this.cargarDeportesDelAlumno(this.alumnoId!);
       },
       error: (error) => {
         Swal.fire({
@@ -2549,7 +2598,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.alumnoService.activarDeporteDeAlumno(this.alumnoId!, deporte.deporte)
     );
 
-    // Ejecutar todas las activaciones en paralelo
+    // Ejecutar todas las activaciones secuencialmente
     concat(...activarDeportesObservables).subscribe({
       next: () => {
         // Se ejecuta después de cada activación individual
@@ -2562,50 +2611,17 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         });
       },
       complete: () => {
-        // Cuando todas las activaciones se completen, actualizar el alumno
-        const fechaAltaHoy = new Date().toISOString().split('T')[0];
-        const formData = new FormData();
-        formData.append('alumnoEditado', JSON.stringify({
-          nombre: this.alumno.nombre,
-          apellidos: this.alumno.apellidos,
-          fechaNacimiento: this.alumno.fechaNacimiento ? formatDate(this.alumno.fechaNacimiento) : null,
-          nif: this.alumno.nif,
-          direccion: this.alumno.direccion,
-          email: this.alumno.email,
-          telefono: this.alumno.telefono,
-          telefono2: this.alumno.telefono2,
-          tipoTarifa: this.alumno.tipoTarifa,
-          cuantiaTarifa: this.alumno.cuantiaTarifa,
-          rolFamiliar: this.alumno.rolFamiliar,
-          grupoFamiliar: this.alumno.grupoFamiliar,
-          fechaAlta: fechaAltaHoy,
-          fechaAltaInicial: this.alumno.fechaAltaInicial ? formatDate(this.alumno.fechaAltaInicial) : null,
-          fechaBaja: null,
-          activo: true,
-          autorizacionWeb: this.alumno.autorizacionWeb,
-          tieneDiscapacidad: this.alumno.tieneDiscapacidad,
-        }));
-
-        this.endpointsService.actualizarAlumno(this.alumnoId!, formData).subscribe({
-          next: () => {
-            const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
-            Swal.fire({
-              title: '¡Dado de alta!',
-              text: `El alumno ha sido dado de alta en todos sus deportes: ${deportesLabels}.`,
-              icon: 'success',
-              timer: 3000,
-            });
-            this.cargarAlumno(this.alumnoId!);
-            this.cargarDeportesDelAlumno(this.alumnoId!);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error',
-              text: error.error?.message || 'No se pudo actualizar el alumno',
-              icon: 'error',
-            });
-          },
+        // El backend ya actualiza el alumno automáticamente al activar cada deporte
+        // Solo recargamos los datos para reflejar los cambios
+        const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
+        Swal.fire({
+          title: '¡Dado de alta!',
+          text: `El alumno ha sido dado de alta en todos sus deportes: ${deportesLabels}.`,
+          icon: 'success',
+          timer: 3000,
         });
+        this.cargarAlumno(this.alumnoId!);
+        this.cargarDeportesDelAlumno(this.alumnoId!);
       },
     });
   }
