@@ -175,7 +175,7 @@
                   <i class="bi bi-hash"></i>
                   Expediente: {{ alumno.numeroExpediente }}
                 </span>
-                @if (alumno.activo) {
+                @if (isAlumnoActivo()) {
                 <span class="meta-item">
                   <span class="status-badge status-active">
                     <i class="bi bi-check-circle-fill"></i>
@@ -183,7 +183,7 @@
                   </span>
                 </span>
                 }
-                @if (!alumno.activo) {
+                @if (!isAlumnoActivo()) {
                 <span class="meta-item">
                   <span class="status-badge status-inactive">
                     <i class="bi bi-x-circle-fill"></i>
@@ -216,12 +216,22 @@
                 <span>Agregar Deporte</span>
               </button>
               }
+              @if (isAlumnoActivo()) {
               <button class="admin-btn admin-btn-danger admin-btn-sm"
                 (click)="eliminarODarDeBajaAlumno()"
                 title="Dar de baja o eliminar alumno">
                 <i class="bi bi-trash"></i>
                 <span>Eliminar/Dar de Baja</span>
               </button>
+              }
+              @if (!isAlumnoActivo()) {
+              <button class="admin-btn admin-btn-success admin-btn-sm"
+                (click)="eliminarODarDeBajaAlumno()"
+                title="Dar de alta o eliminar alumno">
+                <i class="bi bi-check-circle"></i>
+                <span>Dar de Alta/Eliminar</span>
+              </button>
+              }
             </div>
           </div>
 
