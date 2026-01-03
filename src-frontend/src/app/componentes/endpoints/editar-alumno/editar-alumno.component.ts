@@ -2236,6 +2236,128 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Eliminar o dar de baja al alumno
+   */
+  eliminarODarDeBajaAlumno(): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Qué deseas hacer?',
+      html: `
+        <p>Selecciona una opción para <strong>${this.alumno.nombre} ${this.alumno.apellidos}</strong>:</p>
+        <ul style="text-align: left; margin-top: 1rem;">
+          <li><strong>Dar de baja:</strong> Marca al alumno como inactivo pero mantiene todos sus datos (historial, grupos, productos, etc.)</li>
+          <li><strong>Eliminar completamente:</strong> Elimina permanentemente al alumno y toda su información (irreversible)</li>
+        </ul>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Dar de baja',
+      denyButtonText: 'Eliminar completamente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ffa500',
+      denyButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Dar de baja (soft delete)
+        this.darDeBajaAlumno();
+      } else if (result.isDenied) {
+        // Eliminar completamente (hard delete)
+        this.eliminarAlumnoCompletamente();
+      }
+    });
+  }
+
+  /**
+   * Dar de baja al alumno (soft delete)
+   */
+  private darDeBajaAlumno(): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    const fechaBajaHoy = new Date().toISOString().split('T')[0];
+
+    this.alumno.fechaBaja = fechaBajaHoy;
+
+    this.endpointsService.actualizarAlumno(this.alumnoId, this.alumno).subscribe({
+      next: () => {
+        Swal.fire({
+          title: '¡Dado de baja!',
+          text: 'El alumno ha sido marcado como inactivo. Puedes reactivarlo quitando la fecha de baja.',
+          icon: 'success',
+          timer: 3000,
+        });
+        this.obtenerAlumno(this.alumnoId!);
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error?.message || 'No se pudo dar de baja al alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Eliminar completamente al alumno (hard delete)
+   */
+  private eliminarAlumnoCompletamente(): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Estás completamente seguro?',
+      html: `
+        <p>Esta acción <strong>NO SE PUEDE DESHACER</strong>.</p>
+        <p>Se eliminarán permanentemente:</p>
+        <ul style="text-align: left; margin-top: 1rem;">
+          <li>Todos los datos personales</li>
+          <li>Historial de deportes y grados</li>
+          <li>Asignaciones a grupos y turnos</li>
+          <li>Productos y pagos</li>
+          <li>Documentos adjuntos</li>
+          <li>Convocatorias de examen</li>
+        </ul>
+      `,
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar permanentemente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService.eliminarAlumnos(this.alumnoId!).subscribe({
+          next: () => {
+            Swal.fire({
+              title: '¡Eliminado!',
+              text: 'El alumno ha sido eliminado completamente del sistema.',
+              icon: 'success',
+              timer: 2000,
+            }).then(() => {
+              this.router.navigate(['/alumnosListar']);
+            });
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: error.error?.message || 'No se pudo eliminar al alumno',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
+  }
+
+  /**
    * Get the AlumnoDeporteDTO for the active sport
    */
   getDeporteActivo(): AlumnoDeporteDTO | undefined {

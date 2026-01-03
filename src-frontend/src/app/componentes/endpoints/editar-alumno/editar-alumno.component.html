@@ -209,12 +209,20 @@
               <i class="bi bi-trophy-fill"></i>
               Deportes del Alumno
             </h5>
-            @if (deportesDisponibles.length > 0) {
-            <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="abrirModalAgregarDeporte()">
-              <i class="bi bi-plus-circle"></i>
-              <span>Agregar Deporte</span>
-            </button>
-            }
+            <div class="d-flex gap-2">
+              @if (deportesDisponibles.length > 0) {
+              <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="abrirModalAgregarDeporte()">
+                <i class="bi bi-plus-circle"></i>
+                <span>Agregar Deporte</span>
+              </button>
+              }
+              <button class="admin-btn admin-btn-danger admin-btn-sm"
+                (click)="eliminarODarDeBajaAlumno()"
+                title="Dar de baja o eliminar alumno">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar/Dar de Baja</span>
+              </button>
+            </div>
           </div>
 
           <!-- Tabs Navigation -->
