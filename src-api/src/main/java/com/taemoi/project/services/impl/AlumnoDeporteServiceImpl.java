@@ -233,13 +233,24 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			throw new IllegalArgumentException("El deporte ya está activo");
 		}
 
+		Date fechaAltaHoy = new Date();
+
 		// Reactivar (preserva todos los datos: grado, fechaGrado, aptoParaExamen, etc.)
 		alumnoDeporte.setActivo(true);
 		alumnoDeporte.setFechaBaja(null);
-		alumnoDeporte.setFechaAlta(new Date()); // Actualizar fecha de alta a hoy
+		alumnoDeporte.setFechaAlta(fechaAltaHoy); // Actualizar fecha de alta a hoy
 		// fechaAltaInicial se mantiene sin cambios (conserva la fecha original de alta)
 		// NO se resetea aptoParaExamen ni grado - se mantienen como estaban
 		alumnoDeporteRepository.save(alumnoDeporte);
+
+		// También actualizar el alumno para mantener consistencia
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado: " + alumnoId));
+		alumno.setActivo(true);
+		alumno.setFechaBaja(null);
+		alumno.setFechaAlta(fechaAltaHoy);
+		// fechaAltaInicial del alumno se mantiene sin cambios
+		alumnoRepository.save(alumno);
 	}
 
 	@Autowired
