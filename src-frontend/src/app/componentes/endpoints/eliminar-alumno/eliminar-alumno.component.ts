@@ -4,8 +4,11 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
-import { Subject } from 'rxjs';
+import { Subject, concat } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { AlumnoService } from '../../../features/alumno/services/alumno.service';
+import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
+import { getDeporteLabel } from '../../../enums/deporte';
 
 @Component({
   selector: 'app-eliminar-alumno',
@@ -25,7 +28,10 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private readonly storageKey = 'eliminarAlumnoEstado';
 
-  constructor(private readonly endpointsService: EndpointsService) {}
+  constructor(
+    private readonly endpointsService: EndpointsService,
+    private readonly alumnoService: AlumnoService
+  ) {}
 
   ngOnInit(): void {
     this.restaurarEstadoPaginacion();
@@ -322,5 +328,118 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error parsing saved pagination state:', error);
     }
+  }
+
+  darDeAltaAlumno(alumnoId: number): void {
+    // Primero obtener los deportes del alumno para ver cuáles están inactivos
+    this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
+      next: (deportes: AlumnoDeporteDTO[]) => {
+        const deportesInactivos = deportes.filter(d => d.activo === false);
+
+        if (deportesInactivos.length === 0) {
+          Swal.fire({
+            title: 'Información',
+            text: 'El alumno ya tiene todos sus deportes activos.',
+            icon: 'info',
+          });
+          return;
+        }
+
+        // Si solo hay un deporte inactivo, activarlo directamente
+        if (deportesInactivos.length === 1) {
+          this.activarDeporteDeAlumno(alumnoId, deportesInactivos[0].deporte);
+          return;
+        }
+
+        // Si hay múltiples deportes inactivos, mostrar selector con opción "Todos"
+        const deportesOptions = deportesInactivos
+          .map(d => `<option value="${d.deporte}">${getDeporteLabel(d.deporte)}</option>`)
+          .join('');
+
+        Swal.fire({
+          title: 'Selecciona el deporte a activar',
+          html: `
+            <select id="deporte-select" class="swal2-input">
+              <option value="">Selecciona un deporte...</option>
+              <option value="TODOS">✓ Todos los deportes</option>
+              ${deportesOptions}
+            </select>
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Dar de Alta',
+          cancelButtonText: 'Cancelar',
+          preConfirm: () => {
+            const select = document.getElementById('deporte-select') as HTMLSelectElement;
+            if (!select.value) {
+              Swal.showValidationMessage('Por favor selecciona un deporte');
+              return false;
+            }
+            return select.value;
+          },
+        }).then((result) => {
+          if (result.isConfirmed && result.value) {
+            if (result.value === 'TODOS') {
+              this.activarTodosLosDeportes(alumnoId, deportesInactivos);
+            } else {
+              this.activarDeporteDeAlumno(alumnoId, result.value);
+            }
+          }
+        });
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'Error al obtener los deportes del alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  private activarDeporteDeAlumno(alumnoId: number, deporte: string): void {
+    this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte).subscribe({
+      next: () => {
+        Swal.fire({
+          title: 'Alumno dado de alta',
+          text: `El alumno ha sido dado de alta en ${getDeporteLabel(deporte)}.`,
+          icon: 'success',
+          timer: 2000,
+        });
+        this.obtenerAlumnos();
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error || 'Error al dar de alta al alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  private activarTodosLosDeportes(alumnoId: number, deportesInactivos: AlumnoDeporteDTO[]): void {
+    const activarDeportesObservables = deportesInactivos.map(deporte =>
+      this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte.deporte)
+    );
+
+    concat(...activarDeportesObservables).subscribe({
+      complete: () => {
+        const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
+        Swal.fire({
+          title: 'Alumno dado de alta',
+          text: `El alumno ha sido dado de alta en todos sus deportes: ${deportesLabels}.`,
+          icon: 'success',
+          timer: 2000,
+        });
+        this.obtenerAlumnos();
+      },
+      error: (error) => {
+        Swal.fire({
+          title: 'Error',
+          text: error.error || 'Error al activar algunos deportes',
+          icon: 'error',
+        });
+      },
+    });
   }
 }

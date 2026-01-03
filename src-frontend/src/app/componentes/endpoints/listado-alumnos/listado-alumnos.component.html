@@ -231,13 +231,13 @@
                 <i class="bi bi-pencil-square"></i>
                 <span>Editar</span>
               </button>
-              @if (alumno.activo === false) {
+              @if (!isAlumnoActivo(alumno.id)) {
                 <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
                   <i class="bi bi-check-circle"></i>
                   <span>Dar de Alta</span>
                 </button>
               }
-              @if (alumno.activo !== false) {
+              @if (isAlumnoActivo(alumno.id)) {
                 <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)">
                   <i class="bi bi-x-circle"></i>
                   <span>Dar de Baja</span>
@@ -313,12 +313,12 @@
                       <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
                         <i class="bi bi-pencil-square"></i>
                       </button>
-                      @if (alumno.activo === false) {
+                      @if (!isAlumnoActivo(alumno.id)) {
                         <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
                           <i class="bi bi-check-circle"></i>
                         </button>
                       }
-                      @if (alumno.activo !== false) {
+                      @if (isAlumnoActivo(alumno.id)) {
                         <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)" title="Dar de Baja">
                           <i class="bi bi-x-circle"></i>
                         </button>

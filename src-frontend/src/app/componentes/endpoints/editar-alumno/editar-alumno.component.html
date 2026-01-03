@@ -278,7 +278,14 @@
                       <span>Activar Deporte</span>
                     </button>
                     }
-                    @if (deportesDelAlumno.length > 1 && deporteItem.activo !== false) {
+                    @if (getDeportesActivosCount() > 1 && deporteItem.activo !== false) {
+                    <button class="admin-btn admin-btn-warning admin-btn-sm"
+                      (click)="desactivarDeporte(deporteItem.deporte)">
+                      <i class="bi bi-x-circle"></i>
+                      <span>Desactivar Deporte</span>
+                    </button>
+                    }
+                    @if (deportesDelAlumno.length > 1) {
                     <button class="admin-btn admin-btn-danger admin-btn-sm"
                       (click)="removerDeporte(deporteItem.deporte)">
                       <i class="bi bi-trash"></i>
