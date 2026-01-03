@@ -418,9 +418,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Apply filters to the complete dataset
     let filtrados = this.alumnosCompletos;
 
-    // Filter by inactive status (use 'activo' field, not 'fechaBaja')
+    // Filter by inactive status (use sport-based active status)
     if (!this.mostrarInactivos) {
-      filtrados = filtrados.filter((alumno) => alumno.activo === true);
+      filtrados = filtrados.filter((alumno) => this.isAlumnoActivo(alumno.id));
     }
 
     // Filter by sport
@@ -470,6 +470,15 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
+  }
+
+  /**
+   * Check if alumno is active based on sport count
+   * Alumno is active if has at least 1 active sport
+   */
+  isAlumnoActivo(alumnoId: number): boolean {
+    const deportesActivos = this.getDeportesDeAlumno(alumnoId);
+    return deportesActivos.length > 0;
   }
 
   getResumenAlumno(alumnoId: number): ResumenAlumno {
