@@ -8,6 +8,14 @@
 
 // Ensure table scrolls horizontally on mobile
 .admin-table {
+  table {
+    th.col-actions,
+    td.col-actions {
+      width: 200px;
+      white-space: nowrap;
+    }
+  }
+
   @media (max-width: 767px) {
     // Enable smooth horizontal scrolling
     overflow-x: auto;
@@ -30,6 +38,12 @@
     table {
       min-width: 600px; // Ensure table is wide enough to scroll
       width: 100%;
+
+      th.col-actions,
+      td.col-actions {
+        width: auto;
+        min-width: 180px;
+      }
 
       thead th {
         padding: 1rem 0.75rem;
