@@ -28,6 +28,8 @@ public interface EventoService {
 
 	void toggleVisibilidad(@NonNull Long id);
 
+	void actualizarOrdenEventos(@NonNull List<Long> ordenIds);
+
 	Documento agregarDocumentoAEvento(@NonNull Long eventoId, MultipartFile archivo) throws IOException;
 
 	List<Documento> obtenerDocumentosEvento(@NonNull Long eventoId);
