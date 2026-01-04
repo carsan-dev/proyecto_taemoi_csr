@@ -1069,6 +1069,71 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Abre WhatsApp con el teléfono del alumno.
+   * Si tiene dos teléfonos, muestra un selector para elegir cuál usar.
+   */
+  abrirWhatsApp(): void {
+    const telefono1 = this.alumno?.telefono;
+    const telefono2 = this.alumno?.telefono2;
+
+    if (!telefono1 && !telefono2) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sin teléfono',
+        text: 'Este alumno no tiene ningún teléfono registrado.',
+      });
+      return;
+    }
+
+    // Si solo hay un teléfono, abrir directamente
+    if (telefono1 && !telefono2) {
+      this.abrirWhatsAppConTelefono(telefono1);
+      return;
+    }
+
+    if (!telefono1 && telefono2) {
+      this.abrirWhatsAppConTelefono(telefono2);
+      return;
+    }
+
+    // Si hay dos teléfonos, mostrar selector
+    Swal.fire({
+      title: 'Seleccionar teléfono',
+      text: '¿A qué número deseas enviar el mensaje de WhatsApp?',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: `Principal: ${telefono1}`,
+      denyButtonText: `Secundario: ${telefono2}`,
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#25D366',
+      denyButtonColor: '#128C7E',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.abrirWhatsAppConTelefono(telefono1);
+      } else if (result.isDenied) {
+        this.abrirWhatsAppConTelefono(telefono2);
+      }
+    });
+  }
+
+  /**
+   * Abre WhatsApp Web con el teléfono proporcionado.
+   */
+  private abrirWhatsAppConTelefono(telefono: string | number): void {
+    // Convertir a string y limpiar de espacios y caracteres no numéricos
+    let telefonoLimpio = String(telefono).replace(/\D/g, '');
+
+    // Añadir código de país de España si no lo tiene
+    if (!telefonoLimpio.startsWith('34') && telefonoLimpio.length === 9) {
+      telefonoLimpio = '34' + telefonoLimpio;
+    }
+
+    const whatsappUrl = `https://wa.me/${telefonoLimpio}`;
+    window.open(whatsappUrl, '_blank');
+  }
+
+  /**
    * Para cargar los diferentes grados disponibles (según tu lógica de backend).
    */
   cargarGrados(): void {
