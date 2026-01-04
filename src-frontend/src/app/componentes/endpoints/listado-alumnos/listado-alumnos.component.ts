@@ -461,8 +461,25 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   getDeportesDeAlumno(alumnoId: number): AlumnoDeporteDTO[] {
     const deportes = this.deportesPorAlumno.get(alumnoId) || [];
-    // Filter to show only active sports in the list
-    return deportes.filter((d) => d.activo !== false);
+    // Filter to show only active sports and sort by priority
+    const deportesActivos = deportes.filter((d) => d.activo !== false);
+
+    // Sort: sports with license first, then by date (oldest first)
+    return [...deportesActivos].sort((a, b) => {
+      const aRequiereLicencia = a.deporte === 'TAEKWONDO' || a.deporte === 'KICKBOXING';
+      const bRequiereLicencia = b.deporte === 'TAEKWONDO' || b.deporte === 'KICKBOXING';
+
+      // Prioritize sports that require license
+      if (aRequiereLicencia && !bRequiereLicencia) return -1;
+      if (!aRequiereLicencia && bRequiereLicencia) return 1;
+
+      // Within same priority, sort by date (oldest first)
+      const fechaA = a.fechaAltaInicial || a.fechaAlta;
+      const fechaB = b.fechaAltaInicial || b.fechaAlta;
+      const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
+      const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
+      return timeA - timeB;
+    });
   }
 
   /**
@@ -520,7 +537,16 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (!deportes || deportes.length === 0) {
       return null;
     }
-    const deportesOrdenados = [...deportes].sort((a, b) => {
+
+    // Prioritize sports that require license (Taekwondo, Kickboxing)
+    const deportesConLicencia = deportes.filter(
+      (d) => d.deporte === 'TAEKWONDO' || d.deporte === 'KICKBOXING'
+    );
+
+    // Use sports with license if available, otherwise use all sports
+    const deportesAOrdenar = deportesConLicencia.length > 0 ? deportesConLicencia : deportes;
+
+    const deportesOrdenados = [...deportesAOrdenar].sort((a, b) => {
       const fechaA = a.fechaAltaInicial || a.fechaAlta;
       const fechaB = b.fechaAltaInicial || b.fechaAlta;
       const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
@@ -652,6 +678,21 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   practicaDeporte(alumnoId: number, deporte: string): boolean {
     const deportes = this.deportesPorAlumno.get(alumnoId) || [];
     return deportes.some((d) => d.deporte === deporte);
+  }
+
+  /**
+   * Check if a sport requires showing grade (not for Pilates or Defensa Personal)
+   */
+  deporteRequiereGrado(deporte: string): boolean {
+    return deporte !== 'PILATES' && deporte !== 'DEFENSA_PERSONAL_FEMENINA';
+  }
+
+  /**
+   * Check if alumno needs to show license (has at least one sport that requires license)
+   */
+  alumnoRequiereLicencia(alumnoId: number): boolean {
+    const deportes = this.getDeportesDeAlumno(alumnoId);
+    return deportes.some((d) => d.deporte === 'TAEKWONDO' || d.deporte === 'KICKBOXING');
   }
 
   /**
