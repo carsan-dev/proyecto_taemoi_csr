@@ -118,22 +118,66 @@ export class AuthenticationService {
       .post(`${this.urlBase}/logout`, {}, { withCredentials: true })
       .subscribe({
         next: () => {
-          // Limpiar todos los estados relacionados con el usuario
-          this.actualizarEstadoLogueado(false);
-          this.rolesSubject.next([]); // Limpiar roles
-          this.usernameSubject.next(null); // Limpiar nombre de usuario
-          this.emailSubject.next(null); // Limpiar email
-          this.rolesCargados = false; // Reiniciar roles cargados
-
-          // Limpiar la bandera de mensaje de bienvenida
-          if (globalThis.window?.sessionStorage) {
-            globalThis.window.sessionStorage.removeItem('welcomeShown');
-          }
+          this.limpiarEstadoLocal();
         },
         error: (error) => {
           console.error('Error al cerrar sesión', error);
+          // Limpiar estado local aunque falle el logout del backend
+          this.limpiarEstadoLocal();
         },
       });
+  }
+
+  /**
+   * Limpia el estado local de autenticación sin llamar al backend.
+   * Útil cuando la sesión ha expirado y no podemos llamar al endpoint de logout.
+   */
+  limpiarEstadoLocal(): void {
+    this.actualizarEstadoLogueado(false);
+    this.rolesSubject.next([]);
+    this.usernameSubject.next(null);
+    this.emailSubject.next(null);
+    this.alumnoIdSubject.next(null);
+    this.isAdminSubject.next(false);
+    this.isManagerSubject.next(false);
+    this.isUserSubject.next(false);
+    this.rolesCargados = false;
+
+    // Limpiar sessionStorage
+    if (globalThis.window?.sessionStorage) {
+      globalThis.window.sessionStorage.clear();
+    }
+
+    // Intentar eliminar la cookie jwt (aunque sea HTTP-only, el navegador puede ignorarlo)
+    // La cookie se eliminará correctamente cuando el backend responda al logout
+    if (globalThis.document) {
+      globalThis.document.cookie = 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+  }
+
+  /**
+   * Fuerza el cierre de sesión cuando la sesión ha expirado.
+   * Llama al backend para limpiar la cookie y limpia el estado local.
+   * Devuelve una promesa que se resuelve cuando el proceso termina.
+   */
+  forzarCierreSesion(): Promise<void> {
+    // Primero limpiar el estado local
+    this.limpiarEstadoLocal();
+
+    // Llamar al backend para limpiar la cookie HTTP-only
+    return new Promise((resolve) => {
+      this.http
+        .post(`${this.urlBase}/logout`, {}, { withCredentials: true })
+        .subscribe({
+          next: () => {
+            resolve();
+          },
+          error: () => {
+            // Aunque falle, el estado local ya está limpio
+            resolve();
+          },
+        });
+    });
   }
 
   obtenerRoles(): Observable<string[]> {
