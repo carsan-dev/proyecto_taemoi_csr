@@ -2,12 +2,18 @@ package com.taemoi.project.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.entities.Documento;
@@ -37,12 +43,14 @@ public class EventoServiceImpl implements EventoService {
 
 	@Override
 	public List<Evento> obtenerTodosLosEventos() {
-		return eventoRepository.findAll();
+		ensureOrdenesGlobal();
+		return eventoRepository.findAllByOrderByOrdenAsc();
 	}
 
 	@Override
 	public List<Evento> obtenerEventosVisibles() {
-		return eventoRepository.findByVisibleTrue();
+		ensureOrdenesGlobal();
+		return eventoRepository.findByVisibleTrueOrderByOrdenAsc();
 	}
 
 	@Override
@@ -53,6 +61,7 @@ public class EventoServiceImpl implements EventoService {
 
 	@Override
 	public Evento guardarEvento(@NonNull Evento evento, MultipartFile archivoImagen) throws IOException {
+		ensureOrdenesGlobal();
 		if (archivoImagen != null && !archivoImagen.isEmpty()) {
 			// Guardar la imagen en el sistema de archivos y obtener la entidad `Imagen` con
 			// la ruta
@@ -62,6 +71,10 @@ public class EventoServiceImpl implements EventoService {
 			imagenRepository.save(imagenGuardada);
 
 			evento.setFotoEvento(imagenGuardada);
+		}
+
+		if (evento.getOrden() == null) {
+			evento.setOrden(obtenerSiguienteOrden());
 		}
 
 		// Save the Evento after the Imagen is saved
@@ -164,6 +177,38 @@ public class EventoServiceImpl implements EventoService {
 	}
 
 	@Override
+	@Transactional
+	public void actualizarOrdenEventos(@NonNull List<Long> ordenIds) {
+		if (ordenIds == null || ordenIds.isEmpty()) {
+			throw new IllegalArgumentException("La lista de IDs no puede estar vacia.");
+		}
+
+		Set<Long> idsUnicos = new HashSet<>(ordenIds);
+		if (idsUnicos.size() != ordenIds.size()) {
+			throw new IllegalArgumentException("La lista de IDs contiene duplicados.");
+		}
+
+		List<Evento> eventos = eventoRepository.findAll();
+		if (eventos.size() != ordenIds.size()) {
+			throw new IllegalArgumentException("La lista de IDs debe incluir todos los eventos.");
+		}
+
+		Map<Long, Evento> eventosPorId = eventos.stream()
+				.collect(Collectors.toMap(Evento::getId, evento -> evento));
+
+		int orden = 1;
+		for (Long id : ordenIds) {
+			Evento evento = eventosPorId.get(id);
+			if (evento == null) {
+				throw new EventoNoEncontradoException("No se encontro el evento con ID: " + id);
+			}
+			evento.setOrden(orden++);
+		}
+
+		eventoRepository.saveAll(eventos);
+	}
+
+	@Override
 	public Documento agregarDocumentoAEvento(@NonNull Long eventoId, MultipartFile archivo) throws IOException {
 		Evento evento = eventoRepository.findById(eventoId)
 				.orElseThrow(() -> new EventoNoEncontradoException("No se encontró el evento con ID: " + eventoId));
@@ -205,6 +250,55 @@ public class EventoServiceImpl implements EventoService {
 				.findFirst()
 				.orElseThrow(() -> new RuntimeException(
 						"El documento con ID " + documentoId + " no pertenece al evento con ID " + eventoId));
+	}
+
+	private void ensureOrdenesGlobal() {
+		List<Evento> eventos = eventoRepository.findAll();
+		if (eventos.isEmpty()) {
+			return;
+		}
+
+		List<Evento> eventosConOrden = eventos.stream()
+				.filter(evento -> evento.getOrden() != null)
+				.collect(Collectors.toList());
+		List<Evento> eventosSinOrden = eventos.stream()
+				.filter(evento -> evento.getOrden() == null)
+				.sorted(Comparator.comparing(Evento::getId))
+				.collect(Collectors.toList());
+
+		if (eventosSinOrden.isEmpty()) {
+			return;
+		}
+
+		if (eventosConOrden.isEmpty()) {
+			int orden = 1;
+			for (Evento evento : eventosSinOrden) {
+				evento.setOrden(orden++);
+			}
+			eventoRepository.saveAll(eventosSinOrden);
+			return;
+		}
+
+		int maxOrden = eventosConOrden.stream()
+				.map(Evento::getOrden)
+				.filter(orden -> orden != null)
+				.mapToInt(Integer::intValue)
+				.max()
+				.orElse(0);
+
+		for (Evento evento : eventosSinOrden) {
+			evento.setOrden(++maxOrden);
+		}
+
+		eventoRepository.saveAll(eventosSinOrden);
+	}
+
+	private int obtenerSiguienteOrden() {
+		Integer maxOrden = eventoRepository.findMaxOrden();
+		if (maxOrden == null) {
+			return 1;
+		}
+		return maxOrden + 1;
 	}
 
 }

@@ -43,6 +43,7 @@ public class Evento {
 	private List<Documento> documentos = new ArrayList<>();
 
 	private Boolean visible = true;
+	private Integer orden;
 
 	public Long getId() {
 		return id;
@@ -82,6 +83,14 @@ public class Evento {
 
 	public void setVisible(Boolean visible) {
 		this.visible = visible;
+	}
+
+	public Integer getOrden() {
+		return orden;
+	}
+
+	public void setOrden(Integer orden) {
+		this.orden = orden;
 	}
 
 	public List<Documento> getDocumentos() {
