@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
@@ -13,7 +13,7 @@ import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
   templateUrl: './evento-detalle.component.html',
   styleUrl: './evento-detalle.component.scss',
 })
-export class EventoDetalleComponent implements OnInit {
+export class EventoDetalleComponent implements OnInit, OnDestroy {
   evento: Evento | null = null; // Ahora usamos la interfaz Evento
   eventoId!: number;
   modalImagenAbierto: boolean = false;
@@ -55,6 +55,11 @@ export class EventoDetalleComponent implements OnInit {
 
   cerrarModalImagen(): void {
     this.modalImagenAbierto = false;
+    document.body.style.overflow = '';
+  }
+
+  ngOnDestroy(): void {
+    // Ensure scroll is restored if the modal was left open on navigation.
     document.body.style.overflow = '';
   }
 
