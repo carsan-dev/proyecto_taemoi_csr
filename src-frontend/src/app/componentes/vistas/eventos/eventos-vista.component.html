@@ -1,0 +1,66 @@
+<div class="eventos-page">
+  <!-- Hero Header -->
+  @if (showHero) {
+    <div class="hero-header">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="page-title-section">
+          <i class="bi bi-calendar-event"></i>
+          <h1>Metas y Próximos Eventos</h1>
+          <p class="hero-subtitle">Descubre todos nuestros eventos, competiciones y actividades especiales</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="content-wrapper">
+      @if (isLoading) {
+        <!-- Loading Skeleton -->
+        <app-skeleton-card
+          type="masonry"
+          [count]="previewMode ? 4 : 8"
+          [columns]="previewMode ? 1 : 4"
+        ></app-skeleton-card>
+      } @else if (eventos.length > 0) {
+        <!-- Masonry Grid -->
+        <div class="masonry-grid">
+          @for (evento of eventos; track evento.id) {
+            <div
+              class="event-card"
+              (click)="onEventoClick(evento.id)"
+            >
+              <div class="event-image-container">
+                <img
+                  [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                  class="event-img"
+                  alt="{{ evento.titulo }}"
+                />
+                <div class="event-overlay">
+                  <i class="bi bi-zoom-in"></i>
+                </div>
+              </div>
+              <div class="event-info">
+                <h3 class="event-title">{{ evento.titulo }}</h3>
+                <p class="event-description">{{ evento.descripcion }}</p>
+                <div class="event-footer">
+                  <span class="view-more">Ver detalles <i class="bi bi-arrow-right"></i></span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Empty State -->
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <i class="bi bi-calendar-x"></i>
+          </div>
+          <h3 class="empty-state-title">No hay eventos disponibles</h3>
+          <p class="empty-state-text">Actualmente no tenemos eventos programados. Vuelve pronto para descubrir nuevas actividades y competiciones.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
