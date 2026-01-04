@@ -36,7 +36,6 @@ Comandos actualizar backend (sirve para arrancar server y para actualizar los ot
     dcp build --pull backend frontend
     dcp up -d backend frontend
 
-
 Comando para acceder al contenedor de mysql y actualizar base de datos
 
   docker exec -it taemoi-mysql-prod mysql -h 127.0.0.1 -u taemoi -p -e "Comando completo, como: ALTER TABLE taemoi_db.alumno ADD COLUMN telefono2 INT NULL;"
