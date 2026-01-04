@@ -24,7 +24,7 @@ $github-color: #333;
   background: linear-gradient(135deg, $dark-bg 0%, $dark-accent 100%);
   color: $text-light;
   overflow: hidden;
-  margin-top: 5rem;
+  margin-top: 0;
 
   &::before {
     content: '';
