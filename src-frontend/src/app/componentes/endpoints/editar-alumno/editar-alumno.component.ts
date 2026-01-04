@@ -1089,7 +1089,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       Swal.fire({
         icon: 'warning',
         title: 'Sin telefono',
-        text: 'Este alumno no tiene ningun telefono registrado.',
+        text: 'Este alumno no tiene ningun teléfono registrado.',
       });
       return;
     }
@@ -1108,7 +1108,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Si hay dos telefonos, mostrar selector
     Swal.fire({
       title: 'Seleccionar telefono',
-      text: 'A que numero deseas enviar el mensaje de WhatsApp?',
+      text: 'A qué número deseas enviar el mensaje de WhatsApp?',
       icon: 'question',
       showCancelButton: true,
       showDenyButton: true,
@@ -1154,7 +1154,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   enviarWhatsappConDocumentos(): void {
     if (!this.whatsappTelefonoSeleccionado) {
-      showErrorToast('No se pudo seleccionar telefono');
+      showErrorToast('No se pudo seleccionar teléfono');
       return;
     }
 
@@ -1172,7 +1172,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   private buildWhatsappMensajePlantilla(): string {
     const nombreCompleto = `${this.alumno?.nombre ?? ''} ${this.alumno?.apellidos ?? ''}`.trim();
     if (nombreCompleto) {
-      return `Hola, te envio la documentacion de ${nombreCompleto}.`;
+      return `Hola, te envío la documentación de ${nombreCompleto}.`;
     }
     return this.whatsappMensajePlantilla;
   }
@@ -1182,7 +1182,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private abrirWhatsAppConTelefono(telefono: string | number, mensaje?: string): void {
     // Convertir a string y limpiar de espacios y caracteres no numericos
-    let telefonoLimpio = String(telefono).replace(/\D/g, '');
+    let telefonoLimpio = String(telefono).replaceAll(/\D/g, '');
 
     // Anadir codigo de pais de Espana si no lo tiene
     if (!telefonoLimpio.startsWith('34') && telefonoLimpio.length === 9) {
