@@ -440,6 +440,7 @@ $whatsapp-hover: #128C7E;
 // Item card (for listado components)
 .admin-item-card {
   @include modern-card;
+  overflow: visible;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
