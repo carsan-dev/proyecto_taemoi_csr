@@ -937,6 +937,14 @@ export class EndpointsService {
       );
   }
 
+  actualizarOrdenEventos(ordenIds: number[]): Observable<void> {
+    return this.http
+      .put<void>(`${this.urlBase}/eventos/orden`, ordenIds, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   // ==================== DOCUMENTOS DE EVENTOS ====================
 
   obtenerDocumentosEvento(eventoId: number): Observable<any[]> {
