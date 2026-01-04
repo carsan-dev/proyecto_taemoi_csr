@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   EventEmitter,
+  HostListener,
   Input,
   OnChanges,
   Output,
@@ -21,9 +22,21 @@ export class PaginacionComponent implements OnChanges {
   @Input() deshabilitado: boolean = false;
   @Output() pageChange = new EventEmitter<number>();
   mostrarPaginas: number[] = [];
+  private esMobile: boolean = typeof window !== 'undefined' && window.innerWidth < 576;
 
   ngOnChanges(): void {
+    this.detectarMobile();
     this.actualizarPaginasMostradas();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.detectarMobile();
+    this.actualizarPaginasMostradas();
+  }
+
+  private detectarMobile(): void {
+    this.esMobile = window.innerWidth < 576;
   }
 
   cambiarPagina(pageNumber: number): void {
@@ -43,7 +56,8 @@ export class PaginacionComponent implements OnChanges {
   }
 
   private actualizarPaginasMostradas(): void {
-    const paginasAMostrar = 5;
+    // En móvil mostrar 3 páginas, en desktop mostrar 5
+    const paginasAMostrar = this.esMobile ? 3 : 5;
     const mitad = Math.floor(paginasAMostrar / 2);
 
     let paginaInicio = this.paginaActual - mitad;
