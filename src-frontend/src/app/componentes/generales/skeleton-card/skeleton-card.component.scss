@@ -378,6 +378,9 @@
   }
 
   .skeleton-masonry {
+    columns: 2 !important;
+    column-gap: 1.25rem;
+
     .skeleton-event-card {
       margin-bottom: 1rem;
       border-radius: 16px;
@@ -395,6 +398,9 @@
 
 @media (max-width: 576px) {
   .skeleton-masonry {
+    columns: 2 !important;
+    column-gap: 0.75rem;
+
     .skeleton-event-card {
       margin-bottom: 1.25rem;
       border-radius: 12px;
