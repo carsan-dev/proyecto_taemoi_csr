@@ -566,6 +566,10 @@
   background: rgba($text-light, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
 }
 
 .detalle-label {

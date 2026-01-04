@@ -162,10 +162,12 @@
                       <span class="resumen-label">Antigüedad principal</span>
                       <span class="resumen-value">{{ resumen.antiguedadPrincipal || '-' }}</span>
                     </div>
+                    @if (alumnoRequiereLicencia(alumno.id)) {
                     <div class="resumen-item resumen-item-full">
                       <span class="resumen-label">Licencia</span>
                       <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
                     </div>
+                    }
                   </div>
                 }
               </div>
@@ -188,9 +190,11 @@
                       <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
                         <div class="deporte-detalle-header">
                           <span class="deporte-detalle-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                          @if (deporteRequiereGrado(deporteItem.deporte)) {
                           <span class="deporte-detalle-grado" [style]="getGradoStyle(deporteItem.grado || '')">
                             {{ deporteItem.grado || 'Sin grado' }}
                           </span>
+                          }
                         </div>
                         <div class="deporte-detalle-grid">
                           <div class="deporte-detalle-item">
@@ -203,14 +207,16 @@
                               {{ ((deporteItem.fechaAltaInicial || deporteItem.fechaAlta) | date: 'dd/MM/yyyy') || '-' }}
                             </span>
                           </div>
-                          <div class="deporte-detalle-item">
+                          <div class="deporte-detalle-item" [class.full-width]="!deporteRequiereGrado(deporteItem.deporte)">
                             <span class="detalle-label">Antigüedad</span>
                             <span class="detalle-valor">{{ getAntiguedadDeporte(deporteItem) || '-' }}</span>
                           </div>
+                          @if (deporteRequiereGrado(deporteItem.deporte)) {
                           <div class="deporte-detalle-item">
                             <span class="detalle-label">Categoría</span>
                             <span class="detalle-valor">{{ deporteItem.categoria || 'N/A' }}</span>
                           </div>
+                          }
                         </div>
                       </div>
                     }
@@ -291,7 +297,7 @@
                           <span class="badge-loading-small">...</span>
                         }
                         @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
-                          <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="getDeporteLabel(deporteItem.deporte) + ': ' + (deporteItem.grado || 'Sin grado')">
+                          <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="deporteRequiereGrado(deporteItem.deporte) ? getDeporteLabel(deporteItem.deporte) + ': ' + (deporteItem.grado || 'Sin grado') : getDeporteLabel(deporteItem.deporte)">
                             {{ getDeporteLabel(deporteItem.deporte).substring(0, 3) }}
                           </span>
                         }
@@ -301,7 +307,11 @@
                   <td class="table-tarifa">{{ resumen.tarifaPrincipal }}</td>
                   <td class="table-antiguedad">{{ resumen.antiguedadPrincipal || '-' }}</td>
                   <td class="table-licencia">
+                    @if (alumnoRequiereLicencia(alumno.id)) {
                     <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                    } @else {
+                    <span class="resumen-badge licencia-none">N/A</span>
+                    }
                   </td>
                   @if (mostrarInactivos) {
                     <td [class.text-danger]="alumno.activo === false">
