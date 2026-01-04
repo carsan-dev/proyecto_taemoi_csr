@@ -532,6 +532,11 @@ public class PDFServiceImpl implements PDFService {
 							&& Boolean.TRUE.equals(ad.getAlumno().getActivo()))
 					.collect(Collectors.toList());
 		}
+		// Exclude sports without license requirements
+		alumnos = alumnos.stream()
+				.filter(ad -> ad.getDeporte() != Deporte.PILATES
+						&& ad.getDeporte() != Deporte.DEFENSA_PERSONAL_FEMENINA)
+				.collect(Collectors.toList());
 
 		LocalDate today = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
@@ -574,8 +579,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append("  font-size: 9pt;");
 		html.append("}");
 		html.append(".status-vigente { background: #d4edda; color: #155724; }");
-		html.append(".status-caducada { background: #f8d7da; color: #721c24; }");
-		html.append(".status-sin { background: #fff3cd; color: #856404; }");
+		html.append(".status-caducada { background: #fff3cd; color: #856404; }");
+		html.append(".status-sin { background: #f8d7da; color: #721c24; }");
 		// Estilos para el cinturón en la columna de grado
 		html.append(".grado-cell { text-align: center; vertical-align: middle; }");
 		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
@@ -600,12 +605,12 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasVigor));
 
-		html.append("<div class='section-header' style='background-color: #dc3545;'>");
+		html.append("<div class='section-header' style='background-color: #ffc107; margin-top: 5mm;'>");
 		html.append("Licencias Caducadas (" + licenciasCaducadas.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasCaducadas));
 
-		html.append("<div class='section-header' style='background-color: #ffc107;'>");
+		html.append("<div class='section-header' style='background-color: #dc3545; margin-top: 5mm;'>");
 		html.append("Sin Licencia (" + sinLicencia.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(sinLicencia));
@@ -634,7 +639,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<thead><tr>");
 		html.append("<th>Nombre y Apellidos</th>");
 		html.append("<th>Deporte</th>");
-		html.append("<th>N&#186; Exp.</th>");
+		html.append("<th>EXP.</th>");
 		html.append("<th>N&#186; Lic.</th>");
 		html.append("<th>Fecha Lic.</th>");
 		html.append("<th>Grado</th>");
@@ -3006,7 +3011,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		case PILATES:
 			return "Pilates";
 		case DEFENSA_PERSONAL_FEMENINA:
-			return "Defensa Personal Femenina";
+			return "D.P. Fem.";
 		default:
 			return deporte.name();
 		}
