@@ -6,39 +6,42 @@
 
 <div class="admin-page-container">
   <div class="container">
-    <!-- Action Bar -->
-    <div class="admin-action-bar">
-      <h2>
-        <i class="bi bi-calendar-event"></i>
-        Gestión de Eventos
-      </h2>
-      <div class="action-buttons">
-        <button class="admin-btn admin-btn-primary" (click)="guardarOrden()"
-          [disabled]="!ordenPendiente || guardandoOrden">
-          <i class="bi bi-check2-square"></i>
-          <span>{{ guardandoOrden ? 'Guardando...' : 'Guardar orden' }}</span>
-        </button>
-        <button class="admin-btn admin-btn-success" [routerLink]="['/eventosCrear']">
-          <i class="bi bi-plus-circle"></i>
-          <span>Crear Nuevo Evento</span>
-        </button>
+    <div class="eventos-layout">
+      <!-- Action Bar -->
+      <div class="admin-action-bar">
+        <h2>
+          <i class="bi bi-calendar-event"></i>
+          Gestión de Eventos
+        </h2>
+        <div class="action-buttons">
+          <button class="admin-btn admin-btn-primary" (click)="guardarOrden()"
+            [hidden]="!ordenPendiente || guardandoOrden">
+            <i class="bi bi-check2-square"></i>
+            <span>{{ guardandoOrden ? 'Guardando...' : 'Guardar orden' }}</span>
+          </button>
+          <button class="admin-btn admin-btn-info" type="button" (click)="togglePreview()"
+            [attr.aria-expanded]="previewVisible" aria-controls="eventosPreviewModal">
+            <i [class]="previewVisible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            <span>{{ previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa' }}</span>
+          </button>
+          <button class="admin-btn admin-btn-success" [routerLink]="['/eventosCrear']">
+            <i class="bi bi-plus-circle"></i>
+            <span>Crear Nuevo Evento</span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Skeleton Loading -->
-    @if (cargando) {
-      <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
-    }
+      <div class="eventos-list">
+        <!-- Skeleton Loading -->
+        @if (cargando) {
+        <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+        }
 
-    <!-- Eventos Grid -->
-    @if (!cargando && eventos && eventos.length > 0) {
-      <div class="admin-cards-grid"
-        cdkDropList
-        [cdkDropListData]="eventos"
-        [cdkDropListDisabled]="cargando"
-        cdkDropListOrientation="mixed"
-        (cdkDropListDropped)="drop($event)">
-        @for (evento of eventos; track evento.id) {
+        <!-- Eventos Grid -->
+        @if (!cargando && eventos && eventos.length > 0) {
+        <div class="admin-cards-grid" cdkDropList [cdkDropListData]="eventos" [cdkDropListDisabled]="cargando"
+          cdkDropListOrientation="mixed" (cdkDropListDropped)="drop($event)">
+          @for (evento of eventos; track evento.id) {
           <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando">
             <div class="drag-handle" cdkDragHandle title="Arrastrar para ordenar">
               <i class="bi bi-grip-vertical"></i>
@@ -46,23 +49,22 @@
             <div class="item-header">
               <img class="item-image"
                 [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                [alt]="'Imagen de ' + evento.titulo"
-                (click)="abrirModal(evento.fotoEvento?.url)"
+                [alt]="'Imagen de ' + evento.titulo" (click)="abrirModal(evento.fotoEvento?.url)"
                 style="cursor: zoom-in;" />
               <div class="item-title">
                 <h4>
                   {{ evento.titulo }}
                   @if (evento.visible === false) {
-                    <span class="visibility-badge oculto" title="Evento oculto en la página pública">
-                      <i class="bi bi-eye-slash"></i>
-                      Oculto
-                    </span>
+                  <span class="visibility-badge oculto" title="Evento oculto en la página pública">
+                    <i class="bi bi-eye-slash"></i>
+                    Oculto
+                  </span>
                   }
                   @if (evento.visible === true) {
-                    <span class="visibility-badge visible" title="Evento visible en la página pública">
-                      <i class="bi bi-eye"></i>
-                      Visible
-                    </span>
+                  <span class="visibility-badge visible" title="Evento visible en la página pública">
+                    <i class="bi bi-eye"></i>
+                    Visible
+                  </span>
                   }
                 </h4>
               </div>
@@ -75,8 +77,7 @@
             </div>
 
             <div class="item-footer">
-              <button
-                class="admin-btn admin-btn-sm"
+              <button class="admin-btn admin-btn-sm"
                 [ngClass]="evento.visible ? 'admin-btn-warning' : 'admin-btn-success'"
                 (click)="toggleVisibilidad(evento.id, evento.titulo)"
                 [title]="evento.visible ? 'Ocultar evento' : 'Mostrar evento'">
@@ -93,17 +94,46 @@
               </button>
             </div>
           </div>
+          }
+        </div>
+        } @else {
+        <!-- Plantilla para cuando no haya eventos -->
+        @if (!cargando) {
+        <div class="admin-card text-center">
+          <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos"
+            style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
+          <h3 class="mb-3">¡No hay eventos disponibles!</h3>
+          <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!
+          </p>
+        </div>
+        }
         }
       </div>
-    } @else {
-      <!-- Plantilla para cuando no haya eventos -->
-      @if (!cargando) {
-        <div class="admin-card text-center">
-          <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos" style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
-          <h3 class="mb-3">¡No hay eventos disponibles!</h3>
-          <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!</p>
-        </div>
-      }
-    }
+    </div>
   </div>
 </div>
+
+@if (previewVisible) {
+<div class="preview-modal" id="eventosPreviewModal" (click)="togglePreview()">
+  <div class="preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle"
+    (click)="$event.stopPropagation()">
+    <div class="preview-modal-header">
+      <div class="preview-heading">
+        <h3 class="preview-title" id="previewTitle">Vista previa</h3>
+        <p class="preview-subtitle">Orden actual de la página pública (solo eventos visibles).</p>
+      </div>
+      <button class="preview-close" type="button" (click)="togglePreview()" aria-label="Cerrar vista previa">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="preview-modal-body">
+      <div class="preview-viewport">
+        <div class="preview-scale">
+          <app-eventos-vista [eventos]="eventosPreview" [isLoading]="cargando"
+            [enableNavigation]="false"></app-eventos-vista>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
