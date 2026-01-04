@@ -19,7 +19,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
   styleUrl: './listado-productos.component.scss',
 })
 export class ListadoProductosComponent implements OnInit, OnDestroy {
-  productos: Producto[] = [];
+  productos: Array<Producto & { selected?: boolean }> = [];
   conceptoFiltro: string = '';
   paginaActual: number = 1;
   tamanoPagina: number = 10;
@@ -65,7 +65,10 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (page: any) => {
-          this.productos = page.content || [];
+          this.productos = (page.content || []).map((producto: Producto) => ({
+            ...producto,
+            selected: false,
+          }));
           this.totalPaginas = page.totalPages || 0;
           this.totalElementos = page.totalElements || 0;
 
@@ -110,6 +113,61 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
     });
   }
 
+  eliminarProductosSeleccionados(): void {
+    const productosSeleccionados = this.productos.filter(
+      (producto) => producto.selected
+    );
+
+    if (productosSeleccionados.length === 0) {
+      Swal.fire({
+        title: 'No hay productos seleccionados',
+        text: 'Por favor, seleccione al menos un producto para eliminar.',
+        icon: 'info',
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Estas seguro?',
+      text: 'Los productos seleccionados seran eliminados permanentemente',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Si, eliminarlos',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.eliminarProductoSecuencial([...productosSeleccionados]);
+      }
+    });
+  }
+
+  private eliminarProductoSecuencial(productosSeleccionados: Array<Producto & { selected?: boolean }>): void {
+    if (productosSeleccionados.length === 0) {
+      showSuccessToast('Productos eliminados correctamente');
+      this.obtenerProductos();
+      return;
+    }
+
+    const producto = productosSeleccionados.pop();
+    if (!producto) {
+      showSuccessToast('Productos eliminados correctamente');
+      this.obtenerProductos();
+      return;
+    }
+
+    this.endpointsService.eliminarProducto(producto.id).subscribe({
+      next: () => {
+        this.eliminarProductoSecuencial(productosSeleccionados);
+      },
+      error: () => {
+        showErrorToast(`No se pudo eliminar el producto ${producto.concepto}`);
+        this.eliminarProductoSecuencial(productosSeleccionados);
+      },
+    });
+  }
+
   filtrarPorConcepto(): void {
     this.searchSubject.next(this.conceptoFiltro);
   }
@@ -132,6 +190,22 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
     }
     this.guardarEstadoPaginacion();
     this.obtenerProductos();
+  }
+
+  toggleSelectAll(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const checked = input.checked;
+    this.productos.forEach((producto) => {
+      producto.selected = checked;
+    });
+  }
+
+  get hasSelectedProductos(): boolean {
+    return this.productos.some((producto) => producto.selected);
+  }
+
+  get allProductosSelected(): boolean {
+    return this.productos.length > 0 && this.productos.every((producto) => producto.selected);
   }
 
   private guardarEstadoPaginacion(): void {
