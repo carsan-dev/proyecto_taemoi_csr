@@ -208,7 +208,10 @@ public class PDFServiceImpl implements PDFService {
 				+ "  color: #ffffff;" + "  font-weight: 600;" + "  font-size: 10pt;" + "  text-transform: uppercase;"
 				+ "  letter-spacing: 0.5px;" + "}" + "tbody tr:nth-child(even) {" + "  background-color: #f8f9fa;" + "}"
 				+ "tbody tr:nth-child(odd) {" + "  background-color: #ffffff;" + "}" + "tbody tr:hover {"
-				+ "  background-color: #e7f3ff;" + "}" + ".kickboxing {" + "  padding-top: 10mm;"
+				+ "  background-color: #e7f3ff;" + "}"
+				+ "tbody tr { page-break-inside: avoid; }"
+				+ "thead { display: table-header-group; }"
+				+ "table { page-break-inside: auto; }" + ".kickboxing {" + "  padding-top: 10mm;"
 				+ "  border-top: 3px solid #ff4500;" + "  margin-top: 10mm;" + "}" + ".section-header {"
 				+ "  background-color: #1b2b2e;" + "  color: #ffffff;" + "  padding: 5mm;" + "  border-radius: 2mm;"
 				+ "  margin-bottom: 5mm;" + "  font-size: 14pt;" + "  font-weight: 700;" + "  text-align: center;"
@@ -398,10 +401,11 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
 			html.append("<th>N&#186; Expediente</th>");
-			html.append("<th>Licencia Federativa</th>");
+			html.append("<th>Licencia Fed.</th>");
 			html.append("<th>Fecha del Grado</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
+			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 			for (AlumnoDeporte alumnoDeporte : alumnosGrado) {
 				Alumno alumno = alumnoDeporte.getAlumno();
 				if (alumno == null) {
@@ -413,7 +417,13 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 				String licencia = alumnoDeporte.getNumeroLicencia() != null ? alumnoDeporte.getNumeroLicencia().toString() : "N/A";
 				html.append("<td>").append(licencia).append("</td>");
-				String fechaGrado = alumnoDeporte.getFechaGrado() != null ? alumnoDeporte.getFechaGrado().toString() : "N/A";
+				// Format date as dd/MM/yyyy
+				String fechaGrado = "N/A";
+				if (alumnoDeporte.getFechaGrado() != null) {
+					LocalDate fecha = Instant.ofEpochMilli(alumnoDeporte.getFechaGrado().getTime())
+							.atZone(ZoneId.systemDefault()).toLocalDate();
+					fechaGrado = fecha.format(dateFormatter);
+				}
 				html.append("<td>").append(fechaGrado).append("</td>");
 				html.append("</tr>");
 			}
@@ -535,7 +545,11 @@ public class PDFServiceImpl implements PDFService {
 			if (Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia()) && alumnoDeporte.getFechaLicencia() != null) {
 				LocalDate fechaLicencia = Instant.ofEpochMilli(alumnoDeporte.getFechaLicencia().getTime())
 						.atZone(ZoneId.systemDefault()).toLocalDate();
-				if (fechaLicencia.plusYears(1).isAfter(today)) {
+				// La lógica debe coincidir con listado-alumnos.component.ts:
+				// Una licencia es válida si su año >= año actual
+				int añoLicencia = fechaLicencia.getYear();
+				int añoActual = today.getYear();
+				if (añoLicencia >= añoActual) {
 					licenciasVigor.add(alumnoDeporte);
 				} else {
 					licenciasCaducadas.add(alumnoDeporte);
@@ -562,6 +576,18 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".status-vigente { background: #d4edda; color: #155724; }");
 		html.append(".status-caducada { background: #f8d7da; color: #721c24; }");
 		html.append(".status-sin { background: #fff3cd; color: #856404; }");
+		// Estilos para el cinturón en la columna de grado
+		html.append(".grado-cell { text-align: center; vertical-align: middle; }");
+		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
+		html.append(".grado-text { font-size: 8pt; font-weight: 600; line-height: 1.2; }");
+		// Ajustar anchos de columnas para la tabla de licencias
+		html.append(".licencias-table { table-layout: fixed; }");
+		html.append(".licencias-table th:nth-child(1), .licencias-table td:nth-child(1) { width: 28%; }");
+		html.append(".licencias-table th:nth-child(2), .licencias-table td:nth-child(2) { width: 14%; }");
+		html.append(".licencias-table th:nth-child(3), .licencias-table td:nth-child(3) { width: 10%; }");
+		html.append(".licencias-table th:nth-child(4), .licencias-table td:nth-child(4) { width: 10%; }");
+		html.append(".licencias-table th:nth-child(5), .licencias-table td:nth-child(5) { width: 14%; white-space: nowrap; }");
+		html.append(".licencias-table th:nth-child(6), .licencias-table td:nth-child(6) { width: 24%; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
@@ -604,16 +630,17 @@ public class PDFServiceImpl implements PDFService {
 	 */
 	private String generarTablaAlumnos(List<AlumnoDeporte> alumnos) {
 		StringBuilder html = new StringBuilder();
-		html.append("<table>");
+		html.append("<table class='licencias-table'>");
 		html.append("<thead><tr>");
 		html.append("<th>Nombre y Apellidos</th>");
 		html.append("<th>Deporte</th>");
-		html.append("<th>N&#186; Expediente</th>");
-		html.append("<th>N&#186; Licencia</th>");
-		html.append("<th>Fecha de Licencia</th>");
+		html.append("<th>N&#186; Exp.</th>");
+		html.append("<th>N&#186; Lic.</th>");
+		html.append("<th>Fecha Lic.</th>");
 		html.append("<th>Grado</th>");
 		html.append("</tr></thead>");
 		html.append("<tbody>");
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 		for (AlumnoDeporte alumnoDeporte : alumnos) {
 			Alumno alumno = alumnoDeporte.getAlumno();
 			html.append("<tr>");
@@ -624,12 +651,18 @@ public class PDFServiceImpl implements PDFService {
 					? alumnoDeporte.getNumeroLicencia().toString()
 					: "N/A";
 			html.append("<td>").append(numLicencia).append("</td>");
-			String fechaLic = (alumnoDeporte.getFechaLicencia() != null) ? alumnoDeporte.getFechaLicencia().toString() : "N/A";
+			// Format date as dd/MM/yyyy
+			String fechaLic = "N/A";
+			if (alumnoDeporte.getFechaLicencia() != null) {
+				LocalDate fechaLicencia = Instant.ofEpochMilli(alumnoDeporte.getFechaLicencia().getTime())
+						.atZone(ZoneId.systemDefault()).toLocalDate();
+				fechaLic = fechaLicencia.format(dateFormatter);
+			}
 			html.append("<td>").append(fechaLic).append("</td>");
-			String nombreGrado = (alumnoDeporte.getGrado() != null && alumnoDeporte.getGrado().getTipoGrado().getNombre() != null)
-					? alumnoDeporte.getGrado().getTipoGrado().getNombre()
-					: "N/A";
-			html.append("<td>").append(nombreGrado).append("</td>");
+			// Use belt drawing for grade
+			TipoGrado tipoGrado = (alumnoDeporte.getGrado() != null) ? alumnoDeporte.getGrado().getTipoGrado() : null;
+			String nombreGrado = (tipoGrado != null && tipoGrado.getNombre() != null) ? tipoGrado.getNombre() : "N/A";
+			html.append(generarCeldaGrado(tipoGrado, nombreGrado));
 			html.append("</tr>");
 		}
 		html.append("</tbody>");
@@ -1309,6 +1342,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				".side-table th:last-child, .side-table td:last-child { border-right: 1px solid #dee2e6 !important; }");
 		html.append(
 				".side-table tfoot td { background: #e9ecef; font-weight: 600; text-align: center; font-size: 6.5pt; }");
+		html.append(".main-table tbody tr, .side-table tbody tr { page-break-inside: avoid; }");
+		html.append(".main-table thead, .side-table thead { display: table-header-group; }");
 		html.append("</style>");
 		html.append("</head><body>");
 
