@@ -2618,6 +2618,45 @@ label {
   }
 }
 
+// Product status container (badge + action button)
+.producto-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+
+  .status-badge {
+    white-space: nowrap;
+  }
+}
+
+// Show more/less button
+.btn-ver-mas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 2px dashed rgba($primary-color, 0.3);
+  border-radius: 10px;
+  color: $primary-color;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    background: rgba($primary-color, 0.05);
+    border-color: $primary-color;
+  }
+
+  i {
+    font-size: 1rem;
+  }
+}
+
 // Info Cards
 .info-card-header {
   padding: 1.25rem 1.5rem;
@@ -3024,13 +3063,11 @@ label {
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   transition: $transition;
-  animation: fadeInUp 0.3s ease;
-  animation-fill-mode: both;
 
-  @for $i from 1 through 12 {
-    &:nth-child(#{$i}) {
-      animation-delay: #{$i * 0.05}s;
-    }
+  // Solo animar los nuevos items cuando se expande
+  &.nuevo-item {
+    animation: fadeInUp 0.3s ease;
+    animation-fill-mode: both;
   }
 
   &:hover {
