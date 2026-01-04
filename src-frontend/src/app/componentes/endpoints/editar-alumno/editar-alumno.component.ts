@@ -1172,7 +1172,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   private buildWhatsappMensajePlantilla(): string {
     const nombreCompleto = `${this.alumno?.nombre ?? ''} ${this.alumno?.apellidos ?? ''}`.trim();
     if (nombreCompleto) {
-      return `Hola, te envío la documentación de ${nombreCompleto}.`;
+      return `Hola, te envío la documentación de ${nombreCompleto}. Saludos 🥋😘`;
     }
     return this.whatsappMensajePlantilla;
   }
