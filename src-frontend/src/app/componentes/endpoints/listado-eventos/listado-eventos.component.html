@@ -13,6 +13,11 @@
         Gestión de Eventos
       </h2>
       <div class="action-buttons">
+        <button class="admin-btn admin-btn-primary" (click)="guardarOrden()"
+          [disabled]="!ordenPendiente || guardandoOrden">
+          <i class="bi bi-check2-square"></i>
+          <span>{{ guardandoOrden ? 'Guardando...' : 'Guardar orden' }}</span>
+        </button>
         <button class="admin-btn admin-btn-success" [routerLink]="['/eventosCrear']">
           <i class="bi bi-plus-circle"></i>
           <span>Crear Nuevo Evento</span>
@@ -27,9 +32,17 @@
 
     <!-- Eventos Grid -->
     @if (!cargando && eventos && eventos.length > 0) {
-      <div class="admin-cards-grid">
+      <div class="admin-cards-grid"
+        cdkDropList
+        [cdkDropListData]="eventos"
+        [cdkDropListDisabled]="cargando"
+        cdkDropListOrientation="mixed"
+        (cdkDropListDropped)="drop($event)">
         @for (evento of eventos; track evento.id) {
-          <div class="admin-item-card">
+          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando">
+            <div class="drag-handle" cdkDragHandle title="Arrastrar para ordenar">
+              <i class="bi bi-grip-vertical"></i>
+            </div>
             <div class="item-header">
               <img class="item-image"
                 [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
