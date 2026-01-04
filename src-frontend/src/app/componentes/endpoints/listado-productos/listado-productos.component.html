@@ -6,6 +6,14 @@
         <i class="bi bi-box-seam"></i>
         Gestión de Productos
       </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-danger" (click)="eliminarProductosSeleccionados()"
+          [disabled]="!hasSelectedProductos">
+          <i class="bi bi-trash"></i>
+          <span class="d-none d-md-inline">Eliminar Seleccionados</span>
+          <span class="d-md-none">Eliminar</span>
+        </button>
+      </div>
     </div>
 
     <!-- Filter Bar -->
@@ -29,6 +37,14 @@
         <table>
           <thead>
             <tr>
+              <th style="width: 60px;">
+                <div class="form-check d-flex justify-content-center">
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="allProductosSelected"
+                    (change)="toggleSelectAll($event)"
+                    title="Seleccionar todos">
+                </div>
+              </th>
               <th (click)="ordenarPor('id')" style="cursor: pointer;">
                 ID
                 @if (orderBy === 'id') {
@@ -62,16 +78,21 @@
                   </span>
                 }
               </th>
-              <th>Acciones</th>
+              <th class="col-actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (producto of productos; track producto.id) {
               <tr>
+                <td>
+                  <div class="form-check d-flex justify-content-center">
+                    <input type="checkbox" class="form-check-input" [(ngModel)]="producto.selected">
+                  </div>
+                </td>
                 <td>{{ producto.id }}</td>
                 <td>{{ producto.concepto }}</td>
                 <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
-                <td>
+                <td class="col-actions">
                   <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">
                     <i class="bi bi-pencil-square"></i>
                     <span>Editar</span>
@@ -85,7 +106,7 @@
             }
             @if (!cargando && (!productos || productos.length === 0)) {
               <tr>
-                <td colspan="4" class="text-center text-muted">No hay productos disponibles</td>
+                <td colspan="5" class="text-center text-muted">No hay productos disponibles</td>
               </tr>
             }
           </tbody>
