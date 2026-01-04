@@ -934,9 +934,10 @@
   }
 }
 
-// Modals for sport management (add sport and update grade)
+// Modals with shared layout (add sport, update grade, WhatsApp)
 #agregarDeporteModal,
-#actualizarGradoModal {
+#actualizarGradoModal,
+#whatsappModal {
   .modal-content {
     background-color: $text-light;
     margin: auto;
@@ -973,6 +974,68 @@
       padding-top: 1rem;
       border-top: 2px solid $background-light;
     }
+  }
+}
+
+#whatsappModal {
+  .whatsapp-docs-section {
+    margin-top: 1rem;
+  }
+
+  .whatsapp-docs-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $text-muted;
+    margin-bottom: 0.75rem;
+
+    i {
+      color: $primary-color;
+    }
+  }
+
+  .whatsapp-docs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .whatsapp-doc-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: $background-light;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+
+    .doc-name {
+      flex: 1;
+      font-weight: 500;
+      color: $text-dark;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .doc-type {
+      font-size: 0.8rem;
+      color: $text-muted;
+      white-space: nowrap;
+    }
+  }
+
+  .whatsapp-telefono {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: $text-muted;
+    font-size: 0.9rem;
   }
 }
 
@@ -1068,7 +1131,8 @@
   }
 
   #agregarDeporteModal,
-  #actualizarGradoModal {
+  #actualizarGradoModal,
+  #whatsappModal {
     .modal-content {
       width: 90%;
       padding: 1.5rem;
@@ -1334,11 +1398,11 @@
   }
 
   &.pilates {
-    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+    background: linear-gradient(135deg, $pilates-color 0%, $pilates-hover 100%);
   }
 
   &.defensa-personal-femenina {
-    background: linear-gradient(135deg, #ff9800 0%, #e68a00 100%);
+    background: linear-gradient(135deg, $defensa-color 0%, $defensa-hover 100%);
   }
 }
 
