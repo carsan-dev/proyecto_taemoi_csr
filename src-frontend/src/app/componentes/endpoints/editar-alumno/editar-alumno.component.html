@@ -1538,7 +1538,7 @@
                       <i class="bi bi-file-earmark-pdf-fill"></i>
                     </div>
                     <div class="documento-info">
-                      <span class="documento-name">{{ doc.nombre }}</span>
+                      <span class="documento-name" [title]="doc.nombre">{{ doc.nombre }}</span>
                       <span class="documento-type">{{ doc.tipo }}</span>
                     </div>
                     <div class="documento-actions">
@@ -1566,11 +1566,16 @@
                 </div>
                 }
 
-                <div class="mt-4">
+                <div class="mt-4 d-flex gap-2 flex-wrap">
                   <button type="button" class="admin-btn admin-btn-success" (click)="docFileInput.click()"
                     aria-label="Subir Documento">
                     <i class="bi bi-plus-circle"></i>
                     <span>Subir Documento</span>
+                  </button>
+                  <button type="button" class="admin-btn admin-btn-whatsapp" (click)="abrirWhatsApp()"
+                    aria-label="Abrir WhatsApp" [disabled]="!alumno?.telefono">
+                    <i class="bi bi-whatsapp"></i>
+                    <span>WhatsApp</span>
                   </button>
                   <input #docFileInput type="file" id="docFile" (change)="onDocumentoSelected($event)"
                     style="display: none;"
