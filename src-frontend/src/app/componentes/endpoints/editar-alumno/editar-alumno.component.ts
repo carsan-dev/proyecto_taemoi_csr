@@ -91,6 +91,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   documentosAlumno: any[] = [];
   mostrarTodosDocumentos = false;
   readonly documentosVisiblesInicial = 5;
+  mostrarModalWhatsapp = false;
+  whatsappTelefonoSeleccionado: string | number | null = null;
+  whatsappMensaje = '';
+  whatsappDocumentosSeleccionados = new Set<number>();
+  private readonly whatsappMensajePlantilla = 'Hola, te envio la documentacion.';
 
   // Multi-sport properties
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
@@ -1073,8 +1078,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Abre WhatsApp con el teléfono del alumno.
-   * Si tiene dos teléfonos, muestra un selector para elegir cuál usar.
+   * Abre el flujo de WhatsApp con el telefono del alumno.
+   * Si tiene dos telefonos, muestra un selector para elegir cual usar.
    */
   abrirWhatsApp(): void {
     const telefono1 = this.alumno?.telefono;
@@ -1083,27 +1088,27 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (!telefono1 && !telefono2) {
       Swal.fire({
         icon: 'warning',
-        title: 'Sin teléfono',
-        text: 'Este alumno no tiene ningún teléfono registrado.',
+        title: 'Sin telefono',
+        text: 'Este alumno no tiene ningun telefono registrado.',
       });
       return;
     }
 
-    // Si solo hay un teléfono, abrir directamente
+    // Si solo hay un telefono, abrir modal directamente
     if (telefono1 && !telefono2) {
-      this.abrirWhatsAppConTelefono(telefono1);
+      this.abrirModalWhatsapp(telefono1);
       return;
     }
 
     if (!telefono1 && telefono2) {
-      this.abrirWhatsAppConTelefono(telefono2);
+      this.abrirModalWhatsapp(telefono2);
       return;
     }
 
-    // Si hay dos teléfonos, mostrar selector
+    // Si hay dos telefonos, mostrar selector
     Swal.fire({
-      title: 'Seleccionar teléfono',
-      text: '¿A qué número deseas enviar el mensaje de WhatsApp?',
+      title: 'Seleccionar telefono',
+      text: 'A que numero deseas enviar el mensaje de WhatsApp?',
       icon: 'question',
       showCancelButton: true,
       showDenyButton: true,
@@ -1114,26 +1119,81 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       denyButtonColor: '#128C7E',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.abrirWhatsAppConTelefono(telefono1);
+        this.abrirModalWhatsapp(telefono1);
       } else if (result.isDenied) {
-        this.abrirWhatsAppConTelefono(telefono2);
+        this.abrirModalWhatsapp(telefono2);
       }
     });
   }
 
+  private abrirModalWhatsapp(telefono: string | number): void {
+    this.whatsappTelefonoSeleccionado = telefono;
+    this.whatsappMensaje = this.buildWhatsappMensajePlantilla();
+    this.whatsappDocumentosSeleccionados = new Set<number>();
+    this.mostrarModalWhatsapp = true;
+  }
+
+  cerrarModalWhatsapp(): void {
+    this.mostrarModalWhatsapp = false;
+  }
+
+  isWhatsappDocumentoSeleccionado(documentoId: number): boolean {
+    return this.whatsappDocumentosSeleccionados.has(documentoId);
+  }
+
+  toggleWhatsappDocumento(documentoId: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const seleccionados = new Set(this.whatsappDocumentosSeleccionados);
+    if (input.checked) {
+      seleccionados.add(documentoId);
+    } else {
+      seleccionados.delete(documentoId);
+    }
+    this.whatsappDocumentosSeleccionados = seleccionados;
+  }
+
+  enviarWhatsappConDocumentos(): void {
+    if (!this.whatsappTelefonoSeleccionado) {
+      showErrorToast('No se pudo seleccionar telefono');
+      return;
+    }
+
+    const documentosSeleccionados = this.documentosAlumno.filter(
+      (doc) => this.whatsappDocumentosSeleccionados.has(doc.id)
+    );
+    documentosSeleccionados.forEach((doc) => this.descargarDocumento(doc));
+
+    const mensaje = (this.whatsappMensaje || '').trim();
+    const telefono = this.whatsappTelefonoSeleccionado;
+    this.cerrarModalWhatsapp();
+    this.abrirWhatsAppConTelefono(telefono, mensaje);
+  }
+
+  private buildWhatsappMensajePlantilla(): string {
+    const nombreCompleto = `${this.alumno?.nombre ?? ''} ${this.alumno?.apellidos ?? ''}`.trim();
+    if (nombreCompleto) {
+      return `Hola, te envio la documentacion de ${nombreCompleto}.`;
+    }
+    return this.whatsappMensajePlantilla;
+  }
+
   /**
-   * Abre WhatsApp Web con el teléfono proporcionado.
+   * Abre WhatsApp Web con el telefono proporcionado.
    */
-  private abrirWhatsAppConTelefono(telefono: string | number): void {
-    // Convertir a string y limpiar de espacios y caracteres no numéricos
+  private abrirWhatsAppConTelefono(telefono: string | number, mensaje?: string): void {
+    // Convertir a string y limpiar de espacios y caracteres no numericos
     let telefonoLimpio = String(telefono).replace(/\D/g, '');
 
-    // Añadir código de país de España si no lo tiene
+    // Anadir codigo de pais de Espana si no lo tiene
     if (!telefonoLimpio.startsWith('34') && telefonoLimpio.length === 9) {
       telefonoLimpio = '34' + telefonoLimpio;
     }
 
-    const whatsappUrl = `https://wa.me/${telefonoLimpio}`;
+    let whatsappUrl = `https://wa.me/${telefonoLimpio}`;
+    const texto = mensaje?.trim();
+    if (texto) {
+      whatsappUrl = `${whatsappUrl}?text=${encodeURIComponent(texto)}`;
+    }
     window.open(whatsappUrl, '_blank');
   }
 

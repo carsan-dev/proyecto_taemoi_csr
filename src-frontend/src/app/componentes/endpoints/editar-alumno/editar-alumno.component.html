@@ -1586,7 +1586,7 @@
                     <span>Subir Documento</span>
                   </button>
                   <button type="button" class="admin-btn admin-btn-whatsapp" (click)="abrirWhatsApp()"
-                    aria-label="Abrir WhatsApp" [disabled]="!alumno?.telefono">
+                    aria-label="Abrir WhatsApp" [disabled]="!alumno?.telefono && !alumno?.telefono2">
                     <i class="bi bi-whatsapp"></i>
                     <span>WhatsApp</span>
                   </button>
@@ -1737,6 +1737,81 @@
         <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalEliminarConvocatorias()">
           <i class="bi bi-x-circle"></i>
           <span>Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal de WhatsApp -->
+  @if (alumno) {
+  <div id="whatsappModal" class="modal" [class.show]="mostrarModalWhatsapp"
+    (click)="cerrarModalWhatsapp()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-whatsapp me-2"></i>
+          Enviar WhatsApp
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalWhatsapp()" aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Escribe el mensaje y selecciona los documentos que quieras descargar.</p>
+
+        <div class="admin-form-field mb-3">
+          <label for="whatsappMensaje">
+            <i class="bi bi-chat-dots"></i>
+            Mensaje
+          </label>
+          <textarea id="whatsappMensaje" class="admin-form-control" rows="4"
+            [(ngModel)]="whatsappMensaje" placeholder="Escribe el mensaje"></textarea>
+        </div>
+
+        <div class="whatsapp-docs-section">
+          <h6 class="whatsapp-docs-title">
+            <i class="bi bi-paperclip"></i>
+            Documentos
+          </h6>
+          @if (documentosAlumno && documentosAlumno.length > 0) {
+          <div class="whatsapp-docs-list">
+            @for (doc of documentosAlumno; track doc.id) {
+            <label class="whatsapp-doc-item">
+              <input type="checkbox" class="form-check-input"
+                [checked]="isWhatsappDocumentoSeleccionado(doc.id)"
+                (change)="toggleWhatsappDocumento(doc.id, $event)"
+                [attr.aria-label]="'Seleccionar documento ' + doc.nombre" />
+              <span class="doc-name" [title]="doc.nombre">{{ doc.nombre }}</span>
+              <span class="doc-type">{{ doc.tipo }}</span>
+            </label>
+            }
+          </div>
+          } @else {
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No hay documentos disponibles</p>
+          </div>
+          }
+          <small class="form-text text-muted">
+            Los documentos seleccionados se descargaran al enviar para adjuntarlos manualmente en WhatsApp.
+          </small>
+        </div>
+
+        @if (whatsappTelefonoSeleccionado) {
+        <div class="whatsapp-telefono mt-3">
+          <i class="bi bi-telephone"></i>
+          Numero seleccionado: {{ whatsappTelefonoSeleccionado }}
+        </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalWhatsapp()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-whatsapp"
+          (click)="enviarWhatsappConDocumentos()" [disabled]="!whatsappTelefonoSeleccionado">
+          <i class="bi bi-whatsapp"></i>
+          <span>Enviar</span>
         </button>
       </div>
     </div>
