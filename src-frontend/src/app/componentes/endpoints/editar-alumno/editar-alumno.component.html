@@ -204,12 +204,12 @@
         <!-- Multi-Sport Tabs Section -->
         @if (deportesDelAlumno.length > 0) {
         <div class="admin-card mb-4">
-          <div class="info-card-header d-flex justify-content-between align-items-center">
+          <div class="info-card-header deportes-alumno-header">
             <h5 class="info-card-title">
               <i class="bi bi-trophy-fill"></i>
               Deportes del Alumno
             </h5>
-            <div class="d-flex gap-2">
+            <div class="deporte-actions">
               @if (deportesDisponibles.length > 0) {
               <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="abrirModalAgregarDeporte()">
                 <i class="bi bi-plus-circle"></i>
@@ -1521,7 +1521,7 @@
           </div>
 
           <!-- Documentos -->
-          <div class="col-12 mb-4">
+          <div class="col-12 mb-4" id="documentos-section">
             <div class="admin-card">
               <div class="info-card-header">
                 <h5 class="info-card-title">
@@ -1531,9 +1531,11 @@
               </div>
               <div class="info-card-body">
                 @if (documentosAlumno && documentosAlumno.length > 0) {
-                <div class="documentos-grid">
-                  @for (doc of documentosAlumno; track doc.id) {
-                  <div class="documento-item">
+                <div class="documentos-grid" [class.expanded]="mostrarTodosDocumentos">
+                  @for (doc of documentosVisibles; track doc.id; let i = $index) {
+                  <div class="documento-item"
+                    [class.nuevo-item]="mostrarTodosDocumentos && i >= documentosVisiblesInicial"
+                    [style.animation-delay]="mostrarTodosDocumentos && i >= documentosVisiblesInicial ? ((i - documentosVisiblesInicial) * 0.05) + 's' : '0s'">
                     <div class="documento-icon">
                       <i class="bi bi-file-earmark-pdf-fill"></i>
                     </div>
@@ -1558,6 +1560,17 @@
                   </div>
                   }
                 </div>
+                @if (documentosAlumno.length > documentosVisiblesInicial) {
+                <button type="button" class="btn-ver-mas mt-3" (click)="toggleMostrarDocumentos()">
+                  @if (mostrarTodosDocumentos) {
+                  <i class="bi bi-chevron-up"></i>
+                  <span>Ver menos</span>
+                  } @else {
+                  <i class="bi bi-chevron-down"></i>
+                  <span>Ver más ({{ documentosAlumno.length - documentosVisiblesInicial }} más)</span>
+                  }
+                </button>
+                }
                 }
                 @if (!documentosAlumno || documentosAlumno.length === 0) {
                 <div class="empty-state">
