@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
@@ -6,17 +7,20 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-listado-eventos',
   standalone: true,
-  imports: [CommonModule, RouterModule, SkeletonCardComponent],
+  imports: [CommonModule, RouterModule, SkeletonCardComponent, DragDropModule],
   templateUrl: './listado-eventos.component.html',
   styleUrl: './listado-eventos.component.scss',
 })
 export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   cargando: boolean = true; // Local loading state
+  ordenPendiente: boolean = false;
+  guardandoOrden: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}
@@ -27,6 +31,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
       next: (eventos) => {
         this.eventos = eventos;
         this.cargando = false;
+        this.ordenPendiente = false;
       },
       error: (error) => {
         this.cargando = false;
@@ -46,6 +51,36 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  drop(event: CdkDragDrop<any[]>): void {
+    if (this.cargando || !this.eventos || this.eventos.length === 0) {
+      return;
+    }
+    moveItemInArray(this.eventos, event.previousIndex, event.currentIndex);
+    this.ordenPendiente = true;
+  }
+
+  guardarOrden(): void {
+    if (!this.ordenPendiente || this.guardandoOrden) {
+      return;
+    }
+
+    const ordenIds = this.eventos.map((evento) => evento.id);
+    this.guardandoOrden = true;
+    this.endpointsService
+      .actualizarOrdenEventos(ordenIds)
+      .pipe(finalize(() => (this.guardandoOrden = false)))
+      .subscribe({
+        next: () => {
+          showSuccessToast('Orden de eventos guardado');
+          this.ordenPendiente = false;
+          this.endpointsService.obtenerTodosLosEventos();
+        },
+        error: () => {
+          showErrorToast('No se pudo guardar el orden de eventos');
+        },
+      });
   }
 
   eliminarEvento(id: number): void {

@@ -86,3 +86,51 @@
     color: white;
   }
 }
+
+.admin-item-card {
+  position: relative;
+
+  &.cdk-drag-preview {
+    transition: none !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  &.cdk-drag-placeholder {
+    opacity: 0.35;
+  }
+
+  &.cdk-drag-dragging {
+    transition: none !important;
+  }
+}
+
+.admin-cards-grid.cdk-drop-list-dragging .admin-item-card:not(.cdk-drag-placeholder) {
+  transition: transform 200ms ease;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #2f3a3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: background 0.2s ease;
+  z-index: 2;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
