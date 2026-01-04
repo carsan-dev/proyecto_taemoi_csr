@@ -1,15 +1,14 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
-import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { EventosVistaComponent } from './eventos-vista.component';
 
 @Component({
   selector: 'app-eventos',
   standalone: true,
-  imports: [CommonModule, SkeletonCardComponent],
+  imports: [EventosVistaComponent],
   templateUrl: './eventos.component.html',
   styleUrl: './eventos.component.scss',
 })
