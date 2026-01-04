@@ -204,7 +204,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public List<Documento> obtenerDocumentosAlumno(Long alumnoId) {
 	    Alumno alumno = alumnoRepository.findById(alumnoId)
 	            .orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
-	    return alumno.getDocumentos();
+	    return documentoRepository.findByAlumnoIdOrderByNombreAsc(alumno.getId());
 	}
 
 	/**
