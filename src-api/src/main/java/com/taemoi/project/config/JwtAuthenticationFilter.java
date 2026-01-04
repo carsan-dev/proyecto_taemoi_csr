@@ -95,9 +95,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 			}
 		} catch (Exception e) {
-			logger.error(">>> ERROR en la validación del token JWT para {}: {}", requestPath, e.getMessage());
-			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
-			return;
+			// Token inválido o expirado - no autenticar al usuario
+			// En lugar de devolver error aquí (que no tendría headers CORS),
+			// dejamos que la petición continúe sin autenticación.
+			// Spring Security devolverá un 401 con los headers CORS correctos.
+			logger.warn(">>> Token JWT inválido o expirado para {}: {}", requestPath, e.getMessage());
+			SecurityContextHolder.clearContext();
 		}
 
 		logger.info(">>> JwtAuthenticationFilter completed for: {}", requestPath);
