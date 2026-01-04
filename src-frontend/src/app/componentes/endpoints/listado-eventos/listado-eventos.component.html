@@ -1,6 +1,6 @@
 <div id="imageModal" class="modal" (click)="cerrarModal()">
   <span class="close" (click)="cerrarModal()"><i class="bi bi-x-circle-fill"></i></span>
-  <img class="modal-content" id="imgAmpliada" />
+  <img class="modal-content" id="imgAmpliada" [alt]="modalAlt" />
   <div id="caption"></div>
 </div>
 
@@ -49,7 +49,7 @@
             <div class="item-header">
               <img class="item-image"
                 [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                [alt]="'Imagen de ' + evento.titulo" (click)="abrirModal(evento.fotoEvento?.url)"
+                [alt]="evento.titulo" (click)="abrirModal(evento.fotoEvento?.url, evento.titulo)"
                 style="cursor: zoom-in;" />
               <div class="item-title">
                 <h4>
@@ -115,8 +115,7 @@
 
 @if (previewVisible) {
 <div class="preview-modal" id="eventosPreviewModal" (click)="togglePreview()">
-  <div class="preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle"
-    (click)="$event.stopPropagation()">
+  <dialog class="preview-modal-dialog" aria-labelledby="previewTitle" open (click)="$event.stopPropagation()">
     <div class="preview-modal-header">
       <div class="preview-heading">
         <h3 class="preview-title" id="previewTitle">Vista previa</h3>
@@ -134,6 +133,6 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 </div>
 }
