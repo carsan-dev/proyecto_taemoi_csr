@@ -6,6 +6,35 @@
 // COMPONENT-SPECIFIC STYLES FOR EDITAR-ALUMNO
 // ========================================
 
+// Header for "Deportes del Alumno" section with responsive buttons
+.deportes-alumno-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .deporte-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .deporte-actions {
+      width: 100%;
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
 // Image Modal (for viewing full-size images)
 .modal {
   display: none;
@@ -494,8 +523,14 @@
   .producto-status {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+
+    .status-badge {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
   }
 
   .admin-btn-icon {

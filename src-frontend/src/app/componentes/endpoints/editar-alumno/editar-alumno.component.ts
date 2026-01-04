@@ -24,6 +24,7 @@ import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
+import { ScrollService } from '../../../servicios/generales/scroll.service';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 
@@ -88,6 +89,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   mostrarModalConvocatorias = false;
   mostrarModalEliminarConvocatorias = false;
   documentosAlumno: any[] = [];
+  mostrarTodosDocumentos = false;
+  readonly documentosVisiblesInicial = 5;
 
   // Multi-sport properties
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
@@ -211,7 +214,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly location: Location
+    private readonly location: Location,
+    private readonly scrollService: ScrollService
   ) {
     this.alumnoForm = this.fb.group(
       {
@@ -1131,6 +1135,32 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     const whatsappUrl = `https://wa.me/${telefonoLimpio}`;
     window.open(whatsappUrl, '_blank');
+  }
+
+  /**
+   * Devuelve los documentos visibles según el estado de mostrarTodosDocumentos.
+   */
+  get documentosVisibles(): any[] {
+    if (this.mostrarTodosDocumentos || this.documentosAlumno.length <= this.documentosVisiblesInicial) {
+      return this.documentosAlumno;
+    }
+    return this.documentosAlumno.slice(0, this.documentosVisiblesInicial);
+  }
+
+  /**
+   * Alterna entre mostrar todos los documentos o solo los iniciales.
+   * Al colapsar, hace scroll a la sección de documentos.
+   */
+  toggleMostrarDocumentos(): void {
+    const estabaExpandido = this.mostrarTodosDocumentos;
+    this.mostrarTodosDocumentos = !this.mostrarTodosDocumentos;
+
+    // Si estaba expandido y ahora se colapsa, hacer scroll a la sección
+    if (estabaExpandido) {
+      setTimeout(() => {
+        this.scrollService.scrollToElement('documentos-section');
+      }, 50);
+    }
   }
 
   /**
