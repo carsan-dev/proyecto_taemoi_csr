@@ -29,6 +29,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
   ordenPendiente: boolean = false;
   guardandoOrden: boolean = false;
   previewVisible: boolean = false;
+  modalAlt: string = 'Vista ampliada del evento';
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}
@@ -115,7 +116,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     });
   }
 
-  abrirModal(imagenUrl: string | null) {
+  abrirModal(imagenUrl: string | null, eventoTitulo?: string) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
 
@@ -128,6 +129,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
       return; // Detenemos la ejecución si no hay imagen
     }
 
+    this.modalAlt = eventoTitulo ? `Vista ampliada de ${eventoTitulo}` : 'Vista ampliada del evento';
     if (modal && modalImg) {
       modal.style.display = 'block';
       modalImg.src = imagenUrl;
