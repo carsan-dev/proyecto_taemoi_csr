@@ -15,16 +15,27 @@ Desplegar en el server
 Comandos actualizar backend (sirve para arrancar server y para actualizar los otros contenedores tambien)
 
   # 1. Stop the containers
-  sudo docker-compose -f docker-compose.production.yml down
+  sudo docker compose -f docker-compose.production.yml down
 
   # 2. Rebuild the backend with the fix (no cache to ensere fresh build)
-  sudo docker-compose -f docker-compose.production.yml build --no-cache backend
+  sudo docker compose -f docker-compose.production.yml build --no-cache backend
 
   # 3. Start all containers
-  sudo docker-compose -f docker-compose.production.yml up -d
+  sudo docker compose -f docker-compose.production.yml up -d
 
   # 4. Monitor the backend logs to ensure it starts successfully
-  sudo docker-compose -f docker-compose.production.yml logs -f backend
+  sudo docker compose -f docker-compose.production.yml logs -f backend
+
+  O comprimido en un solo comando usando alias alojados en ~/.bashrc:
+
+    dcp up -d --build backend frontend
+    dlogb
+
+  En caso de tener que recrear con una nueva imagen:
+
+    dcp build --pull backend frontend
+    dcp up -d backend frontend
+
 
 Comando para acceder al contenedor de mysql y actualizar base de datos
 
@@ -33,7 +44,7 @@ Comando para acceder al contenedor de mysql y actualizar base de datos
 Comandos para eliminar todo lo existente en docker de cara a deploy limpio
 
   # 1. Stop the containers if are running
-  sudo docker-compose -f docker-compose.production.yml down
+  sudo docker compose -f docker-compose.production.yml down
 
   # 2. Eliminate the old images of containers and containers stopped
   sudo docker system prune -af
