@@ -47,6 +47,8 @@ $warning-color: #ff9800;
 $warning-hover: #e68900;
 $info-color: #2196F3;
 $info-hover: #0b7dda;
+$whatsapp-color: #25D366;
+$whatsapp-hover: #128C7E;
 
 // ========================================
 // TYPOGRAPHY
@@ -235,6 +237,10 @@ $info-hover: #0b7dda;
 
   &.admin-btn-info {
     @include modern-button($info-color, $info-hover);
+  }
+
+  &.admin-btn-whatsapp {
+    @include modern-button($whatsapp-color, $whatsapp-hover);
   }
 
   &.admin-btn-taekwondo {
