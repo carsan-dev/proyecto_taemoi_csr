@@ -8,11 +8,18 @@ import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
+import { EventosVistaComponent } from '../../vistas/eventos/eventos-vista.component';
 
 @Component({
   selector: 'app-listado-eventos',
   standalone: true,
-  imports: [CommonModule, RouterModule, SkeletonCardComponent, DragDropModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SkeletonCardComponent,
+    DragDropModule,
+    EventosVistaComponent
+  ],
   templateUrl: './listado-eventos.component.html',
   styleUrl: './listado-eventos.component.scss',
 })
@@ -21,9 +28,18 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
   cargando: boolean = true; // Local loading state
   ordenPendiente: boolean = false;
   guardandoOrden: boolean = false;
+  previewVisible: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(public endpointsService: EndpointsService) {}
+
+  get eventosPreview(): any[] {
+    return this.eventos.filter((evento) => evento.visible !== false);
+  }
+
+  togglePreview(): void {
+    this.previewVisible = !this.previewVisible;
+  }
 
   ngOnInit(): void {
     this.cargando = true;
