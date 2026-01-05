@@ -14,10 +14,10 @@
           Gestión de Eventos
         </h2>
         <div class="action-buttons">
-          <button class="admin-btn admin-btn-primary" (click)="guardarOrden()"
-            [hidden]="!ordenPendiente || guardandoOrden">
+          <button class="admin-btn admin-btn-primary" (click)="guardarCambios()"
+            [hidden]="!cambiosPendientes" [disabled]="guardandoCambios">
             <i class="bi bi-check2-square"></i>
-            <span>{{ guardandoOrden ? 'Guardando...' : 'Guardar orden' }}</span>
+            <span>{{ guardandoCambios ? 'Guardando...' : 'Guardar cambios' }}</span>
           </button>
           <button class="admin-btn admin-btn-info" type="button" (click)="togglePreview()"
             [attr.aria-expanded]="previewVisible" aria-controls="eventosPreviewModal">
@@ -42,7 +42,8 @@
         <div class="admin-cards-grid" cdkDropList [cdkDropListData]="eventos" [cdkDropListDisabled]="cargando"
           cdkDropListOrientation="mixed" (cdkDropListDropped)="drop($event)">
           @for (evento of eventos; track evento.id) {
-          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando">
+          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando"
+            [class.is-hidden]="!isEventoVisible(evento)">
             <div class="drag-handle" cdkDragHandle title="Arrastrar para ordenar">
               <i class="bi bi-grip-vertical"></i>
             </div>
@@ -54,13 +55,12 @@
               <div class="item-title">
                 <h4>
                   {{ evento.titulo }}
-                  @if (evento.visible === false) {
+                  @if (!isEventoVisible(evento)) {
                   <span class="visibility-badge oculto" title="Evento oculto en la página pública">
                     <i class="bi bi-eye-slash"></i>
                     Oculto
                   </span>
-                  }
-                  @if (evento.visible === true) {
+                  } @else {
                   <span class="visibility-badge visible" title="Evento visible en la página pública">
                     <i class="bi bi-eye"></i>
                     Visible
@@ -78,11 +78,11 @@
 
             <div class="item-footer">
               <button class="admin-btn admin-btn-sm"
-                [ngClass]="evento.visible ? 'admin-btn-warning' : 'admin-btn-success'"
+                [ngClass]="isEventoVisible(evento) ? 'admin-btn-warning' : 'admin-btn-success'"
                 (click)="toggleVisibilidad(evento.id, evento.titulo)"
-                [title]="evento.visible ? 'Ocultar evento' : 'Mostrar evento'">
-                <i [class]="evento.visible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-                <span>{{ evento.visible ? 'Ocultar' : 'Mostrar' }}</span>
+                [title]="isEventoVisible(evento) ? 'Ocultar evento' : 'Mostrar evento'">
+                <i [class]="isEventoVisible(evento) ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                <span>{{ isEventoVisible(evento) ? 'Ocultar' : 'Mostrar' }}</span>
               </button>
               <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
                 <i class="bi bi-pencil-square"></i>

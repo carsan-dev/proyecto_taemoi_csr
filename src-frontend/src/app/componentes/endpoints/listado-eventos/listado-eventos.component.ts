@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
@@ -27,19 +28,32 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   cargando: boolean = true; // Local loading state
   ordenPendiente: boolean = false;
-  guardandoOrden: boolean = false;
+  visibilidadPendiente: boolean = false;
+  guardandoCambios: boolean = false;
   previewVisible: boolean = false;
   modalAlt: string = 'Vista ampliada del evento';
   private readonly subscriptions: Subscription = new Subscription();
+  private readonly visibilidadOverrides = new Map<number, boolean>();
 
   constructor(public endpointsService: EndpointsService) {}
 
   get eventosPreview(): any[] {
-    return this.eventos.filter((evento) => evento.visible !== false);
+    return this.eventos.filter((evento) => this.isEventoVisible(evento));
+  }
+
+  get cambiosPendientes(): boolean {
+    return this.ordenPendiente || this.visibilidadPendiente;
   }
 
   togglePreview(): void {
     this.previewVisible = !this.previewVisible;
+  }
+
+  isEventoVisible(evento: any): boolean {
+    if (this.visibilidadOverrides.has(evento.id)) {
+      return this.visibilidadOverrides.get(evento.id) as boolean;
+    }
+    return evento.visible !== false;
   }
 
   ngOnInit(): void {
@@ -49,6 +63,7 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
         this.eventos = eventos;
         this.cargando = false;
         this.ordenPendiente = false;
+        this.sincronizarVisibilidadPendiente();
       },
       error: (error) => {
         this.cargando = false;
@@ -78,24 +93,33 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     this.ordenPendiente = true;
   }
 
-  guardarOrden(): void {
-    if (!this.ordenPendiente || this.guardandoOrden) {
+  guardarCambios(): void {
+    if (!this.cambiosPendientes || this.guardandoCambios) {
       return;
     }
 
-    const ordenIds = this.eventos.map((evento) => evento.id);
-    this.guardandoOrden = true;
-    this.endpointsService
-      .actualizarOrdenEventos(ordenIds)
-      .pipe(finalize(() => (this.guardandoOrden = false)))
+    const requests = [];
+    if (this.ordenPendiente) {
+      const ordenIds = this.eventos.map((evento) => evento.id);
+      requests.push(this.endpointsService.actualizarOrdenEventos(ordenIds));
+    }
+    for (const id of this.visibilidadOverrides.keys()) {
+      requests.push(this.endpointsService.toggleVisibilidadEvento(id));
+    }
+
+    this.guardandoCambios = true;
+    forkJoin(requests)
+      .pipe(finalize(() => (this.guardandoCambios = false)))
       .subscribe({
         next: () => {
-          showSuccessToast('Orden de eventos guardado');
+          showSuccessToast('Cambios guardados');
           this.ordenPendiente = false;
+          this.visibilidadOverrides.clear();
+          this.visibilidadPendiente = false;
           this.endpointsService.obtenerTodosLosEventos();
         },
         error: () => {
-          showErrorToast('No se pudo guardar el orden de eventos');
+          showErrorToast('No se pudieron guardar los cambios');
         },
       });
   }
@@ -145,26 +169,27 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
 
   toggleVisibilidad(id: number, eventoTitulo: string): void {
     const evento = this.eventos.find((e) => e.id === id);
-    const accion = evento?.visible ? 'ocultar' : 'mostrar';
+    if (!evento) {
+      return;
+    }
+    const visibleActual = this.isEventoVisible(evento);
+    const nuevoVisible = !visibleActual;
+    const visibleOriginal = evento.visible !== false;
+    if (nuevoVisible === visibleOriginal) {
+      this.visibilidadOverrides.delete(id);
+    } else {
+      this.visibilidadOverrides.set(id, nuevoVisible);
+    }
+    this.visibilidadPendiente = this.visibilidadOverrides.size > 0;
+  }
 
-    Swal.fire({
-      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} evento?`,
-      text: `¿Deseas ${accion} "${eventoTitulo}" en la página pública?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Sí, ${accion}`,
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.endpointsService.toggleVisibilidadEvento(id).subscribe({
-          next: () => {
-            showSuccessToast(`Evento ahora ${evento?.visible ? 'oculto' : 'visible'}`);
-          },
-          error: () => {
-            showErrorToast('No se pudo cambiar la visibilidad');
-          },
-        });
+  private sincronizarVisibilidadPendiente(): void {
+    const idsActuales = new Set(this.eventos.map((evento) => evento.id));
+    for (const id of this.visibilidadOverrides.keys()) {
+      if (!idsActuales.has(id)) {
+        this.visibilidadOverrides.delete(id);
       }
-    });
+    }
+    this.visibilidadPendiente = this.visibilidadOverrides.size > 0;
   }
 }
