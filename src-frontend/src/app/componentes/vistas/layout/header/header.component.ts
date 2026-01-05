@@ -33,6 +33,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   spotifyEmbedUrl: SafeResourceUrl | null = null;
   spotifyOpenUrl: string | null = null;
   spotifyError: string = '';
+  spotifyControlsEnabled: boolean = false;
   spotifyWidgetWidth: number = 360;
   spotifyWidgetHeight: number = 360;
   private readonly spotifyUrlStorageKey = 'adminSpotifyUrl';
@@ -336,6 +337,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   guardarSpotifyUrl(): void {
+    if (!this.spotifyControlsEnabled) {
+      return;
+    }
     const url = this.spotifyUrlInput.trim();
     const windowRef = this.getWindowRef();
     if (!url) {
@@ -365,6 +369,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   abrirSpotify(): void {
+    if (!this.spotifyControlsEnabled) {
+      return;
+    }
     const windowRef = this.getWindowRef();
     if (this.spotifyOpenUrl && windowRef !== undefined) {
       windowRef.open(this.spotifyOpenUrl, '_blank', 'noopener');

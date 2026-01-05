@@ -366,10 +366,14 @@
         <div class="spotify-input-row">
           <input id="spotifyUrlInput" class="spotify-input" type="url" [(ngModel)]="spotifyUrlInput"
             (keydown.enter)="guardarSpotifyUrl()" placeholder="https://open.spotify.com/playlist/..." />
-          <button class="spotify-save" type="button" (click)="guardarSpotifyUrl()">Guardar</button>
+          <button class="spotify-save" type="button" (click)="guardarSpotifyUrl()"
+            [disabled]="!spotifyControlsEnabled">
+            Guardar
+          </button>
         </div>
         <div class="spotify-actions">
-          <button class="spotify-open" type="button" (click)="abrirSpotify()" [disabled]="!spotifyOpenUrl">
+          <button class="spotify-open" type="button" (click)="abrirSpotify()"
+            [disabled]="!spotifyControlsEnabled || !spotifyOpenUrl">
             <i class="bi bi-box-arrow-up-right"></i>
             Abrir en Spotify
           </button>
