@@ -104,6 +104,10 @@
   }
 }
 
+.admin-item-card.is-moved {
+  animation: movePulse 350ms ease;
+}
+
 .admin-item-card.is-hidden {
   background: #f1f3f5;
   border: 1px dashed #d0d5dd;
@@ -111,6 +115,15 @@
 
   .item-image {
     filter: grayscale(1);
+  }
+}
+
+@keyframes movePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
   }
 }
 
@@ -151,6 +164,38 @@
 
   &:active {
     cursor: grabbing;
+  }
+}
+
+.move-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: none;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.move-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: #2f3a3a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 
@@ -288,6 +333,16 @@
 
   .preview-viewport {
     max-height: calc(100vh - 240px);
+  }
+}
+
+@media (max-width: 768px) {
+  .move-controls {
+    display: inline-flex;
+  }
+
+  .drag-handle {
+    display: none;
   }
 }
 
