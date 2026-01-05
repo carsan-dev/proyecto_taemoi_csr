@@ -202,4 +202,20 @@ public class AdminController {
 		configuracionSistemaService.actualizarLimiteTurno(nuevoLimite);
 		return ResponseEntity.ok(nuevoLimite);
 	}
+
+	@GetMapping("/configuracion/spotify-url")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<String> obtenerSpotifyUrl() {
+		logger.info("## AdminController :: obtenerSpotifyUrl");
+		String url = configuracionSistemaService.obtenerSpotifyUrl();
+		return ResponseEntity.ok(url);
+	}
+
+	@PutMapping("/configuracion/spotify-url")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<String> actualizarSpotifyUrl(@RequestBody(required = false) String spotifyUrl) {
+		logger.info("## AdminController :: actualizarSpotifyUrl");
+		configuracionSistemaService.actualizarSpotifyUrl(spotifyUrl);
+		return ResponseEntity.ok(spotifyUrl);
+	}
 }
