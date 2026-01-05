@@ -106,6 +106,7 @@
 
 .admin-item-card.is-moved {
   animation: movePulse 350ms ease;
+  z-index: 3;
 }
 
 .admin-item-card.is-hidden {
