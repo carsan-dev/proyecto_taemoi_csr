@@ -172,10 +172,10 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         this.stats.totalEventos = eventos.length;
         this.stats.eventosVisibles = eventos.filter((e: any) => e.visible).length;
 
-        // Get visible events (up to 5)
+        // Get visible events (up to 4)
         this.stats.proximosEventos = eventos
           .filter((e: any) => e.visible)
-          .slice(0, 5);
+          .slice(0, 4);
 
         this.cargandoEventos = false;
       }
