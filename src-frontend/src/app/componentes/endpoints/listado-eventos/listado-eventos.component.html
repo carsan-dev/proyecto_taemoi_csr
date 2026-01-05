@@ -41,9 +41,20 @@
         @if (!cargando && eventos && eventos.length > 0) {
         <div class="admin-cards-grid" cdkDropList [cdkDropListData]="eventos" [cdkDropListDisabled]="cargando"
           cdkDropListOrientation="mixed" (cdkDropListDropped)="drop($event)">
-          @for (evento of eventos; track evento.id) {
-          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando"
-            [class.is-hidden]="!isEventoVisible(evento)">
+          @for (evento of eventos; track evento.id; let i = $index) {
+          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando" #eventoCard
+            [attr.data-evento-id]="evento.id"
+            [class.is-hidden]="!isEventoVisible(evento)" [class.is-moved]="evento.id === movedEventoId">
+            <div class="move-controls">
+              <button class="move-btn" type="button" (click)="moverEvento(i, -1)"
+                [disabled]="cargando || i === 0" aria-label="Mover evento arriba" title="Mover arriba">
+                <i class="bi bi-arrow-up"></i>
+              </button>
+              <button class="move-btn" type="button" (click)="moverEvento(i, 1)"
+                [disabled]="cargando || i === eventos.length - 1" aria-label="Mover evento abajo" title="Mover abajo">
+                <i class="bi bi-arrow-down"></i>
+              </button>
+            </div>
             <div class="drag-handle" cdkDragHandle title="Arrastrar para ordenar">
               <i class="bi bi-grip-vertical"></i>
             </div>
