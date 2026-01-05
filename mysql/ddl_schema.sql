@@ -351,6 +351,7 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`configuracion_sistema` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `clave` VARCHAR(255) NOT NULL,
   `valor` INT NOT NULL,
+  `valor_texto` VARCHAR(500) NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
