@@ -104,6 +104,16 @@
   }
 }
 
+.admin-item-card.is-hidden {
+  background: #f1f3f5;
+  border: 1px dashed #d0d5dd;
+  opacity: 0.78;
+
+  .item-image {
+    filter: grayscale(1);
+  }
+}
+
 .admin-cards-grid.cdk-drop-list-dragging .admin-item-card:not(.cdk-drag-placeholder) {
   transition: transform 200ms ease;
 }
