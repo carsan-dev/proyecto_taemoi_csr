@@ -1368,4 +1368,20 @@ export class EndpointsService {
       })
       .pipe(catchError(this.manejarError));
   }
+
+  obtenerSpotifyUrl(): Observable<string | null> {
+    return this.http
+      .get<string | null>(`${this.urlBase}/admin/configuracion/spotify-url`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarSpotifyUrl(spotifyUrl: string | null): Observable<string | null> {
+    return this.http
+      .put<string | null>(`${this.urlBase}/admin/configuracion/spotify-url`, spotifyUrl, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
 }
