@@ -963,6 +963,7 @@ header.fixed-header {
     align-items: center;
     justify-content: space-between;
     gap: 2rem;
+    min-width: 0;
   }
 
   .admin-toggle-button {
@@ -995,6 +996,7 @@ header.fixed-header {
     gap: 1rem;
     text-decoration: none;
     flex: 1;
+    min-width: 0;
 
     .admin-logo {
       height: 50px;
@@ -1005,6 +1007,7 @@ header.fixed-header {
       display: flex;
       flex-direction: column;
       gap: 0.1rem;
+      min-width: 0;
 
       .brand-title {
         font-size: 1.1rem;
@@ -1012,6 +1015,9 @@ header.fixed-header {
         color: $text-light;
         letter-spacing: 1px;
         text-transform: uppercase;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .brand-subtitle {
@@ -1019,6 +1025,9 @@ header.fixed-header {
         color: rgba($text-light, 0.7);
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   }
@@ -1027,6 +1036,7 @@ header.fixed-header {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    flex-shrink: 0;
 
     .admin-user-info {
       display: flex;
@@ -1514,6 +1524,13 @@ header.fixed-header {
   &:hover {
     background: #25d566;
   }
+
+  &:disabled {
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
 }
 
 .spotify-error {
@@ -1608,6 +1625,20 @@ header.fixed-header {
   .spotify-widget {
     right: 1rem;
     bottom: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-top-navbar {
+    .navbar-container {
+      gap: 1rem;
+    }
+
+    .navbar-actions {
+      .admin-user-info {
+        display: none;
+      }
+    }
   }
 }
 
