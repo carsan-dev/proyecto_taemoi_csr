@@ -2,7 +2,6 @@ package com.taemoi.project.services.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.entities.ConfiguracionSistema;
@@ -20,8 +19,6 @@ public class ConfiguracionSistemaServiceImpl implements ConfiguracionSistemaServ
 
     private static final String CLAVE_LIMITE_TURNO = "limite_turno";
     private static final Integer LIMITE_TURNO_DEFAULT = 36;
-    private static final String CLAVE_SPOTIFY_URL = "spotify_url";
-    private static final Integer VALOR_TEXTO_DEFAULT = 1;
 
     @Autowired
     private ConfiguracionSistemaRepository configuracionSistemaRepository;
@@ -61,35 +58,6 @@ public class ConfiguracionSistemaServiceImpl implements ConfiguracionSistemaServ
         ConfiguracionSistema config = configuracionSistemaRepository.findByClave(CLAVE_LIMITE_TURNO)
                 .orElse(new ConfiguracionSistema(CLAVE_LIMITE_TURNO, nuevoLimite));
         config.setValor(nuevoLimite);
-        configuracionSistemaRepository.save(config);
-    }
-
-    @Override
-    @Nullable
-    public String obtenerSpotifyUrl() {
-        return configuracionSistemaRepository.findByClave(CLAVE_SPOTIFY_URL)
-                .map(ConfiguracionSistema::getValorTexto)
-                .orElse(null);
-    }
-
-    @Override
-    @Transactional
-    public void actualizarSpotifyUrl(@Nullable String spotifyUrl) {
-        String normalizado = spotifyUrl == null ? null : spotifyUrl.trim();
-        if (normalizado != null && normalizado.isEmpty()) {
-            normalizado = null;
-        }
-
-        ConfiguracionSistema config = configuracionSistemaRepository.findByClave(CLAVE_SPOTIFY_URL).orElse(null);
-        if (normalizado == null && config == null) {
-            return;
-        }
-
-        if (config == null) {
-            config = new ConfiguracionSistema(CLAVE_SPOTIFY_URL, VALOR_TEXTO_DEFAULT);
-        }
-        config.setValor(VALOR_TEXTO_DEFAULT);
-        config.setValorTexto(normalizado);
         configuracionSistemaRepository.save(config);
     }
 }

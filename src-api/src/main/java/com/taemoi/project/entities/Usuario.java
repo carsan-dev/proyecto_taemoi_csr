@@ -66,6 +66,9 @@ private String contrasena;
 	@Column(name = "reset_token_expires_at")
 	private LocalDateTime resetTokenExpiresAt;
 
+	@Column(name = "spotify_url", length = 500)
+	private String spotifyUrl;
+
 	@ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
 	@Enumerated(EnumType.STRING)
 	@CollectionTable(name = "usuario_rol")
@@ -182,6 +185,14 @@ private String contrasena;
 
 	public void setResetTokenExpiresAt(LocalDateTime resetTokenExpiresAt) {
 		this.resetTokenExpiresAt = resetTokenExpiresAt;
+	}
+
+	public String getSpotifyUrl() {
+		return spotifyUrl;
+	}
+
+	public void setSpotifyUrl(String spotifyUrl) {
+		this.spotifyUrl = spotifyUrl;
 	}
 
 	public Long getId() {
