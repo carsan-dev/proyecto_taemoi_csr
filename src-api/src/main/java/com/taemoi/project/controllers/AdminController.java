@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -207,15 +209,31 @@ public class AdminController {
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	public ResponseEntity<String> obtenerSpotifyUrl() {
 		logger.info("## AdminController :: obtenerSpotifyUrl");
-		String url = configuracionSistemaService.obtenerSpotifyUrl();
-		return ResponseEntity.ok(url);
+		Usuario usuario = obtenerUsuarioAutenticado();
+		return ResponseEntity.ok(usuario.getSpotifyUrl());
 	}
 
 	@PutMapping("/configuracion/spotify-url")
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	public ResponseEntity<String> actualizarSpotifyUrl(@RequestBody(required = false) String spotifyUrl) {
 		logger.info("## AdminController :: actualizarSpotifyUrl");
-		configuracionSistemaService.actualizarSpotifyUrl(spotifyUrl);
-		return ResponseEntity.ok(spotifyUrl);
+		Usuario usuario = obtenerUsuarioAutenticado();
+		String normalizado = spotifyUrl == null ? null : spotifyUrl.trim();
+		if (normalizado != null && normalizado.isEmpty()) {
+			normalizado = null;
+		}
+		usuario.setSpotifyUrl(normalizado);
+		usuarioService.actualizarUsuario(usuario);
+		return ResponseEntity.ok(normalizado);
+	}
+
+	private Usuario obtenerUsuarioAutenticado() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			throw new UsuarioNoEncontradoException("Usuario no autenticado.");
+		}
+		String email = authentication.getName();
+		return usuarioService.encontrarPorEmail(email)
+				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con email: " + email));
 	}
 }

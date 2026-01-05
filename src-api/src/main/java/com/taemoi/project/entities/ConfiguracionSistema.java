@@ -1,6 +1,5 @@
 package com.taemoi.project.entities;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -21,9 +20,6 @@ public class ConfiguracionSistema {
     @NotNull(message = "El valor no puede ser nulo")
     @Min(value = 1, message = "El límite debe ser al menos 1")
     private Integer valor;
-
-    @Column(name = "valor_texto", length = 500)
-    private String valorTexto;
 
     public ConfiguracionSistema() {
     }
@@ -57,11 +53,4 @@ public class ConfiguracionSistema {
         this.valor = valor;
     }
 
-    public String getValorTexto() {
-        return valorTexto;
-    }
-
-    public void setValorTexto(String valorTexto) {
-        this.valorTexto = valorTexto;
-    }
 }
