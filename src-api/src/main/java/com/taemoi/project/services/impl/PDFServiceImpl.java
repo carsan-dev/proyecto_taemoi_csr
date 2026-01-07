@@ -2277,7 +2277,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		// Table
 		html.append("<table>");
 		html.append("<thead><tr>");
-		html.append("<th style='width: 28%;'>NOMBRE</th>");
+		html.append("<th style='width: 28%;'>APELLIDOS Y NOMBRE</th>");
 		html.append("<th style='width: 12%;'>DEPORTE</th>");
 		html.append("<th style='width: 14%;'>DESCUENTO</th>");
 		html.append("<th style='width: 12%;'>CUANTÍA</th>");
@@ -2299,7 +2299,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			            if (alumno == null) {
 			                return "";
 			            }
-			            return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
+			            String apellidos = alumno.getApellidos() == null ? "" : alumno.getApellidos();
+			            String nombre = alumno.getNombre() == null ? "" : alumno.getNombre();
+			            return (apellidos + " " + nombre).trim().toLowerCase(Locale.ROOT);
 			        })
 			        .thenComparing(ad -> {
 			            if (ad.getDeporte() == Deporte.TAEKWONDO) {
@@ -2339,8 +2341,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			    html.append("<tr>");
 
 			    // NOMBRE
-			    html.append("<td class='nombre-cell'>").append(alumno.getNombre()).append(" ")
-			            .append(alumno.getApellidos()).append("</td>");
+			    String nombreCompleto = (alumno.getApellidos() == null ? "" : alumno.getApellidos())
+			            + " " + (alumno.getNombre() == null ? "" : alumno.getNombre());
+			    html.append("<td class='nombre-cell'>").append(nombreCompleto.trim()).append("</td>");
 
 			    // DEPORTE
 			    html.append("<td class='deporte-cell'>");
