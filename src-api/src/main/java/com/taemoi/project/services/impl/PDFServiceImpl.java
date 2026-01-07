@@ -2437,7 +2437,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			    for (AlumnoDeporte ad : deportesAlumno) {
 			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
 			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
-			        String fechaPago = "-";
+			        String fechaPago = "";
 			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
 			            boolean todosPagados = productosAlumno.stream()
 			                    .allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
