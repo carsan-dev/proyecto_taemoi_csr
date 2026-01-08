@@ -2,10 +2,13 @@ package com.taemoi.project.services.impl;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
@@ -32,6 +36,18 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private static final String TARIFA_COMPETIDOR_TAEKWONDO = "TARIFA COMPETIDOR TAEKWONDO";
 	private static final String TARIFA_COMPETIDOR_KICKBOXING = "TARIFA COMPETIDOR KICKBOXING";
 	private static final Double PRECIO_TARIFA_COMPETIDOR = 20.0;
+	private static final String LICENCIA_FEDERATIVA_ADULTO = "LICENCIA FEDERATIVA ADULTO";
+	private static final String LICENCIA_FEDERATIVA_INFANTIL = "LICENCIA FEDERATIVA INFANTIL";
+	private static final String LICENCIA_FEDERATIVA_DISCAPACIDAD = "LICENCIA FEDERATIVA DISCAPACIDAD";
+	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_ADULTO =
+			"PARTE PROPORCIONAL LICENCIA FEDERATIVA ADULTO";
+	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL =
+			"PARTE PROPORCIONAL LICENCIA FEDERATIVA INFANTIL";
+	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD =
+			"PARTE PROPORCIONAL LICENCIA FEDERATIVA DISCAPACIDAD";
+	private static final int EDAD_LIMITE_INFANTIL = 14;
+	private static final int MES_CORTE_LICENCIA = 9;
+	private static final DateTimeFormatter FORMATO_FECHA_LICENCIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
@@ -418,18 +434,105 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void crearAltaLicenciaFederativa(Alumno alumno) {
-		// Check if product exists - if not, skip license creation instead of failing
-		var optionalProducto = productoRepository.findByConcepto("LICENCIA FEDERATIVA");
-		if (optionalProducto.isEmpty()) {
-			// Log warning but don't fail - allows system to work without this product configured
-			System.out.println("ADVERTENCIA: Producto 'LICENCIA FEDERATIVA' no encontrado. " +
-					"Se omitirá la creación automática de licencia para el alumno " + alumno.getId());
-			return;
+	public void cargarLicenciasGenerales(int ano, String deporte) {
+		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
+		LocalDate fechaInicio = obtenerFechaInicioLicencia(ano, esSegundaMitadDelAno);
+		LocalDate fechaFin = LocalDate.of(ano, 12, 31);
+
+		List<AlumnoDeporte> alumnosDeportes = obtenerAlumnosDeportesLicencia(deporte);
+		Set<String> conceptosExistentes = obtenerConceptosLicenciaExistentes();
+		Date fechaAsignacion = Date.from(fechaInicio.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
+			Alumno alumno = alumnoDeporte.getAlumno();
+			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno);
+			String concepto = construirConceptoLicencia(
+					productoLicencia.getConcepto(),
+					fechaInicio,
+					fechaFin,
+					alumnoDeporte.getDeporte());
+			String clave = alumno.getId() + "-" + concepto;
+
+			if (conceptosExistentes.contains(clave)) {
+				continue;
+			}
+
+			ProductoAlumno productoAlumno = new ProductoAlumno();
+			productoAlumno.setAlumno(alumno);
+			productoAlumno.setAlumnoDeporte(alumnoDeporte);
+			productoAlumno.setProducto(productoLicencia);
+			productoAlumno.setConcepto(concepto);
+			productoAlumno.setPrecio(productoLicencia.getPrecio());
+			productoAlumno.setFechaAsignacion(fechaAsignacion);
+			productoAlumno.setCantidad(1);
+			productoAlumno.setPagado(false);
+
+			productoAlumnoRepository.save(productoAlumno);
+		}
+	}
+
+	@Override
+	public void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+
+		if (!Boolean.TRUE.equals(alumno.getActivo())) {
+			throw new IllegalArgumentException("El alumno no está activo.");
 		}
 
-		Producto productoLicencia = optionalProducto.get();
+		List<AlumnoDeporte> deportesObjetivo = obtenerDeportesAlumnoParaLicencia(alumnoId, deporte);
+		if (deportesObjetivo.isEmpty()) {
+			throw new IllegalArgumentException("El alumno no tiene licencias activadas en los deportes seleccionados.");
+		}
 
+		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
+		LocalDate fechaInicio = obtenerFechaInicioLicencia(ano, esSegundaMitadDelAno);
+		LocalDate fechaFin = LocalDate.of(ano, 12, 31);
+		Date fechaAsignacion = Date.from(fechaInicio.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+		boolean algunoCreado = false;
+		StringBuilder mensajesExistentes = new StringBuilder();
+
+		for (AlumnoDeporte alumnoDeporte : deportesObjetivo) {
+			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno);
+			String concepto = construirConceptoLicencia(
+					productoLicencia.getConcepto(),
+					fechaInicio,
+					fechaFin,
+					alumnoDeporte.getDeporte());
+
+			boolean yaExiste = alumno.getProductosAlumno().stream()
+					.anyMatch(pa -> pa.getConcepto() != null && concepto.equalsIgnoreCase(pa.getConcepto()));
+
+			if (yaExiste && !forzar) {
+				if (mensajesExistentes.length() > 0) {
+					mensajesExistentes.append(", ");
+				}
+				mensajesExistentes.append(alumnoDeporte.getDeporte().name());
+				continue;
+			}
+
+			ProductoAlumno productoAlumno = new ProductoAlumno();
+			productoAlumno.setAlumno(alumno);
+			productoAlumno.setAlumnoDeporte(alumnoDeporte);
+			productoAlumno.setProducto(productoLicencia);
+			productoAlumno.setConcepto(concepto);
+			productoAlumno.setPrecio(productoLicencia.getPrecio());
+			productoAlumno.setFechaAsignacion(fechaAsignacion);
+			productoAlumno.setCantidad(1);
+			productoAlumno.setPagado(false);
+
+			productoAlumnoRepository.save(productoAlumno);
+			algunoCreado = true;
+		}
+
+		if (!algunoCreado && mensajesExistentes.length() > 0) {
+			throw new IllegalStateException("El alumno ya tiene asignada la licencia para: " + mensajesExistentes);
+		}
+	}
+
+	@Override
+	public void crearAltaLicenciaFederativa(Alumno alumno) {
 		List<AlumnoDeporte> deportesConLicencia = alumno.getDeportes().stream()
 				.filter(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getFechaLicencia() != null)
 				.collect(Collectors.toList());
@@ -449,18 +552,19 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.toUpperCase();
 		String mesAnio = mesEnEspanol + " " + fechaLicenciaLocal.getYear();
 
-		boolean esSegundaMitadDelAno = fechaLicenciaLocal.getMonthValue() >= 9;
+		boolean esSegundaMitadDelAno = fechaLicenciaLocal.getMonthValue() >= MES_CORTE_LICENCIA;
+		Producto productoLicencia;
+		try {
+			productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno);
+		} catch (ProductoNoEncontradoException ex) {
+			System.out.println("ADVERTENCIA: " + ex.getMessage()
+					+ ". Se omitirá la creación automática de licencia para el alumno " + alumno.getId());
+			return;
+		}
 
-		double precio;
-		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
-			precio = esSegundaMitadDelAno ? 20.0 : 30.0;
-		} else {
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad < 14) {
-				precio = esSegundaMitadDelAno ? 20.0 : 35.0;
-			} else {
-				precio = esSegundaMitadDelAno ? 35.0 : 46.0;
-			}
+		Double precio = productoLicencia.getPrecio();
+		if (precio == null) {
+			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno);
 		}
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -478,30 +582,22 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumnoRepository.save(productoAlumno);
 	}
 
+
 	@Override
 	public ProductoAlumnoDTO renovarLicencia(Long alumnoId) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-		Producto productoLicencia = productoRepository.findByConcepto("LICENCIA FEDERATIVA")
-				.orElseThrow(() -> new ProductoNoEncontradoException("El producto 'LICENCIA FEDERATIVA' no existe."));
-
 		LocalDate fechaActual = LocalDate.now();
-		boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= 9;
+		boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= MES_CORTE_LICENCIA;
+		Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno);
 
 		String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, Locale.of("es", "ES"))
 				.toUpperCase();
 
-		double precio;
-		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
-			precio = esSegundaMitadDelAno ? 20.0 : 30.0;
-		} else {
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad < 14) {
-				precio = esSegundaMitadDelAno ? 20.0 : 35.0;
-			} else {
-				precio = esSegundaMitadDelAno ? 35.0 : 46.0;
-			}
+		Double precio = productoLicencia.getPrecio();
+		if (precio == null) {
+			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno);
 		}
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -540,6 +636,149 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		return convertirADTO(savedProductoAlumno);
+	}
+
+
+	private boolean esSegundaMitadDelAno() {
+		return LocalDate.now().getMonthValue() >= MES_CORTE_LICENCIA;
+	}
+
+	private LocalDate obtenerFechaInicioLicencia(int ano, boolean esSegundaMitadDelAno) {
+		return esSegundaMitadDelAno ? LocalDate.of(ano, MES_CORTE_LICENCIA, 1) : LocalDate.of(ano, 1, 1);
+	}
+
+	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno) {
+		String concepto;
+		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+			concepto = esSegundaMitadDelAno
+					? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD
+					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
+		} else {
+			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+			if (edad < EDAD_LIMITE_INFANTIL) {
+				concepto = esSegundaMitadDelAno
+						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
+						: LICENCIA_FEDERATIVA_INFANTIL;
+			} else {
+				concepto = esSegundaMitadDelAno
+						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_ADULTO
+						: LICENCIA_FEDERATIVA_ADULTO;
+			}
+		}
+
+		return productoRepository.findByConcepto(concepto)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto '" + concepto + "' no encontrado"));
+	}
+
+	private double calcularPrecioLicenciaFallback(Alumno alumno, boolean esSegundaMitadDelAno) {
+		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
+			return esSegundaMitadDelAno ? 20.0 : 30.0;
+		}
+
+		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+		if (edad < EDAD_LIMITE_INFANTIL) {
+			return esSegundaMitadDelAno ? 20.0 : 35.0;
+		}
+		return esSegundaMitadDelAno ? 35.0 : 46.0;
+	}
+
+	private String construirConceptoLicencia(
+			String conceptoProducto,
+			LocalDate fechaInicio,
+			LocalDate fechaFin,
+			Deporte deporte) {
+		String rango = "DEL " + fechaInicio.format(FORMATO_FECHA_LICENCIA)
+				+ " AL " + fechaFin.format(FORMATO_FECHA_LICENCIA);
+		return conceptoProducto + " " + rango + " - " + deporte.name();
+	}
+
+	
+
+	private List<AlumnoDeporte> obtenerAlumnosDeportesLicencia(String deporte) {
+		List<AlumnoDeporte> alumnosDeportes;
+		if (deporte == null || "TODOS".equalsIgnoreCase(deporte)) {
+			alumnosDeportes = alumnoDeporteRepository.findActivosByDeporteIn(
+					List.of(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+		} else {
+			Deporte deporteEnum = parseDeporteLicencia(deporte);
+			alumnosDeportes = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporteEnum);
+		}
+
+		return alumnosDeportes.stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+				.filter(ad -> ad.getAlumno() != null && Boolean.TRUE.equals(ad.getAlumno().getActivo()))
+				.filter(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()))
+				.collect(Collectors.toList());
+	}
+
+	private List<AlumnoDeporte> obtenerDeportesAlumnoParaLicencia(Long alumnoId, String deporte) {
+		if (deporte == null || "TODOS".equalsIgnoreCase(deporte)) {
+			return alumnoDeporteRepository.findByAlumnoId(alumnoId).stream()
+					.filter(ad -> Boolean.TRUE.equals(ad.getActivo())
+							&& Boolean.TRUE.equals(ad.getTieneLicencia())
+							&& deporteRequiereLicencia(ad.getDeporte())
+							&& ad.getAlumno() != null
+							&& Boolean.TRUE.equals(ad.getAlumno().getActivo()))
+					.collect(Collectors.toList());
+		}
+
+		Deporte deporteEnum = parseDeporteLicencia(deporte);
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporteEnum)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no practica el deporte: " + deporte));
+
+		if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())) {
+			throw new IllegalArgumentException("El alumno no está activo en el deporte: " + deporte);
+		}
+		if (alumnoDeporte.getAlumno() != null && !Boolean.TRUE.equals(alumnoDeporte.getAlumno().getActivo())) {
+			throw new IllegalArgumentException("El alumno no está activo.");
+		}
+		if (!Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
+			throw new IllegalArgumentException("El alumno no tiene la licencia activada en el deporte: " + deporte);
+		}
+
+		return List.of(alumnoDeporte);
+	}
+
+	private Deporte parseDeporteLicencia(String deporte) {
+		Deporte deporteEnum;
+		try {
+			deporteEnum = Deporte.valueOf(deporte.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Deporte no v\u00e1lido: " + deporte +
+					". Valores v\u00e1lidos: TAEKWONDO, KICKBOXING");
+		}
+
+		if (!deporteRequiereLicencia(deporteEnum)) {
+			throw new IllegalArgumentException("Deporte no v\u00e1lido para licencias: " + deporte);
+		}
+
+		return deporteEnum;
+	}
+
+	private boolean deporteRequiereLicencia(Deporte deporte) {
+		return deporte == Deporte.TAEKWONDO || deporte == Deporte.KICKBOXING;
+	}
+
+	private Set<String> obtenerConceptosLicenciaExistentes() {
+		return productoAlumnoRepository.findAll().stream()
+				.filter(pa -> pa.getConcepto() != null && pa.getConcepto().contains("LICENCIA FEDERATIVA"))
+				.map(pa -> {
+					Long alumnoId = obtenerAlumnoIdProducto(pa);
+					return alumnoId != null ? alumnoId + "-" + pa.getConcepto() : null;
+				})
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+	}
+
+	private Long obtenerAlumnoIdProducto(ProductoAlumno productoAlumno) {
+		if (productoAlumno.getAlumno() != null) {
+			return productoAlumno.getAlumno().getId();
+		}
+		if (productoAlumno.getAlumnoDeporte() != null && productoAlumno.getAlumnoDeporte().getAlumno() != null) {
+			return productoAlumno.getAlumnoDeporte().getAlumno().getId();
+		}
+		return null;
 	}
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
