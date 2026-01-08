@@ -34,6 +34,10 @@ public interface ProductoAlumnoService {
 
 	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar);
 
+	void cargarLicenciasGenerales(int ano, String deporte);
+
+	void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar);
+
 	void crearAltaLicenciaFederativa(Alumno alumno);
 
 	ProductoAlumnoDTO renovarLicencia(Long alumnoId);

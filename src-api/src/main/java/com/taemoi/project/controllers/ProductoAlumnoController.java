@@ -142,6 +142,41 @@ public class ProductoAlumnoController {
 					.body(Map.of("mensaje", "Ocurrió un error al crear la mensualidad.", "detalle", ex.getMessage()));
 		}
 	}
+
+	@PostMapping("/licencias/general")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> cargarLicenciasGenerales(
+			@RequestParam int ano,
+			@RequestParam(required = false, defaultValue = "TODOS") String deporte) {
+		try {
+			productoAlumnoService.cargarLicenciasGenerales(ano, deporte);
+			return ResponseEntity.ok(Map.of("mensaje", "Licencias creadas correctamente."));
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
+		}
+	}
+
+	@PostMapping("/licencias/individual")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> cargarLicenciaIndividual(
+			@RequestParam Long alumnoId,
+			@RequestParam int ano,
+			@RequestParam(required = false, defaultValue = "TODOS") String deporte,
+			@RequestParam(defaultValue = "false") boolean forzar) {
+		try {
+			productoAlumnoService.cargarLicenciaIndividual(alumnoId, ano, deporte, forzar);
+			return ResponseEntity.ok(Map.of("mensaje", "Licencia individual creada correctamente."));
+		} catch (IllegalStateException ex) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(Map.of("mensaje", ex.getMessage(), "accion", "confirmar"));
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
+		} catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("mensaje", "Ocurrió un error al crear la licencia.", "detalle", ex.getMessage()));
+		}
+	}
+
 	
 	@PostMapping("{alumnoId}/renovar-licencia")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
