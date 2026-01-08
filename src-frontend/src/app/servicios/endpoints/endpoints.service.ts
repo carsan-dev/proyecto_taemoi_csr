@@ -569,6 +569,31 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  cargarLicenciasGenerales(ano: number, deporte: string): Observable<any> {
+    return this.http
+      .post(
+        `${this.urlBase}/productos-alumno/licencias/general?ano=${ano}&deporte=${deporte}`,
+        null,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  cargarLicenciaIndividual(
+    alumnoId: number,
+    ano: number,
+    deporte: string,
+    forzar: boolean = false
+  ): Observable<any> {
+    return this.http
+      .post(
+        `${this.urlBase}/productos-alumno/licencias/individual?alumnoId=${alumnoId}&ano=${ano}&deporte=${deporte}&forzar=${forzar}`,
+        null,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   cargarMensualidadesMultiDeporte(mesAno: string): Observable<any> {
     return this.http
       .post(`${this.urlBase}/productos-alumno/mensualidades/multi-deporte`, mesAno, {
