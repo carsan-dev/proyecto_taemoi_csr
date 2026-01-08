@@ -7,6 +7,10 @@
         Gestión de Productos
       </h2>
       <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" [routerLink]="['/productosCrear']">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear producto</span>
+        </button>
         <button class="admin-btn admin-btn-danger" (click)="eliminarProductosSeleccionados()"
           [disabled]="!hasSelectedProductos">
           <i class="bi bi-trash"></i>
