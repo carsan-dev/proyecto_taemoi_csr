@@ -35,6 +35,10 @@
     background: $background-light;
     padding: 0.375rem;
     border-radius: 10px;
+    border: 0;
+    margin: 0;
+    min-inline-size: 0;
+    min-width: 0;
 
     .view-toggle-btn {
       display: flex;
@@ -501,26 +505,26 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
 
   &.taekwondo {
-    border-left-color: $taekwondo-color;
     border-color: rgba($taekwondo-color, 0.2);
+    border-left-color: $taekwondo-color;
     background: linear-gradient(135deg, rgba($taekwondo-color, 0.12), rgba($taekwondo-color, 0.02));
   }
 
   &.kickboxing {
-    border-left-color: $kickboxing-color;
     border-color: rgba($kickboxing-color, 0.2);
+    border-left-color: $kickboxing-color;
     background: linear-gradient(135deg, rgba($kickboxing-color, 0.12), rgba($kickboxing-color, 0.02));
   }
 
   &.pilates {
-    border-left-color: $pilates-color;
     border-color: rgba($pilates-color, 0.2);
+    border-left-color: $pilates-color;
     background: linear-gradient(135deg, rgba($pilates-color, 0.12), rgba($pilates-color, 0.02));
   }
 
   &.defensa_personal_femenina {
-    border-left-color: $defensa-color;
     border-color: rgba($defensa-color, 0.2);
+    border-left-color: $defensa-color;
     background: linear-gradient(135deg, rgba($defensa-color, 0.12), rgba($defensa-color, 0.02));
   }
 }
@@ -770,6 +774,10 @@
     background: $background-light;
     padding: 0.375rem;
     border-radius: 10px;
+    border: 0;
+    margin: 0;
+    min-inline-size: 0;
+    min-width: 0;
 
     .view-toggle-btn {
       display: flex;
@@ -805,6 +813,156 @@
 }
 
 // ========================================
+// GESTION PANELS
+// ========================================
+
+.gestion-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 2px solid rgba($text-muted, 0.12);
+  background: $text-light;
+  box-shadow: $shadow-sm;
+}
+
+.gestion-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba($primary-color, 0.1);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  i {
+    font-size: 1.6rem;
+    color: $primary-color;
+    background: rgba($primary-color, 0.12);
+    padding: 0.6rem;
+    border-radius: 12px;
+  }
+}
+
+.panel-text {
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: $text-muted;
+  }
+}
+
+.panel-tag {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba($primary-color, 0.12);
+  color: $primary-color;
+  border: 1px solid rgba($primary-color, 0.3);
+}
+
+.gestion-panel-mensualidades {
+  border-color: rgba($success-color, 0.35);
+  border-left: 4px solid $success-color;
+  background: linear-gradient(135deg, rgba($success-color, 0.08), rgba($success-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($success-color, 0.2);
+  }
+
+  .panel-title i {
+    color: $success-color;
+    background: rgba($success-color, 0.15);
+  }
+
+  .panel-tag {
+    background: rgba($success-color, 0.15);
+    color: $success-color;
+    border-color: rgba($success-color, 0.35);
+  }
+}
+
+.gestion-panel-licencias {
+  border-color: rgba($primary-color, 0.35);
+  border-left: 4px solid $primary-color;
+  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($primary-color, 0.2);
+  }
+}
+
+// ========================================
+// TABS (LICENCIAS + MENSUALIDADES)
+// ========================================
+
+.licencias-tabs,
+.mensualidades-tabs {
+  margin-top: 1rem;
+
+  .tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: $background-light;
+    border-radius: 12px;
+    box-shadow: $shadow-sm;
+  }
+
+  .tab-item {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.85rem 1.25rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: $text-light;
+    color: $text-dark;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: $transition;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+      background: rgba($primary-color, 0.05);
+      border-color: rgba($primary-color, 0.3);
+      color: $primary-color;
+    }
+
+    &.active {
+      background: $primary-color;
+      color: $text-light;
+      border-color: $primary-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  .tab-content {
+    margin-top: 1rem;
+  }
+}
+
+// ========================================
 // LISTADO ASISTENCIA
 // ========================================
 
@@ -812,6 +970,35 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
+}
+
+.dias-semana-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+  min-width: 0;
+
+  legend {
+    padding: 0;
+  }
+}
+
+.mensualidades-tabs {
+  .tab-item {
+    &:hover {
+      background: rgba($success-color, 0.08);
+      border-color: rgba($success-color, 0.35);
+      color: $success-color;
+    }
+
+    &.active {
+      background: $success-color;
+      color: $text-light;
+      border-color: $success-color;
+      box-shadow: $shadow-sm;
+    }
+  }
 }
 
 .dia-chip {
@@ -1027,6 +1214,27 @@
 }
 
 @media (max-width: 767px) {
+
+  .gestion-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel-tag {
+    align-self: flex-start;
+  }
+
+  .licencias-tabs,
+  .mensualidades-tabs {
+    .tabs-nav {
+      flex-direction: column;
+    }
+
+    .tab-item {
+      width: 100%;
+    }
+  }
+
   .unified-controls-bar {
     padding: 1rem;
 

@@ -92,7 +92,8 @@
 
       <!-- Right: View Toggle -->
       <div class="controls-section view-section">
-        <div class="view-toggle-buttons" role="group" aria-label="Cambiar vista">
+        <fieldset class="view-toggle-buttons">
+          <legend class="visually-hidden">Cambiar vista</legend>
           <button
             class="view-toggle-btn"
             [class.active]="vistaActual === 'cards'"
@@ -111,7 +112,7 @@
             <i class="bi bi-table"></i>
             <span>Tabla</span>
           </button>
-        </div>
+        </fieldset>
       </div>
     </div>
 
@@ -137,7 +138,7 @@
                 <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
               </div>
             </div>
-            
+
             <div class="item-body">
               <div class="item-field-full resumen-card">
                 <div class="resumen-header">
@@ -231,7 +232,7 @@
                 </div>
               }
             </div>
-            
+
             <div class="item-footer">
               <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
                 <i class="bi bi-pencil-square"></i>
@@ -352,86 +353,193 @@
     <details class="collapsible-section">
       <summary class="section-summary">
         <i class="bi bi-calendar-check"></i>
-        <span>Gestión de Mensualidades</span>
+        <span>Gestión de Mensualidades y Licencias</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </summary>
       <div class="section-content">
         <div class="row g-3">
           <div class="col-12 col-lg-6">
-            <div class="admin-card">
-              <div class="admin-section-header">
-                <i class="bi bi-calendar-check"></i>
-                <h4>Cargar Mensualidades</h4>
+            <div class="gestion-panel gestion-panel-mensualidades">
+              <div class="gestion-panel-header">
+                <div class="panel-title">
+                  <i class="bi bi-calendar-check"></i>
+                  <div class="panel-text">
+                    <h4>Gestión de Mensualidades</h4>
+                    <p>Aplica cobros generales o individuales.</p>
+                  </div>
+                </div>
+                <span class="panel-tag">Mensualidades</span>
               </div>
-              <div class="mb-3">
-                <label for="deporteSeleccionado" class="form-label fw-semibold mb-2">
-                  <i class="bi bi-trophy me-2"></i>Deporte:
-                </label>
-                <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
-                  <option value="TODOS">Todos los Alumnos</option>
-                  <option value="TAEKWONDO">Solo Taekwondo</option>
-                  <option value="KICKBOXING">Solo Kickboxing</option>
-                </select>
+              <div class="mensualidades-tabs">
+              <div class="tabs-nav">
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'general'" (click)="mensualidadesTab = 'general'">
+                  <span>Mensualidades generales</span>
+                </button>
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'individual'" (click)="mensualidadesTab = 'individual'">
+                  <span>Mensualidades individuales</span>
+                </button>
               </div>
-              <div class="mb-3">
-                <label for="mesAno" class="form-label fw-semibold mb-2">
-                  <i class="bi bi-calendar3 me-2"></i>Mes y Año:
-                </label>
-                <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
+
+              <div class="tab-content">
+                @if (mensualidadesTab === 'general') {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="deporteSeleccionado" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
+                        <option value="TODOS">Todos los Alumnos</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="mesAno" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                      </label>
+                      <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
+                    </div>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
+                      <i class="bi bi-cash-stack"></i>
+                      <span>Cargar Mensualidades</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="alumnoSeleccionado" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-person me-2"></i>Seleccionar Alumno:
+                      </label>
+                      <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                        @for (alumno of alumnosSeleccionables; track alumno.id) {
+                          <option [value]="alumno.id">
+                            {{ alumno.nombre }} {{ alumno.apellidos }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="deporteSeleccionadoIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
+                        <option value="TODOS">Todos los Deportes</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="mesAnoIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                      </label>
+                      <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+                    </div>
+                    <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
+                      [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
+                      <i class="bi bi-cash"></i>
+                      <span>Cargar Mensualidad</span>
+                    </button>
+                  </div>
+                }
               </div>
-              <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
-                <i class="bi bi-cash-stack"></i>
-                <span>Cargar Mensualidades</span>
-              </button>
+              </div>
             </div>
           </div>
 
           <div class="col-12 col-lg-6">
-            <div class="admin-card">
-              <div class="admin-section-header">
-                <i class="bi bi-person-check"></i>
-                <h4>Cargar Mensualidad Individual</h4>
+            <div class="gestion-panel gestion-panel-licencias">
+              <div class="gestion-panel-header">
+                <div class="panel-title">
+                  <i class="bi bi-shield-check"></i>
+                  <div class="panel-text">
+                    <h4>Gestión de Licencias Federativas</h4>
+                    <p>Registra licencias por año y deporte.</p>
+                  </div>
+                </div>
+                <span class="panel-tag">Licencias</span>
               </div>
-              <div class="mb-3">
-                <label for="alumnoSeleccionado" class="form-label fw-semibold mb-2">
-                  <i class="bi bi-person me-2"></i>Seleccionar Alumno:
-                </label>
-                <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
-                  @for (alumno of alumnosSeleccionables; track alumno.id) {
-                    <option [value]="alumno.id">
-                      {{ alumno.nombre }} {{ alumno.apellidos }}
-                    </option>
-                  }
-                </select>
+              <div class="licencias-tabs">
+              <div class="tabs-nav">
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'general'" (click)="licenciasTab = 'general'">
+                  <span>Licencias generales</span>
+                </button>
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'individual'" (click)="licenciasTab = 'individual'">
+                  <span>Licencias individuales</span>
+                </button>
               </div>
-              <div class="mb-3">
-                <label for="deporteSeleccionadoIndividual" class="form-label fw-semibold mb-2">
-                  <i class="bi bi-trophy me-2"></i>Deporte:
-                </label>
-                <select id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
-                  <option value="TODOS">Todos los Deportes</option>
-                  <option value="TAEKWONDO">Solo Taekwondo</option>
-                  <option value="KICKBOXING">Solo Kickboxing</option>
-                </select>
+
+              <div class="tab-content">
+                @if (licenciasTab === 'general') {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="deporteLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select id="deporteLicenciaGeneral" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionado">
+                        <option value="TODOS">Todos los Alumnos</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="anoLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Año:
+                      </label>
+                      <input id="anoLicenciaGeneral" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionado" />
+                    </div>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarLicenciasGenerales()">
+                      <i class="bi bi-shield-check"></i>
+                      <span>Cargar Licencias</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="alumnoSeleccionadoLicencia" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-person me-2"></i>Seleccionar Alumno:
+                      </label>
+                      <select id="alumnoSeleccionadoLicencia" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                        @for (alumno of alumnosSeleccionables; track alumno.id) {
+                          <option [value]="alumno.id">
+                            {{ alumno.nombre }} {{ alumno.apellidos }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="deporteLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select id="deporteLicenciaIndividual" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
+                        <option value="TODOS">Todos los Deportes</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="anoLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Año:
+                      </label>
+                      <input id="anoLicenciaIndividual" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionadoIndividual" />
+                    </div>
+                    <button class="admin-btn admin-btn-primary w-100" (click)="cargarLicenciaIndividual()"
+                      [disabled]="!alumnoSeleccionado || !anoLicenciaSeleccionadoIndividual">
+                      <i class="bi bi-shield-check"></i>
+                      <span>Cargar Licencia</span>
+                    </button>
+                  </div>
+                }
               </div>
-              <div class="mb-3">
-                <label for="mesAnoIndividual" class="form-label fw-semibold mb-2">
-                  <i class="bi bi-calendar3 me-2"></i>Mes y Año:
-                </label>
-                <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
               </div>
-              <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
-                [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
-                <i class="bi bi-cash"></i>
-                <span>Cargar Mensualidad</span>
-              </button>
             </div>
           </div>
         </div>
       </div>
     </details>
 
-    <!-- Collapsible Listado de Asistencia Section -->
+
+
+        <!-- Collapsible Listado de Asistencia Section -->
     <details class="collapsible-section">
       <summary class="section-summary">
         <i class="bi bi-clipboard-check"></i>
@@ -462,18 +570,20 @@
                 </div>
 
                 <div class="col-12 col-md-6">
-                  <label class="form-label fw-semibold mb-2">
-                    <i class="bi bi-calendar-week me-2"></i>Días de la semana:
-                  </label>
-                  <div class="dias-semana-grid" role="group" aria-label="Días de la semana">
-                    @for (g of grupos; track g) {
-                      <label class="dia-chip" [class.active]="gruposSeleccionados.includes(g)">
-                        <input type="checkbox" class="dia-checkbox" [checked]="gruposSeleccionados.includes(g)"
-                          (change)="toggleGrupoSeleccionado(g)" />
-                        <span>{{ g | titlecase }}</span>
-                      </label>
-                    }
-                  </div>
+                  <fieldset class="dias-semana-fieldset">
+                    <legend class="form-label fw-semibold mb-2">
+                      <i class="bi bi-calendar-week me-2"></i>Días de la semana:
+                    </legend>
+                    <div class="dias-semana-grid">
+                      @for (g of grupos; track g) {
+                        <label class="dia-chip" [class.active]="gruposSeleccionados.includes(g)">
+                          <input type="checkbox" class="dia-checkbox" [checked]="gruposSeleccionados.includes(g)"
+                            (change)="toggleGrupoSeleccionado(g)" />
+                          <span>{{ g | titlecase }}</span>
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
                 </div>
               </div>
 
