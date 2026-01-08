@@ -50,12 +50,18 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   mostrarInactivos: boolean = false;
   cargando: boolean = true; // Local loading state
   usandoPaginacionCliente: boolean = false; // Track if using client-side pagination
-  private searchSubject = new Subject<string>();
+  private readonly searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   deporteSeleccionado: string = 'TODOS';
   alumnoSeleccionado: number | null = null;
   mesAnoSeleccionadoIndividual: string = '';
   deporteSeleccionadoIndividual: string = 'TODOS';
+  anoLicenciaSeleccionado: number = new Date().getFullYear();
+  deporteLicenciaSeleccionado: string = 'TODOS';
+  anoLicenciaSeleccionadoIndividual: number = new Date().getFullYear();
+  deporteLicenciaSeleccionadoIndividual: string = 'TODOS';
+  licenciasTab: 'general' | 'individual' = 'general';
+  mensualidadesTab: 'general' | 'individual' = 'general';
   mostrarModalInforme: boolean = false;
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
@@ -663,12 +669,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.paginaActual = 1;
     this.guardarEstadoPaginacion(); // Save state when filtering
 
-    // If filtering by sport, we need to load all students and paginate client-side
-    if (this.deporteFiltro !== 'TODOS') {
-      this.obtenerTodosLosAlumnosConDeportes();
-    } else {
-      // If showing all sports, use backend pagination
+    // If showing all sports, use backend pagination
+    if (this.deporteFiltro === 'TODOS') {
       this.obtenerAlumnos();
+    } else {
+      // If filtering by sport, we need to load all students and paginate client-side
+      this.obtenerTodosLosAlumnosConDeportes();
     }
   }
 
@@ -1153,7 +1159,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Determine which service method to call based on sport selection
     const serviceCall =
       this.deporteSeleccionadoIndividual === 'TODOS'
         ? this.endpointsService.cargarMensualidadIndividual(
@@ -1183,13 +1188,140 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     });
   }
 
+  cargarLicenciasGenerales(): void {
+    if (!this.anoLicenciaSeleccionado) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un año.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.loadingService.show();
+
+    const serviceCall = this.endpointsService.cargarLicenciasGenerales(
+      this.anoLicenciaSeleccionado,
+      this.deporteLicenciaSeleccionado
+    );
+
+    const deporteTexto =
+      this.deporteLicenciaSeleccionado === 'TODOS'
+        ? 'alumnos activos con licencia'
+        : `alumnos activos de ${this.deporteLicenciaSeleccionado}`;
+
+    serviceCall.pipe(finalize(() => this.loadingService.hide())).subscribe({
+      next: () => {
+        showSuccessToast(
+          `Licencias ${this.anoLicenciaSeleccionado} asignadas a ${deporteTexto}`
+        );
+        if (this.usandoPaginacionCliente) {
+          this.obtenerTodosLosAlumnosConDeportes();
+        } else {
+          this.obtenerAlumnos();
+        }
+      },
+      error: (error) => {
+        showErrorToast(
+          error?.error?.mensaje || 'Error al asignar las licencias'
+        );
+      },
+    });
+  }
+
+  cargarLicenciaIndividual(): void {
+    if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un alumno y un año.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    const serviceCall = this.endpointsService.cargarLicenciaIndividual(
+      this.alumnoSeleccionado,
+      this.anoLicenciaSeleccionadoIndividual,
+      this.deporteLicenciaSeleccionadoIndividual
+    );
+
+    const deporteTexto =
+      this.deporteLicenciaSeleccionadoIndividual === 'TODOS'
+        ? 'todos los deportes'
+        : this.deporteLicenciaSeleccionadoIndividual;
+
+    serviceCall.subscribe({
+      next: () => {
+        showSuccessToast(
+          `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
+        );
+      },
+      error: (error) => {
+        if (error.status === 409 && error.error.accion === 'confirmar') {
+          Swal.fire({
+            title: 'Atención',
+            text: error.error.mensaje,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cargar',
+            cancelButtonText: 'No, cancelar',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              this.forzarCargarLicenciaIndividual();
+            }
+          });
+        } else {
+          showErrorToast(
+            error?.error?.mensaje || 'No se pudo cargar la licencia'
+          );
+        }
+      },
+    });
+  }
+
+  forzarCargarLicenciaIndividual(): void {
+    if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Por favor selecciona un alumno y un año.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    const serviceCall = this.endpointsService.cargarLicenciaIndividual(
+      this.alumnoSeleccionado,
+      this.anoLicenciaSeleccionadoIndividual,
+      this.deporteLicenciaSeleccionadoIndividual,
+      true
+    );
+
+    const deporteTexto =
+      this.deporteLicenciaSeleccionadoIndividual === 'TODOS'
+        ? 'todos los deportes'
+        : this.deporteLicenciaSeleccionadoIndividual;
+
+    serviceCall.subscribe({
+      next: () => {
+        showSuccessToast(
+          `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
+        );
+      },
+      error: (error) => {
+        showErrorToast(
+          error?.error?.mensaje || 'No se pudo cargar la licencia'
+        );
+      },
+    });
+  }
+
   generarListadoAsistencia(): void {
     if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
       Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error');
       return;
     }
 
-    const [year, month] = this.mesAnoAsistencia.split('-').map((v) => Number(v));
+    const [year, month] = this.mesAnoAsistencia.split('-').map(Number);
     const grupos = this.ordenarGruposSeleccionados(this.gruposSeleccionados);
     const solicitudes = grupos.map((grupo) =>
       this.endpointsService.descargarAsistencia(year, month, grupo).pipe(
