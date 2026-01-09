@@ -1207,7 +1207,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     const deporteTexto =
       this.deporteLicenciaSeleccionado === 'TODOS'
-        ? 'alumnos activos con licencia'
+        ? 'alumnos activos'
         : `alumnos activos de ${this.deporteLicenciaSeleccionado}`;
 
     serviceCall.pipe(finalize(() => this.loadingService.hide())).subscribe({
