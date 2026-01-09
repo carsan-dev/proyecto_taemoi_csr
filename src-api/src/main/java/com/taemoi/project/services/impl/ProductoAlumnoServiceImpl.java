@@ -482,7 +482,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		List<AlumnoDeporte> deportesObjetivo = obtenerDeportesAlumnoParaLicencia(alumnoId, deporte);
 		if (deportesObjetivo.isEmpty()) {
-			throw new IllegalArgumentException("El alumno no tiene licencias activadas en los deportes seleccionados.");
+			throw new IllegalArgumentException("El alumno no tiene deportes activos con licencia federativa en los deportes seleccionados.");
 		}
 
 		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
@@ -707,7 +707,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return alumnosDeportes.stream()
 				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
 				.filter(ad -> ad.getAlumno() != null && Boolean.TRUE.equals(ad.getAlumno().getActivo()))
-				.filter(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()))
 				.collect(Collectors.toList());
 	}
 
@@ -715,7 +714,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (deporte == null || "TODOS".equalsIgnoreCase(deporte)) {
 			return alumnoDeporteRepository.findByAlumnoId(alumnoId).stream()
 					.filter(ad -> Boolean.TRUE.equals(ad.getActivo())
-							&& Boolean.TRUE.equals(ad.getTieneLicencia())
 							&& deporteRequiereLicencia(ad.getDeporte())
 							&& ad.getAlumno() != null
 							&& Boolean.TRUE.equals(ad.getAlumno().getActivo()))
@@ -733,10 +731,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (alumnoDeporte.getAlumno() != null && !Boolean.TRUE.equals(alumnoDeporte.getAlumno().getActivo())) {
 			throw new IllegalArgumentException("El alumno no está activo.");
 		}
-		if (!Boolean.TRUE.equals(alumnoDeporte.getTieneLicencia())) {
-			throw new IllegalArgumentException("El alumno no tiene la licencia activada en el deporte: " + deporte);
-		}
-
 		return List.of(alumnoDeporte);
 	}
 
