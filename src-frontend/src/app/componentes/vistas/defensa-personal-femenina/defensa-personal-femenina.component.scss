@@ -12,6 +12,8 @@ $shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
 $shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
 $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$hero-offset: clamp(100px, 9vw, 140px);
+$cta-spacing: clamp(2.5rem, 6vw, 5rem);
 
 // ========================================
 // MAIN CONTENT
@@ -26,12 +28,14 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 .hero-container {
   position: relative;
   height: 500px;
+  margin-top: $hero-offset;
   padding: 0;
   overflow: hidden;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url("../../../../assets/media/placeholder.webp");
+  background: linear-gradient(120deg, rgba($defensa-color, 0.65), rgba(0, 0, 0, 0.2)),
+    url("../../../../assets/media/defensa_personal_banner.webp");
   background-position: center;
   background-size: cover;
+  background-blend-mode: multiply;
 
   .hero-overlay {
     position: absolute;
@@ -39,7 +43,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
+    background: linear-gradient(to bottom, rgba($defensa-color, 0.35), rgba(0, 0, 0, 0.6));
     z-index: 1;
   }
 
@@ -304,6 +308,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, $defensa-color 0%, color.adjust($defensa-color, $lightness: -10%) 100%);
   position: relative;
   overflow: hidden;
+  margin-bottom: $cta-spacing;
 
   &::before {
     content: '';
