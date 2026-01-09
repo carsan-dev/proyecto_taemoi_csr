@@ -401,6 +401,11 @@ $defensa-hover: #d81b60;
               }
             }
 
+            img.image-focus-center {
+              object-fit: cover;
+              object-position: 50% 50%;
+            }
+
             @keyframes imageZoom {
               from {
                 opacity: 0;
@@ -425,6 +430,7 @@ $defensa-hover: #d81b60;
               );
               opacity: 0.6;
               transition: opacity 0.4s ease;
+              z-index: 2;
             }
 
             &:hover img {
