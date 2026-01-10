@@ -452,8 +452,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			String concepto = construirConceptoLicencia(
 					productoLicencia.getConcepto(),
 					fechaInicio,
-					fechaFin,
-					alumnoDeporte.getDeporte());
+					fechaFin);
 			String clave = alumno.getId() + "-" + concepto;
 
 			if (conceptosExistentes.contains(clave)) {
@@ -501,8 +500,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			String concepto = construirConceptoLicencia(
 					productoLicencia.getConcepto(),
 					fechaInicio,
-					fechaFin,
-					alumnoDeporte.getDeporte());
+					fechaFin);
 
 			boolean yaExiste = alumno.getProductosAlumno().stream()
 					.anyMatch(pa -> pa.getConcepto() != null && concepto.equalsIgnoreCase(pa.getConcepto()));
@@ -702,11 +700,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private String construirConceptoLicencia(
 			String conceptoProducto,
 			LocalDate fechaInicio,
-			LocalDate fechaFin,
-			Deporte deporte) {
+			LocalDate fechaFin) {
 		String rango = "DEL " + fechaInicio.format(FORMATO_FECHA_LICENCIA)
 				+ " AL " + fechaFin.format(FORMATO_FECHA_LICENCIA);
-		return conceptoProducto + " " + rango + " - " + deporte.name();
+		return conceptoProducto + " " + rango;
 	}
 
 	
