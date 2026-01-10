@@ -28,8 +28,8 @@ export class GradoService {
    * Get available grades based on student's birth date
    * This determines whether student gets minor or adult grade progression
    */
-  obtenerGradosPorFechaNacimiento(fechaNacimiento: string): Observable<any> {
-    return this.http.get<any>(`${this.urlBase}/disponibles/${fechaNacimiento}`, {
+  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, deporte: string = 'TAEKWONDO'): Observable<any> {
+    return this.http.get<any>(`${this.urlBase}/disponibles/${fechaNacimiento}?deporte=${deporte}`, {
       withCredentials: true,
     });
   }
