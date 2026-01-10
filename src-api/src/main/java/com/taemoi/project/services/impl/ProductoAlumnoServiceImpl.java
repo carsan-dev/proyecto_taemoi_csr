@@ -47,7 +47,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO INFANTIL";
 	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD =
 			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO DISCAPACIDAD";
-	private static final int EDAD_LIMITE_INFANTIL = 14;
+	private static final int EDAD_LIMITE_INFANTIL_TAEKWONDO = 14;
+	private static final int EDAD_LIMITE_INFANTIL_KICKBOXING = 15;
 	private static final int MES_CORTE_LICENCIA = 9;
 	private static final DateTimeFormatter FORMATO_FECHA_LICENCIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -660,7 +661,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		String concepto;
 		if (deporte == Deporte.KICKBOXING) {
 			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			concepto = edad < EDAD_LIMITE_INFANTIL
+			concepto = edad < EDAD_LIMITE_INFANTIL_KICKBOXING
 					? LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL
 					: LICENCIA_FEDERATIVA_KICKBOXING_ADULTO;
 		} else if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
@@ -669,7 +670,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
 		} else {
 			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad < EDAD_LIMITE_INFANTIL) {
+			if (edad < EDAD_LIMITE_INFANTIL_TAEKWONDO) {
 				concepto = esSegundaMitadDelAno
 						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
 						: LICENCIA_FEDERATIVA_INFANTIL;
@@ -690,7 +691,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-		if (edad < EDAD_LIMITE_INFANTIL) {
+		if (edad < EDAD_LIMITE_INFANTIL_TAEKWONDO) {
 			return esSegundaMitadDelAno ? 20.0 : 35.0;
 		}
 		return esSegundaMitadDelAno ? 35.0 : 46.0;
