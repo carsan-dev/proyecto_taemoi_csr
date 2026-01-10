@@ -633,9 +633,9 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGradosPorFechaNacimiento(fechaNacimiento: string): Observable<any> {
+  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, deporte: string = 'TAEKWONDO'): Observable<any> {
     return this.http
-      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}`, {
+      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}?deporte=${deporte}`, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
