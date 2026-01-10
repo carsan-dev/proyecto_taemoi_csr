@@ -91,6 +91,27 @@ function isLightColor(hexColor: string): boolean {
 /**
  * Gets inline styles for displaying a grade with colored text
  */
+/**
+ * Obtiene el nombre a mostrar para un grado según el deporte.
+ * En Kickboxing, el grado ROJO se muestra como MARRÓN.
+ *
+ * @param tipoGrado El tipo de grado (ej: 'ROJO', 'BLANCO')
+ * @param deporte El deporte (ej: 'KICKBOXING', 'TAEKWONDO')
+ * @returns El nombre del grado a mostrar
+ */
+export function getGradoNombreParaDeporte(tipoGrado: string | null | undefined, deporte: string | null | undefined): string {
+  if (!tipoGrado) {
+    return '';
+  }
+
+  // En Kickboxing, el grado ROJO se llama MARRÓN
+  if (deporte === 'KICKBOXING' && tipoGrado.toUpperCase() === 'ROJO') {
+    return 'MARRÓN';
+  }
+
+  return tipoGrado;
+}
+
 export function getGradoTextStyle(tipoGrado: string): string {
   const colorInfo = getGradoColors(tipoGrado);
 
