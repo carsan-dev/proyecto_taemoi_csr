@@ -1121,25 +1121,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return null;
 		}
 
-		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
+		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
 
 		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
-	}
-
-	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-		if (fechaNacimiento == null) {
-			return false;
-		}
-		LocalDate fechaNacimientoLocal;
-		if (fechaNacimiento instanceof java.sql.Date date) {
-			fechaNacimientoLocal = date.toLocalDate();
-		} else {
-			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		}
-		LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
-		int anioActual = LocalDate.now().getYear();
-		return fechaCumple14.getYear() == anioActual;
 	}
 
 	/**
@@ -1147,8 +1132,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * Útil para sistema multi-deporte.
 	 */
 	private TipoGrado calcularSiguienteGradoPorDeporte(TipoGrado gradoActual, Deporte deporte, Alumno alumno) {
-		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
+		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
 		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
 	}
 

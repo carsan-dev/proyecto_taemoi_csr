@@ -815,9 +815,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
 							alumnoDeporte.getDeporte(),
-							FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
-									|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
-											&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+							FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
 							gradoActualTipo);
 					html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
@@ -972,9 +970,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 						// Grado a Promocionar with belt
 						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
 								alumnoDeporte.getDeporte(),
-								FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
-										|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
-												&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+								FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
 								alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
 						html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
@@ -1158,9 +1154,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 					// Grado a Promocionar with belt
 					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
 							alumnoDeporte.getDeporte(),
-							FechaUtils.calcularEdad(alumno.getFechaNacimiento()) < 13
-									|| (FechaUtils.calcularEdad(alumno.getFechaNacimiento()) == 13
-											&& !cumple14EsteAnio(alumno.getFechaNacimiento())),
+							FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
 							alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
 					html.append(generarCeldaGrado(gradoPromocionTipo, promotionGrade));
 
@@ -1201,8 +1195,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
 		Deporte deporte = alumnoDeporte.getDeporte();
-		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumno.getFechaNacimiento()));
+		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
+		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
 
 		// Get next grade using grade progression config
 		TipoGrado nuevoTipo = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
@@ -1219,21 +1213,6 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		return (nuevoGrado.getTipoGrado() != null && nuevoGrado.getTipoGrado().getNombre() != null)
 				? nuevoGrado.getTipoGrado().getNombre()
 				: "N/A";
-	}
-
-	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-		if (fechaNacimiento == null) {
-			return false;
-		}
-		LocalDate fechaNacimientoLocal;
-		if (fechaNacimiento instanceof java.sql.Date date) {
-			fechaNacimientoLocal = date.toLocalDate();
-		} else {
-			fechaNacimientoLocal = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		}
-		LocalDate fechaCumple14 = fechaNacimientoLocal.plusYears(14);
-		int anioActual = LocalDate.now().getYear();
-		return fechaCumple14.getYear() == anioActual;
 	}
 
 	@Override
