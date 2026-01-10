@@ -666,9 +666,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
 		Deporte deporte = alumnoDeporte.getDeporte();
 
-		// Calcular edad del alumno
-		int edad = FechaUtils.calcularEdad(alumnoDeporte.getAlumno().getFechaNacimiento());
-		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(alumnoDeporte.getAlumno().getFechaNacimiento()));
+		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
+		boolean esMenor = FechaUtils.esMenor(alumnoDeporte.getAlumno().getFechaNacimiento(), deporte);
 
 		// Usar GradeProgressionConfig para obtener el siguiente grado
 		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
@@ -696,10 +695,9 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			fechaGrado = fechaGradoDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		}
 
-		// Calcular edad y meses requeridos
+		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
 		Date fechaNacimiento = alumnoDeporte.getAlumno().getFechaNacimiento();
-		int edad = FechaUtils.calcularEdad(fechaNacimiento);
-		boolean esMenor = edad < 13 || (edad == 13 && !cumple14EsteAnio(fechaNacimiento));
+		boolean esMenor = FechaUtils.esMenor(fechaNacimiento, alumnoDeporte.getDeporte());
 		Long mesesRequeridos = (esMenor
 				? examEligibilityConfig.obtenerMesesRequeridosMenores()
 				: examEligibilityConfig.obtenerMesesRequeridosMayores())
@@ -748,25 +746,5 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Override
 	public Optional<AlumnoDeporte> obtenerPorIdConRelaciones(Long id) {
 		return alumnoDeporteRepository.findByIdWithRelaciones(id);
-	}
-
-	/**
-	 * Verifica si el alumno cumple 14 años en el año actual
-	 */
-	private boolean cumple14EsteAnio(Date fechaNacimiento) {
-		if (fechaNacimiento == null) {
-			return false;
-		}
-
-		LocalDate fechaNac;
-		if (fechaNacimiento instanceof java.sql.Date date) {
-			fechaNac = date.toLocalDate();
-		} else {
-			fechaNac = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		}
-		int anioNacimiento = fechaNac.getYear();
-		int anioActual = LocalDate.now().getYear();
-		int edadEsteAnio = anioActual - anioNacimiento;
-		return edadEsteAnio >= 14;
 	}
 }
