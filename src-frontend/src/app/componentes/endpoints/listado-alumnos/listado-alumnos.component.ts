@@ -10,7 +10,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
 import { Subject, forkJoin, of, concat } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs/operators';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
@@ -877,6 +877,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   getGradoStyle(tipoGrado: string): string {
     return getGradoTextStyle(tipoGrado);
+  }
+
+  getGradoNombre(tipoGrado: string | null | undefined, deporte: string | null | undefined): string {
+    return getGradoNombreParaDeporte(tipoGrado, deporte);
   }
 
   cambiarPagina(pageNumber: number): void {

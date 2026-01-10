@@ -20,7 +20,7 @@ import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
 import { formatDate } from '../../../utilities/formatear-fecha';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
@@ -1519,12 +1519,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.alumnoForm.get('grado')?.updateValueAndValidity();
   }
 
-  getGradoNombre(grado: any): string {
-    const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
-    if (deporteSeleccionado === 'KICKBOXING' && grado.tipoGrado === 'ROJO') {
-      return 'MARRON';
-    }
-    return grado.tipoGrado;
+  getGradoNombre(grado: any, deporte?: string): string {
+    const deporteSeleccionado = deporte || this.alumnoForm.get('deporte')?.value;
+    return getGradoNombreParaDeporte(grado?.tipoGrado, deporteSeleccionado);
   }
 
   getGradoStyle(tipoGrado: string): string {
@@ -3523,7 +3520,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       const categoriaVacia =
         !categoriaActual || (typeof categoriaActual === 'string' && categoriaActual.trim() === '');
       if (categoriaVacia) {
-        const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+        const categoriaPorEdad = this.obtenerCategoriaPorEdad(deporte);
         if (categoriaPorEdad) {
           pending.categoria = categoriaPorEdad;
         }
@@ -3597,14 +3594,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const pending = this.pendingCompetidorChanges.get(deporte);
     const categoriaActual = pending?.categoria ?? deporteItem?.categoria ?? '';
     if (!categoriaActual) {
-      const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+      const categoriaPorEdad = this.obtenerCategoriaPorEdad(deporte);
       return categoriaPorEdad || '';
     }
     return categoriaActual;
   }
 
-  private obtenerCategoriaPorEdad(): string {
-    return calcularCategoriaPorEdad(this.alumno?.fechaNacimiento ?? null);
+  private obtenerCategoriaPorEdad(deporte: string = 'TAEKWONDO'): string {
+    return calcularCategoriaPorEdad(this.alumno?.fechaNacimiento ?? null, deporte);
   }
 
   /**
@@ -3942,8 +3939,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const categoriaVacia =
       !categoriaActual || (typeof categoriaActual === 'string' && categoriaActual.trim() === '');
 
-    if (competidorActual && categoriaVacia && deporte === 'TAEKWONDO') {
-      const categoriaPorEdad = this.obtenerCategoriaPorEdad();
+    // Asignar categoría automáticamente para competidores si no tiene una
+    if (competidorActual && categoriaVacia) {
+      const categoriaPorEdad = this.obtenerCategoriaPorEdad(deporte);
       if (categoriaPorEdad) {
         datosCompetidor.categoria = categoriaPorEdad;
       }

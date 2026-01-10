@@ -16,6 +16,7 @@ import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
+import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 
 /**
@@ -404,20 +405,21 @@ export class CrearAlumnoComponent implements OnInit {
     this.grados = gradosFiltrados;
   }
 
-  private obtenerCategoriaPorEdadActual(): string {
-    return calcularCategoriaPorEdad(this.alumnoData.get('fechaNacimiento')?.value || null);
+  private obtenerCategoriaPorEdadActual(deporte: string = 'TAEKWONDO'): string {
+    return calcularCategoriaPorEdad(this.alumnoData.get('fechaNacimiento')?.value || null, deporte);
   }
 
   private actualizarCategoriasPorEdad(): void {
-    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
     this.deportesFormArray.controls.forEach((control) => {
       const competidor = control.get('competidor')?.value;
       const categoriaControl = control.get('categoria');
+      const deporteSeleccionado = control.get('deporte')?.value || 'TAEKWONDO';
       if (!categoriaControl) {
         return;
       }
 
       if (competidor) {
+        const categoriaPorEdad = this.obtenerCategoriaPorEdadActual(deporteSeleccionado);
         if (!categoriaControl.value || !categoriaControl.dirty) {
           categoriaControl.setValue(categoriaPorEdad, { emitEvent: false });
         }
@@ -433,6 +435,7 @@ export class CrearAlumnoComponent implements OnInit {
     const categoriaControl = deporteForm.get('categoria');
     const fechaAltaCompeticionControl = deporteForm.get('fechaAltaCompeticion');
     const fechaAltaCompetidorInicialControl = deporteForm.get('fechaAltaCompetidorInicial');
+    const deporteSeleccionado = deporteForm.get('deporte')?.value || 'TAEKWONDO';
     if (!categoriaControl) {
       return;
     }
@@ -450,7 +453,7 @@ export class CrearAlumnoComponent implements OnInit {
 
     const fechaAlta = deporteForm.get('fechaAlta')?.value || this.obtenerFechaHoy();
     const fechaAltaInicial = deporteForm.get('fechaAltaInicial')?.value || fechaAlta;
-    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
+    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual(deporteSeleccionado);
     if (categoriaPorEdad && (!categoriaControl.value || !categoriaControl.dirty)) {
       categoriaControl.setValue(categoriaPorEdad);
     }
@@ -516,38 +519,38 @@ export class CrearAlumnoComponent implements OnInit {
     }
 
     const alumnoData = this.alumnoData.getRawValue();
-    const categoriaPorEdad = this.obtenerCategoriaPorEdadActual();
 
     // For each sport, set fechaAltaInicial to fechaAlta if not provided
     if (alumnoData.deportesInicial) {
-      alumnoData.deportesInicial.forEach((deporte: any) => {
-        if (!deporte.fechaAltaInicial) {
-          deporte.fechaAltaInicial = deporte.fechaAlta;
+      alumnoData.deportesInicial.forEach((deporteData: any) => {
+        if (!deporteData.fechaAltaInicial) {
+          deporteData.fechaAltaInicial = deporteData.fechaAlta;
         }
-        if (!deporte.tieneLicencia) {
-          deporte.competidor = false;
+        if (!deporteData.tieneLicencia) {
+          deporteData.competidor = false;
         }
-        if (deporte.competidor) {
-          if (!deporte.fechaAltaCompeticion) {
-            deporte.fechaAltaCompeticion = deporte.fechaAlta || this.obtenerFechaHoy();
+        if (deporteData.competidor) {
+          if (!deporteData.fechaAltaCompeticion) {
+            deporteData.fechaAltaCompeticion = deporteData.fechaAlta || this.obtenerFechaHoy();
           }
-          if (!deporte.fechaAltaCompetidorInicial) {
-            deporte.fechaAltaCompetidorInicial =
-              deporte.fechaAltaInicial || deporte.fechaAlta || this.obtenerFechaHoy();
+          if (!deporteData.fechaAltaCompetidorInicial) {
+            deporteData.fechaAltaCompetidorInicial =
+              deporteData.fechaAltaInicial || deporteData.fechaAlta || this.obtenerFechaHoy();
           }
-          if (!deporte.categoria) {
-            deporte.categoria = categoriaPorEdad;
+          if (!deporteData.categoria) {
+            // Calcular categoría según el deporte específico
+            deporteData.categoria = this.obtenerCategoriaPorEdadActual(deporteData.deporte || 'TAEKWONDO');
           }
-          if (deporte.peso === '' || deporte.peso === null || deporte.peso === undefined) {
-            deporte.peso = null;
+          if (deporteData.peso === '' || deporteData.peso === null || deporteData.peso === undefined) {
+            deporteData.peso = null;
           } else {
-            deporte.peso = Number(deporte.peso);
+            deporteData.peso = Number(deporteData.peso);
           }
         } else {
-          deporte.categoria = '';
-          deporte.fechaAltaCompeticion = null;
-          deporte.fechaAltaCompetidorInicial = null;
-          deporte.peso = null;
+          deporteData.categoria = '';
+          deporteData.fechaAltaCompeticion = null;
+          deporteData.fechaAltaCompetidorInicial = null;
+          deporteData.peso = null;
         }
       });
     }
@@ -716,15 +719,9 @@ export class CrearAlumnoComponent implements OnInit {
     this.alumnoData.get('grado')?.updateValueAndValidity();
   }
 
-  getGradoNombre(grado: any): string {
-    const deporteSeleccionado = this.alumnoData.get('deporte')?.value;
-
-    if (deporteSeleccionado === 'KICKBOXING' && grado.tipoGrado === 'ROJO') {
-      return 'MARRÓN';
-    }
-
-    // Puedes agregar más transformaciones si es necesario
-    return grado.tipoGrado;
+  getGradoNombre(grado: any, deporte?: string): string {
+    const deporteSeleccionado = deporte || this.alumnoData.get('deporte')?.value;
+    return getGradoNombreParaDeporte(grado?.tipoGrado, deporteSeleccionado);
   }
 
   removeImage() {
