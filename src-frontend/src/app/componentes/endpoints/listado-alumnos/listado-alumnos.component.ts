@@ -127,7 +127,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Restore pagination state if returning from another page
     this.restaurarEstadoPaginacion();
 
-    this.obtenerAlumnos();
+    // If filtering by sport, use client-side pagination; otherwise use backend pagination
+    if (this.deporteFiltro !== 'TODOS') {
+      this.obtenerTodosLosAlumnosConDeportes();
+    } else {
+      this.obtenerAlumnos();
+    }
     this.cargarTodosLosAlumnos();
 
     // Setup debounced search
