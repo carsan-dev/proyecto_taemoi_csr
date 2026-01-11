@@ -714,17 +714,15 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
             continue;
         }
 
-        int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-        if (edad >= 15) {
-            continue; // Not infantiles
-        }
-
         // Check each sport the student practices
         for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
 
             // Skip inactive sports or sports where student is not ready for exam
             if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
                     || !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+                continue;
+            }
+            if (!FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
                 continue;
             }
 
@@ -879,16 +877,14 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				continue;
 			}
 
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad < 15) {
-				continue; // Not adultos
-			}
-
 			// Check each sport the student practices
 			for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
 				// Skip inactive sports or sports where student is not ready for exam
 				if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
 						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+					continue;
+				}
+				if (FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
 					continue;
 				}
 
@@ -1034,7 +1030,7 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	 *
 	 * @param soloActivos Filter only active students
 	 * @param deporte     Sport to filter (TAEKWONDO or KICKBOXING)
-	 * @param esInfantil  true for infantiles (<15), false for adultos (>=15)
+	 * @param esInfantil  true for menores segun FechaUtils.esMenor, false for adultos
 	 * @return PDF bytes
 	 */
 	private byte[] generarInformePromocionPorDeporte(boolean soloActivos, Deporte deporte, boolean esInfantil) {
@@ -1053,21 +1049,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		// Map<PromotionGrade, List<AlumnoPromotionInfo>>
 		Map<String, List<AlumnoPromotionInfo>> gradoMap = new java.util.LinkedHashMap<>();
 
-		int edadLimite = 15;
-
 		for (Alumno alumno : todosAlumnos) {
 			if (alumno.getFechaNacimiento() == null) {
 				continue;
-			}
-
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-
-			// Filter by age category
-			if (esInfantil && edad >= edadLimite) {
-				continue; // Not infantiles
-			}
-			if (!esInfantil && edad < edadLimite) {
-				continue; // Not adultos
 			}
 
 			// Check each sport the student practices
@@ -1080,6 +1064,10 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 				// Skip inactive sports or sports where student is not ready for exam
 				if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
 						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+					continue;
+				}
+				boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte());
+				if (esInfantil != esMenor) {
 					continue;
 				}
 
