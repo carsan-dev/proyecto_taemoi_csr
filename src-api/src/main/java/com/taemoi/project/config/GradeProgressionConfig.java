@@ -108,10 +108,15 @@ public class GradeProgressionConfig {
 	private Map<TipoGrado, TipoGrado> buildMapaGradosMayoresTaekwondo() {
 		Map<TipoGrado, TipoGrado> mapa = new LinkedHashMap<>();
 		mapa.put(TipoGrado.BLANCO, TipoGrado.AMARILLO);
+		mapa.put(TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO);
 		mapa.put(TipoGrado.AMARILLO, TipoGrado.NARANJA);
+		mapa.put(TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA);
 		mapa.put(TipoGrado.NARANJA, TipoGrado.VERDE);
+		mapa.put(TipoGrado.NARANJA_VERDE, TipoGrado.VERDE);
 		mapa.put(TipoGrado.VERDE, TipoGrado.AZUL);
+		mapa.put(TipoGrado.VERDE_AZUL, TipoGrado.AZUL);
 		mapa.put(TipoGrado.AZUL, TipoGrado.ROJO);
+		mapa.put(TipoGrado.AZUL_ROJO, TipoGrado.ROJO);
 		mapa.put(TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN);
 		mapa.put(TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN);
 		mapa.put(TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN);
