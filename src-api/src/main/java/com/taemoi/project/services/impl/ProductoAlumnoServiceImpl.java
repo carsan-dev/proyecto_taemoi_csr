@@ -658,8 +658,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte) {
 		String concepto;
 		if (deporte == Deporte.KICKBOXING) {
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			concepto = edad < EDAD_LIMITE_INFANTIL_KICKBOXING
+			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+			concepto = esMenor
 					? LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL
 					: LICENCIA_FEDERATIVA_KICKBOXING_ADULTO;
 		} else if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
@@ -667,8 +667,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD
 					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
 		} else {
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			if (edad < EDAD_LIMITE_INFANTIL_TAEKWONDO) {
+			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+			if (esMenor) {
 				concepto = esSegundaMitadDelAno
 						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
 						: LICENCIA_FEDERATIVA_INFANTIL;
@@ -689,9 +689,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		// Usar la regla de edad correcta según el deporte
-		int edadLimite = deporte == Deporte.KICKBOXING ? EDAD_LIMITE_INFANTIL_KICKBOXING : EDAD_LIMITE_INFANTIL_TAEKWONDO;
-		int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-		if (edad < edadLimite) {
+		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+		if (esMenor) {
 			return esSegundaMitadDelAno ? 20.0 : 35.0;
 		}
 		return esSegundaMitadDelAno ? 35.0 : 46.0;
