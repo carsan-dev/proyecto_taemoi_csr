@@ -1052,17 +1052,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO) {
-		LocalDate fechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate();
-		LocalDate fechaActual = LocalDate.now();
-		int edad = Period.between(fechaNacimiento, fechaActual).getYears();
-
-		// Verificar si cumple 14 años en el año actual
-		boolean cumpleCatorceEsteAno = fechaNacimiento.plusYears(14).getYear() == fechaActual.getYear();
-
-		// Se considera menor si tiene menos de 13 años o tiene 13 pero no cumple 14
-		// este año
-		boolean esMenor = edad < 13 || (edad == 13 && !cumpleCatorceEsteAno);
+		Deporte deporte = nuevoAlumnoDTO.getDeporte() != null ? nuevoAlumnoDTO.getDeporte() : Deporte.TAEKWONDO;
+		boolean esMenor = FechaUtils.esMenor(nuevoAlumnoDTO.getFechaNacimiento(), deporte);
 
 		List<TipoGrado> gradosDisponibles;
 
