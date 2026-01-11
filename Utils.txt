@@ -203,4 +203,6 @@ Actualizar precio productos
 
 ✔ Modificar listado de asistencia para poder seleccionar los dias a sacar en vez de sacar de uno en uno
 
-A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar (50% completado)
+Licencia kickboxing adulto 71.95, licencia kickboxing infantil 54.95
+
+A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar (50% completado) 
