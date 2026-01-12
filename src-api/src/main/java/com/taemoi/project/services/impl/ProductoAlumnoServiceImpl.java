@@ -47,7 +47,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO INFANTIL";
 	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD =
 			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO DISCAPACIDAD";
+	@SuppressWarnings("unused")
 	private static final int EDAD_LIMITE_INFANTIL_TAEKWONDO = 14;
+	@SuppressWarnings("unused")
 	private static final int EDAD_LIMITE_INFANTIL_KICKBOXING = 15;
 	private static final int MES_CORTE_LICENCIA = 9;
 	private static final DateTimeFormatter FORMATO_FECHA_LICENCIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
