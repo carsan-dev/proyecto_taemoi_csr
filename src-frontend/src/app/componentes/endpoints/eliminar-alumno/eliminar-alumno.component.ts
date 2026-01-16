@@ -9,6 +9,7 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
+import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 
 @Component({
   selector: 'app-eliminar-alumno',
@@ -368,6 +369,9 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
           showCancelButton: true,
           confirmButtonText: 'Dar de Alta',
           cancelButtonText: 'Cancelar',
+          didOpen: () => {
+            attachSwalSelectSearch({ selectId: 'deporte-select', placeholder: 'Buscar deporte...' });
+          },
           preConfirm: () => {
             const select = document.getElementById('deporte-select') as HTMLSelectElement;
             if (!select.value) {

@@ -13,11 +13,12 @@ import { PaginacionComponent } from '../../../generales/paginacion/paginacion.co
 import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
 import { Observable, concat, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-productos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent, PaginacionComponent, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, ProductosAlumnoNotasComponent, PaginacionComponent, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './productos-alumno.component.html',
   styleUrl: './productos-alumno.component.scss',
 })

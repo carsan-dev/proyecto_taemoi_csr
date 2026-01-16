@@ -34,7 +34,7 @@
       <form (ngSubmit)="asignarTurno()" #turnoForm="ngForm">
         <div class="form-group">
           <label for="turnoSelect">Seleccione un turno</label>
-          <select
+          <select appSearchableSelect
             id="turnoSelect"
             class="form-control"
             [(ngModel)]="turnoSeleccionado"

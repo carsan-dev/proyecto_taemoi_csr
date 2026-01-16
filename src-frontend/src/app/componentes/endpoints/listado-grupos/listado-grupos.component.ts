@@ -10,11 +10,12 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { finalize, filter, take } from 'rxjs/operators';
 import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-listado-grupos',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, GrupoAlumnosModalComponent, SkeletonCardComponent],
+  imports: [CommonModule, RouterModule, FormsModule, GrupoAlumnosModalComponent, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './listado-grupos.component.html',
   styleUrl: './listado-grupos.component.scss',
 })
