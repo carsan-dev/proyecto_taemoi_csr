@@ -95,7 +95,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   whatsappTelefonoSeleccionado: string | number | null = null;
   whatsappMensaje = '';
   whatsappDocumentosSeleccionados = new Set<number>();
-  private readonly whatsappMensajePlantilla = 'Hola, te envio la documentacion.';
+  private readonly whatsappMensajePlantilla = 'Hola, te env\u00edo la documentaci\u00f3n.';
 
   // Multi-sport properties
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
@@ -1172,7 +1172,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   private buildWhatsappMensajePlantilla(): string {
     const nombreCompleto = `${this.alumno?.nombre ?? ''} ${this.alumno?.apellidos ?? ''}`.trim();
     if (nombreCompleto) {
-      return `Hola, te envío la documentación de ${nombreCompleto}. Saludos 🥋😘`;
+      return `Hola, te env\u00edo la documentaci\u00f3n de ${nombreCompleto}. Saludos \u{1F94B}\u{1F618}`;
     }
     return this.whatsappMensajePlantilla;
   }
