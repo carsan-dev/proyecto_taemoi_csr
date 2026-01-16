@@ -10,22 +10,22 @@ import com.taemoi.project.entities.Deporte;
 public class FechaUtils {
 
 	/**
-	 * Edad límite para ser considerado adulto en Taekwondo.
-	 * Un alumno es adulto si cumple 14 años en el año actual.
+	 * Edad limite para ser considerado adulto en Taekwondo.
+	 * Un alumno es adulto si cumple 14 anos en el ano actual.
 	 */
 	public static final int EDAD_ADULTO_TAEKWONDO = 14;
 
 	/**
-	 * Edad límite para ser considerado adulto en Kickboxing.
-	 * Un alumno es adulto si cumple 15 años en el año actual.
+	 * Edad limite para ser considerado adulto en Kickboxing.
+	 * Un alumno es adulto si cumple 15 anos en el ano actual.
 	 */
 	public static final int EDAD_ADULTO_KICKBOXING = 15;
 
 	/**
-	 * Determina si un alumno es considerado "menor" según las reglas del deporte especificado.
+	 * Determina si un alumno es considerado "menor" segun las reglas del deporte especificado.
 	 *
-	 * Para Taekwondo: menor si edad < 13 o (edad == 13 y no cumple 14 este año)
-	 * Para Kickboxing: menor si edad < 14 o (edad == 14 y no cumple 15 este año)
+	 * Para Taekwondo: menor si edad < 13 o (edad == 13 y no cumple 14 este ano)
+	 * Para Kickboxing: menor si edad < 14 o (edad == 14 y no cumple 15 este ano)
 	 * Para otros deportes: se usa la regla de Taekwondo por defecto.
 	 *
 	 * @param fechaNacimiento La fecha de nacimiento del alumno.
@@ -46,7 +46,7 @@ public class FechaUtils {
 		}
 
 		if (edad == edadLimiteMenor) {
-			// Solo es adulto si cumple edadAdulto este año
+			// Solo es adulto si cumple edadAdulto este ano
 			return !cumpleEdadEsteAnio(fechaNacimiento, edadAdulto);
 		}
 
@@ -54,10 +54,32 @@ public class FechaUtils {
 	}
 
 	/**
+	 * Determina si un alumno es considerado "menor" para un ano de referencia.
+	 * Se considera adulto si cumple la edad adulta durante ese ano.
+	 *
+	 * @param fechaNacimiento La fecha de nacimiento del alumno.
+	 * @param deporte El deporte para aplicar la regla correcta.
+	 * @param anioReferencia El ano que se usa para decidir si cumple la edad adulta ese ano.
+	 * @return true si el alumno es considerado menor, false si es adulto.
+	 */
+	public static boolean esMenor(Date fechaNacimiento, Deporte deporte, int anioReferencia) {
+		if (fechaNacimiento == null) {
+			return true; // Por defecto, si no hay fecha, consideramos menor
+		}
+
+		int edadAdulto = obtenerEdadAdulto(deporte);
+		LocalDate fechaNac = convertirALocalDate(fechaNacimiento);
+		int anioCumpleAdulto = fechaNac.plusYears(edadAdulto).getYear();
+
+		// Es menor si NO cumple la edad adulta en el ano de referencia (ni antes).
+		return anioCumpleAdulto > anioReferencia;
+	}
+
+	/**
 	 * Obtiene la edad a partir de la cual un alumno es considerado adulto para un deporte.
 	 *
 	 * @param deporte El deporte.
-	 * @return La edad límite para ser adulto.
+	 * @return La edad limite para ser adulto.
 	 */
 	public static int obtenerEdadAdulto(Deporte deporte) {
 		if (deporte == Deporte.KICKBOXING) {
@@ -68,11 +90,11 @@ public class FechaUtils {
 	}
 
 	/**
-	 * Verifica si el alumno cumple una edad específica en el año actual.
+	 * Verifica si el alumno cumple una edad especifica en el ano actual.
 	 *
 	 * @param fechaNacimiento La fecha de nacimiento.
 	 * @param edad La edad a verificar.
-	 * @return true si cumple esa edad este año.
+	 * @return true si cumple esa edad este ano.
 	 */
 	public static boolean cumpleEdadEsteAnio(Date fechaNacimiento, int edad) {
 		if (fechaNacimiento == null) {
@@ -106,12 +128,12 @@ public class FechaUtils {
 	}
 
 	/**
-	 * Calcula la antigüedad desde una fecha hasta hoy, retornando un string con formato "X años y Y meses".
+	 * Calcula la antiguedad desde una fecha hasta hoy, retornando un string con formato "X anos y Y meses".
 	 * Si la fecha es null, retorna null.
-	 * Usa correctamente singular/plural en español (1 año, 2 años, 1 mes, 2 meses).
+	 * Usa correctamente singular/plural en espanol (1 ano, 2 anos, 1 mes, 2 meses).
 	 *
-	 * @param fechaInicial La fecha inicial desde la que se calcula la antigüedad.
-	 * @return String con formato "X años y Y meses", "X año", "Y meses", etc., o null si fechaInicial es null.
+	 * @param fechaInicial La fecha inicial desde la que se calcula la antiguedad.
+	 * @return String con formato "X anos y Y meses", "X ano", "Y meses", etc., o null si fechaInicial es null.
 	 */
 	public static String calcularAntiguedad(Date fechaInicial) {
 		if (fechaInicial == null) {
