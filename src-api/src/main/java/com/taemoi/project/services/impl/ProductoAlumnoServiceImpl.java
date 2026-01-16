@@ -450,7 +450,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
-			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte());
+			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
 					productoLicencia.getConcepto(),
 					fechaInicio,
@@ -498,7 +498,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		StringBuilder mensajesExistentes = new StringBuilder();
 
 		for (AlumnoDeporte alumnoDeporte : deportesObjetivo) {
-			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte());
+			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
 					productoLicencia.getConcepto(),
 					fechaInicio,
@@ -564,7 +564,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Deporte deporteLicencia = deporteBase != null ? deporteBase.getDeporte() : Deporte.TAEKWONDO;
 		Producto productoLicencia;
 		try {
-			productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, deporteLicencia);
+			productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, deporteLicencia, fechaLicenciaLocal.getYear());
 		} catch (ProductoNoEncontradoException ex) {
 			System.out.println("ADVERTENCIA: " + ex.getMessage()
 					+ ". Se omitirá la creación automática de licencia para el alumno " + alumno.getId());
@@ -573,7 +573,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Double precio = productoLicencia.getPrecio();
 		if (precio == null) {
-			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno, deporteLicencia);
+			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno, deporteLicencia, fechaLicenciaLocal.getYear());
 		}
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -610,14 +610,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 		AlumnoDeporte deporteBase = deportesActualizar.isEmpty() ? null : deportesActualizar.get(0);
 		Deporte deporteLicencia = deporteBase != null ? deporteBase.getDeporte() : Deporte.TAEKWONDO;
-		Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, deporteLicencia);
+		Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, deporteLicencia, fechaActual.getYear());
 
 		String mesEnEspanol = fechaActual.getMonth().getDisplayName(TextStyle.FULL, Locale.of("es", "ES"))
 				.toUpperCase();
 
 		Double precio = productoLicencia.getPrecio();
 		if (precio == null) {
-			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno, deporteLicencia);
+			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno, deporteLicencia, fechaActual.getYear());
 		}
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -657,10 +657,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return esSegundaMitadDelAno ? LocalDate.of(ano, MES_CORTE_LICENCIA, 1) : LocalDate.of(ano, 1, 1);
 	}
 
-	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte) {
+	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte, int anioReferencia) {
 		String concepto;
 		if (deporte == Deporte.KICKBOXING) {
-			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
 			concepto = esMenor
 					? LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL
 					: LICENCIA_FEDERATIVA_KICKBOXING_ADULTO;
@@ -669,7 +669,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD
 					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
 		} else {
-			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
 			if (esMenor) {
 				concepto = esSegundaMitadDelAno
 						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
@@ -685,13 +685,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto '" + concepto + "' no encontrado"));
 	}
 
-	private double calcularPrecioLicenciaFallback(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte) {
+	private double calcularPrecioLicenciaFallback(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte, int anioReferencia) {
 		if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
 			return esSegundaMitadDelAno ? 20.0 : 30.0;
 		}
 
 		// Usar la regla de edad correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
 		if (esMenor) {
 			return esSegundaMitadDelAno ? 20.0 : 35.0;
 		}
