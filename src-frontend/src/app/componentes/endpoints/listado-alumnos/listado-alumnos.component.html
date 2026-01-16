@@ -43,7 +43,7 @@
             <i class="bi bi-trophy-fill"></i>
             Deporte:
           </label>
-          <select
+          <select appSearchableSelect
             id="deporteFilter"
             class="admin-form-control filter-select"
             [(ngModel)]="deporteFiltro"
@@ -387,7 +387,7 @@
                       <label for="deporteSeleccionado" class="form-label fw-semibold mb-2">
                         <i class="bi bi-trophy me-2"></i>Deporte:
                       </label>
-                      <select id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
+                      <select appSearchableSelect id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
                         <option value="TODOS">Todos los Alumnos</option>
                         <option value="TAEKWONDO">Solo Taekwondo</option>
                         <option value="KICKBOXING">Solo Kickboxing</option>
@@ -410,7 +410,7 @@
                       <label for="alumnoSeleccionado" class="form-label fw-semibold mb-2">
                         <i class="bi bi-person me-2"></i>Seleccionar Alumno:
                       </label>
-                      <select id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                      <select appSearchableSelect id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
                         @for (alumno of alumnosSeleccionables; track alumno.id) {
                           <option [value]="alumno.id">
                             {{ alumno.nombre }} {{ alumno.apellidos }}
@@ -422,7 +422,7 @@
                       <label for="deporteSeleccionadoIndividual" class="form-label fw-semibold mb-2">
                         <i class="bi bi-trophy me-2"></i>Deporte:
                       </label>
-                      <select id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
+                      <select appSearchableSelect id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
                         <option value="TODOS">Todos los Deportes</option>
                         <option value="TAEKWONDO">Solo Taekwondo</option>
                         <option value="KICKBOXING">Solo Kickboxing</option>
@@ -475,7 +475,7 @@
                       <label for="deporteLicenciaGeneral" class="form-label fw-semibold mb-2">
                         <i class="bi bi-trophy me-2"></i>Deporte:
                       </label>
-                      <select id="deporteLicenciaGeneral" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionado">
+                      <select appSearchableSelect id="deporteLicenciaGeneral" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionado">
                         <option value="TODOS">Todos los Alumnos</option>
                         <option value="TAEKWONDO">Solo Taekwondo</option>
                         <option value="KICKBOXING">Solo Kickboxing</option>
@@ -498,7 +498,7 @@
                       <label for="alumnoSeleccionadoLicencia" class="form-label fw-semibold mb-2">
                         <i class="bi bi-person me-2"></i>Seleccionar Alumno:
                       </label>
-                      <select id="alumnoSeleccionadoLicencia" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                      <select appSearchableSelect id="alumnoSeleccionadoLicencia" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
                         @for (alumno of alumnosSeleccionables; track alumno.id) {
                           <option [value]="alumno.id">
                             {{ alumno.nombre }} {{ alumno.apellidos }}
@@ -510,7 +510,7 @@
                       <label for="deporteLicenciaIndividual" class="form-label fw-semibold mb-2">
                         <i class="bi bi-trophy me-2"></i>Deporte:
                       </label>
-                      <select id="deporteLicenciaIndividual" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
+                      <select appSearchableSelect id="deporteLicenciaIndividual" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
                         <option value="TODOS">Todos los Deportes</option>
                         <option value="TAEKWONDO">Solo Taekwondo</option>
                         <option value="KICKBOXING">Solo Kickboxing</option>

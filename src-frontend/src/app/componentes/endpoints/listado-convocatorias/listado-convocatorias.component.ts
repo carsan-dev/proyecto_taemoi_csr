@@ -10,6 +10,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import localeEs from '@angular/common/locales/es';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
+import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 
 // Register Spanish locale
 registerLocaleData(localeEs, 'es');
@@ -56,7 +58,7 @@ export class CapitalizeMonthPipe implements PipeTransform {
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
   providers: [{ provide: LOCALE_ID, useValue: 'es' }],
@@ -187,6 +189,9 @@ export class ListadoConvocatoriasComponent implements OnInit {
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
+      didOpen: () => {
+        attachSwalSelectSearch({ selectId: 'swal-deporte', placeholder: 'Buscar deporte...' });
+      },
       preConfirm: () => {
         const deporteElement = document.getElementById('swal-deporte') as HTMLSelectElement;
         const fechaElement = document.getElementById('swal-fecha') as HTMLInputElement;

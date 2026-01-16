@@ -34,7 +34,7 @@
           <label for="deporte" class="form-label fw-semibold">
             <i class="bi bi-funnel-fill me-2"></i>Filtrar por Deporte:
           </label>
-          <select id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
+          <select appSearchableSelect id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
             (change)="onDeporteChange()">
             @for (deporte of deportes; track deporte) {
               <option [value]="deporte">{{ deporte }}</option>
@@ -242,7 +242,7 @@
                   <label for="alumnoSeleccionado" class="form-label">
                     <i class="bi bi-search me-2"></i>Seleccionar Alumno
                   </label>
-                  <select id="alumnoSeleccionado" class="form-select-custom"
+                  <select appSearchableSelect id="alumnoSeleccionado" class="form-select-custom"
                           [(ngModel)]="alumnoSeleccionado">
                     <option [value]="null" disabled>Seleccione un alumno apto para examen</option>
                     @for (alumno of alumnosFiltrados; track alumno.id) {

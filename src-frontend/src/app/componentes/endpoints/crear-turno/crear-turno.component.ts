@@ -12,11 +12,12 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-crear-turno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SearchableSelectDirective],
   templateUrl: './crear-turno.component.html',
   styleUrl: './crear-turno.component.scss',
 })
