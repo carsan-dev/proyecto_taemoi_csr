@@ -185,6 +185,7 @@ $whatsapp-hover: #128C7E;
 .admin-card {
   @include modern-card;
   padding: 2rem;
+  overflow: visible;
 
   &.admin-card-large {
     padding: 3rem;
@@ -343,6 +344,73 @@ $whatsapp-hover: #128C7E;
     background-size: 16px 12px;
     padding-right: 3rem;
   }
+}
+
+.admin-select-combobox {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.admin-select-input {
+  cursor: text;
+  display: block;
+  width: 100%;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px 12px;
+  padding-right: 3rem;
+}
+
+.admin-select-input.admin-select-input-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.admin-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: $text-light;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: $shadow-md;
+  z-index: 50;
+  display: none;
+}
+
+.admin-select-dropdown.is-open {
+  display: block;
+}
+
+.admin-select-option {
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  transition: $transition-fast;
+}
+
+.admin-select-option:hover,
+.admin-select-option.is-active {
+  background: rgba($primary-color, 0.08);
+}
+
+.admin-select-option.is-disabled {
+  color: $text-muted;
+  cursor: not-allowed;
+}
+
+.admin-select-option.is-selected {
+  font-weight: 600;
+}
+
+.admin-select-empty {
+  padding: 0.6rem 0.85rem;
+  color: $text-muted;
+  font-style: italic;
 }
 
 // Form floating labels
