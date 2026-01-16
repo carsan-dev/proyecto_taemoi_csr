@@ -16,6 +16,8 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { LoadingService } from '../../../servicios/generales/loading.service';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
+import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 
 type ResumenAlumno = {
   totalDeportes: number;
@@ -35,6 +37,7 @@ type ResumenAlumno = {
     RouterLink,
     InformeModalComponent,
     SkeletonCardComponent,
+    SearchableSelectDirective,
   ],
   templateUrl: './listado-alumnos.component.html',
   styleUrl: './listado-alumnos.component.scss',
@@ -969,6 +972,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           showCancelButton: true,
           confirmButtonText: 'Dar de Alta',
           cancelButtonText: 'Cancelar',
+          didOpen: () => {
+            attachSwalSelectSearch({ selectId: 'deporte-select', placeholder: 'Buscar deporte...' });
+          },
           preConfirm: () => {
             const select = document.getElementById('deporte-select') as HTMLSelectElement;
             if (!select.value) {

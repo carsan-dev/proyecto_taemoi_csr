@@ -25,6 +25,8 @@ import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad'
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
+import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 
@@ -36,6 +38,7 @@ import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
     FormsModule,
     ReactiveFormsModule,
     PaginacionComponent,
+    SearchableSelectDirective,
   ],
   templateUrl: './editar-alumno.component.html',
   styleUrls: ['./editar-alumno.component.scss'],
@@ -2688,6 +2691,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#28a745',
       cancelButtonColor: '#6c757d',
+      didOpen: () => {
+        attachSwalSelectSearch({ selectId: 'deporte-select', placeholder: 'Buscar deporte...' });
+      },
       preConfirm: () => {
         const deporteSelect = document.getElementById('deporte-select') as HTMLSelectElement;
         if (!deporteSelect.value) {

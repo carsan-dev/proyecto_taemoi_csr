@@ -10,11 +10,12 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-gestionar-turnos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonCardComponent],
+  imports: [CommonModule, FormsModule, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './gestionar-turnos-alumno.component.html',
   styleUrl: './gestionar-turnos-alumno.component.scss',
 })

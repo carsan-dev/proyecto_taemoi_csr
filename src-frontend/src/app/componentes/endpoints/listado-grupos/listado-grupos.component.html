@@ -91,7 +91,7 @@
 
                 <!-- Add turno dropdown -->
                 <div class="add-turno-actions">
-                  <select class="form-select form-select-sm"
+                  <select appSearchableSelect class="form-select form-select-sm"
                           #turnoSelect
                           (change)="asignarTurnoAGrupo(grupo.id, turnoSelect.value); turnoSelect.value = ''">
                     <option value="" selected>+ Añadir turno...</option>

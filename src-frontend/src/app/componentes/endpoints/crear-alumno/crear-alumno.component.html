@@ -244,7 +244,7 @@
                             Deporte
                             <span class="required">*</span>
                           </label>
-                          <select class="admin-form-control form-select" [id]="'deporte-' + i"
+                          <select appSearchableSelect class="admin-form-control form-select" [id]="'deporte-' + i"
                                   formControlName="deporte"
                                   (change)="onDeporteChangeEnLista(i)"
                                   required>
@@ -266,7 +266,7 @@
                             Grado Inicial
                             <span class="required">*</span>
                           </label>
-                          <select class="admin-form-control form-select" [id]="'grado-' + i"
+                          <select appSearchableSelect class="admin-form-control form-select" [id]="'grado-' + i"
                                   formControlName="grado">
                             <option value="" disabled selected>Selecciona el grado</option>
                             @for (grado of obtenerGradosFiltradosParaDeporte(i); track grado.id) {
@@ -329,7 +329,7 @@
                             Tipo de Tarifa
                             <span class="required">*</span>
                           </label>
-                          <select class="admin-form-control form-select" [id]="'tipoTarifa-' + i"
+                          <select appSearchableSelect class="admin-form-control form-select" [id]="'tipoTarifa-' + i"
                                   formControlName="tipoTarifa" required
                                   (change)="onTipoTarifaChangeEnLista(i)">
                             <option value="" disabled selected>Selecciona una tarifa</option>
@@ -361,7 +361,7 @@
                             Rol Familiar
                             <span class="required">*</span>
                           </label>
-                          <select class="admin-form-control form-select" [id]="'rolFamiliar-' + i"
+                          <select appSearchableSelect class="admin-form-control form-select" [id]="'rolFamiliar-' + i"
                                   formControlName="rolFamiliar"
                                   (change)="onRolFamiliarChangeEnLista(i, $event)">
                             <option value="" disabled>Selecciona un rol</option>
@@ -479,7 +479,7 @@
                             <i class="bi bi-award"></i>
                             Categoria
                           </label>
-                          <select class="admin-form-control form-select" [id]="'categoria-' + i"
+                          <select appSearchableSelect class="admin-form-control form-select" [id]="'categoria-' + i"
                                   formControlName="categoria">
                             <option value="">-- Seleccionar categoria --</option>
                             @for (cat of categorias; track cat) {

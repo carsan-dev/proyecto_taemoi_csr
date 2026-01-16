@@ -18,6 +18,7 @@ import { ScrollService } from '../../../servicios/generales/scroll.service';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 
 /**
  * Interface for sport entry in the form
@@ -46,7 +47,7 @@ interface DeporteEntry {
 @Component({
   selector: 'app-crear-alumno',
   standalone: true,
-  imports: [FormsModule, CommonModule, ReactiveFormsModule],
+  imports: [FormsModule, CommonModule, ReactiveFormsModule, SearchableSelectDirective],
   templateUrl: './crear-alumno.component.html',
   styleUrls: ['./crear-alumno.component.scss'],
 })

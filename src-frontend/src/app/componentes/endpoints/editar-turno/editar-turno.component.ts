@@ -14,11 +14,12 @@ import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { finalize } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-editar-turno',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectDirective],
   templateUrl: './editar-turno.component.html',
   styleUrl: './editar-turno.component.scss',
 })

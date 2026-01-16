@@ -415,7 +415,7 @@
                           <i class="bi bi-tag"></i>
                           Tipo de Tarifa
                         </label>
-                        <select [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
+                        <select appSearchableSelect [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
                           [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
                           (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
                           <option value="">Seleccionar tarifa</option>
@@ -447,7 +447,7 @@
                           <i class="bi bi-people"></i>
                           Rol Familiar
                         </label>
-                        <select [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                        <select appSearchableSelect [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
                           [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
                           (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
                           <option value="NINGUNO">Ninguno</option>
@@ -706,7 +706,7 @@
                           <i class="bi bi-tag"></i>
                           Tipo de Tarifa
                         </label>
-                        <select [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
+                        <select appSearchableSelect [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
                           [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
                           (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
                           <option value="">Seleccionar tarifa</option>
@@ -738,7 +738,7 @@
                           <i class="bi bi-people"></i>
                           Rol Familiar
                         </label>
-                        <select [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                        <select appSearchableSelect [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
                           [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
                           (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
                           <option value="NINGUNO">Ninguno</option>
@@ -914,7 +914,7 @@
                               <i class="bi bi-award"></i>
                               Categoría
                             </label>
-                            <select [id]="'categoria-' + deporteItem.deporte" class="admin-form-control"
+                            <select appSearchableSelect [id]="'categoria-' + deporteItem.deporte" class="admin-form-control"
                               [ngModel]="getCategoriaValue(deporteItem.deporte)"
                               (ngModelChange)="onCategoriaModelChange(deporteItem.deporte, $event)">
                               <option value="">-- Seleccionar Categoría --</option>
@@ -1039,7 +1039,7 @@
                           <!-- Add turno select (only turnos from this grupo) -->
                           @if (getTurnosDisponiblesDelGrupo(grupo.id).length > 0) {
                           <div class="add-turno-action">
-                            <select class="form-select form-select-sm"
+                            <select appSearchableSelect class="form-select form-select-sm"
                                     (change)="agregarTurnoAlumno(+$any($event.target).value); $any($event.target).value = ''">
                               <option value="" selected disabled>+ Añadir turno...</option>
                               @for (turno of getTurnosDisponiblesDelGrupo(grupo.id); track turno.id) {
@@ -1057,7 +1057,7 @@
                       <!-- Add Grupo select -->
                       @if (getGruposDisponiblesDelDeporte(deporteItem.deporte).length > 0) {
                       <div class="add-grupo-action">
-                        <select class="form-select"
+                        <select appSearchableSelect class="form-select"
                                 (change)="agregarGrupoAlumno(+$any($event.target).value); $any($event.target).value = ''">
                           <option value="" selected disabled>+ Añadir grupo...</option>
                           @for (grupo of getGruposDisponiblesDelDeporte(deporteItem.deporte); track grupo.id) {
@@ -1841,7 +1841,7 @@
             Deporte
             <span class="required">*</span>
           </label>
-          <select id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte"
+          <select appSearchableSelect id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte"
             (ngModelChange)="onNuevoDeporteChange($event)">
             @for (deporte of deportesDisponibles; track deporte) {
             <option [value]="deporte">{{ getDeporteLabel(deporte) }}</option>
@@ -1857,7 +1857,7 @@
             Grado Inicial
             <span class="required">*</span>
           </label>
-          <select id="gradoInicialDeporte" class="admin-form-control form-select" [(ngModel)]="gradoInicialDeporte">
+          <select appSearchableSelect id="gradoInicialDeporte" class="admin-form-control form-select" [(ngModel)]="gradoInicialDeporte">
             @for (grado of todosLosGrados; track grado.tipoGrado) {
             <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
             }
@@ -1959,7 +1959,7 @@
             Nuevo Grado
             <span class="required">*</span>
           </label>
-          <select id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
+          <select appSearchableSelect id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
             @for (grado of todosLosGrados; track grado.tipoGrado) {
             <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
             }
