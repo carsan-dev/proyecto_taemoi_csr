@@ -25,6 +25,7 @@ public class AlumnoConDeportesDTO {
 	private Date fechaNacimiento;
 	private String nif;
 	private String direccion;
+	private String observaciones;
 	private Integer telefono;
 	private String email;
 	private TipoTarifa tipoTarifa;
@@ -83,6 +84,7 @@ public class AlumnoConDeportesDTO {
 		dto.setFechaNacimiento(alumno.getFechaNacimiento());
 		dto.setNif(alumno.getNif());
 		dto.setDireccion(alumno.getDireccion());
+		dto.setObservaciones(alumno.getObservaciones());
 		dto.setTelefono(alumno.getTelefono());
 		dto.setEmail(alumno.getEmail());
 
@@ -176,6 +178,14 @@ public class AlumnoConDeportesDTO {
 
 	public void setDireccion(String direccion) {
 		this.direccion = direccion;
+	}
+
+	public String getObservaciones() {
+		return observaciones;
+	}
+
+	public void setObservaciones(String observaciones) {
+		this.observaciones = observaciones;
 	}
 
 	public Integer getTelefono() {

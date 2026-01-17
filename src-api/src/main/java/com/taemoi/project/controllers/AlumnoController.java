@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
@@ -383,6 +384,23 @@ public class AlumnoController {
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	/**
+	 * Actualiza las observaciones de un alumno.
+	 *
+	 * @param id ID del alumno a actualizar.
+	 * @param request DTO con las observaciones.
+	 * @return ResponseEntity con el alumno actualizado.
+	 */
+	@PutMapping("/{id}/observaciones")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> actualizarObservaciones(@PathVariable @NonNull Long id,
+			@Valid @RequestBody AlumnoObservacionesDTO request) {
+		Alumno alumno = alumnoService.actualizarObservaciones(id,
+				request != null ? request.getObservaciones() : null);
+		AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+		return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 	}
 
 	/**
