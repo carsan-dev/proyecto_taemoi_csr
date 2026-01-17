@@ -25,7 +25,7 @@
 
 <!-- Grid View Skeleton -->
 @if (type === 'grid') {
-  <div class="skeleton-grid" [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'">
+  <div class="skeleton-grid" [style.grid-template-columns]="'repeat(' + (columns ?? 1) + ', 1fr)'">
     @for (item of items; track $index) {
       <div class="skeleton-card">
         <div class="skeleton-image"></div>
