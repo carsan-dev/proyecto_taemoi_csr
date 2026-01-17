@@ -22,6 +22,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private detachListeners: Array<() => void> = [];
   private labelEl?: HTMLLabelElement;
   private labelForBackup?: string;
+  private fieldEl?: HTMLElement;
 
   constructor(
     private readonly elRef: ElementRef<HTMLSelectElement>,
@@ -102,6 +103,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
 
     this.hideSelect(select);
     this.bindLabel(select);
+    this.fieldEl = this.wrapperEl.closest('.admin-form-field, .form-group') as HTMLElement | null;
     this.syncDisabled();
     this.buildOptions();
     this.syncFromSelect();
@@ -487,6 +489,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     }
     this.isOpen = true;
     this.renderer.addClass(this.dropdownEl, 'is-open');
+    this.renderer.addClass(this.wrapperEl, 'is-open');
+    if (this.fieldEl) {
+      this.renderer.addClass(this.fieldEl, 'admin-select-field-open');
+    }
     this.renderer.setAttribute(this.inputEl, 'aria-expanded', 'true');
     if (applyFilter) {
       this.filterOptions();
@@ -508,6 +514,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     }
     this.isOpen = false;
     this.renderer.removeClass(this.dropdownEl, 'is-open');
+    this.renderer.removeClass(this.wrapperEl, 'is-open');
+    if (this.fieldEl) {
+      this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
+    }
     this.renderer.setAttribute(this.inputEl, 'aria-expanded', 'false');
     if (restoreValue) {
       this.syncFromSelect();

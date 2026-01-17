@@ -352,6 +352,14 @@ $whatsapp-hover: #128C7E;
   width: 100%;
 }
 
+.admin-select-combobox.is-open {
+  z-index: 30;
+}
+
+.admin-select-field-open {
+  z-index: 25;
+}
+
 .admin-select-input {
   cursor: text;
   display: block;
