@@ -1239,6 +1239,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public boolean datosAlumnoValidos(AlumnoDTO alumnoDTO) {
+		return datosAlumnoValidos(alumnoDTO, true);
+	}
+
+	@Override
+	public boolean datosAlumnoValidos(AlumnoDTO alumnoDTO, boolean requiereTarifaYFechaAlta) {
 		if (alumnoDTO.getNombre() == null || alumnoDTO.getNombre().isEmpty() || alumnoDTO.getApellidos() == null
 				|| alumnoDTO.getApellidos().isEmpty()) {
 			return false;
@@ -1254,10 +1259,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (alumnoDTO.getTelefono() != null && alumnoDTO.getTelefono() <= 0) {
 			return false;
 		}
-		if (alumnoDTO.getTipoTarifa() == null) {
-			return false;
-		}
-		if (alumnoDTO.getFechaAlta() == null || alumnoDTO.getFechaAlta().after(new Date())) {
+		if (requiereTarifaYFechaAlta) {
+			if (alumnoDTO.getTipoTarifa() == null) {
+				return false;
+			}
+			if (alumnoDTO.getFechaAlta() == null || alumnoDTO.getFechaAlta().after(new Date())) {
+				return false;
+			}
+		} else if (alumnoDTO.getFechaAlta() != null && alumnoDTO.getFechaAlta().after(new Date())) {
 			return false;
 		}
 		return true;

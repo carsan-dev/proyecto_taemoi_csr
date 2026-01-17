@@ -371,7 +371,8 @@ public class AlumnoController {
 				throw new FechaNacimientoInvalidaException("La fecha de nacimiento es inválida.");
 			}
 
-			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO)) {
+			boolean requiereTarifaYFechaAlta = alumnoDeporteService.obtenerDeportesDelAlumno(id).isEmpty();
+			if (!alumnoService.datosAlumnoValidos(nuevoAlumnoDTO, requiereTarifaYFechaAlta)) {
 				throw new DatosAlumnoInvalidosException("Los datos del alumno actualizado son inválidos.");
 			}
 
