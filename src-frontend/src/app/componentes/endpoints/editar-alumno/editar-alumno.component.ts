@@ -386,7 +386,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerAlumnoPorId(alumnoId).subscribe({
         next: (alumnoResponse: any) => {
           // Alumno exists! Check if we need to toggle inactive filter
-          const esInactivo = alumnoResponse.fechaBaja != null;
+          const esInactivo = alumnoResponse.activo === false || alumnoResponse.fechaBaja != null;
 
           if (esInactivo && !this.mostrarInactivos) {
             // This is an inactive alumno but we're not showing inactive ones
