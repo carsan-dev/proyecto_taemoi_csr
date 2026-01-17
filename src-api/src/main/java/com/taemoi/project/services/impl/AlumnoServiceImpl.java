@@ -320,6 +320,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setEmail(normalizedEmail);
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
+		nuevoAlumno.setObservaciones(nuevoAlumnoDTO.getObservaciones());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
 		// Asignar AutorizacionWeb, si no está definida por defecto a true
@@ -559,6 +560,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setEmail(normalizedEmail);
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
 			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
+			if (alumnoActualizado.getObservaciones() != null) {
+				alumnoExistente.setObservaciones(alumnoActualizado.getObservaciones());
+			}
 
 			if (usaLegacy) {
 				alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
@@ -652,6 +656,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 		} else {
 			throw new RuntimeException("No se encontro el alumno con ID: " + id);
 		}
+	}
+
+	@Override
+	@Transactional
+	public Alumno actualizarObservaciones(@NonNull Long id, String observaciones) {
+		Alumno alumno = alumnoRepository.findById(id)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
+		alumno.setObservaciones(observaciones);
+		return alumnoRepository.save(alumno);
 	}
 
 	/**

@@ -18,6 +18,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -108,6 +109,10 @@ public class Alumno {
 
 	@NotNull(message = "La autorización web no puede ser nula")
 	private Boolean autorizacionWeb = true;
+
+	@Lob
+	@Column(columnDefinition = "LONGTEXT")
+	private String observaciones;
 
 	// Note: Nullable for multi-sport mode (competidor is per-sport in AlumnoDeporte)
 	// Only required for legacy single-sport mode
@@ -393,6 +398,14 @@ public class Alumno {
 
 	public void setAutorizacionWeb(Boolean autorizacionWeb) {
 		this.autorizacionWeb = autorizacionWeb;
+	}
+
+	public String getObservaciones() {
+		return observaciones;
+	}
+
+	public void setObservaciones(String observaciones) {
+		this.observaciones = observaciones;
 	}
 
 	public Boolean getCompetidor() {

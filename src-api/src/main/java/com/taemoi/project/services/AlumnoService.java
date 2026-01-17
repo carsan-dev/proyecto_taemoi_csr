@@ -73,6 +73,8 @@ public interface AlumnoService {
 
 	String generarContrasena(String nombre, String apellidos);
 
+	Alumno actualizarObservaciones(@NonNull Long id, String observaciones);
+
 	Alumno darDeBajaAlumno(Long id);
 
 	Alumno darDeAltaAlumno(Long id);
