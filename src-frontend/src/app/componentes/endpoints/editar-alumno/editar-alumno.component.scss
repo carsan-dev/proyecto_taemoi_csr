@@ -934,6 +934,17 @@
   }
 }
 
+.info-value-multiline {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.observaciones-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
 // Modals with shared layout (add sport, update grade, WhatsApp)
 #agregarDeporteModal,
 #actualizarGradoModal,
