@@ -24,6 +24,7 @@ public class AlumnoDTO {
 	private String email;
 	private Integer telefono;
 	private Integer telefono2;
+	private String observaciones;
 	private Double cuantiaTarifa;
 	private TipoTarifa tipoTarifa;
 	private RolFamiliar rolFamiliar;
@@ -59,7 +60,7 @@ public class AlumnoDTO {
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
-			String nif, String direccion, String email, Integer telefono, Integer telefono2, Double cuantiaTarifa, TipoTarifa tipoTarifa,
+			String nif, String direccion, String email, Integer telefono, Integer telefono2, String observaciones, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
 			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
 			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
@@ -74,6 +75,7 @@ public class AlumnoDTO {
 		this.email = email;
 		this.telefono = telefono;
 		this.telefono2 = telefono2;
+		this.observaciones = observaciones;
 		this.cuantiaTarifa = cuantiaTarifa;
 		this.tipoTarifa = tipoTarifa;
 		this.rolFamiliar = rolFamiliar;
@@ -161,6 +163,14 @@ public class AlumnoDTO {
 
 	public void setTelefono2(Integer telefono2) {
 		this.telefono2 = telefono2;
+	}
+
+	public String getObservaciones() {
+		return observaciones;
+	}
+
+	public void setObservaciones(String observaciones) {
+		this.observaciones = observaciones;
 	}
 
 	public TipoTarifa getTipoTarifa() {
@@ -440,7 +450,7 @@ public class AlumnoDTO {
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
-				cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
+				alumno.getObservaciones(), cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
 				alumno.getAutorizacionWeb(),
 				competidor,
