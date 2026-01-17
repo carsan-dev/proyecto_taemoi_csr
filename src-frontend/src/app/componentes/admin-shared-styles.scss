@@ -353,11 +353,12 @@ $whatsapp-hover: #128C7E;
 }
 
 .admin-select-combobox.is-open {
-  z-index: 30;
+  z-index: 500;
 }
 
 .admin-select-field-open {
-  z-index: 25;
+  position: relative;
+  z-index: 490;
 }
 
 .admin-select-input {
@@ -387,7 +388,7 @@ $whatsapp-hover: #128C7E;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   box-shadow: $shadow-md;
-  z-index: 50;
+  z-index: 510;
   display: none;
 }
 

@@ -1,4 +1,5 @@
 import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy, Renderer2 } from '@angular/core';
+import { Subscription } from 'rxjs';
 
 @Directive({
   selector: 'select[appSearchableSelect]',
@@ -18,6 +19,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private activeIndex = -1;
   private isOpen = false;
   private debounceHandle?: number;
+  private stableSub?: Subscription;
+  private lastSelectValue?: string;
   private observer?: MutationObserver;
   private detachListeners: Array<() => void> = [];
   private labelEl?: HTMLLabelElement;
@@ -37,6 +40,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.debounceHandle) {
       window.clearTimeout(this.debounceHandle);
+    }
+    if (this.stableSub) {
+      this.stableSub.unsubscribe();
     }
     this.detachListeners.forEach((detach) => detach());
     if (this.observer) {
@@ -103,12 +109,13 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
 
     this.hideSelect(select);
     this.bindLabel(select);
-    this.fieldEl = this.wrapperEl.closest('.admin-form-field, .form-group') as HTMLElement | null;
+    this.fieldEl = (this.wrapperEl.closest('.admin-form-field, .form-group') as HTMLElement | null) ?? undefined;
     this.syncDisabled();
     this.buildOptions();
     this.syncFromSelect();
     this.bindEvents();
     this.observeChanges(select);
+    this.watchSelectValue(select);
   }
 
   private hideSelect(select: HTMLSelectElement): void {
@@ -241,6 +248,21 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     });
   }
 
+  private watchSelectValue(select: HTMLSelectElement): void {
+    this.lastSelectValue = select.value;
+    this.stableSub = this.zone.onStable.subscribe(() => {
+      if (!this.inputEl) {
+        return;
+      }
+      if (this.isOpen || document.activeElement === this.inputEl) {
+        return;
+      }
+      if (select.value !== this.lastSelectValue) {
+        this.syncFromSelect();
+      }
+    });
+  }
+
   private buildOptions(): void {
     if (!this.dropdownEl) {
       return;
@@ -299,6 +321,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     }
 
     this.syncSelectedClasses();
+    this.lastSelectValue = select.value;
   }
 
   private syncSelectedClasses(): void {
