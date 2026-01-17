@@ -21,7 +21,7 @@
         <app-skeleton-card
           type="masonry"
           [count]="previewMode ? 4 : 8"
-          [columns]="previewMode ? 1 : 4"
+          [columns]="previewMode ? 1 : null"
         ></app-skeleton-card>
       } @else if (eventos.length > 0) {
         <!-- Masonry Grid -->

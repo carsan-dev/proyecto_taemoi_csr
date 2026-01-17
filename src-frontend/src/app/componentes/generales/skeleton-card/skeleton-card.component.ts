@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 export class SkeletonCardComponent {
   @Input() type: 'list' | 'grid' | 'table' | 'distribution' | 'events' | 'masonry' = 'list';
   @Input() count: number = 5;
-  @Input() columns: number = 3; // For grid layout
+  @Input() columns: number | null = 3; // For grid layout
 
   get items(): number[] {
     return new Array(this.count).fill(0);
