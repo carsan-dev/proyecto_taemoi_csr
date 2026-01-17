@@ -71,6 +71,8 @@ public interface AlumnoService {
 
 	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO);
 
+	boolean datosAlumnoValidos(AlumnoDTO alumnoDTO, boolean requiereTarifaYFechaAlta);
+
 	String generarContrasena(String nombre, String apellidos);
 
 	Alumno actualizarObservaciones(@NonNull Long id, String observaciones);
