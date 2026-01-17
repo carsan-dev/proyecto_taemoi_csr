@@ -65,6 +65,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   alumnoId: number | null = null;
   tipoTarifaEditado: boolean = false;
   mostrarInactivos: boolean = false;
+  observacionesDraft: string = '';
+  guardandoObservaciones: boolean = false;
 
   // Opciones de dropdown
   tiposTarifa = Object.values(TipoTarifa);
@@ -165,6 +167,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     tieneDiscapacidad?: boolean;
     autorizacionWeb?: boolean;
     fechaBaja?: string;
+    observaciones?: string;
   } = {};
   editingBasicInfo: boolean = false;
 
@@ -257,6 +260,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         grado: [''], // DEPRECATED: No longer required - managed via tabs
         aptoParaExamen: [false], // DEPRECATED: No longer required - managed via tabs
         tieneDiscapacidad: [false],
+        observaciones: [''],
       }
     );
   }
@@ -445,6 +449,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         next: (alumnoResponse: any) => {
           this.alumno = alumnoResponse;
           this.alumnoId = this.alumno.id;
+          this.observacionesDraft = this.alumno.observaciones ?? '';
 
           // Obtener productos del alumno, convocatorias, etc.
           if (this.alumnoId) {
@@ -881,6 +886,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
       tieneDiscapacidad: alumno.tieneDiscapacidad,
+      observaciones: alumno.observaciones ?? '',
     });
 
     // Per-sport fields (tarifa, licencia, fechaAlta, etc.) are now managed in sport tabs
@@ -4331,6 +4337,33 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return !value || (typeof value === 'string' && value.trim() === '');
   }
 
+  // ==================== OBSERVACIONES ====================
+
+  hasObservacionesChanges(): boolean {
+    const actual = this.alumno?.observaciones ?? '';
+    return (this.observacionesDraft ?? '') !== actual;
+  }
+
+  guardarObservaciones(): void {
+    if (!this.alumnoId || !this.alumno || this.guardandoObservaciones || !this.hasObservacionesChanges()) {
+      return;
+    }
+
+    this.guardandoObservaciones = true;
+    const observaciones = this.observacionesDraft ?? '';
+    this.endpointsService.actualizarObservacionesAlumno(this.alumnoId, observaciones)
+      .pipe(finalize(() => (this.guardandoObservaciones = false)))
+      .subscribe({
+        next: () => {
+          showSuccessToast('Observaciones actualizadas');
+          this.alumno.observaciones = observaciones;
+        },
+        error: () => {
+          showErrorToast('Error al actualizar las observaciones');
+        },
+      });
+  }
+
   private validateNif(value: any): string | null {
     if (this.isBlank(value)) {
       return 'El DNI es obligatorio';
@@ -4443,6 +4476,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       tieneDiscapacidad: this.pendingBasicInfoChanges.tieneDiscapacidad ?? this.alumno.tieneDiscapacidad,
       autorizacionWeb: this.pendingBasicInfoChanges.autorizacionWeb ?? this.alumno.autorizacionWeb,
       fechaBaja: fechaBaja,
+      observaciones: this.pendingBasicInfoChanges.observaciones ?? this.alumno.observaciones,
       // Required fields for backend validation (preserve current values)
       tipoTarifa: this.alumno.tipoTarifa,
       fechaAlta: this.alumno.fechaAlta ? formatDate(this.alumno.fechaAlta) : null,
