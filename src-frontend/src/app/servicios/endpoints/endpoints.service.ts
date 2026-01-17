@@ -256,6 +256,14 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  actualizarObservacionesAlumno(id: number, observaciones: string | null): Observable<any> {
+    return this.http
+      .put<any>(`${this.urlBase}/alumnos/${id}/observaciones`, { observaciones }, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarImagenAlumno(id: number): Observable<any> {
     return this.http
       .delete(`${this.urlBase}/alumnos/${id}/imagen`, {

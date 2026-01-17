@@ -1516,6 +1516,29 @@
                     </span>
                   }
                 </div>
+                <!-- Observaciones -->
+                <div class="admin-form-field mb-3">
+                  <label for="observaciones">
+                    <i class="bi bi-journal-text"></i>
+                    Observaciones
+                  </label>
+                  <textarea id="observaciones" class="admin-form-control" rows="4"
+                            [(ngModel)]="observacionesDraft"
+                            placeholder="Escribe aquí todas las observaciones que quieras."
+                            aria-label="Observaciones del alumno"></textarea>
+                  <div class="observaciones-actions">
+                    <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                            (click)="guardarObservaciones()"
+                            [disabled]="!hasObservacionesChanges() || guardandoObservaciones">
+                      <i class="bi bi-check-circle"></i>
+                      <span>{{ guardandoObservaciones ? 'Guardando...' : 'Guardar observaciones' }}</span>
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Puedes añadir todas las observaciones que necesites.
+                  </small>
+                </div>
               </div>
             </div>
           </div>
