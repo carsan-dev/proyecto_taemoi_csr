@@ -79,14 +79,15 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
-    path: 'alumnosEditar',
+    path: 'alumnosEditar/:id',
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
-    path: 'alumnosEditar/:id',
+    path: 'alumnosEditar',
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
+    pathMatch: 'full',
   },
   {
     path: 'alumnos/:id/productos',
