@@ -939,6 +939,11 @@
   word-break: break-word;
 }
 
+.observaciones-textarea {
+  // Avoid lag while resizing by limiting transitions to non-size properties.
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 .observaciones-actions {
   display: flex;
   justify-content: flex-end;
