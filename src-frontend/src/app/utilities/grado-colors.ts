@@ -26,24 +26,22 @@ export function getGradoColors(tipoGrado: string): GradoColorInfo {
   };
 
   // Check if it's a split color grade (supports underscore, hyphen, slash, or space)
-  if (!gradoUpper.includes('DAN') && !gradoUpper.includes('PUM')) {
-    const parts = gradoUpper.split(/[\s/_-]+/).filter(Boolean);
-    const colors: string[] = [];
+  const parts = gradoUpper.split(/[\s/_-]+/).filter(Boolean);
+  const colors: string[] = [];
 
-    for (const part of parts) {
-      if (colorMap[part]) {
-        colors.push(colorMap[part]);
-      }
+  for (const part of parts) {
+    if (colorMap[part]) {
+      colors.push(colorMap[part]);
     }
+  }
 
-    if (colors.length >= 2) {
-      const splitColors = colors.slice(0, 2);
-      return {
-        colors: splitColors,
-        isSplit: true,
-        needsBorder: splitColors.some(c => c === '#FFFFFF'),
-      };
-    }
+  if (colors.length >= 2) {
+    const splitColors = colors.slice(0, 2);
+    return {
+      colors: splitColors,
+      isSplit: true,
+      needsBorder: splitColors.some(c => c === '#FFFFFF'),
+    };
   }
 
   // Single color grades
