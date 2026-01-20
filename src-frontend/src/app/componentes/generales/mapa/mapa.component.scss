@@ -27,32 +27,9 @@
     margin: 5px;
   }
 
-  .share-button {
-    left: 5px;
-    position: absolute;
-    bottom: 10px;
-    z-index: 1000;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 50%;
-    color: #fff;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 5px;
-  }
-
   .route-button {
     left: 50%;
     transform: translateX(-50%);
-  }
-
-  .share-button-twitter {
-    background-color: #000;
-    bottom: 75px;
-  }
-
-  .share-button-facebook {
-    background-color: #0866FF;
   }
 
   .download-button {
@@ -99,8 +76,7 @@
     bottom: 5px;
   }
 
-  .route-button,
-  .share-button {
+  .route-button {
     margin: 3px;
     font-size: 12px;
     padding: 8px 10px;
@@ -108,10 +84,6 @@
 
   .download-button {
     display: none;
-  }
-
-  .share-button {
-    padding: 8px;
   }
 
   .route-button {

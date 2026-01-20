@@ -47,6 +47,44 @@ body {
   position: relative;
 }
 
+// Improve Leaflet touch targets on mobile.
+@media (max-width: 768px) {
+  a.leaflet-popup-close-button {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+    line-height: 48px !important;
+    font-size: 22px !important;
+    padding: 0 !important;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    top: 6px;
+    right: 6px;
+  }
+
+  .leaflet-control-geocoder {
+    margin: 10px 0 0 !important;
+  }
+
+  a.leaflet-control-geocoder-icon,
+  button.leaflet-control-geocoder-icon {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+    line-height: 48px !important;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-size: 22px 22px !important;
+    background-position: center !important;
+  }
+}
+
 // Add padding to main content when admin navbar is present
 body:has(.admin-top-navbar) #content {
   padding-top: 70px !important;

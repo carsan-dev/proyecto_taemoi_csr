@@ -39,6 +39,9 @@ export class MapaComponent implements AfterViewInit {
       // Initialize map
       this.map = this.L.map('map').setView(this.localizacionConcreta, 13);
 
+      const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+      const isMobile = screenWidth <= 768;
+
       // Add base layers
       const mapaLayer = this.L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -67,37 +70,37 @@ export class MapaComponent implements AfterViewInit {
       // Add layer control
       this.L.control.layers(baseMaps).addTo(this.map);
 
-      // Add geocoder with safe error handling
-      try {
-        const geocoder = (this.L.Control).geocoder({
-          defaultMarkGeocode: false,
-        });
+      if (!isMobile) {
+        // Add geocoder with safe error handling
+        try {
+          const geocoder = (this.L.Control).geocoder({
+            defaultMarkGeocode: false,
+          });
 
-        geocoder.on('markgeocode', (e: any) => {
-          try {
-            if (e && e.geocode && e.geocode.bbox) {
-              const bbox = e.geocode.bbox;
-              const poly = this.L.polygon([
-                bbox.getSouthEast(),
-                bbox.getNorthEast(),
-                bbox.getNorthWest(),
-                bbox.getSouthWest(),
-              ]);
-              this.map.fitBounds(poly.getBounds());
+          geocoder.on('markgeocode', (e: any) => {
+            try {
+              if (e && e.geocode && e.geocode.bbox) {
+                const bbox = e.geocode.bbox;
+                const poly = this.L.polygon([
+                  bbox.getSouthEast(),
+                  bbox.getNorthEast(),
+                  bbox.getNorthWest(),
+                  bbox.getSouthWest(),
+                ]);
+                this.map.fitBounds(poly.getBounds());
+              }
+            } catch (err) {
+              console.error('Error handling geocode result:', err);
             }
-          } catch (err) {
-            console.error('Error handling geocode result:', err);
-          }
-        });
+          });
 
-        geocoder.addTo(this.map);
-      } catch (err) {
-        console.warn('Geocoder plugin not available:', err);
+          geocoder.addTo(this.map);
+        } catch (err) {
+          console.warn('Geocoder plugin not available:', err);
+        }
       }
 
       // Add minimap on larger screens
-      const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
       if (screenWidth > 576) {
         try {
           const miniMapLayer = this.L.tileLayer(
@@ -120,9 +123,13 @@ export class MapaComponent implements AfterViewInit {
         iconSize: [30, 30],
       });
 
+      const locationTitle = 'Ubicacion Moiskimdo en Umbrete';
+
       // Add marker
       const marker = this.L.marker(this.localizacionConcreta, {
         icon: this.pulsatingIcon,
+        title: locationTitle,
+        alt: locationTitle,
       }).addTo(this.map);
 
       // Add popup
@@ -133,7 +140,9 @@ export class MapaComponent implements AfterViewInit {
         <b>Ubicación:</b><br>
         C. Parada de la Cigüeña 36, 41806 Umbrete, Sevilla<br>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">Abrir en Google Maps</a>
-      `).openPopup();
+      `, {
+        closeButton: !isMobile,
+      }).openPopup();
 
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -168,7 +177,12 @@ export class MapaComponent implements AfterViewInit {
             ],
             routeWhileDragging: true,
             createMarker: (i: number, waypoint: any, n: number) => {
-              return this.L.marker(waypoint.latLng, { icon: this.pulsatingIcon });
+              const markerTitle = i === 0 ? 'Tu ubicacion' : 'Destino Moiskimdo';
+              return this.L.marker(waypoint.latLng, {
+                icon: this.pulsatingIcon,
+                title: markerTitle,
+                alt: markerTitle,
+              });
             },
           }).addTo(this.map);
         } catch (error) {
@@ -181,25 +195,6 @@ export class MapaComponent implements AfterViewInit {
         alert('Error al obtener tu ubicación: ' + error.message);
       }
     );
-  }
-
-  shareOnFacebook(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const lat = this.localizacionConcreta[0];
-      const lng = this.localizacionConcreta[1];
-      const url = encodeURIComponent(`https://www.google.com/maps?q=${lat},${lng}`);
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
-    }
-  }
-
-  shareOnTwitter(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const lat = this.localizacionConcreta[0];
-      const lng = this.localizacionConcreta[1];
-      const url = encodeURIComponent(`https://www.google.com/maps?q=${lat},${lng}`);
-      const text = encodeURIComponent('¡Mira esta ubicación interesante!');
-      window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
-    }
   }
 
   downloadLocation(): void {
