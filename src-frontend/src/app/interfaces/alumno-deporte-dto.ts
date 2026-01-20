@@ -14,6 +14,7 @@ export interface AlumnoDeporteDTO {
 
   // Status and dates
   activo: boolean;
+  principal?: boolean;
   fechaAlta: Date | string;
   fechaAltaInicial: Date | string | null; // For seniority calculation
   fechaBaja: Date | string | null;
