@@ -18,17 +18,17 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 // Sport Colors (matching main site)
 $taekwondo-color: #0D47A1;
 $taekwondo-hover: #1976D2;
-$kickboxing-color: #ff4500;
-$kickboxing-hover: #e83e00;
-$pilates-color: #57A2A8;
-$pilates-hover: #468A8F;
+$kickboxing-color: #cc3700;
+$kickboxing-hover: #b83200;
+$pilates-color: #447e83;
+$pilates-hover: #3f7579;
 $defensa-color: #c2185b;
 $defensa-hover: #d81b60;
 
 // Availability colors
-$available-color: #4caf50;
-$warning-color: #ff9800;
-$full-color: #f44336;
+$available-color: #2e7d32;
+$warning-color: #b45309;
+$full-color: #c62828;
 
 // ========================================
 // PAGE LAYOUT
@@ -415,6 +415,7 @@ $full-color: #f44336;
     }
   }
 
+
   &.defensa {
     background: $defensa-color;
     box-shadow: 0 4px 12px rgba($defensa-color, 0.3);
@@ -699,7 +700,7 @@ $full-color: #f44336;
   }
 
   .info-content {
-    h3 {
+    h2 {
       margin: 0 0 0.5rem 0;
       font-size: 1.2rem;
       font-weight: 600;
@@ -714,7 +715,7 @@ $full-color: #f44336;
     }
 
     .contacto-link {
-      color: $primary-color;
+      color: $primary-dark;
       font-weight: 600;
       text-decoration: none;
       transition: $transition;
