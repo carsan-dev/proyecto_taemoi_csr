@@ -24,38 +24,38 @@ export const SEO_ROUTES = {
     canonical: `${BASE_URL}/inicio`,
   },
   taekwondo: {
-    title: 'Taekwondo en Umbrete (Sevilla) | Clases para ninos y adultos - Moiskimdo',
+    title: "Taekwondo en Umbrete y Aljarafe (Sevilla) | Club Moi's Kim Do",
     description:
-      'Clases de taekwondo en Umbrete y Sevilla (Aljarafe). Iniciacion, tecnificacion y competicion con instructores certificados.',
+      'Escuela de artes marciales en Umbrete (Aljarafe, Sevilla). Clases de taekwondo para ninos y adultos con instructores certificados.',
     keywords:
-      "taekwondo umbrete, taekwondo sevilla, escuela de taekwondo, clases de taekwondo, taekwondo aljarafe, taekwondo andalucia, taekwondo ninos, taekwondo adultos, club taekwondo sevilla, moiskimdo, club mois kim do, club moi's kim do",
+      "taekwondo umbrete, taekwondo aljarafe, taekwondo sevilla, escuela de taekwondo, clases de taekwondo, escuela artes marciales sevilla, taekwondo andalucia, taekwondo ninos, taekwondo adultos, club taekwondo sevilla, moiskimdo, club mois kim do, club moi's kim do",
     canonical: `${BASE_URL}/taekwondo`,
     ogImage: `${BASE_URL}/assets/media/taekwondo_banner.webp`,
   },
   kickboxing: {
-    title: 'Kickboxing Light en Umbrete (Sevilla) | Moiskimdo',
+    title: "Kickboxing Light en Umbrete y Aljarafe (Sevilla) | Club Moi's Kim Do",
     description:
-      'Kickboxing light en Umbrete y Sevilla. Entrenamientos seguros para todas las edades con tecnica, cardio y defensa personal.',
+      'Escuela de artes marciales en Umbrete (Aljarafe, Sevilla). Kickboxing light seguro para todas las edades con tecnica, cardio y defensa personal.',
     keywords:
-      "kickboxing light, kickboxing umbrete, kickboxing sevilla, kickboxing aljarafe, clases de kickboxing, kickboxing andalucia, kickboxing mujeres, moiskimdo, club mois kim do, club moi's kim do",
+      "kickboxing light, kickboxing umbrete, kickboxing aljarafe, kickboxing sevilla, clases de kickboxing, escuela artes marciales sevilla, kickboxing andalucia, kickboxing mujeres, moiskimdo, club mois kim do, club moi's kim do",
     canonical: `${BASE_URL}/kickboxing`,
     ogImage: `${BASE_URL}/assets/media/kickboxing_banner.webp`,
   },
   pilates: {
-    title: 'Pilates Balance en Umbrete (Sevilla) | Moiskimdo',
+    title: "Pilates Balance en Umbrete y Aljarafe (Sevilla) | Club Moi's Kim Do",
     description:
-      'Clases de pilates balance en Umbrete y Sevilla. Postura, fuerza y flexibilidad con grupos reducidos.',
+      'Clases de pilates balance en Umbrete (Aljarafe, Sevilla). Postura, fuerza y flexibilidad en una escuela de artes marciales.',
     keywords:
-      "pilates umbrete, pilates sevilla, pilates aljarafe, pilates balance, clases de pilates, pilates para adultos, pilates para mujeres, pilates andalucia, moiskimdo, club mois kim do, club moi's kim do",
+      "pilates umbrete, pilates aljarafe, pilates sevilla, pilates balance, clases de pilates, escuela artes marciales sevilla, pilates para adultos, pilates para mujeres, pilates andalucia, moiskimdo, club mois kim do, club moi's kim do",
     canonical: `${BASE_URL}/pilates`,
     ogImage: `${BASE_URL}/assets/media/pilates_suelo.webp`,
   },
   defensaPersonal: {
-    title: 'Defensa Personal Femenina en Umbrete (Sevilla) | Moiskimdo',
+    title: "Defensa Personal Femenina en Umbrete y Aljarafe (Sevilla) | Club Moi's Kim Do",
     description:
-      'Defensa personal femenina en Umbrete y Sevilla. Tecnicas practicas de autodefensa, seguridad y confianza.',
+      'Escuela de artes marciales en Umbrete (Aljarafe, Sevilla). Defensa personal femenina con tecnicas practicas, seguridad y confianza.',
     keywords:
-      "defensa personal femenina, defensa personal mujeres, autodefensa femenina, defensa personal sevilla, defensa personal umbrete, defensa personal aljarafe, defensa personal andalucia, moiskimdo, club mois kim do, club moi's kim do",
+      "defensa personal femenina, defensa personal mujeres, autodefensa femenina, defensa personal umbrete, defensa personal aljarafe, defensa personal sevilla, escuela artes marciales sevilla, defensa personal andalucia, moiskimdo, club mois kim do, club moi's kim do",
     canonical: `${BASE_URL}/defensapersonalfemenina`,
     ogImage: `${BASE_URL}/assets/media/defensa_personal_banner.webp`,
   },
