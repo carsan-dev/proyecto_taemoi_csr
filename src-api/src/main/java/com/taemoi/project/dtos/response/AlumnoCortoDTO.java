@@ -2,6 +2,7 @@ package com.taemoi.project.dtos.response;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.entities.Imagen;
 
 public class AlumnoCortoDTO {
@@ -86,14 +87,9 @@ public class AlumnoCortoDTO {
 		}
 
 		String grado = null;
-		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
-			AlumnoDeporte principal = alumno.getDeportes().stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
-					.findFirst()
-					.orElse(alumno.getDeportes().get(0));
-			if (principal != null && principal.getGrado() != null) {
-				grado = principal.getGrado().getTipoGrado().getNombre();
-			}
+		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
+		if (principal != null && principal.getGrado() != null) {
+			grado = principal.getGrado().getTipoGrado().getNombre();
 		} else if (alumno.getGrado() != null) {
 			grado = alumno.getGrado().getTipoGrado().getNombre();
 		}

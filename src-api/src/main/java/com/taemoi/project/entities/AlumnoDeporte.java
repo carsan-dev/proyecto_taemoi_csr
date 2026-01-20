@@ -66,6 +66,10 @@ public class AlumnoDeporte {
 	@NotNull(message = "El campo activo no puede ser nulo")
 	private Boolean activo = true;
 
+	@Column(nullable = false)
+	@NotNull(message = "El campo principal no puede ser nulo")
+	private Boolean principal = false;
+
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
 
@@ -171,6 +175,14 @@ public class AlumnoDeporte {
 
 	public void setActivo(Boolean activo) {
 		this.activo = activo;
+	}
+
+	public Boolean getPrincipal() {
+		return principal;
+	}
+
+	public void setPrincipal(Boolean principal) {
+		this.principal = principal;
 	}
 
 	public Date getFechaAlta() {

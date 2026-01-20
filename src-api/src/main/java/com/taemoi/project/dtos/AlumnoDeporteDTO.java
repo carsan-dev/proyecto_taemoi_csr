@@ -21,6 +21,7 @@ public class AlumnoDeporteDTO {
 
 	// Status and dates
 	private Boolean activo;
+	private Boolean principal;
 	private Date fechaAlta;
 	private Date fechaAltaInicial; // For seniority calculation
 	private Date fechaBaja;
@@ -76,6 +77,7 @@ public class AlumnoDeporteDTO {
 
 		// Status and dates
 		dto.setActivo(alumnoDeporte.getActivo());
+		dto.setPrincipal(alumnoDeporte.getPrincipal());
 		dto.setFechaAlta(alumnoDeporte.getFechaAlta());
 		dto.setFechaAltaInicial(alumnoDeporte.getFechaAltaInicial());
 		dto.setFechaBaja(alumnoDeporte.getFechaBaja());
@@ -214,6 +216,14 @@ public class AlumnoDeporteDTO {
 
 	public void setActivo(Boolean activo) {
 		this.activo = activo;
+	}
+
+	public Boolean getPrincipal() {
+		return principal;
+	}
+
+	public void setPrincipal(Boolean principal) {
+		this.principal = principal;
 	}
 
 	public Date getFechaAlta() {

@@ -54,6 +54,15 @@ public interface AlumnoDeporteService {
 		Double peso, java.util.Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, java.util.Date fechaLicencia);
 
 	/**
+	 * Marca un deporte como principal para un alumno (desmarca el resto).
+	 *
+	 * @param alumnoId ID del alumno
+	 * @param deporte Deporte a marcar como principal
+	 * @return AlumnoDeporte actualizado
+	 */
+	AlumnoDeporte establecerDeportePrincipal(Long alumnoId, Deporte deporte);
+
+	/**
 	 * Desactiva un deporte de un alumno (marca como inactivo pero mantiene todos los datos)
 	 *
 	 * @param alumnoId ID del alumno
