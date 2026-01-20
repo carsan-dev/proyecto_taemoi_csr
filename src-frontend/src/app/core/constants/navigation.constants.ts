@@ -35,7 +35,7 @@ export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
     items: [
       {
         label: 'Taekwondo',
-        route: '/eltaekwondo',
+        route: '/taekwondo',
       },
       {
         label: 'Kickboxing',
