@@ -236,7 +236,7 @@ $transition-speed: 0.3s;
                 top: -0.5rem;
                 left: 2.5rem;
                 font-size: 0.75rem;
-                color: $primary-color;
+                color: $primary-hover;
                 background: $text-light;
                 padding: 0 0.5rem;
               }
@@ -246,7 +246,7 @@ $transition-speed: 0.3s;
               top: -0.5rem;
               left: 2.5rem;
               font-size: 0.75rem;
-              color: $primary-color;
+              color: $primary-hover;
               background: $text-light;
               padding: 0 0.5rem;
             }
@@ -276,13 +276,19 @@ $transition-speed: 0.3s;
               color: $text-dark;
             }
 
-            &:not([value=""]) ~ .select-label {
-              top: -0.5rem;
+            & ~ .select-label {
+              top: -0.65rem;
               left: 2.5rem;
               font-size: 0.75rem;
-              color: $primary-color;
-              background: $text-light;
-              padding: 0 0.5rem;
+              color: $primary-hover;
+              background: transparent;
+              padding: 0;
+            }
+
+            &:focus ~ .select-label {
+              color: $primary-hover;
+              background: transparent;
+              padding: 0;
             }
           }
 
