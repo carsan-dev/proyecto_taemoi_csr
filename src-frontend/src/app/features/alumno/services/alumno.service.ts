@@ -330,6 +330,19 @@ export class AlumnoService {
   }
 
   /**
+   * Set a sport as principal for a student
+   * @param alumnoId Student ID
+   * @param deporte Sport name to mark as principal
+   */
+  establecerDeportePrincipal(alumnoId: number, deporte: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.urlBase}/${alumnoId}/deportes/${deporte}/principal`,
+      {},
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Remove a sport from a student completely (hard delete - physical deletion)
    * @param alumnoId Student ID
    * @param deporte Sport name to remove
