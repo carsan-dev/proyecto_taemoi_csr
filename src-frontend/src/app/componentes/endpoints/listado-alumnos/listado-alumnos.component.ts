@@ -477,22 +477,57 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     const deportes = this.deportesPorAlumno.get(alumnoId) || [];
     // Filter to show only active sports and sort by priority
     const deportesActivos = deportes.filter((d) => d.activo !== false);
+    return this.ordenarDeportesPorPrincipal(deportesActivos);
+  }
 
-    // Sort: sports with license first, then by date (oldest first)
-    return [...deportesActivos].sort((a, b) => {
-      const aRequiereLicencia = a.deporte === 'TAEKWONDO' || a.deporte === 'KICKBOXING';
-      const bRequiereLicencia = b.deporte === 'TAEKWONDO' || b.deporte === 'KICKBOXING';
+  private ordenarDeportesPorPrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO[] {
+    if (!deportes || deportes.length === 0) {
+      return [];
+    }
+    const principal = this.getDeportePrincipalDeLista(deportes);
+    return [...deportes].sort((a, b) => {
+      if (principal) {
+        if (a.deporte === principal.deporte) return -1;
+        if (b.deporte === principal.deporte) return 1;
+      }
+      return this.obtenerFechaOrdenDeporte(a) - this.obtenerFechaOrdenDeporte(b);
+    });
+  }
 
-      // Prioritize sports that require license
-      if (aRequiereLicencia && !bRequiereLicencia) return -1;
-      if (!aRequiereLicencia && bRequiereLicencia) return 1;
+  private obtenerFechaOrdenDeporte(deporte: AlumnoDeporteDTO): number {
+    const fecha = deporte.fechaAltaInicial || deporte.fechaAlta;
+    return fecha ? new Date(fecha).getTime() : Number.MAX_SAFE_INTEGER;
+  }
 
-      // Within same priority, sort by date (oldest first)
-      const fechaA = a.fechaAltaInicial || a.fechaAlta;
-      const fechaB = b.fechaAltaInicial || b.fechaAlta;
-      const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
-      const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
-      return timeA - timeB;
+  isDeportePrincipalDeLista(alumnoId: number, deporte: string): boolean {
+    const deportes = this.getDeportesDeAlumno(alumnoId);
+    const principal = this.getDeportePrincipalDeLista(deportes);
+    return principal?.deporte === deporte;
+  }
+
+  marcarDeportePrincipal(alumnoId: number, deporte: string): void {
+    const deportes = this.deportesPorAlumno.get(alumnoId) || [];
+    const deporteData = deportes.find((d) => d.deporte === deporte);
+    if (!deporteData || deporteData.activo === false) {
+      showErrorToast('No se puede marcar como principal un deporte inactivo');
+      return;
+    }
+    if (this.isDeportePrincipalDeLista(alumnoId, deporte)) {
+      return;
+    }
+
+    this.alumnoService.establecerDeportePrincipal(alumnoId, deporte).subscribe({
+      next: () => {
+        const actualizados = deportes.map((d) => ({
+          ...d,
+          principal: d.deporte === deporte,
+        }));
+        this.deportesPorAlumno.set(alumnoId, actualizados);
+        showSuccessToast(`Deporte principal actualizado a ${getDeporteLabel(deporte)}`);
+      },
+      error: (error) => {
+        showErrorToast(error?.error || 'No se pudo actualizar el deporte principal');
+      },
     });
   }
 
@@ -524,7 +559,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     let licenciaTexto = 'Sin deportes';
     let licenciaClase = 'licencia-none';
     if (deportePrincipal) {
-      if (!deportePrincipal.tieneLicencia) {
+      const requiereLicencia = deportePrincipal.deporte === 'TAEKWONDO' || deportePrincipal.deporte === 'KICKBOXING';
+      if (!requiereLicencia) {
+        licenciaTexto = 'N/A';
+        licenciaClase = 'licencia-none';
+      } else if (!deportePrincipal.tieneLicencia) {
         licenciaTexto = 'Sin licencia';
         licenciaClase = 'licencia-off';
       } else if (this.licenciaEnVigor(deportePrincipal.fechaLicencia)) {
@@ -551,23 +590,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (!deportes || deportes.length === 0) {
       return null;
     }
-
-    // Prioritize sports that require license (Taekwondo, Kickboxing)
-    const deportesConLicencia = deportes.filter(
-      (d) => d.deporte === 'TAEKWONDO' || d.deporte === 'KICKBOXING'
-    );
-
-    // Use sports with license if available, otherwise use all sports
-    const deportesAOrdenar = deportesConLicencia.length > 0 ? deportesConLicencia : deportes;
-
-    const deportesOrdenados = [...deportesAOrdenar].sort((a, b) => {
-      const fechaA = a.fechaAltaInicial || a.fechaAlta;
-      const fechaB = b.fechaAltaInicial || b.fechaAlta;
-      const timeA = fechaA ? new Date(fechaA).getTime() : Number.MAX_SAFE_INTEGER;
-      const timeB = fechaB ? new Date(fechaB).getTime() : Number.MAX_SAFE_INTEGER;
-      return timeA - timeB;
-    });
-    return deportesOrdenados[0];
+    const principales = deportes.filter((d) => d.principal === true);
+    const candidatos = principales.length > 0 ? principales : deportes;
+    return [...candidatos].sort((a, b) => {
+      return this.obtenerFechaOrdenDeporte(a) - this.obtenerFechaOrdenDeporte(b);
+    })[0];
   }
 
   private licenciaEnVigor(
@@ -706,7 +733,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   alumnoRequiereLicencia(alumnoId: number): boolean {
     const deportes = this.getDeportesDeAlumno(alumnoId);
-    return deportes.some((d) => d.deporte === 'TAEKWONDO' || d.deporte === 'KICKBOXING');
+    const principal = this.getDeportePrincipalDeLista(deportes);
+    if (!principal) {
+      return false;
+    }
+    return principal.deporte === 'TAEKWONDO' || principal.deporte === 'KICKBOXING';
   }
 
   /**
@@ -889,6 +920,32 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   getGradoNombre(tipoGrado: string | null | undefined, deporte: string | null | undefined): string {
     return getGradoNombreParaDeporte(tipoGrado, deporte);
+  }
+
+  getGradoNombrePartes(
+    tipoGrado: string | null | undefined,
+    deporte: string | null | undefined
+  ): { texto: string; sufijo: string | null } {
+    const nombre = getGradoNombreParaDeporte(tipoGrado, deporte);
+    if (!nombre) {
+      return { texto: 'Sin grado', sufijo: null };
+    }
+
+    const normalizado = nombre
+      .replace(/[_/\\-]+/g, ' ')
+      .replace(/[º°]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const match = normalizado.match(/(?:^|\s)(\d+)(?:\s*(PUM|DAN))?$/i);
+    if (!match) {
+      return { texto: normalizado, sufijo: null };
+    }
+
+    const indice = match.index ?? 0;
+    const texto = normalizado.slice(0, indice).trim();
+    const sufijo = match[2] ? `${match[1]} ${match[2].toUpperCase()}` : match[1];
+
+    return { texto: texto || normalizado, sufijo };
   }
 
   cambiarPagina(pageNumber: number): void {

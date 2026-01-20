@@ -495,6 +495,8 @@
 }
 
 .deporte-detalle {
+  position: relative;
+  --header-line-color: #{rgba($primary-color, 0.35)};
   display: grid;
   gap: 0.6rem;
   padding: 0.85rem;
@@ -505,24 +507,28 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
 
   &.taekwondo {
+    --header-line-color: #{rgba($taekwondo-color, 0.4)};
     border-color: rgba($taekwondo-color, 0.2);
     border-left-color: $taekwondo-color;
     background: linear-gradient(135deg, rgba($taekwondo-color, 0.12), rgba($taekwondo-color, 0.02));
   }
 
   &.kickboxing {
+    --header-line-color: #{rgba($kickboxing-color, 0.4)};
     border-color: rgba($kickboxing-color, 0.2);
     border-left-color: $kickboxing-color;
     background: linear-gradient(135deg, rgba($kickboxing-color, 0.12), rgba($kickboxing-color, 0.02));
   }
 
   &.pilates {
+    --header-line-color: #{rgba($pilates-color, 0.4)};
     border-color: rgba($pilates-color, 0.2);
     border-left-color: $pilates-color;
     background: linear-gradient(135deg, rgba($pilates-color, 0.12), rgba($pilates-color, 0.02));
   }
 
   &.defensa_personal_femenina {
+    --header-line-color: #{rgba($defensa-color, 0.4)};
     border-color: rgba($defensa-color, 0.2);
     border-left-color: $defensa-color;
     background: linear-gradient(135deg, rgba($defensa-color, 0.12), rgba($defensa-color, 0.02));
@@ -532,13 +538,22 @@
 .deporte-detalle-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.35rem;
   padding-bottom: 0.35rem;
   border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-right: 2.4rem;
+  min-width: 0;
 }
 
 .deporte-detalle-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
   font-weight: 700;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -547,10 +562,71 @@
 }
 
 .deporte-detalle-grado {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-top: 0.35rem;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  border-top: 1px solid var(--header-line-color);
+}
+
+.deporte-detalle-grado .grado-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.deporte-detalle-grado .grado-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deporte-detalle-grado .grado-suffix {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.deporte-principal-btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba($warning-color, 0.4);
+  background: $text-light;
+  color: $warning-color;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: $transition;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &.active,
+  &:disabled {
+    background: rgba($warning-color, 0.15);
+    color: $warning-color;
+    cursor: default;
+    transform: none;
+  }
 }
 
 .deporte-detalle-grid {

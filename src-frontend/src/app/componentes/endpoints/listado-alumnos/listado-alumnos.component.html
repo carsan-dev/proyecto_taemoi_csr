@@ -187,14 +187,33 @@
                     @if (getDeportesDeAlumno(alumno.id).length === 0) {
                       <span class="badge-loading">Cargando...</span>
                     }
-                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id; let i = $index) {
                       <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
+                        <button type="button"
+                          class="deporte-principal-btn"
+                          [class.active]="i === 0"
+                          [disabled]="i === 0"
+                          (click)="marcarDeportePrincipal(alumno.id, deporteItem.deporte)"
+                          [attr.aria-label]="'Marcar ' + getDeporteLabel(deporteItem.deporte) + ' como principal'">
+                          <i class="bi" [class.bi-star-fill]="i === 0" [class.bi-star]="i !== 0"></i>
+                        </button>
                         <div class="deporte-detalle-header">
                           <span class="deporte-detalle-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
                           @if (deporteRequiereGrado(deporteItem.deporte)) {
-                          <span class="deporte-detalle-grado" [style]="getGradoStyle(deporteItem.grado || '')">
-                            {{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado' }}
+                          @if (getGradoNombrePartes(deporteItem.grado, deporteItem.deporte); as gradoPartes) {
+                          <span class="deporte-detalle-grado">
+                            <span class="grado-line">
+                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '')">
+                                {{ gradoPartes.texto }}
+                              </span>
+                              @if (gradoPartes.sufijo) {
+                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '')">
+                                {{ gradoPartes.sufijo }}
+                              </span>
+                              }
+                            </span>
                           </span>
+                          }
                           }
                         </div>
                         <div class="deporte-detalle-grid">
