@@ -106,6 +106,7 @@
                 class="form-select"
                 id="asunto"
                 formControlName="asunto"
+                required
                 [class.invalid]="contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched">
                 <option value="" disabled selected>Selecciona un asunto</option>
                 <option value="Inscripción">Inscripción</option>
