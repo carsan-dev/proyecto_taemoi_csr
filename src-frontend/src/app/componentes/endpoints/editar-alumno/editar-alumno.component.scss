@@ -767,6 +767,25 @@
         font-weight: 600;
       }
 
+      .tab-principal {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.35rem;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 999px;
+        background: rgba($warning-color, 0.15);
+        color: $warning-color;
+        font-size: 0.7rem;
+        line-height: 1;
+
+        i {
+          display: block;
+          line-height: 1;
+        }
+      }
+
       .tab-badge {
         font-size: 0.8rem;
         padding: 0.25rem 0.75rem;
@@ -803,6 +822,11 @@
           background: rgba(255, 255, 255, 0.2);
           color: $text-light;
         }
+
+        .tab-principal {
+          background: rgba(255, 255, 255, 0.25);
+          color: $text-light;
+        }
       }
     }
   }
@@ -833,7 +857,7 @@
           align-items: center;
           gap: 0.75rem;
 
-          i {
+          .deporte-icon {
             color: $primary-color;
             font-size: 1.75rem;
           }
@@ -842,6 +866,35 @@
         .deporte-actions {
           display: flex;
           gap: 0.5rem;
+
+          .admin-btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+        }
+      }
+
+      .principal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        background: rgba($warning-color, 0.15);
+        border: 1px solid rgba($warning-color, 0.35);
+        color: $warning-color;
+        font-weight: 700;
+        font-size: 0.78rem;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+
+        i {
+          display: block;
+          line-height: 1;
+          font-size: 0.85rem;
+          color: $warning-color;
         }
       }
 

@@ -2091,9 +2091,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
-        this.deportesDelAlumno = deportes;
-        const deportesActivos = deportes.filter(d => d.activo !== false);
-        const deportesPreferidos = deportesActivos.length > 0 ? deportesActivos : deportes;
+        const deportesOrdenados = this.ordenarDeportesPorPrincipal(deportes);
+        this.deportesDelAlumno = deportesOrdenados;
+        const deportesActivos = deportesOrdenados.filter(d => d.activo !== false);
+        const deportesPreferidos = deportesActivos.length > 0 ? deportesActivos : deportesOrdenados;
         const deportePorDefecto = deportesPreferidos[0]?.deporte;
 
         // Set active sport
@@ -2133,6 +2134,81 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   getDeportesDisponiblesParaAgregar(): Deporte[] {
     const deportesAsignados = new Set(this.deportesDelAlumno.map(d => d.deporte));
     return Object.values(Deporte).filter(d => !deportesAsignados.has(d));
+  }
+
+  private ordenarDeportesPorPrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO[] {
+    if (!deportes || deportes.length === 0) {
+      return [];
+    }
+    const principal = this.seleccionarDeportePrincipal(deportes);
+    return [...deportes].sort((a, b) => {
+      if (principal) {
+        if (a.deporte === principal.deporte) return -1;
+        if (b.deporte === principal.deporte) return 1;
+      }
+      const aActivo = a.activo !== false;
+      const bActivo = b.activo !== false;
+      if (aActivo !== bActivo) {
+        return aActivo ? -1 : 1;
+      }
+      return this.obtenerFechaOrdenDeporte(a) - this.obtenerFechaOrdenDeporte(b);
+    });
+  }
+
+  private seleccionarDeportePrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO | null {
+    if (!deportes || deportes.length === 0) {
+      return null;
+    }
+    const activos = deportes.filter(d => d.activo !== false);
+    const principalActivo = this.seleccionarDeportePrincipalDesdeLista(activos);
+    if (principalActivo) {
+      return principalActivo;
+    }
+    return this.seleccionarDeportePrincipalDesdeLista(deportes);
+  }
+
+  private seleccionarDeportePrincipalDesdeLista(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO | null {
+    if (!deportes || deportes.length === 0) {
+      return null;
+    }
+    const principales = deportes.filter(d => d.principal === true);
+    const candidatos = principales.length > 0 ? principales : deportes;
+    return [...candidatos].sort((a, b) => {
+      return this.obtenerFechaOrdenDeporte(a) - this.obtenerFechaOrdenDeporte(b);
+    })[0];
+  }
+
+  private obtenerFechaOrdenDeporte(deporte: AlumnoDeporteDTO): number {
+    const fecha = deporte.fechaAltaInicial || deporte.fechaAlta;
+    return fecha ? new Date(fecha).getTime() : Number.MAX_SAFE_INTEGER;
+  }
+
+  isDeportePrincipal(deporte: string): boolean {
+    const principal = this.seleccionarDeportePrincipal(this.deportesDelAlumno);
+    return principal?.deporte === deporte;
+  }
+
+  marcarDeportePrincipal(deporte: string): void {
+    if (!this.alumnoId) {
+      return;
+    }
+    const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
+    if (!deporteData || deporteData.activo === false) {
+      showErrorToast('No se puede marcar como principal un deporte inactivo');
+      return;
+    }
+    if (this.isDeportePrincipal(deporte)) {
+      return;
+    }
+    this.alumnoService.establecerDeportePrincipal(this.alumnoId, deporte).subscribe({
+      next: () => {
+        showSuccessToast(`Deporte principal actualizado a ${getDeporteLabel(deporte)}`);
+        this.cargarDeportesDelAlumno(this.alumnoId!, true);
+      },
+      error: (error) => {
+        showErrorToast(error?.error || 'No se pudo actualizar el deporte principal');
+      },
+    });
   }
 
   /**
@@ -2252,7 +2328,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           if (this.alumnoId) {
             this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId).subscribe({
               next: (deportes: AlumnoDeporteDTO[]) => {
-                this.deportesDelAlumno = deportes;
+                this.deportesDelAlumno = this.ordenarDeportesPorPrincipal(deportes);
                 // Switch to the newly added sport
                 this.deporteActivo = deporteToActivate;
                 this.deportesDisponibles = this.getDeportesDisponiblesParaAgregar();
@@ -2816,7 +2892,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Get the count of active sports for this alumno
    */
   getDeportesActivosCount(): number {
-    return this.deportesDelAlumno.filter(d => d.activo).length;
+    return this.deportesDelAlumno.filter(d => d.activo !== false).length;
   }
 
   /**
@@ -3984,14 +4060,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.alumnoService.obtenerDeportesDelAlumno(this.alumnoId!).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
-        this.deportesDelAlumno = deportes;
+        this.deportesDelAlumno = this.ordenarDeportesPorPrincipal(deportes);
 
         // Preserve the current active tab
-        const stillExists = deportes.find(d => d.deporte === currentActiveDeporte);
+        const stillExists = this.deportesDelAlumno.find(d => d.deporte === currentActiveDeporte);
         if (stillExists) {
           this.deporteActivo = currentActiveDeporte;
-        } else if (deportes.length > 0) {
-          this.deporteActivo = deportes[0].deporte;
+        } else if (this.deportesDelAlumno.length > 0) {
+          this.deporteActivo = this.deportesDelAlumno[0].deporte;
         }
 
         // NOW delete pending changes after data has been reloaded
