@@ -142,6 +142,7 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `taemoi_test`.`alumno_deporte` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
+  `principal` BIT(1) NOT NULL DEFAULT 0,
   `apto_para_examen` BIT(1) NOT NULL,
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
   `fecha_alta` DATE NULL DEFAULT NULL,
