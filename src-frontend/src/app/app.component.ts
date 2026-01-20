@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton.component';
 import { ScrollService } from './servicios/generales/scroll.service';
 import { NgxSpinnerModule } from 'ngx-spinner';
+import { SeoService } from './servicios/generales/seo.service';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +20,7 @@ export class AppComponent {
   private selectTypeaheadResetTimer: number | null = null;
   private activeSelect: HTMLSelectElement | null = null;
 
-  constructor(private scrollService: ScrollService) {
+  constructor(private scrollService: ScrollService, private seoService: SeoService) {
     // ScrollService is initialized automatically and handles route changes
   }
 
