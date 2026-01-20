@@ -245,6 +245,11 @@
                 <i class="bi bi-trophy"></i>
                 <span class="tab-label">
                   {{ getDeporteLabel(deporteItem.deporte) }}
+                  @if (isDeportePrincipal(deporteItem.deporte)) {
+                  <span class="tab-principal" title="Principal">
+                    <i class="bi bi-star-fill"></i>
+                  </span>
+                  }
                   @if (deporteItem.activo === false) {
                   <small class="ms-1 text-muted">(Inactivo)</small>
                   }
@@ -262,15 +267,27 @@
                 <!-- Deporte Header with Action Buttons -->
                 <div class="deporte-header">
                   <h4>
-                    <i class="bi bi-trophy-fill"></i>
+                    <i class="bi bi-trophy-fill deporte-icon"></i>
                     {{ getDeporteLabel(deporteItem.deporte) }}
                     @if (deporteItem.activo === false) {
                     <span class="badge bg-secondary ms-2">
                       <i class="bi bi-pause-circle"></i> Inactivo
                     </span>
                     }
+                    @if (isDeportePrincipal(deporteItem.deporte)) {
+                    <span class="badge principal-badge ms-2">
+                      <i class="bi bi-star-fill"></i> Principal
+                    </span>
+                    }
                   </h4>
                   <div class="deporte-actions">
+                    @if (deporteItem.activo !== false && !isDeportePrincipal(deporteItem.deporte)) {
+                    <button class="admin-btn admin-btn-outline admin-btn-sm"
+                      (click)="marcarDeportePrincipal(deporteItem.deporte)">
+                      <i class="bi bi-star"></i>
+                      <span>Marcar principal</span>
+                    </button>
+                    }
                     @if (deporteItem.activo === false) {
                     <button class="admin-btn admin-btn-success admin-btn-sm"
                       (click)="activarDeporte(deporteItem.deporte)">
