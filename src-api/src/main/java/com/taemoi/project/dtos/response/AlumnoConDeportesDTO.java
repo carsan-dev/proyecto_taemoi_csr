@@ -11,6 +11,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.utils.AlumnoDeporteUtils;
 
 /**
  * DTO que representa un alumno con todos sus deportes
@@ -63,13 +64,7 @@ public class AlumnoConDeportesDTO {
 		}
 
 		AlumnoConDeportesDTO dto = new AlumnoConDeportesDTO();
-		AlumnoDeporte deportePrincipal = null;
-		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
-			deportePrincipal = alumno.getDeportes().stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
-					.findFirst()
-					.orElse(alumno.getDeportes().get(0));
-		}
+		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
 		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
 		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();

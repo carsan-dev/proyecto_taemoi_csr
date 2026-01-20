@@ -715,6 +715,28 @@ public class AlumnoController {
 	/**
 	 * Remueve completamente un deporte de un alumno (hard delete - eliminación física)
 	 */
+	/**
+	 * Marca un deporte como principal para un alumno
+	 * PUT /api/alumnos/{id}/deportes/{deporte}/principal
+	 */
+	@PutMapping("/{id}/deportes/{deporte}/principal")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> establecerDeportePrincipal(@PathVariable Long id, @PathVariable String deporte) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
+					.establecerDeportePrincipal(id, deporteEnum);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al establecer deporte principal", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al establecer deporte principal");
+		}
+	}
+
 	@DeleteMapping("/{id}/deportes/{deporte}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> removerDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {

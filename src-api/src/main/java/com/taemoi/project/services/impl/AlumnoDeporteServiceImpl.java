@@ -197,6 +197,31 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
+	public AlumnoDeporte establecerDeportePrincipal(Long alumnoId, Deporte deporte) {
+		List<AlumnoDeporte> deportesDelAlumno = alumnoDeporteRepository.findByAlumnoId(alumnoId);
+		if (deportesDelAlumno.isEmpty()) {
+			throw new IllegalArgumentException("El alumno no tiene deportes asignados");
+		}
+
+		AlumnoDeporte deportePrincipal = deportesDelAlumno.stream()
+				.filter(ad -> ad.getDeporte() == deporte)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		if (Boolean.FALSE.equals(deportePrincipal.getActivo())) {
+			throw new IllegalArgumentException("No se puede marcar como principal un deporte inactivo");
+		}
+
+		for (AlumnoDeporte alumnoDeporte : deportesDelAlumno) {
+			alumnoDeporte.setPrincipal(alumnoDeporte.getDeporte() == deporte);
+		}
+		alumnoDeporteRepository.saveAll(deportesDelAlumno);
+
+		return deportePrincipal;
+	}
+
+	@Override
 	public void desactivarDeporteDeAlumno(Long alumnoId, Deporte deporte) {
 		// Verificar que el alumno tiene más de un deporte activo
 		long deportesActivos = alumnoDeporteRepository.countByAlumnoIdAndActivoTrue(alumnoId);
@@ -217,6 +242,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 		// Marcar como inactivo (mantiene todos los datos: grado, fechaGrado, aptoParaExamen, etc.)
 		alumnoDeporte.setActivo(false);
+		alumnoDeporte.setPrincipal(false);
 		alumnoDeporte.setFechaBaja(new Date());
 		alumnoDeporteRepository.save(alumnoDeporte);
 	}
