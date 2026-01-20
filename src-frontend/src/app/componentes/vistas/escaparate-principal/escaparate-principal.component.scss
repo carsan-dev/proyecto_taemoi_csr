@@ -384,6 +384,78 @@ $defensa-hover: #d81b60;
             }
           }
 
+          .faq-list {
+            display: grid;
+            gap: 0.75rem;
+            margin: 0 0 2rem;
+
+            .faq-item {
+              border: 1px solid rgba($primary-color, 0.15);
+              border-radius: 14px;
+              padding: 0.2rem 1rem;
+              background: #ffffff;
+              box-shadow: $shadow-sm;
+
+              &[open] {
+                border-color: rgba($primary-color, 0.35);
+              }
+            }
+
+            .faq-question {
+              list-style: none;
+              cursor: pointer;
+              font-weight: 600;
+              color: $text-dark;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 1rem;
+              padding: 0.75rem 0;
+            }
+
+            .faq-question::-webkit-details-marker {
+              display: none;
+            }
+
+            .faq-question::after {
+              content: '+';
+              color: $primary-color;
+              font-weight: 700;
+              font-size: 1.2rem;
+            }
+
+            .faq-item[open] .faq-question::after {
+              content: '-';
+            }
+
+            .faq-answer {
+              color: $text-muted;
+              line-height: 1.7;
+              display: block;
+              max-height: 0;
+              opacity: 0;
+              overflow: hidden;
+              padding-bottom: 0;
+              transform: translateY(-4px);
+              transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+
+              p {
+                margin: 0;
+              }
+
+              .schedule-list {
+                margin: 0.5rem 0 0;
+              }
+            }
+
+            .faq-item[open] .faq-answer {
+              max-height: 500px;
+              opacity: 1;
+              padding-bottom: 0.75rem;
+              transform: translateY(0);
+            }
+          }
+
           .schedule-list {
             list-style: none;
             padding: 0;
