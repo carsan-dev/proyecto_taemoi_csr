@@ -29,7 +29,7 @@ export const SEO_ROUTES = {
       'Clases de taekwondo en Umbrete y Sevilla (Aljarafe). Iniciacion, tecnificacion y competicion con instructores certificados.',
     keywords:
       "taekwondo umbrete, taekwondo sevilla, escuela de taekwondo, clases de taekwondo, taekwondo aljarafe, taekwondo andalucia, taekwondo ninos, taekwondo adultos, club taekwondo sevilla, moiskimdo, club mois kim do, club moi's kim do",
-    canonical: `${BASE_URL}/eltaekwondo`,
+    canonical: `${BASE_URL}/taekwondo`,
     ogImage: `${BASE_URL}/assets/media/taekwondo_banner.webp`,
   },
   kickboxing: {

@@ -14,8 +14,13 @@ export const routes: Routes = [
   },
   {
     path: 'eltaekwondo',
+    redirectTo: '/taekwondo',
+    pathMatch: 'full',
+  },
+  {
+    path: 'taekwondo',
     data: { seo: SEO_ROUTES.taekwondo },
-    loadComponent: () => import('./componentes/vistas/eltaekwondo/eltaekwondo.component').then(m => m.EltaekwondoComponent)
+    loadComponent: () => import('./componentes/vistas/taekwondo/taekwondo.component').then(m => m.TaekwondoComponent)
   },
   {
     path: 'kickboxing',
