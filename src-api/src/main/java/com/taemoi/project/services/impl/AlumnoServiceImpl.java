@@ -61,6 +61,7 @@ import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.ProductoAlumnoService;
+import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
@@ -1103,13 +1104,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
-		AlumnoDeporte deportePrincipal = null;
-		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
-			deportePrincipal = alumno.getDeportes().stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
-					.findFirst()
-					.orElse(alumno.getDeportes().get(0));
-		}
+		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
 		TipoGrado gradoActual = null;
 		Deporte deporte = null;
