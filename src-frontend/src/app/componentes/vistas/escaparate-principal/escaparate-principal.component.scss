@@ -797,6 +797,9 @@ $defensa-hover: #d81b60;
             flex: 1;
 
             .contact-label {
+              display: flex;
+              flex-direction: column;
+              gap: 0.25rem;
               font-size: 0.85rem;
               color: $text-muted;
               font-weight: 500;
@@ -809,6 +812,8 @@ $defensa-hover: #d81b60;
               color: $text-dark;
               font-weight: 600;
               white-space: nowrap;
+              text-transform: none;
+              letter-spacing: normal;
             }
           }
         }
