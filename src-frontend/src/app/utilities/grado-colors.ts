@@ -25,9 +25,9 @@ export function getGradoColors(tipoGrado: string): GradoColorInfo {
     NEGRO: '#000000',
   };
 
-  // Check if it's a split color grade (contains underscore)
-  if (gradoUpper.includes('_') && !gradoUpper.includes('DAN') && !gradoUpper.includes('PUM')) {
-    const parts = gradoUpper.split('_');
+  // Check if it's a split color grade (supports underscore, hyphen, slash, or space)
+  if (!gradoUpper.includes('DAN') && !gradoUpper.includes('PUM')) {
+    const parts = gradoUpper.split(/[\s/_-]+/).filter(Boolean);
     const colors: string[] = [];
 
     for (const part of parts) {
@@ -36,11 +36,12 @@ export function getGradoColors(tipoGrado: string): GradoColorInfo {
       }
     }
 
-    if (colors.length === 2) {
+    if (colors.length >= 2) {
+      const splitColors = colors.slice(0, 2);
       return {
-        colors: colors,
+        colors: splitColors,
         isSplit: true,
-        needsBorder: colors.some(c => c === '#FFFFFF'),
+        needsBorder: splitColors.some(c => c === '#FFFFFF'),
       };
     }
   }
