@@ -21,7 +21,7 @@ export const SEO_DEFAULTS: Required<Pick<SeoMeta, 'title' | 'description' | 'key
 export const SEO_ROUTES = {
   home: {
     ...SEO_DEFAULTS,
-    canonical: `${BASE_URL}/`,
+    canonical: `${BASE_URL}/inicio`,
   },
   taekwondo: {
     title: 'Taekwondo en Umbrete (Sevilla) | Clases para ninos y adultos - Moiskimdo',
