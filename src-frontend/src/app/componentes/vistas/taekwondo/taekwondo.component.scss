@@ -85,7 +85,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       animation: fadeInUp 1s ease;
 
       .hero-title {
-        font-size: clamp(2.5rem, 6vw, 5rem);
+        font-size: clamp(2.5rem, 6vw, 4rem);
         font-weight: 700;
         color: $text-light;
         margin: 0;
@@ -95,7 +95,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       }
 
       .hero-subtitle {
-        font-size: clamp(1.2rem, 4vw, 2.5rem);
+        font-size: clamp(1.1rem, 3vw, 1.5rem);
         font-weight: 700;
         color: $text-light;
         margin: 0.5rem 0 1.5rem;
@@ -104,7 +104,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       }
 
       .hero-description {
-        font-size: clamp(1rem, 2vw, 1.3rem);
+        font-size: 1rem;
         color: rgba($text-light, 0.95);
         margin: 0;
         text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
@@ -407,6 +407,91 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     opacity: 1;
     padding-bottom: 0.75rem;
     transform: translateY(0);
+  }
+}
+
+// ========================================
+// RELATED SPORTS SECTION
+// ========================================
+.related-section {
+  padding: 3rem 2rem;
+  background: #ffffff;
+
+  .related-card {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+
+    .related-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0 0 0.5rem;
+    }
+
+    .related-description {
+      color: $text-muted;
+      margin-bottom: 2rem;
+    }
+
+    .related-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+
+      .related-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: $transition;
+        border: 2px solid;
+
+        i {
+          font-size: 1.1rem;
+        }
+
+        &.taekwondo {
+          color: $taekwondo-color;
+          border-color: $taekwondo-color;
+          &:hover {
+            background: $taekwondo-color;
+            color: $text-light;
+          }
+        }
+
+        &.kickboxing {
+          color: #CF4800;
+          border-color: #CF4800;
+          &:hover {
+            background: #CF4800;
+            color: $text-light;
+          }
+        }
+
+        &.pilates {
+          color: #3E7D83;
+          border-color: #3E7D83;
+          &:hover {
+            background: #3E7D83;
+            color: $text-light;
+          }
+        }
+
+        &.defensa {
+          color: #c2185b;
+          border-color: #c2185b;
+          &:hover {
+            background: #c2185b;
+            color: $text-light;
+          }
+        }
+      }
+    }
   }
 }
 
