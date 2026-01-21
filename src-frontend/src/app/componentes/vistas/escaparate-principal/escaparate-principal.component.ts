@@ -8,6 +8,7 @@ import {
   Inject,
   PLATFORM_ID,
   OnInit,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/slider-tocable.component';
@@ -22,7 +23,7 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
   templateUrl: './escaparate-principal.component.html',
   styleUrl: './escaparate-principal.component.scss',
 })
-export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
+export class EscaparatePrincipalComponent implements AfterViewInit, OnInit, OnDestroy {
   @ViewChild('videoPresentacion')
   videoPresentacion!: ElementRef<HTMLVideoElement>;
 
@@ -30,6 +31,12 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
   images!: QueryList<ElementRef>;
 
   usuarioLogueado: boolean = false;
+
+  // Reviews carousel
+  currentReview: number = 0;
+  totalReviews: number = 10;
+  visibleCards: number = 3;
+  private reviewInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject(PLATFORM_ID) private readonly platformId: Object,
@@ -46,6 +53,83 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit {
     this.authService.rolesCambio.subscribe((roles) => {
       this.redirigirSiAdmin(roles);
     });
+
+    // Start reviews carousel auto-rotation
+    if (isPlatformBrowser(this.platformId)) {
+      this.updateVisibleCards();
+      window.addEventListener('resize', this.updateVisibleCards.bind(this));
+      this.startReviewAutoRotation();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopReviewAutoRotation();
+    if (isPlatformBrowser(this.platformId)) {
+      window.removeEventListener('resize', this.updateVisibleCards.bind(this));
+    }
+  }
+
+  // Reviews carousel methods
+  get totalPages(): number {
+    return Math.ceil(this.totalReviews / this.visibleCards);
+  }
+
+  get translateX(): number {
+    // Each card takes up (100 / visibleCards)% of the visible area
+    // We move by one card width at a time
+    const cardWidthPercent = 100 / this.visibleCards;
+    return -(this.currentReview * cardWidthPercent);
+  }
+
+  updateVisibleCards(): void {
+    const width = window.innerWidth;
+    if (width >= 1024) {
+      this.visibleCards = 3;
+    } else if (width >= 768) {
+      this.visibleCards = 2;
+    } else {
+      this.visibleCards = 1;
+    }
+    // Reset to valid position if needed
+    if (this.currentReview >= this.totalReviews - this.visibleCards + 1) {
+      this.currentReview = Math.max(0, this.totalReviews - this.visibleCards);
+    }
+  }
+
+  nextReview(): void {
+    const maxIndex = this.totalReviews - this.visibleCards;
+    this.currentReview = this.currentReview >= maxIndex ? 0 : this.currentReview + 1;
+    this.resetAutoRotation();
+  }
+
+  prevReview(): void {
+    const maxIndex = this.totalReviews - this.visibleCards;
+    this.currentReview = this.currentReview <= 0 ? maxIndex : this.currentReview - 1;
+    this.resetAutoRotation();
+  }
+
+  goToReview(index: number): void {
+    this.currentReview = index;
+    this.resetAutoRotation();
+  }
+
+  private startReviewAutoRotation(): void {
+    this.reviewInterval = setInterval(() => {
+      const maxIndex = this.totalReviews - this.visibleCards;
+      this.currentReview = this.currentReview >= maxIndex ? 0 : this.currentReview + 1;
+    }, 6000); // Change review every 6 seconds
+  }
+
+  private stopReviewAutoRotation(): void {
+    if (this.reviewInterval) {
+      clearInterval(this.reviewInterval);
+      this.reviewInterval = null;
+    }
+  }
+
+  private resetAutoRotation(): void {
+    this.stopReviewAutoRotation();
+    this.startReviewAutoRotation();
   }
 
   ngAfterViewInit(): void {
