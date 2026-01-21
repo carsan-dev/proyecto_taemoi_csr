@@ -2560,6 +2560,18 @@ $defensa-hover: #d81b60;
   }
 }
 
+@media (max-width: 375px) {
+  .review-card {
+    .review-stars {
+      flex-wrap: wrap;
+
+      .review-date {
+        flex: 0 0 100%;
+      }
+    }
+  }
+}
+
 // Reduced motion for accessibility
 @media (prefers-reduced-motion: reduce) {
   *,
