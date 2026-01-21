@@ -158,6 +158,7 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/eventos").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/imagen").permitAll()
+						.requestMatchers(HttpMethod.HEAD, "/api/eventos/{eventoId}/imagen").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/eventos/**")
