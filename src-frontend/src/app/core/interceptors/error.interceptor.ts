@@ -38,6 +38,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         switch (error.status) {
           case 401:
             // Unauthorized - redirect to login
+            if (!sesionConfirmada(injector) || esSolicitudAutenticacion(req.url)) {
+              return throwError(() => error);
+            }
             manejarSesionExpirada(injector, router);
             return throwError(() => error);
 
@@ -72,10 +75,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           case 0:
             // Network error (no response from server)
             // Podría ser una sesión expirada si el usuario estaba logueado
+            if (error.error instanceof ProgressEvent && error.error.type === 'abort') {
+              return throwError(() => error);
+            }
             if (estaUsuarioLogueado(injector)) {
               console.error('Network error while logged in - possible session expiration');
-              manejarSesionExpirada(injector, router);
-              return throwError(() => error);
             }
             errorTitle = 'Error de Red';
             errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
@@ -114,6 +118,11 @@ function getAuthService(injector: Injector): AuthenticationService {
   return injector.get(AuthService) as AuthenticationService;
 }
 
+function esSolicitudAutenticacion(url: string): boolean {
+  const normalizedUrl = url.toLowerCase();
+  return normalizedUrl.includes('/api/auth/');
+}
+
 /**
  * Comprueba si el usuario está logueado usando inyección lazy.
  */
@@ -121,6 +130,15 @@ function estaUsuarioLogueado(injector: Injector): boolean {
   try {
     const authService = getAuthService(injector);
     return authService.comprobarLogueado();
+  } catch {
+    return false;
+  }
+}
+
+function sesionConfirmada(injector: Injector): boolean {
+  try {
+    const authService = getAuthService(injector);
+    return authService.comprobarLogueado() && authService.rolesEstanCargados();
   } catch {
     return false;
   }
