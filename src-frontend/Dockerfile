@@ -14,8 +14,8 @@ COPY . .
 # Build for production
 RUN npm run build:production
 
-# Production stage with Alpine nginx
-FROM nginx:1.25-alpine
+# Production stage with Alpine nginx + Brotli support
+FROM macbre/nginx-brotli:1.25.3-alpine
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl
