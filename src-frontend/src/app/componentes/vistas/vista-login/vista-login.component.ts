@@ -179,9 +179,10 @@ export class VistaLoginComponent implements OnInit {
         });
       },
       error: (error) => {
+        const { title, message } = this.obtenerErrorLogin(error);
         Swal.fire({
-          title: 'Error en la petición',
-          text: 'No hemos podido conectar con el servidor',
+          title,
+          text: message,
           icon: 'error',
         });
       },
@@ -259,6 +260,30 @@ export class VistaLoginComponent implements OnInit {
       cookie += '; Secure';
     }
     document.cookie = cookie;
+  }
+
+  private obtenerErrorLogin(error: any): { title: string; message: string } {
+    const status = error?.status;
+    if (status === 0) {
+      return {
+        title: 'Error de conexion',
+        message: 'No hemos podido conectar con el servidor.',
+      };
+    }
+    if (status === 401 || status === 403 || status === 404) {
+      return {
+        title: 'Credenciales incorrectas',
+        message: 'El correo o la contrasena no son correctos.',
+      };
+    }
+    const backendMessage =
+      error?.error?.mensaje ||
+      error?.error?.message ||
+      error?.error?.error;
+    return {
+      title: 'No se pudo iniciar sesion',
+      message: backendMessage || 'Revisa tus datos e intentalo de nuevo.',
+    };
   }
 
   private normalizarFechaNacimiento(valor: string | Date): string {

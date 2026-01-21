@@ -62,6 +62,7 @@ export class AuthenticationService {
   }
 
   login(credenciales: LoginInterface): Observable<string[]> {
+    this.rolesCargados = false;
     return this.http
       .post<any>(`${this.urlBase}/signin`, credenciales, {
         withCredentials: true,
@@ -74,10 +75,6 @@ export class AuthenticationService {
           this.usernameSubject.next(username); // Actualizar nombre de usuario
           this.emailSubject.next(email); // Actualizar email
 
-          // Solo llamamos a obtenerRoles si los roles no han sido cargados
-          if (this.rolesCargados) {
-            return of(this.rolesSubject.value);
-          }
           return this.obtenerRoles().pipe(
             tap(() => {
               // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
@@ -190,7 +187,7 @@ export class AuthenticationService {
         }),
         catchError((error) => {
           this.rolesSubject.next([]);
-          this.rolesCargados = true;
+          this.rolesCargados = false;
           return of([]);
         })
       );
@@ -298,10 +295,6 @@ export class AuthenticationService {
               },
             });
 
-            // Solo llamamos a obtenerRoles si los roles no han sido cargados
-            if (this.rolesCargados) {
-              return;
-            }
             this.obtenerRoles().subscribe();
           } else {
             this.actualizarEstadoLogueado(false);
@@ -311,11 +304,13 @@ export class AuthenticationService {
             this.isAdminSubject.next(false);
             this.isManagerSubject.next(false);
             this.isUserSubject.next(false);
+            this.rolesCargados = false;
           }
         }),
         catchError((error) => {
           console.error('Error al verificar estado de autenticación', error);
           this.actualizarEstadoLogueado(false);
+          this.rolesCargados = false;
           return of(false);
         })
       )
