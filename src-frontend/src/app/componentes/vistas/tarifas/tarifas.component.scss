@@ -6,6 +6,7 @@
 $primary-color: #12383a;
 $taekwondo-color: #0D47A1;
 $kickboxing-color: #E65100;
+$kickboxing-color-contrast: #CF4800;
 $pilates-color: #7B1FA2;
 $defensa-color: #00695C;
 $text-light: #ffffff;
@@ -161,19 +162,21 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   }
 
   &.featured {
-    border: 3px solid $kickboxing-color;
+    border: 3px solid $kickboxing-color-contrast;
 
     .card-badge {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: $kickboxing-color;
-      color: $text-light;
+      background: #ffffff;
+      color: $kickboxing-color-contrast;
+      border: 2px solid $kickboxing-color-contrast;
       padding: 0.35rem 0.75rem;
       border-radius: 20px;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       z-index: 10;
+      box-shadow: $shadow-sm;
     }
   }
 
@@ -277,10 +280,10 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   }
 
   &.kickboxing-btn {
-    background: $kickboxing-color;
+    background: $kickboxing-color-contrast;
     color: $text-light;
     &:hover {
-      background: color.adjust($kickboxing-color, $lightness: -8%);
+      background: color.adjust($kickboxing-color-contrast, $lightness: -8%);
     }
   }
 
