@@ -525,7 +525,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
   animation: fadeIn 0.3s ease;
 
   .modal-overlay {
@@ -541,20 +541,22 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .modal-content {
     position: relative;
     z-index: 2;
-    max-width: 95vw;
-    max-height: 95vh;
+    width: 100%;
+    max-width: 90vw;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
     animation: zoomIn 0.4s ease;
+    padding: 1rem;
 
     .close-button {
       position: absolute;
-      top: -3rem;
+      top: 0;
       right: 0;
-      background: rgba(255, 255, 255, 0.1);
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.4);
       color: $text-light;
       width: 3rem;
       height: 3rem;
@@ -565,21 +567,23 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       transition: $transition;
       backdrop-filter: blur(10px);
+      z-index: 10;
 
       i {
         font-size: 1.5rem;
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.6);
         transform: rotate(90deg) scale(1.1);
       }
     }
 
     .modal-image-wrapper {
+      width: 100%;
       max-width: 100%;
-      max-height: calc(95vh - 5rem);
+      max-height: calc(90vh - 6rem);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -589,7 +593,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       .modal-img {
         max-width: 100%;
-        max-height: calc(95vh - 5rem);
+        max-height: calc(90vh - 6rem);
         width: auto;
         height: auto;
         display: block;
@@ -607,6 +611,10 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 50px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 90%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }
@@ -725,16 +733,29 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .image-modal {
-    padding: 1rem;
+    padding: 0.75rem;
 
     .modal-content {
+      max-width: 95vw;
+      max-height: 95vh;
+      padding: 0.75rem;
+
       .close-button {
-        top: -2.5rem;
-        width: 2.5rem;
-        height: 2.5rem;
+        top: 0;
+        right: 0;
+        width: 2.75rem;
+        height: 2.75rem;
 
         i {
-          font-size: 1.2rem;
+          font-size: 1.25rem;
+        }
+      }
+
+      .modal-image-wrapper {
+        max-height: calc(95vh - 5rem);
+
+        .modal-img {
+          max-height: calc(95vh - 5rem);
         }
       }
 
@@ -851,18 +872,29 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0.5rem;
 
     .modal-content {
+      max-width: 98vw;
+      max-height: 98vh;
+      padding: 0.5rem;
+      gap: 0.75rem;
+
       .close-button {
-        top: -2rem;
-        width: 2.2rem;
-        height: 2.2rem;
+        top: 0;
+        right: 0;
+        width: 2.5rem;
+        height: 2.5rem;
 
         i {
-          font-size: 1rem;
+          font-size: 1.1rem;
         }
       }
 
       .modal-image-wrapper {
+        max-height: calc(98vh - 4.5rem);
         border-radius: 10px;
+
+        .modal-img {
+          max-height: calc(98vh - 4.5rem);
+        }
       }
 
       .modal-caption {

@@ -92,6 +92,7 @@
             [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
             [alt]="evento.titulo"
             class="modal-img"
+            loading="lazy"
             (click)="$event.stopPropagation()"
           />
         </div>
