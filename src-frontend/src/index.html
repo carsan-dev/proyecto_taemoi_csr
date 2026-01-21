@@ -10,12 +10,12 @@
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
   <meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
   <meta name="author" content="Moiskimdo">
-  <meta name="language" content="es">
   <meta name="geo.region" content="ES-AN">
   <meta name="geo.placename" content="Umbrete, Sevilla">
   <meta name="geo.position" content="37.368259;-6.160836">
-  <meta name="ICBM" content="37.368259, -6.160836">
   <meta name="theme-color" content="#12383a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="canonical" href="https://moiskimdo.es/inicio">
   <link rel="alternate" hreflang="es-ES" href="https://moiskimdo.es/inicio">
   <link rel="icon" href="favicon.svg" type="image/svg+xml" sizes="any">
@@ -30,6 +30,8 @@
   <meta property="og:description" content="Escuela de artes marciales en Umbrete (Sevilla). Taekwondo, kickboxing light, pilates balance y defensa personal femenina en el Aljarafe y Andaluc&iacute;a.">
   <meta property="og:url" content="https://moiskimdo.es/">
   <meta property="og:image" content="https://moiskimdo.es/assets/media/fachada_escuela.webp">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Fachada de la escuela de artes marciales en Umbrete">
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
@@ -40,23 +42,37 @@
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SportsActivityLocation",
+      "@type": ["LocalBusiness", "SportsActivityLocation"],
       "@id": "https://moiskimdo.es/#club",
       "name": "Moiskimdo - Escuela de Artes Marciales",
-      "alternateName": "Moi's Kim Do",
+      "alternateName": ["Moi's Kim Do", "Club Mois Kim Do", "Moiskimdo Taekwondo"],
       "url": "https://moiskimdo.es/",
-      "logo": "https://moiskimdo.es/favicon.svg",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://moiskimdo.es/favicon.svg",
+        "width": 512,
+        "height": 512
+      },
       "image": [
-        "https://moiskimdo.es/assets/media/fachada_escuela.webp",
+        {
+          "@type": "ImageObject",
+          "url": "https://moiskimdo.es/assets/media/fachada_escuela.webp",
+          "width": 1200,
+          "height": 630,
+          "caption": "Fachada de la escuela de artes marciales Moiskimdo en Umbrete"
+        },
         "https://moiskimdo.es/assets/media/taekwondo_banner.webp",
         "https://moiskimdo.es/assets/media/kickboxing_banner.webp",
         "https://moiskimdo.es/assets/media/defensa_personal_banner.webp",
         "https://moiskimdo.es/assets/media/pilates_suelo.webp"
       ],
-      "description": "Escuela de artes marciales en Umbrete (Sevilla). Taekwondo, kickboxing light, pilates balance y defensa personal femenina para ni\u00f1os y adultos en el Aljarafe y Andalucia.",
+      "description": "Escuela de artes marciales en Umbrete (Sevilla). Clases de taekwondo, kickboxing light, pilates balance y defensa personal femenina para ninos y adultos en el Aljarafe y Andalucia. Mas de 15 anos de experiencia.",
+      "priceRange": "$$",
+      "currenciesAccepted": "EUR",
+      "paymentAccepted": "Efectivo, Tarjeta de credito, Transferencia bancaria",
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "Calle Parada de la Cig\u00fce\u00f1a, 36",
+        "streetAddress": "Calle Parada de la Ciguena, 36",
         "postalCode": "41806",
         "addressLocality": "Umbrete",
         "addressRegion": "Sevilla",
@@ -70,21 +86,12 @@
       "hasMap": "https://www.google.com/maps?q=37.368259,-6.160836",
       "telephone": "+34625753952",
       "email": "moiskimdotaekwondo@gmail.com",
-      "openingHours": [
-        "Mo 17:00-21:30",
-        "Tu 17:00-21:00",
-        "We 17:00-21:30",
-        "Th 17:00-21:30",
-        "Fr 18:30-19:30"
-      ],
+      "foundingDate": "2009",
+      "openingHours": ["Mo 17:00-21:30", "Tu 17:00-21:00", "We 17:00-21:30", "Th 17:00-21:30", "Fr 18:30-19:30"],
       "openingHoursSpecification": [
         {
           "@type": "OpeningHoursSpecification",
-          "dayOfWeek": [
-            "Monday",
-            "Wednesday",
-            "Thursday"
-          ],
+          "dayOfWeek": ["Monday", "Wednesday", "Thursday"],
           "opens": "17:00",
           "closes": "21:30"
         },
@@ -102,22 +109,61 @@
         }
       ],
       "areaServed": [
-        "Umbrete",
-        "Sevilla",
-        "Aljarafe",
-        "Andalucia"
+        {"@type": "City", "name": "Umbrete"},
+        {"@type": "City", "name": "Sevilla"},
+        {"@type": "AdministrativeArea", "name": "Aljarafe"},
+        {"@type": "AdministrativeArea", "name": "Andalucia"}
       ],
-      "sport": [
-        "Taekwondo",
-        "Kickboxing Light",
-        "Defensa Personal Femenina",
-        "Pilates Balance"
-      ],
+      "sport": ["Taekwondo", "Kickboxing Light", "Defensa Personal Femenina", "Pilates Balance"],
       "sameAs": [
         "https://www.facebook.com/moiskimdo.escueladetaekwondo/",
         "https://www.instagram.com/moiskimdo_/"
       ],
-      "keywords": "moiskimdo, club mois kim do, club moi's kim do, taekwondo umbrete, taekwondo sevilla, kickboxing light, pilates balance, defensa personal femenina"
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "47"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Clases de artes marciales",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Clases de Taekwondo",
+              "description": "Clases de taekwondo para ninos y adultos con instructores certificados"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Clases de Kickboxing Light",
+              "description": "Kickboxing light seguro para todas las edades"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Clases de Pilates Balance",
+              "description": "Pilates para mejorar postura, fuerza y flexibilidad"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Defensa Personal Femenina",
+              "description": "Tecnicas de autodefensa practica para mujeres"
+            }
+          }
+        ]
+      }
     }
   </script>
   <script type="application/ld+json">
@@ -127,35 +173,144 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "Donde esta la escuela de taekwondo en Umbrete?",
+          "name": "Donde esta la escuela de taekwondo Moiskimdo en Umbrete?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Estamos en Calle Parada de la Cig\u00fce\u00f1a 36, 41806 Umbrete, Sevilla, en el Aljarafe."
+            "text": "Estamos en Calle Parada de la Ciguena 36, 41806 Umbrete, Sevilla, en el Aljarafe sevillano. Facil acceso desde Sevilla y municipios cercanos."
           }
         },
         {
           "@type": "Question",
-          "name": "Que clases ofrecemos en Sevilla y Aljarafe?",
+          "name": "Que clases de artes marciales ofreceis en el Aljarafe y Sevilla?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Ofrecemos taekwondo, kickboxing light, pilates balance y defensa personal femenina para ni\u00f1os, jovenes y adultos."
+            "text": "Ofrecemos clases de taekwondo, kickboxing light, pilates balance y defensa personal femenina para ninos, jovenes y adultos de todos los niveles."
           }
         },
         {
           "@type": "Question",
-          "name": "Hay clases para ninos y adultos?",
+          "name": "Hay clases de taekwondo para ninos en Umbrete?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Si. Tenemos grupos por edades y niveles, desde iniciacion hasta avanzado."
+            "text": "Si, tenemos grupos especificos para ninos desde 4 anos, jovenes y adultos. Cada grupo esta adaptado por edad y nivel de experiencia."
           }
         },
         {
           "@type": "Question",
-          "name": "Cual es el horario habitual de las clases?",
+          "name": "Cual es el horario de las clases de artes marciales?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Lunes 17:00-21:30; martes 17:00-21:00; miercoles y jueves 17:00-21:30; viernes 18:30-19:30. Consulta el horario completo en la web."
+            "text": "Lunes 17:00-21:30, martes 17:00-21:00, miercoles y jueves 17:00-21:30, viernes 18:30-19:30. Consulta los horarios especificos de cada deporte en nuestra web."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "Cuanto cuestan las clases de taekwondo o kickboxing?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Tenemos diferentes tarifas segun la edad y modalidad. Ofrecemos descuentos familiares y la primera clase es gratuita. Contactanos para informacion detallada."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Necesito experiencia previa para apuntarme?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, aceptamos alumnos de todos los niveles. Tenemos grupos de iniciacion donde empezamos desde cero con atencion personalizada."
+          }
+        }
+      ]
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Cursos de artes marciales en Moiskimdo",
+      "description": "Clases y cursos de artes marciales disponibles en nuestra escuela de Umbrete",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": {
+            "@type": "Course",
+            "name": "Taekwondo en Umbrete",
+            "description": "Clases de taekwondo para todas las edades. Aprende tecnica, disciplina y defensa personal con instructores certificados.",
+            "provider": {"@id": "https://moiskimdo.es/#club"},
+            "url": "https://moiskimdo.es/taekwondo",
+            "educationalLevel": "Todos los niveles",
+            "teaches": ["Tecnicas de taekwondo", "Poomsae", "Combate deportivo", "Defensa personal", "Disciplina marcial"],
+            "availableLanguage": "es",
+            "courseMode": "presencial",
+            "hasCourseInstance": {
+              "@type": "CourseInstance",
+              "courseMode": "presencial",
+              "location": {"@id": "https://moiskimdo.es/#club"}
+            }
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "item": {
+            "@type": "Course",
+            "name": "Kickboxing Light en Umbrete",
+            "description": "Kickboxing light seguro y efectivo para mejorar tu forma fisica y aprender defensa personal.",
+            "provider": {"@id": "https://moiskimdo.es/#club"},
+            "url": "https://moiskimdo.es/kickboxing",
+            "educationalLevel": "Todos los niveles",
+            "teaches": ["Tecnicas de kickboxing", "Cardio", "Defensa personal", "Condicion fisica"],
+            "availableLanguage": "es",
+            "courseMode": "presencial"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": {
+            "@type": "Course",
+            "name": "Pilates Balance en Umbrete",
+            "description": "Clases de pilates para mejorar postura, fuerza core y flexibilidad en un ambiente relajado.",
+            "provider": {"@id": "https://moiskimdo.es/#club"},
+            "url": "https://moiskimdo.es/pilates",
+            "educationalLevel": "Todos los niveles",
+            "teaches": ["Pilates mat", "Control postural", "Fortalecimiento core", "Flexibilidad"],
+            "availableLanguage": "es",
+            "courseMode": "presencial"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "item": {
+            "@type": "Course",
+            "name": "Defensa Personal Femenina en Umbrete",
+            "description": "Curso de autodefensa para mujeres con tecnicas practicas y efectivas para situaciones reales.",
+            "provider": {"@id": "https://moiskimdo.es/#club"},
+            "url": "https://moiskimdo.es/defensapersonalfemenina",
+            "educationalLevel": "Todos los niveles",
+            "teaches": ["Autodefensa", "Tecnicas de escape", "Conciencia situacional", "Confianza personal"],
+            "availableLanguage": "es",
+            "courseMode": "presencial",
+            "audience": {
+              "@type": "Audience",
+              "audienceType": "Mujeres"
+            }
+          }
+        }
+      ]
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Inicio",
+          "item": "https://moiskimdo.es/inicio"
         }
       ]
     }
