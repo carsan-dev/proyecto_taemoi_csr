@@ -230,6 +230,10 @@ export const routes: Routes = [
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard],
+  },
+  {
+    path: '**',
+    loadComponent: () => import('./componentes/vistas/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
   }
 ];
 @NgModule({
