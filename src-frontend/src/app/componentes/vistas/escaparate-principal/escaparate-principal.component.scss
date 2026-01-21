@@ -123,6 +123,25 @@ $defensa-hover: #d81b60;
         text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
         letter-spacing: 3px;
         text-transform: uppercase;
+
+        .desktop-only,
+        .mobile-only {
+          font-family: inherit;
+        }
+
+        .desktop-only {
+          display: none;
+          @media (min-width: 768px) {
+            display: inline;
+          }
+        }
+
+        .mobile-only {
+          display: inline;
+          @media (min-width: 768px) {
+            display: none;
+          }
+        }
       }
 
       .hero-description {
