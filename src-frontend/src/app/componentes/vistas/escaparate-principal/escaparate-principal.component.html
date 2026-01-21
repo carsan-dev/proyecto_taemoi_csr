@@ -639,7 +639,13 @@
       <h2 class="section-title">PRÓXIMOS EVENTOS</h2>
       <p class="section-subtitle">Descubre nuestras competiciones y actividades especiales</p>
     </div>
-    <app-slider-tocable></app-slider-tocable>
+    @defer (on viewport) {
+      <app-slider-tocable></app-slider-tocable>
+    } @placeholder {
+      <div class="slider-placeholder" aria-hidden="true"></div>
+    } @loading {
+      <div class="slider-placeholder is-loading" aria-hidden="true"></div>
+    }
     <div class="events-button-container">
       <button class="modern-btn events-btn" routerLink="/eventos">
         <i class="bi bi-arrow-right-circle-fill"></i>
@@ -658,7 +664,13 @@
       </div>
 
       <div class="map-wrapper">
-        <app-mapa></app-mapa>
+        @defer (on viewport) {
+          <app-mapa></app-mapa>
+        } @placeholder {
+          <div class="mapa-placeholder" aria-hidden="true"></div>
+        } @loading {
+          <div class="mapa-placeholder is-loading" aria-hidden="true"></div>
+        }
       </div>
 
       <div class="location-info">
