@@ -219,16 +219,20 @@ $defensa-hover: #d81b60;
 // ========================================
 // INFO SECTIONS
 // ========================================
-.info-divs-section {
-  padding: 5rem 0;
-  background: #f8f9fa;
+  .info-divs-section {
+    padding: 5rem 0;
+    background: #f8f9fa;
 
-  .info-div {
-    margin-bottom: 5rem;
+    .info-div {
+      margin-bottom: 5rem;
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+      &.compact {
+        margin-bottom: 3.5rem;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
 
     .info-card {
       max-width: 1400px;
@@ -253,6 +257,50 @@ $defensa-hover: #d81b60;
 
         &.image-wide.reverse {
           grid-template-columns: 1.2fr 0.8fr;
+        }
+
+        &.compact {
+          grid-template-columns: 1fr;
+          text-align: center;
+
+          .text-content {
+            align-items: center;
+            text-align: center;
+            padding: 3rem 3.5rem;
+          }
+
+          .section-header {
+            justify-content: center;
+          }
+        }
+
+        &.compact.with-media {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto;
+          text-align: center;
+
+          .text-content {
+            align-items: center;
+            text-align: center;
+            padding: 3rem 3rem 2rem;
+          }
+
+          .section-header {
+            justify-content: center;
+          }
+
+          .features-list.compact {
+            margin-left: auto;
+            margin-right: auto;
+          }
+
+          .img-content.compact-media {
+            width: 100%;
+
+            .image-wrapper {
+              height: 300px;
+            }
+          }
         }
 
         // Subtle top border accent
@@ -380,6 +428,91 @@ $defensa-hover: #d81b60;
                 font-size: 1rem;
                 color: $text-dark;
                 font-weight: 500;
+              }
+            }
+          }
+
+          .features-list.compact {
+            margin: 0 auto 1.75rem;
+            max-width: 520px;
+            border-left: none;
+            border-top: 3px solid $primary-color;
+            text-align: left;
+          }
+
+          .disciplines-callout {
+            margin: 0 0 2rem;
+            display: grid;
+            gap: 0.75rem;
+
+            .disciplines-label {
+              font-size: 0.85rem;
+              font-weight: 700;
+              color: $text-dark;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+            }
+
+            .discipline-links {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.75rem;
+            }
+
+            .discipline-link {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.65rem 1.35rem;
+              border-radius: 50px;
+              text-decoration: none;
+              font-weight: 600;
+              transition: $transition;
+              border: 2px solid;
+              background: #ffffff;
+
+              i {
+                font-size: 1.05rem;
+              }
+
+              &.taekwondo {
+                color: $taekwondo-color;
+                border-color: $taekwondo-color;
+
+                &:hover {
+                  background: $taekwondo-color;
+                  color: $text-light;
+                }
+              }
+
+              &.kickboxing {
+                color: $kickboxing-color;
+                border-color: $kickboxing-color;
+
+                &:hover {
+                  background: $kickboxing-color;
+                  color: $text-light;
+                }
+              }
+
+              &.pilates {
+                color: $pilates-color;
+                border-color: $pilates-color;
+
+                &:hover {
+                  background: $pilates-color;
+                  color: $text-light;
+                }
+              }
+
+              &.defensa {
+                color: $defensa-color;
+                border-color: $defensa-color;
+
+                &:hover {
+                  background: $defensa-color;
+                  color: $text-light;
+                }
               }
             }
           }
@@ -570,6 +703,117 @@ $defensa-hover: #d81b60;
             }
           }
         }
+      }
+    }
+  }
+}
+
+// ========================================
+// INSTRUCTORS BAND
+// ========================================
+.instructors-band {
+  padding: 4rem 2rem;
+  margin-bottom: 5rem;
+  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($pilates-color, 0.08));
+
+  .instructors-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(360px, 600px) 1fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .instructors-media {
+    position: relative;
+  }
+
+  .instructors-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 200px;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .instructor-photo {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: $shadow-md;
+
+    &.primary {
+      grid-row: 1 / span 2;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  .instructors-text {
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-icon {
+      font-size: 2rem;
+      color: $text-light;
+      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 15%));
+      padding: 0.9rem;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba($primary-color, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 58px;
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0;
+    }
+
+    .section-description {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: $text-muted;
+      margin: 0 0 1rem;
+    }
+
+    .instructors-highlights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .highlight-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid rgba($primary-color, 0.15);
+      font-weight: 600;
+      color: $text-dark;
+      font-size: 0.95rem;
+      box-shadow: $shadow-sm;
+
+      i {
+        color: #4caf50;
+        font-size: 1.1rem;
       }
     }
   }
@@ -1058,6 +1302,28 @@ $defensa-hover: #d81b60;
             }
           }
 
+          &.compact.with-media {
+            .text-content {
+              align-items: center;
+              text-align: center;
+            }
+
+            .section-header {
+              justify-content: center;
+            }
+
+            .features-list.compact {
+              margin-left: auto;
+              margin-right: auto;
+            }
+          }
+
+          &.compact {
+            .text-content {
+              padding: 2.75rem 2rem;
+            }
+          }
+
           .text-content {
             padding: 3rem 2rem;
 
@@ -1090,6 +1356,10 @@ $defensa-hover: #d81b60;
               img {
                 object-fit: cover;
               }
+            }
+
+            &.compact-media .image-wrapper {
+              height: 240px;
             }
 
             &.image-compact img {
@@ -1138,6 +1408,41 @@ $defensa-hover: #d81b60;
       }
     }
   }
+
+  .instructors-band {
+    padding: 3rem 1.5rem;
+    margin-bottom: 3rem;
+
+    .instructors-inner {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    .instructors-media {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .instructors-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: 150px;
+    }
+
+    .instructor-photo.primary {
+      grid-row: auto;
+    }
+
+    .instructors-text {
+      .section-header {
+        justify-content: center;
+        flex-direction: column;
+      }
+
+      .instructors-highlights {
+        justify-content: center;
+      }
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -1161,6 +1466,12 @@ $defensa-hover: #d81b60;
 
           &::before {
             border-radius: 16px 16px 0 0;
+          }
+
+          &.compact {
+            .text-content {
+              padding: 2.25rem 1.5rem;
+            }
           }
 
           .text-content {
@@ -1207,6 +1518,14 @@ $defensa-hover: #d81b60;
               }
             }
 
+            .disciplines-callout {
+              align-items: center;
+
+              .discipline-links {
+                justify-content: center;
+              }
+            }
+
             .schedule-list {
               li {
                 grid-template-columns: 1fr;
@@ -1228,6 +1547,10 @@ $defensa-hover: #d81b60;
           .img-content {
             .image-wrapper {
               height: 350px;
+            }
+
+            &.compact-media .image-wrapper {
+              height: 210px;
             }
           }
         }
@@ -1356,6 +1679,12 @@ $defensa-hover: #d81b60;
             border-radius: 12px 12px 0 0;
           }
 
+          &.compact {
+            .text-content {
+              padding: 2rem 1.25rem;
+            }
+          }
+
           .text-content {
             padding: 2rem 1.25rem;
 
@@ -1378,11 +1707,27 @@ $defensa-hover: #d81b60;
             .features-list {
               padding: 0.875rem;
             }
+
+            .disciplines-callout {
+              .discipline-links {
+                flex-direction: column;
+                width: 100%;
+              }
+
+              .discipline-link {
+                width: 100%;
+                justify-content: center;
+              }
+            }
           }
 
           .img-content {
             .image-wrapper {
               height: 300px;
+            }
+
+            &.compact-media .image-wrapper {
+              height: 195px;
             }
           }
         }
@@ -1443,6 +1788,17 @@ $defensa-hover: #d81b60;
           font-size: 0.9rem;
         }
       }
+    }
+  }
+
+  .instructors-band {
+    .instructors-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: 150px;
+    }
+
+    .instructor-photo.primary {
+      grid-column: span 2;
     }
   }
 
