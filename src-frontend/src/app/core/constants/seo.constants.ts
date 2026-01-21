@@ -86,6 +86,15 @@ export const SEO_ROUTES = {
     canonical: `${BASE_URL}/contacto`,
     ogImage: `${BASE_URL}/assets/media/recepcion_escuela.webp`,
   },
+  tarifas: {
+    title: 'Tarifas y Precios | Clases de Artes Marciales en Umbrete (Sevilla) - Moiskimdo',
+    description:
+      'Consulta las tarifas de taekwondo, kickboxing, pilates y defensa personal femenina en Umbrete (Sevilla). Descuentos familiares y primera clase gratuita.',
+    keywords:
+      "precios taekwondo umbrete, tarifas artes marciales sevilla, cuanto cuesta taekwondo, precios kickboxing, precios pilates umbrete, descuentos familiares, moiskimdo, club mois kim do, club moi's kim do",
+    canonical: `${BASE_URL}/tarifas`,
+    ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
+  },
   noIndex: {
     noIndex: true,
   },
