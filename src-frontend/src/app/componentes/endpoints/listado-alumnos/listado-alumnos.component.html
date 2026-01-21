@@ -131,7 +131,7 @@
               <a [routerLink]="['/alumnosEditar', alumno.id]">
                 <img class="item-image"
                   [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                  [alt]="'Perfil de ' + alumno.nombre" />
+                  [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
               </a>
               <div class="item-title">
                 <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
@@ -303,7 +303,7 @@
                     <a [routerLink]="['/alumnosEditar', alumno.id]">
                       <img class="table-avatar"
                         [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                        [alt]="'Perfil de ' + alumno.nombre" />
+                        [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
                     </a>
                   </td>
                   <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>

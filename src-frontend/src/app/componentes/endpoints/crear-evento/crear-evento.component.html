@@ -137,7 +137,7 @@
                 <!-- Vista previa de la imagen -->
                 @if (imagen && imagePreview) {
                   <div class="file-preview">
-                    <img [src]="imagePreview" alt="Vista previa del evento">
+                    <img [src]="imagePreview" alt="Vista previa del evento" loading="lazy">
                     <div class="file-info">
                       <p class="file-name">Imagen del evento seleccionada</p>
                       <p class="file-size">Vista previa disponible</p>
