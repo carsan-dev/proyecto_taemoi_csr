@@ -57,6 +57,11 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/contacto/contacto.component').then(m => m.ContactoComponent)
   },
   {
+    path: 'tarifas',
+    data: { seo: SEO_ROUTES.tarifas },
+    loadComponent: () => import('./componentes/vistas/tarifas/tarifas.component').then(m => m.TarifasComponent)
+  },
+  {
     path: 'login',
     data: { seo: SEO_ROUTES.noIndex },
     component: VistaLoginComponent // Eager-load login page for better UX
