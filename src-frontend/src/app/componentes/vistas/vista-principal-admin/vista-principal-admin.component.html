@@ -168,7 +168,7 @@
               <div class="event-item">
                 <img class="event-thumbnail"
                      [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
-                     [alt]="evento.titulo">
+                     [alt]="evento.titulo" loading="lazy">
                 <div class="event-info">
                   <span class="event-title">{{ evento.titulo }}</span>
                 </div>
