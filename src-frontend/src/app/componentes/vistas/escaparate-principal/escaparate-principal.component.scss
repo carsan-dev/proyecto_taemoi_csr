@@ -17,18 +17,18 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 // Sport Colors
-$taekwondo-color: #0D47A1;
-$taekwondo-hover: #1976D2;
+$taekwondo-color: #0d47a1;
+$taekwondo-hover: #1976d2;
 $kickboxing-color: #ff4500;
 $kickboxing-hover: #e83e00;
-$pilates-color: #57A2A8;
-$pilates-hover: #468A8F;
+$pilates-color: #57a2a8;
+$pilates-hover: #468a8f;
 $defensa-color: #c2185b;
 $defensa-hover: #d81b60;
 
 @font-face {
-  font-family: 'Osaka-Sans Serif';
-  src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+  font-family: "Osaka-Sans Serif";
+  src: url("../../../../assets/fonts/osaka-re.ttf") format("truetype");
   font-display: swap;
 }
 
@@ -63,7 +63,11 @@ $defensa-hover: #d81b60;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.3),
+      rgba(0, 0, 0, 0.6)
+    );
     z-index: 1;
   }
 
@@ -92,7 +96,7 @@ $defensa-hover: #d81b60;
 
       i {
         font-size: 1.3rem;
-        color: #FFD700;
+        color: #ffd700;
       }
 
       span {
@@ -105,7 +109,7 @@ $defensa-hover: #d81b60;
       animation: fadeInUp 1s ease;
 
       .hero-title {
-        font-family: 'Osaka-Sans Serif', sans-serif;
+        font-family: "Osaka-Sans Serif", sans-serif;
         font-size: clamp(3rem, 8vw, 7rem);
         font-weight: 700;
         color: $text-light;
@@ -117,7 +121,7 @@ $defensa-hover: #d81b60;
       }
 
       .hero-subtitle {
-        font-family: 'Osaka-Sans Serif', sans-serif;
+        font-family: "Osaka-Sans Serif", sans-serif;
         font-size: clamp(1.4rem, 3.2vw, 2.6rem);
         font-weight: 700;
         color: $text-light;
@@ -196,21 +200,21 @@ $defensa-hover: #d81b60;
 
             &:hover {
               transform: translateY(-3px);
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: $shadow-lg;
-          }
-
-          &.accent {
-            background: linear-gradient(135deg, #00c853, #009624);
-            color: $text-light;
-            box-shadow: 0 6px 18px rgba(0, 200, 83, 0.35);
-
-            &:hover {
-              transform: translateY(-3px);
-              box-shadow: 0 8px 25px rgba(0, 200, 83, 0.45);
+              background: rgba(255, 255, 255, 0.2);
+              border-color: rgba(255, 255, 255, 0.5);
+              box-shadow: $shadow-lg;
             }
-          }
+
+            &.accent {
+              background: linear-gradient(135deg, #00c853, #009624);
+              color: $text-light;
+              box-shadow: 0 6px 18px rgba(0, 200, 83, 0.35);
+
+              &:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 200, 83, 0.45);
+              }
+            }
           }
 
           &:active {
@@ -240,20 +244,20 @@ $defensa-hover: #d81b60;
 // ========================================
 // INFO SECTIONS
 // ========================================
-  .info-divs-section {
-    padding: 5rem 0;
-    background: #f8f9fa;
+.info-divs-section {
+  padding: 5rem 0;
+  background: #f8f9fa;
 
-    .info-div {
-      margin-bottom: 5rem;
+  .info-div {
+    margin-bottom: 5rem;
 
-      &.compact {
-        margin-bottom: 3.5rem;
-      }
+    &.compact {
+      margin-bottom: 3.5rem;
+    }
 
-      &:last-child {
-        margin-bottom: 0;
-      }
+    &:last-child {
+      margin-bottom: 0;
+    }
 
     .info-card {
       max-width: 1400px;
@@ -326,13 +330,18 @@ $defensa-hover: #d81b60;
 
         // Subtle top border accent
         &::before {
-          content: '';
+          content: "";
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
           height: 3px;
-          background: linear-gradient(90deg, $primary-color, $pilates-color, $kickboxing-color);
+          background: linear-gradient(
+            90deg,
+            $primary-color,
+            $pilates-color,
+            $kickboxing-color
+          );
           border-radius: 20px 20px 0 0;
         }
 
@@ -371,7 +380,11 @@ $defensa-hover: #d81b60;
             .section-icon {
               font-size: 2.5rem;
               color: $text-light;
-              background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 15%));
+              background: linear-gradient(
+                135deg,
+                $primary-color,
+                color.adjust($primary-color, $lightness: 15%)
+              );
               padding: 1.125rem;
               border-radius: 16px;
               box-shadow: 0 4px 16px rgba($primary-color, 0.25);
@@ -393,7 +406,7 @@ $defensa-hover: #d81b60;
 
               // Decorative underline
               &::after {
-                content: '';
+                content: "";
                 position: absolute;
                 bottom: -8px;
                 left: 0;
@@ -572,14 +585,14 @@ $defensa-hover: #d81b60;
             }
 
             .faq-question::after {
-              content: '+';
+              content: "+";
               color: $primary-color;
               font-weight: 700;
               font-size: 1.2rem;
             }
 
             .faq-item[open] .faq-question::after {
-              content: '-';
+              content: "-";
             }
 
             .faq-answer {
@@ -591,7 +604,10 @@ $defensa-hover: #d81b60;
               overflow: hidden;
               padding-bottom: 0;
               transform: translateY(-4px);
-              transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+              transition:
+                max-height 0.3s ease,
+                opacity 0.3s ease,
+                transform 0.3s ease;
 
               p {
                 margin: 0;
@@ -647,7 +663,12 @@ $defensa-hover: #d81b60;
           overflow: hidden;
 
           &.image-compact .image-wrapper {
-            background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%);
+            background: linear-gradient(
+              90deg,
+              #f8f9fa 0%,
+              #ffffff 50%,
+              #f8f9fa 100%
+            );
           }
 
           &.image-compact img {
@@ -685,7 +706,6 @@ $defensa-hover: #d81b60;
               object-position: 50% 50%;
             }
 
-
             @keyframes imageZoom {
               from {
                 opacity: 0;
@@ -718,7 +738,6 @@ $defensa-hover: #d81b60;
               transform: scale(1.05);
             }
 
-
             &:hover .image-overlay {
               opacity: 0.2;
             }
@@ -739,13 +758,18 @@ $defensa-hover: #d81b60;
   overflow: hidden;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba($primary-color, 0.2), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba($primary-color, 0.2),
+      transparent
+    );
   }
 }
 
@@ -859,8 +883,20 @@ $defensa-hover: #d81b60;
     padding: 2rem 1.5rem;
     margin: -2rem -1.5rem;
     position: relative;
-    mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2%,
+      black 98%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2%,
+      black 98%,
+      transparent
+    );
   }
 
   .reviews-track {
@@ -918,7 +954,7 @@ $defensa-hover: #d81b60;
         gap: 0.25rem;
 
         &::before {
-          content: '✓';
+          content: "✓";
           color: #34a853;
           font-size: 0.7rem;
         }
@@ -982,7 +1018,7 @@ $defensa-hover: #d81b60;
     justify-content: center;
 
     &::before {
-      content: '';
+      content: "";
       width: 10px;
       height: 10px;
       border-radius: 50%;
@@ -1104,7 +1140,11 @@ $defensa-hover: #d81b60;
 .instructors-band {
   padding: 4rem 2rem;
   margin-bottom: 5rem;
-  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($pilates-color, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba($primary-color, 0.08),
+    rgba($pilates-color, 0.08)
+  );
 
   .instructors-inner {
     max-width: 1200px;
@@ -1156,7 +1196,11 @@ $defensa-hover: #d81b60;
     .section-icon {
       font-size: 2rem;
       color: $text-light;
-      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 15%));
+      background: linear-gradient(
+        135deg,
+        $primary-color,
+        color.adjust($primary-color, $lightness: 15%)
+      );
       padding: 0.9rem;
       border-radius: 14px;
       box-shadow: 0 4px 16px rgba($primary-color, 0.25);
@@ -1239,7 +1283,7 @@ $defensa-hover: #d81b60;
   }
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1248,7 +1292,9 @@ $defensa-hover: #d81b60;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.3);
     transform: translate(-50%, -50%);
-    transition: width 0.6s ease, height 0.6s ease;
+    transition:
+      width 0.6s ease,
+      height 0.6s ease;
   }
 
   &:hover::before {
@@ -1341,13 +1387,17 @@ $defensa-hover: #d81b60;
   overflow: hidden;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     right: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.03) 0%,
+      transparent 70%
+    );
     animation: pulse 15s infinite;
   }
 
@@ -1397,13 +1447,18 @@ $defensa-hover: #d81b60;
   }
 
   .slider-placeholder::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
     animation: placeholder-shimmer 2s infinite;
   }
 }
@@ -1438,13 +1493,14 @@ $defensa-hover: #d81b60;
       overflow: hidden;
 
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: url('../../../../assets/media/Logo_escuela.svg') center/contain no-repeat;
+        background: url("../../../../assets/media/Logo_escuela.svg")
+          center/contain no-repeat;
         opacity: 0.03;
         pointer-events: none;
       }
@@ -1492,13 +1548,18 @@ $defensa-hover: #d81b60;
       }
 
       .mapa-placeholder::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.45),
+          transparent
+        );
         animation: placeholder-shimmer 2s infinite;
       }
     }
@@ -1512,7 +1573,11 @@ $defensa-hover: #d81b60;
         gap: 1rem;
         margin-bottom: 2rem;
         padding: 1.5rem;
-        background: linear-gradient(135deg, rgba($primary-color, 0.05), rgba($primary-color, 0.02));
+        background: linear-gradient(
+          135deg,
+          rgba($primary-color, 0.05),
+          rgba($primary-color, 0.02)
+        );
         border-radius: 15px;
         border-left: 4px solid $primary-color;
 
@@ -1634,7 +1699,11 @@ $defensa-hover: #d81b60;
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateX(-50%) translateY(0);
   }
   40% {
@@ -1646,7 +1715,8 @@ $defensa-hover: #d81b60;
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.3;
   }
   50% {
@@ -2231,7 +2301,6 @@ $defensa-hover: #d81b60;
       grid-column: span 2;
     }
   }
-
 }
 
 // ========================================
@@ -2479,6 +2548,16 @@ $defensa-hover: #d81b60;
       border-radius: 16px;
     }
   }
+  .review-stars {
+    flex-wrap: wrap;
+    gap: 0.35rem 0.6rem;
+    margin-bottom: 0.75rem;
+
+    .review-date {
+      margin-left: 0;
+      line-height: 1.2;
+    }
+  }
 }
 
 // Reduced motion for accessibility
@@ -2500,7 +2579,11 @@ $defensa-hover: #d81b60;
 @media (prefers-color-scheme: dark) {
   // This can be expanded when dark mode is fully implemented
   .video-overlay {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8));
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.5),
+      rgba(0, 0, 0, 0.8)
+    );
   }
 }
 
