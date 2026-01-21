@@ -586,6 +586,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   }
 
   .cta-section {
+    margin-bottom: clamp(0.75rem, 2vw, 1.75rem);
     .cta-buttons {
       flex-direction: column;
 
