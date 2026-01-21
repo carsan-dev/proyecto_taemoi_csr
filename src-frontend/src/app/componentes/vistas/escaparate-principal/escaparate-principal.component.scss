@@ -10,6 +10,7 @@ $dark-accent: #284747;
 $text-light: #ffffff;
 $text-dark: #212529;
 $text-muted: #6c757d;
+$text-muted-strong: #4b5563;
 $shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
 $shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
 $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
@@ -1310,11 +1311,11 @@ $defensa-hover: #d81b60;
   }
 
   &.contact-btn {
-    background: $primary-color;
+    background: $primary-dark;
     color: $text-light;
 
     &:hover {
-      background: $primary-dark;
+      background: color.adjust($primary-dark, $lightness: -8%);
     }
   }
 
@@ -1552,6 +1553,7 @@ $defensa-hover: #d81b60;
           border-radius: 15px;
           transition: $transition;
           border: 2px solid transparent;
+          color: $text-dark;
 
           &:hover {
             background: $text-light;
@@ -1578,7 +1580,7 @@ $defensa-hover: #d81b60;
               flex-direction: column;
               gap: 0.25rem;
               font-size: 0.85rem;
-              color: $text-muted;
+              color: $text-muted-strong;
               font-weight: 500;
               text-transform: uppercase;
               letter-spacing: 0.5px;
