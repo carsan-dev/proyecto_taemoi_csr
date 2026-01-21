@@ -15,6 +15,7 @@ import { SliderTocableComponent } from '../../generales/carousel/slider-tocable/
 import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { Router, RouterLink } from '@angular/router';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
+import { SeoService } from '../../../servicios/generales/seo.service';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -41,7 +42,8 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit, OnDe
   constructor(
     @Inject(PLATFORM_ID) private readonly platformId: Object,
     private readonly authService: AuthenticationService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly seoService: SeoService
   ) {}
 
   ngOnInit(): void {
@@ -54,12 +56,42 @@ export class EscaparatePrincipalComponent implements AfterViewInit, OnInit, OnDe
       this.redirigirSiAdmin(roles);
     });
 
+    // Add Review Schema for SEO
+    this.setReviewSchema();
+
     // Start reviews carousel auto-rotation
     if (isPlatformBrowser(this.platformId)) {
       this.updateVisibleCards();
       window.addEventListener('resize', this.updateVisibleCards.bind(this));
       this.startReviewAutoRotation();
     }
+  }
+
+  private setReviewSchema(): void {
+    const reviews = [
+      {
+        author: 'K Leal',
+        rating: 5,
+        text: 'Mi hija de 11 finalmente ha encontrado un deporte que le apasiona. Yo también aprovecho y entreno con ella. Las clases son divertidas y con el nivel de exigencia indicado según la edad. Todo el equipo es profesional, amistoso y motiva adecuadamente al alumnado. El Club Moi\'s Kim Do ofrece la posibilidad de vivir el taekwondo de forma compatible con diferentes objetivos deportivos.'
+      },
+      {
+        author: 'Carlos Sánchez',
+        rating: 5,
+        text: 'La mejor escuela de artes marciales de Umbrete y del Aljarafe sin lugar a dudas. Llevo muchos años haciendo taekwondo allí y recientemente me apunté a kickboxing y a pilates. El kickboxing light está súper bien y el pilates balance me ha venido genial para descargar tensión y fortalecer el core. Si buscas instructores profesionales y calidad en el servicio, Moi\'s Kim Do es tu sitio.'
+      },
+      {
+        author: 'Miguel Marín Rodríguez',
+        rating: 5,
+        text: 'El mejor dojan donde aprender taekwondo en Umbrete.'
+      },
+      {
+        author: 'F. Javier Vargas',
+        rating: 5,
+        text: 'Muy buena escuela de artes marciales. Profesionalidad y buen ambiente.'
+      }
+    ];
+
+    this.seoService.setReviewsSchema(reviews);
   }
 
   ngOnDestroy(): void {
