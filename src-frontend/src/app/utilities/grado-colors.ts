@@ -116,7 +116,7 @@ export function getGradoTextStyle(tipoGrado: string): string {
 
   if (colorInfo.isSplit) {
     // For split colors, we'll use a gradient
-    const gradient = `linear-gradient(to bottom, ${colorInfo.colors[0]} 50%, ${colorInfo.colors[1]} 50%)`;
+    const gradient = `linear-gradient(to bottom, ${colorInfo.colors[1]} 50%, ${colorInfo.colors[0]} 50%)`;
     let style = `background: ${gradient}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;`;
 
     // Check if any color is light
