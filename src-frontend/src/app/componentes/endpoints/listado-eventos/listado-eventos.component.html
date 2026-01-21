@@ -1,6 +1,6 @@
 <div id="imageModal" class="modal" (click)="cerrarModal()">
   <span class="close" (click)="cerrarModal()"><i class="bi bi-x-circle-fill"></i></span>
-  <img class="modal-content" id="imgAmpliada" [alt]="modalAlt" />
+  <img class="modal-content" id="imgAmpliada" [alt]="modalAlt" loading="lazy" />
   <div id="caption"></div>
 </div>
 
@@ -62,7 +62,7 @@
               <img class="item-image"
                 [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
                 [alt]="evento.titulo" (click)="abrirModal(evento.fotoEvento?.url, evento.titulo)"
-                style="cursor: zoom-in;" />
+                style="cursor: zoom-in;" loading="lazy" />
               <div class="item-title">
                 <h4>
                   {{ evento.titulo }}

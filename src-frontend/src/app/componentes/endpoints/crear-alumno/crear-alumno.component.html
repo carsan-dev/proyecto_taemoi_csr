@@ -558,7 +558,7 @@
                 <!-- Vista previa de la imagen -->
                 @if (imagen && imagenPreview) {
                 <div class="file-preview">
-                  <img [src]="imagenPreview" alt="Vista previa del alumno" />
+                  <img [src]="imagenPreview" alt="Vista previa del alumno" loading="lazy" />
                   <div class="file-info">
                     <p class="file-name">Imagen del alumno seleccionada</p>
                     <p class="file-size">Vista previa disponible</p>

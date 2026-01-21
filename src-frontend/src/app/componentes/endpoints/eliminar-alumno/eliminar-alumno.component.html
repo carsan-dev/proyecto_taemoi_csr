@@ -82,7 +82,7 @@
                 <td>
                   <img class="table-profile-image"
                     [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
-                    [alt]="'Perfil de ' + alumno.nombre">
+                    [alt]="'Perfil de ' + alumno.nombre" loading="lazy">
                 </td>
                 <td>{{ alumno.nombre }}</td>
                 <td>{{ alumno.apellidos }}</td>
@@ -123,7 +123,7 @@
               <tr>
                 <td colspan="8" class="text-center py-5">
                   <img src="../../../../assets/media/placeholder_roto.svg" alt="No hay alumnos"
-                    style="width: 120px; height: auto; margin-bottom: 1rem; opacity: 0.5;" />
+                    style="width: 120px; height: auto; margin-bottom: 1rem; opacity: 0.5;" loading="lazy" />
                   <p class="text-muted mb-0">No se encontraron alumnos que coincidan con los criterios de búsqueda.</p>
                 </td>
               </tr>
