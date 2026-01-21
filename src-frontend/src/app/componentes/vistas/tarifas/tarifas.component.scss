@@ -22,22 +22,29 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 // MAIN CONTENT
 // ========================================
 .main-content {
-  background: #f8f9fa;
+  background: #ffffff;
 }
 
 // ========================================
-// HERO SECTION
+// HERO HEADER
 // ========================================
-.hero-container {
+.hero-header {
   position: relative;
-  height: 400px;
-  margin-top: 120px;
-  padding: 0;
+  background: linear-gradient(135deg, color.adjust($primary-color, $lightness: 6%) 0%, color.adjust($primary-color, $lightness: -12%) 100%);
+  padding: 3rem 2rem;
+  margin: 120px 0 1.5rem;
   overflow: hidden;
-  background: linear-gradient(120deg, rgba($primary-color, 0.8), rgba(0, 0, 0, 0.4)),
-    url("../../../../assets/media/fachada_escuela.webp");
-  background-position: center;
-  background-size: cover;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+    animation: pulse 15s infinite;
+  }
 
   .hero-overlay {
     position: absolute;
@@ -45,64 +52,45 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba($primary-color, 0.4), rgba(0, 0, 0, 0.6));
-    z-index: 1;
+    background: url('../../../../assets/media/Logo_escuela.svg') center/contain no-repeat;
+    opacity: 0.06;
+    pointer-events: none;
   }
 
   .hero-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .page-title-section {
     text-align: center;
-    z-index: 2;
-    width: 90%;
-    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInDown 0.6s ease;
 
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 0.75rem 1.5rem;
-      border-radius: 50px;
+    i {
+      font-size: 3.5rem;
       color: $text-light;
-      margin-bottom: 1.5rem;
-
-      i {
-        font-size: 1.2rem;
-        color: #FFD700;
-      }
-
-      span {
-        font-size: 0.95rem;
-        font-weight: 600;
-      }
+      opacity: 0.9;
     }
 
-    .hero-text {
-      .hero-title {
-        font-size: clamp(2.5rem, 6vw, 4rem);
-        font-weight: 700;
-        color: $text-light;
-        margin: 0;
-        text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
-      }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: $text-light;
+      margin: 0;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
 
-      .hero-subtitle {
-        font-size: clamp(1.1rem, 3vw, 1.5rem);
-        font-weight: 500;
-        color: rgba($text-light, 0.9);
-        margin: 0.75rem 0;
-      }
-
-      .hero-description {
-        font-size: 1rem;
-        color: rgba($text-light, 0.85);
-        margin: 0;
-      }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: rgba($text-light, 0.85);
+      margin: 0;
+      max-width: 700px;
     }
   }
 }
@@ -111,7 +99,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 // PRICING SECTION
 // ========================================
 .pricing-section {
-  padding: 4rem 2rem;
+  padding: 2.5rem 2rem 4rem;
   background: #ffffff;
 
   .pricing-header {
@@ -155,6 +143,8 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   box-shadow: $shadow-md;
   transition: $transition;
   position: relative;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     transform: translateY(-8px);
@@ -218,6 +208,9 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 
   .card-body {
     padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
 
     .price {
       text-align: center;
@@ -234,6 +227,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       list-style: none;
       padding: 0;
       margin: 0 0 2rem;
+      flex: 1 1 auto;
 
       li {
         display: flex;
@@ -270,6 +264,7 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   justify-content: center;
   gap: 0.5rem;
   transition: $transition;
+  margin-top: auto;
 
   &.taekwondo-btn {
     background: $taekwondo-color;
@@ -529,9 +524,9 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 // RESPONSIVE
 // ========================================
 @media (max-width: 768px) {
-  .hero-container {
-    height: 350px;
+  .hero-header {
     margin-top: 90px;
+    padding: 2.5rem 1.5rem;
   }
 
   .pricing-section {
@@ -577,8 +572,9 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 }
 
 @media (max-width: 480px) {
-  .hero-container {
+  .hero-header {
     margin-top: 80px;
+    padding: 2.25rem 1rem;
   }
 }
 
