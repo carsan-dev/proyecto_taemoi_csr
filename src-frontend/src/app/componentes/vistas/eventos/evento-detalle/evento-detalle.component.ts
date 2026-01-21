@@ -5,6 +5,7 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { Evento } from '../../../../interfaces/evento';
 import { CommonModule } from '@angular/common';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
+import { SeoService } from '../../../../servicios/generales/seo.service';
 
 @Component({
   selector: 'app-evento-detalle',
@@ -14,14 +15,15 @@ import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
   styleUrl: './evento-detalle.component.scss',
 })
 export class EventoDetalleComponent implements OnInit, OnDestroy {
-  evento: Evento | null = null; // Ahora usamos la interfaz Evento
+  evento: Evento | null = null;
   eventoId!: number;
   modalImagenAbierto: boolean = false;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly endpointsService: EndpointsService,
-    private readonly spinner: NgxSpinnerService
+    private readonly spinner: NgxSpinnerService,
+    private readonly seoService: SeoService
   ) {}
 
   ngOnInit(): void {
@@ -30,21 +32,42 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
   }
 
   obtenerEvento(id: number): void {
-    this.spinner.show(); // Mostrar el spinner cuando comience la carga
+    this.spinner.show();
 
     this.endpointsService.obtenerEventoPorId(id).subscribe({
       next: (response: Evento) => {
         this.evento = response;
-        this.spinner.hide(); // Ocultar el spinner cuando se haya cargado el evento
+        this.actualizarSeo(response);
+        this.spinner.hide();
       },
       error: () => {
-        this.spinner.hide(); // Ocultar el spinner si hay un error
+        this.spinner.hide();
         Swal.fire({
           title: 'Error',
           text: 'No hemos podido obtener los detalles del evento.',
           icon: 'error',
         });
       },
+    });
+  }
+
+  private actualizarSeo(evento: Evento): void {
+    const descripcionCorta =
+      evento.descripcion.length > 155
+        ? evento.descripcion.substring(0, 152) + '...'
+        : evento.descripcion;
+
+    this.seoService.updateDynamicSeo({
+      title: `${evento.titulo} | Eventos Moiskimdo - Taekwondo en Umbrete`,
+      description: descripcionCorta,
+      keywords: `${evento.titulo}, evento taekwondo, competicion artes marciales, moiskimdo, umbrete, sevilla`,
+      ogImage: evento.fotoEvento?.url ?? undefined,
+      canonical: `https://moiskimdo.es/eventos/${evento.id}`,
+      breadcrumbs: [
+        { name: 'Inicio', url: '/inicio' },
+        { name: 'Eventos', url: '/eventos' },
+        { name: evento.titulo, url: `/eventos/${evento.id}` },
+      ],
     });
   }
 
