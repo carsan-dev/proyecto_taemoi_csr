@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -109,9 +111,18 @@ public class AuthenticationController {
 	 *         token JWT.
 	 */
 	@PostMapping("/signin")
-	public ResponseEntity<JwtAuthenticationResponse> signin(@RequestBody LoginRequest request,
+	public ResponseEntity<?> signin(@RequestBody LoginRequest request,
 			HttpServletResponse response) {
-		JwtAuthenticationResponse jwtResponse = authenticationService.signin(request);
+		JwtAuthenticationResponse jwtResponse;
+		try {
+			jwtResponse = authenticationService.signin(request);
+		} catch (LockedException e) {
+			return ResponseEntity.status(HttpStatus.LOCKED)
+					.body(Map.of("mensaje", "Cuenta bloqueada temporalmente."));
+		} catch (BadCredentialsException e) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+					.body(Map.of("mensaje", "Credenciales invalidas."));
+		}
 
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
