@@ -1009,17 +1009,17 @@ $defensa-hover: #d81b60;
   width: 100%;
   padding: 1rem 2rem;
   background: white;
-  border: 2px solid rgba($primary-color, 0.2);
+  border: 2px solid rgba($primary-dark, 0.25);
   border-radius: 12px;
-  color: $primary-color;
+  color: $primary-dark;
   text-decoration: none;
   font-weight: 600;
   transition: $transition;
 
   &:hover {
-    background: $primary-color;
+    background: $primary-dark;
     color: white;
-    border-color: $primary-color;
+    border-color: $primary-dark;
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }
