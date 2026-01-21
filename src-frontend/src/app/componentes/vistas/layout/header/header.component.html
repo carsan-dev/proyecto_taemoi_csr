@@ -1,9 +1,10 @@
 @if (isAuthChecked && !usuarioLogueado) {
-  <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
+<header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
-        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi">
+        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
+          alt="Logo de la aplicación TaeMoi">
       </a>
       <div class="header-title-mobile d-lg-none">
         <div class="title-main">MOI'S KIM DO</div>
@@ -20,12 +21,14 @@
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdown" [routerLinkActive]="['active']" [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdown" [routerLinkActive]="['active']"
+                [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
               </a>
               <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdown">
@@ -62,6 +65,11 @@
               </a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/tarifas']" routerLinkActive="active">
+                <i class="bi bi-tag me-1"></i>Tarifas
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">
                 <i class="bi bi-envelope me-1"></i>Contacto
               </a>
@@ -71,8 +79,8 @@
         <div class="navbar-right">
           <ul class="navbar-nav d-flex flex-row align-items-center">
             <li class="nav-item me-3">
-              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
-                target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
+                rel="noopener noreferrer" aria-label="Facebook">
                 <i class="bi bi-facebook"></i>
               </a>
             </li>
@@ -92,12 +100,12 @@
       </div>
     </div>
   </nav>
-  </header>
+</header>
 }
 
 <!-- Header para administradores -->
 @if (isAuthChecked && isAdmin) {
-  <header class="admin-top-navbar">
+<header class="admin-top-navbar">
   <div class="navbar-container">
     <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú">
       <i class="bi bi-list"></i>
@@ -118,7 +126,7 @@
       <div class="admin-user-info">
         <i class="bi bi-person-circle"></i>
         @if (username) {
-          <span class="username">{{ username }}</span>
+        <span class="username">{{ username }}</span>
         }
       </div>
       <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
@@ -126,9 +134,9 @@
       </button>
     </div>
   </div>
-  </header>
+</header>
 
-  <nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
+<nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
   <div class="sidebar-header">
     <h3>Navegación</h3>
     <button class="close-sidebar" (click)="closeAdminMenu()">
@@ -147,7 +155,8 @@
       </a>
     </li>
     <li>
-      <a class="menu-link" [routerLink]="['/inicio']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
+      <a class="menu-link" [routerLink]="['/inicio']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
         <i class="bi bi-house-door"></i>
         <span>Inicio</span>
       </a>
@@ -162,6 +171,12 @@
       <a class="menu-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu()">
         <i class="bi bi-clock"></i>
         <span>Horarios</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/tarifas']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-tag"></i>
+        <span>Tarifas</span>
       </a>
     </li>
     <li>
@@ -193,7 +208,8 @@
       </a>
     </li>
     <li>
-      <a class="menu-link" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active" (click)="closeAdminMenu()">
+      <a class="menu-link" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active"
+        (click)="closeAdminMenu()">
         <i class="bi bi-shield-fill-check"></i>
         <span>Defensa Personal</span>
       </a>
@@ -205,14 +221,16 @@
 
     <!-- Alumnos Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('alumnos'); $event.stopPropagation()" [class.expanded]="expandedSections['alumnos']">
+      <div class="menu-link expandable" (click)="toggleSection('alumnos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['alumnos']">
         <i class="bi bi-people"></i>
         <span>Alumnos</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['alumnos']">
         <li>
-          <a class="submenu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
             <span>Listar Alumnos</span>
           </a>
@@ -224,13 +242,15 @@
           </a>
         </li>
         <li>
-          <a class="submenu-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-pencil-square"></i>
             <span>Editar Alumno</span>
           </a>
         </li>
         <li>
-          <a class="submenu-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-trash"></i>
             <span>Eliminar Alumno</span>
           </a>
@@ -240,7 +260,8 @@
 
     <!-- Grupos y Turnos Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()" [class.expanded]="expandedSections['grupos']">
+      <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['grupos']">
         <i class="bi bi-collection"></i>
         <span>Grupos y Turnos</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
@@ -269,14 +290,16 @@
 
     <!-- Eventos Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('eventos'); $event.stopPropagation()" [class.expanded]="expandedSections['eventos']">
+      <div class="menu-link expandable" (click)="toggleSection('eventos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['eventos']">
         <i class="bi bi-calendar-check"></i>
         <span>Eventos</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['eventos']">
         <li>
-          <a class="submenu-link" [routerLink]="['/eventosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/eventosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
             <span>Consultar Eventos</span>
           </a>
@@ -292,20 +315,23 @@
 
     <!-- Productos Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('productos'); $event.stopPropagation()" [class.expanded]="expandedSections['productos']">
+      <div class="menu-link expandable" (click)="toggleSection('productos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['productos']">
         <i class="bi bi-cart3"></i>
         <span>Productos</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['productos']">
         <li>
-          <a class="submenu-link" [routerLink]="['/productosListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/productosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
             <span>Consultar Productos</span>
           </a>
         </li>
         <li>
-          <a class="submenu-link" [routerLink]="['/productosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/productosCrear']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-plus-square-fill"></i>
             <span>Crear Producto</span>
           </a>
@@ -315,14 +341,16 @@
 
     <!-- Convocatorias Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()" [class.expanded]="expandedSections['convocatorias']">
+      <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['convocatorias']">
         <i class="bi bi-clipboard-check"></i>
         <span>Convocatorias</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['convocatorias']">
         <li>
-          <a class="submenu-link" [routerLink]="['/convocatoriasListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/convocatoriasListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
             <span>Consultar Convocatorias</span>
           </a>
@@ -332,14 +360,16 @@
 
     <!-- Administración Section -->
     <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()" [class.expanded]="expandedSections['administracion']">
+      <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['administracion']">
         <i class="bi bi-gear-fill"></i>
         <span>Administración</span>
         <i class="bi bi-chevron-down chevron-icon"></i>
       </div>
       <ul class="submenu" [class.show]="expandedSections['administracion']">
         <li>
-          <a class="submenu-link" [routerLink]="['/configuracion-sistema']" routerLinkActive="active" (click)="closeAdminMenu()">
+          <a class="submenu-link" [routerLink]="['/configuracion-sistema']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
             <i class="bi bi-sliders"></i>
             <span>Configuración</span>
           </a>
@@ -347,67 +377,67 @@
       </ul>
     </li>
   </ul>
-  </nav>
+</nav>
 
-  @if (spotifyWidgetVisible) {
-    <section class="spotify-widget" aria-label="Reproductor de Spotify" #spotifyWidget
-      [style.width.px]="spotifyWidgetWidth" [style.height.px]="spotifyWidgetHeight">
-      <div class="spotify-widget-header">
-        <div class="spotify-widget-title">
-          <i class="bi bi-spotify"></i>
-          <span>Spotify</span>
-        </div>
-        <button class="spotify-close" type="button" (click)="toggleSpotifyWidget()" aria-label="Ocultar reproductor">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="spotify-widget-body">
-        <label class="spotify-label" for="spotifyUrlInput">Enlace de Spotify</label>
-        <div class="spotify-input-row">
-          <input id="spotifyUrlInput" class="spotify-input" type="url" [(ngModel)]="spotifyUrlInput"
-            (keydown.enter)="guardarSpotifyUrl()" placeholder="https://open.spotify.com/playlist/..." />
-          <button class="spotify-save" type="button" (click)="guardarSpotifyUrl()"
-            [disabled]="!spotifyControlsEnabled">
-            Guardar
-          </button>
-        </div>
-        <div class="spotify-actions">
-          <button class="spotify-open" type="button" (click)="abrirSpotify()"
-            [disabled]="!spotifyControlsEnabled || !spotifyOpenUrl">
-            <i class="bi bi-box-arrow-up-right"></i>
-            Abrir en Spotify
-          </button>
-          <span class="spotify-hint">En móvil, la reproducción completa se abre en la app.</span>
-        </div>
-        @if (spotifyError) {
-          <div class="spotify-error">{{ spotifyError }}</div>
-        }
-        @if (spotifyEmbedUrl) {
-          <iframe class="spotify-embed" [src]="spotifyEmbedUrl" width="100%" frameborder="0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"
-            title="Reproductor de Spotify"></iframe>
-        } @else {
-          <div class="spotify-empty">Pega un enlace para cargar tu música.</div>
-        }
-      </div>
-      <span class="spotify-resize-handle handle-tl" aria-hidden="true"
-        (pointerdown)="iniciarRedimension($event, 'tl')"></span>
-      <span class="spotify-resize-handle handle-tr" aria-hidden="true"
-        (pointerdown)="iniciarRedimension($event, 'tr')"></span>
-      <span class="spotify-resize-handle handle-bl" aria-hidden="true"
-        (pointerdown)="iniciarRedimension($event, 'bl')"></span>
-      <span class="spotify-resize-handle handle-br" aria-hidden="true"
-        (pointerdown)="iniciarRedimension($event, 'br')"></span>
-    </section>
-  }
+@if (spotifyWidgetVisible) {
+<section class="spotify-widget" aria-label="Reproductor de Spotify" #spotifyWidget [style.width.px]="spotifyWidgetWidth"
+  [style.height.px]="spotifyWidgetHeight">
+  <div class="spotify-widget-header">
+    <div class="spotify-widget-title">
+      <i class="bi bi-spotify"></i>
+      <span>Spotify</span>
+    </div>
+    <button class="spotify-close" type="button" (click)="toggleSpotifyWidget()" aria-label="Ocultar reproductor">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="spotify-widget-body">
+    <label class="spotify-label" for="spotifyUrlInput">Enlace de Spotify</label>
+    <div class="spotify-input-row">
+      <input id="spotifyUrlInput" class="spotify-input" type="url" [(ngModel)]="spotifyUrlInput"
+        (keydown.enter)="guardarSpotifyUrl()" placeholder="https://open.spotify.com/playlist/..." />
+      <button class="spotify-save" type="button" (click)="guardarSpotifyUrl()" [disabled]="!spotifyControlsEnabled">
+        Guardar
+      </button>
+    </div>
+    <div class="spotify-actions">
+      <button class="spotify-open" type="button" (click)="abrirSpotify()"
+        [disabled]="!spotifyControlsEnabled || !spotifyOpenUrl">
+        <i class="bi bi-box-arrow-up-right"></i>
+        Abrir en Spotify
+      </button>
+      <span class="spotify-hint">En móvil, la reproducción completa se abre en la app.</span>
+    </div>
+    @if (spotifyError) {
+    <div class="spotify-error">{{ spotifyError }}</div>
+    }
+    @if (spotifyEmbedUrl) {
+    <iframe class="spotify-embed" [src]="spotifyEmbedUrl" width="100%" frameborder="0"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"
+      title="Reproductor de Spotify"></iframe>
+    } @else {
+    <div class="spotify-empty">Pega un enlace para cargar tu música.</div>
+    }
+  </div>
+  <span class="spotify-resize-handle handle-tl" aria-hidden="true"
+    (pointerdown)="iniciarRedimension($event, 'tl')"></span>
+  <span class="spotify-resize-handle handle-tr" aria-hidden="true"
+    (pointerdown)="iniciarRedimension($event, 'tr')"></span>
+  <span class="spotify-resize-handle handle-bl" aria-hidden="true"
+    (pointerdown)="iniciarRedimension($event, 'bl')"></span>
+  <span class="spotify-resize-handle handle-br" aria-hidden="true"
+    (pointerdown)="iniciarRedimension($event, 'br')"></span>
+</section>
+}
 }
 
 @if (isAuthChecked && usuarioLogueado && isUser && !isAdmin) {
-  <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
+<header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
-        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi">
+        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
+          alt="Logo de la aplicación TaeMoi">
       </a>
       <div class="header-title-mobile d-lg-none">
         <div class="title-main">MOI'S KIM DO</div>
@@ -424,12 +454,15 @@
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdownUser" [routerLinkActive]="['active']" [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdownUser"
+                [routerLinkActive]="['active']" [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
               </a>
               <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdownUser">
@@ -466,6 +499,11 @@
               </a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/tarifas']" routerLinkActive="active">
+                <i class="bi bi-tag me-1"></i>Tarifas
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">
                 <i class="bi bi-envelope me-1"></i>Contacto
               </a>
@@ -486,8 +524,8 @@
               </a>
             </li>
             <li class="nav-item me-3">
-              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
-                target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
+                rel="noopener noreferrer" aria-label="Facebook">
                 <i class="bi bi-facebook"></i>
               </a>
             </li>
@@ -501,7 +539,7 @@
               <div class="user-menu-toggle user-info" aria-label="Usuario autenticado">
                 <i class="bi bi-person-circle"></i>
                 @if (username) {
-                  <span class="user-name">{{ username }}</span>
+                <span class="user-name">{{ username }}</span>
                 }
               </div>
             </li>
@@ -516,5 +554,5 @@
       </div>
     </div>
   </nav>
-  </header>
+</header>
 }
