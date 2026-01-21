@@ -69,6 +69,14 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
         { name: evento.titulo, url: `/eventos/${evento.id}` },
       ],
     });
+
+    // Agregar Event Schema para SEO
+    this.seoService.setEventSchema({
+      name: evento.titulo,
+      description: evento.descripcion,
+      image: evento.fotoEvento?.url ?? undefined,
+      url: `/eventos/${evento.id}`,
+    });
   }
 
   abrirModalImagen(): void {
@@ -84,6 +92,8 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Ensure scroll is restored if the modal was left open on navigation.
     document.body.style.overflow = '';
+    // Limpiar Event Schema al salir de la página
+    this.seoService.removeEventSchema();
   }
 
   getFileIcon(tipo: string): string {
