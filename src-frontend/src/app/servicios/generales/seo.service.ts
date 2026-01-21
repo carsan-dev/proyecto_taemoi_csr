@@ -199,4 +199,140 @@ export class SeoService {
     }
     return current;
   }
+
+  /**
+   * Agrega Event Schema JSON-LD al documento para SEO de eventos
+   */
+  setEventSchema(config: {
+    name: string;
+    description: string;
+    image?: string;
+    url: string;
+    startDate?: string;
+    endDate?: string;
+  }): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    // Eliminar schema de evento existente
+    const existingScript = this.document.querySelector('script[data-event-schema]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Crear Event Schema
+    const schema: any = {
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      name: config.name,
+      description: config.description,
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      eventStatus: 'https://schema.org/EventScheduled',
+      location: {
+        '@type': 'Place',
+        name: 'Club Moi\'s Kim Do',
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Calle Parada de la Ciguena, 36',
+          addressLocality: 'Umbrete',
+          addressRegion: 'Sevilla',
+          postalCode: '41806',
+          addressCountry: 'ES'
+        }
+      },
+      organizer: {
+        '@type': 'Organization',
+        name: 'Club Moi\'s Kim Do',
+        url: 'https://moiskimdo.es'
+      }
+    };
+
+    // Agregar imagen si está disponible
+    if (config.image) {
+      schema.image = [config.image];
+    }
+
+    // Agregar fechas si están disponibles
+    if (config.startDate) {
+      schema.startDate = config.startDate;
+    }
+    if (config.endDate) {
+      schema.endDate = config.endDate;
+    }
+
+    // Agregar URL del evento
+    schema.url = `${this.baseUrl}${config.url}`;
+
+    const script = this.document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-event-schema', 'true');
+    script.textContent = JSON.stringify(schema);
+    this.document.head.appendChild(script);
+  }
+
+  /**
+   * Elimina el Event Schema del documento (útil al salir de la página de evento)
+   */
+  removeEventSchema(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const existingScript = this.document.querySelector('script[data-event-schema]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+  }
+
+  /**
+   * Agrega Review Schema JSON-LD al documento para SEO de reseñas
+   */
+  setReviewsSchema(reviews: Array<{
+    author: string;
+    rating: number;
+    text: string;
+    date?: string;
+  }>): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    // Eliminar schema de reseñas existente
+    const existingScript = this.document.querySelector('script[data-reviews-schema]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Crear array de Review schemas
+    const reviewSchemas = reviews.map(review => ({
+      '@type': 'Review',
+      author: {
+        '@type': 'Person',
+        name: review.author
+      },
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: review.rating,
+        bestRating: 5,
+        worstRating: 1
+      },
+      reviewBody: review.text,
+      ...(review.date && { datePublished: review.date })
+    }));
+
+    // Crear schema que incluye las reseñas en el LocalBusiness
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      '@id': 'https://moiskimdo.es/#club',
+      review: reviewSchemas
+    };
+
+    const script = this.document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-reviews-schema', 'true');
+    script.textContent = JSON.stringify(schema);
+    this.document.head.appendChild(script);
+  }
 }
