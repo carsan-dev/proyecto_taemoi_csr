@@ -28,6 +28,7 @@ $defensa-hover: #d81b60;
 @font-face {
   font-family: 'Osaka-Sans Serif';
   src: url('../../../../assets/fonts/osaka-re.ttf') format('truetype');
+  font-display: swap;
 }
 
 // ========================================
@@ -1384,6 +1385,26 @@ $defensa-hover: #d81b60;
     position: relative;
     z-index: 1;
   }
+
+  .slider-placeholder {
+    width: 100%;
+    height: 600px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slider-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: placeholder-shimmer 2s infinite;
+  }
 }
 
 // ========================================
@@ -1460,6 +1481,25 @@ $defensa-hover: #d81b60;
       position: relative;
       border-radius: 0;
       overflow: hidden;
+
+      .mapa-placeholder {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #e6ecef 0%, #f5f7f9 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .mapa-placeholder::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+        animation: placeholder-shimmer 2s infinite;
+      }
     }
 
     .location-info {
@@ -2413,6 +2453,32 @@ $defensa-hover: #d81b60;
   }
 }
 
+@media (max-width: 1200px) {
+  .slider-section {
+    .slider-placeholder {
+      height: 550px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .slider-section {
+    .slider-placeholder {
+      height: 500px;
+      border-radius: 20px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .slider-section {
+    .slider-placeholder {
+      height: 450px;
+      border-radius: 16px;
+    }
+  }
+}
+
 // Reduced motion for accessibility
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -2433,5 +2499,14 @@ $defensa-hover: #d81b60;
   // This can be expanded when dark mode is fully implemented
   .video-overlay {
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8));
+  }
+}
+
+@keyframes placeholder-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
   }
 }
