@@ -47,7 +47,7 @@
   <section class="info-divs-section">
     <!-- Who We Are Section -->
     <div class="info-div">
-      <div class="info-card">
+      <div class="info-card info-card--reveal" #infoCard>
         <div class="card-content image-wide">
           <div class="text-content">
             <div class="section-header">
@@ -77,7 +77,7 @@
           </div>
           <div class="img-content">
             <div class="image-wrapper">
-              <img #animatedImage src="../../../../assets/media/rafa_competicion.webp"
+              <img src="../../../../assets/media/rafa_competicion.webp"
                 alt="Competición de taekwondo en Umbrete - Club Moi's Kim Do Sevilla" loading="lazy">
               <div class="image-overlay"></div>
             </div>
@@ -87,11 +87,11 @@
     </div>
     <!-- What We Do Section -->
     <div class="info-div reverse">
-      <div class="info-card">
+      <div class="info-card info-card--reveal" #infoCard>
         <div class="card-content reverse image-wide">
           <div class="img-content image-compact">
             <div class="image-wrapper">
-              <img #animatedImage class="image-focus-center" src="../../../../assets/media/doble_puño_v2.webp"
+              <img class="image-focus-center" src="../../../../assets/media/doble_puño_v2.webp"
                 alt="Entrenamiento de artes marciales en el Aljarafe sevillano" loading="lazy">
               <div class="image-overlay"></div>
             </div>
@@ -134,8 +134,8 @@
       </div>
     </div>
     <!-- Why Choose Us Section -->
-    <div class="info-div compact">
-      <div class="info-card">
+    <div class="info-div compact why-choose-us">
+      <div class="info-card info-card--reveal" #infoCard>
         <div class="card-content compact with-media">
           <div class="text-content">
             <div class="section-header">
@@ -165,7 +165,7 @@
           </div>
           <div class="img-content compact-media">
             <div class="image-wrapper">
-              <img #animatedImage src="../../../../assets/media/pilates_suelo.webp"
+              <img src="../../../../assets/media/pilates_suelo.webp"
                 alt="Clase de pilates en Umbrete - Escuela Moiskimdo Sevilla" loading="lazy">
               <div class="image-overlay"></div>
             </div>
@@ -179,10 +179,14 @@
         <div class="reviews-header">
           <div class="google-badge">
             <svg class="google-icon" viewBox="0 0 24 24" width="24" height="24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
             <span class="google-text">Reseñas de Google</span>
           </div>
@@ -205,265 +209,320 @@
           </button>
 
           <div class="reviews-wrapper">
-          <div class="reviews-track" [style.transform]="'translateX(' + translateX + '%)'">
-            <!-- Review 1 - K Leal -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">K</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">K Leal</span>
-                  <span class="review-badge">Local Guide</span>
+            <div class="reviews-track" [style.transform]="'translateX(' + translateX + '%)'">
+              <!-- Review 1 - K Leal -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">K</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">K Leal</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 3 años</span>
+                </div>
+                <p class="review-text">Mi hija de 11 finalmente ha encontrado un deporte que le apasiona. Yo también
+                  aprovecho y entreno con ella. Las clases son divertidas y con el nivel de exigencia indicado según la
+                  edad. Todo el equipo es profesional, amistoso y motiva adecuadamente al alumnado. El Club Moi's Kim Do
+                  ofrece la posibilidad de vivir el taekwondo de forma compatible con diferentes objetivos deportivos.
+                </p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 3 años</span>
-              </div>
-              <p class="review-text">Mi hija de 11 finalmente ha encontrado un deporte que le apasiona. Yo también aprovecho y entreno con ella. Las clases son divertidas y con el nivel de exigencia indicado según la edad. Todo el equipo es profesional, amistoso y motiva adecuadamente al alumnado. El Club Moi's Kim Do ofrece la posibilidad de vivir el taekwondo de forma compatible con diferentes objetivos deportivos.</p>
-            </div>
 
-            <!-- Review 2 - Carlos Sánchez -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">C</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Carlos Sánchez</span>
+              <!-- Review 2 - Carlos Sánchez -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">C</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Carlos Sánchez</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Recientemente</span>
+                </div>
+                <p class="review-text">La mejor escuela de artes marciales de Umbrete y del Aljarafe sin lugar a dudas.
+                  Llevo muchos años haciendo taekwondo allí y recientemente me apunté a kickboxing y a pilates. El
+                  kickboxing light está súper bien y el pilates balance me ha venido genial para descargar tensión y
+                  fortalecer el core. Si buscas instructores profesionales y calidad en el servicio, Moi's Kim Do es tu
+                  sitio. 🥋🥊💪</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Recientemente</span>
-              </div>
-              <p class="review-text">La mejor escuela de artes marciales de Umbrete y del Aljarafe sin lugar a dudas. Llevo muchos años haciendo taekwondo allí y recientemente me apunté a kickboxing y a pilates. El kickboxing light está súper bien y el pilates balance me ha venido genial para descargar tensión y fortalecer el core. Si buscas instructores profesionales y calidad en el servicio, Moi's Kim Do es tu sitio. 🥋🥊💪</p>
-            </div>
 
-            <!-- Review 3 - Miguel Marín -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">M</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Miguel Marín Rodríguez</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 3 - Miguel Marín -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">M</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Miguel Marín Rodríguez</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 8 años</span>
+                </div>
+                <p class="review-text">El mejor dojan donde aprender taekwondo en Umbrete.</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 8 años</span>
-              </div>
-              <p class="review-text">El mejor dojan donde aprender taekwondo en Umbrete.</p>
-            </div>
 
-            <!-- Review 4 - F JAVIER Vargas -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">F</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">F. Javier Vargas</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 4 - F JAVIER Vargas -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">F</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">F. Javier Vargas</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 5 años</span>
+                </div>
+                <p class="review-text">Estupendas instalaciones y un gran profesor, que ama su deporte desde niño. Ideal
+                  para todas las edades pero especialmente para niños que son educados desde pequeños en valores
+                  importantísimos. Muy recomendable.</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 5 años</span>
-              </div>
-              <p class="review-text">Estupendas instalaciones y un gran profesor, que ama su deporte desde niño. Ideal para todas las edades pero especialmente para niños que son educados desde pequeños en valores importantísimos. Muy recomendable.</p>
-            </div>
 
-            <!-- Review 5 - F. Ortiz -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">F</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">F. Ortiz</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 5 - F. Ortiz -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">F</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">F. Ortiz</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 4 años</span>
+                </div>
+                <p class="review-text">Escuela 100% recomendable, el Maestro Moisés y su equipo tienen un buen
+                  equilibrio entre el buen ambiente y la disciplina en sus clases. Recomendada para todas las edades.
+                </p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 4 años</span>
-              </div>
-              <p class="review-text">Escuela 100% recomendable, el Maestro Moisés y su equipo tienen un buen equilibrio entre el buen ambiente y la disciplina en sus clases. Recomendada para todas las edades.</p>
-            </div>
 
-            <!-- Review 6 - J A Morales Martín -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">J</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">J. A. Morales Martín</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 6 - J A Morales Martín -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">J</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">J. A. Morales Martín</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 8 años</span>
+                </div>
+                <p class="review-text">Gran centro deportivo de artes marciales. Muy adaptado a niños, jóvenes con
+                  intenciones de superarse y adultos con ganas de trabajar su físico y su técnica. Gran profesor.</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 8 años</span>
-              </div>
-              <p class="review-text">Gran centro deportivo de artes marciales. Muy adaptado a niños, jóvenes con intenciones de superarse y adultos con ganas de trabajar su físico y su técnica. Gran profesor.</p>
-            </div>
 
-            <!-- Review 7 - Jose M. Ramirez -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">J</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Jose M. Ramirez</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 7 - Jose M. Ramirez -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">J</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Jose M. Ramirez</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 3 años</span>
+                </div>
+                <p class="review-text">Espectacular y trato excelente. Buenos profesionales.</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 3 años</span>
-              </div>
-              <p class="review-text">Espectacular y trato excelente. Buenos profesionales.</p>
-            </div>
 
-            <!-- Review 8 - Inma Rom -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">I</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Inma Rom</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 8 - Inma Rom -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">I</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Inma Rom</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 4 meses</span>
+                </div>
+                <p class="review-text">Buen ambiente y disciplina, ha aprendido mucho y sigue aprendiendo mi niño, está
+                  muy contento. ¡Muchas gracias! 👌💪</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 4 meses</span>
-              </div>
-              <p class="review-text">Buen ambiente y disciplina, ha aprendido mucho y sigue aprendiendo mi niño, está muy contento. ¡Muchas gracias! 👌💪</p>
-            </div>
 
-            <!-- Review 9 - Lupe De La Rosa -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">L</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Lupe De La Rosa</span>
+              <!-- Review 9 - Lupe De La Rosa -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">L</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Lupe De La Rosa</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 5 años</span>
+                </div>
+                <p class="review-text">Mi niño lleva ya 4 años apuntado y está súper contento con la escuela, está súper
+                  preparada y muy bien organizada. ¡Gracias Moisés!</p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 5 años</span>
-              </div>
-              <p class="review-text">Mi niño lleva ya 4 años apuntado y está súper contento con la escuela, está súper preparada y muy bien organizada. ¡Gracias Moisés!</p>
-            </div>
 
-            <!-- Review 10 - Oscar Uzcategui -->
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar">O</div>
-                <div class="reviewer-info">
-                  <span class="reviewer-name">Oscar Uzcategui</span>
-                  <span class="review-badge">Local Guide</span>
+              <!-- Review 10 - Oscar Uzcategui -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">O</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Oscar Uzcategui</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 </div>
-                <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 2 semanas</span>
+                </div>
+                <p class="review-text"></p>
               </div>
-              <div class="review-stars">
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-                <span class="review-date">Hace 2 semanas</span>
-              </div>
-              <p class="review-text"></p>
             </div>
-          </div>
           </div>
 
           <button class="carousel-btn next" (click)="nextReview()" aria-label="Siguiente reseña">
@@ -473,21 +532,15 @@
 
         <div class="carousel-dots">
           @for (i of [0,1,2,3,4,5,6,7,8,9]; track i) {
-            @if (i <= totalReviews - visibleCards) {
-              <button
-                class="dot"
-                [class.active]="currentReview === i"
-                (click)="goToReview(i)"
-                [attr.aria-label]="'Ir a página ' + (i + 1)">
-              </button>
+          @if (i <= totalReviews - visibleCards) { <button class="dot" [class.active]="currentReview === i"
+            (click)="goToReview(i)" [attr.aria-label]="'Ir a página ' + (i + 1)">
+            </button>
             }
-          }
+            }
         </div>
 
         <a href="https://www.google.com/maps/place/Club+Moi's+Kim+Do/@37.3687365,-6.1606214,17z/data=!4m8!3m7!1s0xd1211665f2d8fbb:0x8db196e36ecfe0ff!8m2!3d37.3682568!4d-6.1607791!9m1!1b1!16s%2Fg%2F11c1t14c5r"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="google-reviews-link">
+          target="_blank" rel="noopener noreferrer" class="google-reviews-link">
           <span>Ver todas las reseñas en Google</span>
           <i class="bi bi-box-arrow-up-right"></i>
         </a>
@@ -498,15 +551,17 @@
       <div class="instructors-inner">
         <div class="instructors-media">
           <div class="instructors-grid">
-            <div class="instructor-photo primary">
-              <img #animatedImage src="../../../../assets/media/instructores.webp" alt="Instructores de taekwondo certificados en Umbrete (Sevilla)"
-                loading="lazy">
+            <div class="instructor-photo primary instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/instructores.webp"
+                alt="Instructores de taekwondo certificados en Umbrete (Sevilla)" loading="lazy">
             </div>
-            <div class="instructor-photo">
-              <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Instructora de pilates en el Aljarafe - Moiskimdo" loading="lazy">
+            <div class="instructor-photo instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/instructores_2.webp"
+                alt="Instructora de pilates en el Aljarafe - Moiskimdo" loading="lazy">
             </div>
-            <div class="instructor-photo">
-              <img #animatedImage src="../../../../assets/media/placeholder.webp" alt="Instructor de defensa personal femenina en Umbrete" loading="lazy">
+            <div class="instructor-photo instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/placeholder.webp"
+                alt="Instructor de defensa personal femenina en Umbrete" loading="lazy">
             </div>
           </div>
         </div>
@@ -531,7 +586,7 @@
     </section>
     <!-- Local SEO Section -->
     <div class="info-div">
-      <div class="info-card">
+      <div class="info-card info-card--reveal" #infoCard>
         <div class="card-content image-wide">
           <div class="text-content">
             <div class="section-header">
@@ -565,7 +620,7 @@
           </div>
           <div class="img-content">
             <div class="image-wrapper">
-              <img #animatedImage src="../../../../assets/media/fachada_escuela.webp"
+              <img src="../../../../assets/media/fachada_escuela.webp"
                 alt="Fachada de la escuela de artes marciales Moiskimdo en Umbrete (Sevilla)" loading="lazy">
               <div class="image-overlay"></div>
             </div>
@@ -575,11 +630,11 @@
     </div>
 
     <div class="info-div reverse">
-      <div class="info-card">
+      <div class="info-card info-card--reveal" #infoCard>
         <div class="card-content reverse image-wide">
           <div class="img-content">
             <div class="image-wrapper">
-              <img #animatedImage src="../../../../assets/media/interior_escuela.webp"
+              <img src="../../../../assets/media/interior_escuela.webp"
                 alt="Interior del gimnasio de taekwondo y kickboxing en Umbrete - Moiskimdo" loading="lazy">
               <div class="image-overlay"></div>
             </div>
@@ -634,23 +689,70 @@
 
   <!-- Events Slider Section -->
   <section class="slider-section">
-    <div class="section-header-centered">
-      <i class="bi bi-calendar-event section-icon"></i>
-      <h2 class="section-title">PRÓXIMOS EVENTOS</h2>
-      <p class="section-subtitle">Descubre nuestras competiciones y actividades especiales</p>
-    </div>
-    @defer (on viewport) {
-      <app-slider-tocable></app-slider-tocable>
-    } @placeholder {
-      <div class="slider-placeholder" aria-hidden="true"></div>
-    } @loading {
-      <div class="slider-placeholder is-loading" aria-hidden="true"></div>
-    }
-    <div class="events-button-container">
-      <button class="modern-btn events-btn" routerLink="/eventos">
-        <i class="bi bi-arrow-right-circle-fill"></i>
-        <span>Ver Todos los Eventos</span>
-      </button>
+    <div class="events-surface info-card--reveal" #infoCard>
+      <div class="events-head">
+        <div class="events-copy">
+          <div class="events-title-row">
+            <i class="bi bi-calendar-event events-icon" aria-hidden="true"></i>
+            <h2 class="events-title">PRÓXIMOS EVENTOS</h2>
+          </div>
+
+          <p class="events-subtitle">
+            Descubre nuestras competiciones y actividades especiales.
+          </p>
+
+          <div class="events-pills" aria-label="Tipos de eventos">
+            <span class="events-pill">
+              <i class="bi bi-trophy-fill" aria-hidden="true"></i>
+              Competiciones
+            </span>
+            <span class="events-pill">
+              <i class="bi bi-people-fill" aria-hidden="true"></i>
+              Exhibiciones
+            </span>
+            <span class="events-pill">
+              <i class="bi bi-award-fill" aria-hidden="true"></i>
+              Logros
+            </span>
+          </div>
+        </div>
+
+        <div class="events-actions">
+          <button class="modern-btn contact-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Quiero apuntarme</span>
+          </button>
+
+          <button class="modern-btn events-btn" routerLink="/eventos">
+            <i class="bi bi-arrow-right-circle-fill"></i>
+            <span>Ver calendario</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="events-body">
+        @defer (on viewport) {
+        <div class="events-frame">
+          <app-slider-tocable></app-slider-tocable>
+        </div>
+        } @placeholder {
+        <div class="events-frame" aria-hidden="true">
+          <div class="events-carousel-skeleton">
+            @for (i of [1,2,3]; track i) {
+              <div class="skeleton-card"></div>
+            }
+          </div>
+        </div>
+        } @loading {
+        <div class="events-frame" aria-hidden="true">
+          <div class="events-carousel-skeleton">
+            @for (i of [1,2,3]; track i) {
+              <div class="skeleton-card"></div>
+            }
+          </div>
+        </div>
+        }
+      </div>
     </div>
   </section>
 
@@ -665,11 +767,11 @@
 
       <div class="map-wrapper">
         @defer (on viewport) {
-          <app-mapa></app-mapa>
+        <app-mapa></app-mapa>
         } @placeholder {
-          <div class="mapa-placeholder" aria-hidden="true"></div>
+        <div class="mapa-placeholder" aria-hidden="true"></div>
         } @loading {
-          <div class="mapa-placeholder is-loading" aria-hidden="true"></div>
+        <div class="mapa-placeholder is-loading" aria-hidden="true"></div>
         }
       </div>
 
