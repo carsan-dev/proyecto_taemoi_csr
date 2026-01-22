@@ -68,7 +68,8 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       border-radius: 50px;
       color: $text-light;
       margin-bottom: 2rem;
-      animation: fadeInDown 0.8s ease;
+      animation: heroBadgePop 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 100ms;
 
       i {
         font-size: 1.3rem;
@@ -82,8 +83,6 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     }
 
     .hero-text {
-      animation: fadeInUp 1s ease;
-
       .hero-title {
         font-size: clamp(2.5rem, 6vw, 4rem);
         font-weight: 700;
@@ -92,6 +91,8 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
         text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
         letter-spacing: 2px;
         line-height: 1.1;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 200ms;
       }
 
       .hero-subtitle {
@@ -101,6 +102,8 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
         margin: 0.5rem 0 1.5rem;
         text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
         letter-spacing: 1px;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 300ms;
       }
 
       .hero-description {
@@ -109,6 +112,8 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
         margin: 0;
         text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
         font-weight: 400;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 400ms;
       }
     }
   }
@@ -119,7 +124,9 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
-    animation: bounce 2s infinite;
+    opacity: 0;
+    animation: scrollIndicatorReveal 600ms ease-out forwards, bounce 2s infinite;
+    animation-delay: 600ms, 1200ms;
 
     i {
       font-size: 2.5rem;
@@ -150,20 +157,17 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 
       // Scroll reveal animation
       &.info-card--reveal {
-        --reveal-x: 0px;
         opacity: 0;
-        transform: translate3d(var(--reveal-x), 26px, 0) scale(0.985) rotateX(7deg);
-        transform-style: preserve-3d;
-        filter: blur(10px);
+        transform: translateY(24px);
         transition:
-          opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-          transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-          filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+          opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+          transform 650ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: transform, opacity;
 
         &.is-visible {
           opacity: 1;
           transform: none;
-          filter: none;
+          will-change: auto;
         }
 
         &.no-animation {
@@ -171,29 +175,32 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
         }
 
         &.is-visible .card-content::after {
-          animation: infoCardSheen 1s 0.2s ease-out forwards;
+          animation: infoCardSheen 800ms 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
       }
 
       .card-content {
         position: relative;
 
+        // Sheen effect optimizado con transform (GPU accelerated)
         &::after {
           content: '';
           position: absolute;
           top: 0;
-          left: -100%;
+          left: 0;
           width: 60%;
           height: 100%;
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 255, 255, 0.3),
+            rgba(255, 255, 255, 0.35),
             transparent
           );
           pointer-events: none;
           z-index: 2;
           border-radius: 25px;
+          transform: translateX(-150%);
+          will-change: transform;
         }
         background: $text-light;
         border-radius: 25px;
@@ -536,6 +543,34 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
             color: $text-light;
           }
         }
+
+        // Scroll reveal animation
+        &.related-link--reveal {
+          opacity: 0;
+          transform: translateY(20px);
+          transition:
+            opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform, opacity;
+
+          &.is-visible {
+            opacity: 1;
+            transform: none;
+            will-change: auto;
+          }
+
+          &.no-animation {
+            transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          // Staggered delays
+          &:nth-child(1) { transition-delay: 0ms, 0ms, 0s, 0s; }
+          &:nth-child(2) { transition-delay: 100ms, 100ms, 0s, 0s; }
+          &:nth-child(3) { transition-delay: 200ms, 200ms, 0s, 0s; }
+        }
       }
     }
   }
@@ -662,30 +697,66 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
       background: #f8f9fa;
     }
   }
+
+  // Scroll reveal animation
+  &.cta-btn--reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    &.no-animation {
+      transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
 }
 
 // ========================================
 // ANIMATIONS
 // ========================================
-@keyframes fadeInDown {
-  from {
+@keyframes heroBadgePop {
+  0% {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: translateY(-14px) scale(0.96);
   }
-  to {
+  65% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }
 
-@keyframes fadeInUp {
-  from {
+@keyframes heroTextReveal {
+  0% {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(14px);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+  }
+}
+
+@keyframes scrollIndicatorReveal {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
 
@@ -712,10 +783,10 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 
 @keyframes infoCardSheen {
   0% {
-    left: -100%;
+    transform: translateX(-150%);
   }
   100% {
-    left: 150%;
+    transform: translateX(350%);
   }
 }
 

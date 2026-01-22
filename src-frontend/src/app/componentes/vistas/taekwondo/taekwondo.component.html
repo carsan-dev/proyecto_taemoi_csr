@@ -177,15 +177,15 @@
       <h2 class="related-title">Tambi&eacute;n ofrecemos en Umbrete</h2>
       <p class="related-description">Descubre otras disciplinas en nuestra escuela de artes marciales:</p>
       <div class="related-links">
-        <a routerLink="/kickboxing" class="related-link kickboxing">
+        <a routerLink="/kickboxing" class="related-link related-link--reveal kickboxing" #relatedLink>
           <i class="bi bi-fire"></i>
           <span>Kickboxing Light</span>
         </a>
-        <a routerLink="/pilates" class="related-link pilates">
+        <a routerLink="/pilates" class="related-link related-link--reveal pilates" #relatedLink>
           <i class="bi bi-heart-pulse-fill"></i>
           <span>Pilates Balance</span>
         </a>
-        <a routerLink="/defensapersonalfemenina" class="related-link defensa">
+        <a routerLink="/defensapersonalfemenina" class="related-link related-link--reveal defensa" #relatedLink>
           <i class="bi bi-shield-fill-check"></i>
           <span>Defensa Personal Femenina</span>
         </a>
@@ -201,7 +201,7 @@
         <h2 class="cta-title">PRIMERA CLASE GRATUITA</h2>
         <p class="cta-subtitle">&iquest;Quieres probar taekwondo en Umbrete? Reserva tu clase gratuita.</p>
       </div>
-      <button class="modern-btn taekwondo-btn" routerLink="/contacto">
+      <button class="modern-btn taekwondo-btn cta-btn--reveal" routerLink="/contacto" #ctaButton>
         <i class="bi bi-envelope-fill"></i>
         <span>Más información</span>
       </button>

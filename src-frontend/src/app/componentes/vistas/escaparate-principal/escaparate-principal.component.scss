@@ -418,7 +418,6 @@ $defensa-hover: #d81b60;
       padding: 0 2rem;
 
       &.info-card--reveal {
-        perspective: 900px;
         --reveal-x: -18px;
 
         .card-content {
@@ -426,31 +425,30 @@ $defensa-hover: #d81b60;
           backface-visibility: hidden;
 
           opacity: 0;
-          transform: translate3d(var(--reveal-x), 26px, 0) scale(0.985)
-            rotateX(7deg);
-          filter: blur(10px);
+          transform: translate3d(var(--reveal-x), 24px, 0);
 
           transition:
-            transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            opacity 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            filter 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform 650ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
           will-change: transform, opacity;
 
+          // Sheen effect optimizado con transform (GPU accelerated)
           &::after {
             content: "";
             position: absolute;
             inset: 0;
+            width: 60%;
             background: linear-gradient(
               120deg,
               rgba(255, 255, 255, 0) 0%,
-              rgba(255, 255, 255, 0.55) 45%,
-              rgba(255, 255, 255, 0) 70%
+              rgba(255, 255, 255, 0.45) 50%,
+              rgba(255, 255, 255, 0) 100%
             );
-            transform: translateX(-120%) skewX(-14deg);
-            opacity: 0;
+            transform: translateX(-150%) skewX(-15deg);
             pointer-events: none;
             z-index: 3;
+            will-change: transform;
           }
         }
 
@@ -458,15 +456,19 @@ $defensa-hover: #d81b60;
           .card-content {
             opacity: 1;
             transform: none;
-            filter: none;
             will-change: auto;
-            backface-visibility: visible;
 
             &::after {
-              opacity: 0.7;
-              animation: infoCardSheen 900ms cubic-bezier(0.2, 0.8, 0.2, 1)
-                120ms both;
+              animation: infoCardSheen 800ms 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             }
+          }
+        }
+
+        &.no-animation .card-content {
+          transition: none;
+
+          &::after {
+            animation: none;
           }
         }
       }
@@ -1375,13 +1377,13 @@ $defensa-hover: #d81b60;
     width: 100%;
 
     .instructor-photo.instructor-photo--reveal:nth-child(1) {
-      transition-delay: 70ms;
+      transition-delay: 0ms;
     }
     .instructor-photo.instructor-photo--reveal:nth-child(2) {
-      transition-delay: 170ms;
+      transition-delay: 100ms;
     }
     .instructor-photo.instructor-photo--reveal:nth-child(3) {
-      transition-delay: 270ms;
+      transition-delay: 200ms;
     }
   }
 
@@ -1390,26 +1392,10 @@ $defensa-hover: #d81b60;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: $shadow-md;
+    contain: layout style paint;
 
     &.primary {
       grid-row: 1 / span 2;
-    }
-
-    // Overlay suave para dar look más moderno sin tocar nitidez
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        135deg,
-        rgba($primary-color, 0.12) 0%,
-        rgba($pilates-color, 0.1) 55%,
-        rgba(0, 0, 0, 0.06) 100%
-      );
-      opacity: 0.35;
-      transition: opacity 450ms ease;
-      pointer-events: none;
-      z-index: 1;
     }
 
     img {
@@ -1417,46 +1403,38 @@ $defensa-hover: #d81b60;
       height: 100%;
       object-fit: cover;
       display: block;
-
-      opacity: 1;
-      transform: none;
-
       filter: grayscale(80%) brightness(0.95);
-      transition:
-        filter 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-        transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-
-      will-change: transform, opacity;
     }
   }
 
   .instructor-photo.instructor-photo--reveal {
     opacity: 0;
-    transform: translateY(16px) scale(0.985);
-
+    transform: translateY(20px);
     transition:
-      opacity 650ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
-
-    will-change: transform, opacity;
+      opacity 450ms ease-out,
+      transform 450ms ease-out;
 
     &.is-visible {
       opacity: 1;
       transform: none;
+    }
 
-      will-change: auto;
-      backface-visibility: visible;
+    &.no-animation {
+      transition: none;
+      transition-delay: 0ms !important;
     }
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .instructor-photo:hover img {
-      filter: grayscale(0%) brightness(1);
-      transform: scale(1.05);
-    }
+    .instructor-photo {
+      img {
+        transition: filter 350ms ease, transform 350ms ease;
+      }
 
-    .instructor-photo:hover::after {
-      opacity: 0.16;
+      &:hover img {
+        filter: grayscale(0%) brightness(1);
+        transform: scale(1.02);
+      }
     }
   }
 
@@ -1694,21 +1672,22 @@ $defensa-hover: #d81b60;
   // Reveal compatible con tu IntersectionObserver (añade is-visible)
   .events-surface.info-card--reveal {
     opacity: 0;
-    transform: translateY(26px) scale(0.985);
-    filter: blur(10px);
+    transform: translateY(24px);
 
     transition:
-      transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      opacity 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      filter 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform 650ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform, opacity;
   }
 
   .events-surface.info-card--reveal.is-visible {
     opacity: 1;
     transform: none;
-    filter: none;
     will-change: auto;
+  }
+
+  .events-surface.info-card--reveal.no-animation {
+    transition: none;
   }
 
   .events-head {
@@ -2998,14 +2977,13 @@ $defensa-hover: #d81b60;
       .card-content {
         opacity: 1 !important;
         transform: none !important;
-        filter: none !important;
-
-        &::after {
-          opacity: 0 !important;
-          animation: none !important;
-        }
       }
     }
+  }
+
+  .slider-section .events-surface.info-card--reveal {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   .video-content .hero-badge,
@@ -3048,15 +3026,10 @@ $defensa-hover: #d81b60;
 
 @keyframes infoCardSheen {
   0% {
-    transform: translateX(-120%) skewX(-14deg);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.65;
+    transform: translateX(-150%) skewX(-15deg);
   }
   100% {
-    transform: translateX(120%) skewX(-14deg);
-    opacity: 0;
+    transform: translateX(350%) skewX(-15deg);
   }
 }
 

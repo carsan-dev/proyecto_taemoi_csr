@@ -22,7 +22,11 @@ export class TarifasComponent implements AfterViewInit, OnDestroy {
   @ViewChildren('revealCard')
   revealCards!: QueryList<ElementRef<HTMLElement>>;
 
+  @ViewChildren('ctaButton')
+  ctaButtons!: QueryList<ElementRef<HTMLElement>>;
+
   private cardObserver: IntersectionObserver | null = null;
+  private ctaObserver: IntersectionObserver | null = null;
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
@@ -65,10 +69,36 @@ export class TarifasComponent implements AfterViewInit, OnDestroy {
         this.cardObserver?.observe(card.nativeElement);
       }
     });
+
+    // CTA buttons observer
+    this.ctaButtons.forEach((btn) => {
+      const rect = btn.nativeElement.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        btn.nativeElement.classList.add('is-visible', 'no-animation');
+      }
+    });
+
+    this.ctaObserver = new IntersectionObserver((entries, obs) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          (entry.target as HTMLElement).classList.add('is-visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, cardOptions);
+
+    this.ctaButtons.forEach((btn) => {
+      if (!btn.nativeElement.classList.contains('is-visible')) {
+        this.ctaObserver?.observe(btn.nativeElement);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.cardObserver?.disconnect();
     this.cardObserver = null;
+    this.ctaObserver?.disconnect();
+    this.ctaObserver = null;
   }
 }
