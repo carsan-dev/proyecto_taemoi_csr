@@ -28,7 +28,9 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "server": "src/main.server.ts",
-            "prerender": true,
+            "prerender": {
+              "routesFile": "prerender-routes.txt"
+            },
             "ssr": false,
             "polyfills": [
               "zone.js"
