@@ -19,6 +19,31 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 $cta-spacing: clamp(2.5rem, 6vw, 5rem);
 
 // ========================================
+// SCROLL REVEAL ANIMATION
+// ========================================
+.card--reveal {
+  --reveal-x: 0px;
+  opacity: 0;
+  transform: translate3d(var(--reveal-x), 26px, 0) scale(0.985) rotateX(7deg);
+  transform-style: preserve-3d;
+  filter: blur(10px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.is-visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  &.no-animation {
+    transition: none;
+  }
+}
+
+// ========================================
 // MAIN CONTENT
 // ========================================
 .main-content {
