@@ -7,6 +7,7 @@ import {
   Inject,
   PLATFORM_ID,
   QueryList,
+  ViewChild,
   ViewChildren,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -24,7 +25,15 @@ export class DefensaPersonalFemeninaComponent implements AfterViewInit, OnDestro
   @ViewChildren('infoCard')
   infoCards!: QueryList<ElementRef<HTMLElement>>;
 
+  @ViewChildren('relatedLink')
+  relatedLinks!: QueryList<ElementRef<HTMLElement>>;
+
+  @ViewChild('ctaButton')
+  ctaButton!: ElementRef<HTMLElement>;
+
   private infoCardObserver: IntersectionObserver | null = null;
+  private relatedLinkObserver: IntersectionObserver | null = null;
+  private ctaObserver: IntersectionObserver | null = null;
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
@@ -69,10 +78,57 @@ export class DefensaPersonalFemeninaComponent implements AfterViewInit, OnDestro
         this.infoCardObserver?.observe(card.nativeElement);
       }
     });
+
+    // Related links observer
+    this.relatedLinks.forEach((link) => {
+      const rect = link.nativeElement.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        link.nativeElement.classList.add('is-visible', 'no-animation');
+      }
+    });
+
+    this.relatedLinkObserver = new IntersectionObserver((entries, obs) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          (entry.target as HTMLElement).classList.add('is-visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, cardOptions);
+
+    this.relatedLinks.forEach((link) => {
+      if (!link.nativeElement.classList.contains('is-visible')) {
+        this.relatedLinkObserver?.observe(link.nativeElement);
+      }
+    });
+
+    // CTA button observer
+    if (this.ctaButton) {
+      const rect = this.ctaButton.nativeElement.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        this.ctaButton.nativeElement.classList.add('is-visible', 'no-animation');
+      } else {
+        this.ctaObserver = new IntersectionObserver((entries, obs) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              (entry.target as HTMLElement).classList.add('is-visible');
+              obs.unobserve(entry.target);
+            }
+          });
+        }, cardOptions);
+        this.ctaObserver.observe(this.ctaButton.nativeElement);
+      }
+    }
   }
 
   ngOnDestroy(): void {
     this.infoCardObserver?.disconnect();
     this.infoCardObserver = null;
+    this.relatedLinkObserver?.disconnect();
+    this.relatedLinkObserver = null;
+    this.ctaObserver?.disconnect();
+    this.ctaObserver = null;
   }
 }
