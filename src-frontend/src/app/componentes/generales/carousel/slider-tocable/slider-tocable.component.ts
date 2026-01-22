@@ -1,6 +1,11 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, PLATFORM_ID, Inject, HostListener } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  Inject,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
@@ -17,37 +22,31 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   isLoading: boolean = true;
   currentIndex: number = 0;
-  autoPlayInterval: any;
-  userInteracted: boolean = false;
-  isHovered: boolean = false;
+  visibleCards: number = 3;
+
+  private readonly subscriptions: Subscription = new Subscription();
+  private readonly onResize = () => this.updateVisibleCards();
 
   defaultFotos: any[] = [
     {
-      titulo: 'Evento 1',
-      descripcion: 'Descripción del evento 1',
-      fotoEvento: {
-        tipo: 'image/webp',
-        datos: '../../../../assets/media/default.webp',
-      },
+      id: 1,
+      titulo: 'Evento de ejemplo 1',
+      descripcion: 'Descripción del evento de ejemplo 1',
+      fotoEvento: { url: '../../../../assets/media/default.webp' },
     },
     {
-      titulo: 'Evento 2',
-      descripcion: 'Descripción del evento 2',
-      fotoEvento: {
-        tipo: 'image/webp',
-        datos: '../../../../assets/media/default.webp',
-      },
+      id: 2,
+      titulo: 'Evento de ejemplo 2',
+      descripcion: 'Descripción del evento de ejemplo 2',
+      fotoEvento: { url: '../../../../assets/media/default.webp' },
     },
     {
-      titulo: 'Evento 3',
-      descripcion: 'Descripción del evento 3',
-      fotoEvento: {
-        tipo: 'image/webp',
-        datos: '../../../../assets/media/default.webp',
-      },
+      id: 3,
+      titulo: 'Evento de ejemplo 3',
+      descripcion: 'Descripción del evento de ejemplo 3',
+      fotoEvento: { url: '../../../../assets/media/default.webp' },
     },
   ];
-  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,
@@ -55,17 +54,19 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.updateVisibleCards();
+      window.addEventListener('resize', this.onResize);
+    }
+
     const eventosSubscription = this.endpointsService.eventos$.subscribe({
       next: (eventos) => {
-        this.eventos = eventos.length ? eventos.slice(0, 5) : this.defaultFotos;
+        this.eventos = eventos.length ? eventos.slice(0, 6) : this.defaultFotos;
         this.isLoading = false;
-        // Solo iniciar autoplay si hay más de 1 evento
-        if (isPlatformBrowser(this.platformId) && this.eventos.length > 1) {
-          this.startAutoPlay();
-          this.setupVisibilityListener();
-        }
+        // Ajustar índice si es necesario
+        this.adjustIndex();
       },
-      error: (error) => {
+      error: () => {
         Swal.fire({
           title: 'Error',
           text: 'No hemos podido obtener los eventos.',
@@ -82,87 +83,59 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.stopAutoPlay();
     if (isPlatformBrowser(this.platformId)) {
-      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+      window.removeEventListener('resize', this.onResize);
     }
   }
 
-  // Page Visibility API - pausar cuando el tab no está visible
-  private setupVisibilityListener(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+  // Calcula el translateX como porcentaje (igual que reviews)
+  get translateX(): number {
+    const cardWidthPercent = 100 / this.visibleCards;
+    return -(this.currentIndex * cardWidthPercent);
+  }
+
+  // Actualiza el número de cards visibles según el ancho de pantalla
+  updateVisibleCards(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const width = window.innerWidth;
+    if (width >= 1024) {
+      this.visibleCards = 3;
+    } else if (width >= 768) {
+      this.visibleCards = 2;
+    } else {
+      this.visibleCards = 1;
+    }
+
+    this.adjustIndex();
+  }
+
+  // Ajusta el índice para que no se salga del rango válido
+  private adjustIndex(): void {
+    const maxIndex = Math.max(0, this.eventos.length - this.visibleCards);
+    if (this.currentIndex > maxIndex) {
+      this.currentIndex = maxIndex;
     }
   }
 
-  private handleVisibilityChange = (): void => {
-    if (document.hidden) {
-      this.stopAutoPlay();
-    } else if (!this.userInteracted && !this.isHovered && this.eventos.length > 1) {
-      this.startAutoPlay();
-    }
-  };
+  // Genera los índices para los dots
+  getDotIndices(): number[] {
+    const maxIndex = Math.max(0, this.eventos.length - this.visibleCards);
+    return Array.from({ length: maxIndex + 1 }, (_, i) => i);
+  }
 
   nextSlide(): void {
-    this.userInteracted = true;
-    this.stopAutoPlay();
-    if (this.currentIndex < this.eventos.length - 1) {
-      this.currentIndex++;
-    } else {
-      this.currentIndex = 0;
-    }
+    const maxIndex = this.eventos.length - this.visibleCards;
+    this.currentIndex = this.currentIndex >= maxIndex ? 0 : this.currentIndex + 1;
   }
 
   prevSlide(): void {
-    this.userInteracted = true;
-    this.stopAutoPlay();
-    if (this.currentIndex > 0) {
-      this.currentIndex--;
-    } else {
-      this.currentIndex = this.eventos.length - 1;
-    }
+    const maxIndex = this.eventos.length - this.visibleCards;
+    this.currentIndex = this.currentIndex <= 0 ? maxIndex : this.currentIndex - 1;
   }
 
   goToSlide(index: number): void {
-    this.userInteracted = true;
-    this.stopAutoPlay();
     this.currentIndex = index;
-  }
-
-  startAutoPlay(): void {
-    // Limpiar cualquier interval existente primero
-    this.stopAutoPlay();
-
-    this.autoPlayInterval = setInterval(() => {
-      // Solo avanzar si no hay interacción del usuario y no está en hover
-      if (!this.userInteracted && !this.isHovered) {
-        if (this.currentIndex < this.eventos.length - 1) {
-          this.currentIndex++;
-        } else {
-          this.currentIndex = 0;
-        }
-      }
-    }, 8000); // 8 segundos - más tiempo para leer
-  }
-
-  stopAutoPlay(): void {
-    if (this.autoPlayInterval) {
-      clearInterval(this.autoPlayInterval);
-      this.autoPlayInterval = null;
-    }
-  }
-
-  pauseAutoPlay(): void {
-    this.isHovered = true;
-    this.stopAutoPlay();
-  }
-
-  resumeAutoPlay(): void {
-    this.isHovered = false;
-    // Solo reanudar si el usuario NO ha interactuado manualmente
-    if (isPlatformBrowser(this.platformId) && !this.userInteracted && this.eventos.length > 1) {
-      this.startAutoPlay();
-    }
   }
 
   getImageUrl(evento: any): string {
