@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
@@ -43,10 +44,17 @@ export class HorariosComponent implements OnInit {
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly router: Router
+    private readonly router: Router,
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
   ngOnInit(): void {
+    // Only load data in browser (skip during prerendering)
+    if (!isPlatformBrowser(this.platformId)) {
+      this.isLoading = false;
+      return;
+    }
+
     this.cargarLimiteTurno();
     this.obtenerTurnos();
   }
