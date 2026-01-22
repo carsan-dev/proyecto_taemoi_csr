@@ -134,7 +134,10 @@ export class SeoService {
   }
 
   private setCanonical(url: string): void {
-    // Works on both browser and server (prerendering)
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     let link = this.document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
     if (!link) {
       link = this.document.createElement('link');
@@ -162,7 +165,10 @@ export class SeoService {
   }
 
   private setBreadcrumbSchema(breadcrumbs: BreadcrumbItem[]): void {
-    // Works on both browser and server (prerendering)
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     const existingScript = this.document.querySelector('script[data-breadcrumb]');
     if (existingScript) {
       existingScript.remove();
