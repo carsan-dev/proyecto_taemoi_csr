@@ -1,11 +1,17 @@
-import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideServerRendering } from '@angular/platform-server';
-import { appConfig } from './app.config';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { routes } from './app.routes';
+import { NgxSpinnerModule } from 'ngx-spinner';
 
-const serverConfig: ApplicationConfig = {
+export const config: ApplicationConfig = {
   providers: [
     provideServerRendering(),
+    provideRouter(routes),
+    provideHttpClient(withFetch()),
+    provideNoopAnimations(),
+    importProvidersFrom(NgxSpinnerModule.forRoot({ type: 'ball-clip-rotate' })),
   ],
 };
-
-export const config = mergeApplicationConfig(appConfig, serverConfig);
