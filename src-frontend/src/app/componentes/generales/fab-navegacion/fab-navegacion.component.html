@@ -1,0 +1,314 @@
+<!-- FAB Tablet (576px - 991px) - Solo para usuarios no admin -->
+@if (isTablet && !isAdmin) {
+  <!-- Backdrop -->
+  @if (isMenuOpen) {
+    <div
+      class="fab-backdrop"
+      (click)="onBackdropClick()"
+      aria-hidden="true">
+    </div>
+  }
+
+  <!-- FAB Menu Items -->
+  <nav
+    class="fab-menu"
+    [class.open]="isMenuOpen"
+    role="menu"
+    aria-label="Menú de navegación rápida"
+    [attr.aria-hidden]="!isMenuOpen"
+    id="fab-menu">
+    <!-- Deportes -->
+    @for (item of navItemsDeportes; track item.route; let i = $index) {
+      <a
+        class="fab-menu-item deporte"
+        [style.--item-color]="item.color"
+        [style.--item-index]="navItemsDeportes.length - 1 - i"
+        [class.active]="isActiveRoute(item.route)"
+        [routerLink]="item.route"
+        (click)="closeAllMenus()"
+        role="menuitem"
+        [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null"
+        [attr.tabindex]="isMenuOpen ? 0 : -1">
+        <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+        <span class="fab-menu-label">{{ item.label }}</span>
+      </a>
+    }
+
+    <!-- Separador -->
+    <div class="fab-separator" [style.--item-index]="navItemsDeportes.length" role="separator" aria-hidden="true"></div>
+
+    <!-- Principales -->
+    @for (item of navItemsPrincipales; track item.route; let i = $index) {
+      <a
+        class="fab-menu-item principal"
+        [style.--item-index]="navItemsDeportes.length + 1 + (navItemsPrincipales.length - 1 - i)"
+        [class.active]="isActiveRoute(item.route)"
+        [routerLink]="item.route"
+        (click)="closeAllMenus()"
+        role="menuitem"
+        [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null"
+        [attr.tabindex]="isMenuOpen ? 0 : -1">
+        <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+        <span class="fab-menu-label">{{ item.label }}</span>
+      </a>
+    }
+
+    <!-- User items -->
+    @if (usuarioLogueado && isUser && !isAdmin) {
+      <div class="fab-separator" [style.--item-index]="navItemsDeportes.length + navItemsPrincipales.length + 1" role="separator" aria-hidden="true"></div>
+      @for (item of navItemsUser; track item.route; let i = $index) {
+        <a
+          class="fab-menu-item user-item"
+          [style.--item-index]="navItemsDeportes.length + navItemsPrincipales.length + 2 + i"
+          [class.active]="isActiveRoute(item.route)"
+          [routerLink]="item.route"
+          (click)="closeAllMenus()"
+          role="menuitem"
+          [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null"
+          [attr.tabindex]="isMenuOpen ? 0 : -1">
+          <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+          <span class="fab-menu-label">{{ item.label }}</span>
+        </a>
+      }
+    }
+
+    <!-- Login/Logout -->
+    @if (!usuarioLogueado) {
+      <div class="fab-separator" [style.--item-index]="navItemsDeportes.length + navItemsPrincipales.length + 1" role="separator" aria-hidden="true"></div>
+      <a
+        class="fab-menu-item login-item"
+        [style.--item-index]="navItemsDeportes.length + navItemsPrincipales.length + 2"
+        [routerLink]="'/login'"
+        (click)="closeAllMenus()"
+        role="menuitem"
+        [attr.tabindex]="isMenuOpen ? 0 : -1">
+        <i class="bi bi-person-circle" aria-hidden="true"></i>
+        <span class="fab-menu-label">Iniciar Sesión</span>
+      </a>
+    } @else if (!isAdmin) {
+      <button
+        class="fab-menu-item logout-item"
+        [style.--item-index]="navItemsDeportes.length + navItemsPrincipales.length + (isUser ? navItemsUser.length + 3 : 2)"
+        (click)="cerrarSesion()"
+        role="menuitem"
+        type="button"
+        [attr.tabindex]="isMenuOpen ? 0 : -1">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+        <span class="fab-menu-label">Cerrar Sesión</span>
+      </button>
+    }
+  </nav>
+
+  <!-- FAB Button -->
+  <button
+    class="fab-button"
+    [class.open]="isMenuOpen"
+    (click)="toggleMenu()"
+    type="button"
+    [attr.aria-expanded]="isMenuOpen"
+    aria-controls="fab-menu"
+    aria-haspopup="menu"
+    [attr.aria-label]="isMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+    <i class="bi" [ngClass]="isMenuOpen ? 'bi-x-lg' : 'bi-compass'" aria-hidden="true"></i>
+  </button>
+}
+
+<!-- Bottom Navigation Mobile (< 576px) -->
+@if (isMobile) {
+  <!-- Mobile Full Menu Overlay - Usuarios normales -->
+  @if (isMobileMenuOpen && !isAdmin) {
+    <div
+      class="mobile-menu-overlay"
+      [class.open]="isMobileMenuOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-menu-title">
+      <div
+        class="mobile-menu-backdrop"
+        (click)="onBackdropClick()"
+        aria-hidden="true">
+      </div>
+      <div class="mobile-menu-content" role="document">
+        <div class="mobile-menu-header">
+          <h2 id="mobile-menu-title">Navegación</h2>
+          <button
+            class="mobile-menu-close"
+            (click)="toggleMobileMenu()"
+            type="button"
+            aria-label="Cerrar menú de navegación">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <nav class="mobile-menu-section" aria-label="Páginas principales">
+          <h3 class="mobile-menu-section-title" id="pages-section">Páginas</h3>
+          <div class="mobile-menu-grid" role="list" aria-labelledby="pages-section">
+            @for (item of navItemsPrincipales; track item.route) {
+              <a
+                class="mobile-menu-item"
+                [class.active]="isActiveRoute(item.route)"
+                [routerLink]="item.route"
+                (click)="closeAllMenus()"
+                role="listitem"
+                [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
+                <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          </div>
+        </nav>
+
+        <nav class="mobile-menu-section" aria-label="Deportes">
+          <h3 class="mobile-menu-section-title" id="sports-section">Deportes</h3>
+          <div class="mobile-menu-grid deportes" role="list" aria-labelledby="sports-section">
+            @for (item of navItemsDeportes; track item.route) {
+              <a
+                class="mobile-menu-item deporte"
+                [style.--deporte-color]="item.color"
+                [class.active]="isActiveRoute(item.route)"
+                [routerLink]="item.route"
+                (click)="closeAllMenus()"
+                role="listitem"
+                [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
+                <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          </div>
+        </nav>
+
+        <!-- Cuenta section -->
+        <div class="mobile-menu-section" aria-label="Cuenta">
+          <h3 class="mobile-menu-section-title" id="account-section">Cuenta</h3>
+          <div class="mobile-menu-grid cuenta" role="list" aria-labelledby="account-section">
+            @if (!usuarioLogueado) {
+              <a
+                class="mobile-menu-item login"
+                [routerLink]="'/login'"
+                (click)="closeAllMenus()"
+                role="listitem">
+                <i class="bi bi-person-circle" aria-hidden="true"></i>
+                <span>Iniciar Sesión</span>
+              </a>
+            } @else {
+              @if (isUser) {
+                <a
+                  class="mobile-menu-item user"
+                  [class.active]="isActiveRoute('/userpage')"
+                  [routerLink]="'/userpage'"
+                  (click)="closeAllMenus()"
+                  role="listitem"
+                  [attr.aria-current]="isActiveRoute('/userpage') ? 'page' : null">
+                  <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+                  <span>Mis Clases</span>
+                </a>
+              }
+              <button
+                class="mobile-menu-item logout"
+                (click)="cerrarSesion()"
+                type="button"
+                role="listitem">
+                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                <span>Cerrar Sesión</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Mobile Full Menu Overlay - Admin -->
+  @if (isMobileMenuOpen && isAdmin) {
+    <div
+      class="mobile-menu-overlay"
+      [class.open]="isMobileMenuOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-mobile-menu-title">
+      <div
+        class="mobile-menu-backdrop"
+        (click)="onBackdropClick()"
+        aria-hidden="true">
+      </div>
+      <div class="mobile-menu-content admin-menu" role="document">
+        <div class="mobile-menu-header">
+          <h2 id="admin-mobile-menu-title">Panel Admin</h2>
+          <button
+            class="mobile-menu-close"
+            (click)="toggleMobileMenu()"
+            type="button"
+            aria-label="Cerrar menú de administración">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        @for (section of adminSections; track section.label) {
+          <nav class="mobile-menu-section" [attr.aria-label]="section.label">
+            <h3 class="mobile-menu-section-title">{{ section.label }}</h3>
+            <div class="admin-menu-grid" role="list">
+              @for (item of section.items; track item.route) {
+                <a
+                  class="admin-menu-item"
+                  [style.--item-color]="item.color"
+                  [class.active]="isActiveRoute(item.route)"
+                  [class.has-color]="item.color"
+                  [routerLink]="item.route"
+                  (click)="closeAllMenus()"
+                  role="listitem"
+                  [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
+                  <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+                  <span>{{ item.label }}</span>
+                </a>
+              }
+            </div>
+          </nav>
+        }
+
+        <!-- Logout admin -->
+        <div class="mobile-menu-section">
+          <div class="admin-menu-grid">
+            <button
+              class="admin-menu-item logout"
+              (click)="cerrarSesion()"
+              type="button"
+              role="listitem">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav" [class.admin]="isAdmin" aria-label="Navegación principal" role="navigation">
+    @for (item of currentBottomNavItems; track item.label) {
+      @if (item.label === 'Menú') {
+        <button
+          class="bottom-nav-item menu-button"
+          [class.menu-open]="isMobileMenuOpen"
+          (click)="onBottomNavClick(item)"
+          type="button"
+          [attr.aria-expanded]="isMobileMenuOpen"
+          aria-controls="mobile-menu"
+          aria-haspopup="dialog"
+          [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+          <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : item.icon" aria-hidden="true"></i>
+          <span aria-hidden="true">{{ item.label }}</span>
+        </button>
+      } @else {
+        <a
+          class="bottom-nav-item"
+          [class.active]="isActiveRoute(item.route)"
+          [routerLink]="item.route"
+          [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null"
+          [attr.aria-label]="'Ir a ' + item.label">
+          <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    }
+  </nav>
+}
