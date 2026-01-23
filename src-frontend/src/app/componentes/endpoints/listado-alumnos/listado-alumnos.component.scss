@@ -598,6 +598,15 @@
   white-space: nowrap;
 }
 
+.deporte-detalle-grado .grado-fecha {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+
 .deporte-principal-btn {
   position: absolute;
   top: 0.6rem;
