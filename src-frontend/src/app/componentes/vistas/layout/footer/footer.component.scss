@@ -465,6 +465,11 @@ $github-color: #333;
     .footer-content {
       padding: 2rem 0 0 0;
     }
+
+    // Espacio adicional para la bottom navigation bar
+    .footer-bottom {
+      padding-bottom: calc(1.5rem + 70px + env(safe-area-inset-bottom, 0));
+    }
   }
 
   .footer-brand {
