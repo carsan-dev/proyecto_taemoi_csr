@@ -10,6 +10,10 @@
         <div class="title-main">MOI'S KIM DO</div>
         <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
       </div>
+      <!-- Botón login solo móvil -->
+      <a class="btn-login-mobile d-lg-none" [routerLink]="['/login']" aria-label="Iniciar sesión">
+        <i class="bi bi-person-circle"></i>
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -443,6 +447,10 @@
         <div class="title-main">MOI'S KIM DO</div>
         <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
       </div>
+      <!-- Botón logout solo móvil -->
+      <button class="btn-logout-mobile d-lg-none" (click)="cerrarSesion()" type="button" aria-label="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserNav"
         aria-controls="navbarUserNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
