@@ -142,14 +142,13 @@
 
         <nav class="mobile-menu-section" aria-label="Páginas principales">
           <h3 class="mobile-menu-section-title" id="pages-section">Páginas</h3>
-          <div class="mobile-menu-grid" role="list" aria-labelledby="pages-section">
+          <div class="mobile-menu-grid" aria-labelledby="pages-section">
             @for (item of navItemsPrincipales; track item.route) {
               <a
                 class="mobile-menu-item"
                 [class.active]="isActiveRoute(item.route)"
                 [routerLink]="item.route"
                 (click)="closeAllMenus()"
-                role="listitem"
                 [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
                 <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
                 <span>{{ item.label }}</span>
@@ -160,7 +159,7 @@
 
         <nav class="mobile-menu-section" aria-label="Deportes">
           <h3 class="mobile-menu-section-title" id="sports-section">Deportes</h3>
-          <div class="mobile-menu-grid deportes" role="list" aria-labelledby="sports-section">
+          <div class="mobile-menu-grid deportes" aria-labelledby="sports-section">
             @for (item of navItemsDeportes; track item.route) {
               <a
                 class="mobile-menu-item deporte"
@@ -168,7 +167,6 @@
                 [class.active]="isActiveRoute(item.route)"
                 [routerLink]="item.route"
                 (click)="closeAllMenus()"
-                role="listitem"
                 [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
                 <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
                 <span>{{ item.label }}</span>
@@ -180,13 +178,12 @@
         <!-- Cuenta section -->
         <div class="mobile-menu-section" aria-label="Cuenta">
           <h3 class="mobile-menu-section-title" id="account-section">Cuenta</h3>
-          <div class="mobile-menu-grid cuenta" role="list" aria-labelledby="account-section">
+          <div class="mobile-menu-grid cuenta" aria-labelledby="account-section">
             @if (!usuarioLogueado) {
               <a
                 class="mobile-menu-item login"
                 [routerLink]="'/login'"
-                (click)="closeAllMenus()"
-                role="listitem">
+                (click)="closeAllMenus()">
                 <i class="bi bi-person-circle" aria-hidden="true"></i>
                 <span>Iniciar Sesión</span>
               </a>
@@ -197,7 +194,6 @@
                   [class.active]="isActiveRoute('/userpage')"
                   [routerLink]="'/userpage'"
                   (click)="closeAllMenus()"
-                  role="listitem"
                   [attr.aria-current]="isActiveRoute('/userpage') ? 'page' : null">
                   <i class="bi bi-calendar2-check" aria-hidden="true"></i>
                   <span>Mis Clases</span>
@@ -206,8 +202,7 @@
               <button
                 class="mobile-menu-item logout"
                 (click)="cerrarSesion()"
-                type="button"
-                role="listitem">
+                type="button">
                 <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
                 <span>Cerrar Sesión</span>
               </button>
@@ -246,7 +241,7 @@
         @for (section of adminSections; track section.label) {
           <nav class="mobile-menu-section" [attr.aria-label]="section.label">
             <h3 class="mobile-menu-section-title">{{ section.label }}</h3>
-            <div class="admin-menu-grid" role="list">
+            <div class="admin-menu-grid">
               @for (item of section.items; track item.route) {
                 <a
                   class="admin-menu-item"
@@ -255,7 +250,6 @@
                   [class.has-color]="item.color"
                   [routerLink]="item.route"
                   (click)="closeAllMenus()"
-                  role="listitem"
                   [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null">
                   <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
                   <span>{{ item.label }}</span>
@@ -271,8 +265,7 @@
             <button
               class="admin-menu-item logout"
               (click)="cerrarSesion()"
-              type="button"
-              role="listitem">
+              type="button">
               <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
               <span>Cerrar Sesión</span>
             </button>
