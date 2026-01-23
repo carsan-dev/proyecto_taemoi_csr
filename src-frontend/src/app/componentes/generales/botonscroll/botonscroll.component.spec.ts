@@ -11,7 +11,7 @@ describe('BotonscrollComponent', () => {
       imports: [BotonscrollComponent]
     })
     .compileComponents();
-    
+
     fixture = TestBed.createComponent(BotonscrollComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
