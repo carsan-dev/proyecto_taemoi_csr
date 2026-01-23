@@ -26,4 +26,9 @@
     transform: translateY(2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
+
+  // Ajuste en móvil para posicionar encima de la bottom nav
+  @media (max-width: 575.98px) {
+    bottom: 90px; // 70px de bottom nav + 20px de margen
+  }
 }
