@@ -686,6 +686,59 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Calculates time since the student obtained their current grade
+   * Shows days when less than 1 month
+   */
+  getTiempoConGrado(fechaGrado: Date | string | null | undefined): string | null {
+    if (!fechaGrado) {
+      return null;
+    }
+
+    const fechaInicio = new Date(fechaGrado);
+    if (Number.isNaN(fechaInicio.getTime())) {
+      return null;
+    }
+
+    const hoy = new Date();
+    let anios = hoy.getFullYear() - fechaInicio.getFullYear();
+    let meses = hoy.getMonth() - fechaInicio.getMonth();
+    let dias = hoy.getDate() - fechaInicio.getDate();
+
+    if (dias < 0) {
+      meses -= 1;
+      const ultimoDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+      dias += ultimoDiaMesAnterior;
+    }
+    if (meses < 0) {
+      anios -= 1;
+      meses += 12;
+    }
+    if (anios < 0) {
+      anios = 0;
+      meses = 0;
+      dias = 0;
+    }
+
+    const aniosStr = anios === 1 ? '1 año' : `${anios} años`;
+    const mesesStr = meses === 1 ? '1 mes' : `${meses} meses`;
+    const diasStr = dias === 1 ? '1 día' : `${dias} días`;
+
+    if (anios > 0 && meses > 0) {
+      return `${aniosStr} y ${mesesStr}`;
+    }
+    if (anios > 0) {
+      return aniosStr;
+    }
+    if (meses > 0) {
+      return mesesStr;
+    }
+    if (dias > 0) {
+      return diasStr;
+    }
+    return 'Hoy';
+  }
+
+  /**
    * Toggle between cards and table view
    */
   cambiarVista(vista: 'cards' | 'table'): void {

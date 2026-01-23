@@ -212,7 +212,7 @@
                               </span>
                               }
                               @if (deporteItem.fechaGrado) {
-                              <span class="grado-fecha">({{ deporteItem.fechaGrado | date: 'dd/MM/yyyy' }})</span>
+                              <span class="grado-fecha">({{ getTiempoConGrado(deporteItem.fechaGrado) }})</span>
                               }
                             </span>
                           </span>
