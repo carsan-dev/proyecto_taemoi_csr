@@ -178,6 +178,73 @@ header.fixed-header {
       }
     }
 
+    // Hide the burger on mobile (bottom nav handles navigation)
+    @media (max-width: 575.98px) {
+      .navbar-toggler {
+        display: none !important;
+      }
+    }
+
+    // Botón login móvil (usuario no logueado)
+    .btn-login-mobile {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1));
+      border: 1px solid rgba(0, 123, 255, 0.3);
+      color: #007bff;
+      font-size: 1.25rem;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      margin-left: auto;
+
+      &:hover {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.3), rgba(0, 123, 255, 0.2));
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      @media (max-width: 575.98px) {
+        display: flex;
+      }
+    }
+
+    // Botón logout móvil (usuario logueado)
+    .btn-logout-mobile {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.15), rgba(220, 53, 69, 0.08));
+      border: 1px solid rgba(220, 53, 69, 0.3);
+      color: #dc3545;
+      font-size: 1.25rem;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: auto;
+
+      &:hover {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.25), rgba(220, 53, 69, 0.15));
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      @media (max-width: 575.98px) {
+        display: flex;
+      }
+    }
+
     // Smooth collapse transition (mobile only)
     .navbar-collapse {
       @media (min-width: 992px) {
@@ -1642,6 +1709,19 @@ header.fixed-header {
         display: none;
       }
     }
+  }
+}
+
+// Hide admin sidebar toggle on mobile (bottom nav handles navigation)
+@media (max-width: 575.98px) {
+  .admin-top-navbar {
+    .admin-toggle-button {
+      display: none !important;
+    }
+  }
+
+  .admin-sidebar {
+    display: none !important;
   }
 }
 

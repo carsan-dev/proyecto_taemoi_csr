@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone, ViewChild } from '@angular/core';
-import { NavigationStart, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { CommonModule } from '@angular/common';
@@ -96,11 +96,16 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAuthChecked = true;
     }
 
-    // Close admin menu on navigation
+    // Close admin menu on navigation and reset scroll state
     this.subscriptions.add(
       this.router.events.subscribe((event) => {
         if (event instanceof NavigationStart) {
           this.adminMenuVisible = false;
+        }
+        // Reset scroll tracking on navigation end to prevent stale lastScrollTop values
+        if (event instanceof NavigationEnd) {
+          this.lastScrollTop = 0;
+          this.isHidden = false;
         }
       })
     );
