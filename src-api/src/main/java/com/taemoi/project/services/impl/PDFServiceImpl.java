@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
@@ -200,23 +201,22 @@ public class PDFServiceImpl implements PDFService {
 				+ "  border-top-left-radius: 0.5mm;" + "  border-top-right-radius: 0.5mm;" + "}"
 				+ ".cinturon.doble .inferior {" + "  bottom: 0;" + "  border-bottom-left-radius: 0.5mm;"
 				+ "  border-bottom-right-radius: 0.5mm;" + "}" + ".grado-nombre {" + "  display: inline-block;"
-				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;" + "  white-space: nowrap;" + "}"
-				+ ".raya {" + "  position: absolute;" + "  top: 50%;" + "  transform: translateY(-50%);"
-				+ "  height: 80%;" + "  background-color: #FFD700;" + "  z-index: 10;" + "}" + "table {"
-				+ "  width: 100%;" + "  border-collapse: collapse;" + "  margin-top: 2mm;" + "  border-radius: 2mm;"
-				+ "  overflow: hidden;" + "}" + "th, td {" + "  border: 1px solid #dee2e6;" + "  padding: 3mm 2mm;"
-				+ "  text-align: center;" + "  font-size: 10pt;" + "}" + "th {" + "  background-color: #007bff;"
-				+ "  color: #ffffff;" + "  font-weight: 600;" + "  font-size: 10pt;" + "  text-transform: uppercase;"
+				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;"
+				+ "  white-space: nowrap;" + "}" + ".raya {" + "  position: absolute;" + "  top: 50%;"
+				+ "  transform: translateY(-50%);" + "  height: 80%;" + "  background-color: #FFD700;"
+				+ "  z-index: 10;" + "}" + "table {" + "  width: 100%;" + "  border-collapse: collapse;"
+				+ "  margin-top: 2mm;" + "  border-radius: 2mm;" + "  overflow: hidden;" + "}" + "th, td {"
+				+ "  border: 1px solid #dee2e6;" + "  padding: 3mm 2mm;" + "  text-align: center;"
+				+ "  font-size: 10pt;" + "}" + "th {" + "  background-color: #007bff;" + "  color: #ffffff;"
+				+ "  font-weight: 600;" + "  font-size: 10pt;" + "  text-transform: uppercase;"
 				+ "  letter-spacing: 0.5px;" + "}" + "tbody tr:nth-child(even) {" + "  background-color: #f8f9fa;" + "}"
 				+ "tbody tr:nth-child(odd) {" + "  background-color: #ffffff;" + "}" + "tbody tr:hover {"
-				+ "  background-color: #e7f3ff;" + "}"
-				+ "tbody tr { page-break-inside: avoid; }"
-				+ "thead { display: table-header-group; }"
-				+ "table { page-break-inside: auto; }" + ".kickboxing {" + "  padding-top: 10mm;"
-				+ "  border-top: 3px solid #ff4500;" + "  margin-top: 10mm;" + "}" + ".section-header {"
-				+ "  background-color: #1b2b2e;" + "  color: #ffffff;" + "  padding: 5mm;" + "  border-radius: 2mm;"
-				+ "  margin-bottom: 5mm;" + "  font-size: 14pt;" + "  font-weight: 700;" + "  text-align: center;"
-				+ "}";
+				+ "  background-color: #e7f3ff;" + "}" + "tbody tr { page-break-inside: avoid; }"
+				+ "thead { display: table-header-group; }" + "table { page-break-inside: auto; }" + ".kickboxing {"
+				+ "  padding-top: 10mm;" + "  border-top: 3px solid #ff4500;" + "  margin-top: 10mm;" + "}"
+				+ ".section-header {" + "  background-color: #1b2b2e;" + "  color: #ffffff;" + "  padding: 5mm;"
+				+ "  border-radius: 2mm;" + "  margin-bottom: 5mm;" + "  font-size: 14pt;" + "  font-weight: 700;"
+				+ "  text-align: center;" + "}";
 	}
 
 	@Override
@@ -393,7 +393,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='cinturon' style='" + cinturonStyle + "'></div>");
 			}
 
-			html.append("<span class='grado-nombre'>").append(GradoUtils.getNombreGradoParaDeporte(tipo, deporte)).append("</span>");
+			html.append("<span class='grado-nombre'>").append(GradoUtils.getNombreGradoParaDeporte(tipo, deporte))
+					.append("</span>");
 			html.append("</div>");
 			html.append("<div class='derecha'>");
 			html.append("Alumnos: ").append(alumnosGrado.size());
@@ -418,7 +419,9 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 						.append("</td>");
 				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
-				String licencia = alumnoDeporte.getNumeroLicencia() != null ? alumnoDeporte.getNumeroLicencia().toString() : "N/A";
+				String licencia = alumnoDeporte.getNumeroLicencia() != null
+						? alumnoDeporte.getNumeroLicencia().toString()
+						: "N/A";
 				html.append("<td>").append(licencia).append("</td>");
 				// Format date as dd/MM/yyyy
 				String fechaGrado = "N/A";
@@ -529,16 +532,12 @@ public class PDFServiceImpl implements PDFService {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			alumnos = alumnos.stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo())
-							&& ad.getAlumno() != null
-							&& Boolean.TRUE.equals(ad.getAlumno().getActivo()))
-					.collect(Collectors.toList());
+			alumnos = alumnos.stream().filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && ad.getAlumno() != null
+					&& Boolean.TRUE.equals(ad.getAlumno().getActivo())).collect(Collectors.toList());
 		}
 		// Exclude sports without license requirements
-		alumnos = alumnos.stream()
-				.filter(ad -> ad.getDeporte() != Deporte.PILATES
-						&& ad.getDeporte() != Deporte.DEFENSA_PERSONAL_FEMENINA)
+		alumnos = alumnos.stream().filter(
+				ad -> ad.getDeporte() != Deporte.PILATES && ad.getDeporte() != Deporte.DEFENSA_PERSONAL_FEMENINA)
 				.collect(Collectors.toList());
 
 		LocalDate today = LocalDate.now();
@@ -594,7 +593,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".licencias-table th:nth-child(2), .licencias-table td:nth-child(2) { width: 14%; }");
 		html.append(".licencias-table th:nth-child(3), .licencias-table td:nth-child(3) { width: 10%; }");
 		html.append(".licencias-table th:nth-child(4), .licencias-table td:nth-child(4) { width: 10%; }");
-		html.append(".licencias-table th:nth-child(5), .licencias-table td:nth-child(5) { width: 14%; white-space: nowrap; }");
+		html.append(
+				".licencias-table th:nth-child(5), .licencias-table td:nth-child(5) { width: 14%; white-space: nowrap; }");
 		html.append(".licencias-table th:nth-child(6), .licencias-table td:nth-child(6) { width: 24%; }");
 		html.append("</style>");
 		html.append("</head>");
@@ -688,171 +688,165 @@ public class PDFServiceImpl implements PDFService {
 				+ textoSeguro + "</div></td>";
 	}
 
-@Override
-public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
-    List<Alumno> todosAlumnos = alumnoRepository.findAll();
+	@Override
+	public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
+		List<Alumno> todosAlumnos = alumnoRepository.findAll();
 
-    // Filter by active status if requested
-    if (soloActivos) {
-        todosAlumnos = todosAlumnos.stream()
-                .filter(a -> Boolean.TRUE.equals(a.getActivo()))
-                .collect(Collectors.toList());
-    }
+		// Filter by active status if requested
+		if (soloActivos) {
+			todosAlumnos = todosAlumnos.stream().filter(a -> Boolean.TRUE.equals(a.getActivo()))
+					.collect(Collectors.toList());
+		}
 
-    LocalDate today = LocalDate.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
-            "EEEE, d 'de' MMMM 'de' yyyy",
-            Locale.of("es", "ES")
-    );
-    String fechaGeneracion = today.format(formatter);
+		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
 
-    // Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
-    Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
+		// Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
+		Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
 
-    for (Alumno alumno : todosAlumnos) {
-        if (alumno.getFechaNacimiento() == null) {
-            continue;
-        }
+		for (Alumno alumno : todosAlumnos) {
+			if (alumno.getFechaNacimiento() == null) {
+				continue;
+			}
 
-        // Check each sport the student practices
-        for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
+			// Check each sport the student practices
+			for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
 
-            // Skip inactive sports or sports where student is not ready for exam
-            if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
-                    || !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
-                continue;
-            }
-            if (!FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
-                continue;
-            }
+				// Skip inactive sports or sports where student is not ready for exam
+				if (!Boolean.TRUE.equals(alumnoDeporte.getActivo())
+						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+					continue;
+				}
+				if (!FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
+					continue;
+				}
 
-            // Calculate promotion grade for this sport
-            String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
+				// Calculate promotion grade for this sport
+				String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
 
-            // Add to the map
-            Deporte deporte = alumnoDeporte.getDeporte();
-            deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
-            deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
-            deporteGradoMap.get(deporte).get(promotionGrade)
-                    .add(new AlumnoPromotionInfo(alumno, alumnoDeporte, promotionGrade));
-        }
-    }
+				// Add to the map
+				Deporte deporte = alumnoDeporte.getDeporte();
+				deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
+				deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
+				deporteGradoMap.get(deporte).get(promotionGrade)
+						.add(new AlumnoPromotionInfo(alumno, alumnoDeporte, promotionGrade));
+			}
+		}
 
-    // Build HTML
-    StringBuilder html = new StringBuilder();
-    html.append("<!DOCTYPE html>");
-    html.append("<html>");
-    html.append("<head>");
-    html.append("<meta charset='UTF-8' />");
-    html.append("<style>");
-    html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
-    html.append(".promotion-group { margin-bottom: 8mm; }");
-    html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
-    html.append(".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
-    html.append(".promotion-table { table-layout: fixed; }");
-    html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
-    html.append(".grado-cell { text-align: center; }");
-    html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
-    html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
-    html.append("</style>");
-    html.append("</head>");
-    html.append("<body>");
+		// Build HTML
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
+		html.append(".promotion-group { margin-bottom: 8mm; }");
+		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
+		html.append(
+				".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+		html.append(".promotion-table { table-layout: fixed; }");
+		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
+		html.append(".grado-cell { text-align: center; }");
+		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
+		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
 
-    // Add header with logo
-    html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
+		// Add header with logo
+		html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
 
-    // If no students found
-    if (deporteGradoMap.isEmpty()) {
-        html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
-        html.append("No se encontraron alumnos infantiles aptos para promocionar.");
-        html.append("</p>");
-    } else {
+		// If no students found
+		if (deporteGradoMap.isEmpty()) {
+			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
+			html.append("No se encontraron alumnos infantiles aptos para promocionar.");
+			html.append("</p>");
+		} else {
 
-        // Iterate through sports
-        for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
-            Deporte deporte = deporteEntry.getKey();
+			// Iterate through sports
+			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
+				Deporte deporte = deporteEntry.getKey();
 
-            html.append("<div class='sport-section'>");
-            html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
+				html.append("<div class='sport-section'>");
+				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
 
-            // Iterate through promotion grades for this sport
-            for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
-                String promotionGrade = gradeEntry.getKey();
-                List<AlumnoPromotionInfo> alumnos = gradeEntry.getValue();
+				// Iterate through promotion grades for this sport
+				for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
+					String promotionGrade = gradeEntry.getKey();
+					List<AlumnoPromotionInfo> alumnos = gradeEntry.getValue();
 
-                html.append("<div class='promotion-group'>");
-                html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
+					html.append("<div class='promotion-group'>");
+					html.append("<h2>Promocionan a ").append(promotionGrade).append("</h2>");
 
-                html.append("<table class='promotion-table'>");
-                html.append("<thead><tr>");
-                html.append("<th>Nombre y Apellidos</th>");
-                html.append("<th>N&#186; Expediente</th>");
-                html.append("<th>Grado Actual</th>");
-                html.append("<th>Grado a Promocionar</th>");
-                html.append("<th>Edad</th>");
-                html.append("</tr></thead>");
-                html.append("<tbody>");
+					html.append("<table class='promotion-table'>");
+					html.append("<thead><tr>");
+					html.append("<th>Nombre y Apellidos</th>");
+					html.append("<th>N&#186; Expediente</th>");
+					html.append("<th>Grado Actual</th>");
+					html.append("<th>Grado a Promocionar</th>");
+					html.append("<th>Edad</th>");
+					html.append("</tr></thead>");
+					html.append("<tbody>");
 
-                for (AlumnoPromotionInfo info : alumnos) {
-                    Alumno alumno = info.alumno;
-                    AlumnoDeporte alumnoDeporte = info.alumnoDeporte;
+					for (AlumnoPromotionInfo info : alumnos) {
+						Alumno alumno = info.alumno;
+						AlumnoDeporte alumnoDeporte = info.alumnoDeporte;
 
-                    html.append("<tr>");
+						html.append("<tr>");
 
-                    html.append("<td>")
-                            .append(alumno.getNombre()).append(" ")
-                            .append(alumno.getApellidos())
-                            .append("</td>");
+						html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
+								.append("</td>");
 
-                    html.append("<td>")
-                            .append(alumno.getNumeroExpediente())
-                            .append("</td>");
+						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-                    TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
-							? alumnoDeporte.getGrado().getTipoGrado()
-							: null;
-					String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo, alumnoDeporte.getDeporte());
-					html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
+						TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
+								? alumnoDeporte.getGrado().getTipoGrado()
+								: null;
+						String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
+								alumnoDeporte.getDeporte());
+						html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
 
-					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
-							alumnoDeporte.getDeporte(),
-							FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
-							gradoActualTipo);
-					String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo, alumnoDeporte.getDeporte());
-					html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
+						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
+								alumnoDeporte.getDeporte(),
+								FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
+								gradoActualTipo);
+						String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
+								alumnoDeporte.getDeporte());
+						html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
 
-                    int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-                    html.append("<td>").append(edad).append("</td>");
+						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
+						html.append("<td>").append(edad).append("</td>");
 
-                    html.append("</tr>");
-                }
+						html.append("</tr>");
+					}
 
-                html.append("</tbody>");
-                html.append("</table>");
-                html.append("</div>");
-            }
+					html.append("</tbody>");
+					html.append("</table>");
+					html.append("</div>");
+				}
 
-            html.append("</div>"); // Close sport-section
-        }
-    }
+				html.append("</div>"); // Close sport-section
+			}
+		}
 
-    html.append("</body>");
-    html.append("</html>");
+		html.append("</body>");
+		html.append("</html>");
 
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    PdfRendererBuilder builder = new PdfRendererBuilder();
-    builder.withHtmlContent(html.toString(), null);
-    builder.toStream(outputStream);
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
 
-    try {
-        builder.run();
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
+		try {
+			builder.run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-    return outputStream.toByteArray();
-}
-
+		return outputStream.toByteArray();
+	}
 
 	@Override
 	public byte[] generarInformeAdultosAPromocionar(boolean soloActivos) {
@@ -964,7 +958,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 						TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
 								? alumnoDeporte.getGrado().getTipoGrado()
 								: null;
-						String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo, alumnoDeporte.getDeporte());
+						String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
+								alumnoDeporte.getDeporte());
 						html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
 
 						// Grado a Promocionar with belt
@@ -972,7 +967,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 								alumnoDeporte.getDeporte(),
 								FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
 								alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-						String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo, alumnoDeporte.getDeporte());
+						String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
+								alumnoDeporte.getDeporte());
 						html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
@@ -1030,7 +1026,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	 *
 	 * @param soloActivos Filter only active students
 	 * @param deporte     Sport to filter (TAEKWONDO or KICKBOXING)
-	 * @param esInfantil  true for menores segun FechaUtils.esMenor, false for adultos
+	 * @param esInfantil  true for menores segun FechaUtils.esMenor, false for
+	 *                    adultos
 	 * @return PDF bytes
 	 */
 	private byte[] generarInformePromocionPorDeporte(boolean soloActivos, Deporte deporte, boolean esInfantil) {
@@ -1141,7 +1138,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 					TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
 							? alumnoDeporte.getGrado().getTipoGrado()
 							: null;
-					String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo, alumnoDeporte.getDeporte());
+					String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
+							alumnoDeporte.getDeporte());
 					html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
 
 					// Grado a Promocionar with belt
@@ -1149,7 +1147,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 							alumnoDeporte.getDeporte(),
 							FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
 							alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-					String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo, alumnoDeporte.getDeporte());
+					String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
+							alumnoDeporte.getDeporte());
 					html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
@@ -1213,13 +1212,10 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	}
 
 	@Override
-	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, Deporte deporte) throws IOException {
-		List<String> gruposFiltrados = grupos == null
-				? Collections.emptyList()
-				: grupos.stream()
-						.filter(g -> g != null && !g.isBlank())
-						.map(String::trim)
-						.distinct()
+	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, Deporte deporte)
+			throws IOException {
+		List<String> gruposFiltrados = grupos == null ? Collections.emptyList()
+				: grupos.stream().filter(g -> g != null && !g.isBlank()).map(String::trim).distinct()
 						.collect(Collectors.toList());
 
 		if (gruposFiltrados.isEmpty()) {
@@ -1228,15 +1224,13 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 		gruposFiltrados.sort(Comparator.comparing(g -> DiaSemanaUtils.mapGrupoToDayOfWeek(g).getValue()));
 
-		List<Deporte> deportesFiltrar = deporte != null
-				? Collections.singletonList(deporte)
+		List<Deporte> deportesFiltrar = deporte != null ? Collections.singletonList(deporte)
 				: Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
 						Deporte.DEFENSA_PERSONAL_FEMENINA);
 
 		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
 				Deporte.DEFENSA_PERSONAL_FEMENINA);
-		List<Deporte> deportesReporte = deportesOrdenados.stream()
-				.filter(deportesFiltrar::contains)
+		List<Deporte> deportesReporte = deportesOrdenados.stream().filter(deportesFiltrar::contains)
 				.collect(Collectors.toList());
 
 		class TurnoWithAlumnos {
@@ -1326,10 +1320,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		boolean firstPage = true;
 
 		for (String grupo : gruposFiltrados) {
-			List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar).stream()
-					.filter(ad -> ad.getAlumno() != null)
-					.filter(ad -> ad.getAlumno().getFechaNacimiento() != null
-							&& ad.getAlumno().getTurnos() != null
+			List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar)
+					.stream().filter(ad -> ad.getAlumno() != null)
+					.filter(ad -> ad.getAlumno().getFechaNacimiento() != null && ad.getAlumno().getTurnos() != null
 							&& !ad.getAlumno().getTurnos().isEmpty())
 					.filter(ad -> ad.getAlumno().getTurnos().stream()
 							.anyMatch(t -> t.getDiaSemana() != null && t.getDiaSemana().equalsIgnoreCase(grupo)))
@@ -1421,7 +1414,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 					html.append("<h2>LISTADO DE ASISTENCIA - ")
 							.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
 							.append(" ").append(year).append("</h2>");
-					html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " ")).append("</p>");
+					html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " "))
+							.append("</p>");
 					html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
 					html.append("<p class='info'>").append(grupo.toUpperCase()).append(" - Turno de ").append(turnoStr)
 							.append("</p>");
@@ -1443,7 +1437,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 						int edad = Period.between(nac, LocalDate.now()).getYears();
 
 						// Determinar estado de licencia
-						boolean tieneLicencia = Boolean.TRUE.equals(ad.getTieneLicencia()) && ad.getNumeroLicencia() != null;
+						boolean tieneLicencia = Boolean.TRUE.equals(ad.getTieneLicencia())
+								&& ad.getNumeroLicencia() != null;
 						String lic;
 						String licClass;
 
@@ -1536,7 +1531,6 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		return os.toByteArray();
 	}
 
-
 	/**
 	 * Generates HTML content for the belt color cell in the attendance list. Shows
 	 * dan numbers for black belts and split colors for half-color belts.
@@ -1576,9 +1570,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			String color1 = getBeltColorHex(parts[1]);
 			String color2 = getBeltColorHex(parts[0]);
 			// El borde viene de la celda <td>, no necesitamos añadir uno extra
-			return "<td><div class='cinturon-split'>"
-					+ "<div class='cinturon-half-superior' style='background-color: " + color1 + ";'></div>"
-					+ "<div class='cinturon-half-inferior' style='background-color: " + color2 + ";'></div></div></td>";
+			return "<td><div class='cinturon-split'>" + "<div class='cinturon-half-superior' style='background-color: "
+					+ color1 + ";'></div>" + "<div class='cinturon-half-inferior' style='background-color: " + color2
+					+ ";'></div></div></td>";
 		}
 
 		// Single color belt
@@ -1874,20 +1868,16 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 		// Filter by active status if requested
 		if (soloActivos) {
-			todasMensualidades = todasMensualidades.stream()
-					.filter(pa -> {
-						Alumno alumno = pa.getAlumnoDeporte() != null
-								? pa.getAlumnoDeporte().getAlumno()
-								: pa.getAlumno();
-						if (alumno == null || !Boolean.TRUE.equals(alumno.getActivo())) {
-							return false;
-						}
-						if (pa.getAlumnoDeporte() != null && !Boolean.TRUE.equals(pa.getAlumnoDeporte().getActivo())) {
-							return false;
-						}
-						return true;
-					})
-					.collect(Collectors.toList());
+			todasMensualidades = todasMensualidades.stream().filter(pa -> {
+				Alumno alumno = pa.getAlumnoDeporte() != null ? pa.getAlumnoDeporte().getAlumno() : pa.getAlumno();
+				if (alumno == null || !Boolean.TRUE.equals(alumno.getActivo())) {
+					return false;
+				}
+				if (pa.getAlumnoDeporte() != null && !Boolean.TRUE.equals(pa.getAlumnoDeporte().getActivo())) {
+					return false;
+				}
+				return true;
+			}).collect(Collectors.toList());
 		}
 
 		LocalDate today = LocalDate.now();
@@ -2024,14 +2014,13 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			html.append("</div>");
 
 			// Sort by student name (and sport)
-			List<MensualidadGroup> sortedGroups = mensualidadesPorAlumno.values().stream()
-					.sorted((g1, g2) -> {
-						String nombre1 = (g1.alumno != null ? g1.alumno.getNombre() + " " + g1.alumno.getApellidos() : "")
-								+ " " + (g1.deporte != null ? g1.deporte.name() : "");
-						String nombre2 = (g2.alumno != null ? g2.alumno.getNombre() + " " + g2.alumno.getApellidos() : "")
-								+ " " + (g2.deporte != null ? g2.deporte.name() : "");
-						return nombre1.compareTo(nombre2);
-					}).collect(Collectors.toList());
+			List<MensualidadGroup> sortedGroups = mensualidadesPorAlumno.values().stream().sorted((g1, g2) -> {
+				String nombre1 = (g1.alumno != null ? g1.alumno.getNombre() + " " + g1.alumno.getApellidos() : "") + " "
+						+ (g1.deporte != null ? g1.deporte.name() : "");
+				String nombre2 = (g2.alumno != null ? g2.alumno.getNombre() + " " + g2.alumno.getApellidos() : "") + " "
+						+ (g2.deporte != null ? g2.deporte.name() : "");
+				return nombre1.compareTo(nombre2);
+			}).collect(Collectors.toList());
 
 			for (MensualidadGroup group : sortedGroups) {
 				Alumno alumno = group.alumno;
@@ -2201,11 +2190,11 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> productosDelMes = productoAlumnoRepository
 				.findMensualidadesYTarifasCompetidorByMes(conceptoBase, mesAnoConcepto);
 
-		// Group products by alumno+deporte, collecting all products (mensualidad + tarifa competidor)
-		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes.stream()
-				.filter(pa -> pa.getAlumno() != null && pa.getAlumnoDeporte() != null)
-				.collect(Collectors.groupingBy(
-						pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte().name()));
+		// Group products by alumno+deporte, collecting all products (mensualidad +
+		// tarifa competidor)
+		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes
+				.stream().filter(pa -> pa.getAlumno() != null && pa.getAlumnoDeporte() != null).collect(Collectors
+						.groupingBy(pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte().name()));
 
 		// Build HTML for PDF
 		String fechaGeneracion = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -2264,175 +2253,165 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			html.append("</td></tr>");
 		} else {
 
-			Comparator<AlumnoDeporte> ordenPorAlumno = Comparator
-			        .comparing((AlumnoDeporte ad) -> {
-			            Alumno alumno = ad.getAlumno();
-			            if (alumno == null) {
-			                return "";
-			            }
-			            String apellidos = alumno.getApellidos() == null ? "" : alumno.getApellidos();
-			            String nombre = alumno.getNombre() == null ? "" : alumno.getNombre();
-			            return (apellidos + " " + nombre).trim().toLowerCase(Locale.ROOT);
-			        })
-			        .thenComparing(ad -> {
-			            if (ad.getDeporte() == Deporte.TAEKWONDO) {
-			                return 0;
-			            }
-			            if (ad.getDeporte() == Deporte.KICKBOXING) {
-			                return 1;
-			            }
-			            return 2;
-			        });
+			Comparator<AlumnoDeporte> ordenPorAlumno = Comparator.comparing((AlumnoDeporte ad) -> {
+				Alumno alumno = ad.getAlumno();
+				if (alumno == null) {
+					return "";
+				}
+				String apellidos = alumno.getApellidos() == null ? "" : alumno.getApellidos();
+				String nombre = alumno.getNombre() == null ? "" : alumno.getNombre();
+				return (apellidos + " " + nombre).trim().toLowerCase(Locale.ROOT);
+			}).thenComparing(ad -> {
+				if (ad.getDeporte() == Deporte.TAEKWONDO) {
+					return 0;
+				}
+				if (ad.getDeporte() == Deporte.KICKBOXING) {
+					return 1;
+				}
+				return 2;
+			});
 
-			List<AlumnoDeporte> alumnoDeportesOrdenados = alumnoDeportes.stream()
-			        .filter(ad -> ad.getAlumno() != null)
-			        .sorted(ordenPorAlumno)
-			        .collect(Collectors.toList());
+			List<AlumnoDeporte> alumnoDeportesOrdenados = alumnoDeportes.stream().filter(ad -> ad.getAlumno() != null)
+					.sorted(ordenPorAlumno).collect(Collectors.toList());
 
 			Map<Long, List<AlumnoDeporte>> deportesPorAlumno = new java.util.LinkedHashMap<>();
 			for (AlumnoDeporte ad : alumnoDeportesOrdenados) {
-			    Long alumnoId = ad.getAlumno().getId();
-			    List<AlumnoDeporte> lista = deportesPorAlumno.get(alumnoId);
-			    if (lista == null) {
-			        lista = new ArrayList<>();
-			        deportesPorAlumno.put(alumnoId, lista);
-			    }
-			    lista.add(ad);
+				Long alumnoId = ad.getAlumno().getId();
+				List<AlumnoDeporte> lista = deportesPorAlumno.get(alumnoId);
+				if (lista == null) {
+					lista = new ArrayList<>();
+					deportesPorAlumno.put(alumnoId, lista);
+				}
+				lista.add(ad);
 			}
 
 			for (List<AlumnoDeporte> deportesAlumno : deportesPorAlumno.values()) {
-			    if (deportesAlumno.isEmpty()) {
-			        continue;
-			    }
-			    Alumno alumno = deportesAlumno.get(0).getAlumno();
-			    if (alumno == null) {
-			        continue;
-			    }
+				if (deportesAlumno.isEmpty()) {
+					continue;
+				}
+				Alumno alumno = deportesAlumno.get(0).getAlumno();
+				if (alumno == null) {
+					continue;
+				}
 
-			    html.append("<tr>");
+				html.append("<tr>");
 
-			    // NOMBRE
-			    String nombreCompleto = (alumno.getApellidos() == null ? "" : alumno.getApellidos())
-			            + " " + (alumno.getNombre() == null ? "" : alumno.getNombre());
-			    html.append("<td class='nombre-cell'>").append(nombreCompleto.trim()).append("</td>");
+				// NOMBRE
+				String nombreCompleto = (alumno.getApellidos() == null ? "" : alumno.getApellidos()) + " "
+						+ (alumno.getNombre() == null ? "" : alumno.getNombre());
+				html.append("<td class='nombre-cell'>").append(nombreCompleto.trim()).append("</td>");
 
-			    // DEPORTE
-			    html.append("<td class='deporte-cell'>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        String deporteClass = "";
-			        String deporteNombre = "";
-			        if (ad.getDeporte() == Deporte.TAEKWONDO) {
-			            deporteClass = "deporte-taekwondo";
-			            deporteNombre = "Taekwondo";
-			        } else if (ad.getDeporte() == Deporte.KICKBOXING) {
-			            deporteClass = "deporte-kickboxing";
-			            deporteNombre = "Kickboxing";
-			        } else if (ad.getDeporte() != null) {
-			            deporteNombre = getDeporteNombre(ad.getDeporte());
-			        }
-			        html.append("<div class='line-item " + deporteClass + "'>")
-			                .append(deporteNombre.isEmpty() ? "-" : deporteNombre)
-			                .append("</div>");
-			    }
-			    html.append("</td>");
+				// DEPORTE
+				html.append("<td class='deporte-cell'>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					String deporteClass = "";
+					String deporteNombre = "";
+					if (ad.getDeporte() == Deporte.TAEKWONDO) {
+						deporteClass = "deporte-taekwondo";
+						deporteNombre = "Taekwondo";
+					} else if (ad.getDeporte() == Deporte.KICKBOXING) {
+						deporteClass = "deporte-kickboxing";
+						deporteNombre = "Kickboxing";
+					} else if (ad.getDeporte() != null) {
+						deporteNombre = getDeporteNombre(ad.getDeporte());
+					}
+					html.append("<div class='line-item " + deporteClass + "'>")
+							.append(deporteNombre.isEmpty() ? "-" : deporteNombre).append("</div>");
+				}
+				html.append("</td>");
 
-			    // DESCUENTO
-			    html.append("<td>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        String tipoTarifa = ad.getTipoTarifa() != null
-			                ? ad.getTipoTarifa().toString().replace("_", " ")
-			                : "-";
-			        html.append("<div class='line-item'>").append(tipoTarifa).append("</div>");
-			    }
-			    html.append("</td>");
+				// DESCUENTO
+				html.append("<td>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					String tipoTarifa = ad.getTipoTarifa() != null ? ad.getTipoTarifa().toString().replace("_", " ")
+							: "-";
+					html.append("<div class='line-item'>").append(tipoTarifa).append("</div>");
+				}
+				html.append("</td>");
 
-			    // CUANTIA
-			    html.append("<td>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
-			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
-			        String cuantia = "-";
-			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
-			            double totalCuantia = productosAlumno.stream()
-			                    .filter(p -> p.getPrecio() != null)
-			                    .mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
-			                    .sum();
-			            cuantia = String.format("%.2f EUR", totalCuantia);
-			        } else if (ad.getCuantiaTarifa() != null) {
-			            cuantia = String.format("%.2f EUR", ad.getCuantiaTarifa());
-			        }
-			        html.append("<div class='line-item'>").append(cuantia).append("</div>");
-			    }
-			    html.append("</td>");
+				// CUANTIA
+				html.append("<td>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
+							.get(mapKey);
+					String cuantia = "-";
+					if (productosAlumno != null && !productosAlumno.isEmpty()) {
+						double totalCuantia = productosAlumno.stream().filter(p -> p.getPrecio() != null)
+								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
+						cuantia = String.format("%.2f EUR", totalCuantia);
+					} else if (ad.getCuantiaTarifa() != null) {
+						cuantia = String.format("%.2f EUR", ad.getCuantiaTarifa());
+					}
+					html.append("<div class='line-item'>").append(cuantia).append("</div>");
+				}
+				html.append("</td>");
 
-			    // COMP
-			    html.append("<td class='comp-cell'>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
-			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
-			        String comp = "-";
-			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
-			            double competidorCuantia = productosAlumno.stream()
-			                    .filter(p -> {
-			                        String concepto = p.getConcepto();
-			                        return concepto != null
-			                                && concepto.toUpperCase(Locale.ROOT).startsWith("TARIFA COMPETIDOR");
-			                    })
-			                    .filter(p -> p.getPrecio() != null)
-			                    .mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio)
-			                    .sum();
-			            if (competidorCuantia > 0) {
-			                comp = String.format("%.2f", competidorCuantia);
-			            }
-			        }
-			        html.append("<div class='line-item'>").append(comp).append("</div>");
-			    }
-			    html.append("</td>");
+				// COMP
+				html.append("<td class='comp-cell'>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
+							.get(mapKey);
+					String comp = "-";
+					if (productosAlumno != null && !productosAlumno.isEmpty()) {
+						double competidorCuantia = productosAlumno.stream().filter(p -> {
+							String concepto = p.getConcepto();
+							return concepto != null
+									&& concepto.toUpperCase(Locale.ROOT).startsWith("TARIFA COMPETIDOR");
+						}).filter(p -> p.getPrecio() != null)
+								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
+						if (competidorCuantia > 0) {
+							comp = String.format("%.2f", competidorCuantia);
+						}
+					}
+					html.append("<div class='line-item'>").append(comp).append("</div>");
+				}
+				html.append("</td>");
 
-			    // GRADO
-			    html.append("<td class='grado-cell'>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
-			        html.append("<div class='line-item'>");
-			        if (tipoGrado != null) {
-			            html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
-			        } else {
-			            html.append("-");
-			        }
-			        html.append("</div>");
-			    }
-			    html.append("</td>");
+				// GRADO
+				html.append("<td class='grado-cell'>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+					html.append("<div class='line-item'>");
+					if (tipoGrado != null) {
+						html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
+					} else {
+						html.append("-");
+					}
+					html.append("</div>");
+				}
+				html.append("</td>");
 
-			    // FECHA DE PAGO
-			    html.append("<td>");
-			    for (AlumnoDeporte ad : deportesAlumno) {
-			        String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
-			        List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte.get(mapKey);
-			        String fechaPago = "";
-			        if (productosAlumno != null && !productosAlumno.isEmpty()) {
-			            boolean todosPagados = productosAlumno.stream()
-			                    .allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
-			            if (todosPagados) {
-			                Date ultimaFechaPago = productosAlumno.stream()
-			                        .filter(p -> p.getFechaPago() != null)
-			                        .map(com.taemoi.project.entities.ProductoAlumno::getFechaPago)
-			                        .max(Date::compareTo)
-			                        .orElse(null);
-			                if (ultimaFechaPago != null) {
-			                    LocalDate fecha = Instant.ofEpochMilli(ultimaFechaPago.getTime())
-			                            .atZone(ZoneId.systemDefault()).toLocalDate();
-			                    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-			                    fechaPago = fecha.format(dateFormatter);
-			                }
-			            }
-			        }
-			        html.append("<div class='line-item'>").append(fechaPago).append("</div>");
-			    }
-			    html.append("</td>");
+				// FECHA DE PAGO
+				html.append("<td>");
+				for (AlumnoDeporte ad : deportesAlumno) {
+					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
+							.get(mapKey);
+					String fechaPago = "";
+					if (productosAlumno != null && !productosAlumno.isEmpty()) {
+						boolean todosPagados = productosAlumno.stream()
+								.allMatch(p -> Boolean.TRUE.equals(p.getPagado()));
+						if (todosPagados) {
+							Date ultimaFechaPago = productosAlumno.stream().filter(p -> p.getFechaPago() != null)
+									.map(com.taemoi.project.entities.ProductoAlumno::getFechaPago).max(Date::compareTo)
+									.orElse(null);
+							if (ultimaFechaPago != null) {
+								LocalDate fecha = Instant.ofEpochMilli(ultimaFechaPago.getTime())
+										.atZone(ZoneId.systemDefault()).toLocalDate();
+								DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+								fechaPago = fecha.format(dateFormatter);
+							}
+						}
+					}
+					html.append("<div class='line-item'>").append(fechaPago).append("</div>");
+				}
+				html.append("</td>");
 
-			    html.append("</tr>");
+				html.append("</tr>");
 			}
-}
+		}
 
 		html.append("</tbody>");
 		html.append("</table>");
@@ -2458,8 +2437,8 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	@Override
 	public byte[] generarInformeCompetidores() {
 		// Get all active competitors for Taekwondo and Kickboxing
-		List<AlumnoDeporte> competidores = alumnoDeporteRepository.findCompetidoresActivosByDeporteIn(
-				Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+		List<AlumnoDeporte> competidores = alumnoDeporteRepository
+				.findCompetidoresActivosByDeporteIn(Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
 
 		LocalDate now = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
@@ -2472,6 +2451,18 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
 		html.append(generarEstilosModernos("Listado de Competidores", fechaGeneracion));
+		html.append(".badge-categoria {").append(" display: inline-block;").append(" padding: 1.2mm 3mm;")
+				.append(" border-radius: 999px;").append(" border: 1.5px solid #007bff;")
+				.append(" background: #ffffff;").append(" font-weight: 700;").append(" font-size: 11pt;")
+				.append(" color: #1b2b2e;").append(" }");
+
+		html.append(".badge-categoria.badge-muted {").append(" border-color: #6c757d;").append(" color: #6c757d;")
+				.append(" }");
+
+		html.append(".grado-celda { white-space: nowrap; }");
+		html.append(
+				".grado-label { margin-left: 2mm; font-size: 9pt; font-weight: 600; vertical-align: middle; white-space: nowrap; }");
+
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
@@ -2481,12 +2472,10 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 
 		// Separate by sport
 		List<AlumnoDeporte> competidoresTaekwondo = competidores.stream()
-				.filter(ad -> ad.getDeporte() == Deporte.TAEKWONDO)
-				.collect(Collectors.toList());
+				.filter(ad -> ad.getDeporte() == Deporte.TAEKWONDO).collect(Collectors.toList());
 
 		List<AlumnoDeporte> competidoresKickboxing = competidores.stream()
-				.filter(ad -> ad.getDeporte() == Deporte.KICKBOXING)
-				.collect(Collectors.toList());
+				.filter(ad -> ad.getDeporte() == Deporte.KICKBOXING).collect(Collectors.toList());
 
 		// Taekwondo section
 		if (!competidoresTaekwondo.isEmpty()) {
@@ -2526,185 +2515,127 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 	}
 
 	/**
-	 * Genera el HTML para una sección de competidores, agrupando por grado.
+	 * Genera el HTML para una sección de competidores, agrupando por categoría. En
+	 * la tabla se reemplaza la columna Categoría por Grado (con dibujo de
+	 * cinturón).
 	 */
 	private String generarSeccionCompetidores(List<AlumnoDeporte> competidores) {
 		StringBuilder html = new StringBuilder();
-		// Obtener el deporte de la lista (todos los competidores son del mismo deporte)
+
 		Deporte deporte = competidores.isEmpty() ? Deporte.TAEKWONDO : competidores.get(0).getDeporte();
 
-		// Group by grade
-		Map<Grado, List<AlumnoDeporte>> competidoresPorGrado = competidores.stream()
-				.filter(ad -> ad.getGrado() != null)
-				.collect(Collectors.groupingBy(AlumnoDeporte::getGrado));
-
-		// Sort grades by ordinal (highest first)
-		List<Map.Entry<Grado, List<AlumnoDeporte>>> entradasOrdenadas = new ArrayList<>(competidoresPorGrado.entrySet());
-		entradasOrdenadas.sort((e1, e2) -> {
-			int ordinal1 = e1.getKey().getTipoGrado().ordinal();
-			int ordinal2 = e2.getKey().getTipoGrado().ordinal();
-			return Integer.compare(ordinal2, ordinal1);
-		});
-
-		for (Map.Entry<Grado, List<AlumnoDeporte>> entry : entradasOrdenadas) {
-			Grado grado = entry.getKey();
-			List<AlumnoDeporte> competidoresGrado = entry.getValue();
-			// Sort by name
-			competidoresGrado.sort(Comparator.comparing(ad ->
-					(ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()));
-			TipoGrado tipo = grado.getTipoGrado();
-
-			html.append("<div class='grupo'>");
-			html.append("<div class='encabezado-grupo'>");
-			html.append("<div class='izquierda'>");
-
-			// Draw belt based on grade type
-			if (tipo.name().contains("ROJO_NEGRO")) {
-				String[] parts = tipo.name().split("_");
-				String colorInferior = obtenerColorPorNombre(parts[0]);
-				String colorSuperior = obtenerColorPorNombre(parts[1]);
-				int stripeCount = 0;
-				try {
-					stripeCount = Integer.parseInt(parts[2]);
-				} catch (Exception e) {
-				}
-				html.append("<div class='cinturon doble' style='position: relative;'>");
-				html.append("<div class='superior' style='background-color: ").append(colorSuperior).append("; z-index: 1;'></div>");
-				html.append("<div class='inferior' style='background-color: ").append(colorInferior).append("; z-index: 1;'></div>");
-				int stripeWidth = 6;
-				int gap = 2;
-				int initialMargin = 6;
-				for (int i = 0; i < stripeCount; i++) {
-					int rightOffset = initialMargin + i * (stripeWidth + gap);
-					html.append("<div class='raya' style='right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px; z-index: 2;'></div>");
-				}
-				html.append("</div>");
-			} else if (tipo.name().contains("DAN") || (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
-				html.append("<div class='cinturon' style='background-color: ").append(obtenerColorCinturon(tipo)).append(";'>");
-				try {
-					int stripeCount = 0;
-					if (tipo.name().contains("DAN")) {
-						String[] parts = tipo.name().split("_");
-						stripeCount = Integer.parseInt(parts[1]);
-					}
-					int stripeWidth = 6;
-					int gap = 2;
-					int initialMargin = 6;
-					for (int i = 0; i < stripeCount; i++) {
-						int rightOffset = initialMargin + i * (stripeWidth + gap);
-						html.append("<div class='raya' style='right:").append(rightOffset).append("px; width:").append(stripeWidth).append("px;'></div>");
-					}
-				} catch (Exception e) {
-				}
-				html.append("</div>");
-			} else if (tipo.name().contains("_")) {
-				String[] parts = tipo.name().split("_");
-				String colorSuperior = obtenerColorPorNombre(parts[1]);
-				String colorInferior = obtenerColorPorNombre(parts[0]);
-				html.append("<div class='cinturon doble'>");
-				html.append("<div class='superior' style='background-color: ").append(colorSuperior).append(";'></div>");
-				html.append("<div class='inferior' style='background-color: ").append(colorInferior).append(";'></div>");
-				html.append("</div>");
-			} else {
-				String cinturonStyle = obtenerEstiloCinturon(tipo);
-				html.append("<div class='cinturon' style='").append(cinturonStyle).append("'></div>");
-			}
-
-			html.append("<span class='grado-nombre'>").append(GradoUtils.getNombreGradoParaDeporte(tipo, deporte)).append("</span>");
-			html.append("</div>");
-			html.append("<div class='derecha'>");
-			html.append("Competidores: ").append(competidoresGrado.size());
-			html.append("</div>");
-			html.append("</div>");
-
-			// Table with competitor-specific columns
-			html.append("<table>");
-			html.append("<thead><tr>");
-			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>Categoría</th>");
-			html.append("<th>Peso</th>");
-			html.append("<th>Fecha Peso</th>");
-			html.append("</tr></thead>");
-			html.append("<tbody>");
-
-			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-			for (AlumnoDeporte ad : competidoresGrado) {
-				Alumno alumno = ad.getAlumno();
-				html.append("<tr>");
-				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
-
-				// Categoría
-				String categoria = ad.getCategoria() != null ? ad.getCategoria().getNombre() : "";
-				html.append("<td>").append(categoria).append("</td>");
-
-				// Peso
-				String peso = ad.getPeso() != null ? String.format("%.1f kg", ad.getPeso()) : "";
-				html.append("<td>").append(peso).append("</td>");
-
-				// Fecha Peso
-				String fechaPeso = "";
-				if (ad.getFechaPeso() != null) {
-					LocalDate fecha = Instant.ofEpochMilli(ad.getFechaPeso().getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
-					fechaPeso = fecha.format(dateFormatter);
-				}
-				html.append("<td>").append(fechaPeso).append("</td>");
-
-				html.append("</tr>");
-			}
-
-			html.append("</tbody>");
-			html.append("</table>");
-			html.append("</div>");
+		// Color según deporte para la badge
+		String colorAcento;
+		if (deporte == Deporte.KICKBOXING) {
+			colorAcento = "#ff4500";
+		} else if (deporte == Deporte.TAEKWONDO) {
+			colorAcento = "#0D47A1";
+		} else {
+			colorAcento = "#007bff";
 		}
 
-		// Handle competitors without grade
-		List<AlumnoDeporte> sinGrado = competidores.stream()
-				.filter(ad -> ad.getGrado() == null)
-				.sorted(Comparator.comparing(ad -> (ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()))
-				.collect(Collectors.toList());
+		final String SIN_CATEGORIA = "Sin categoría";
 
-		if (!sinGrado.isEmpty()) {
+		// Agrupar por nombre de categoría
+		Map<String, List<AlumnoDeporte>> porCategoria = competidores.stream().collect(Collectors.groupingBy(ad -> {
+			if (ad.getCategoria() == null || ad.getCategoria().getNombre() == null) {
+				return SIN_CATEGORIA;
+			}
+			String n = ad.getCategoria().getNombre().trim();
+			return n.isEmpty() ? SIN_CATEGORIA : n;
+		}));
+
+		// Ordenar categorías, dejando "Sin categoría" al final
+		List<String> categoriasOrdenadas = new ArrayList<>(porCategoria.keySet());
+		categoriasOrdenadas.sort((a, b) -> {
+			if (a.equals(SIN_CATEGORIA) && !b.equals(SIN_CATEGORIA))
+				return 1;
+			if (!a.equals(SIN_CATEGORIA) && b.equals(SIN_CATEGORIA))
+				return -1;
+			return a.compareToIgnoreCase(b);
+		});
+
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+		for (String nombreCategoria : categoriasOrdenadas) {
+			List<AlumnoDeporte> grupo = porCategoria.get(nombreCategoria);
+			if (grupo == null || grupo.isEmpty())
+				continue;
+
+			// Ordenar alumnos por nombre
+			grupo.sort(Comparator
+					.comparing(ad -> (ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()));
+
+			boolean esSinCategoria = SIN_CATEGORIA.equals(nombreCategoria);
+
+			// Encabezado de grupo con badge (sin rectángulo azul)
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
+
 			html.append("<div class='izquierda'>");
-			html.append("<div class='cinturon' style='background-color: #CCCCCC;'></div>");
-			html.append("<span class='grado-nombre'>Sin Grado</span>");
-			html.append("</div>");
-			html.append("<div class='derecha'>");
-			html.append("Competidores: ").append(sinGrado.size());
-			html.append("</div>");
+			html.append("<span class='badge-categoria");
+			if (esSinCategoria) {
+				html.append(" badge-muted");
+			}
+			html.append("' style='border-color: ").append(esSinCategoria ? "#6c757d" : colorAcento).append(";");
+
+			if (!esSinCategoria) {
+				html.append(" color: ").append(colorAcento).append(";");
+			}
+			html.append("'>").append(nombreCategoria).append("</span>");
 			html.append("</div>");
 
+			html.append("<div class='derecha'>");
+			html.append("Competidores: ").append(grupo.size());
+			html.append("</div>");
+
+			html.append("</div>");
+
+			// Tabla: reemplazamos "Categoría" por "Grado"
 			html.append("<table>");
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>Categoría</th>");
+			html.append("<th>Grado</th>");
 			html.append("<th>Peso</th>");
 			html.append("<th>Fecha Peso</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
 
-			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-			for (AlumnoDeporte ad : sinGrado) {
+			for (AlumnoDeporte ad : grupo) {
 				Alumno alumno = ad.getAlumno();
-				html.append("<tr>");
-				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
-
-				String categoria = ad.getCategoria() != null ? ad.getCategoria().getNombre() : "";
-				html.append("<td>").append(categoria).append("</td>");
 
 				String peso = ad.getPeso() != null ? String.format("%.1f kg", ad.getPeso()) : "";
-				html.append("<td>").append(peso).append("</td>");
 
 				String fechaPeso = "";
 				if (ad.getFechaPeso() != null) {
-					LocalDate fecha = Instant.ofEpochMilli(ad.getFechaPeso().getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+					LocalDate fecha = Instant.ofEpochMilli(ad.getFechaPeso().getTime()).atZone(ZoneId.systemDefault())
+							.toLocalDate();
 					fechaPeso = fecha.format(dateFormatter);
 				}
-				html.append("<td>").append(fechaPeso).append("</td>");
 
+				// Grado del alumno
+				TipoGrado tipoGrado = (ad.getGrado() != null) ? ad.getGrado().getTipoGrado() : null;
+				String nombreGrado = (tipoGrado != null) ? GradoUtils.getNombreGradoParaDeporte(tipoGrado, deporte)
+						: "Sin grado";
+
+				html.append("<tr>");
+				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
+						.append("</td>");
+
+				// Celda GRADO con dibujo del cinturón
+				html.append("<td class='grado-celda'>");
+				if (tipoGrado != null) {
+					html.append(generarCinturonInlineHTML(tipoGrado, 55, 12));
+				} else {
+					// Cinturón gris simple
+					html.append(
+							"<div style='background-color: #CCCCCC; width: 55px; height: 12px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'></div>");
+				}
+				html.append("<span class='grado-label'>").append(nombreGrado).append("</span>");
+				html.append("</td>");
+
+				html.append("<td>").append(peso).append("</td>");
+				html.append("<td>").append(fechaPeso).append("</td>");
 				html.append("</tr>");
 			}
 
@@ -2805,7 +2736,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			html.append("<td class='grade-from'>");
 			html.append("<span class='belt-with-text'>");
 			html.append(generarCinturonInlineHTML(gradoActual, 50, 15));
-			html.append("<span class='belt-text'>DE ").append(GradoUtils.getNombreGradoParaDeporte(gradoActual, convocatoria.getDeporte()).toUpperCase()).append("</span>");
+			html.append("<span class='belt-text'>DE ")
+					.append(GradoUtils.getNombreGradoParaDeporte(gradoActual, convocatoria.getDeporte()).toUpperCase())
+					.append("</span>");
 			html.append("</span>");
 			html.append("</td>");
 
@@ -2817,8 +2750,9 @@ public byte[] generarInformeInfantilesAPromocionar(boolean soloActivos) {
 			// Right: A [GRADE]
 			html.append("<td class='grade-to'>");
 			html.append("<span class='belt-with-text'>");
-			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ")
-					.append(GradoUtils.getNombreGradoParaDeporte(gradoSiguiente, convocatoria.getDeporte()).toUpperCase()).append("</span>");
+			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(
+					GradoUtils.getNombreGradoParaDeporte(gradoSiguiente, convocatoria.getDeporte()).toUpperCase())
+					.append("</span>");
 			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
 			html.append("</span>");
 			html.append("</td>");
