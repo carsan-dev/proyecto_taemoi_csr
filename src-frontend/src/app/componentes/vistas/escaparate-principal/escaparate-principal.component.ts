@@ -86,9 +86,9 @@ export class EscaparatePrincipalComponent
         text: "Mi hija de 11 finalmente ha encontrado un deporte que le apasiona. Yo también aprovecho y entreno con ella. Las clases son divertidas y con el nivel de exigencia indicado según la edad. Todo el equipo es profesional, amistoso y motiva adecuadamente al alumnado. El Club Moi's Kim Do ofrece la posibilidad de vivir el taekwondo de forma compatible con diferentes objetivos deportivos.",
       },
       {
-        author: 'Carlos Sánchez',
+        author: 'Cristina FRANCO BOURRELLIER',
         rating: 5,
-        text: "La mejor escuela de artes marciales de Umbrete y del Aljarafe sin lugar a dudas. Llevo muchos años haciendo taekwondo allí y recientemente me apunté a kickboxing y a pilates. El kickboxing light está súper bien y el pilates balance me ha venido genial para descargar tensión y fortalecer el core. Si buscas instructores profesionales y calidad en el servicio, Moi's Kim Do es tu sitio.",
+        text: 'Las clases de defensa personal son geniales, aprendemos tecnicas de defensa a la vez que hacemos ejercicios de fuerza. Muy contenta con el grupo y el profesor.',
       },
       {
         author: 'Miguel Marín Rodríguez',
