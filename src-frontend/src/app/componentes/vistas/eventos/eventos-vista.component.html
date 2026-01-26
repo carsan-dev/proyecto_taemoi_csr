@@ -31,12 +31,22 @@
               class="event-card"
               (click)="onEventoClick(evento.id)"
             >
-              <div class="event-image-container">
+              <div class="event-image-container" [class.is-loading]="!isImageLoaded(evento.id)">
+                @if (!isImageLoaded(evento.id)) {
+                  <app-skeleton-card
+                    type="image"
+                    class="event-image-skeleton"
+                    aria-hidden="true"
+                  ></app-skeleton-card>
+                }
                 <img
                   [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
                   class="event-img"
                   alt="{{ evento.titulo }}"
                   loading="lazy"
+                  (load)="onImageLoad(evento.id)"
+                  (error)="onImageError(evento.id)"
+                  [class.is-loaded]="isImageLoaded(evento.id)"
                 />
                 <div class="event-overlay">
                   <i class="bi bi-zoom-in"></i>

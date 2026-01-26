@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
@@ -12,7 +12,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
     '[class.preview]': 'previewMode'
   }
 })
-export class EventosVistaComponent {
+export class EventosVistaComponent implements OnChanges {
   @Input() eventos: any[] = [];
   @Input() isLoading: boolean = false;
   @Input() enableNavigation: boolean = true;
@@ -21,10 +21,45 @@ export class EventosVistaComponent {
 
   @Output() eventoClick = new EventEmitter<number>();
 
+  private readonly loadedImages = new Set<number>();
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['eventos']) {
+      const currentIds = new Set(
+        this.eventos
+          .map((evento) => evento?.id)
+          .filter((id) => id !== null && id !== undefined)
+      );
+      for (const id of this.loadedImages) {
+        if (!currentIds.has(id)) {
+          this.loadedImages.delete(id);
+        }
+      }
+    }
+  }
+
   onEventoClick(eventoId: number): void {
     if (!this.enableNavigation) {
       return;
     }
     this.eventoClick.emit(eventoId);
+  }
+
+  isImageLoaded(eventoId: number): boolean {
+    return this.loadedImages.has(eventoId);
+  }
+
+  onImageLoad(eventoId: number): void {
+    if (eventoId === null || eventoId === undefined) {
+      return;
+    }
+    this.loadedImages.add(eventoId);
+  }
+
+  onImageError(eventoId: number): void {
+    if (eventoId === null || eventoId === undefined) {
+      return;
+    }
+    this.loadedImages.add(eventoId);
   }
 }

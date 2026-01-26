@@ -164,11 +164,29 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
       background: #f0f0f0;
 
+      &.is-loading {
+        min-height: 220px;
+      }
+
+      .event-image-skeleton {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
       .event-img {
         width: 100%;
         height: auto;
         display: block;
-        transition: transform 0.5s ease;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.5s ease;
+
+        &.is-loaded {
+          opacity: 1;
+        }
       }
 
       .event-overlay {
@@ -183,6 +201,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         justify-content: center;
         opacity: 0;
         transition: opacity 0.4s ease;
+        z-index: 2;
 
         i {
           color: $text-light;
@@ -483,6 +502,10 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .event-image-container {
+        &.is-loading {
+          min-height: 190px;
+        }
+
         .event-overlay {
           i {
             font-size: 2rem;
@@ -688,6 +711,10 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .event-card {
     .event-image-container {
       max-height: 200px;
+
+      &.is-loading {
+        min-height: 200px;
+      }
 
       .event-img {
         object-fit: cover;
