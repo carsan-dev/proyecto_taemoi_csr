@@ -21,7 +21,7 @@ export const SEO_DEFAULTS: Required<Pick<SeoMeta, 'title' | 'description' | 'key
 export const SEO_ROUTES = {
   home: {
     ...SEO_DEFAULTS,
-    canonical: `${BASE_URL}/inicio`,
+    canonical: `${BASE_URL}/`,
   },
   taekwondo: {
     title: "Taekwondo en Umbrete y Aljarafe (Sevilla) | Club Moi's Kim Do",

@@ -6,12 +6,12 @@ import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-logi
 import { SEO_ROUTES } from './core/constants/seo.constants';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/inicio', pathMatch: 'full' },
   {
-    path: 'inicio',
+    path: '',
     data: { seo: SEO_ROUTES.home },
     component: EscaparatePrincipalComponent // Eager-load main page to prevent white screen
   },
+  { path: 'inicio', redirectTo: '', pathMatch: 'full' },
   {
     path: 'eltaekwondo',
     redirectTo: '/taekwondo',
