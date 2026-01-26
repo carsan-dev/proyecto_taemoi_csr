@@ -64,7 +64,7 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
       ogImage: evento.fotoEvento?.url ?? undefined,
       canonical: `https://moiskimdo.es/eventos/${evento.id}`,
       breadcrumbs: [
-        { name: 'Inicio', url: '/inicio' },
+        { name: 'Inicio', url: '/' },
         { name: 'Eventos', url: '/eventos' },
         { name: evento.titulo, url: `/eventos/${evento.id}` },
       ],

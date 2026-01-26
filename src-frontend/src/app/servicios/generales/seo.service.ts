@@ -19,37 +19,38 @@ export class SeoService {
   private readonly baseUrl = 'https://moiskimdo.es';
 
   private readonly routeBreadcrumbs: Record<string, BreadcrumbItem[]> = {
-    '/inicio': [{ name: 'Inicio', url: '/inicio' }],
+    '/': [{ name: 'Inicio', url: '/' }],
+    '/inicio': [{ name: 'Inicio', url: '/' }],
     '/taekwondo': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Taekwondo', url: '/taekwondo' },
     ],
     '/kickboxing': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Kickboxing', url: '/kickboxing' },
     ],
     '/pilates': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Pilates', url: '/pilates' },
     ],
     '/defensapersonalfemenina': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Defensa Personal Femenina', url: '/defensapersonalfemenina' },
     ],
     '/horarios': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Horarios', url: '/horarios' },
     ],
     '/eventos': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Eventos', url: '/eventos' },
     ],
     '/contacto': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Contacto', url: '/contacto' },
     ],
     '/tarifas': [
-      { name: 'Inicio', url: '/inicio' },
+      { name: 'Inicio', url: '/' },
       { name: 'Tarifas', url: '/tarifas' },
     ],
   };

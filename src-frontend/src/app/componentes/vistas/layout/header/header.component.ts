@@ -328,7 +328,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
         });
 
         this.adminMenuVisible = false;
-        this.router.navigate(['/inicio']);
+        this.router.navigate(['/']);
       }
     });
   }

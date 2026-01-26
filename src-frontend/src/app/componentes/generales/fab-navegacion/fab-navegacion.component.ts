@@ -46,7 +46,7 @@ export class FabNavegacionComponent implements OnInit, OnDestroy, AfterViewCheck
 
   // Navigation items for public/user views
   readonly navItemsPrincipales: NavItem[] = [
-    { label: 'Inicio', route: '/inicio', icon: 'bi-house-door' },
+    { label: 'Inicio', route: '/', icon: 'bi-house-door' },
     { label: 'Eventos', route: '/eventos', icon: 'bi-calendar-event' },
     { label: 'Horarios', route: '/horarios', icon: 'bi-clock' },
     { label: 'Tarifas', route: '/tarifas', icon: 'bi-tag' },
@@ -61,7 +61,7 @@ export class FabNavegacionComponent implements OnInit, OnDestroy, AfterViewCheck
   ];
 
   readonly bottomNavItems: NavItem[] = [
-    { label: 'Inicio', route: '/inicio', icon: 'bi-house-door' },
+    { label: 'Inicio', route: '/', icon: 'bi-house-door' },
     { label: 'Horarios', route: '/horarios', icon: 'bi-clock' },
     { label: 'Menú', route: '', icon: 'bi-grid-3x3-gap-fill' },
     { label: 'Eventos', route: '/eventos', icon: 'bi-calendar-event' },
@@ -83,7 +83,7 @@ export class FabNavegacionComponent implements OnInit, OnDestroy, AfterViewCheck
       icon: 'bi-house',
       items: [
         { label: 'Dashboard', route: '/adminpage', icon: 'bi-speedometer2' },
-        { label: 'Inicio (web)', route: '/inicio', icon: 'bi-house-door' },
+        { label: 'Inicio (web)', route: '/', icon: 'bi-house-door' },
         { label: 'Horarios', route: '/horarios', icon: 'bi-clock' },
         { label: 'Tarifas', route: '/tarifas', icon: 'bi-tag' },
       ]
@@ -277,7 +277,7 @@ export class FabNavegacionComponent implements OnInit, OnDestroy, AfterViewCheck
           icon: 'success',
           timer: 2000,
         });
-        this.router.navigate(['/inicio']);
+        this.router.navigate(['/']);
       }
     });
   }

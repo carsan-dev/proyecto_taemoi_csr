@@ -245,7 +245,7 @@ export class VistaLoginComponent implements OnInit {
     } else if (this.authService.tieneRolUser()) {
       this.router.navigate(['/userpage']);
     } else {
-      this.router.navigate(['/inicio']);
+      this.router.navigate(['/']);
     }
   }
 

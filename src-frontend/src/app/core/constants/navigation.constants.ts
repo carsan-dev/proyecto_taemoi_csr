@@ -28,7 +28,7 @@ export function isDropdown(item: NavigationMenuItem): item is NavigationDropdown
 export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
   {
     label: 'Inicio',
-    route: '/inicio',
+    route: '/',
   },
   {
     label: '¿Qué hacemos?',
