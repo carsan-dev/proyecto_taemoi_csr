@@ -30,11 +30,11 @@ export const roleGuard: CanActivateFn = (route, state) => {
             return true; // Permitimos acceso
           }
         }
-        router.navigate(['/inicio']);
+        router.navigate(['/']);
         return false; // Redirigimos al inicio si no tiene permisos
       }),
       catchError(() => {
-        router.navigate(['/inicio']);
+        router.navigate(['/']);
         return of(false); // En caso de error, redirigimos al inicio
       })
     );
@@ -53,11 +53,11 @@ export const roleGuard: CanActivateFn = (route, state) => {
             return true; // Permitimos acceso si tiene el rol adecuado
           }
         }
-        router.navigate(['/inicio']);
+        router.navigate(['/']);
         return false; // Redirigimos si no tiene permisos
       }),
       catchError(() => {
-        router.navigate(['/inicio']);
+        router.navigate(['/']);
         return of(false); // Redirigimos al inicio en caso de error
       })
     );

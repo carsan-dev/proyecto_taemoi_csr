@@ -2,7 +2,7 @@
 <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
-      <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
+      <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
       </a>
@@ -20,12 +20,12 @@
       </button>
       <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
         <div class="navbar-left d-flex align-items-center">
-          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/inicio']">
+          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
             <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active"
+              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
@@ -159,7 +159,7 @@
       </a>
     </li>
     <li>
-      <a class="menu-link" [routerLink]="['/inicio']" routerLinkActive="active"
+      <a class="menu-link" [routerLink]="['/']" routerLinkActive="active"
         [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
         <i class="bi bi-house-door"></i>
         <span>Inicio</span>
@@ -439,7 +439,7 @@
 <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
-      <a class="navbar-brand d-lg-none" [routerLink]="['/inicio']">
+      <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
       </a>
@@ -457,12 +457,12 @@
       </button>
       <div class="collapse navbar-collapse justify-content-between" id="navbarUserNav">
         <div class="navbar-left d-flex align-items-center">
-          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/inicio']">
+          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
             <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/inicio']" routerLinkActive="active"
+              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
@@ -564,3 +564,4 @@
   </nav>
 </header>
 }
+

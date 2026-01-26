@@ -23,13 +23,13 @@ export class NoEncontrado implements OnInit {
       keywords: 'error 404, página no encontrada, moiskimdo',
       canonical: 'https://moiskimdo.es/no-encontrado',
       breadcrumbs: [
-        { name: 'Inicio', url: '/inicio' },
+        { name: 'Inicio', url: '/' },
         { name: 'Página no encontrada', url: '/no-encontrado' }
       ]
     });
   }
 
   volver(): void {
-    this.router.navigate(['/inicio']);
+    this.router.navigate(['/']);
   }
 }
