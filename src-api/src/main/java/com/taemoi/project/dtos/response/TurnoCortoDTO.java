@@ -124,7 +124,7 @@ public class TurnoCortoDTO {
 						}
 						return alumno.getDeporte() != null && alumno.getDeporte().equals(deporteGrupo);
 					})
-					.map(AlumnoDTO::deAlumno)
+					.map(alumno -> AlumnoDTO.deAlumno(alumno, deporteGrupo))
 					.collect(Collectors.toList()));
 		}
 

@@ -471,4 +471,104 @@ public class AlumnoDTO {
 
 		return dto;
 	}
+
+	/**
+	 * Convierte un objeto Alumno en un objeto AlumnoDTO usando el deporte indicado
+	 * como referencia (si existe en el alumno).
+	 */
+	public static AlumnoDTO deAlumno(Alumno alumno, Deporte deporte) {
+		if (alumno == null) {
+			return null;
+		}
+
+		if (deporte == null) {
+			return deAlumno(alumno);
+		}
+
+		AlumnoDeporte deporteSeleccionado = null;
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			deporteSeleccionado = alumno.getDeportes().stream()
+					.filter(ad -> deporte.equals(ad.getDeporte()) && Boolean.TRUE.equals(ad.getActivo()))
+					.findFirst()
+					.orElse(null);
+
+			if (deporteSeleccionado == null) {
+				deporteSeleccionado = alumno.getDeportes().stream()
+						.filter(ad -> deporte.equals(ad.getDeporte()))
+						.findFirst()
+						.orElse(null);
+			}
+		}
+
+		if (deporteSeleccionado == null) {
+			return deAlumno(alumno);
+		}
+
+		TipoTarifa tipoTarifa = deporteSeleccionado.getTipoTarifa();
+		Double cuantiaTarifa = deporteSeleccionado.getCuantiaTarifa();
+		RolFamiliar rolFamiliar = deporteSeleccionado.getRolFamiliar();
+		String grupoFamiliar = deporteSeleccionado.getGrupoFamiliar();
+
+		// Categoria is now per-sport (in AlumnoDeporte), not global
+		String categoriaNombre = deporteSeleccionado.getCategoria() != null
+				? deporteSeleccionado.getCategoria().getNombre()
+				: null;
+		String gradoTipo = null;
+		if (deporteSeleccionado.getGrado() != null) {
+			gradoTipo = deporteSeleccionado.getGrado().getTipoGrado().name();
+		} else if (alumno.getGrado() != null) {
+			gradoTipo = alumno.getGrado().getTipoGrado().name();
+		}
+
+		Integer telefono = null;
+		if (alumno.getTelefono() != null) {
+			telefono = Integer.valueOf(alumno.getTelefono());
+		}
+
+		Integer telefono2 = null;
+		if (alumno.getTelefono2() != null) {
+			telefono2 = Integer.valueOf(alumno.getTelefono2());
+		}
+
+		// Calcular antiguedad desde fechaAltaInicial
+		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
+
+		Boolean competidor = deporteSeleccionado.getCompetidor();
+		Double peso = deporteSeleccionado.getPeso();
+		Date fechaPeso = deporteSeleccionado.getFechaPeso();
+		Deporte deporteAlumno = deporteSeleccionado.getDeporte();
+		Date fechaGrado = deporteSeleccionado.getFechaGrado();
+		Boolean tieneLicencia = deporteSeleccionado.getTieneLicencia();
+		Integer numeroLicencia = deporteSeleccionado.getNumeroLicencia();
+		Date fechaLicencia = deporteSeleccionado.getFechaLicencia();
+		Boolean aptoParaExamen = deporteSeleccionado.getAptoParaExamen();
+
+		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
+				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
+				alumno.getObservaciones(), cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
+				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
+				alumno.getAutorizacionWeb(),
+				competidor,
+				peso,
+				fechaPeso,
+				deporteAlumno,
+				categoriaNombre, gradoTipo,
+				fechaGrado,
+				alumno.getFotoAlumno(),
+				tieneLicencia,
+				numeroLicencia,
+				fechaLicencia,
+				alumno.getTieneDiscapacidad(),
+				aptoParaExamen);
+
+		// Populate deportes list from AlumnoDeporte entities
+		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
+			List<AlumnoDeporteDTO> deportesDTOs = alumno.getDeportes().stream()
+					.map(AlumnoDeporteDTO::deAlumnoDeporte)
+					.collect(java.util.stream.Collectors.toList());
+			dto.setDeportes(deportesDTOs);
+		}
+
+		return dto;
+	}
 }
