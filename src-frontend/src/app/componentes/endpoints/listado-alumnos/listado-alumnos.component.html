@@ -184,11 +184,14 @@
                     <i class="bi bi-chevron-down"></i>
                   </summary>
                   <div class="deportes-detalles">
-                    @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                    @if (!tieneDeportesCargados(alumno.id)) {
                       <span class="badge-loading">Cargando...</span>
-                    }
-                    @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id; let i = $index) {
-                      <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
+                    } @else if (getDeportesDetalle(alumno); as deportesDetalle) {
+                      @if (deportesDetalle.length === 0) {
+                        <span class="badge-empty">Sin deportes</span>
+                      }
+                      @for (deporteItem of deportesDetalle; track deporteItem.id; let i = $index) {
+                        <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
                         <button type="button"
                           class="deporte-principal-btn"
                           [class.active]="i === 0"
@@ -241,7 +244,8 @@
                           </div>
                           }
                         </div>
-                      </div>
+                        </div>
+                      }
                     }
                   </div>
                 </details>
