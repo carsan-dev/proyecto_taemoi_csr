@@ -254,7 +254,7 @@
                   <small class="ms-1 text-muted">(Inactivo)</small>
                   }
                 </span>
-                <span class="tab-badge">{{ deporteItem.grado || 'Sin grado' }}</span>
+                <span class="tab-badge">{{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado' }}</span>
               </button>
               }
             </div>
@@ -524,7 +524,7 @@
                           Grado Actual
                         </span>
                         <span class="info-value info-value-highlight" [style]="getGradoStyle(deporteItem.grado || '')">
-                          {{ deporteItem.grado || 'Sin grado asignado' }}
+                          {{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado asignado' }}
                         </span>
                       </div>
 
