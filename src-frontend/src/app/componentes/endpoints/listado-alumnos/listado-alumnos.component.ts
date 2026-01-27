@@ -403,9 +403,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           // Extract sports data from each alumno and store in map
           this.deportesPorAlumno.clear();
           alumnosConDeportes.forEach((alumno) => {
-            if (alumno.deportes && alumno.deportes.length > 0) {
-              this.deportesPorAlumno.set(alumno.id, alumno.deportes);
-            }
+            this.deportesPorAlumno.set(alumno.id, alumno.deportes ?? []);
           });
 
           // Update alumnos array with the filtered and paginated data
@@ -478,6 +476,27 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     // Filter to show only active sports and sort by priority
     const deportesActivos = deportes.filter((d) => d.activo !== false);
     return this.ordenarDeportesPorPrincipal(deportesActivos);
+  }
+
+  /**
+   * Check if sports data has been loaded for a specific alumno
+   */
+  tieneDeportesCargados(alumnoId: number): boolean {
+    return this.deportesPorAlumno.has(alumnoId);
+  }
+
+  /**
+   * Get sports for detail view (include inactive sports for inactive alumnos)
+   */
+  getDeportesDetalle(alumno: any): AlumnoDeporteDTO[] {
+    if (!alumno) {
+      return [];
+    }
+    if (alumno.activo === false) {
+      const deportes = this.deportesPorAlumno.get(alumno.id) || [];
+      return this.ordenarDeportesPorPrincipal(deportes);
+    }
+    return this.getDeportesDeAlumno(alumno.id);
   }
 
   private ordenarDeportesPorPrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO[] {
