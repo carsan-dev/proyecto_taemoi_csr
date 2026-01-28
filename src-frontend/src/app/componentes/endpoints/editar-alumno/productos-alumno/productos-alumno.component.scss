@@ -609,6 +609,11 @@ app-paginacion {
       }
     }
   }
+
+  // On mobile, keep the action bar above the bottom navigation.
+  @media (max-width: 575.98px) {
+    bottom: calc(70px + env(safe-area-inset-bottom, 0));
+  }
 }
 
 @keyframes slideUp {
