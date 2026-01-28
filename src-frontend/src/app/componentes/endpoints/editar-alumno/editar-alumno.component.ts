@@ -1530,7 +1530,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   getGradoNombre(grado: any, deporte?: string): string {
     const deporteSeleccionado = deporte || this.alumnoForm.get('deporte')?.value;
-    return getGradoNombreParaDeporte(grado?.tipoGrado, deporteSeleccionado);
+    const tipoGrado = typeof grado === 'string' ? grado : grado?.tipoGrado;
+    return getGradoNombreParaDeporte(tipoGrado, deporteSeleccionado);
   }
 
   getGradoStyle(tipoGrado: string): string {
