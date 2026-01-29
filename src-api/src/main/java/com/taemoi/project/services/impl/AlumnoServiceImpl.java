@@ -1270,8 +1270,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		productoAlumno.setPrecio(producto.getPrecio());
 		productoAlumnoRepository.save(productoAlumno);
 
-		// Actualizar grado y recalcular aptitud (fecha de grado incluida)
-		return alumnoDeporteService.actualizarGradoPorDeporte(alumnoId, deporte, gradoSiguiente);
+		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
+		return alumnoDeporte;
 	}
 
 
