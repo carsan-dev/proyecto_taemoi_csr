@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
