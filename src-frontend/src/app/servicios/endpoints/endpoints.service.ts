@@ -339,12 +339,17 @@ export class EndpointsService {
   agregarAlumnoAConvocatoria(
     alumnoId: number,
     convocatoriaId: number,
-    porRecompensa: boolean
+    porRecompensa: boolean,
+    rojoBordado?: boolean
   ): Observable<any> {
+    const payload: any = { porRecompensa };
+    if (rojoBordado !== undefined) {
+      payload.rojoBordado = rojoBordado;
+    }
     return this.http
       .post<any>(
         `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
-        { porRecompensa }, // Enviar como JSON
+        payload, // Enviar como JSON
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
@@ -359,16 +364,21 @@ export class EndpointsService {
   agregarAlumnoAConvocatoriaMultiDeporte(
     convocatoriaId: number,
     alumnoConvocatoriaData: any,
-    porRecompensa: boolean
+    porRecompensa: boolean,
+    rojoBordado?: boolean
   ): Observable<any> {
     const alumnoId = alumnoConvocatoriaData.alumno.id;
+    const payload: any = {
+      porRecompensa,
+      alumnoDeporteId: alumnoConvocatoriaData.alumnoDeporte.id
+    };
+    if (rojoBordado !== undefined) {
+      payload.rojoBordado = rojoBordado;
+    }
     return this.http
       .post<any>(
         `${this.urlBase}/alumnos/${convocatoriaId}/alumno/${alumnoId}`,
-        {
-          porRecompensa,
-          alumnoDeporteId: alumnoConvocatoriaData.alumnoDeporte.id
-        },
+        payload,
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
@@ -388,12 +398,14 @@ export class EndpointsService {
 
   pasarGradoPorRecompensa(
     alumnoId: number,
-    deporte: string
+    deporte: string,
+    rojoBordado?: boolean
   ): Observable<any> {
+    const payload = rojoBordado === undefined ? null : { rojoBordado };
     return this.http
       .post<any>(
         `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/pase-recompensa`,
-        null,
+        payload,
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));

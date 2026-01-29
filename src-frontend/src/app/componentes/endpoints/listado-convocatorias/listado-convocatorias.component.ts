@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { trigger, transition, style, animate } from '@angular/animations';
 import localeEs from '@angular/common/locales/es';
@@ -468,41 +469,102 @@ export class ListadoConvocatoriasComponent implements OnInit {
   agregarAlumnoAConvocatoria(): void {
     if (!this.alumnoSeleccionado || !this.convocatoriaSeleccionada) return;
 
+    const alumnoSeleccionado = this.alumnosFiltrados.find(
+      (alumno) => alumno.id === this.alumnoSeleccionado
+    );
+
     Swal.fire({
       title: 'Selecciona el tipo de producto',
-      text: '¿Asignar el precio por antigüedad o por recompensa?',
+      text: 'Asignar el precio por antiguedad o por recompensa?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Por Recompensa',
-      cancelButtonText: 'Por Antigüedad',
+      cancelButtonText: 'Por Antiguedad',
     }).then((result) => {
       const porRecompensa = result.isConfirmed; // true si selecciona recompensa
-      this.endpointsService
-        .agregarAlumnoAConvocatoria(
-          this.alumnoSeleccionado!,
-          this.convocatoriaSeleccionada.id,
-          porRecompensa
-        )
-        .subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Alumno agregado',
-              text: 'El alumno ha sido asignado correctamente.',
-              icon: 'success',
-              timer: 2000,
-            });
-            this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
-          },
-          error: () => {
-            Swal.fire({
-              title: 'Error',
-              text: 'No se pudo agregar al alumno.',
-              icon: 'error',
-            });
-          },
+
+      const agregarAlumno = (rojoBordado: boolean) => {
+        this.endpointsService
+          .agregarAlumnoAConvocatoria(
+            this.alumnoSeleccionado!,
+            this.convocatoriaSeleccionada.id,
+            porRecompensa,
+            rojoBordado
+          )
+          .subscribe({
+            next: () => {
+              Swal.fire({
+                title: 'Alumno agregado',
+                text: 'El alumno ha sido asignado correctamente.',
+                icon: 'success',
+                timer: 2000,
+              });
+              this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
+            },
+            error: () => {
+              Swal.fire({
+                title: 'Error',
+                text: 'No se pudo agregar al alumno.',
+                icon: 'error',
+              });
+            },
+          });
+      };
+
+      if (this.requiereSeleccionCinturonRojo(alumnoSeleccionado)) {
+        this.solicitarTipoCinturonRojo(
+          `El alumno pasará a rojo en ${this.convocatoriaSeleccionada.deporte}. Selecciona el tipo de cinturón.`
+        ).then((rojoBordado) => {
+          if (rojoBordado === null) {
+            return;
+          }
+          agregarAlumno(rojoBordado);
         });
+        return;
+      }
+
+      agregarAlumno(false);
     });
   }
+
+  private requiereSeleccionCinturonRojo(alumno: any): boolean {
+    if (!alumno || !this.convocatoriaSeleccionada) {
+      return false;
+    }
+    return esSiguienteGradoRojo(
+      this.convocatoriaSeleccionada.deporte,
+      alumno.grado,
+      alumno.fechaNacimiento
+    );
+  }
+
+  private solicitarTipoCinturonRojo(texto: string): Promise<boolean | null> {
+    return Swal.fire({
+      title: 'Selecciona cinturón rojo',
+      text: texto,
+      input: 'radio',
+      inputOptions: {
+        normal: 'Rojo (sin bordar)',
+        bordado: 'Rojo bordado',
+      },
+      inputValue: 'normal',
+      showCancelButton: true,
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (value) {
+          return null;
+        }
+        return 'Debes seleccionar una opcion';
+      },
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return null;
+      }
+      return result.value === 'bordado';
+    });
+  }
+
 
   eliminarAlumnoDeConvocatoria(alumno: any): void {
     if (!this.convocatoriaSeleccionada) return;

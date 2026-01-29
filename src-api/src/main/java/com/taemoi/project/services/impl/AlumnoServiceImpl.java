@@ -78,6 +78,10 @@ import org.slf4j.LoggerFactory;
 public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
+	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
+	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN CINTURÓN ROJO  BORDADO";
+	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
+	private static final String DERECHO_RECOMPENSA_ROJO_BORDADO = "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA";
 
 	/**
 	 * Inyección del repositorio de alumno.
@@ -1135,9 +1139,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
 	}
 
+	private String resolverConceptoProducto(TipoGrado gradoSiguiente, boolean porRecompensa, boolean rojoBordado) {
+		if (gradoSiguiente == TipoGrado.ROJO) {
+			if (porRecompensa) {
+				return rojoBordado ? DERECHO_RECOMPENSA_ROJO_BORDADO : DERECHO_RECOMPENSA_ROJO;
+			}
+			return rojoBordado ? DERECHO_EXAMEN_ROJO_BORDADO : DERECHO_EXAMEN_ROJO;
+		}
+		return gradoSiguiente.obtenerNombreProducto(porRecompensa);
+	}
+
 	@Override
 	@Transactional
-	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa) {
+	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa,
+			boolean rojoBordado) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -1163,8 +1178,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno para el deporte " + convocatoria.getDeporte());
 		}
 
-		// Usar el método del enum TipoGrado para obtener el nombre del producto
-		String conceptoProducto = gradoSiguiente.obtenerNombreProducto(porRecompensa);
+		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
 
 		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
 				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
@@ -1210,7 +1224,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Override
 	@Transactional
-	public AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId, Deporte deporte) {
+	public AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId, Deporte deporte, boolean rojoBordado) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -1242,7 +1256,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Obtener producto de recompensa asociado al siguiente grado
-		String conceptoProducto = gradoSiguiente.obtenerNombreProducto(true);
+		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, true, rojoBordado);
 		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
 				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
 
