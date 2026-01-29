@@ -783,6 +783,27 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Pasa de grado por recompensa en un deporte específico y asigna el producto correspondiente
+	 * POST /api/alumnos/{id}/deportes/{deporte}/pase-recompensa
+	 */
+	@PostMapping("/{id}/deportes/{deporte}/pase-recompensa")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> pasarGradoPorRecompensa(@PathVariable Long id, @PathVariable String deporte) {
+		try {
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoPorRecompensa(id, deporteEnum);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al pasar de grado por recompensa", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al pasar de grado por recompensa");
+		}
+	}
+
+	/**
 	 * Actualiza el estado de aptoParaExamen para un deporte específico
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/apto-examen
 	 * Body: { "aptoParaExamen": true }

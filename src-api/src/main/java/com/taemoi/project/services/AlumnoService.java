@@ -140,6 +140,12 @@ public interface AlumnoService {
 			com.taemoi.project.entities.TipoGrado nuevoGrado);
 
 	/**
+	 * Pasa de grado por recompensa en un deporte específico y asigna el producto correspondiente
+	 */
+	com.taemoi.project.entities.AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte);
+
+	/**
 	 * Actualiza la fecha de alta inicial del alumno
 	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
 	 *
