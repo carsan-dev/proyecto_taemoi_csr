@@ -20,12 +20,14 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
+import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.MensualidadUtils;
@@ -68,6 +70,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Autowired
 	private com.taemoi.project.repositories.AlumnoDeporteRepository alumnoDeporteRepository;
+
+	@Autowired
+	private AlumnoDeporteService alumnoDeporteService;
 
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
@@ -153,7 +158,30 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	    alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
 	    alumnoRepository.save(alumno);
 
+	    if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !Boolean.TRUE.equals(pagadoAntes)) {
+	    	activarGradoPorRecompensaPagada(updatedProductoAlumno);
+	    }
+
 	    return convertirADTO(updatedProductoAlumno);
+	}
+
+	private void activarGradoPorRecompensaPagada(ProductoAlumno productoAlumno) {
+		String concepto = productoAlumno.getConcepto();
+		TipoGrado gradoObjetivo = TipoGrado.fromProductoRecompensa(concepto);
+		if (gradoObjetivo == null) {
+			return;
+		}
+
+		AlumnoDeporte alumnoDeporte = productoAlumno.getAlumnoDeporte();
+		if (alumnoDeporte == null || alumnoDeporte.getAlumno() == null) {
+			return;
+		}
+
+		alumnoDeporteService.actualizarGradoPorDeporte(
+				alumnoDeporte.getAlumno().getId(),
+				alumnoDeporte.getDeporte(),
+				gradoObjetivo
+		);
 	}
 
 

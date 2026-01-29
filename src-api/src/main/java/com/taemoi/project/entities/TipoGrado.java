@@ -89,6 +89,19 @@ public enum TipoGrado {
 		return productoRecompensa != null;
 	}
 
+	public static TipoGrado fromProductoRecompensa(String concepto) {
+		if (concepto == null) {
+			return null;
+		}
+		for (TipoGrado tipo : TipoGrado.values()) {
+			if (tipo.tieneProductoRecompensa()
+					&& concepto.equalsIgnoreCase(tipo.obtenerNombreProducto(true))) {
+				return tipo;
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * Convierte un nombre de tipo de grado en el correspondiente valor de la
 	 * enumeración TipoGrado.
