@@ -79,7 +79,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
 	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
-	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN CINTURÓN ROJO  BORDADO";
+	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN CINTURÓN ROJO BORDADO";
 	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
 	private static final String DERECHO_RECOMPENSA_ROJO_BORDADO = "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA";
 
