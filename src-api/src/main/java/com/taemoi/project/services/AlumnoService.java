@@ -89,7 +89,8 @@ public interface AlumnoService {
 
 	List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(com.taemoi.project.entities.Deporte deporte);
 
-	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa);
+	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa,
+			boolean rojoBordado);
 
 	void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId);
 
@@ -143,7 +144,7 @@ public interface AlumnoService {
 	 * Pasa de grado por recompensa en un deporte específico y asigna el producto correspondiente
 	 */
 	com.taemoi.project.entities.AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId,
-			com.taemoi.project.entities.Deporte deporte);
+			com.taemoi.project.entities.Deporte deporte, boolean rojoBordado);
 
 	/**
 	 * Actualiza la fecha de alta inicial del alumno

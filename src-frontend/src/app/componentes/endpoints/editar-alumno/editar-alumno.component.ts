@@ -22,6 +22,7 @@ import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte'
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
+import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { ScrollService } from '../../../servicios/generales/scroll.service';
@@ -2948,7 +2949,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           : `El grado para ${deporteLabel} ha sido actualizado a ${this.nuevoGradoActualizar}`;
 
         Swal.fire({
-          title: '¡Grado actualizado!',
+          title: 'Grado actualizado!',
           text: mensaje,
           icon: 'success',
           timer: 2000,
@@ -3579,38 +3580,91 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Siempre usar el producto de derecho de examen (no recompensa)
     const porRecompensa = false;
 
-    // Prepare the data with AlumnoDeporte ID
-    const alumnoConvocatoriaData = {
-      alumno: { id: this.alumnoId },
-      convocatoria: { id: convocatoria.id },
-      alumnoDeporte: { id: deporteData.id }, // Link to the specific sport
+    const agregarAlumno = (rojoBordado: boolean) => {
+      const alumnoConvocatoriaData = {
+        alumno: { id: this.alumnoId },
+        convocatoria: { id: convocatoria.id },
+        alumnoDeporte: { id: deporteData.id }, // Link to the specific sport
+      };
+
+      this.endpointsService
+        .agregarAlumnoAConvocatoriaMultiDeporte(
+          convocatoria.id,
+          alumnoConvocatoriaData,
+          porRecompensa,
+          rojoBordado
+        )
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Agregado!',
+              text: `El alumno ha sido agregado a la convocatoria de ${getDeporteLabel(
+                deporteSeleccionado
+              )}`,
+              icon: 'success',
+              timer: 2000,
+            });
+            this.cerrarModalConvocatorias();
+            this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+            this.obtenerProductosAlumno(this.alumnoId!);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: error.error?.message || 'No se pudo agregar a la convocatoria',
+              icon: 'error',
+            });
+          },
+        });
     };
 
-    this.endpointsService
-      .agregarAlumnoAConvocatoriaMultiDeporte(convocatoria.id, alumnoConvocatoriaData, porRecompensa)
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            title: '¡Agregado!',
-            text: `El alumno ha sido agregado a la convocatoria de ${getDeporteLabel(
-              deporteSeleccionado
-            )}`,
-            icon: 'success',
-            timer: 2000,
-          });
-          this.cerrarModalConvocatorias();
-          this.cargarConvocatoriasDelAlumno(this.alumnoId!);
-          this.obtenerProductosAlumno(this.alumnoId!);
-        },
-        error: (error) => {
-          Swal.fire({
-            title: 'Error',
-            text: error.error?.message || 'No se pudo agregar a la convocatoria',
-            icon: 'error',
-          });
-        },
+    if (this.requiereSeleccionCinturonRojo(deporteSeleccionado, deporteData.grado)) {
+      this.solicitarTipoCinturonRojo(
+        'Selecciona cinturon rojo',
+        `El alumno pasara a rojo en ${getDeporteLabel(deporteSeleccionado)}. Selecciona el tipo de cinturon.`
+      ).then((rojoBordado) => {
+        if (rojoBordado === null) {
+          return;
+        }
+        agregarAlumno(rojoBordado);
       });
+      return;
+    }
+
+    agregarAlumno(false);
   }
+
+  private requiereSeleccionCinturonRojo(deporte: string, gradoActual?: string | null): boolean {
+    return esSiguienteGradoRojo(deporte, gradoActual ?? null, this.alumno?.fechaNacimiento);
+  }
+
+  private solicitarTipoCinturonRojo(titulo: string, texto: string): Promise<boolean | null> {
+    return Swal.fire({
+      title: titulo,
+      text: texto,
+      input: 'radio',
+      inputOptions: {
+        normal: 'Rojo (sin bordar)',
+        bordado: 'Rojo bordado',
+      },
+      inputValue: 'normal',
+      showCancelButton: true,
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (value) {
+          return null;
+        }
+        return 'Debes seleccionar una opcion';
+      },
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return null;
+      }
+      return result.value === 'bordado';
+    });
+  }
+
 
   // ========== BATCH UPDATE METHODS FOR PENDING CHANGES ==========
 
@@ -4534,24 +4588,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
-      title: 'Pasar de grado por recompensa',
-      text: `Se actualizará el grado en ${this.getDeporteLabel(deporte)} y se añadirá el producto de recompensa.`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Confirmar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      if (!result.isConfirmed) {
-        return;
-      }
-
-      this.endpointsService.pasarGradoPorRecompensa(this.alumnoId!, deporte).subscribe({
+    const ejecutarPase = (rojoBordado: boolean) => {
+      this.endpointsService.pasarGradoPorRecompensa(this.alumnoId!, deporte, rojoBordado).subscribe({
         next: () => {
           Swal.fire({
-            title: '¡Grado actualizado!',
+            title: 'Grado actualizado!',
             text: `El alumno ha pasado de grado por recompensa en ${this.getDeporteLabel(deporte)}.`,
             icon: 'success',
             timer: 2000,
@@ -4567,8 +4608,40 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           });
         },
       });
+    };
+
+    const gradoActual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado;
+    if (this.requiereSeleccionCinturonRojo(deporte, gradoActual)) {
+      this.solicitarTipoCinturonRojo(
+        'Pasar a rojo por recompensa',
+        `Se actualizara el grado en ${this.getDeporteLabel(deporte)} y se anadira el producto de recompensa. Selecciona el tipo de cinturon.`
+      ).then((rojoBordado) => {
+        if (rojoBordado === null) {
+          return;
+        }
+        ejecutarPase(rojoBordado);
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Pasar de grado por recompensa',
+      text: `Se actualizara el grado en ${this.getDeporteLabel(deporte)} y se anadira el producto de recompensa.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      ejecutarPase(false);
     });
   }
+
 
   private validateNif(value: any): string | null {
     if (this.isBlank(value)) {
