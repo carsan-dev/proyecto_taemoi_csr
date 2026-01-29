@@ -73,11 +73,16 @@ export class ConvocatoriaService {
   agregarAlumnoAConvocatoria(
     alumnoId: number,
     convocatoriaId: number,
-    porRecompensa: boolean
+    porRecompensa: boolean,
+    rojoBordado?: boolean
   ): Observable<any> {
+    const payload: any = { porRecompensa };
+    if (rojoBordado !== undefined) {
+      payload.rojoBordado = rojoBordado;
+    }
     return this.http.post<any>(
       `${this.alumnoBase}/${convocatoriaId}/alumno/${alumnoId}`,
-      { porRecompensa },
+      payload,
       { withCredentials: true }
     );
   }

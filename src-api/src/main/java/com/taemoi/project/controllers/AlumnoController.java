@@ -553,12 +553,13 @@ public class AlumnoController {
 	@PostMapping("/{convocatoriaId}/alumno/{alumnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId,
-			@RequestBody Map<String, Boolean> params) {
+			@RequestBody(required = false) Map<String, Object> params) {
 
 		try {
-			boolean porRecompensa = params.getOrDefault("porRecompensa", false); // Extraer el parámetro del cuerpo
+			boolean porRecompensa = params != null && Boolean.TRUE.equals(params.get("porRecompensa"));
+			boolean rojoBordado = params != null && Boolean.TRUE.equals(params.get("rojoBordado"));
 			AlumnoConvocatoriaDTO alumnoConvocatoriaDTO = alumnoService.agregarAlumnoAConvocatoria(alumnoId,
-					convocatoriaId, porRecompensa);
+					convocatoriaId, porRecompensa, rojoBordado);
 
 			return ResponseEntity.ok(alumnoConvocatoriaDTO);
 		} catch (Exception e) {
@@ -788,10 +789,13 @@ public class AlumnoController {
 	 */
 	@PostMapping("/{id}/deportes/{deporte}/pase-recompensa")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> pasarGradoPorRecompensa(@PathVariable Long id, @PathVariable String deporte) {
+	public ResponseEntity<?> pasarGradoPorRecompensa(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody(required = false) Map<String, Object> params) {
 		try {
+			boolean rojoBordado = params != null && Boolean.TRUE.equals(params.get("rojoBordado"));
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
-			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoPorRecompensa(id, deporteEnum);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoPorRecompensa(id,
+					deporteEnum, rojoBordado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
 					.deAlumnoDeporte(alumnoDeporte);
 			return ResponseEntity.ok(dto);
