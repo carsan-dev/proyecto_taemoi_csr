@@ -1208,6 +1208,58 @@ public class AlumnoServiceImpl implements AlumnoService {
 		alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
 	}
 
+	@Override
+	@Transactional
+	public AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId, Deporte deporte) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
+
+		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"El alumno no tiene asignado el deporte: " + deporte));
+
+		// Validar que el deporte admite grados
+		if (deporte == Deporte.PILATES || deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+			throw new IllegalArgumentException("El deporte " + deporte + " no tiene sistema de grados");
+		}
+
+		// Verificar que el alumno está apto para examen en este deporte
+		if (!Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+			throw new IllegalArgumentException(
+					"El alumno no está apto para examen en el deporte " + deporte);
+		}
+
+		TipoGrado gradoActual = alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null;
+		if (gradoActual == null) {
+			throw new IllegalArgumentException("El alumno no tiene grado asignado en el deporte " + deporte);
+		}
+
+		// Calcular siguiente grado con la misma lógica por edad y deporte
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, deporte, alumno);
+		if (gradoSiguiente == null) {
+			throw new IllegalArgumentException(
+					"No se pudo determinar el siguiente grado del alumno para el deporte " + deporte);
+		}
+
+		// Obtener producto de recompensa asociado al siguiente grado
+		String conceptoProducto = gradoSiguiente.obtenerNombreProducto(true);
+		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
+				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
+
+		ProductoAlumno productoAlumno = new ProductoAlumno();
+		productoAlumno.setAlumno(alumno);
+		productoAlumno.setAlumnoDeporte(alumnoDeporte);
+		productoAlumno.setProducto(producto);
+		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setFechaAsignacion(new Date());
+		productoAlumno.setCantidad(1);
+		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumnoRepository.save(productoAlumno);
+
+		// Actualizar grado y recalcular aptitud (fecha de grado incluida)
+		return alumnoDeporteService.actualizarGradoPorDeporte(alumnoId, deporte, gradoSiguiente);
+	}
+
 
 	/**
 	 * Verifica si la fecha de nacimiento es válida.
