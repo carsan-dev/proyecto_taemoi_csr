@@ -1823,19 +1823,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Abre el modal para seleccionar el tipo de convocatoria (examen normal o por recompensa).
    */
   seleccionarTipoConvocatoria(alumno: any): void {
-    Swal.fire({
-      title: 'Selecciona el tipo de convocatoria',
-      text: '¿Asignar el precio por antigüedad o por recompensa?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Por Recompensa',
-      cancelButtonText: 'Por Antigüedad',
-      confirmButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      const porRecompensa = result.isConfirmed;
-      this.abrirModalConvocatoriasConTipo(alumno, porRecompensa);
-    });
+    this.abrirModalConvocatoriasConTipo(alumno, false);
   }
 
   abrirModalConvocatoriasConTipo(alumno: any, porRecompensa: boolean): void {
@@ -1875,7 +1863,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   agregarAConvocatoriaEspecifica(convocatoria: any): void {
     if (!this.alumnoId) return;
 
-    const porRecompensa = this.alumnoEditado.porRecompensa;
+    const porRecompensa = false;
     this.endpointsService
       .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
       .subscribe({
@@ -3450,24 +3438,77 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   /**
    * Open convocatoria modal for a specific sport
-   * First asks whether the exam is "por recompensa" or "por antigüedad"
+   * Shows a selection swal to choose or create a convocatoria
    */
   abrirModalConvocatoriasPorDeporte(deporte: string): void {
-    // Ask if it's por recompensa or por antigüedad
-    Swal.fire({
-      title: 'Selecciona el tipo de convocatoria',
-      text: '¿Asignar el precio por antigüedad o por recompensa?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Por Recompensa',
-      cancelButtonText: 'Por Antigüedad',
-      confirmButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      if (result.isConfirmed || result.dismiss === Swal.DismissReason.cancel) {
-        const porRecompensa = result.isConfirmed;
-        this.cargarConvocatoriasFiltradasPorDeporte(deporte, porRecompensa);
-      }
+    if (!this.alumnoId) {
+      return;
+    }
+
+    this.deporteParaConvocatoria = deporte;
+
+    this.endpointsService.obtenerConvocatorias(deporte).subscribe({
+      next: (convocatorias: any[]) => {
+        const convocatoriasOrdenadas = [...convocatorias].sort((a, b) =>
+          new Date(b.fechaConvocatoria).getTime() - new Date(a.fechaConvocatoria).getTime()
+        );
+
+        if (convocatoriasOrdenadas.length === 0) {
+          this.abrirSwalCrearConvocatoria(deporte);
+          return;
+        }
+
+        const inputOptions: Record<string, string> = {};
+        convocatoriasOrdenadas.forEach((convocatoria) => {
+          const fecha = this.formatDateForInput(convocatoria.fechaConvocatoria);
+          inputOptions[String(convocatoria.id)] = `${fecha}`;
+        });
+
+        const ahora = new Date();
+        const proximas = convocatoriasOrdenadas
+          .filter((conv) => new Date(conv.fechaConvocatoria) >= ahora)
+          .sort((a, b) =>
+            new Date(a.fechaConvocatoria).getTime() - new Date(b.fechaConvocatoria).getTime()
+          );
+        const convocatoriaDefault = proximas[0] ?? convocatoriasOrdenadas[0];
+
+        Swal.fire({
+          title: `Selecciona convocatoria (${this.getDeporteLabel(deporte)})`,
+          input: 'select',
+          inputOptions,
+          inputPlaceholder: 'Selecciona una convocatoria',
+          inputValue: String(convocatoriaDefault.id),
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: 'Añadir',
+          denyButtonText: 'Crear nueva',
+          cancelButtonText: 'Cancelar',
+          inputValidator: (value) => {
+            if (value) {
+              return null;
+            }
+            return 'Debes seleccionar una convocatoria';
+          },
+        }).then((result) => {
+          if (result.isConfirmed && result.value) {
+            const convocatoriaSeleccionada = convocatoriasOrdenadas.find(
+              (conv) => String(conv.id) === String(result.value)
+            );
+            if (convocatoriaSeleccionada) {
+              this.agregarAConvocatoriaPorDeporte(convocatoriaSeleccionada);
+            }
+          } else if (result.isDenied) {
+            this.abrirSwalCrearConvocatoria(deporte);
+          }
+        });
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar las convocatorias',
+          icon: 'error',
+        });
+      },
     });
   }
 
@@ -3521,8 +3562,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     // Find the AlumnoDeporte ID for the selected sport
+    const deporteSeleccionado = this.deporteParaConvocatoria || convocatoria.deporte;
     const deporteData = this.deportesDelAlumno.find(
-      (d) => d.deporte === this.deporteParaConvocatoria
+      (d) => d.deporte === deporteSeleccionado
     );
 
     if (!deporteData) {
@@ -3534,8 +3576,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Get the porRecompensa value set earlier
-    const porRecompensa = this.alumnoEditado.porRecompensa ?? false;
+    // Siempre usar el producto de derecho de examen (no recompensa)
+    const porRecompensa = false;
 
     // Prepare the data with AlumnoDeporte ID
     const alumnoConvocatoriaData = {
@@ -3551,13 +3593,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           Swal.fire({
             title: '¡Agregado!',
             text: `El alumno ha sido agregado a la convocatoria de ${getDeporteLabel(
-              this.deporteParaConvocatoria
+              deporteSeleccionado
             )}`,
             icon: 'success',
             timer: 2000,
           });
           this.cerrarModalConvocatorias();
           this.cargarConvocatoriasDelAlumno(this.alumnoId!);
+          this.obtenerProductosAlumno(this.alumnoId!);
         },
         error: (error) => {
           Swal.fire({
@@ -4439,6 +4482,92 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           showErrorToast('Error al actualizar las observaciones');
         },
       });
+  }
+
+  /**
+   * Crea una nueva convocatoria desde un swal y agrega al alumno directamente
+   */
+  private abrirSwalCrearConvocatoria(deporte: string): void {
+    this.deporteParaConvocatoria = deporte;
+    Swal.fire({
+      title: `Nueva convocatoria (${this.getDeporteLabel(deporte)})`,
+      input: 'date',
+      inputLabel: 'Fecha de la convocatoria',
+      inputValue: this.formatDateForInput(new Date()),
+      showCancelButton: true,
+      confirmButtonText: 'Crear y añadir',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'Debes seleccionar una fecha';
+        }
+        return null;
+      },
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const nuevaConvocatoria = {
+          fechaConvocatoria: result.value,
+          deporte,
+        };
+
+        this.endpointsService.crearConvocatoria(nuevaConvocatoria).subscribe({
+          next: (convocatoriaCreada) => {
+            this.agregarAConvocatoriaPorDeporte(convocatoriaCreada);
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error',
+              text: error.error?.message || 'No se pudo crear la convocatoria',
+              icon: 'error',
+            });
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Pasa de grado por recompensa en el deporte indicado
+   */
+  pasarGradoPorRecompensa(deporte: string): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    Swal.fire({
+      title: 'Pasar de grado por recompensa',
+      text: `Se actualizará el grado en ${this.getDeporteLabel(deporte)} y se añadirá el producto de recompensa.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      this.endpointsService.pasarGradoPorRecompensa(this.alumnoId!, deporte).subscribe({
+        next: () => {
+          Swal.fire({
+            title: '¡Grado actualizado!',
+            text: `El alumno ha pasado de grado por recompensa en ${this.getDeporteLabel(deporte)}.`,
+            icon: 'success',
+            timer: 2000,
+          });
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
+          this.obtenerProductosAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo pasar de grado por recompensa',
+            icon: 'error',
+          });
+        },
+      });
+    });
   }
 
   private validateNif(value: any): string | null {
