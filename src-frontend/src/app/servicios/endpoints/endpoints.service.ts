@@ -386,6 +386,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  pasarGradoPorRecompensa(
+    alumnoId: number,
+    deporte: string
+  ): Observable<any> {
+    return this.http
+      .post<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/pase-recompensa`,
+        null,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerConvocatoriasDeAlumno(
     alumnoId: number
   ): Observable<ConvocatoriaDTO[]> {

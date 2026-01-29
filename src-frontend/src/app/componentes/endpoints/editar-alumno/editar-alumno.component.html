@@ -596,6 +596,13 @@
                             <i class="bi bi-plus-circle"></i>
                             <span>Agregar a Convocatoria</span>
                           </button>
+                          @if (deporteItem.deporte !== 'KICKBOXING') {
+                          <button class="admin-btn admin-btn-warning admin-btn-sm"
+                            (click)="pasarGradoPorRecompensa(deporteItem.deporte)">
+                            <i class="bi bi-award"></i>
+                            <span>Pasar de Grado por Recompensa</span>
+                          </button>
+                          }
                         </div>
                       </div>
                       }
