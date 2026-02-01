@@ -1190,6 +1190,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		productoAlumno.setFechaAsignacion(new Date());
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumno.setPagado(false);
 		productoAlumnoRepository.save(productoAlumno);
 
 		AlumnoConvocatoria alumnoConvocatoria = new AlumnoConvocatoria();
@@ -1268,6 +1269,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		productoAlumno.setFechaAsignacion(new Date());
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPrecio(producto.getPrecio());
+		productoAlumno.setPagado(false);
 		productoAlumnoRepository.save(productoAlumno);
 
 		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
