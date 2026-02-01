@@ -4614,7 +4614,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (this.requiereSeleccionCinturonRojo(deporte, gradoActual)) {
       this.solicitarTipoCinturonRojo(
         'Pasar a rojo por recompensa',
-        `Se actualizara el grado en ${this.getDeporteLabel(deporte)} y se anadira el producto de recompensa. Selecciona el tipo de cinturon.`
+        `Se actualizará el grado en ${this.getDeporteLabel(deporte)} una vez realizado el pago y se añadirá el producto de recompensa. Selecciona el tipo de cinturón.`
       ).then((rojoBordado) => {
         if (rojoBordado === null) {
           return;
@@ -4626,7 +4626,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     Swal.fire({
       title: 'Pasar de grado por recompensa',
-      text: `Se actualizara el grado en ${this.getDeporteLabel(deporte)} y se anadira el producto de recompensa.`,
+      text: `Se actualizará el grado en ${this.getDeporteLabel(deporte)} una vez realizado el pago y se añadirá el producto de recompensa.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
