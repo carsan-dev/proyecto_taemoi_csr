@@ -338,5 +338,115 @@
 </head>
 <body>
   <app-root></app-root>
+  <div id="cookie-consent" class="cookie-consent" role="dialog" aria-live="polite" aria-label="Aviso de cookies">
+    <div class="cookie-consent__card">
+      <div class="cookie-consent__text">
+        <h2>Cookies y privacidad</h2>
+        <p>
+          Usamos cookies de an&aacute;lisis para mejorar la experiencia.
+          Puedes aceptarlas o rechazarlas en cualquier momento.
+        </p>
+        <div class="cookie-consent__links">
+          <a href="/politica-privacidad">Pol&iacute;tica de privacidad</a>
+          <span aria-hidden="true">&middot;</span>
+          <a href="/politica-cookies">Pol&iacute;tica de cookies</a>
+        </div>
+      </div>
+      <div class="cookie-consent__actions">
+        <button id="cookie-consent-reject" type="button">Rechazar</button>
+        <button id="cookie-consent-accept" type="button">Aceptar anal&iacute;ticas</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    (function () {
+      var storageKey = 'cookieConsent';
+      var consentEl = document.getElementById('cookie-consent');
+      if (!consentEl) {
+        return;
+      }
+      var acceptBtn = document.getElementById('cookie-consent-accept');
+      var rejectBtn = document.getElementById('cookie-consent-reject');
+
+      function applyConsent(granted) {
+        var update = {
+          ad_storage: 'denied',
+          analytics_storage: granted ? 'granted' : 'denied',
+          functionality_storage: 'granted',
+          security_storage: 'granted'
+        };
+        if (typeof window.gtag === 'function') {
+          window.gtag('consent', 'update', update);
+        } else {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push(['consent', 'update', update]);
+        }
+      }
+
+      function hide() {
+        consentEl.setAttribute('hidden', '');
+      }
+
+      function show() {
+        consentEl.removeAttribute('hidden');
+      }
+
+      function getStored() {
+        try {
+          return localStorage.getItem(storageKey);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function setStored(value) {
+        try {
+          localStorage.setItem(storageKey, value);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      function init() {
+        var stored = getStored();
+        if (stored === 'accepted') {
+          applyConsent(true);
+          hide();
+          return;
+        }
+        if (stored === 'rejected') {
+          applyConsent(false);
+          hide();
+          return;
+        }
+        show();
+      }
+
+      if (acceptBtn) {
+        acceptBtn.addEventListener('click', function () {
+          setStored('accepted');
+          applyConsent(true);
+          hide();
+        });
+      }
+
+      if (rejectBtn) {
+        rejectBtn.addEventListener('click', function () {
+          setStored('rejected');
+          applyConsent(false);
+          hide();
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+
 </body>
 </html>
