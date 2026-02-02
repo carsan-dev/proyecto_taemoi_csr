@@ -15,7 +15,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3H7GC1T4X"></script>
   <script>
     gtag('js', new Date());
-    gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true });
+    gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true, send_page_view: false });
   </script>
   <meta charset="utf-8">
   <title>Moiskimdo | Taekwondo, Kickboxing, Pilates y Defensa Personal Femenina en Umbrete (Sevilla)</title>
@@ -369,6 +369,7 @@
       }
       var acceptBtn = document.getElementById('cookie-consent-accept');
       var rejectBtn = document.getElementById('cookie-consent-reject');
+      var measurementId = 'G-R3H7GC1T4X';
 
       function applyConsent(granted) {
         var update = {
@@ -382,6 +383,16 @@
         } else {
           globalThis.dataLayer = globalThis.dataLayer || [];
           globalThis.dataLayer.push(['consent', 'update', update]);
+        }
+      }
+
+      function enableAnalytics() {
+        var config = { anonymize_ip: true, send_page_view: true };
+        if (typeof globalThis.gtag === 'function') {
+          globalThis.gtag('config', measurementId, config);
+        } else {
+          globalThis.dataLayer = globalThis.dataLayer || [];
+          globalThis.dataLayer.push(['config', measurementId, config]);
         }
       }
 
@@ -413,6 +424,7 @@
         var stored = getStored();
         if (stored === 'accepted') {
           applyConsent(true);
+          enableAnalytics();
           hide();
           return;
         }
@@ -428,9 +440,7 @@
         acceptBtn.addEventListener('click', function () {
           setStored('accepted');
           applyConsent(true);
-          if (typeof globalThis.gtag === 'function') {
-            globalThis.gtag('event', 'page_view', { send_to: 'G-R3H7GC1T4X' });
-          }
+          enableAnalytics();
           hide();
         });
       }
