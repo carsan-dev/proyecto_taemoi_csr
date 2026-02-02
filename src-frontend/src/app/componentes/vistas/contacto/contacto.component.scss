@@ -284,6 +284,12 @@ $transition-speed: 0.3s;
             }
           }
 
+          .form-select[multiple] {
+            background-image: none;
+            padding-right: 1.2rem;
+            min-height: 150px;
+          }
+
           &.select-wrapper {
             .form-select {
               padding-top: 1.55rem;
@@ -304,6 +310,18 @@ $transition-speed: 0.3s;
             }
           }
 
+          &.multi-select-wrapper {
+            .input-icon {
+              top: 1.4rem;
+              transform: none;
+            }
+
+            .form-select {
+              padding-top: 2.1rem;
+              padding-bottom: 1rem;
+            }
+          }
+
           .form-textarea {
             resize: vertical;
             min-height: 140px;
@@ -321,6 +339,13 @@ $transition-speed: 0.3s;
             transition: all $transition-speed ease;
             background: transparent;
           }
+        }
+
+        .help-text {
+          color: $text-muted;
+          font-size: 0.8rem;
+          margin-top: 0.35rem;
+          padding-left: 0.5rem;
         }
 
         .error-message {
@@ -587,6 +612,17 @@ $transition-speed: 0.3s;
 
               .form-label {
                 top: 0.55rem;
+              }
+            }
+
+            &.multi-select-wrapper {
+              .input-icon {
+                top: 1.2rem;
+              }
+
+              .form-select {
+                min-height: 130px;
+                padding-top: 1.9rem;
               }
             }
 

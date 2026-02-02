@@ -20,6 +20,12 @@ import { CommonModule } from '@angular/common';
 })
 export class ContactoComponent {
   contactForm: FormGroup;
+  readonly deportesDisponibles = [
+    'Taekwondo',
+    'Kickboxing Light',
+    'Pilates Balance',
+    'Defensa Personal Femenina',
+  ];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -31,8 +37,26 @@ export class ContactoComponent {
       apellidos: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       asunto: ['', Validators.required],
+      deportes: [[], Validators.required],
       mensaje: ['', Validators.required],
     });
+  }
+
+  private obtenerDeportesSeleccionados(): string[] {
+    return (this.contactForm.get('deportes')?.value ?? []) as string[];
+  }
+
+  private formatearDeportes(deportes: string[]): string {
+    if (!deportes || deportes.length === 0) {
+      return 'No especificado';
+    }
+
+    return deportes.join(', ');
+  }
+
+  private construirMensajeConDeportes(mensaje: string, deportes: string[]): string {
+    const deportesTexto = this.formatearDeportes(deportes);
+    return `${mensaje}\nDeportes de interes: ${deportesTexto}`;
   }
 
   enviarWhatsApp() {
@@ -43,7 +67,9 @@ export class ContactoComponent {
 
     const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
     const nombreCompleto = `${nombre} ${apellidos}`;
-    const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
+    const deportesSeleccionados = this.obtenerDeportesSeleccionados();
+    const deportesTexto = this.formatearDeportes(deportesSeleccionados);
+    const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nDeportes de interes: ${deportesTexto}\nCuerpo del mensaje: ${mensaje}`;
 
     const numeroWhatsApp = '34625752354'; // Número en formato internacional sin '+'
 
@@ -63,7 +89,16 @@ export class ContactoComponent {
       return;
     }
 
-    const emailData = this.contactForm.value;
+    const { nombre, apellidos, email, asunto, mensaje } = this.contactForm.value;
+    const deportesSeleccionados = this.obtenerDeportesSeleccionados();
+    const mensajeConDeportes = this.construirMensajeConDeportes(mensaje, deportesSeleccionados);
+    const emailData = {
+      nombre,
+      apellidos,
+      email,
+      asunto,
+      mensaje: mensajeConDeportes,
+    };
 
     this.spinner.show();
 
@@ -90,7 +125,14 @@ export class ContactoComponent {
   }
 
   limpiarCampos() {
-    this.contactForm.reset();
+    this.contactForm.reset({
+      nombre: '',
+      apellidos: '',
+      email: '',
+      asunto: '',
+      deportes: [],
+      mensaje: '',
+    });
   }
 
   onSubmit() {

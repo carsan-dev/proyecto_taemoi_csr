@@ -124,6 +124,31 @@
             }
           </div>
 
+          <!-- Sports Field -->
+          <div class="form-group">
+            <div class="input-wrapper select-wrapper multi-select-wrapper">
+              <i class="bi bi-activity input-icon"></i>
+              <select
+                class="form-select"
+                id="deportes"
+                formControlName="deportes"
+                multiple
+                [class.invalid]="contactForm.get('deportes')?.invalid && contactForm.get('deportes')?.touched">
+                @for (deporte of deportesDisponibles; track deporte) {
+                  <option [value]="deporte">{{ deporte }}</option>
+                }
+              </select>
+              <label for="deportes" class="form-label select-label">Deporte de inter&eacute;s</label>
+            </div>
+            <div class="help-text">Puedes seleccionar varios.</div>
+            @if (contactForm.get('deportes')?.invalid && contactForm.get('deportes')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                Selecciona al menos un deporte
+              </div>
+            }
+          </div>
+
           <!-- Message Field -->
           <div class="form-group">
             <div class="input-wrapper textarea-wrapper">
