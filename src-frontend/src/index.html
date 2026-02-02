@@ -2,12 +2,20 @@
 <html lang="es">
 <head>
   <!-- Google tag (gtag.js) - Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3H7GC1T4X"></script>
   <script>
     globalThis.dataLayer = globalThis.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      ad_storage: 'denied',
+      analytics_storage: 'denied',
+      functionality_storage: 'granted',
+      security_storage: 'granted'
+    });
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3H7GC1T4X"></script>
+  <script>
     gtag('js', new Date());
-    gtag('config', 'G-R3H7GC1T4X');
+    gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true });
   </script>
   <meta charset="utf-8">
   <title>Moiskimdo | Taekwondo, Kickboxing, Pilates y Defensa Personal Femenina en Umbrete (Sevilla)</title>

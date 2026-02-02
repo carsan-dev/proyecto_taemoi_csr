@@ -1,0 +1,24 @@
+@if (visible) {
+  <section class="cookie-consent" role="dialog" aria-live="polite" aria-label="Aviso de cookies">
+    <div class="cookie-text">
+      <h2>Cookies y privacidad</h2>
+      <p>
+        Usamos cookies de an&aacute;lisis para mejorar la experiencia.
+        Puedes aceptarlas o rechazarlas en cualquier momento.
+      </p>
+      <div class="cookie-links">
+        <a routerLink="/politica-privacidad">Pol&iacute;tica de privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a routerLink="/politica-cookies">Pol&iacute;tica de cookies</a>
+      </div>
+    </div>
+    <div class="cookie-actions">
+      <button class="cookie-btn decline" type="button" (click)="rejectAnalytics()">
+        Rechazar
+      </button>
+      <button class="cookie-btn accept" type="button" (click)="acceptAnalytics()">
+        Aceptar anal&iacute;ticas
+      </button>
+    </div>
+  </section>
+}
