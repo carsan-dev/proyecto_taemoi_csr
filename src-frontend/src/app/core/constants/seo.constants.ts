@@ -86,6 +86,30 @@ export const SEO_ROUTES = {
     canonical: `${BASE_URL}/contacto`,
     ogImage: `${BASE_URL}/assets/media/recepcion_escuela.webp`,
   },
+  privacidad: {
+    title: 'Política de privacidad | Moiskimdo',
+    description:
+      'Información sobre el tratamiento de datos personales y derechos de los usuarios en Moiskimdo.',
+    keywords: 'politica de privacidad moiskimdo, datos personales, proteccion de datos',
+    canonical: `${BASE_URL}/politica-privacidad`,
+    ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
+  },
+  cookies: {
+    title: 'Política de cookies | Moiskimdo',
+    description:
+      'Información sobre el uso de cookies y analítica en la web de Moiskimdo.',
+    keywords: 'politica de cookies moiskimdo, cookies, analitica',
+    canonical: `${BASE_URL}/politica-cookies`,
+    ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
+  },
+  avisoLegal: {
+    title: 'Aviso legal | Moiskimdo',
+    description:
+      'Información legal y condiciones de uso del sitio web de Moiskimdo.',
+    keywords: 'aviso legal moiskimdo, condiciones de uso, informacion legal',
+    canonical: `${BASE_URL}/aviso-legal`,
+    ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
+  },
   tarifas: {
     title: 'Tarifas y Precios | Clases de Artes Marciales en Umbrete (Sevilla) - Moiskimdo',
     description:

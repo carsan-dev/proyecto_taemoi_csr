@@ -57,6 +57,21 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/contacto/contacto.component').then(m => m.ContactoComponent)
   },
   {
+    path: 'politica-privacidad',
+    data: { seo: SEO_ROUTES.privacidad },
+    loadComponent: () => import('./componentes/vistas/legal/politica-privacidad/politica-privacidad.component').then(m => m.PoliticaPrivacidadComponent)
+  },
+  {
+    path: 'politica-cookies',
+    data: { seo: SEO_ROUTES.cookies },
+    loadComponent: () => import('./componentes/vistas/legal/politica-cookies/politica-cookies.component').then(m => m.PoliticaCookiesComponent)
+  },
+  {
+    path: 'aviso-legal',
+    data: { seo: SEO_ROUTES.avisoLegal },
+    loadComponent: () => import('./componentes/vistas/legal/aviso-legal/aviso-legal.component').then(m => m.AvisoLegalComponent)
+  },
+  {
     path: 'tarifas',
     data: { seo: SEO_ROUTES.tarifas },
     loadComponent: () => import('./componentes/vistas/tarifas/tarifas.component').then(m => m.TarifasComponent)
