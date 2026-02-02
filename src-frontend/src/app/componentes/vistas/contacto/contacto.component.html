@@ -126,19 +126,24 @@
 
           <!-- Sports Field -->
           <div class="form-group">
-            <div class="input-wrapper select-wrapper multi-select-wrapper">
+            <div class="input-wrapper badge-wrapper">
               <i class="bi bi-activity input-icon"></i>
-              <select
-                class="form-select"
-                id="deportes"
-                formControlName="deportes"
-                multiple
-                [class.invalid]="contactForm.get('deportes')?.invalid && contactForm.get('deportes')?.touched">
-                @for (deporte of deportesDisponibles; track deporte) {
-                  <option [value]="deporte">{{ deporte }}</option>
-                }
-              </select>
-              <label for="deportes" class="form-label select-label">Deporte de inter&eacute;s</label>
+              <div class="badge-field">
+                <span class="badge-label">Deporte de inter&eacute;s</span>
+                <div class="badge-grid">
+                  @for (deporte of deportesDisponibles; track deporte) {
+                    <button
+                      type="button"
+                      class="sport-badge"
+                      [class.selected]="deporteSeleccionado(deporte)"
+                      (click)="toggleDeporte(deporte)">
+                      <i class="bi" [class.bi-check-circle-fill]="deporteSeleccionado(deporte)"
+                         [class.bi-circle]="!deporteSeleccionado(deporte)"></i>
+                      <span>{{ deporte }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
             </div>
             <div class="help-text">Puedes seleccionar varios.</div>
             @if (contactForm.get('deportes')?.invalid && contactForm.get('deportes')?.touched) {

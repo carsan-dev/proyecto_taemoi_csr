@@ -2,7 +2,7 @@
 // VARIABLES
 // ========================================
 $primary-color: #007bff;
-$primary-hover: #0056b3;
+$primary-dark: #0056b3;
 $success-color: #25D366;
 $success-hover: #1da851;
 $danger-color: #dc3545;
@@ -11,20 +11,27 @@ $dark-accent: #284747;
 $text-dark: #212529;
 $text-light: #ffffff;
 $text-muted: #6c757d;
+$text-muted-strong: #4b5563;
 $border-color: #dee2e6;
 $bg-light: #f8f9fa;
-$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
-$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
 $transition-speed: 0.3s;
+
+@font-face {
+  font-family: "Osaka-Sans Serif";
+  src: url("../../../../assets/fonts/osaka-re.ttf") format("truetype");
+  font-display: swap;
+}
 
 // ========================================
 // CONTACT PAGE
 // ========================================
 .contact-page {
   min-height: 100vh;
-  padding: 6rem 1rem 2rem;
-  background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%); // Match login palette
+  padding: 6rem 1rem 3rem;
+  background: $bg-light;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -39,11 +46,29 @@ $transition-speed: 0.3s;
   .contact-card {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
-    background: $text-light;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-radius: 20px;
     overflow: hidden;
     box-shadow: $shadow-lg;
     animation: fadeInUp 0.6s ease;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(
+        90deg,
+        $primary-color,
+        #57a2a8,
+        #ff4500
+      );
+      border-radius: 20px 20px 0 0;
+      z-index: 1;
+    }
   }
 
   // ========================================
@@ -81,7 +106,7 @@ $transition-speed: 0.3s;
       width: 90px;
       height: 90px;
       margin: 0 auto 1.5rem;
-      background: linear-gradient(135deg, $primary-color, $primary-hover);
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -96,7 +121,8 @@ $transition-speed: 0.3s;
     }
 
     .brand-title {
-      font-size: 2.3rem;
+      font-family: "Osaka-Sans Serif", sans-serif;
+      font-size: 2.4rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
       letter-spacing: 0.5px;
@@ -163,7 +189,7 @@ $transition-speed: 0.3s;
   // ========================================
   .contact-right {
     padding: 3rem 2.5rem;
-    background: $text-light;
+    background: transparent;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -173,14 +199,15 @@ $transition-speed: 0.3s;
       text-align: center;
 
       .form-title {
-        font-size: 2.2rem;
+        font-family: "Osaka-Sans Serif", sans-serif;
+        font-size: 2.1rem;
         font-weight: 700;
         color: $text-dark;
         margin-bottom: 0.5rem;
       }
 
       .form-description {
-        color: $text-muted;
+        color: $text-muted-strong;
         font-size: 0.95rem;
         line-height: 1.5;
       }
@@ -223,7 +250,7 @@ $transition-speed: 0.3s;
             border-radius: 12px;
             font-size: 1rem;
             color: $text-dark;
-            background: $text-light;
+            background: #ffffff;
             transition: all $transition-speed ease;
             outline: none;
 
@@ -233,7 +260,7 @@ $transition-speed: 0.3s;
 
             &:focus {
               border-color: $primary-color;
-              box-shadow: 0 0 0 4px rgba($primary-color, 0.1);
+              box-shadow: 0 0 0 4px rgba($primary-color, 0.12);
 
               ~ .input-icon {
                 color: $primary-color;
@@ -243,8 +270,8 @@ $transition-speed: 0.3s;
                 top: -0.6rem;
                 left: 3rem;
                 font-size: 0.75rem;
-                color: $primary-hover;
-                background: $text-light;
+                color: $primary-dark;
+                background: #ffffff;
                 padding: 0 0.5rem;
               }
             }
@@ -253,8 +280,8 @@ $transition-speed: 0.3s;
               top: -0.6rem;
               left: 3rem;
               font-size: 0.75rem;
-              color: $primary-hover;
-              background: $text-light;
+              color: $primary-dark;
+              background: #ffffff;
               padding: 0 0.5rem;
             }
 
@@ -300,13 +327,13 @@ $transition-speed: 0.3s;
               top: 0.6rem;
               transform: none;
               font-size: 0.75rem;
-              color: $primary-hover;
+              color: $primary-dark;
               background: transparent;
               padding: 0;
             }
 
             .form-select:focus ~ .form-label {
-              color: $primary-hover;
+              color: $primary-dark;
             }
           }
 
@@ -319,6 +346,13 @@ $transition-speed: 0.3s;
             .form-select {
               padding-top: 2.1rem;
               padding-bottom: 1rem;
+            }
+          }
+
+          &.badge-wrapper {
+            .input-icon {
+              top: 1.4rem;
+              transform: none;
             }
           }
 
@@ -371,9 +405,9 @@ $transition-speed: 0.3s;
         margin-top: 2rem;
 
         .btn {
-          padding: 1.1rem 1.5rem;
+          padding: 1rem 1.6rem;
           border: none;
-          border-radius: 12px;
+          border-radius: 50px;
           font-size: 1.05rem;
           font-weight: 600;
           cursor: pointer;
@@ -382,7 +416,7 @@ $transition-speed: 0.3s;
           align-items: center;
           justify-content: center;
           gap: 0.75rem;
-          box-shadow: $shadow-sm;
+          box-shadow: $shadow-md;
           position: relative;
           overflow: hidden;
 
@@ -447,6 +481,73 @@ $transition-speed: 0.3s;
             }
           }
         }
+      }
+    }
+  }
+
+  .badge-field {
+    width: 100%;
+    padding: 1.9rem 1.5rem 1.4rem 3.5rem;
+    border: 2px solid $border-color;
+    border-radius: 16px;
+    background: #ffffff;
+    transition: all $transition-speed ease;
+    display: grid;
+    gap: 1rem;
+
+    .badge-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: $primary-dark;
+    }
+
+    .badge-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  }
+
+  .badge-wrapper:focus-within .badge-field {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 4px rgba($primary-color, 0.12);
+  }
+
+  .sport-badge {
+    border: 2px solid rgba($primary-color, 0.25);
+    background: #ffffff;
+    color: $text-dark;
+    padding: 0.55rem 1.1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all $transition-speed ease;
+    box-shadow: $shadow-sm;
+
+    i {
+      font-size: 1.05rem;
+      color: $primary-color;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
+      border-color: rgba($primary-color, 0.45);
+    }
+
+    &.selected {
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+      color: $text-light;
+      border-color: transparent;
+      box-shadow: 0 8px 18px rgba($primary-color, 0.3);
+
+      i {
+        color: $text-light;
       }
     }
   }
@@ -615,14 +716,9 @@ $transition-speed: 0.3s;
               }
             }
 
-            &.multi-select-wrapper {
+            &.badge-wrapper {
               .input-icon {
                 top: 1.2rem;
-              }
-
-              .form-select {
-                min-height: 130px;
-                padding-top: 1.9rem;
               }
             }
 
@@ -649,6 +745,30 @@ $transition-speed: 0.3s;
           }
         }
       }
+    }
+  }
+
+  @media (max-width: 576px) {
+    .badge-field {
+      padding: 1.6rem 1.2rem 1.2rem;
+      align-items: center;
+    }
+
+    .badge-wrapper .input-icon {
+      display: none;
+    }
+
+    .badge-label {
+      text-align: center;
+    }
+
+    .badge-grid {
+      justify-content: center;
+    }
+
+    .sport-badge {
+      width: 100%;
+      justify-content: center;
     }
   }
 }

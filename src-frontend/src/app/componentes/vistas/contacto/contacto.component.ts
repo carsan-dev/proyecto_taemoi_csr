@@ -46,6 +46,21 @@ export class ContactoComponent {
     return (this.contactForm.get('deportes')?.value ?? []) as string[];
   }
 
+  toggleDeporte(deporte: string) {
+    const deportes = this.obtenerDeportesSeleccionados();
+    const existe = deportes.includes(deporte);
+    const nuevosDeportes = existe
+      ? deportes.filter((item) => item !== deporte)
+      : [...deportes, deporte];
+
+    this.contactForm.get('deportes')?.setValue(nuevosDeportes);
+    this.contactForm.get('deportes')?.markAsTouched();
+  }
+
+  deporteSeleccionado(deporte: string): boolean {
+    return this.obtenerDeportesSeleccionados().includes(deporte);
+  }
+
   private formatearDeportes(deportes: string[]): string {
     if (!deportes || deportes.length === 0) {
       return 'No especificado';
