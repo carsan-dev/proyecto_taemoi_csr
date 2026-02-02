@@ -45,7 +45,7 @@ export class ContactoComponent {
     const nombreCompleto = `${nombre} ${apellidos}`;
     const mensajeCompleto = `Nombre completo: ${nombreCompleto}\nCorreo electrónico: ${email}\nAsunto: ${asunto}\nCuerpo del mensaje: ${mensaje}`;
 
-    const numeroWhatsApp = '34695568455'; // Número en formato internacional sin '+'
+    const numeroWhatsApp = '34625752354'; // Número en formato internacional sin '+'
 
     // Codificar el mensaje
     const encodedMessage = encodeURIComponent(mensajeCompleto);
