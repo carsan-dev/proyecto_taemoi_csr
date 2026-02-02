@@ -1264,9 +1264,9 @@ public class PDFServiceImpl implements PDFService {
 		html.append(
 				".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
 		html.append(".table-container { width: 100%; overflow: visible; }");
-		html.append(".table-wrapper { display: table; width: 100%; table-layout: fixed; }");
+		html.append(".table-wrapper { display: table; width: auto; table-layout: fixed; margin-left: auto; margin-right: auto; padding-left: 4mm; padding-right: 4mm; }");
 		html.append(".table-cell { display: table-cell; vertical-align: top; overflow: visible; }");
-		html.append(".main-table, .side-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
+		html.append(".main-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
 		html.append(
 				".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
 		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
@@ -1277,15 +1277,15 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
-		html.append(".main-table th:first-child, .main-table td:first-child { width: 8mm; font-size: 7pt; }");
-		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 10.5mm; }");
-		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 8mm; font-size: 7.5pt; }");
-		html.append(".main-table th:nth-child(4), .main-table td:nth-child(4) { width: 7mm; font-size: 7.5pt; }");
+		html.append(".main-table th:first-child, .main-table td:first-child { width: 11mm; font-size: 7pt; }");
+		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 13mm; }");
+		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 11mm; font-size: 7.5pt; }");
+		html.append(".main-table th:nth-child(4), .main-table td:nth-child(4) { width: 9mm; font-size: 7.5pt; }");
 		html.append(
-				".main-table th:nth-child(5) { width: 55mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
+				".main-table th:nth-child(5) { width: 75mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
 		html.append(
-				".main-table td:nth-child(5) { width: 55mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
-		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 10mm; font-size: 7.5pt; }");
+				".main-table td:nth-child(5) { width: 75mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
+		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 13mm; font-size: 7.5pt; }");
 		html.append(".cinturon-blanco { background: #ffffff; }");
 		html.append(".cinturon-amarillo { background: #ffeb3b; }");
 		html.append(".cinturon-naranja { background: #ff9800; }");
@@ -1304,7 +1304,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append(
 				".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 7pt; vertical-align: middle; }");
 		html.append(
-				".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; }");
+				".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; width: auto; display: inline-table; border-collapse: collapse; }");
 		html.append(
 				".side-table th, .side-table td { width: 6mm; padding: 0.8mm 0.3mm; text-align: center; box-sizing: border-box; }");
 		html.append(
@@ -1421,8 +1421,9 @@ public class PDFServiceImpl implements PDFService {
 					html.append("</div>");
 
 					// Tables
+					html.append("<div class='table-container'>");
 					html.append("<div class='table-wrapper'>");
-					html.append("<div class='table-cell' style='width: 65%;'>");
+					html.append("<div class='table-cell'>");
 					html.append("<table class='main-table'>");
 					html.append("<thead><tr>");
 					html.append(
@@ -1488,7 +1489,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append("</div>");
 
 					// Attendance grid
-					html.append("<div class='table-cell' style='width: 35%;'>");
+					html.append("<div class='table-cell'>");
 					html.append("<table class='side-table'><thead><tr>");
 					for (LocalDate f : fechas) {
 						html.append("<th>").append(f.getDayOfMonth()).append("</th>");
@@ -1507,6 +1508,7 @@ public class PDFServiceImpl implements PDFService {
 						html.append("<td>").append(f.getDayOfMonth()).append("</td>");
 					}
 					html.append("</tr></tfoot></table>");
+					html.append("</div>");
 					html.append("</div>");
 					html.append("</div>");
 				}
