@@ -3,6 +3,8 @@
 <head>
   <!-- Google tag (gtag.js) - Google Analytics 4 -->
   <script>
+    globalThis.__gtagLoaded = false;
+    globalThis.__gtagLoadFailed = false;
     globalThis.dataLayer = globalThis.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('consent', 'default', {
@@ -12,7 +14,9 @@
       security_storage: 'granted'
     });
   </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3H7GC1T4X"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3H7GC1T4X"
+    onload="window.__gtagLoaded = true;"
+    onerror="window.__gtagLoaded = false; window.__gtagLoadFailed = true;"></script>
   <script>
     gtag('js', new Date());
     gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true, send_page_view: false });
@@ -346,6 +350,9 @@
           Usamos cookies de an&aacute;lisis para mejorar la experiencia.
           Puedes aceptarlas o rechazarlas en cualquier momento.
         </p>
+        <p id="cookie-consent-notice" class="cookie-consent__notice" hidden>
+          Si usas un bloqueador de anuncios, la anal&iacute;tica puede no funcionar aunque aceptes.
+        </p>
         <div class="cookie-consent__links">
           <a href="/politica-privacidad">Pol&iacute;tica de privacidad</a>
           <span aria-hidden="true">&middot;</span>
@@ -369,6 +376,7 @@
       }
       var acceptBtn = document.getElementById('cookie-consent-accept');
       var rejectBtn = document.getElementById('cookie-consent-reject');
+      var noticeEl = document.getElementById('cookie-consent-notice');
       var measurementId = 'G-R3H7GC1T4X';
 
       function applyConsent(granted) {
@@ -404,6 +412,17 @@
         consentEl.removeAttribute('hidden');
       }
 
+      function scheduleGtagCheck() {
+        if (!noticeEl) {
+          return;
+        }
+        setTimeout(function () {
+          if (globalThis.__gtagLoadFailed === true || globalThis.__gtagLoaded !== true) {
+            noticeEl.removeAttribute('hidden');
+          }
+        }, 1500);
+      }
+
       function getStored() {
         try {
           return localStorage.getItem(storageKey);
@@ -434,6 +453,7 @@
           return;
         }
         show();
+        scheduleGtagCheck();
       }
 
       if (acceptBtn) {

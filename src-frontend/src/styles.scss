@@ -242,6 +242,16 @@ main#content {
   line-height: 1.4;
 }
 
+.cookie-consent__notice {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+  background: #fff7ed;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+}
+
 .cookie-consent__links {
   display: flex;
   align-items: center;
