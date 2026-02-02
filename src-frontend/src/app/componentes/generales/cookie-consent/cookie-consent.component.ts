@@ -12,29 +12,35 @@ type ConsentState = 'accepted' | 'rejected';
   styleUrl: './cookie-consent.component.scss',
 })
 export class CookieConsentComponent implements OnInit {
-  visible = false;
+  visible = true;
   private readonly storageKey = 'cookieConsent';
 
   ngOnInit(): void {
     const windowRef = this.getWindowRef();
     if (!windowRef) {
+      this.visible = true;
       return;
     }
 
-    const stored = windowRef.localStorage.getItem(this.storageKey) as ConsentState | null;
-    if (stored === 'accepted') {
-      this.applyConsent(true);
-      this.visible = false;
-      return;
-    }
+    try {
+      const stored = windowRef.localStorage.getItem(this.storageKey) as ConsentState | null;
+      if (stored === 'accepted') {
+        this.applyConsent(true);
+        this.visible = false;
+        return;
+      }
 
-    if (stored === 'rejected') {
-      this.applyConsent(false);
-      this.visible = false;
-      return;
-    }
+      if (stored === 'rejected') {
+        this.applyConsent(false);
+        this.visible = false;
+        return;
+      }
 
-    this.visible = true;
+      this.visible = true;
+    } catch {
+      // If storage is blocked, show the banner so the user can choose.
+      this.visible = true;
+    }
   }
 
   acceptAnalytics(): void {
