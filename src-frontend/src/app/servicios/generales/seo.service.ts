@@ -49,6 +49,18 @@ export class SeoService {
       { name: 'Inicio', url: '/' },
       { name: 'Contacto', url: '/contacto' },
     ],
+    '/politica-privacidad': [
+      { name: 'Inicio', url: '/' },
+      { name: 'Política de privacidad', url: '/politica-privacidad' },
+    ],
+    '/politica-cookies': [
+      { name: 'Inicio', url: '/' },
+      { name: 'Política de cookies', url: '/politica-cookies' },
+    ],
+    '/aviso-legal': [
+      { name: 'Inicio', url: '/' },
+      { name: 'Aviso legal', url: '/aviso-legal' },
+    ],
     '/tarifas': [
       { name: 'Inicio', url: '/' },
       { name: 'Tarifas', url: '/tarifas' },
