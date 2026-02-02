@@ -2016,21 +2016,28 @@ $defensa-hover: #d81b60;
             .contact-label {
               display: flex;
               flex-direction: column;
-              gap: 0.25rem;
+              gap: 0.2rem;
               font-size: 0.85rem;
               color: $text-muted-strong;
               font-weight: 500;
               text-transform: uppercase;
               letter-spacing: 0.5px;
+              line-height: 1.3;
             }
 
             .contact-value {
+              display: block;
               font-size: 0.8rem;
               color: $text-dark;
               font-weight: 600;
+              line-height: 1.35;
               white-space: nowrap;
               text-transform: none;
               letter-spacing: normal;
+            }
+
+            .contact-value + .contact-value {
+              margin-top: 0.1rem;
             }
           }
         }
