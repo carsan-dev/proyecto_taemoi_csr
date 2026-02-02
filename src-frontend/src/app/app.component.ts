@@ -4,11 +4,12 @@ import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton
 import { ScrollService } from './servicios/generales/scroll.service';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { SeoService } from './servicios/generales/seo.service';
+import { CookieConsentComponent } from './componentes/generales/cookie-consent/cookie-consent.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SkeletonComponent, NgxSpinnerModule],
+  imports: [RouterOutlet, SkeletonComponent, NgxSpinnerModule, CookieConsentComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
