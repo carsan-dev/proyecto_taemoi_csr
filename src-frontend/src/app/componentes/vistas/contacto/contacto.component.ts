@@ -10,11 +10,12 @@ import { MailService } from '../../../servicios/contacto/mail.service';
 import Swal from 'sweetalert2';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-contacto',
   standalone: true,
-  imports: [FormsModule, NgxSpinnerModule, CommonModule, ReactiveFormsModule],
+  imports: [FormsModule, NgxSpinnerModule, CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './contacto.component.html',
   styleUrl: './contacto.component.scss',
 })
@@ -39,6 +40,7 @@ export class ContactoComponent {
       asunto: ['', Validators.required],
       deportes: [[], Validators.required],
       mensaje: ['', Validators.required],
+      consentimiento: [false, Validators.requiredTrue],
     });
   }
 
@@ -147,6 +149,7 @@ export class ContactoComponent {
       asunto: '',
       deportes: [],
       mensaje: '',
+      consentimiento: false,
     });
   }
 
