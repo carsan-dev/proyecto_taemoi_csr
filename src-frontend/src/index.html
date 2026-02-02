@@ -352,6 +352,7 @@
         </p>
         <p id="cookie-consent-notice" class="cookie-consent__notice" hidden>
           Si usas un bloqueador de anuncios, la anal&iacute;tica puede no funcionar aunque aceptes.
+          Para activarla, desactiva el adblock o permite esta web.
         </p>
         <div class="cookie-consent__links">
           <a href="/politica-privacidad">Pol&iacute;tica de privacidad</a>
@@ -417,10 +418,11 @@
           return;
         }
         setTimeout(function () {
-          if (globalThis.__gtagLoadFailed === true || globalThis.__gtagLoaded !== true) {
+          var gtmReady = globalThis.google_tag_manager && globalThis.google_tag_manager[measurementId];
+          if (globalThis.__gtagLoadFailed === true || globalThis.__gtagLoaded !== true || !gtmReady) {
             noticeEl.removeAttribute('hidden');
           }
-        }, 1500);
+        }, 2000);
       }
 
       function getStored() {
