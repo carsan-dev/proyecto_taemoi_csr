@@ -377,11 +377,11 @@
           functionality_storage: 'granted',
           security_storage: 'granted'
         };
-        if (typeof window.gtag === 'function') {
-          window.gtag('consent', 'update', update);
+        if (typeof globalThis.gtag === 'function') {
+          globalThis.gtag('consent', 'update', update);
         } else {
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push(['consent', 'update', update]);
+          globalThis.dataLayer = globalThis.dataLayer || [];
+          globalThis.dataLayer.push(['consent', 'update', update]);
         }
       }
 
@@ -428,6 +428,9 @@
         acceptBtn.addEventListener('click', function () {
           setStored('accepted');
           applyConsent(true);
+          if (typeof globalThis.gtag === 'function') {
+            globalThis.gtag('event', 'page_view', { send_to: 'G-R3H7GC1T4X' });
+          }
           hide();
         });
       }
