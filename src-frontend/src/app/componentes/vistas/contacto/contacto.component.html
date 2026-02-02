@@ -175,6 +175,23 @@
             }
           </div>
 
+          <!-- Consent -->
+          <div class="form-group consent-group">
+            <label class="consent-checkbox">
+              <input type="checkbox" formControlName="consentimiento" />
+              <span>
+                He le&iacute;do y acepto la
+                <a routerLink="/politica-privacidad">Pol&iacute;tica de privacidad</a>.
+              </span>
+            </label>
+            @if (contactForm.get('consentimiento')?.invalid && contactForm.get('consentimiento')?.touched) {
+              <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                Debes aceptar la pol&iacute;tica de privacidad
+              </div>
+            }
+          </div>
+
           <!-- Action Buttons -->
           <div class="form-actions">
             <button
