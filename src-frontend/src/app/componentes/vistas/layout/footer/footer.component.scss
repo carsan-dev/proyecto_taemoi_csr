@@ -111,6 +111,10 @@ $github-color: #333;
       color: $primary-color;
       margin-top: 0.125rem;
       flex-shrink: 0;
+      width: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     a {
@@ -125,7 +129,15 @@ $github-color: #333;
     }
 
     span {
-      line-height: 1.6;
+      line-height: 1.4;
+    }
+
+    .contact-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      line-height: 1.4;
+      min-width: 0;
     }
 
     &:hover {
