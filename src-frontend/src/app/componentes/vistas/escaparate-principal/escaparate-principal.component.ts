@@ -100,6 +100,11 @@ export class EscaparatePrincipalComponent
         rating: 5,
         text: 'Muy buena escuela de artes marciales. Profesionalidad y buen ambiente.',
       },
+      {
+        author: 'Eva Gonzalez',
+        rating: 5,
+        text: 'Excelente escuela. El Maestro Moises, muy profesional y una mano excelente con los niños. Lola también encantadora. Seriedad en el deporte y disciplina. Mi hija está disfrutando mucho de sus clases. 100% recomendable',
+      },
     ];
 
     this.seoService.setReviewsSchema(reviews);
