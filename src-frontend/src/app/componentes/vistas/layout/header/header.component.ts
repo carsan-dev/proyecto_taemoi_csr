@@ -23,6 +23,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isUser: boolean = false;
   isHidden: boolean = false;
   adminMenuVisible: boolean = false;
+  isMobileMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
@@ -101,6 +102,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.router.events.subscribe((event) => {
         if (event instanceof NavigationStart) {
           this.adminMenuVisible = false;
+          this.closeMobileMenu();
         }
         // Reset scroll tracking on navigation end to prevent stale lastScrollTop values
         if (event instanceof NavigationEnd) {
@@ -127,6 +129,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.detenerRedimension();
+    this.setBodyScrollLock(false);
 
     // Clean up document scroll listener
     const documentRef = this.getDocumentRef();
@@ -134,6 +137,27 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       documentRef.removeEventListener('scroll', this.documentScrollHandler, true);
       this.documentScrollHandler = undefined;
     }
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    this.setBodyScrollLock(this.isMobileMenuOpen);
+  }
+
+  closeMobileMenu(): void {
+    if (!this.isMobileMenuOpen) {
+      return;
+    }
+    this.isMobileMenuOpen = false;
+    this.setBodyScrollLock(false);
+  }
+
+  private setBodyScrollLock(locked: boolean): void {
+    const documentRef = this.getDocumentRef();
+    if (!documentRef?.body) {
+      return;
+    }
+    documentRef.body.style.overflow = locked ? 'hidden' : '';
   }
 
   comprobarRoles() {
