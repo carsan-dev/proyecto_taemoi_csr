@@ -126,10 +126,10 @@
   <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
   <div class="mobile-header-panel" role="document" id="mobile-header-menu">
     <div class="mobile-header-top">
-      <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
       <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
+      <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
       <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
@@ -187,10 +187,10 @@
 
 <nav class="admin-sidebar" id="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
   <div class="sidebar-header">
-    <h3>Navegación</h3>
     <button class="close-sidebar" (click)="closeAdminMenu()">
       <i class="bi bi-x-lg"></i>
     </button>
+    <h3>Navegación</h3>
   </div>
 
   <ul class="sidebar-menu">
@@ -629,10 +629,10 @@
   <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
   <div class="mobile-header-panel" role="document" id="mobile-header-menu">
     <div class="mobile-header-top">
-      <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
       <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
+      <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
       <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
