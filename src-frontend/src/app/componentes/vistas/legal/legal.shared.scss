@@ -53,6 +53,7 @@
   padding: 2rem;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
   border: 1px solid rgba(15, 23, 42, 0.08);
+  margin-bottom: 1.5rem;
 
   p {
     margin: 0 0 1rem;
@@ -93,6 +94,26 @@
   li {
     margin-bottom: 0.4rem;
     line-height: 1.6;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    padding: 0.6rem 0.5rem;
+    color: #334155;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 700;
+    color: #0f172a;
   }
 
   a {
