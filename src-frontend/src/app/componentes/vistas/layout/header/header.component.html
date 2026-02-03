@@ -2,6 +2,11 @@
 <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
+      <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
+      </button>
       <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
@@ -116,13 +121,42 @@
     </div>
   </nav>
 </header>
+<div class="mobile-header-overlay" [class.open]="isMobileMenuOpen" role="dialog" aria-modal="true"
+  aria-labelledby="mobile-header-title" [attr.aria-hidden]="!isMobileMenuOpen">
+  <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
+  <div class="mobile-header-panel" role="document" id="mobile-header-menu">
+    <div class="mobile-header-top">
+      <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <nav class="mobile-header-nav" aria-label="Navegación principal">
+      <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
+      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
+      <a class="mobile-header-link sub" [routerLink]="['/defensapersonalfemenina']"
+        (click)="closeMobileMenu()">Defensa Personal Femenina</a>
+      <div class="mobile-header-section-title">Información</div>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" (click)="closeMobileMenu()">Contacto</a>
+      <div class="mobile-header-section-title">Cuenta</div>
+      <a class="mobile-header-link" [routerLink]="['/login']" (click)="closeMobileMenu()">Iniciar Sesión</a>
+    </nav>
+  </div>
+</div>
 }
 
 <!-- Header para administradores -->
 @if (isAuthChecked && isAdmin) {
 <header class="admin-top-navbar">
   <div class="navbar-container">
-    <button class="admin-toggle-button" (click)="toggleAdminMenu()" aria-label="Abrir menú">
+    <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menú"
+      aria-controls="admin-sidebar" [attr.aria-expanded]="adminMenuVisible">
       <i class="bi bi-list"></i>
     </button>
     <a class="navbar-brand" [routerLink]="['/adminpage']">
@@ -151,7 +185,7 @@
   </div>
 </header>
 
-<nav class="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
+<nav class="admin-sidebar" id="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
   <div class="sidebar-header">
     <h3>Navegación</h3>
     <button class="close-sidebar" (click)="closeAdminMenu()">
@@ -450,6 +484,11 @@
 <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
+      <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
+      </button>
       <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
@@ -585,4 +624,35 @@
     </div>
   </nav>
 </header>
+<div class="mobile-header-overlay" [class.open]="isMobileMenuOpen" role="dialog" aria-modal="true"
+  aria-labelledby="mobile-header-title-user" [attr.aria-hidden]="!isMobileMenuOpen">
+  <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
+  <div class="mobile-header-panel" role="document" id="mobile-header-menu">
+    <div class="mobile-header-top">
+      <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <nav class="mobile-header-nav" aria-label="Navegación principal">
+      <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
+      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
+      <a class="mobile-header-link sub" [routerLink]="['/defensapersonalfemenina']"
+        (click)="closeMobileMenu()">Defensa Personal Femenina</a>
+      <div class="mobile-header-section-title">Información</div>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" (click)="closeMobileMenu()">Contacto</a>
+      <div class="mobile-header-section-title">Cuenta</div>
+      <a class="mobile-header-link" [routerLink]="['/userpage']" (click)="closeMobileMenu()">Mis Clases</a>
+      <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">
+        Cerrar Sesión
+      </button>
+    </nav>
+  </div>
+</div>
 }

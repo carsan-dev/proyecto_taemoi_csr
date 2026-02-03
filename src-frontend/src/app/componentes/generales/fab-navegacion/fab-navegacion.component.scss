@@ -22,6 +22,12 @@ $bottom-nav-bg: rgba(27, 43, 46, 0.95);
 // Focus styles
 $focus-ring: 0 0 0 3px rgba($primary-color, 0.5);
 
+@media (max-width: 575.98px) {
+  :host {
+    display: none;
+  }
+}
+
 // ========================================
 // FAB BUTTON (Desktop/Tablet)
 // ========================================
