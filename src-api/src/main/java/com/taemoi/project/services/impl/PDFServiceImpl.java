@@ -1277,6 +1277,10 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
 		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
 		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
+		html.append(
+				".compact .main-table tbody td, .compact .side-table tbody td { height: 5.4mm; max-height: 5.4mm; min-height: 5.4mm; line-height: 5.4mm; font-size: 7.2pt; }");
+		html.append(
+				".compact .main-table th, .compact .side-table th { height: 7mm; min-height: 7mm; max-height: 7mm; font-size: 7.2pt; padding: 1mm 0.5mm; }");
 		html.append(".main-table th:first-child, .main-table td:first-child { width: 11mm; font-size: 7pt; }");
 		html.append(".main-table th:nth-child(2), .main-table td:nth-child(2) { width: 13mm; }");
 		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 11mm; font-size: 7.5pt; }");
@@ -1421,7 +1425,10 @@ public class PDFServiceImpl implements PDFService {
 					html.append("</div>");
 
 					// Tables
-					html.append("<div class='table-container'>");
+					boolean compact = totalAlumnos >= 32;
+					html.append("<div class='table-container")
+							.append(compact ? " compact" : "")
+							.append("'>");
 					html.append("<div class='table-wrapper'>");
 					html.append("<div class='table-cell'>");
 					html.append("<table class='main-table'>");
