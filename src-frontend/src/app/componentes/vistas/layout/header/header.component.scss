@@ -225,8 +225,8 @@ header.fixed-header {
       }
     }
 
-    // Hide the burger on mobile (bottom nav handles navigation)
-    @media (max-width: 575.98px) {
+    // Hide the burger on mobile/tablet (use custom overlay menu)
+    @media (max-width: 991.98px) {
       .navbar-toggler {
         display: none !important;
       }
@@ -858,6 +858,33 @@ header.fixed-header {
 
       .container-fluid {
         padding: 0 1rem;
+        gap: 0.5rem;
+      }
+
+      .header-actions-mobile {
+        display: flex;
+      }
+
+      .header-title-mobile {
+        align-items: flex-start;
+        text-align: left;
+        padding: 0 0.5rem 0 0.7rem;
+        min-width: 0;
+      }
+
+      .btn-login-mobile,
+      .btn-logout-mobile {
+        display: inline-flex;
+        margin-left: 0;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+
+      .social-link-compact {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
       }
 
       .navbar-left {
@@ -1299,7 +1326,7 @@ header.fixed-header {
   }
 }
 
-@media (min-width: 576px) {
+@media (min-width: 992px) {
   .mobile-header-overlay {
     display: none;
   }
