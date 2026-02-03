@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
+import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
 import com.taemoi.project.services.ProductoAlumnoService;
 
 @RestController
@@ -131,11 +132,24 @@ public class ProductoAlumnoController {
 		try {
 			productoAlumnoService.cargarMensualidadIndividual(alumnoId, nombreMensualidad, forzar);
 			return ResponseEntity.ok(Map.of("mensaje", "Mensualidad individual creada correctamente."));
+		} catch (MensualidadIncompletaException ex) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(Map.of(
+							"mensaje", ex.getMessage(),
+							"accion", "completar",
+							"existentes", Map.of(
+									"mensualidades", ex.getMensualidadesExistentes(),
+									"tarifasCompetidor", ex.getTarifasCompetidorExistentes()
+							),
+							"faltantes", Map.of(
+									"mensualidades", ex.getMensualidadesFaltantes(),
+									"tarifasCompetidor", ex.getTarifasCompetidorFaltantes()
+							)
+					));
 		} catch (IllegalStateException ex) {
 			// Devuelve un código 409 con un mensaje específico
 			return ResponseEntity.status(HttpStatus.CONFLICT)
-					.body(Map.of("mensaje", ex.getMessage(), "accion", "confirmar" // Indica que es necesario confirmar
-					));
+					.body(Map.of("mensaje", ex.getMessage()));
 		} catch (Exception ex) {
 			// Manejo genérico de errores
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -240,9 +254,23 @@ public class ProductoAlumnoController {
 			productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar);
 			return ResponseEntity.ok(Map.of("mensaje",
 				"Mensualidad individual creada correctamente para " + deporte + "."));
+		} catch (MensualidadIncompletaException ex) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(Map.of(
+						"mensaje", ex.getMessage(),
+						"accion", "completar",
+						"existentes", Map.of(
+								"mensualidades", ex.getMensualidadesExistentes(),
+								"tarifasCompetidor", ex.getTarifasCompetidorExistentes()
+						),
+						"faltantes", Map.of(
+								"mensualidades", ex.getMensualidadesFaltantes(),
+								"tarifasCompetidor", ex.getTarifasCompetidorFaltantes()
+						)
+				));
 		} catch (IllegalStateException ex) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(Map.of("mensaje", ex.getMessage(), "accion", "confirmar"));
+				.body(Map.of("mensaje", ex.getMessage()));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(Map.of("mensaje", ex.getMessage()));

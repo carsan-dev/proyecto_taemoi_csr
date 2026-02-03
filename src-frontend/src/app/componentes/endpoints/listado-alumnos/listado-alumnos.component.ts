@@ -1273,10 +1273,26 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
       },
       error: (error) => {
-        if (error.status === 409 && error.error.accion === 'confirmar') {
+        if (error.status === 409 && error.error?.accion === 'completar') {
+          const html = this.construirAvisoMensualidadIncompleta(error.error);
           Swal.fire({
             title: 'Atención',
-            text: error.error.mensaje,
+            html,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, aplicar',
+            cancelButtonText: 'No, cancelar',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              this.forzarCargarMensualidad();
+            }
+          });
+          return;
+        }
+        if (error.status === 409 && error.error?.accion === 'confirmar') {
+          Swal.fire({
+            title: 'Atención',
+            text: error.error?.mensaje || 'La mensualidad ya existe.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, cargar',
@@ -1286,9 +1302,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
               this.forzarCargarMensualidad();
             }
           });
-        } else {
-          Swal.fire('Error', 'No se pudo cargar la mensualidad.', 'error');
+          return;
         }
+        Swal.fire('Error', error?.error?.mensaje || 'No se pudo cargar la mensualidad.', 'error');
       },
     });
   }
@@ -1324,7 +1340,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     serviceCall.subscribe({
       next: () => {
-        showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
+        showSuccessToast('Productos faltantes de mensualidad y competidor cargados correctamente');
       },
       error: () => {
         showErrorToast('No se pudo cargar la mensualidad');
@@ -1536,6 +1552,48 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       'DICIEMBRE',
     ];
     return `${meses[Number.parseInt(mes, 10) - 1]} ${anio}`;
+  }
+
+  private formatearListaDeportes(deportes: unknown): string {
+    if (!Array.isArray(deportes) || deportes.length === 0) {
+      return '';
+    }
+    const deportesValidos = deportes
+      .filter((deporte) => typeof deporte === 'string' && deporte.trim().length > 0)
+      .map((deporte) => this.getDeporteLabel(deporte as string));
+    return deportesValidos.join(', ');
+  }
+
+  private construirAvisoMensualidadIncompleta(payload: any): string {
+    const existentesMensualidad = this.formatearListaDeportes(payload?.existentes?.mensualidades);
+    const existentesCompetidor = this.formatearListaDeportes(payload?.existentes?.tarifasCompetidor);
+    const faltantesMensualidad = this.formatearListaDeportes(payload?.faltantes?.mensualidades);
+    const faltantesCompetidor = this.formatearListaDeportes(payload?.faltantes?.tarifasCompetidor);
+
+    const partes: string[] = [];
+    if (this.mesAnoSeleccionadoIndividual) {
+      partes.push(`<div><strong>Mes:</strong> ${this.formatearNombreMensualidad(this.mesAnoSeleccionadoIndividual)}</div>`);
+    }
+    if (existentesMensualidad || existentesCompetidor) {
+      partes.push('<div style="margin-top: 0.5rem;"><strong>Ya tiene:</strong></div>');
+      if (existentesMensualidad) {
+        partes.push(`<div>Mensualidad: ${existentesMensualidad}</div>`);
+      }
+      if (existentesCompetidor) {
+        partes.push(`<div>Cuota competidor: ${existentesCompetidor}</div>`);
+      }
+    }
+    if (faltantesMensualidad || faltantesCompetidor) {
+      partes.push('<div style="margin-top: 0.5rem;"><strong>Falta:</strong></div>');
+      if (faltantesMensualidad) {
+        partes.push(`<div>Mensualidad: ${faltantesMensualidad}</div>`);
+      }
+      if (faltantesCompetidor) {
+        partes.push(`<div>Cuota competidor: ${faltantesCompetidor}</div>`);
+      }
+    }
+    partes.push('<div style="margin-top: 0.75rem;">¿Quieres aplicar lo que falta?</div>');
+    return partes.join('');
   }
 
   /**
