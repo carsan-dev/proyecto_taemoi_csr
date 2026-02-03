@@ -611,9 +611,11 @@ header.fixed-header {
       justify-content: center;
 
       i {
-        display: block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         line-height: 1;
-        transform: translateY(0.5px);
+        transform: none;
       }
 
       &[href*="facebook"] {
@@ -1087,18 +1089,26 @@ header.fixed-header {
       .btn-login-mobile,
       .btn-logout-mobile {
         margin-left: 0;
-        width: 38px;
-        height: 38px;
-        font-size: 1.1rem;
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
 
         i {
-          display: block;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           line-height: 1;
-          transform: translateY(0.5px);
+          transform: none;
         }
+      }
+
+      .social-link-compact {
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
       }
 
       .header-logo-mobile {
@@ -1149,9 +1159,9 @@ header.fixed-header {
       }
 
       .social-link-compact {
-        width: 24px;
-        height: 24px;
-        font-size: 0.8rem;
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
       }
     }
   }
