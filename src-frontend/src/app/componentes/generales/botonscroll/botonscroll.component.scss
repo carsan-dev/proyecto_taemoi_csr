@@ -1,6 +1,6 @@
 .scroll-to-top-btn {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0));
   right: 20px;
   z-index: 1000;
   border-radius: 50%;
@@ -27,8 +27,9 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
-  // Ajuste en móvil para posicionar encima de la bottom nav
-  @media (max-width: 575.98px) {
-    bottom: 90px; // 70px de bottom nav + 20px de margen
-  }
+  // En móvil ya no hay bottom nav, mantener pegado abajo con safe-area
 }
+
+
+
+
