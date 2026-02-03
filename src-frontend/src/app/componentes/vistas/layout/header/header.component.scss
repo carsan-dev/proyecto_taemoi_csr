@@ -532,6 +532,52 @@ header.fixed-header {
       }
     }
 
+    .header-actions-mobile {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .mobile-social-stack {
+      display: flex;
+      flex-direction: row;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .social-link-compact {
+      width: 26px;
+      height: 26px;
+      font-size: 0.85rem;
+      line-height: 1;
+      background: transparent;
+      border: 1px solid rgba($text-light, 0.15);
+      box-shadow: none;
+      color: $text-light;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        display: block;
+        line-height: 1;
+        transform: translateY(0.5px);
+      }
+
+      &[href*="facebook"] {
+        background: linear-gradient(135deg, #1877f2, #0d65d9);
+        border-color: #1877f2;
+        color: $text-light;
+      }
+
+      &[href*="instagram"] {
+        background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        border-color: #dc2743;
+        color: $text-light;
+      }
+    }
+
     // Mobile My Classes Button
     .btn-my-classes-mobile {
       display: inline-flex;
@@ -883,7 +929,7 @@ header.fixed-header {
         font-size: 1rem;
       }
 
-      .social-link {
+      .navbar-right .social-link {
         width: 48px;
         height: 48px;
         font-size: 1.3rem;
@@ -959,25 +1005,49 @@ header.fixed-header {
     }
   }
 
-  @media (max-width: 576px) {
-    margin: 0.35rem 0.35rem 0;
+    @media (max-width: 576px) {
+      margin: 0.35rem 0.35rem 0;
 
-    nav {
-      .header-title-mobile {
+      nav {
+        .header-actions-mobile {
+          display: flex;
+        }
+
+        .header-title-mobile {
+          align-items: flex-start;
+          text-align: left;
+          padding: 0 0.35rem 0 0.15rem;
+
         .title-main {
-          font-size: 0.85rem;
+          font-size: 1rem;
           letter-spacing: 1px;
         }
 
         .title-sub {
-          font-size: 0.5rem;
-          letter-spacing: 0.5px;
+          display: none;
+        }
+      }
+
+      .btn-login-mobile,
+      .btn-logout-mobile {
+        margin-left: 0;
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          display: block;
+          line-height: 1;
+          transform: translateY(0.5px);
         }
       }
 
       .header-logo-mobile {
-        max-height: 50px;
-        max-width: 130px;
+        max-height: 58px;
+        max-width: 150px;
       }
     }
   }
@@ -1004,8 +1074,14 @@ header.fixed-header {
       }
 
       .header-logo-mobile {
-        max-height: 45px;
-        max-width: 110px;
+        max-height: 52px;
+        max-width: 130px;
+      }
+
+      .social-link-compact {
+        width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
       }
     }
   }
