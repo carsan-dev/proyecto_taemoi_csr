@@ -567,7 +567,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         .pipe(finalize(() => this.pagandoProductos.delete(producto.id)))
         .subscribe({
           next: (respuesta) => {
-            this.actualizarProductoEnListas(respuesta ?? productoActualizado);
+            const productoFinal = respuesta ?? productoActualizado;
+            this.actualizarProductoEnListas(productoFinal);
+            if (this.alumnoId && this.isProductoRecompensa(productoFinal)) {
+              this.cargarDeportesDelAlumno(this.alumnoId, true);
+            }
             showSuccessToast('Producto marcado como pagado');
           },
           error: () => {
@@ -590,6 +594,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (indexPaginado !== -1) {
       this.productosPaginados[indexPaginado] = productoActualizado;
     }
+  }
+
+  private isProductoRecompensa(producto: ProductoAlumnoDTO): boolean {
+    const concepto = (producto?.concepto ?? '').toUpperCase();
+    return concepto.includes('RECOMPENSA');
   }
 
   private captureScrollPositions(): {
