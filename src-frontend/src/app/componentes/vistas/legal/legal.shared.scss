@@ -1,7 +1,10 @@
 .legal-page {
   padding: 6rem 1rem 3rem;
-  background: #f8fafc;
+  background: radial-gradient(circle at top, rgba(18, 56, 58, 0.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   color: #0f172a;
+  position: relative;
+  overflow: hidden;
 }
 
 .legal-hero {
@@ -9,14 +12,28 @@
   margin: 0 auto 2rem;
   padding: 2rem;
   border-radius: 18px;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(135deg, #12383a 0%, #0f172a 70%);
   color: #f8fafc;
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(59, 130, 246, 0.8), rgba(255, 255, 255, 0.2));
+  }
 
   h1 {
     margin: 0 0 0.35rem;
     font-size: clamp(1.8rem, 3vw, 2.5rem);
     font-weight: 700;
+    letter-spacing: 0.5px;
   }
 
   p {
@@ -35,11 +52,47 @@
   border-radius: 18px;
   padding: 2rem;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 
   p {
     margin: 0 0 1rem;
     line-height: 1.7;
     color: #334155;
+  }
+
+  h2 {
+    margin: 1.6rem 0 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    position: relative;
+    padding-left: 0.75rem;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.3rem;
+      width: 4px;
+      height: 1.1rem;
+      border-radius: 999px;
+      background: #12383a;
+    }
+  }
+
+  h2:first-of-type {
+    margin-top: 0;
+  }
+
+  ul {
+    margin: 0 0 1rem;
+    padding-left: 1.1rem;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 0.4rem;
+    line-height: 1.6;
   }
 
   a {
