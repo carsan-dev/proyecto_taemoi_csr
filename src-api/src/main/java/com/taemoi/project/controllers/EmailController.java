@@ -40,7 +40,7 @@ public class EmailController {
 				+ "<div class='footer'>Atentamente,<br>La aplicación de mensajería del Club Moiskimdo Taekwondo</div>"
 				+ "</div>" + "</body>" + "</html>";
 
-		emailService.sendEmail("crolyx16@gmail.com",
+		emailService.sendEmail("moiskimdotaekwondo@gmail.com",
 				"Nuevo mensaje de " + emailRequest.getNombre() + " " + emailRequest.getApellidos(), htmlMsg);
 	}
 }
