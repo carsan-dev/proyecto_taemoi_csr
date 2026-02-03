@@ -572,7 +572,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             if (this.alumnoId && this.isProductoRecompensa(productoFinal)) {
               this.cargarDeportesDelAlumno(this.alumnoId, true);
             }
-            showSuccessToast('Producto marcado como pagado');
+            showSuccessToast('Producto marcado como pagado y grado actualizado');
           },
           error: () => {
             showErrorToast('No se pudo marcar como pagado');
