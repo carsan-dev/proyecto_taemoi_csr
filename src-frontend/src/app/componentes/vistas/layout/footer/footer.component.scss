@@ -372,7 +372,7 @@ $github-color: #333;
       text-decoration: underline;
     }
 
-    &:not(:last-child)::after {
+    &:not(:last-of-type)::after {
       content: '•';
       margin-left: 0.75rem;
       color: rgba($text-light, 0.3);
@@ -596,5 +596,24 @@ $github-color: #333;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+
+// Ensure separators are scoped per attribution group
+.attributions {
+  .attributions-links {
+    display: inline;
+  }
+
+  .attributions-links a::after {
+    content: '';
+    margin: 0;
+  }
+
+  .attributions-links a:not(:last-of-type)::after {
+    content: '•';
+    margin-left: 0.75rem;
+    color: rgba($text-light, 0.3);
   }
 }
