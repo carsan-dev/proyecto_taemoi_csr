@@ -29,6 +29,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly scrollThreshold: number = 100;
   username: string | null = null;
   private documentScrollHandler?: (event: Event) => void;
+  private resizeHandler?: () => void;
   spotifyWidgetVisible: boolean = false;
   spotifyUrlInput: string = '';
   spotifyEmbedUrl: SafeResourceUrl | null = null;
@@ -124,7 +125,30 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       };
       documentRef.addEventListener('scroll', this.documentScrollHandler, true);
     }
+
+    // Update scrollbar width on resize (initial calculation is done in index.html)
+    const windowRef = this.getWindowRef();
+    if (windowRef !== undefined) {
+      this.resizeHandler = () => this.updateScrollbarWidth();
+      windowRef.addEventListener('resize', this.resizeHandler);
+    }
   }
+
+  private updateScrollbarWidth(): void {
+    const documentRef = this.getDocumentRef();
+    if (documentRef !== undefined) {
+      const outer = documentRef.createElement('div');
+      outer.style.cssText = 'visibility:hidden;overflow:scroll;width:100px;height:100px;position:absolute;top:-9999px';
+      documentRef.body.appendChild(outer);
+      const inner = documentRef.createElement('div');
+      inner.style.cssText = 'width:100%;height:100%';
+      outer.appendChild(inner);
+      const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+      documentRef.body.removeChild(outer);
+      documentRef.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+    }
+  }
+
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
@@ -136,6 +160,13 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.documentScrollHandler && documentRef !== undefined) {
       documentRef.removeEventListener('scroll', this.documentScrollHandler, true);
       this.documentScrollHandler = undefined;
+    }
+
+    // Clean up resize listener
+    const windowRef = this.getWindowRef();
+    if (this.resizeHandler && windowRef !== undefined) {
+      windowRef.removeEventListener('resize', this.resizeHandler);
+      this.resizeHandler = undefined;
     }
   }
 
