@@ -355,6 +355,10 @@ $github-color: #333;
     letter-spacing: 0.5px;
   }
 
+  .attributions-title--spaced {
+    margin-top: 0.85rem;
+  }
+
   a {
     display: inline-block;
     color: rgba($text-light, 0.5);
