@@ -1304,6 +1304,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeProductos(): Observable<Blob> {
+    return this.http
+      .get(`${this.urlBase}/informes/productos`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   generarInformeMensualidades(soloActivos: boolean = true): Observable<Blob> {
     const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
