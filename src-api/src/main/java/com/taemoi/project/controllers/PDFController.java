@@ -179,6 +179,17 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(csvBytes);
 	}
 
+	@GetMapping("/productos")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeProductos() {
+		byte[] pdfBytes = pdfService.generarInformeProductos();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_productos.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/mensualidades")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<byte[]> generarInformeMensualidades(

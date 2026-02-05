@@ -30,6 +30,8 @@ public interface PDFService {
 
 	byte[] generarInformeDeudasCSV(boolean soloActivos);
 
+	byte[] generarInformeProductos();
+
 	byte[] generarInformeMensualidades(boolean soloActivos);
 
 	byte[] generarInformeMensualidadesTaekwondo(boolean soloActivos);
