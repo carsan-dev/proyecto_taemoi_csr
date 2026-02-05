@@ -35,10 +35,12 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
@@ -55,6 +57,9 @@ public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private GradoRepository gradoRepository;
+
+	@Autowired
+	private ProductoRepository productoRepository;
 
 	@Autowired
 	private com.taemoi.project.repositories.ProductoAlumnoRepository productoAlumnoRepository;
@@ -165,8 +170,8 @@ public class PDFServiceImpl implements PDFService {
 	 * @return CSS style string
 	 */
 	private String generarEstilosModernos(String pageTitle, String fechaGeneracion) {
-		return "@page {" + "  margin: 25mm 15mm 20mm 15mm;" + "  @top-center {" + "    content: '" + pageTitle + "';"
-				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 16pt;"
+		return "@page {" + "  margin: 18mm 15mm 20mm 15mm;" + "  @top-center {" + "    content: '" + pageTitle + "';"
+				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 13pt;"
 				+ "    font-weight: 700;" + "    color: #1b2b2e;" + "    text-align: center;" + "  }"
 				+ "  @bottom-left {" + "    content: '" + fechaGeneracion + "';"
 				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 9pt;"
@@ -176,13 +181,13 @@ public class PDFServiceImpl implements PDFService {
 				+ "    color: #6c757d;" + "  }" + "}" + "* { box-sizing: border-box; }" + "body {"
 				+ "  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "  color: #212529;"
 				+ "  line-height: 1.6;" + "  background: #ffffff;" + "}" + ".pdf-header {" + "  text-align: center;"
-				+ "  margin-bottom: 8mm;" + "  padding-bottom: 5mm;" + "  border-bottom: 3px solid #007bff;"
+				+ "  margin-bottom: 5mm;" + "  padding-bottom: 3mm;" + "  border-bottom: 2px solid #007bff;"
 				+ "  page-break-inside: avoid;" + "}" + ".logo-container {" + "  text-align: center;"
-				+ "  margin-bottom: 3mm;" + "}" + ".logo-container img {" + "  width: 35mm;" + "  height: auto;"
-				+ "  max-height: 35mm;" + "}" + ".header-content {" + "  text-align: center;" + "}" + ".club-name {"
-				+ "  font-size: 20pt;" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 2mm 0;"
+				+ "  margin-bottom: 2mm;" + "}" + ".logo-container img {" + "  width: 26mm;" + "  height: auto;"
+				+ "  max-height: 26mm;" + "}" + ".header-content {" + "  text-align: center;" + "}" + ".club-name {"
+				+ "  font-size: 15pt;" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 1mm 0;"
 				+ "  text-transform: uppercase;" + "  letter-spacing: 1px;" + "}" + ".report-title {"
-				+ "  font-size: 16pt;" + "  font-weight: 600;" + "  color: #007bff;" + "  margin: 2mm 0 0 0;" + "}"
+				+ "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #007bff;" + "  margin: 1mm 0 0 0;" + "}"
 				+ "h1, h2, h3 {" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 8mm 0 5mm 0;" + "}"
 				+ "h1 { font-size: 22pt; }" + "h2 {" + "  font-size: 16pt;" + "  padding-bottom: 2mm;"
 				+ "  border-bottom: 2px solid #007bff;" + "  display: inline-block;" + "  min-width: 40%;" + "}"
@@ -1840,6 +1845,100 @@ public class PDFServiceImpl implements PDFService {
 		csv.append("TOTAL GENERAL,,,,,").append(String.format("%.2f", totalGeneral)).append(",\n");
 
 		return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	}
+
+	@Override
+	public byte[] generarInformeProductos() {
+		List<Producto> productos = productoRepository.findAll();
+		productos.sort(Comparator.comparing(
+				p -> p.getConcepto() == null ? "" : p.getConcepto().toLowerCase(Locale.ROOT)));
+
+		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Listado de Productos", fechaGeneracion));
+		html.append("@page { margin: 14mm 15mm 20mm 15mm;");
+		html.append("  @top-center { content: ''; }");
+		html.append("  @bottom-left { content: '" + fechaGeneracion + "';");
+		html.append("    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;");
+		html.append("    font-size: 9pt; color: #6c757d; }");
+		html.append("  @bottom-right { content: 'PÃ¡gina ' counter(page) ' de ' counter(pages);");
+		html.append("    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;");
+		html.append("    font-size: 9pt; color: #6c757d; }");
+		html.append("}");
+		html.append("body { font-size: 8.5pt; }");
+		html.append(".pdf-header { margin-bottom: 2mm; padding-bottom: 1.5mm; border-bottom-width: 1.5px; }");
+		html.append(".logo-container { margin-bottom: 1mm; }");
+		html.append(".logo-container img { width: 18mm; max-height: 18mm; }");
+		html.append(".club-name { font-size: 11.5pt; margin: 0.5mm 0; }");
+		html.append(".report-title { font-size: 9.5pt; margin-top: 0.4mm; }");
+		html.append(".section-header { padding: 2mm; margin-bottom: 2mm; font-size: 9.5pt; }");
+		html.append(".productos-table { margin-top: 0.5mm; }");
+		html.append(".productos-table th, .productos-table td { font-size: 7.5pt; padding: 1.1mm 1.2mm; line-height: 1.2; }");
+		html.append(".productos-table th { letter-spacing: 0.2px; }");
+		html.append(".productos-table { table-layout: fixed; }");
+		html.append(".productos-table th:nth-child(1) { width: 70%; }");
+		html.append(".productos-table td:nth-child(1) { width: 70%; text-align: left; }");
+		html.append(".productos-table th:nth-child(2), .productos-table td:nth-child(2) { width: 30%; }");
+		html.append(".precio-cell { font-weight: 600; color: #1b2b2e; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+
+		html.append(generarCabeceraConLogo("Listado de Productos"));
+
+		if (productos.isEmpty()) {
+			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("No hay productos registrados");
+			html.append("</div>");
+		} else {
+			html.append("<div class='section-header' style='background-color: #17a2b8;'>");
+			html.append("Productos (" + productos.size() + ")");
+			html.append("</div>");
+
+			html.append("<table class='productos-table'>");
+			html.append("<thead><tr>");
+			html.append("<th>Concepto</th>");
+			html.append("<th>Precio</th>");
+			html.append("</tr></thead>");
+			html.append("<tbody>");
+
+			for (Producto producto : productos) {
+				String concepto = producto.getConcepto() != null ? producto.getConcepto() : "N/A";
+				String precio = producto.getPrecio() != null
+						? String.format("%.2f", producto.getPrecio()) + " &#8364;"
+						: "N/A";
+
+				html.append("<tr>");
+				html.append("<td>").append(concepto).append("</td>");
+				html.append("<td class='precio-cell'>").append(precio).append("</td>");
+				html.append("</tr>");
+			}
+
+			html.append("</tbody>");
+			html.append("</table>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return outputStream.toByteArray();
 	}
 
 	@Override
