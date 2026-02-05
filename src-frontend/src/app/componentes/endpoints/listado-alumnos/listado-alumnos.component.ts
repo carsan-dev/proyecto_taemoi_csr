@@ -270,6 +270,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         label: 'Informe de Mensualidades de Kickboxing',
       },
       {
+        value: 'productos',
+        label: 'Informe de Productos',
+      },
+      {
         value: 'competidores',
         label: 'Informe de Competidores',
       },
@@ -924,6 +928,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.generarPdfConLoading(
           this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos),
           'No se pudo generar el informe de mensualidades de Kickboxing'
+        );
+        break;
+      case 'productos':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeProductos(),
+          'No se pudo generar el informe de productos'
         );
         break;
       case 'competidores':

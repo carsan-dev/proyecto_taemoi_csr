@@ -89,7 +89,7 @@ export class InformeModalComponent implements OnInit {
           icon: 'bi-people',
           description: this.getDescription(opcion.value)
         });
-      } else if (value.includes('deuda') || value.includes('mensualidad')) {
+      } else if (value.includes('deuda') || value.includes('mensualidad') || value.includes('producto')) {
         categorias[2].opciones.push({
           ...opcion,
           icon: 'bi-currency-euro',
@@ -122,7 +122,8 @@ export class InformeModalComponent implements OnInit {
       'deudas': 'Resumen de pagos pendientes y deudas',
       'mensualidades': 'Estado de mensualidades de todos los alumnos',
       'mensualidades-taekwondo': 'Mensualidades específicas de Taekwondo',
-      'mensualidades-kickboxing': 'Mensualidades específicas de Kickboxing'
+      'mensualidades-kickboxing': 'Mensualidades específicas de Kickboxing',
+      'productos': 'Listado completo de productos con precios'
     };
     return descriptions[value] || '';
   }
