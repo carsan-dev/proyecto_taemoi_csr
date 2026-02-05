@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class MensualidadIncompletaException extends RuntimeException {
+	private static final long serialVersionUID = 1L;
 	private final List<String> mensualidadesExistentes;
 	private final List<String> mensualidadesFaltantes;
 	private final List<String> tarifasCompetidorExistentes;
