@@ -31,7 +31,7 @@ export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
     route: '/',
   },
   {
-    label: 'Â¿QuÃ© hacemos?',
+    label: '¿Qué hacemos?',
     items: [
       {
         label: 'Taekwondo',
@@ -73,7 +73,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     title: 'ACCIONES',
     items: [
       {
-        label: 'PÃ¡gina principal',
+        label: 'Página principal',
         route: '/adminpage',
         icon: 'bi-house-fill',
       },
@@ -93,7 +93,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-person-gear',
       },
       {
-        label: 'AÃ±adir alumnos',
+        label: 'Añadir alumnos',
         route: '/alumnosCrear',
         icon: 'bi-person-add',
       },
@@ -108,7 +108,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     title: 'GRUPOS Y TURNOS',
     items: [
       {
-        label: 'GestiÃ³n de grupos y turnos',
+        label: 'Gestión de grupos y turnos',
         route: '/gruposListar',
         icon: 'bi-people-fill',
       },
@@ -133,7 +133,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-calendar-check-fill',
       },
       {
-        label: 'AÃ±adir eventos',
+        label: 'Añadir eventos',
         route: '/eventosCrear',
         icon: 'bi-calendar-plus-fill',
       },
@@ -148,7 +148,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-box-seam-fill',
       },
       {
-        label: 'AÃ±adir productos',
+        label: 'Añadir productos',
         route: '/productosCrear',
         icon: 'bi-plus-square-fill',
       },

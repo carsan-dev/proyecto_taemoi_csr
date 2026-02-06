@@ -1,4 +1,4 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+﻿import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
@@ -112,6 +112,7 @@ export class SeoService {
     this.updateMetaTag('name', 'twitter:card', 'summary_large_image');
 
     this.setCanonical(canonical);
+    this.setHreflang(canonical);
     this.updateBreadcrumbSchema(cleanPath);
     this.updateRouteSchemas(cleanPath);
   }
@@ -145,6 +146,7 @@ export class SeoService {
     this.updateMetaTag('name', 'twitter:card', 'summary_large_image');
 
     this.setCanonical(canonical);
+    this.setHreflang(canonical);
 
     if (config.breadcrumbs) {
       this.setBreadcrumbSchema(config.breadcrumbs);
@@ -177,6 +179,30 @@ export class SeoService {
       this.document.head.appendChild(link);
     }
     link.setAttribute('href', url);
+  }
+
+  private setHreflang(url: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.setOrCreateLink('alternate', 'es-ES', url);
+    this.setOrCreateLink('alternate', 'x-default', url);
+  }
+
+  private setOrCreateLink(rel: string, hreflang: string, href: string): void {
+    let link = this.document.querySelector(
+      `link[rel='${rel}'][hreflang='${hreflang}']`
+    ) as HTMLLinkElement | null;
+
+    if (!link) {
+      link = this.document.createElement('link');
+      link.setAttribute('rel', rel);
+      link.setAttribute('hreflang', hreflang);
+      this.document.head.appendChild(link);
+    }
+
+    link.setAttribute('href', href);
   }
 
   private buildCanonical(url: string): string {
