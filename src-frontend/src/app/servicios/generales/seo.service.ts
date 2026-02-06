@@ -1,4 +1,4 @@
-﻿import { isPlatformBrowser, DOCUMENT } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
@@ -9,6 +9,8 @@ export interface BreadcrumbItem {
   name: string;
   url: string;
 }
+
+type JsonLdSchema = Record<string, unknown>;
 
 @Injectable({
   providedIn: 'root',
@@ -51,11 +53,11 @@ export class SeoService {
     ],
     '/politica-privacidad': [
       { name: 'Inicio', url: '/' },
-      { name: 'PolÃ­tica de privacidad', url: '/politica-privacidad' },
+      { name: 'Politica de privacidad', url: '/politica-privacidad' },
     ],
     '/politica-cookies': [
       { name: 'Inicio', url: '/' },
-      { name: 'PolÃ­tica de cookies', url: '/politica-cookies' },
+      { name: 'Politica de cookies', url: '/politica-cookies' },
     ],
     '/aviso-legal': [
       { name: 'Inicio', url: '/' },
@@ -68,11 +70,11 @@ export class SeoService {
   };
 
   constructor(
-    private router: Router,
-    private title: Title,
-    private meta: Meta,
-    @Inject(DOCUMENT) private document: Document,
-    @Inject(PLATFORM_ID) private platformId: Object
+    private readonly router: Router,
+    private readonly title: Title,
+    private readonly meta: Meta,
+    @Inject(DOCUMENT) private readonly document: Document,
+    @Inject(PLATFORM_ID) private readonly platformId: Object,
   ) {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
@@ -84,6 +86,7 @@ export class SeoService {
   private applyRouteSeo(): void {
     const route = this.getDeepestRoute(this.router.routerState.snapshot.root);
     const seo = (route.data?.['seo'] as SeoMeta | undefined) ?? {};
+    const cleanPath = this.getCleanPath(this.router.url);
 
     const title = seo.title ?? SEO_DEFAULTS.title;
     const description = seo.description ?? SEO_DEFAULTS.description;
@@ -96,22 +99,23 @@ export class SeoService {
     this.updateMetaTag('name', 'description', description);
     this.updateMetaTag('name', 'keywords', keywords);
     this.updateMetaTag('name', 'robots', robots);
+    this.updateMetaTag('name', 'googlebot', robots);
     this.updateMetaTag('property', 'og:title', title);
     this.updateMetaTag('property', 'og:description', description);
     this.updateMetaTag('property', 'og:url', canonical);
     this.updateMetaTag('property', 'og:image', ogImage);
+    this.updateMetaTag('property', 'og:image:alt', `Imagen de ${title}`);
+    this.updateMetaTag('property', 'og:type', 'website');
     this.updateMetaTag('name', 'twitter:title', title);
     this.updateMetaTag('name', 'twitter:description', description);
     this.updateMetaTag('name', 'twitter:image', ogImage);
+    this.updateMetaTag('name', 'twitter:card', 'summary_large_image');
 
     this.setCanonical(canonical);
-    this.updateBreadcrumbSchema(this.router.url);
+    this.updateBreadcrumbSchema(cleanPath);
+    this.updateRouteSchemas(cleanPath);
   }
 
-  /**
-   * Actualiza el SEO dinÃ¡micamente desde un componente.
-   * Ãštil para pÃ¡ginas con contenido dinÃ¡mico como eventos/:id
-   */
   updateDynamicSeo(config: {
     title: string;
     description: string;
@@ -127,22 +131,35 @@ export class SeoService {
     this.title.setTitle(config.title);
     this.updateMetaTag('name', 'description', config.description);
     this.updateMetaTag('name', 'keywords', keywords);
+    this.updateMetaTag('name', 'robots', this.defaultRobots);
+    this.updateMetaTag('name', 'googlebot', this.defaultRobots);
     this.updateMetaTag('property', 'og:title', config.title);
     this.updateMetaTag('property', 'og:description', config.description);
     this.updateMetaTag('property', 'og:url', canonical);
     this.updateMetaTag('property', 'og:image', ogImage);
+    this.updateMetaTag('property', 'og:image:alt', `Imagen de ${config.title}`);
+    this.updateMetaTag('property', 'og:type', 'article');
     this.updateMetaTag('name', 'twitter:title', config.title);
     this.updateMetaTag('name', 'twitter:description', config.description);
     this.updateMetaTag('name', 'twitter:image', ogImage);
+    this.updateMetaTag('name', 'twitter:card', 'summary_large_image');
 
     this.setCanonical(canonical);
 
     if (config.breadcrumbs) {
       this.setBreadcrumbSchema(config.breadcrumbs);
+    } else {
+      this.updateBreadcrumbSchema(this.getCleanPath(this.router.url));
     }
+
+    this.updateRouteSchemas(this.getCleanPath(this.router.url));
   }
 
-  private updateMetaTag(attr: 'name' | 'property', key: string, content: string): void {
+  private updateMetaTag(
+    attr: 'name' | 'property',
+    key: string,
+    content: string,
+  ): void {
     this.meta.updateTag({ [attr]: key, content }, `${attr}='${key}'`);
   }
 
@@ -151,7 +168,9 @@ export class SeoService {
       return;
     }
 
-    let link = this.document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
+    let link = this.document.querySelector(
+      "link[rel='canonical']",
+    ) as HTMLLinkElement | null;
     if (!link) {
       link = this.document.createElement('link');
       link.setAttribute('rel', 'canonical');
@@ -161,20 +180,25 @@ export class SeoService {
   }
 
   private buildCanonical(url: string): string {
-    const cleaned = url.split('?')[0].split('#')[0];
+    const cleaned = this.getCleanPath(url);
     if (!cleaned || cleaned === '/') {
       return `${this.baseUrl}/`;
     }
     return `${this.baseUrl}${cleaned}`;
   }
 
-  private updateBreadcrumbSchema(url: string): void {
-    const cleanUrl = url.split('?')[0].split('#')[0];
-    const breadcrumbs = this.routeBreadcrumbs[cleanUrl];
+  private getCleanPath(url: string): string {
+    return url.split('?')[0].split('#')[0];
+  }
 
+  private updateBreadcrumbSchema(path: string): void {
+    const breadcrumbs = this.routeBreadcrumbs[path];
     if (breadcrumbs) {
       this.setBreadcrumbSchema(breadcrumbs);
+      return;
     }
+
+    this.removeSchemaBySelector('script[data-breadcrumb]');
   }
 
   private setBreadcrumbSchema(breadcrumbs: BreadcrumbItem[]): void {
@@ -182,12 +206,9 @@ export class SeoService {
       return;
     }
 
-    const existingScript = this.document.querySelector('script[data-breadcrumb]');
-    if (existingScript) {
-      existingScript.remove();
-    }
+    this.removeSchemaBySelector('script[data-breadcrumb]');
 
-    const schema = {
+    const schema: JsonLdSchema = {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: breadcrumbs.map((item, index) => ({
@@ -205,7 +226,269 @@ export class SeoService {
     this.document.head.appendChild(script);
   }
 
-  private getDeepestRoute(route: ActivatedRouteSnapshot): ActivatedRouteSnapshot {
+  private updateRouteSchemas(path: string): void {
+    this.setRouteSchemas(this.getRouteSchemas(path));
+  }
+
+  private getRouteSchemas(path: string): JsonLdSchema[] {
+    switch (path) {
+      case '/taekwondo':
+        return [
+          this.buildSportsServiceSchema(
+            '/taekwondo',
+            'Taekwondo',
+            'Clases de Taekwondo en Umbrete, Aljarafe y Sevilla',
+            'Clases de taekwondo para ninos, jovenes y adultos con grupos por nivel.',
+          ),
+          this.buildFaqSchema([
+            {
+              question: 'Hay clases de taekwondo para ninos en Umbrete?',
+              answer:
+                'Si. Tenemos grupos para ninos, jovenes y adultos, con acceso desde Umbrete, Aljarafe y Sevilla.',
+            },
+            {
+              question: 'Se puede empezar taekwondo sin experiencia previa?',
+              answer:
+                'Si. Las clases de iniciacion estan preparadas para personas que empiezan desde cero.',
+            },
+            {
+              question: 'Donde esta la escuela para taekwondo en el Aljarafe?',
+              answer:
+                'La escuela esta en Umbrete, Sevilla, en Calle Parada de la Ciguena 36.',
+            },
+          ]),
+        ];
+      case '/kickboxing':
+        return [
+          this.buildSportsServiceSchema(
+            '/kickboxing',
+            'Kickboxing Light',
+            'Clases de Kickboxing Light en Umbrete, Aljarafe y Sevilla',
+            'Entrenamientos de kickboxing light para mejorar tecnica, cardio y condicion fisica.',
+          ),
+          this.buildFaqSchema([
+            {
+              question:
+                'Las clases de kickboxing en Umbrete son para principiantes?',
+              answer:
+                'Si. Trabajamos con niveles de iniciacion e intermedio para entrenar con seguridad.',
+            },
+            {
+              question:
+                'Puedo entrenar kickboxing si vivo en Sevilla o el Aljarafe?',
+              answer:
+                'Si. Muchas alumnas y alumnos llegan desde municipios del Aljarafe y desde Sevilla.',
+            },
+            {
+              question: 'Que necesito para empezar kickboxing light?',
+              answer:
+                'Solo ropa comoda. Te orientamos con el material basico en la primera clase.',
+            },
+          ]),
+        ];
+      case '/pilates':
+        return [
+          this.buildSportsServiceSchema(
+            '/pilates',
+            'Pilates Balance',
+            'Clases de Pilates en Umbrete, Aljarafe y Sevilla',
+            'Pilates orientado a movilidad, postura y fortalecimiento del core para todos los niveles.',
+          ),
+          this.buildFaqSchema([
+            {
+              question: 'Hay pilates para principiantes en Umbrete?',
+              answer:
+                'Si. Las sesiones se adaptan al nivel y objetivo de cada persona.',
+            },
+            {
+              question: 'El pilates esta pensado solo para gente joven?',
+              answer:
+                'No. Trabajamos con diferentes edades y niveles de condicion fisica.',
+            },
+            {
+              question:
+                'Puedo venir desde Sevilla o el Aljarafe a clases de pilates?',
+              answer:
+                'Si. La escuela en Umbrete da servicio a alumnado de Aljarafe y Sevilla.',
+            },
+          ]),
+        ];
+      case '/defensa-personal-femenina':
+        return [
+          this.buildSportsServiceSchema(
+            '/defensa-personal-femenina',
+            'Defensa Personal Femenina',
+            'Defensa Personal Femenina en Umbrete, Aljarafe y Sevilla',
+            'Clases practicas de autodefensa para mujeres, con tecnicas aplicables a situaciones reales.',
+          ),
+          this.buildFaqSchema([
+            {
+              question:
+                'Las clases de defensa personal femenina son solo para mujeres en forma?',
+              answer:
+                'No. Las clases se adaptan a cualquier nivel de condicion fisica y experiencia.',
+            },
+            {
+              question: 'Se practica defensa personal femenina en grupo?',
+              answer:
+                'Si. Se trabaja en grupo y por parejas para entrenar tecnicas utiles con seguridad y progresion.',
+            },
+            {
+              question: 'Atendeis alumnas de Sevilla y del Aljarafe?',
+              answer:
+                'Si. La escuela de Umbrete recibe alumnas de Sevilla y municipios cercanos.',
+            },
+          ]),
+        ];
+      case '/horarios':
+        return [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            '@id': `${this.baseUrl}/horarios#webpage`,
+            name: 'Horarios de clases en Umbrete',
+            description:
+              'Horarios de taekwondo, kickboxing light, pilates balance y defensa personal femenina en Umbrete.',
+            url: `${this.baseUrl}/horarios`,
+            isPartOf: { '@id': `${this.baseUrl}/#club` },
+            about: [
+              { '@type': 'Thing', name: 'Taekwondo' },
+              { '@type': 'Thing', name: 'Kickboxing Light' },
+              { '@type': 'Thing', name: 'Pilates Balance' },
+              { '@type': 'Thing', name: 'Defensa Personal Femenina' },
+            ],
+          },
+        ];
+      case '/contacto':
+        return [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ContactPage',
+            '@id': `${this.baseUrl}/contacto#contact`,
+            name: 'Contacto Moiskimdo',
+            description:
+              'Pagina de contacto para inscripcion y dudas sobre taekwondo, kickboxing, pilates y defensa personal femenina.',
+            url: `${this.baseUrl}/contacto`,
+            mainEntity: { '@id': `${this.baseUrl}/#club` },
+          },
+        ];
+      case '/eventos':
+        return [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            '@id': `${this.baseUrl}/eventos#collection`,
+            name: 'Eventos y competiciones de artes marciales en Umbrete y Sevilla',
+            description:
+              'Listado de eventos, actividades y competiciones de taekwondo y kickboxing del club.',
+            url: `${this.baseUrl}/eventos`,
+            isPartOf: { '@id': `${this.baseUrl}/#club` },
+            about: [
+              { '@type': 'Thing', name: 'Taekwondo' },
+              { '@type': 'Thing', name: 'Kickboxing Light' },
+              { '@type': 'Place', name: 'Umbrete' },
+              { '@type': 'Place', name: 'Sevilla' },
+            ],
+          },
+        ];
+      default:
+        return [];
+    }
+  }
+
+  private buildSportsServiceSchema(
+    path: string,
+    serviceType: string,
+    name: string,
+    description: string,
+  ): JsonLdSchema {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      '@id': `${this.baseUrl}${path}#service`,
+      name,
+      description,
+      serviceType,
+      provider: { '@id': `${this.baseUrl}/#club` },
+      areaServed: this.getAreaServed(),
+      url: `${this.baseUrl}${path}`,
+      offers: {
+        '@type': 'Offer',
+        url: `${this.baseUrl}/contacto`,
+        availability: 'https://schema.org/InStock',
+      },
+    };
+  }
+
+  private buildFaqSchema(
+    questions: Array<{
+      question: string;
+      answer: string;
+    }>,
+  ): JsonLdSchema {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: questions.map((entry) => ({
+        '@type': 'Question',
+        name: entry.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: entry.answer,
+        },
+      })),
+    };
+  }
+
+  private getAreaServed(): JsonLdSchema[] {
+    return [
+      { '@type': 'City', name: 'Umbrete' },
+      { '@type': 'AdministrativeArea', name: 'Aljarafe' },
+      { '@type': 'City', name: 'Sevilla' },
+      { '@type': 'AdministrativeArea', name: 'Andalucia' },
+    ];
+  }
+
+  private setRouteSchemas(schemas: JsonLdSchema[]): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.removeSchemasBySelector('script[data-route-schema]');
+
+    schemas.forEach((schema, index) => {
+      const script = this.document.createElement('script');
+      script.type = 'application/ld+json';
+      script.setAttribute('data-route-schema', `${index}`);
+      script.textContent = JSON.stringify(schema);
+      this.document.head.appendChild(script);
+    });
+  }
+
+  private removeSchemaBySelector(selector: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const script = this.document.querySelector(selector);
+    if (script) {
+      script.remove();
+    }
+  }
+
+  private removeSchemasBySelector(selector: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.document
+      .querySelectorAll(selector)
+      .forEach((element) => element.remove());
+  }
+
+  private getDeepestRoute(
+    route: ActivatedRouteSnapshot,
+  ): ActivatedRouteSnapshot {
     let current = route;
     while (current.firstChild) {
       current = current.firstChild;
@@ -213,9 +496,6 @@ export class SeoService {
     return current;
   }
 
-  /**
-   * Agrega Event Schema JSON-LD al documento para SEO de eventos
-   */
   setEventSchema(config: {
     name: string;
     description: string;
@@ -228,14 +508,9 @@ export class SeoService {
       return;
     }
 
-    // Eliminar schema de evento existente
-    const existingScript = this.document.querySelector('script[data-event-schema]');
-    if (existingScript) {
-      existingScript.remove();
-    }
+    this.removeSchemaBySelector('script[data-event-schema]');
 
-    // Crear Event Schema
-    const schema: any = {
+    const schema: Record<string, unknown> = {
       '@context': 'https://schema.org',
       '@type': 'Event',
       name: config.name,
@@ -244,38 +519,34 @@ export class SeoService {
       eventStatus: 'https://schema.org/EventScheduled',
       location: {
         '@type': 'Place',
-        name: 'Club Moi\'s Kim Do',
+        name: "Club Moi's Kim Do",
         address: {
           '@type': 'PostalAddress',
           streetAddress: 'Calle Parada de la Ciguena, 36',
           addressLocality: 'Umbrete',
           addressRegion: 'Sevilla',
           postalCode: '41806',
-          addressCountry: 'ES'
-        }
+          addressCountry: 'ES',
+        },
       },
       organizer: {
         '@type': 'Organization',
-        name: 'Club Moi\'s Kim Do',
-        url: 'https://moiskimdo.es'
-      }
+        name: "Club Moi's Kim Do",
+        url: 'https://moiskimdo.es',
+      },
     };
 
-    // Agregar imagen si estÃ¡ disponible
     if (config.image) {
-      schema.image = [config.image];
+      schema['image'] = [config.image];
     }
-
-    // Agregar fechas si estÃ¡n disponibles
     if (config.startDate) {
-      schema.startDate = config.startDate;
+      schema['startDate'] = config.startDate;
     }
     if (config.endDate) {
-      schema.endDate = config.endDate;
+      schema['endDate'] = config.endDate;
     }
 
-    // Agregar URL del evento
-    schema.url = `${this.baseUrl}${config.url}`;
+    schema['url'] = `${this.baseUrl}${config.url}`;
 
     const script = this.document.createElement('script');
     script.type = 'application/ld+json';
@@ -284,62 +555,45 @@ export class SeoService {
     this.document.head.appendChild(script);
   }
 
-  /**
-   * Elimina el Event Schema del documento (Ãºtil al salir de la pÃ¡gina de evento)
-   */
   removeEventSchema(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    const existingScript = this.document.querySelector('script[data-event-schema]');
-    if (existingScript) {
-      existingScript.remove();
-    }
+    this.removeSchemaBySelector('script[data-event-schema]');
   }
 
-  /**
-   * Agrega Review Schema JSON-LD al documento para SEO de reseÃ±as
-   */
-  setReviewsSchema(reviews: Array<{
-    author: string;
-    rating: number;
-    text: string;
-    date?: string;
-  }>): void {
+  setReviewsSchema(
+    reviews: Array<{
+      author: string;
+      rating: number;
+      text: string;
+      date?: string;
+    }>,
+  ): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
 
-    // Eliminar schema de reseÃ±as existente
-    const existingScript = this.document.querySelector('script[data-reviews-schema]');
-    if (existingScript) {
-      existingScript.remove();
-    }
+    this.removeSchemaBySelector('script[data-reviews-schema]');
 
-    // Crear array de Review schemas
-    const reviewSchemas = reviews.map(review => ({
+    const reviewSchemas = reviews.map((review) => ({
       '@type': 'Review',
       author: {
         '@type': 'Person',
-        name: review.author
+        name: review.author,
       },
       reviewRating: {
         '@type': 'Rating',
         ratingValue: review.rating,
         bestRating: 5,
-        worstRating: 1
+        worstRating: 1,
       },
       reviewBody: review.text,
-      ...(review.date && { datePublished: review.date })
+      ...(review.date && { datePublished: review.date }),
     }));
 
-    // Crear schema que incluye las reseÃ±as en el LocalBusiness
-    const schema = {
+    const schema: JsonLdSchema = {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
       '@id': 'https://moiskimdo.es/#club',
-      review: reviewSchemas
+      review: reviewSchemas,
     };
 
     const script = this.document.createElement('script');
@@ -349,4 +603,3 @@ export class SeoService {
     this.document.head.appendChild(script);
   }
 }
-
