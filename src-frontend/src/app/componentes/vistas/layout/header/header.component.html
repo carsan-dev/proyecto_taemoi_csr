@@ -1,15 +1,15 @@
-@if (isAuthChecked && !usuarioLogueado) {
+﻿@if (isAuthChecked && !usuarioLogueado) {
 <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
       <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
         [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
-        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menÃº de navegaciÃ³n' : 'Abrir menÃº de navegaciÃ³n'">
         <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
       </button>
       <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
-          alt="Logo de la aplicación TaeMoi" width="137" height="137">
+          alt="Logo de la aplicaciÃ³n TaeMoi" width="137" height="137">
       </a>
       <div class="header-title-mobile d-lg-none">
         <div class="title-main">MOI'S KIM DO</div>
@@ -26,7 +26,7 @@
             <i class="bi bi-instagram"></i>
           </a>
         </div>
-        <a class="btn-login-mobile" [routerLink]="['/login']" aria-label="Iniciar sesión">
+        <a class="btn-login-mobile" [routerLink]="['/login']" aria-label="Iniciar sesiÃ³n">
           <i class="bi bi-person-circle"></i>
         </a>
       </div>
@@ -37,7 +37,7 @@
       <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
         <div class="navbar-left d-flex align-items-center">
           <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
-            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
+            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicaciÃ³n TaeMoi" width="137" height="137">
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
@@ -49,7 +49,7 @@
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" role="button" id="deportesDropdown" [routerLinkActive]="['active']"
                 [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
+                <i class="bi bi-trophy me-1"></i>Â¿QuÃ© hacemos?
               </a>
               <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdown">
                 <li>
@@ -68,7 +68,7 @@
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link">
+                  <a class="dropdown-item" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active-link">
                     <i class="bi bi-shield-fill-check me-2"></i>Defensa Personal Femenina
                   </a>
                 </li>
@@ -111,8 +111,8 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="btn btn-login" [routerLink]="['/login']" aria-label="Iniciar sesión">
-                <i class="bi bi-person-circle me-1"></i>Iniciar Sesión
+              <a class="btn btn-login" [routerLink]="['/login']" aria-label="Iniciar sesiÃ³n">
+                <i class="bi bi-person-circle me-1"></i>Iniciar SesiÃ³n
               </a>
             </li>
           </ul>
@@ -127,26 +127,26 @@
   <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
   <div class="mobile-header-panel" role="document" id="mobile-header-menu">
     <div class="mobile-header-top">
-      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menÃº">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
-      <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
+      <div class="mobile-header-title" id="mobile-header-title">NavegaciÃ³n</div>
     </div>
-    <nav class="mobile-header-nav" aria-label="Navegación principal">
+    <nav class="mobile-header-nav" aria-label="NavegaciÃ³n principal">
       <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
-      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <div class="mobile-header-section-title">Â¿QuÃ© hacemos?</div>
       <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
       <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
       <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
-      <a class="mobile-header-link sub" [routerLink]="['/defensapersonalfemenina']"
+      <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
         (click)="closeMobileMenu()">Defensa Personal Femenina</a>
-      <div class="mobile-header-section-title">Información</div>
+      <div class="mobile-header-section-title">InformaciÃ³n</div>
       <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
       <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
       <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
       <a class="mobile-header-link" [routerLink]="['/contacto']" (click)="closeMobileMenu()">Contacto</a>
       <div class="mobile-header-section-title">Cuenta</div>
-      <a class="mobile-header-link" [routerLink]="['/login']" (click)="closeMobileMenu()">Iniciar Sesión</a>
+      <a class="mobile-header-link" [routerLink]="['/login']" (click)="closeMobileMenu()">Iniciar SesiÃ³n</a>
     </nav>
   </div>
 </div>
@@ -157,7 +157,7 @@
 @if (isAuthChecked && isAdmin) {
 <header class="admin-top-navbar">
   <div class="navbar-container">
-    <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menú"
+    <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menÃº"
       aria-controls="admin-sidebar" [attr.aria-expanded]="adminMenuVisible">
       <i class="bi bi-list"></i>
     </button>
@@ -165,7 +165,7 @@
       <img class="admin-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo">
       <div class="brand-text">
         <span class="brand-title">MOI'S KIM DO</span>
-        <span class="brand-subtitle">Panel de Administración</span>
+        <span class="brand-subtitle">Panel de AdministraciÃ³n</span>
       </div>
     </a>
     <div class="navbar-actions">
@@ -180,7 +180,7 @@
         <span class="username">{{ username }}</span>
         }
       </div>
-      <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
+      <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesiÃ³n">
         <i class="bi bi-box-arrow-right"></i>
       </button>
     </div>
@@ -192,7 +192,7 @@
     <button class="close-sidebar" (click)="closeAdminMenu()">
       <i class="bi bi-x-lg"></i>
     </button>
-    <h3>Navegación</h3>
+    <h3>NavegaciÃ³n</h3>
   </div>
 
   <ul class="sidebar-menu">
@@ -259,7 +259,7 @@
       </a>
     </li>
     <li>
-      <a class="menu-link" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active"
+      <a class="menu-link" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active"
         (click)="closeAdminMenu()">
         <i class="bi bi-shield-fill-check"></i>
         <span>Defensa Personal</span>
@@ -267,7 +267,7 @@
     </li>
 
     <li class="menu-section">
-      <span class="section-title">Gestión</span>
+      <span class="section-title">GestiÃ³n</span>
     </li>
 
     <!-- Alumnos Section -->
@@ -319,7 +319,7 @@
         <li>
           <a class="submenu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
             <i class="bi bi-list-ul"></i>
-            <span>Gestión de Grupos y Turnos</span>
+            <span>GestiÃ³n de Grupos y Turnos</span>
           </a>
         </li>
         <li>
@@ -404,19 +404,19 @@
       </ul>
     </li>
 
-    <!-- Administración Section -->
+    <!-- AdministraciÃ³n Section -->
     <li class="menu-item-expandable">
       <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()"
         [class.expanded]="expandedSections['administracion']">
         <i class="bi bi-gear-fill"></i>
-        <span>Administración</span>
+        <span>AdministraciÃ³n</span>
         </div>
       <ul class="submenu" [class.show]="expandedSections['administracion']">
         <li>
           <a class="submenu-link" [routerLink]="['/configuracion-sistema']" routerLinkActive="active"
             (click)="closeAdminMenu()">
             <i class="bi bi-sliders"></i>
-            <span>Configuración</span>
+            <span>ConfiguraciÃ³n</span>
           </a>
         </li>
       </ul>
@@ -451,7 +451,7 @@
         <i class="bi bi-box-arrow-up-right"></i>
         Abrir en Spotify
       </button>
-      <span class="spotify-hint">En móvil, la reproducción completa se abre en la app.</span>
+      <span class="spotify-hint">En mÃ³vil, la reproducciÃ³n completa se abre en la app.</span>
     </div>
     @if (spotifyError) {
     <div class="spotify-error">{{ spotifyError }}</div>
@@ -461,7 +461,7 @@
       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"
       title="Reproductor de Spotify"></iframe>
     } @else {
-    <div class="spotify-empty">Pega un enlace para cargar tu música.</div>
+    <div class="spotify-empty">Pega un enlace para cargar tu mÃºsica.</div>
     }
   </div>
   <span class="spotify-resize-handle handle-tl" aria-hidden="true"
@@ -482,12 +482,12 @@
     <div class="container-fluid">
       <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
         [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
-        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menÃº de navegaciÃ³n' : 'Abrir menÃº de navegaciÃ³n'">
         <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
       </button>
       <a class="navbar-brand d-lg-none" [routerLink]="['/']">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
-          alt="Logo de la aplicación TaeMoi" width="137" height="137">
+          alt="Logo de la aplicaciÃ³n TaeMoi" width="137" height="137">
       </a>
       <div class="header-title-mobile d-lg-none">
         <div class="title-main">MOI'S KIM DO</div>
@@ -508,7 +508,7 @@
           <i class="bi bi-calendar2-check me-1"></i>
           <span>Mis Clases</span>
         </a>
-        <button class="btn-logout-mobile" (click)="cerrarSesion()" type="button" aria-label="Cerrar sesión">
+        <button class="btn-logout-mobile" (click)="cerrarSesion()" type="button" aria-label="Cerrar sesiÃ³n">
           <i class="bi bi-box-arrow-right"></i>
         </button>
       </div>
@@ -519,7 +519,7 @@
       <div class="collapse navbar-collapse justify-content-between" id="navbarUserNav">
         <div class="navbar-left d-flex align-items-center">
           <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
-            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
+            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicaciÃ³n TaeMoi" width="137" height="137">
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
@@ -532,7 +532,7 @@
               <a class="nav-link dropdown-toggle" role="button" id="deportesDropdownUser"
                 [routerLinkActive]="['active']" [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown"
                 aria-expanded="false">
-                <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
+                <i class="bi bi-trophy me-1"></i>Â¿QuÃ© hacemos?
               </a>
               <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdownUser">
                 <li>
@@ -551,7 +551,7 @@
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" [routerLink]="['/defensapersonalfemenina']" routerLinkActive="active-link">
+                  <a class="dropdown-item" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active-link">
                     <i class="bi bi-shield-fill-check me-2"></i>Defensa Personal Femenina
                   </a>
                 </li>
@@ -607,9 +607,9 @@
               </div>
             </li>
             <li class="nav-item">
-              <button type="button" class="btn-logout-user" (click)="cerrarSesion()" aria-label="Cerrar sesión">
+              <button type="button" class="btn-logout-user" (click)="cerrarSesion()" aria-label="Cerrar sesiÃ³n">
                 <i class="bi bi-box-arrow-right"></i>
-                <span>Cerrar sesión</span>
+                <span>Cerrar sesiÃ³n</span>
               </button>
             </li>
           </ul>
@@ -624,20 +624,20 @@
   <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
   <div class="mobile-header-panel" role="document" id="mobile-header-menu">
     <div class="mobile-header-top">
-      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menÃº">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
-      <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
+      <div class="mobile-header-title" id="mobile-header-title-user">NavegaciÃ³n</div>
     </div>
-    <nav class="mobile-header-nav" aria-label="Navegación principal">
+    <nav class="mobile-header-nav" aria-label="NavegaciÃ³n principal">
       <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
-      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <div class="mobile-header-section-title">Â¿QuÃ© hacemos?</div>
       <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
       <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
       <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
-      <a class="mobile-header-link sub" [routerLink]="['/defensapersonalfemenina']"
+      <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
         (click)="closeMobileMenu()">Defensa Personal Femenina</a>
-      <div class="mobile-header-section-title">Información</div>
+      <div class="mobile-header-section-title">InformaciÃ³n</div>
       <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
       <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
       <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
@@ -645,11 +645,12 @@
       <div class="mobile-header-section-title">Cuenta</div>
       <a class="mobile-header-link" [routerLink]="['/userpage']" (click)="closeMobileMenu()">Mis Clases</a>
       <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">
-        Cerrar Sesión
+        Cerrar SesiÃ³n
       </button>
     </nav>
   </div>
 </div>
 }
 }
+
 

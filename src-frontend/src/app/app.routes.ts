@@ -1,4 +1,4 @@
-import { RouterModule, Routes } from '@angular/router';
+﻿import { RouterModule, Routes } from '@angular/router';
 import { NgModule } from '@angular/core';
 import { roleGuard } from './guards/role.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
@@ -34,8 +34,16 @@ export const routes: Routes = [
   },
   {
     path: 'defensapersonalfemenina',
+    redirectTo: '/defensa-personal-femenina',
+    pathMatch: 'full',
+  },
+  {
+    path: 'defensa-personal-femenina',
     data: { seo: SEO_ROUTES.defensaPersonal },
-    loadComponent: () => import('./componentes/vistas/defensa-personal-femenina/defensa-personal-femenina.component').then(m => m.DefensaPersonalFemeninaComponent)
+    loadComponent: () =>
+      import('./componentes/vistas/defensa-personal-femenina/defensa-personal-femenina.component').then(
+        (m) => m.DefensaPersonalFemeninaComponent
+      ),
   },
   {
     path: 'horarios',
@@ -256,3 +264,4 @@ export const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
+

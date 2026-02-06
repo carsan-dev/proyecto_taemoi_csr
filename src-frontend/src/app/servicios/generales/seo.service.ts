@@ -1,4 +1,4 @@
-import { isPlatformBrowser, DOCUMENT } from '@angular/common';
+﻿import { isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
@@ -33,9 +33,9 @@ export class SeoService {
       { name: 'Inicio', url: '/' },
       { name: 'Pilates', url: '/pilates' },
     ],
-    '/defensapersonalfemenina': [
+    '/defensa-personal-femenina': [
       { name: 'Inicio', url: '/' },
-      { name: 'Defensa Personal Femenina', url: '/defensapersonalfemenina' },
+      { name: 'Defensa Personal Femenina', url: '/defensa-personal-femenina' },
     ],
     '/horarios': [
       { name: 'Inicio', url: '/' },
@@ -51,11 +51,11 @@ export class SeoService {
     ],
     '/politica-privacidad': [
       { name: 'Inicio', url: '/' },
-      { name: 'Política de privacidad', url: '/politica-privacidad' },
+      { name: 'PolÃ­tica de privacidad', url: '/politica-privacidad' },
     ],
     '/politica-cookies': [
       { name: 'Inicio', url: '/' },
-      { name: 'Política de cookies', url: '/politica-cookies' },
+      { name: 'PolÃ­tica de cookies', url: '/politica-cookies' },
     ],
     '/aviso-legal': [
       { name: 'Inicio', url: '/' },
@@ -109,8 +109,8 @@ export class SeoService {
   }
 
   /**
-   * Actualiza el SEO dinámicamente desde un componente.
-   * Útil para páginas con contenido dinámico como eventos/:id
+   * Actualiza el SEO dinÃ¡micamente desde un componente.
+   * Ãštil para pÃ¡ginas con contenido dinÃ¡mico como eventos/:id
    */
   updateDynamicSeo(config: {
     title: string;
@@ -261,12 +261,12 @@ export class SeoService {
       }
     };
 
-    // Agregar imagen si está disponible
+    // Agregar imagen si estÃ¡ disponible
     if (config.image) {
       schema.image = [config.image];
     }
 
-    // Agregar fechas si están disponibles
+    // Agregar fechas si estÃ¡n disponibles
     if (config.startDate) {
       schema.startDate = config.startDate;
     }
@@ -285,7 +285,7 @@ export class SeoService {
   }
 
   /**
-   * Elimina el Event Schema del documento (útil al salir de la página de evento)
+   * Elimina el Event Schema del documento (Ãºtil al salir de la pÃ¡gina de evento)
    */
   removeEventSchema(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -299,7 +299,7 @@ export class SeoService {
   }
 
   /**
-   * Agrega Review Schema JSON-LD al documento para SEO de reseñas
+   * Agrega Review Schema JSON-LD al documento para SEO de reseÃ±as
    */
   setReviewsSchema(reviews: Array<{
     author: string;
@@ -311,7 +311,7 @@ export class SeoService {
       return;
     }
 
-    // Eliminar schema de reseñas existente
+    // Eliminar schema de reseÃ±as existente
     const existingScript = this.document.querySelector('script[data-reviews-schema]');
     if (existingScript) {
       existingScript.remove();
@@ -334,7 +334,7 @@ export class SeoService {
       ...(review.date && { datePublished: review.date })
     }));
 
-    // Crear schema que incluye las reseñas en el LocalBusiness
+    // Crear schema que incluye las reseÃ±as en el LocalBusiness
     const schema = {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
@@ -349,3 +349,4 @@ export class SeoService {
     this.document.head.appendChild(script);
   }
 }
+
