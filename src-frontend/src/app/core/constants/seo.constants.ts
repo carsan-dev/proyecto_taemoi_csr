@@ -1,4 +1,4 @@
-export interface SeoMeta {
+﻿export interface SeoMeta {
   title?: string;
   description?: string;
   keywords?: string;
@@ -56,7 +56,7 @@ export const SEO_ROUTES = {
       'Escuela de artes marciales en Umbrete (Aljarafe, Sevilla). Defensa personal femenina con tecnicas practicas, seguridad y confianza.',
     keywords:
       "defensa personal femenina, defensa personal mujeres, autodefensa femenina, defensa personal umbrete, defensa personal aljarafe, defensa personal sevilla, escuela artes marciales sevilla, defensa personal andalucia, moiskimdo, club mois kim do, club moi's kim do",
-    canonical: `${BASE_URL}/defensapersonalfemenina`,
+    canonical: `${BASE_URL}/defensa-personal-femenina`,
     ogImage: `${BASE_URL}/assets/media/defensa_personal_banner.webp`,
   },
   horarios: {
@@ -87,17 +87,17 @@ export const SEO_ROUTES = {
     ogImage: `${BASE_URL}/assets/media/recepcion_escuela.webp`,
   },
   privacidad: {
-    title: 'Política de privacidad | Moiskimdo',
+    title: 'PolÃ­tica de privacidad | Moiskimdo',
     description:
-      'Información sobre el tratamiento de datos personales y derechos de los usuarios en Moiskimdo.',
+      'InformaciÃ³n sobre el tratamiento de datos personales y derechos de los usuarios en Moiskimdo.',
     keywords: 'politica de privacidad moiskimdo, datos personales, proteccion de datos',
     canonical: `${BASE_URL}/politica-privacidad`,
     ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
   },
   cookies: {
-    title: 'Política de cookies | Moiskimdo',
+    title: 'PolÃ­tica de cookies | Moiskimdo',
     description:
-      'Información sobre el uso de cookies y analítica en la web de Moiskimdo.',
+      'InformaciÃ³n sobre el uso de cookies y analÃ­tica en la web de Moiskimdo.',
     keywords: 'politica de cookies moiskimdo, cookies, analitica',
     canonical: `${BASE_URL}/politica-cookies`,
     ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
@@ -105,7 +105,7 @@ export const SEO_ROUTES = {
   avisoLegal: {
     title: 'Aviso legal | Moiskimdo',
     description:
-      'Información legal y condiciones de uso del sitio web de Moiskimdo.',
+      'InformaciÃ³n legal y condiciones de uso del sitio web de Moiskimdo.',
     keywords: 'aviso legal moiskimdo, condiciones de uso, informacion legal',
     canonical: `${BASE_URL}/aviso-legal`,
     ogImage: `${BASE_URL}/assets/media/fachada_escuela.webp`,
@@ -123,3 +123,4 @@ export const SEO_ROUTES = {
     noIndex: true,
   },
 } satisfies Record<string, SeoMeta>;
+
