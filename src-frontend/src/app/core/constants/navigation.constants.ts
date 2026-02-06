@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Navigation constants for consistent menu items across the application
  */
 
@@ -31,7 +31,7 @@ export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
     route: '/',
   },
   {
-    label: '¿Qué hacemos?',
+    label: 'Â¿QuÃ© hacemos?',
     items: [
       {
         label: 'Taekwondo',
@@ -47,7 +47,7 @@ export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
       },
       {
         label: 'Defensa Personal Femenina',
-        route: '/defensapersonalfemenina',
+        route: '/defensa-personal-femenina',
       },
     ],
   },
@@ -73,7 +73,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     title: 'ACCIONES',
     items: [
       {
-        label: 'Página principal',
+        label: 'PÃ¡gina principal',
         route: '/adminpage',
         icon: 'bi-house-fill',
       },
@@ -93,7 +93,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-person-gear',
       },
       {
-        label: 'Añadir alumnos',
+        label: 'AÃ±adir alumnos',
         route: '/alumnosCrear',
         icon: 'bi-person-add',
       },
@@ -108,7 +108,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     title: 'GRUPOS Y TURNOS',
     items: [
       {
-        label: 'Gestión de grupos y turnos',
+        label: 'GestiÃ³n de grupos y turnos',
         route: '/gruposListar',
         icon: 'bi-people-fill',
       },
@@ -133,7 +133,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-calendar-check-fill',
       },
       {
-        label: 'Añadir eventos',
+        label: 'AÃ±adir eventos',
         route: '/eventosCrear',
         icon: 'bi-calendar-plus-fill',
       },
@@ -148,7 +148,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-box-seam-fill',
       },
       {
-        label: 'Añadir productos',
+        label: 'AÃ±adir productos',
         route: '/productosCrear',
         icon: 'bi-plus-square-fill',
       },
@@ -181,3 +181,4 @@ export const SOCIAL_LINKS = [
     icon: 'bi-instagram',
   },
 ];
+
