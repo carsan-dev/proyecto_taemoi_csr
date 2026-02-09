@@ -273,7 +273,7 @@ export class VistaLoginComponent implements OnInit {
     if (status === 401 || status === 403 || status === 404) {
       return {
         title: 'Credenciales incorrectas',
-        message: 'El correo o la contrasena no son correctos.',
+        message: 'El correo o la contraseña no son correctos.',
       };
     }
     const backendMessage =
