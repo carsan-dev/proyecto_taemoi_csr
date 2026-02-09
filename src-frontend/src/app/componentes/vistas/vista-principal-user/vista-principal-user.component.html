@@ -28,6 +28,10 @@
             <i class="bi bi-collection-play-fill"></i>
             <span>Mis clases</span>
           </button>
+          <button type="button" class="hero-btn btn-secondary-action" (click)="scrollToSection('mis-documentos')">
+            <i class="bi bi-file-earmark-text-fill"></i>
+            <span>Mis documentos</span>
+          </button>
           <button type="button" class="hero-btn btn-secondary-action" [routerLink]="['/userpage/turnos']">
             <i class="bi bi-calendar-check-fill"></i>
             <span>Ver horarios</span>
@@ -78,6 +82,14 @@
           <div class="stat-copy">
             <span class="stat-value">{{ getCantidadDeportesAptos() }}</span>
             <span class="stat-label">Aptos para examen</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon"><i class="bi bi-file-earmark-check-fill"></i></span>
+          <div class="stat-copy">
+            <span class="stat-value">{{ documentosAlumno.length }}</span>
+            <span class="stat-label">Documentos</span>
           </div>
         </article>
       </div>
@@ -234,6 +246,54 @@
             <div class="empty-icon"><i class="bi bi-trophy"></i></div>
             <h3>No practicas ningun deporte</h3>
             <p>Ponte en contacto con la escuela para inscribirte.</p>
+          </div>
+        }
+      </section>
+    }
+
+    @if (selectedAlumno) {
+      <section class="dashboard-panel panel-documents" id="mis-documentos">
+        <header class="panel-header">
+          <div>
+            <p class="panel-kicker">Documentacion</p>
+            <h2>Mis Documentos</h2>
+          </div>
+        </header>
+
+        @if (cargandoDocumentos) {
+          <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
+        } @else if (documentosAlumno.length > 0) {
+          <div class="documents-grid">
+            @for (documento of documentosAlumno; track documento.id) {
+              <article class="document-card">
+                <div class="document-main">
+                  <span class="document-icon">
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                  </span>
+                  <div class="document-copy">
+                    <h3 class="document-name" [title]="documento.nombre">{{ documento.nombre }}</h3>
+                    <p class="document-type">{{ documento.tipo || 'Documento' }}</p>
+                  </div>
+                </div>
+
+                <div class="document-actions">
+                  <button type="button" class="document-btn" (click)="abrirDocumento(documento)">
+                    <i class="bi bi-eye-fill"></i>
+                    <span>Ver</span>
+                  </button>
+                  <button type="button" class="document-btn" (click)="descargarDocumento(documento)">
+                    <i class="bi bi-download"></i>
+                    <span>Descargar</span>
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
+            <h3>No hay documentos disponibles</h3>
+            <p>Cuando haya documentos asociados al alumno, apareceran aqui.</p>
           </div>
         }
       </section>
