@@ -33,7 +33,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
   cargandoDeportes: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
-  private readonly beltWidthPx = 74;
+  private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
 
   constructor(
