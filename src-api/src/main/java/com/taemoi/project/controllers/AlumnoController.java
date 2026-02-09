@@ -22,6 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,6 +52,7 @@ import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
@@ -97,6 +100,9 @@ public class AlumnoController {
 	
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
+
+	@Autowired
+	private AlumnoAccessControlService alumnoAccessControlService;
 
 	@PersistenceContext
 	private EntityManager entityManager;
@@ -164,17 +170,23 @@ public class AlumnoController {
 	}
 	
     @GetMapping("/{alumnoId}/documentos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
     public ResponseEntity<List<Documento>> obtenerDocumentosDelAlumno(@PathVariable Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
         List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
         return ResponseEntity.ok(documentos);
     }
 
 	@GetMapping("/{alumnoId}/documentos/{documentoId}/descargar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<Resource> descargarDocumento(
 			@PathVariable Long alumnoId,
 			@PathVariable Long documentoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 		try {
 			logger.info("Attempting to download document - AlumnoId: {}, DocumentoId: {}", alumnoId, documentoId);
 			Documento documento = alumnoService.obtenerDocumentoDeAlumno(alumnoId, documentoId);
@@ -222,6 +234,9 @@ public class AlumnoController {
 	@GetMapping("/{alumnoId}/grupos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<GrupoResponseDTO>> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
 		return ResponseEntity.ok(gruposDTO);
 	}
@@ -462,6 +477,9 @@ public class AlumnoController {
 	@GetMapping("/{alumnoId}/turnos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
 		return ResponseEntity.ok(turnos);
 	}
@@ -585,6 +603,9 @@ public class AlumnoController {
 	@GetMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
+		if (!usuarioPuedeAccederAlumno(id)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
 			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
@@ -1560,5 +1581,10 @@ public class AlumnoController {
 				"message", "Error during categoria migration: " + e.getMessage()
 			));
 		}
+	}
+
+	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		return alumnoAccessControlService.canAccessAlumno(alumnoId, authentication);
 	}
 }

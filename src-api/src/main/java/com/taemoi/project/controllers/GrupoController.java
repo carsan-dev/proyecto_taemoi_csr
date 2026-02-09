@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +27,7 @@ import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
+import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.GrupoService;
 
 /**
@@ -43,6 +46,9 @@ public class GrupoController {
 	 */
 	@Autowired
 	private GrupoService grupoService;
+
+	@Autowired
+	private AlumnoAccessControlService alumnoAccessControlService;
 
 	/**
 	 * Obtiene todos los grupos con sus respectivos alumnos.
@@ -113,12 +119,20 @@ public class GrupoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId,
 			@PathVariable Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 		List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
 		if (!turnosDTO.isEmpty()) {
 			return ResponseEntity.ok(turnosDTO);
 		} else {
 			return ResponseEntity.notFound().build();
 		}
+	}
+
+	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		return alumnoAccessControlService.canAccessAlumno(alumnoId, authentication);
 	}
 
 	/**
