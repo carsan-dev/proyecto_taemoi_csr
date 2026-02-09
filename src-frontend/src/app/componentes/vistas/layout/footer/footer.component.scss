@@ -457,6 +457,14 @@ $github-color: #333;
 }
 
 @media (max-width: 768px) {
+  .footer .row.col-11.mx-auto > [class*='col-'] {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .footer .row.col-11.mx-auto > [class*='col-']:last-child {
+    margin-bottom: 0 !important;
+  }
+
   .footer {
     margin-top: 1rem;
 
@@ -476,7 +484,7 @@ $github-color: #333;
   }
 
   .contact-info {
-    margin-bottom: 2rem;
+    margin-bottom: 0.5rem;
   }
 
   .social-links {
@@ -503,6 +511,14 @@ $github-color: #333;
 }
 
 @media (max-width: 576px) {
+  .footer .row.col-11.mx-auto > [class*='col-'] {
+    margin-bottom: 1rem !important;
+  }
+
+  .footer .row.col-11.mx-auto > [class*='col-']:last-child {
+    margin-bottom: 0 !important;
+  }
+
   .footer {
     .footer-content {
       padding: 2rem 0 0 0;
