@@ -171,8 +171,11 @@
                             [style.--belt-bottom-color]="beltVisual.bottomColor"
                             [attr.aria-label]="'Cinturon ' + beltVisual.label"
                             role="img">
+                            @if (beltVisual.isSplit) {
+                              <span class="grade-belt-half top" aria-hidden="true"></span>
+                            }
                             @for (stripeOffset of beltVisual.stripeOffsets; track stripeOffset) {
-                              <span class="grade-belt-stripe" [style.right.px]="stripeOffset"></span>
+                              <span class="grade-belt-stripe" [style.right.px]="stripeOffset" aria-hidden="true"></span>
                             }
                           </span>
                           <span class="grade-name">{{ beltVisual.label }}</span>
