@@ -846,11 +846,13 @@ header.fixed-header {
       position: relative;
       display: inline-flex;
       align-items: center;
+      align-self: center;
     }
 
     .user-menu-toggle {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.55rem;
       padding: 0.38rem 0.95rem 0.38rem 0.48rem;
       border-radius: $border-radius-pill;
@@ -863,25 +865,38 @@ header.fixed-header {
       transition: $transition-fast;
       text-decoration: none;
       min-height: 38px;
+      line-height: 1;
 
       .bi-person-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 1.45rem;
         color: $pilates-color;
         line-height: 1;
+        flex-shrink: 0;
       }
 
       .user-name {
+        display: inline-flex;
+        align-items: center;
         max-width: clamp(170px, 20vw, 320px);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         color: rgba($text-light, 0.92);
+        line-height: 1.08;
       }
 
       .user-menu-chevron {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.72rem;
         color: rgba($text-light, 0.72);
         transition: $transition-fast;
+        line-height: 1;
+        flex-shrink: 0;
       }
 
       &:hover,
