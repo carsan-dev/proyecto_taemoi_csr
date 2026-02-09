@@ -1175,9 +1175,29 @@
 
           .deporte-actions {
             width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+            align-items: stretch;
 
-            button {
+            .admin-btn {
               width: 100%;
+              min-height: 42px;
+              justify-content: center;
+              padding: 0.625rem 0.875rem;
+            }
+
+            // "Marcar principal" is longer and looks cleaner on its own row.
+            .admin-btn-outline {
+              grid-column: 1 / -1;
+            }
+
+            @media (max-width: 380px) {
+              grid-template-columns: 1fr;
+
+              .admin-btn-outline {
+                grid-column: auto;
+              }
             }
           }
         }
