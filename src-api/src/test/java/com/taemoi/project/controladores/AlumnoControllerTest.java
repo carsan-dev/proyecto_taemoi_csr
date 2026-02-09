@@ -1,25 +1,31 @@
 package com.taemoi.project.controladores;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.AlumnoService;
 // import com.taemoi.project.utils.FechaUtils;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class AlumnoControllerTest {
 
 	@Mock
@@ -30,6 +36,9 @@ class AlumnoControllerTest {
 
 	@Mock
 	private GradoRepository gradoRepository;
+
+	@Mock
+	private AlumnoAccessControlService alumnoAccessControlService;
 
 	@InjectMocks
 	private AlumnoController alumnoController;
@@ -111,5 +120,32 @@ class AlumnoControllerTest {
 		ResponseEntity<Void> result = alumnoController.eliminarAlumno(id);
 
 		assertEquals(HttpStatus.OK, result.getStatusCode());
+	}
+
+	@Test
+	void obtenerDocumentosDelAlumno_DebeDevolverForbiddenCuandoNoTieneAcceso() {
+		Long alumnoId = 1L;
+		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
+
+		ResponseEntity<List<Documento>> result = alumnoController.obtenerDocumentosDelAlumno(alumnoId);
+
+		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
+	}
+
+	@Test
+	void obtenerDocumentosDelAlumno_DebeDevolverOkCuandoTieneAcceso() {
+		Long alumnoId = 1L;
+		Documento documento = new Documento();
+		documento.setId(99L);
+		documento.setNombre("autorizacion.pdf");
+
+		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
+		when(alumnoService.obtenerDocumentosAlumno(alumnoId)).thenReturn(List.of(documento));
+
+		ResponseEntity<List<Documento>> result = alumnoController.obtenerDocumentosDelAlumno(alumnoId);
+
+		assertEquals(HttpStatus.OK, result.getStatusCode());
+		assertEquals(1, result.getBody().size());
+		assertEquals("autorizacion.pdf", result.getBody().get(0).getNombre());
 	}
 }
