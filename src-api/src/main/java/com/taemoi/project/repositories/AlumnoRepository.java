@@ -217,6 +217,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	List<Alumno> findAllByEmailIgnoreCase(String email);
 
+	boolean existsByIdAndEmailIgnoreCase(Long id, String email);
+
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
 	List<Alumno> findAlumnosSinGrupo();
 
