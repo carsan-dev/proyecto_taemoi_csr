@@ -1,17 +1,67 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { VistaPrincipalUserComponent } from './vista-principal-user.component';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
+import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 
 describe('VistaPrincipalUserComponent', () => {
   let component: VistaPrincipalUserComponent;
   let fixture: ComponentFixture<VistaPrincipalUserComponent>;
+  let authServiceSpy: jasmine.SpyObj<AuthenticationService>;
+  let endpointsServiceSpy: jasmine.SpyObj<EndpointsService>;
+  let alumnoServiceSpy: jasmine.SpyObj<AlumnoService>;
+
+  const alumnosMock = [
+    { id: 1, nombre: 'Alumno', apellidos: 'Uno' },
+    { id: 2, nombre: 'Alumno', apellidos: 'Dos' },
+  ];
+
+  const documentoMock = {
+    id: 15,
+    nombre: 'autorizacion.pdf',
+    tipo: 'application/pdf',
+    url: '',
+    ruta: 'Documentos_Alumnos_Moiskimdo/1/autorizacion.pdf',
+  };
 
   beforeEach(async () => {
+    authServiceSpy = jasmine.createSpyObj<AuthenticationService>(
+      'AuthenticationService',
+      ['obtenerNombreUsuario', 'obtenerTodosLosAlumnos']
+    );
+    endpointsServiceSpy = jasmine.createSpyObj<EndpointsService>(
+      'EndpointsService',
+      ['obtenerGruposDelAlumno', 'obtenerDocumentosDeAlumno', 'descargarDocumentoAlumno'],
+      { gruposDelAlumno$: of([]) }
+    );
+    alumnoServiceSpy = jasmine.createSpyObj<AlumnoService>('AlumnoService', ['obtenerDeportesDelAlumno']);
+
+    authServiceSpy.obtenerNombreUsuario.and.returnValue(of('usuario'));
+    authServiceSpy.obtenerTodosLosAlumnos.and.returnValue(of(alumnosMock as any));
+    endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
+    endpointsServiceSpy.descargarDocumentoAlumno.and.returnValue(of(new Blob(['pdf'])));
+    alumnoServiceSpy.obtenerDeportesDelAlumno.and.returnValue(of([]));
+
+    spyOn(Swal, 'fire').and.returnValue(Promise.resolve({} as any));
+    spyOn(globalThis.URL, 'createObjectURL').and.returnValue('blob://test-url');
+    spyOn(globalThis.URL, 'revokeObjectURL').and.stub();
+    spyOn(window, 'open').and.returnValue(null);
+
     await TestBed.configureTestingModule({
-      imports: [VistaPrincipalUserComponent]
+      imports: [VistaPrincipalUserComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceSpy },
+        { provide: EndpointsService, useValue: endpointsServiceSpy },
+        { provide: AlumnoService, useValue: alumnoServiceSpy },
+      ],
     })
     .compileComponents();
-    
+
     fixture = TestBed.createComponent(VistaPrincipalUserComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -19,5 +69,28 @@ describe('VistaPrincipalUserComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('debe cargar documentos del alumno inicial al iniciar', () => {
+    expect(endpointsServiceSpy.obtenerDocumentosDeAlumno).toHaveBeenCalledWith(1);
+    expect(component.documentosAlumno.length).toBe(1);
+    expect(component.documentosAlumno[0].id).toBe(15);
+  });
+
+  it('debe recargar documentos al cambiar de alumno', () => {
+    component.seleccionarAlumno(alumnosMock[1]);
+
+    const llamadas = endpointsServiceSpy.obtenerDocumentosDeAlumno.calls.allArgs().map((args) => args[0]);
+    expect(llamadas).toContain(2);
+  });
+
+  it('debe usar endpoint seguro al abrir y descargar documento', () => {
+    component.selectedAlumno = alumnosMock[1];
+
+    component.abrirDocumento(documentoMock);
+    component.descargarDocumento(documentoMock);
+
+    expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15);
+    expect(endpointsServiceSpy.descargarDocumentoAlumno.calls.count()).toBe(2);
   });
 });

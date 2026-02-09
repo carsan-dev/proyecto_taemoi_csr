@@ -8,6 +8,7 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
+import { Documento } from '../../../interfaces/documento';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
@@ -32,6 +33,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
   cargandoDeportes: boolean = false;
+  documentosAlumno: Documento[] = [];
+  cargandoDocumentos: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
@@ -62,6 +65,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
           this.selectedAlumno = alumnos[0];
           this.cargarGruposDelAlumno(this.selectedAlumno.id);
           this.cargarDeportesDelAlumno(this.selectedAlumno.id);
+          this.cargarDocumentosDelAlumno(this.selectedAlumno.id);
           return;
         }
 
@@ -85,6 +89,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.selectedAlumno = alumno;
     this.cargarGruposDelAlumno(alumno.id);
     this.cargarDeportesDelAlumno(alumno.id);
+    this.cargarDocumentosDelAlumno(alumno.id);
   }
 
   scrollToSection(sectionId: string): void {
@@ -190,6 +195,71 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         Swal.fire({
           title: 'Error',
           text: 'No se pudieron cargar los deportes del alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  cargarDocumentosDelAlumno(alumnoId: number): void {
+    this.cargandoDocumentos = true;
+    this.endpointsService.obtenerDocumentosDeAlumno(alumnoId).subscribe({
+      next: (documentos: Documento[]) => {
+        this.documentosAlumno = documentos ?? [];
+        this.cargandoDocumentos = false;
+      },
+      error: () => {
+        this.documentosAlumno = [];
+        this.cargandoDocumentos = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los documentos del alumno',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  abrirDocumento(documento: Documento): void {
+    this.descargarDocumento(documento, true);
+  }
+
+  descargarDocumento(documento: Documento, abrirEnNuevaPestana: boolean = false): void {
+    const alumnoId = this.selectedAlumno?.id;
+    if (!alumnoId || !documento?.id) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo procesar el documento seleccionado',
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.endpointsService.descargarDocumentoAlumno(alumnoId, documento.id).subscribe({
+      next: (blob) => {
+        const url = globalThis.URL.createObjectURL(blob);
+
+        if (abrirEnNuevaPestana) {
+          globalThis.window?.open(url, '_blank', 'noopener');
+          setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
+          return;
+        }
+
+        const link = globalThis.document?.createElement('a');
+        if (!link) {
+          globalThis.URL.revokeObjectURL(url);
+          return;
+        }
+
+        link.href = url;
+        link.download = documento.nombre || 'documento';
+        link.click();
+        globalThis.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo descargar el documento',
           icon: 'error',
         });
       },
