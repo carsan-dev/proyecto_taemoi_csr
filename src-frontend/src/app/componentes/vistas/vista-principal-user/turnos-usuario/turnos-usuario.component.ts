@@ -17,7 +17,7 @@ interface TimeSlot {
 interface TurnoEnCelda {
   turno: Turno;
   sportKey: string;
-  emoji: string;
+  iconClass: string;
   color: string;
   displayName: string;
 }
@@ -26,7 +26,7 @@ interface DeporteInfo {
   key: string;
   nombre: string;
   nombreCorto: string;
-  emoji: string;
+  iconClass: string;
   color: string;
 }
 
@@ -41,14 +41,9 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   grupos: any[] = [];
   cargando: boolean = true;
   allTurnos: Turno[] = [];
-  diasSemana: string[] = [
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-  ];
-  diasCortos: string[] = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+  deportesUnicos: DeporteInfo[] = [];
+  diasSemana: string[] = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
+  diasCortos: string[] = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'];
   timeSlots: TimeSlot[] = [];
   timetableGrid: Map<string, Map<string, TurnoEnCelda[]>> = new Map();
   selectedDayIndex: number = 0;
@@ -78,6 +73,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
           this.cargarHorariosDelAlumno();
           return;
         }
+
         this.cargando = false;
         Swal.fire({
           title: 'Error',
@@ -100,6 +96,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   cargarHorariosDelAlumno(): void {
     this.cargando = true;
+
     const grupos$ = this.endpointsService.obtenerGruposDelAlumnoObservable(this.alumnoId);
     const turnos$ = this.endpointsService.obtenerTurnosDelAlumnoObservable(this.alumnoId);
 
@@ -107,12 +104,14 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       next: ({ grupos, turnos }) => {
         this.grupos = Array.isArray(grupos) ? grupos : [];
         this.allTurnos = this.normalizarTurnos(Array.isArray(turnos) ? turnos : []);
+        this.deportesUnicos = this.buildDeportesUnicos();
         this.buildTimetable();
         this.selectedDayIndex = this.obtenerPrimerDiaConTurnos();
         this.cargando = false;
       },
       error: () => {
         this.cargando = false;
+        this.deportesUnicos = [];
         Swal.fire({
           title: 'Error',
           text: 'No se pudieron obtener los horarios del alumno.',
@@ -122,20 +121,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(subscription);
-  }
-
-  getDeportesUnicos(): DeporteInfo[] {
-    const deportesMap = new Map<string, DeporteInfo>();
-    this.allTurnos.forEach((turno) => {
-      const info = this.getDeporteInfo(turno.tipoGrupo);
-      if (!deportesMap.has(info.key)) {
-        deportesMap.set(info.key, info);
-      }
-    });
-
-    return Array.from(deportesMap.values()).sort((a, b) =>
-      a.nombre.localeCompare(b.nombre)
-    );
   }
 
   buildTimetable(): void {
@@ -196,6 +181,10 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     return result;
   }
 
+  getCantidadTurnosDia(dia: string): number {
+    return this.getTurnosForDay(dia).length;
+  }
+
   selectDay(index: number): void {
     this.selectedDayIndex = index;
   }
@@ -206,6 +195,19 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  private buildDeportesUnicos(): DeporteInfo[] {
+    const deportesMap = new Map<string, DeporteInfo>();
+
+    this.allTurnos.forEach((turno) => {
+      const info = this.getDeporteInfo(turno.tipoGrupo);
+      if (!deportesMap.has(info.key)) {
+        deportesMap.set(info.key, info);
+      }
+    });
+
+    return Array.from(deportesMap.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
   }
 
   private obtenerPrimerDiaConTurnos(): number {
@@ -239,7 +241,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     return {
       turno,
       sportKey: info.key,
-      emoji: info.emoji,
+      iconClass: info.iconClass,
       color: info.color,
       displayName: info.nombreCorto || info.nombre,
     };
@@ -251,45 +253,49 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     if (key.includes('competici')) {
       return {
         key: 'competicion',
-        nombre: 'Taekwondo Competición',
-        nombreCorto: 'Tkd. Competición',
-        emoji: '🏆',
+        nombre: 'Taekwondo Competicion',
+        nombreCorto: 'Tkd. Competicion',
+        iconClass: 'bi-trophy-fill',
         color: '#7b1fa2',
       };
     }
+
     if (key.includes('taekwondo')) {
       return {
         key: 'taekwondo',
         nombre: 'Taekwondo',
         nombreCorto: 'Taekwondo',
-        emoji: '🥋',
-        color: '#0D47A1',
+        iconClass: 'bi-lightning-charge-fill',
+        color: '#0d47a1',
       };
     }
+
     if (key.includes('kickboxing')) {
       return {
         key: 'kickboxing',
         nombre: 'Kickboxing',
         nombreCorto: 'Kickboxing',
-        emoji: '🥊',
+        iconClass: 'bi-fire',
         color: '#ff4500',
       };
     }
+
     if (key.includes('pilates')) {
       return {
         key: 'pilates',
         nombre: 'Pilates',
         nombreCorto: 'Pilates',
-        emoji: '🧘',
-        color: '#57A2A8',
+        iconClass: 'bi-heart-pulse-fill',
+        color: '#57a2a8',
       };
     }
+
     if (key.includes('defensa personal') || key.includes('defensa')) {
       return {
         key: 'defensa',
         nombre: 'Defensa Personal Femenina',
         nombreCorto: 'D.P. Femenina',
-        emoji: '🛡️',
+        iconClass: 'bi-shield-fill-check',
         color: '#c2185b',
       };
     }
@@ -299,7 +305,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       key: key || 'otro',
       nombre: fallbackName,
       nombreCorto: fallbackName,
-      emoji: '📌',
+      iconClass: 'bi-star-fill',
       color: '#6c757d',
     };
   }

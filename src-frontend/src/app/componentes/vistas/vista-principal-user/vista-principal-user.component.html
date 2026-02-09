@@ -1,144 +1,169 @@
-<div class="user-page">
-  <!-- Hero Header Section -->
-  <div class="hero-header">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <div class="welcome-section">
-        <h1 class="welcome-title">¡Bienvenido!</h1>
-        @if (selectedAlumno) {
-          <p class="welcome-subtitle">
-            <i class="bi bi-person-circle"></i> {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
-          </p>
-        }
+<div class="user-dashboard">
+  <div class="dashboard-shell">
+    <section class="dashboard-hero">
+      <div class="hero-pattern" aria-hidden="true"></div>
+
+      <div class="hero-main">
+        <div class="hero-copy">
+          <span class="hero-eyebrow">
+            <i class="bi bi-stars"></i>
+            Area de alumnos
+          </span>
+          <h1 class="hero-title">Bienvenido/a</h1>
+          @if (selectedAlumno) {
+            <p class="hero-subtitle">
+              <i class="bi bi-person-circle"></i>
+              {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+            </p>
+          } @else {
+            <p class="hero-subtitle">
+              <i class="bi bi-person-circle"></i>
+              Cargando perfil de alumno...
+            </p>
+          }
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" class="hero-btn btn-primary-action" (click)="scrollToSection('mis-grupos')">
+            <i class="bi bi-collection-play-fill"></i>
+            <span>Mis clases</span>
+          </button>
+          <button type="button" class="hero-btn btn-secondary-action" [routerLink]="['/userpage/turnos']">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span>Ver horarios</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Student Selector (if multiple students) -->
       @if (alumnos.length > 1) {
-        <div class="student-selector">
-          <label class="selector-label">
-            <i class="bi bi-people-fill"></i> Seleccionar alumno
-          </label>
-          <div class="student-buttons">
+        <div class="student-switcher" aria-label="Seleccion de alumno">
+          <div class="switcher-label">
+            <i class="bi bi-people-fill"></i>
+            <span>Seleccionar alumno</span>
+          </div>
+          <div class="switcher-track">
             @for (alumno of alumnos; track alumno.id) {
               <button
                 type="button"
-                class="student-btn"
-                [class.active]="selectedAlumno?.id === alumno.id"
+                class="switcher-pill"
+                [class.is-active]="selectedAlumno?.id === alumno.id"
                 (click)="seleccionarAlumno(alumno)">
                 <i class="bi bi-person-badge"></i>
-                {{ alumno.nombre }} {{ alumno.apellidos }}
+                <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
               </button>
             }
           </div>
         </div>
       }
 
-      <!-- Quick Action Button -->
-      <div class="quick-action">
-        <button
-          type="button"
-          class="btn-my-classes"
-          (click)="scrollToSection('mis-grupos')">
-          <i class="bi bi-collection-play-fill"></i>
-          <span>Mis clases</span>
-        </button>
-        <button
-          type="button"
-          class="btn-schedule"
-          [routerLink]="['/userpage/turnos']">
-          <i class="bi bi-calendar-check-fill"></i>
-          <span>Ver horarios</span>
-        </button>
-      </div>
-    </div>
-  </div>
+      <div class="hero-stats">
+        <article class="stat-card">
+          <span class="stat-icon"><i class="bi bi-collection-fill"></i></span>
+          <div class="stat-copy">
+            <span class="stat-value">{{ grupos.length }}</span>
+            <span class="stat-label">Grupos activos</span>
+          </div>
+        </article>
 
-  <!-- Main Content - Groups Section -->
-  <div class="main-content">
-    <div class="content-wrapper">
-      <!-- Section Title -->
-      <div class="section-header" id="mis-grupos">
-        <div class="section-title-box">
-          <i class="bi bi-collection-fill"></i>
+        <article class="stat-card">
+          <span class="stat-icon"><i class="bi bi-trophy-fill"></i></span>
+          <div class="stat-copy">
+            <span class="stat-value">{{ deportesDelAlumno.length }}</span>
+            <span class="stat-label">Deportes inscritos</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon"><i class="bi bi-patch-check-fill"></i></span>
+          <div class="stat-copy">
+            <span class="stat-value">{{ getCantidadDeportesAptos() }}</span>
+            <span class="stat-label">Aptos para examen</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashboard-panel" id="mis-grupos">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Actividad</p>
           <h2>Mis Grupos</h2>
         </div>
-        <div class="section-divider"></div>
-      </div>
+      </header>
 
-      <!-- Groups Grid -->
       @if (selectedAlumno && (endpointsService.gruposDelAlumno$ | async); as grupos) {
         @if (grupos.length > 0) {
-          <div>
-            <div class="groups-grid">
-              @for (grupo of grupos; track grupo.id) {
-                <div class="group-card" [attr.data-sport]="obtenerClaseGrupo(grupo)">
-                  <div class="card-shine"></div>
-                  <div class="group-card-inner">
-                    <div class="group-icon">
-                      <span class="emoji">{{ obtenerIconoDeporte(grupo) }}</span>
-                    </div>
-                    <div class="group-info">
-                      <h3 class="group-name">{{ grupo.nombre }}</h3>
-                      <span class="group-badge" [attr.data-sport]="obtenerClaseGrupo(grupo)" [style.background]="obtenerColorDeporte(grupo)">
-                        {{ obtenerNombreDeporte(grupo) }}
-                      </span>
-                    </div>
+          <div class="groups-grid">
+            @for (grupo of grupos; track grupo.id) {
+              <article class="group-card" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
+                <div class="group-icon" [style.background]="obtenerColorDeporte(grupo)">
+                  <i class="bi" [ngClass]="getIconoDeporteGrupo(grupo)"></i>
+                </div>
+
+                <div class="group-content">
+                  <h3 class="group-name">{{ grupo.nombre }}</h3>
+
+                  <div class="group-meta-row">
+                    <span class="group-chip" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
+                      {{ obtenerNombreDeporte(grupo) }}
+                    </span>
+                    <span class="group-state">
+                      <i class="bi bi-check-circle-fill"></i>
+                      Activo
+                    </span>
                   </div>
                 </div>
-              }
-            </div>
+              </article>
+            }
           </div>
         } @else {
-          <!-- No Groups -->
-          <div class="no-groups-container">
-            <div class="no-groups-icon">
-              <i class="bi bi-inbox"></i>
-            </div>
-            <h3 class="no-groups-title">No tienes grupos asignados</h3>
-            <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
+          <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+            <h3>No tienes grupos asignados</h3>
+            <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
           </div>
         }
       } @else {
-        <!-- No Groups Template -->
-        <div class="no-groups-container">
-          <div class="no-groups-icon">
-            <i class="bi bi-inbox"></i>
-          </div>
-          <h3 class="no-groups-title">No tienes grupos asignados</h3>
-          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo</p>
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+          <h3>No tienes grupos asignados</h3>
+          <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
         </div>
       }
+    </section>
 
-      <!-- Sports Section -->
-      @if (selectedAlumno) {
-        <div class="section-header mt-5">
-          <div class="section-title-box">
-            <i class="bi bi-trophy-fill"></i>
+    @if (selectedAlumno) {
+      <section class="dashboard-panel panel-sports">
+        <header class="panel-header">
+          <div>
+            <p class="panel-kicker">Progreso</p>
             <h2>Mis Deportes</h2>
           </div>
-          <div class="section-divider"></div>
-        </div>
+        </header>
 
         @if (cargandoDeportes) {
           <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
         } @else if (deportesDelAlumno.length > 0) {
           <div class="sports-grid">
             @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
-              <div class="sport-card" [attr.data-sport]="deporteItem.deporte.toLowerCase()">
-                <div class="sport-card-header">
-                  <span class="sport-icon">{{ getIconoDeportePorNombre(deporteItem.deporte) }}</span>
-                  <h3 class="sport-name">{{ getDeporteLabel(deporteItem.deporte) }}</h3>
+              <article class="sport-card" [attr.data-sport]="deporteItem.deporte.toLowerCase()">
+                <div class="sport-head">
+                  <div class="sport-icon">
+                    <i class="bi" [ngClass]="getIconoDeporteTarjeta(deporteItem.deporte)"></i>
+                  </div>
+                  <div>
+                    <h3 class="sport-title">{{ getDeporteLabel(deporteItem.deporte) }}</h3>
+                    <p class="sport-subtitle">Informacion del alumno</p>
+                  </div>
                 </div>
 
-                <div class="sport-card-body">
+                <div class="sport-info-list">
                   @if (deporteItem.grado) {
                     <div class="sport-info-item">
                       <i class="bi bi-award-fill"></i>
-                      <div class="sport-info-content">
-                        <span class="sport-info-label">Grado Actual</span>
-                        <span class="sport-info-value" [style]="getGradoStyle(deporteItem.grado)">
-                          {{ deporteItem.grado }}
-                        </span>
+                      <div>
+                        <span class="label">Grado actual</span>
+                        <span class="value" [style]="getGradoStyle(deporteItem.grado)">{{ deporteItem.grado }}</span>
                       </div>
                     </div>
                   }
@@ -146,9 +171,9 @@
                   @if (deporteItem.fechaGrado) {
                     <div class="sport-info-item">
                       <i class="bi bi-calendar-event"></i>
-                      <div class="sport-info-content">
-                        <span class="sport-info-label">Fecha de Grado</span>
-                        <span class="sport-info-value">{{ formatearFecha(deporteItem.fechaGrado) }}</span>
+                      <div>
+                        <span class="label">Fecha de grado</span>
+                        <span class="value">{{ formatearFecha(deporteItem.fechaGrado) }}</span>
                       </div>
                     </div>
                   }
@@ -156,9 +181,9 @@
                   @if (deporteItem.fechaAlta) {
                     <div class="sport-info-item">
                       <i class="bi bi-calendar-plus"></i>
-                      <div class="sport-info-content">
-                        <span class="sport-info-label">Fecha de Alta</span>
-                        <span class="sport-info-value">{{ formatearFecha(deporteItem.fechaAlta) }}</span>
+                      <div>
+                        <span class="label">Fecha de alta</span>
+                        <span class="value">{{ formatearFecha(deporteItem.fechaAlta) }}</span>
                       </div>
                     </div>
                   }
@@ -166,36 +191,34 @@
                   @if (deporteItem.antiguedad) {
                     <div class="sport-info-item">
                       <i class="bi bi-clock-history"></i>
-                      <div class="sport-info-content">
-                        <span class="sport-info-label">Antigüedad</span>
-                        <span class="sport-info-value">{{ deporteItem.antiguedad }}</span>
+                      <div>
+                        <span class="label">Antiguedad</span>
+                        <span class="value">{{ deporteItem.antiguedad }}</span>
                       </div>
                     </div>
                   }
 
                   <div class="sport-info-item">
                     <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen" [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
-                    <div class="sport-info-content">
-                      <span class="sport-info-label">Estado de Examen</span>
-                      <span class="sport-info-value" [class.text-success]="deporteItem.aptoParaExamen" [class.text-muted]="!deporteItem.aptoParaExamen">
+                    <div>
+                      <span class="label">Estado de examen</span>
+                      <span class="value exam-status" [class.is-ready]="deporteItem.aptoParaExamen" [class.is-pending]="!deporteItem.aptoParaExamen">
                         {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
                       </span>
                     </div>
                   </div>
                 </div>
-              </div>
+              </article>
             }
           </div>
         } @else {
-          <div class="no-groups-container">
-            <div class="no-groups-icon">
-              <i class="bi bi-trophy"></i>
-            </div>
-            <h3 class="no-groups-title">No practicas ningún deporte</h3>
-            <p class="no-groups-text">Ponte en contacto con la escuela para inscribirte</p>
+          <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-trophy"></i></div>
+            <h3>No practicas ningun deporte</h3>
+            <p>Ponte en contacto con la escuela para inscribirte.</p>
           </div>
         }
-      }
-    </div>
+      </section>
+    }
   </div>
 </div>

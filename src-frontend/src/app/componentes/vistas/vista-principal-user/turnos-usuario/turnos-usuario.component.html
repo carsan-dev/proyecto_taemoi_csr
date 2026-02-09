@@ -1,44 +1,68 @@
-<div class="turnos-page">
-  <div class="hero-header">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <button class="btn-back" (click)="volver()">
-        <i class="bi bi-arrow-left-circle-fill"></i>
-        <span>Volver</span>
-      </button>
-      <div class="page-title-section">
-        <i class="bi bi-calendar3"></i>
-        <h1>Mis Horarios</h1>
-      </div>
-    </div>
-  </div>
+<div class="turnos-dashboard">
+  <div class="turnos-shell">
+    <section class="turnos-hero">
+      <div class="hero-pattern" aria-hidden="true"></div>
 
-  <div class="main-content">
-    <div class="content-wrapper">
+      <div class="hero-top">
+        <button class="btn-back" (click)="volver()">
+          <i class="bi bi-arrow-left-circle-fill"></i>
+          <span>Volver</span>
+        </button>
+
+        <div class="hero-title-box">
+          <span class="hero-eyebrow">
+            <i class="bi bi-calendar3"></i>
+            Agenda semanal
+          </span>
+          <h1>Mis Horarios</h1>
+          <p>Consulta tus clases por dia y franja horaria.</p>
+        </div>
+      </div>
+
+      @if (!cargando && allTurnos.length > 0) {
+        <div class="hero-kpis">
+          <article class="kpi-card">
+            <span class="kpi-value">{{ allTurnos.length }}</span>
+            <span class="kpi-label">Clases semanales</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value">{{ timeSlots.length }}</span>
+            <span class="kpi-label">Franjas horarias</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value">{{ deportesUnicos.length }}</span>
+            <span class="kpi-label">Disciplinas</span>
+          </article>
+        </div>
+      }
+    </section>
+
+    <section class="schedule-panel">
       @if (cargando) {
         <app-skeleton-card [type]="'grid'" [count]="4" [columns]="2"></app-skeleton-card>
       } @else if (allTurnos.length > 0) {
-        @let deportesUnicos = getDeportesUnicos();
         @if (deportesUnicos.length > 0) {
           <div class="sport-legend">
             @for (deporte of deportesUnicos; track deporte.key) {
-              <div class="legend-item {{ deporte.key }}">
-                <span class="legend-emoji">{{ deporte.emoji }}</span>
+              <div class="legend-item" [attr.data-sport]="deporte.key">
+                <span class="legend-icon" [style.color]="deporte.color">
+                  <i class="bi" [ngClass]="deporte.iconClass"></i>
+                </span>
                 <span class="legend-text">{{ deporte.nombre }}</span>
               </div>
             }
           </div>
         }
 
-        <div class="timetable-container desktop-view">
-          <div class="timetable">
-            <div class="timetable-header">
-              <div class="time-column header-cell">
+        <div class="table-wrap desktop-view">
+          <div class="schedule-table">
+            <div class="table-head">
+              <div class="time-head">
                 <i class="bi bi-clock"></i>
                 <span>Hora</span>
               </div>
               @for (dia of diasSemana; track $index) {
-                <div class="day-column header-cell">
+                <div class="day-head">
                   <span class="day-full">{{ dia }}</span>
                   <span class="day-short">{{ diasCortos[$index] }}</span>
                 </div>
@@ -46,25 +70,26 @@
             </div>
 
             @for (slot of timeSlots; track slot.horaInicio) {
-              <div class="timetable-row">
-                <div class="time-column time-cell">
-                  <span class="time-start">{{ slot.horaInicio }}</span>
-                  <span class="time-separator">-</span>
-                  <span class="time-end">{{ slot.horaFin }}</span>
+              <div class="table-row">
+                <div class="time-cell">
+                  <span>{{ slot.horaInicio }}</span>
+                  <span class="sep">-</span>
+                  <span>{{ slot.horaFin }}</span>
                 </div>
+
                 @for (dia of diasSemana; track $index) {
                   @let celdas = getTurnosEnCelda(slot, dia);
-                  <div class="day-column day-cell"
-                       [class.has-class]="celdas.length > 0"
-                       [class.empty]="celdas.length === 0">
+                  <div class="day-cell" [class.has-class]="celdas.length > 0">
                     @if (celdas.length > 0) {
                       <div class="class-stack">
                         @for (celda of celdas; track celda.turno.id) {
-                          <div [class]="'class-block ' + celda.sportKey">
-                            <span class="class-emoji">{{ celda.emoji }}</span>
-                            <span class="class-name">{{ celda.displayName }}</span>
-                            <span class="class-time">{{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}</span>
-                          </div>
+                          <article class="class-pill" [attr.data-sport]="celda.sportKey">
+                            <div class="pill-main">
+                              <i class="bi" [ngClass]="celda.iconClass"></i>
+                              <span>{{ celda.displayName }}</span>
+                            </div>
+                            <span class="pill-time">{{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}</span>
+                          </article>
                         }
                       </div>
                     }
@@ -78,10 +103,9 @@
         <div class="mobile-view">
           <div class="day-tabs">
             @for (dia of diasCortos; track $index) {
-              <button class="day-tab"
-                      [class.active]="selectedDayIndex === $index"
-                      (click)="selectDay($index)">
-                {{ dia }}
+              <button class="day-tab" [class.active]="selectedDayIndex === $index" (click)="selectDay($index)">
+                <span>{{ dia }}</span>
+                <small>{{ getCantidadTurnosDia(diasSemana[$index]) }}</small>
               </button>
             }
           </div>
@@ -90,47 +114,43 @@
             @let turnosDelDia = getTurnosForDay(diasSemana[selectedDayIndex]);
             @if (turnosDelDia.length > 0) {
               @for (celda of turnosDelDia; track celda.turno.id) {
-                <div [class]="'mobile-class-card ' + celda.sportKey">
-                  <div class="mobile-card-left">
-                    <span class="mobile-emoji">{{ celda.emoji }}</span>
+                <article class="mobile-class-card" [attr.data-sport]="celda.sportKey">
+                  <div class="mobile-left" [style.color]="celda.color">
+                    <i class="bi" [ngClass]="celda.iconClass"></i>
                   </div>
-                  <div class="mobile-card-content">
-                    <span class="mobile-class-name">{{ celda.displayName }}</span>
-                    <span class="mobile-class-time">
+
+                  <div class="mobile-content">
+                    <span class="mobile-name">{{ celda.displayName }}</span>
+                    <span class="mobile-time">
                       <i class="bi bi-clock"></i>
                       {{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}
                     </span>
                   </div>
-                  <div class="mobile-card-right">
-                    <i class="bi bi-chevron-right"></i>
-                  </div>
-                </div>
+
+                  <i class="bi bi-chevron-right mobile-chevron"></i>
+                </article>
               }
             } @else {
-              <div class="no-classes">
+              <div class="empty-mini-state">
                 <i class="bi bi-calendar-x"></i>
-                <span>No hay clases este día</span>
+                <span>No hay clases este dia.</span>
               </div>
             }
           </div>
         </div>
       } @else if (grupos.length > 0) {
-        <div class="no-groups-container">
-          <div class="no-groups-icon">
-            <i class="bi bi-calendar-x"></i>
-          </div>
-          <h3 class="no-groups-title">No tienes horarios asignados</h3>
-          <p class="no-groups-text">Si crees que esto es un error, contacta con la escuela.</p>
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-calendar-x"></i></div>
+          <h3>No tienes horarios asignados</h3>
+          <p>Si crees que esto es un error, contacta con la escuela.</p>
         </div>
       } @else {
-        <div class="no-groups-container">
-          <div class="no-groups-icon">
-            <i class="bi bi-inbox"></i>
-          </div>
-          <h3 class="no-groups-title">No tienes grupos asignados</h3>
-          <p class="no-groups-text">Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios.</p>
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+          <h3>No tienes grupos asignados</h3>
+          <p>Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios.</p>
         </div>
       }
-    </div>
+    </section>
   </div>
 </div>
