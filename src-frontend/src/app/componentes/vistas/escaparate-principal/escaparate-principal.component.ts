@@ -42,6 +42,8 @@ export class EscaparatePrincipalComponent
   currentReview: number = 0;
   totalReviews: number = 10;
   visibleCards: number = 3;
+  isReviewAutoPaused: boolean = false;
+  private readonly mobileReviewCardWidthPercent: number = 76;
   private reviewInterval: ReturnType<typeof setInterval> | null = null;
 
   private infoCardObserver: IntersectionObserver | null = null;
@@ -124,12 +126,22 @@ export class EscaparatePrincipalComponent
   }
 
   // Reviews carousel methods
+  get canAutoRotateReviews(): boolean {
+    return this.totalReviews > this.visibleCards;
+  }
+
   get totalPages(): number {
     return Math.ceil(this.totalReviews / this.visibleCards);
   }
 
   get translateX(): number {
-    const cardWidthPercent = 100 / this.visibleCards;
+    if (this.visibleCards === 1) {
+      const centerOffset = (100 - this.mobileReviewCardWidthPercent) / 2;
+      return -(this.currentReview * this.mobileReviewCardWidthPercent) + centerOffset;
+    }
+
+    const cardWidthPercent =
+      100 / this.visibleCards;
     return -(this.currentReview * cardWidthPercent);
   }
 
@@ -145,6 +157,16 @@ export class EscaparatePrincipalComponent
 
     if (this.currentReview >= this.totalReviews - this.visibleCards + 1) {
       this.currentReview = Math.max(0, this.totalReviews - this.visibleCards);
+    }
+
+    if (!this.canAutoRotateReviews) {
+      this.stopReviewAutoRotation();
+      this.currentReview = 0;
+      return;
+    }
+
+    if (!this.isReviewAutoPaused) {
+      this.startReviewAutoRotation();
     }
   }
 
@@ -167,7 +189,23 @@ export class EscaparatePrincipalComponent
     this.resetAutoRotation();
   }
 
+  toggleReviewAutoRotation(): void {
+    this.isReviewAutoPaused = !this.isReviewAutoPaused;
+    if (this.isReviewAutoPaused) {
+      this.stopReviewAutoRotation();
+      return;
+    }
+    this.startReviewAutoRotation();
+  }
+
   private startReviewAutoRotation(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (this.isReviewAutoPaused || this.reviewInterval || !this.canAutoRotateReviews) {
+      return;
+    }
+
     this.reviewInterval = setInterval(() => {
       const maxIndex = this.totalReviews - this.visibleCards;
       this.currentReview =
@@ -183,6 +221,9 @@ export class EscaparatePrincipalComponent
   }
 
   private resetAutoRotation(): void {
+    if (this.isReviewAutoPaused || !this.canAutoRotateReviews) {
+      return;
+    }
     this.stopReviewAutoRotation();
     this.startReviewAutoRotation();
   }
@@ -210,12 +251,28 @@ export class EscaparatePrincipalComponent
       });
     });
 
+    // Wait for DOM layout to settle, then initialize reveal observers.
+    requestAnimationFrame(() => {
+      this.initScrollReveal();
+    });
+  }
+
+  private initScrollReveal(): void {
     // Observer exclusivo para info-cards (card reveal)
     const cardOptions: IntersectionObserverInit = {
       root: null,
       rootMargin: '0px 0px -10% 0px',
       threshold: 0.2,
     };
+
+    // Show immediately any card already in viewport (same behavior as sports/tarifas)
+    this.infoCards.forEach((card) => {
+      const rect = card.nativeElement.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        card.nativeElement.classList.add('is-visible', 'no-animation');
+      }
+    });
 
     this.infoCardObserver = new IntersectionObserver((entries, obs) => {
       entries.forEach((entry) => {
@@ -227,7 +284,9 @@ export class EscaparatePrincipalComponent
     }, cardOptions);
 
     this.infoCards.forEach((card) => {
-      this.infoCardObserver?.observe(card.nativeElement);
+      if (!card.nativeElement.classList.contains('is-visible')) {
+        this.infoCardObserver?.observe(card.nativeElement);
+      }
     });
 
     const instructorOptions: IntersectionObserverInit = {
@@ -235,6 +294,14 @@ export class EscaparatePrincipalComponent
       rootMargin: '0px 0px -10% 0px',
       threshold: 0.2,
     };
+
+    this.instructorTiles.forEach((tile) => {
+      const rect = tile.nativeElement.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        tile.nativeElement.classList.add('is-visible', 'no-animation');
+      }
+    });
 
     this.instructorObserver = new IntersectionObserver((entries, obs) => {
       entries.forEach((entry) => {
@@ -246,7 +313,9 @@ export class EscaparatePrincipalComponent
     }, instructorOptions);
 
     this.instructorTiles.forEach((tile) => {
-      this.instructorObserver?.observe(tile.nativeElement);
+      if (!tile.nativeElement.classList.contains('is-visible')) {
+        this.instructorObserver?.observe(tile.nativeElement);
+      }
     });
   }
 

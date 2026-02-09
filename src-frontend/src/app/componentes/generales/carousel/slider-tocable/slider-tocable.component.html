@@ -6,8 +6,7 @@
   </div>
 } @else {
   <div class="events-carousel">
-    <!-- Botón Anterior -->
-    @if (eventos.length > visibleCards) {
+    @if (canAutoRotate) {
       <button
         class="carousel-btn prev"
         (click)="prevSlide()"
@@ -17,7 +16,6 @@
       </button>
     }
 
-    <!-- Contenedor con overflow hidden -->
     <div class="events-wrapper">
       <div
         class="events-track"
@@ -51,8 +49,7 @@
       </div>
     </div>
 
-    <!-- Botón Siguiente -->
-    @if (eventos.length > visibleCards) {
+    @if (canAutoRotate) {
       <button
         class="carousel-btn next"
         (click)="nextSlide()"
@@ -60,18 +57,27 @@
       >
         <i class="bi bi-chevron-right"></i>
       </button>
+
+      <button
+        class="carousel-btn carousel-autoplay-toggle icon-only"
+        type="button"
+        (click)="toggleAutoRotation()"
+        [attr.aria-label]="isAutoPaused ? 'Reanudar carrusel de eventos' : 'Pausar carrusel de eventos'"
+        [attr.aria-pressed]="isAutoPaused"
+      >
+        <i [class]="isAutoPaused ? 'bi bi-play-fill' : 'bi bi-pause-fill'" aria-hidden="true"></i>
+      </button>
     }
   </div>
 
-  <!-- Dots de navegación -->
-  @if (eventos.length > visibleCards) {
+  @if (canAutoRotate) {
     <div class="carousel-dots">
       @for (i of getDotIndices(); track i) {
         <button
           class="dot"
           [class.active]="currentIndex === i"
           (click)="goToSlide(i)"
-          [attr.aria-label]="'Ir a página ' + (i + 1)"
+          [attr.aria-label]="'Ir a pagina ' + (i + 1)"
         ></button>
       }
     </div>

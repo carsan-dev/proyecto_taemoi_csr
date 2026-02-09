@@ -1,17 +1,10 @@
-// ========================================
-// VARIABLES (coherentes con el resto del escaparate)
-// ========================================
 $primary-blue: #0d47a1;
-$primary-blue-dark: #0a3570;
 $primary-blue-light: #1565c0;
 $dark-bg: #1b2b2e;
 $text-light: #ffffff;
 $text-muted: rgba(255, 255, 255, 0.7);
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-// ========================================
-// SKELETON LOADING
-// ========================================
 .events-carousel-skeleton {
   display: flex;
   gap: 1rem;
@@ -30,27 +23,32 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, transparent, rgba($text-light, 0.08), transparent);
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba($text-light, 0.08),
+        transparent
+      );
       animation: skeleton-shimmer 1.8s infinite;
     }
   }
 }
 
 @keyframes skeleton-shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-// ========================================
-// EVENTS CAROUSEL (igual que reviews)
-// ========================================
 .events-carousel {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
 
-  // Botones de navegación
   .carousel-btn {
     flex-shrink: 0;
     width: 44px;
@@ -69,14 +67,12 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     i {
       font-size: 1.25rem;
+      line-height: 1;
+      display: block;
     }
 
     &:hover {
       background: rgba(0, 0, 0, 0.6);
-
-      i {
-        color: white;
-      }
     }
 
     &:active {
@@ -84,7 +80,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  // Wrapper con overflow hidden
   .events-wrapper {
     flex: 1;
     overflow: hidden;
@@ -92,23 +87,33 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin: -1rem 0;
   }
 
-  // Track que se mueve con translateX
   .events-track {
     display: flex;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    // Compensar el padding de las cards para alineación perfecta
     margin: 0 -0.5rem;
+  }
+
+  .carousel-autoplay-toggle {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    z-index: 3;
   }
 }
 
-// ========================================
-// EVENT CARD
-// ========================================
+.carousel-autoplay-toggle {
+  padding: 0;
+
+  i {
+    line-height: 1;
+    display: block;
+  }
+}
+
 .event-card {
-  // Cada card ocupa exactamente 33.333% para que translateX funcione
   flex: 0 0 33.333%;
   min-width: 33.333%;
-  padding: 0 0.5rem; // Espaciado interno para crear gaps visuales
+  padding: 0 0.5rem;
 
   .event-card-inner {
     background: rgba($text-light, 0.08);
@@ -135,7 +140,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  // Imagen
   .event-card-image {
     position: relative;
     height: 180px;
@@ -162,7 +166,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  // Contenido
   .event-card-body {
     padding: 1.25rem;
     display: flex;
@@ -221,9 +224,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ========================================
-// CAROUSEL DOTS
-// ========================================
 .carousel-dots {
   display: flex;
   justify-content: center;
@@ -252,12 +252,8 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ========================================
-// RESPONSIVE - 2 cards visibles (tablet)
-// ========================================
 @media (max-width: 1023px) {
   .event-card {
-    // 2 cards visibles: exactamente 50%
     flex: 0 0 50%;
     min-width: 50%;
   }
@@ -267,9 +263,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ========================================
-// RESPONSIVE - 1 card visible (móvil)
-// ========================================
 @media (max-width: 767px) {
   .events-carousel {
     gap: 0.5rem;
@@ -283,6 +276,11 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
 
+    .carousel-autoplay-toggle {
+      top: 0.1rem;
+      right: 0.1rem;
+    }
+
     .events-wrapper {
       padding: 0.75rem 0;
       margin: -0.75rem 0;
@@ -294,7 +292,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .event-card {
-    // 1 card visible: exactamente 100%
     flex: 0 0 100%;
     min-width: 100%;
     padding: 0 0.25rem;
@@ -334,17 +331,12 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ========================================
-// ACCESSIBILITY
-// ========================================
 @media (prefers-reduced-motion: reduce) {
-  .events-track {
-    transition: none;
-  }
-
+  .events-track,
   .event-card,
   .event-card-image img,
   .carousel-btn,
+  .carousel-autoplay-toggle,
   .dot {
     transition: none;
   }
