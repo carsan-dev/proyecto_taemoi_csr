@@ -162,8 +162,21 @@
                     <div class="sport-info-item">
                       <i class="bi bi-award-fill"></i>
                       <div>
+                        @let beltVisual = getBeltVisual(deporteItem.grado, deporteItem.deporte);
                         <span class="label">Grado actual</span>
-                        <span class="value" [style]="getGradoStyle(deporteItem.grado)">{{ deporteItem.grado }}</span>
+                        <div class="grade-display">
+                          <span class="grade-belt"
+                            [class.is-split]="beltVisual.isSplit"
+                            [style.--belt-top-color]="beltVisual.topColor"
+                            [style.--belt-bottom-color]="beltVisual.bottomColor"
+                            [attr.aria-label]="'Cinturon ' + beltVisual.label"
+                            role="img">
+                            @for (stripeOffset of beltVisual.stripeOffsets; track stripeOffset) {
+                              <span class="grade-belt-stripe" [style.right.px]="stripeOffset"></span>
+                            }
+                          </span>
+                          <span class="grade-name">{{ beltVisual.label }}</span>
+                        </div>
                       </div>
                     </div>
                   }

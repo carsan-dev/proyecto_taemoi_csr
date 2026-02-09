@@ -9,8 +9,15 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+
+interface BeltVisualData {
+  topColor: string;
+  bottomColor: string;
+  isSplit: boolean;
+  stripeOffsets: number[];
+  label: string;
+}
 
 @Component({
   selector: 'app-vista-principal-user',
@@ -26,6 +33,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
   cargandoDeportes: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
+  private readonly beltWidthPx = 74;
+  private readonly beltVisualCache = new Map<string, BeltVisualData>();
 
   constructor(
     public endpointsService: EndpointsService,
@@ -191,8 +200,144 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return getDeporteLabel(deporte);
   }
 
-  getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+  private isKickboxing(deporte: string | null | undefined): boolean {
+    return (deporte || '').toUpperCase() === 'KICKBOXING';
+  }
+
+  private getBeltColorByName(colorName: string, isKickboxing: boolean): string {
+    const normalized = (colorName || '').toUpperCase().trim();
+    if (normalized === 'ROJO' && isKickboxing) {
+      return '#8B4513';
+    }
+
+    switch (normalized) {
+      case 'BLANCO':
+        return '#FFFFFF';
+      case 'AMARILLO':
+        return '#FFFF00';
+      case 'NARANJA':
+        return '#FFA500';
+      case 'VERDE':
+        return '#008000';
+      case 'AZUL':
+        return '#0000FF';
+      case 'ROJO':
+        return '#FF0000';
+      case 'NEGRO':
+        return '#000000';
+      default:
+        return '#CCCCCC';
+    }
+  }
+
+  private getStripeOffsets(stripeCount: number): number[] {
+    const safeCount = Number.isFinite(stripeCount) ? Math.max(0, stripeCount) : 0;
+    const stripeWidth = Math.max(2, Math.floor(this.beltWidthPx / 15));
+    const gap = 1;
+    const initialMargin = 3;
+    return Array.from({ length: safeCount }, (_, index) => initialMargin + index * (stripeWidth + gap));
+  }
+
+  private getBeltLabel(tipoGrado: string, deporte: string | null | undefined): string {
+    const upper = (tipoGrado || '').toUpperCase().trim();
+    if (!upper) {
+      return '';
+    }
+
+    const isKickboxing = this.isKickboxing(deporte);
+    const adaptPart = (part: string): string => {
+      if (isKickboxing && part === 'ROJO') {
+        return 'MARRON';
+      }
+      return part;
+    };
+
+    if (upper.startsWith('NEGRO_') && upper.includes('_DAN')) {
+      const parts = upper.split('_');
+      const dan = parts.length >= 2 ? parts[1] : '';
+      return dan ? `NEGRO ${dan} DAN` : 'NEGRO DAN';
+    }
+
+    if (upper.startsWith('ROJO_NEGRO_')) {
+      const parts = upper.split('_');
+      const pum = parts.length >= 3 ? parts[2] : '';
+      const rojoName = isKickboxing ? 'MARRON' : 'ROJO';
+      return pum ? `${rojoName}/NEGRO ${pum} PUM` : `${rojoName}/NEGRO`;
+    }
+
+    if (upper.includes('_')) {
+      const parts = upper
+        .split('_')
+        .filter((part) => part !== 'DAN' && part !== 'PUM' && !/^\d+$/.test(part));
+      if (parts.length > 0) {
+        return parts.map(adaptPart).join('/');
+      }
+    }
+
+    return adaptPart(upper);
+  }
+
+  getBeltVisual(tipoGrado: string | null | undefined, deporte: string | null | undefined): BeltVisualData {
+    const grado = (tipoGrado || '').toUpperCase().trim();
+    const sport = (deporte || '').toUpperCase().trim();
+    const cacheKey = `${sport}|${grado}`;
+    const cached = this.beltVisualCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const isKickboxing = this.isKickboxing(sport);
+    const defaultVisual: BeltVisualData = {
+      topColor: '#CCCCCC',
+      bottomColor: '#CCCCCC',
+      isSplit: false,
+      stripeOffsets: [],
+      label: 'SIN GRADO'
+    };
+
+    if (!grado) {
+      this.beltVisualCache.set(cacheKey, defaultVisual);
+      return defaultVisual;
+    }
+
+    let topColor = '#CCCCCC';
+    let bottomColor = '#CCCCCC';
+    let isSplit = false;
+    let stripeOffsets: number[] = [];
+
+    if (grado.startsWith('ROJO_NEGRO_')) {
+      const parts = grado.split('_');
+      const stripeCount = Number.parseInt(parts[2] || '0', 10);
+      topColor = this.getBeltColorByName(parts[1], isKickboxing);
+      bottomColor = this.getBeltColorByName(parts[0], isKickboxing);
+      isSplit = true;
+      stripeOffsets = this.getStripeOffsets(stripeCount);
+    } else if (grado.includes('DAN') || (grado.includes('PUM') && !grado.includes('ROJO_NEGRO'))) {
+      const parts = grado.split('_');
+      const stripeCount = grado.includes('DAN') ? Number.parseInt(parts[1] || '0', 10) : 0;
+      topColor = '#000000';
+      bottomColor = '#000000';
+      stripeOffsets = this.getStripeOffsets(stripeCount);
+    } else if (grado.includes('_')) {
+      const parts = grado.split('_');
+      topColor = this.getBeltColorByName(parts[1], isKickboxing);
+      bottomColor = this.getBeltColorByName(parts[0], isKickboxing);
+      isSplit = true;
+    } else {
+      topColor = this.getBeltColorByName(grado, isKickboxing);
+      bottomColor = topColor;
+    }
+
+    const visual: BeltVisualData = {
+      topColor,
+      bottomColor,
+      isSplit,
+      stripeOffsets,
+      label: this.getBeltLabel(grado, sport)
+    };
+
+    this.beltVisualCache.set(cacheKey, visual);
+    return visual;
   }
 
   formatearFecha(fecha: string | Date | null): string {
