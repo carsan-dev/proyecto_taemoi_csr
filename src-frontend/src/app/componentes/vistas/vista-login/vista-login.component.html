@@ -33,7 +33,7 @@
           <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesión' }}</h2>
           @if (!mostrarRegistro) {
             <p class="form-description">
-              Introduce tus credenciales de admin para acceder
+              Accede con tu correo y contraseña.
             </p>
           }
           @if (mostrarRegistro) {
@@ -215,8 +215,8 @@
               </div>
             </div>
 
-            <div class="password-rules">
-              <p>Requisitos:</p>
+            <details class="password-rules" [open]="registro.contrasena.length > 0 || registro.confirmarContrasena.length > 0">
+              <summary>Requisitos de contraseña</summary>
               <ul>
                 <li [class.ok]="registroTieneMinimo" [class.bad]="!registroTieneMinimo">
                   <i class="bi" [ngClass]="registroTieneMinimo ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
@@ -239,7 +239,7 @@
                   Coinciden
                 </li>
               </ul>
-            </div>
+            </details>
 
             <!-- Confirm Password -->
             <div class="form-group">
