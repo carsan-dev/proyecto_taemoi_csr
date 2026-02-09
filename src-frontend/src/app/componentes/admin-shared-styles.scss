@@ -197,6 +197,9 @@ $whatsapp-hover: #128C7E;
   }
 }
 
+// Elevated card while a searchable select is open, so its dropdown
+// can overlap adjacent cards on mobile without being covered.
+
 // Section headers within cards
 .admin-section-header {
   display: flex;
