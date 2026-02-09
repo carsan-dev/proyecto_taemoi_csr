@@ -26,6 +26,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private labelEl?: HTMLLabelElement;
   private labelForBackup?: string;
   private fieldEl?: HTMLElement;
+  private cardEl?: HTMLElement;
 
   constructor(
     private readonly elRef: ElementRef<HTMLSelectElement>,
@@ -47,6 +48,12 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.detachListeners.forEach((detach) => detach());
     if (this.observer) {
       this.observer.disconnect();
+    }
+    if (this.fieldEl) {
+      this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
+    }
+    if (this.cardEl) {
+      this.renderer.removeClass(this.cardEl, 'admin-select-card-open');
     }
     if (this.inputEl) {
       this.inputEl.remove();
@@ -110,6 +117,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.hideSelect(select);
     this.bindLabel(select);
     this.fieldEl = (this.wrapperEl.closest('.admin-form-field, .form-group') as HTMLElement | null) ?? undefined;
+    this.cardEl = (
+      this.wrapperEl.closest('.grupo-card, .admin-card, .info-card') as HTMLElement | null
+    ) ?? undefined;
     this.syncDisabled();
     this.buildOptions();
     this.syncFromSelect();
@@ -516,6 +526,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     if (this.fieldEl) {
       this.renderer.addClass(this.fieldEl, 'admin-select-field-open');
     }
+    if (this.cardEl) {
+      this.renderer.addClass(this.cardEl, 'admin-select-card-open');
+    }
     this.renderer.setAttribute(this.inputEl, 'aria-expanded', 'true');
     if (applyFilter) {
       this.filterOptions();
@@ -530,6 +543,12 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       return;
     }
     if (!this.isOpen) {
+      if (this.fieldEl) {
+        this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
+      }
+      if (this.cardEl) {
+        this.renderer.removeClass(this.cardEl, 'admin-select-card-open');
+      }
       if (restoreValue) {
         this.syncFromSelect();
       }
@@ -540,6 +559,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.renderer.removeClass(this.wrapperEl, 'is-open');
     if (this.fieldEl) {
       this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
+    }
+    if (this.cardEl) {
+      this.renderer.removeClass(this.cardEl, 'admin-select-card-open');
     }
     this.renderer.setAttribute(this.inputEl, 'aria-expanded', 'false');
     if (restoreValue) {

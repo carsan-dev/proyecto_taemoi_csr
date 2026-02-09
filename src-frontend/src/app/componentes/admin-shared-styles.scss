@@ -199,6 +199,11 @@ $whatsapp-hover: #128C7E;
 
 // Elevated card while a searchable select is open, so its dropdown
 // can overlap adjacent cards on mobile without being covered.
+.admin-select-card-open {
+  position: relative;
+  z-index: 520;
+  overflow: visible;
+}
 
 // Section headers within cards
 .admin-section-header {
