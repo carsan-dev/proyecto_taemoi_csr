@@ -38,6 +38,8 @@ interface DeporteInfo {
   styleUrls: ['./turnos-usuario.component.scss'],
 })
 export class TurnosUsuarioComponent implements OnInit, OnDestroy {
+  alumnos: any[] = [];
+  selectedAlumno: any = null;
   grupos: any[] = [];
   cargando: boolean = true;
   allTurnos: Turno[] = [];
@@ -58,9 +60,46 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.inicializarAlumnos();
+  }
+
+  private inicializarAlumnos(): void {
+    const alumnosSubscription = this.authService.obtenerTodosLosAlumnos().subscribe({
+      next: (alumnos) => {
+        if (Array.isArray(alumnos) && alumnos.length > 0) {
+          this.alumnos = alumnos;
+          const alumnoInicial = this.obtenerAlumnoInicial(alumnos);
+          if (alumnoInicial) {
+            this.seleccionarAlumno(alumnoInicial);
+            return;
+          }
+        }
+
+        this.inicializarAlumnoFallback();
+      },
+      error: () => {
+        this.inicializarAlumnoFallback();
+      },
+    });
+
+    this.subscriptions.add(alumnosSubscription);
+  }
+
+  private obtenerAlumnoInicial(alumnos: any[]): any | null {
+    const alumnoId = this.authService.getAlumnoId();
+    if (alumnoId) {
+      return alumnos.find((alumno) => alumno?.id === alumnoId) ?? alumnos[0];
+    }
+    return alumnos[0] ?? null;
+  }
+
+  private inicializarAlumnoFallback(): void {
     const alumnoId = this.authService.getAlumnoId();
     if (alumnoId) {
       this.alumnoId = alumnoId;
+      if (!this.selectedAlumno) {
+        this.selectedAlumno = this.alumnos.find((alumno) => alumno?.id === alumnoId) ?? null;
+      }
       this.cargarHorariosDelAlumno();
       return;
     }
@@ -70,6 +109,10 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
         const resolvedId = usuario?.alumnoDTO?.id ?? this.authService.getAlumnoId();
         if (resolvedId) {
           this.alumnoId = resolvedId;
+          this.selectedAlumno =
+            this.alumnos.find((alumno) => alumno?.id === resolvedId) ??
+            usuario?.alumnoDTO ??
+            this.selectedAlumno;
           this.cargarHorariosDelAlumno();
           return;
         }
@@ -92,6 +135,20 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(usuarioSubscription);
+  }
+
+  seleccionarAlumno(alumno: any): void {
+    const nuevoAlumnoId = alumno?.id;
+    if (!nuevoAlumnoId) {
+      return;
+    }
+    if (this.alumnoId === nuevoAlumnoId && this.selectedAlumno?.id === nuevoAlumnoId) {
+      return;
+    }
+
+    this.selectedAlumno = alumno;
+    this.alumnoId = nuevoAlumnoId;
+    this.cargarHorariosDelAlumno();
   }
 
   cargarHorariosDelAlumno(): void {

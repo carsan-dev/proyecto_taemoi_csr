@@ -16,8 +16,35 @@
           </span>
           <h1>Mis Horarios</h1>
           <p>Consulta tus clases por dia y franja horaria.</p>
+          @if (selectedAlumno) {
+            <p class="hero-student">
+              <i class="bi bi-person-circle"></i>
+              {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+            </p>
+          }
         </div>
       </div>
+
+      @if (alumnos.length > 1) {
+        <div class="student-switcher" aria-label="Seleccion de alumno">
+          <div class="switcher-label">
+            <i class="bi bi-people-fill"></i>
+            <span>Seleccionar alumno</span>
+          </div>
+          <div class="switcher-track">
+            @for (alumno of alumnos; track alumno.id) {
+              <button
+                type="button"
+                class="switcher-pill"
+                [class.is-active]="selectedAlumno?.id === alumno.id"
+                (click)="seleccionarAlumno(alumno)">
+                <i class="bi bi-person-badge"></i>
+                <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
 
       @if (!cargando && allTurnos.length > 0) {
         <div class="hero-kpis">
