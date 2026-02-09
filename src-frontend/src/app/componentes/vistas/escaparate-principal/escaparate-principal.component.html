@@ -527,8 +527,17 @@
           <button class="carousel-btn next" (click)="nextReview()" aria-label="Siguiente reseña">
             <i class="bi bi-chevron-right"></i>
           </button>
+
+          @if (canAutoRotateReviews) {
+          <button class="carousel-btn carousel-autoplay-toggle icon-only" type="button" (click)="toggleReviewAutoRotation()"
+            [attr.aria-label]="isReviewAutoPaused ? 'Reanudar carrusel de reseñas' : 'Pausar carrusel de reseñas'"
+            [attr.aria-pressed]="isReviewAutoPaused">
+            <i [class]="isReviewAutoPaused ? 'bi bi-play-fill' : 'bi bi-pause-fill'" aria-hidden="true"></i>
+          </button>
+          }
         </div>
 
+        @if (canAutoRotateReviews) {
         <div class="carousel-dots">
           @for (i of [0,1,2,3,4,5,6,7,8,9]; track i) {
           @if (i <= totalReviews - visibleCards) { <button class="dot" [class.active]="currentReview === i"
@@ -537,6 +546,7 @@
             }
             }
         </div>
+        }
 
         <a href="https://www.google.com/maps/place/Club+Moi's+Kim+Do/@37.3687365,-6.1606214,17z/data=!4m8!3m7!1s0xd1211665f2d8fbb:0x8db196e36ecfe0ff!8m2!3d37.3682568!4d-6.1607791!9m1!1b1!16s%2Fg%2F11c1t14c5r"
           target="_blank" rel="noopener noreferrer" class="google-reviews-link">
@@ -823,4 +833,3 @@
   </section>
 
 </div>
-
