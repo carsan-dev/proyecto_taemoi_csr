@@ -594,11 +594,6 @@
         </div>
         <div class="navbar-right">
           <ul class="navbar-nav d-flex flex-row align-items-center">
-            <li class="nav-item me-3 d-none d-lg-block">
-              <a class="btn btn-my-classes" [routerLink]="['/userpage']" routerLinkActive="active">
-                <i class="bi bi-calendar2-check me-1"></i>Mis Clases
-              </a>
-            </li>
             <li class="nav-item me-3">
               <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
                 rel="noopener noreferrer" aria-label="Facebook">
@@ -611,19 +606,28 @@
                 <i class="bi bi-instagram"></i>
               </a>
             </li>
-            <li class="nav-item me-3">
-              <div class="user-menu-toggle user-info" aria-label="Usuario autenticado">
+            <li class="nav-item user-desktop-menu d-none d-lg-flex">
+              <button type="button" class="user-menu-toggle" (click)="toggleDesktopUserMenu()"
+                [class.is-open]="isDesktopUserMenuOpen" [attr.aria-expanded]="isDesktopUserMenuOpen"
+                aria-haspopup="menu" aria-label="Opciones de cuenta">
                 <i class="bi bi-person-circle"></i>
-                @if (username) {
-                <span class="user-name">{{ username }}</span>
-                }
-              </div>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="btn-logout-user" (click)="cerrarSesion()" aria-label="Cerrar sesión">
-                <i class="bi bi-box-arrow-right"></i>
-                <span>Cerrar sesión</span>
+                <span class="user-name" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
+                <i class="bi user-menu-chevron"
+                  [ngClass]="isDesktopUserMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               </button>
+              @if (isDesktopUserMenuOpen) {
+              <div class="user-desktop-menu-panel" role="menu" aria-label="Opciones de cuenta">
+                <a class="user-desktop-menu-item" [routerLink]="['/userpage']" (click)="closeDesktopUserMenu()">
+                  <i class="bi bi-calendar2-check"></i>
+                  <span>Mis Clases</span>
+                </a>
+                <button class="user-desktop-menu-item logout" type="button"
+                  (click)="cerrarSesion(); closeDesktopUserMenu()">
+                  <i class="bi bi-box-arrow-right"></i>
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+              }
             </li>
           </ul>
         </div>

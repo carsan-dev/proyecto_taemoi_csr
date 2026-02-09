@@ -842,78 +842,60 @@ header.fixed-header {
       }
     }
 
-    // User Menu Toggle
+    .user-desktop-menu {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
     .user-menu-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 0.6rem;
-      padding: 0.4rem 1rem 0.4rem 0.5rem;
+      gap: 0.55rem;
+      padding: 0.38rem 0.95rem 0.38rem 0.48rem;
       border-radius: $border-radius-pill;
       background: rgba($text-light, 0.1);
-      border: 1px solid rgba($text-light, 0.15);
+      border: 1px solid rgba($text-light, 0.18);
       color: $text-light;
       font-weight: 500;
       font-size: 0.9rem;
       cursor: pointer;
-      transition: $transition;
+      transition: $transition-fast;
       text-decoration: none;
+      min-height: 38px;
 
-      i {
-        font-size: 1.6rem;
-        color: $primary-color;
+      .bi-person-circle {
+        font-size: 1.45rem;
+        color: $pilates-color;
+        line-height: 1;
       }
 
       .user-name {
-        max-width: 100px;
+        max-width: clamp(170px, 20vw, 320px);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        color: rgba($text-light, 0.9);
+        color: rgba($text-light, 0.92);
       }
 
-      &:hover {
-        background: rgba($text-light, 0.15);
-        border-color: rgba($text-light, 0.25);
-        transform: translateY(-2px);
-        box-shadow: $shadow-md;
-      }
-    }
-
-    .user-menu-toggle.user-info {
-      cursor: default;
-      pointer-events: none;
-      background: rgba($text-light, 0.12);
-      border-color: rgba($text-light, 0.25);
-      box-shadow: none;
-
-      &:hover {
-        transform: none;
-        box-shadow: none;
-      }
-    }
-
-    .btn-logout-user {
-      background: linear-gradient(135deg, $danger-color, color.adjust($danger-color, $lightness: -10%));
-      color: $text-light;
-      border: none;
-      border-radius: $border-radius-pill;
-      padding: 0.6rem 1.25rem;
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 15px rgba($danger-color, 0.3);
-      transition: $transition;
-
-      i {
-        font-size: 1rem;
+      .user-menu-chevron {
+        font-size: 0.72rem;
+        color: rgba($text-light, 0.72);
+        transition: $transition-fast;
       }
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba($danger-color, 0.4);
+      &:hover,
+      &.is-open {
+        background: rgba($text-light, 0.16);
+        border-color: rgba($text-light, 0.28);
+        box-shadow: $shadow-sm;
+        transform: translateY(-1px);
+      }
+
+      &.is-open {
+        .user-menu-chevron {
+          color: $text-light;
+        }
       }
 
       &:active {
@@ -921,21 +903,66 @@ header.fixed-header {
       }
     }
 
-    // User Dropdown Menu
-    .dropdown-menu-end {
+    .user-desktop-menu-panel {
+      position: absolute;
+      top: calc(100% + 0.55rem);
       right: 0;
-      left: auto;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.45rem;
+      border-radius: 12px;
+      border: 1px solid rgba($text-light, 0.18);
+      background: linear-gradient(135deg, rgba($dark-bg, 0.98), rgba($dark-accent, 0.97));
+      box-shadow: $shadow-lg;
+      z-index: 1080;
+    }
 
-      .logout-item {
-        color: rgba($danger-color, 0.9);
-        font-weight: 600;
+    .user-desktop-menu-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: rgba($text-light, 0.9);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      i {
+        font-size: 0.95rem;
+        color: rgba($text-light, 0.72);
+      }
+
+      &:hover {
+        background: rgba($text-light, 0.1);
+        color: $text-light;
+
+        i {
+          color: $primary-color;
+        }
+      }
+
+      &.logout {
+        color: rgba($danger-color, 0.95);
+
+        i {
+          color: rgba($danger-color, 0.95);
+        }
 
         &:hover {
-          background: rgba($danger-color, 0.15) !important;
-          color: color.adjust($danger-color, $lightness: 10%) !important;
+          background: rgba($danger-color, 0.15);
+          color: color.adjust($danger-color, $lightness: 10%);
 
           i {
-            color: $danger-color !important;
+            color: color.adjust($danger-color, $lightness: 10%);
           }
         }
       }
@@ -1168,8 +1195,12 @@ header.fixed-header {
           display: none;
         }
 
-        i {
+        .bi-person-circle {
           font-size: 1.4rem;
+        }
+
+        .user-menu-chevron {
+          font-size: 0.68rem;
         }
       }
 
