@@ -1,1210 +1,739 @@
-// ========================================
-// VARIABLES
-// ========================================
 @use 'sass:color';
 
-$primary-color: #007bff;
-$primary-dark: #0056b3;
 $dark-bg: #1b2b2e;
 $dark-accent: #284747;
-$text-light: #ffffff;
-$text-dark: #212529;
-$text-muted: #6c757d;
-$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
-$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$surface: #ffffff;
+$surface-soft: #f5f8fb;
+$text-main: #1f2a37;
+$text-muted: #5f6b7a;
+$border-soft: rgba(31, 42, 55, 0.1);
+$primary: #0d6efd;
+$primary-dark: #0a58ca;
+$success: #198754;
+$warning: #f59f00;
+$danger: #dc3545;
+$shadow-sm: 0 8px 22px rgba(12, 27, 45, 0.08);
+$shadow-md: 0 14px 35px rgba(12, 27, 45, 0.12);
+$shadow-lg: 0 22px 48px rgba(9, 23, 40, 0.15);
+$radius-xl: 24px;
+$radius-lg: 18px;
+$radius-md: 14px;
+$transition: all 0.25s ease;
 
-// Sport Colors
-$taekwondo-color: #667ee6;
-$competicion-color: #e74c3c;
-$pilates-color: #3498db;
-$kickboxing-color: #f39c12;
-$defensa-color: #e91e63;
+$taekwondo: #0d47a1;
+$kickboxing: #ff4500;
+$pilates: #57a2a8;
+$defensa: #c2185b;
+$competicion: #7b1fa2;
 
-// ========================================
-// USER PAGE
-// ========================================
-.user-page {
+.user-dashboard {
   min-height: 100vh;
-  background: #f8f9fa; // Clean background matching main site
-  padding-top: 120px; // Increased to prevent content hiding behind header
+  padding: 108px 1rem 2.5rem;
+  background:
+    radial-gradient(1200px 500px at 110% -5%, rgba(13, 110, 253, 0.08), transparent),
+    radial-gradient(900px 450px at -10% 10%, rgba(33, 150, 243, 0.06), transparent),
+    #edf3f8;
 }
 
-// ========================================
-// HERO HEADER
-// ========================================
-.hero-header {
+.dashboard-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.dashboard-hero {
   position: relative;
-  background: linear-gradient(135deg, $dark-bg 0%, $dark-accent 100%);
-  padding: 3rem 2rem;
-  margin-bottom: 3rem;
   overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
-    animation: pulse 15s infinite;
-  }
-
-  .hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('../../../../assets/media/Logo_escuela.svg') center/contain no-repeat;
-    opacity: 0.03;
-    pointer-events: none;
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .welcome-section {
-    text-align: center;
-    margin-bottom: 2rem;
-
-    .welcome-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: $text-light;
-      margin-bottom: 0.5rem;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      animation: fadeInDown 0.6s ease;
-    }
-
-    .welcome-subtitle {
-      font-size: 1.2rem;
-      color: rgba($text-light, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      animation: fadeInUp 0.6s ease 0.2s backwards;
-
-      i {
-        font-size: 1.5rem;
-      }
-    }
-  }
-
-  // Student Selector
-  .student-selector {
-    margin-bottom: 2rem;
-    animation: fadeInUp 0.6s ease 0.3s backwards;
-
-    .selector-label {
-      display: block;
-      text-align: center;
-      color: rgba($text-light, 0.8);
-      font-size: 0.95rem;
-      margin-bottom: 1rem;
-      font-weight: 500;
-
-      i {
-        margin-right: 0.5rem;
-      }
-    }
-
-    .student-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-    }
-
-    .student-btn {
-      padding: 0.8rem 1.5rem;
-      border: 2px solid rgba($text-light, 0.3);
-      background: rgba($text-light, 0.1);
-      color: $text-light;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: $transition;
-      backdrop-filter: blur(10px);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-
-      i {
-        font-size: 1.2rem;
-      }
-
-      &:hover {
-        background: rgba($text-light, 0.2);
-        border-color: rgba($text-light, 0.5);
-        transform: translateY(-2px);
-      }
-
-      &.active {
-        background: linear-gradient(135deg, $primary-color, $primary-dark);
-        border-color: $primary-color;
-        box-shadow: 0 4px 15px rgba($primary-color, 0.4);
-      }
-    }
-  }
-
-  // Quick Action Button
-  .quick-action {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    animation: fadeInUp 0.6s ease 0.4s backwards;
-
-    .btn-schedule,
-    .btn-my-classes {
-      padding: 1rem 2.5rem;
-      color: $text-light;
-      border: none;
-      border-radius: 50px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: $transition;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.8rem;
-      box-shadow: 0 4px 15px rgba($primary-color, 0.25);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-
-      i {
-        font-size: 1.25rem;
-      }
-
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba($primary-color, 0.4);
-      }
-
-      &:active {
-        transform: translateY(-1px);
-      }
-    }
-
-    .btn-schedule {
-      background: linear-gradient(135deg, $primary-color, $primary-dark);
-    }
-
-    .btn-my-classes {
-      background: linear-gradient(135deg, #00c853, #009624);
-      box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
-    }
-  }
-}
-
-// ========================================
-// MAIN CONTENT
-// ========================================
-.main-content {
-  padding: 0 2rem 3rem;
-
-  .content-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  // Section Header
-  .section-header {
-    margin-bottom: 2.5rem;
-    animation: fadeInUp 0.6s ease 0.5s backwards;
-
-    .section-title-box {
-      display: inline-flex;
-      align-items: center;
-      gap: 1rem;
-      background: $text-light;
-      padding: 1rem 2rem;
-      border-radius: 15px;
-      box-shadow: $shadow-md;
-
-      i {
-        font-size: 1.8rem;
-        color: $primary-color;
-      }
-
-      h2 {
-        margin: 0;
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: $text-dark;
-      }
-    }
-
-    .section-divider {
-      height: 4px;
-      background: linear-gradient(90deg, $primary-color 0%, transparent 100%);
-      margin-top: 1rem;
-      border-radius: 2px;
-    }
-  }
-
-  // Groups Grid
-  .groups-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-    animation: fadeInUp 0.6s ease 0.6s backwards;
-  }
-
-  // Group Card
-  .group-card {
-    position: relative;
-    background: $text-light;
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: $shadow-md;
-    transition: $transition;
-    overflow: hidden;
-    cursor: pointer;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 5px;
-      background: linear-gradient(90deg, $taekwondo-color, color.adjust($taekwondo-color, $lightness: 15%));
-    }
-
-    &[data-sport="taekwondo"]::before {
-      background: linear-gradient(90deg, $taekwondo-color, color.adjust($taekwondo-color, $lightness: 15%));
-    }
-
-    &[data-sport="competicion"]::before {
-      background: linear-gradient(90deg, $competicion-color, color.adjust($competicion-color, $lightness: 15%));
-    }
-
-    &[data-sport="pilates"]::before {
-      background: linear-gradient(90deg, $pilates-color, color.adjust($pilates-color, $lightness: 15%));
-    }
-
-    &[data-sport="kickboxing"]::before {
-      background: linear-gradient(90deg, $kickboxing-color, color.adjust($kickboxing-color, $lightness: 15%));
-    }
-
-    &[data-sport="defensa_personal_femenina"]::before {
-      background: linear-gradient(90deg, $defensa-color, color.adjust($defensa-color, $lightness: 15%));
-    }
-
-    .card-shine {
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-      transform: rotate(45deg);
-      transition: $transition;
-      opacity: 0;
-    }
-
-    &:hover {
-      transform: translateY(-8px);
-      box-shadow: $shadow-lg;
-
-      .card-shine {
-        opacity: 1;
-        animation: shine 0.8s ease;
-      }
-    }
-
-    .group-card-inner {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .group-icon {
-      flex-shrink: 0;
-      width: 80px;
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #f5f7fa, #e9ecef);
-      border-radius: 16px;
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
-
-      .emoji {
-        font-size: 3rem;
-      }
-    }
-
-    .group-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-
-      .group-name {
-        font-size: 1.3rem;
-        font-weight: 600;
-        color: $text-dark;
-        margin: 0;
-      }
-
-      .group-badge {
-        display: inline-block;
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        align-self: flex-start;
-
-        &[data-sport="taekwondo"] {
-          background: linear-gradient(135deg, color.adjust($taekwondo-color, $lightness: 25%), color.adjust($taekwondo-color, $lightness: 30%));
-          color: color.adjust($taekwondo-color, $lightness: -20%);
-        }
-
-        &[data-sport="competicion"] {
-          background: linear-gradient(135deg, color.adjust($competicion-color, $lightness: 25%), color.adjust($competicion-color, $lightness: 30%));
-          color: color.adjust($competicion-color, $lightness: -20%);
-        }
-
-        &[data-sport="pilates"] {
-          background: linear-gradient(135deg, color.adjust($pilates-color, $lightness: 30%), color.adjust($pilates-color, $lightness: 35%));
-          color: color.adjust($pilates-color, $lightness: -20%);
-        }
-
-        &[data-sport="kickboxing"] {
-          background: linear-gradient(135deg, color.adjust($kickboxing-color, $lightness: 25%), color.adjust($kickboxing-color, $lightness: 30%));
-          color: color.adjust($kickboxing-color, $lightness: -30%);
-        }
-
-        &[data-sport="defensa_personal_femenina"] {
-          background: linear-gradient(135deg, color.adjust($defensa-color, $lightness: 25%), color.adjust($defensa-color, $lightness: 30%));
-          color: color.adjust($defensa-color, $lightness: -20%);
-        }
-      }
-    }
-  }
-
-  // No Groups State
-  .no-groups-container {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: $text-light;
-    border-radius: 20px;
-    box-shadow: $shadow-md;
-    animation: fadeInUp 0.6s ease 0.6s backwards;
-
-    .no-groups-icon {
-      font-size: 5rem;
-      color: $text-muted;
-      margin-bottom: 1.5rem;
-      opacity: 0.5;
-    }
-
-    .no-groups-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: $text-dark;
-      margin-bottom: 0.5rem;
-    }
-
-    .no-groups-text {
-      font-size: 1rem;
-      color: $text-muted;
-      margin: 0;
-    }
-  }
-}
-
-// ========================================
-// ANIMATIONS
-// ========================================
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes shine {
-  0% {
-    left: -50%;
-  }
-  100% {
-    left: 150%;
-  }
-}
-
-// ========================================
-// RESPONSIVE
-// ========================================
-@media (max-width: 768px) {
-  .user-page {
-    padding-top: 90px; // Adjusted for mobile header
-  }
-
-  .hero-header {
-    padding: 2rem 1rem;
-
-    .welcome-section {
-      .welcome-title {
-        font-size: 2rem;
-      }
-
-      .welcome-subtitle {
-        font-size: 1rem;
-      }
-    }
-
-    .student-selector {
-      .student-btn {
-        padding: 0.7rem 1.2rem;
-        font-size: 0.95rem;
-      }
-    }
-
-    .quick-action {
-      .btn-schedule {
-        padding: 0.9rem 2rem;
-        font-size: 1rem;
-      }
-    }
-  }
-
-  .main-content {
-    padding: 0 1rem 2rem;
-
-    .section-header {
-      .section-title-box {
-        padding: 0.8rem 1.5rem;
-
-        i {
-          font-size: 1.5rem;
-        }
-
-        h2 {
-          font-size: 1.5rem;
-        }
-      }
-    }
-
-    .groups-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .group-card {
-      padding: 1.5rem;
-
-      .group-icon {
-        width: 60px;
-        height: 60px;
-
-        .emoji {
-          font-size: 2.5rem;
-        }
-      }
-
-      .group-info {
-        .group-name {
-          font-size: 1.1rem;
-        }
-
-        .group-badge {
-          font-size: 0.75rem;
-        }
-      }
-    }
-
-    .no-groups-container {
-      padding: 3rem 1.5rem;
-
-      .no-groups-icon {
-        font-size: 4rem;
-      }
-
-      .no-groups-title {
-        font-size: 1.25rem;
-      }
-
-      .no-groups-text {
-        font-size: 0.9375rem;
-      }
-    }
-  }
-}
-
-// ========================================
-// ENHANCED MOBILE IMPROVEMENTS
-// ========================================
-
-// Better touch targets and accessibility
-@media (max-width: 767px) {
-  .hero-header {
-    margin-bottom: 2rem;
-
-    .student-selector {
-      .student-buttons {
-        flex-direction: column;
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-      }
-
-      .student-btn {
-        width: 100%;
-        min-height: 52px;
-        justify-content: center;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-
-        &:active {
-          transform: scale(0.98);
-        }
-      }
-    }
-
-    .quick-action {
-      .btn-schedule {
-        min-height: 52px;
-        touch-action: manipulation;
-
-        &:active {
-          transform: scale(0.98);
-        }
-      }
-    }
-  }
-
-  .group-card {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    min-height: 140px;
-
-    &:active {
-      transform: scale(0.98);
-    }
-
-    // Disable hover effects on touch devices
-    &:hover {
-      @media (hover: none) {
-        transform: none;
-      }
-    }
-  }
-
-  .section-header {
-    margin-bottom: 2rem;
-
-    .section-title-box {
-      width: 100%;
-      justify-content: center;
-      border-radius: 12px;
-    }
-  }
-}
-
-// Extra small devices
-@media (max-width: 576px) {
-  .user-page {
-    padding-top: 80px;
-  }
-
-  .hero-header {
-    padding: 1.75rem 1rem;
-    margin-bottom: 1.5rem;
-
-    .welcome-section {
-      margin-bottom: 1.5rem;
-
-      .welcome-title {
-        font-size: 1.75rem;
-      }
-
-      .welcome-subtitle {
-        font-size: 0.9375rem;
-        flex-direction: column;
-        gap: 0.25rem;
-
-        i {
-          font-size: 1.25rem;
-        }
-      }
-    }
-
-    .student-selector {
-      margin-bottom: 1.5rem;
-
-      .selector-label {
-        font-size: 0.875rem;
-        margin-bottom: 0.875rem;
-      }
-
-      .student-btn {
-        padding: 0.875rem 1.25rem;
-        font-size: 0.9375rem;
-        min-height: 48px;
-        border-radius: 10px;
-
-        i {
-          font-size: 1.1rem;
-        }
-      }
-    }
-
-    .quick-action {
-      .btn-schedule {
-        width: 100%;
-        max-width: 400px;
-        padding: 1rem 2rem;
-        font-size: 0.9375rem;
-        min-height: 48px;
-
-        i {
-          font-size: 1.2rem;
-        }
-      }
-    }
-  }
-
-  .main-content {
-    padding: 0 0.75rem 2rem;
-
-    .section-header {
-      margin-bottom: 1.75rem;
-
-      .section-title-box {
-        padding: 0.75rem 1.25rem;
-        flex-direction: column;
-        gap: 0.5rem;
-        border-radius: 10px;
-
-        i {
-          font-size: 1.5rem;
-        }
-
-        h2 {
-          font-size: 1.25rem;
-        }
-      }
-
-      .section-divider {
-        height: 3px;
-        margin-top: 0.875rem;
-      }
-    }
-
-    .groups-grid {
-      gap: 1.25rem;
-    }
-
-    .group-card {
-      padding: 1.25rem;
-      border-radius: 16px;
-      min-height: 130px;
-
-      .group-card-inner {
-        gap: 1.25rem;
-      }
-
-      .group-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-
-        .emoji {
-          font-size: 2.25rem;
-        }
-      }
-
-      .group-info {
-        gap: 0.4rem;
-
-        .group-name {
-          font-size: 1rem;
-          line-height: 1.3;
-        }
-
-        .group-badge {
-          font-size: 0.7rem;
-          padding: 0.35rem 0.875rem;
-          border-radius: 16px;
-        }
-      }
-    }
-
-    .no-groups-container {
-      padding: 2.5rem 1.25rem;
-      border-radius: 16px;
-
-      .no-groups-icon {
-        font-size: 3.5rem;
-        margin-bottom: 1.25rem;
-      }
-
-      .no-groups-title {
-        font-size: 1.125rem;
-        margin-bottom: 0.625rem;
-      }
-
-      .no-groups-text {
-        font-size: 0.875rem;
-      }
-    }
-  }
-}
-
-// Extra small devices - very narrow
-@media (max-width: 375px) {
-  .hero-header {
-    padding: 1.5rem 0.875rem;
-
-    .welcome-section {
-      .welcome-title {
-        font-size: 1.5rem;
-      }
-
-      .welcome-subtitle {
-        font-size: 0.875rem;
-      }
-    }
-
-    .student-btn {
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-    }
-
-    .quick-action {
-      .btn-schedule {
-        padding: 0.875rem 1.5rem;
-        font-size: 0.875rem;
-      }
-    }
-  }
-
-  .main-content {
-    padding: 0 0.5rem 1.5rem;
-
-    .section-header {
-      .section-title-box {
-        padding: 0.625rem 1rem;
-
-        i {
-          font-size: 1.25rem;
-        }
-
-        h2 {
-          font-size: 1.125rem;
-        }
-      }
-    }
-
-    .group-card {
-      padding: 1rem;
-
-      .group-card-inner {
-        gap: 1rem;
-      }
-
-      .group-icon {
-        width: 52px;
-        height: 52px;
-
-        .emoji {
-          font-size: 2rem;
-        }
-      }
-
-      .group-info {
-        .group-name {
-          font-size: 0.9375rem;
-        }
-
-        .group-badge {
-          font-size: 0.65rem;
-          padding: 0.3rem 0.75rem;
-        }
-      }
-    }
-
-    .no-groups-container {
-      padding: 2rem 1rem;
-
-      .no-groups-icon {
-        font-size: 3rem;
-      }
-
-      .no-groups-title {
-        font-size: 1rem;
-      }
-
-      .no-groups-text {
-        font-size: 0.8125rem;
-      }
-    }
-  }
-}
-
-// Landscape mode on mobile
-@media (max-height: 600px) and (orientation: landscape) {
-  .user-page {
-    padding-top: 70px;
-  }
-
-  .hero-header {
-    padding: 1.5rem 1rem;
-    margin-bottom: 1.5rem;
-
-    .welcome-section {
-      margin-bottom: 1.25rem;
-
-      .welcome-title {
-        font-size: 1.5rem;
-      }
-
-      .welcome-subtitle {
-        font-size: 0.875rem;
-      }
-    }
-
-    .student-selector {
-      margin-bottom: 1.25rem;
-
-      .student-buttons {
-        flex-direction: row;
-        max-width: none;
-      }
-
-      .student-btn {
-        width: auto;
-        padding: 0.625rem 1.25rem;
-        font-size: 0.875rem;
-      }
-    }
-
-    .quick-action {
-      .btn-schedule {
-        padding: 0.75rem 1.75rem;
-        font-size: 0.875rem;
-      }
-    }
-  }
-
-  .main-content {
-    padding: 0 1rem 1.5rem;
-
-    .section-header {
-      margin-bottom: 1.5rem;
-
-      .section-title-box {
-        padding: 0.625rem 1.25rem;
-        flex-direction: row;
-
-        i {
-          font-size: 1.25rem;
-        }
-
-        h2 {
-          font-size: 1.125rem;
-        }
-      }
-
-      .section-divider {
-        display: none; // Hide divider in landscape
-      }
-    }
-
-    .groups-grid {
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-
-    .group-card {
-      padding: 1rem;
-      min-height: 100px;
-    }
-
-    // Responsive sports grid
-    .sports-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-
-    .sport-card {
-      padding: 1.25rem;
-
-      .sport-card-header {
-        .sport-icon {
-          font-size: 2rem;
-        }
-
-        .sport-name {
-          font-size: 1.2rem;
-        }
-      }
-
-      .sport-card-body {
-        gap: 0.75rem;
-
-        .sport-info-item {
-          padding: 0.625rem;
-
-          i {
-            font-size: 1.1rem;
-          }
-
-          .sport-info-content {
-            .sport-info-label {
-              font-size: 0.75rem;
-            }
-
-            .sport-info-value {
-              font-size: 0.9rem;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-// ========================================
-// SPORTS SECTION
-// ========================================
-
-.sports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  animation: fadeIn 0.6s ease;
-}
-
-.sport-card {
-  background: $text-light;
-  border-radius: 16px;
+  border-radius: $radius-xl;
   padding: 1.5rem;
-  box-shadow: $shadow-sm;
-  transition: $transition;
-  border: 2px solid transparent;
+  background: linear-gradient(135deg, rgba($dark-bg, 0.97), rgba($dark-accent, 0.96));
+  color: #fff;
+  box-shadow: $shadow-lg;
+}
+
+.hero-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.14), transparent 44%),
+    radial-gradient(circle at 12% 80%, rgba(13, 110, 253, 0.2), transparent 42%);
+  opacity: 0.9;
+}
+
+.hero-main {
   position: relative;
-  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, $primary-color, $primary-dark);
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+
+  i {
+    font-size: 0.82rem;
   }
+}
 
-  &[data-sport="taekwondo"]::before {
-    background: linear-gradient(90deg, $taekwondo-color, color.adjust($taekwondo-color, $lightness: -10%));
+.hero-title {
+  margin: 0.8rem 0 0.25rem;
+  font-size: clamp(1.65rem, 2.6vw, 2.25rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.hero-subtitle {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1rem;
+
+  i {
+    font-size: 1.15rem;
+    color: #9fd0ff;
   }
+}
 
-  &[data-sport="kickboxing"]::before {
-    background: linear-gradient(90deg, $kickboxing-color, color.adjust($kickboxing-color, $lightness: -10%));
-  }
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
 
-  &[data-sport="pilates"]::before {
-    background: linear-gradient(90deg, $pilates-color, color.adjust($pilates-color, $lightness: -10%));
-  }
+.hero-btn {
+  border: 0;
+  border-radius: 12px;
+  min-height: 46px;
+  padding: 0.72rem 1.08rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: $transition;
 
-  &[data-sport="defensa_personal_femenina"]::before {
-    background: linear-gradient(90deg, $defensa-color, color.adjust($defensa-color, $lightness: -10%));
+  i {
+    font-size: 1rem;
   }
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-md;
-    border-color: rgba($primary-color, 0.2);
+    transform: translateY(-2px);
   }
 
-  .sport-card-header {
-    display: flex;
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-primary-action {
+  color: #fff;
+  background: linear-gradient(135deg, $primary, $primary-dark);
+  box-shadow: 0 8px 20px rgba($primary, 0.3);
+}
+
+.btn-secondary-action {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.student-switcher {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  padding: 0.95rem;
+  border-radius: $radius-md;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.switcher-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.86);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  i {
+    color: #9fd0ff;
+  }
+}
+
+.switcher-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.switcher-pill {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  padding: 0.48rem 0.82rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  &.is-active {
+    border-color: rgba(255, 255, 255, 0.55);
+    background: linear-gradient(135deg, rgba($primary, 0.95), rgba($primary-dark, 0.95));
+    box-shadow: 0 8px 16px rgba($primary, 0.28);
+  }
+}
+
+.hero-stats {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.72rem 0.82rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 10px;
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.18);
 
-    .sport-icon {
-      font-size: 2.5rem;
-      line-height: 1;
-    }
-
-    .sport-name {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: $text-dark;
-      margin: 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    i {
+      font-size: 0.98rem;
+      color: #fff;
     }
   }
 
-  .sport-card-body {
+  .stat-copy {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.12rem;
+  }
 
-    .sport-info-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      background: rgba($primary-color, 0.02);
-      border-radius: 10px;
-      transition: $transition;
+  .stat-value {
+    font-size: 1.32rem;
+    line-height: 1;
+    font-weight: 800;
+    color: #fff;
+  }
 
-      &:hover {
-        background: rgba($primary-color, 0.05);
-      }
+  .stat-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.78);
+  }
+}
 
-      i {
-        font-size: 1.25rem;
-        color: $primary-color;
-        margin-top: 0.125rem;
-        flex-shrink: 0;
+.dashboard-panel {
+  background: $surface;
+  border: 1px solid $border-soft;
+  border-radius: $radius-xl;
+  padding: 1.3rem;
+  box-shadow: $shadow-sm;
+}
 
-        &.bi-check-circle-fill {
-          color: #28a745;
-        }
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 
-        &.bi-x-circle-fill {
-          color: $text-muted;
-        }
-      }
+  .panel-kicker {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #69829a;
+  }
 
-      .sport-info-content {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        flex: 1;
+  h2 {
+    margin: 0.2rem 0 0;
+    font-size: clamp(1.3rem, 2vw, 1.65rem);
+    line-height: 1.2;
+    color: $text-main;
+  }
+}
 
-        .sport-info-label {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: $text-muted;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 0.8rem;
+}
 
-        .sport-info-value {
-          font-size: 1rem;
-          font-weight: 600;
-          color: $text-dark;
+.group-card {
+  --sport-color: #607d8b;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: $radius-lg;
+  border: 1px solid $border-soft;
+  padding: 0.95rem;
+  background: linear-gradient(180deg, #fff, #fbfdff);
+  transition: $transition;
 
-          &.text-success {
-            color: #28a745;
-          }
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-color: rgba(13, 110, 253, 0.24);
+  }
 
-          &.text-muted {
-            color: $text-muted;
-          }
-        }
-      }
+  &[data-sport='taekwondo'] {
+    --sport-color: #{$taekwondo};
+  }
+
+  &[data-sport='kickboxing'] {
+    --sport-color: #{$kickboxing};
+  }
+
+  &[data-sport='pilates'] {
+    --sport-color: #{$pilates};
+  }
+
+  &[data-sport='defensa'] {
+    --sport-color: #{$defensa};
+  }
+
+  &[data-sport='competicion'] {
+    --sport-color: #{$competicion};
+  }
+}
+
+.group-icon {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  i {
+    font-size: 1.35rem;
+    color: color.adjust($text-main, $lightness: -2%);
+  }
+}
+
+.group-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-name {
+  margin: 0;
+  font-size: 1.03rem;
+  color: $text-main;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.group-meta-row {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  background: #eef4ff;
+  color: #2d4f80;
+
+  &[data-sport='taekwondo'] {
+    background: rgba($taekwondo, 0.14);
+    border-color: rgba($taekwondo, 0.3);
+    color: color.adjust($taekwondo, $lightness: -5%);
+  }
+
+  &[data-sport='kickboxing'] {
+    background: rgba($kickboxing, 0.12);
+    border-color: rgba($kickboxing, 0.28);
+    color: color.adjust($kickboxing, $lightness: -14%);
+  }
+
+  &[data-sport='pilates'] {
+    background: rgba($pilates, 0.14);
+    border-color: rgba($pilates, 0.28);
+    color: color.adjust($pilates, $lightness: -22%);
+  }
+
+  &[data-sport='defensa'] {
+    background: rgba($defensa, 0.12);
+    border-color: rgba($defensa, 0.26);
+    color: color.adjust($defensa, $lightness: -10%);
+  }
+
+  &[data-sport='competicion'] {
+    background: rgba($competicion, 0.13);
+    border-color: rgba($competicion, 0.26);
+    color: color.adjust($competicion, $lightness: -7%);
+  }
+}
+
+.group-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #277953;
+
+  i {
+    font-size: 0.78rem;
+  }
+}
+
+.sports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 0.85rem;
+}
+
+.sport-card {
+  border: 1px solid $border-soft;
+  background: #fff;
+  border-radius: $radius-lg;
+  padding: 1rem;
+  transition: $transition;
+  box-shadow: 0 5px 14px rgba(9, 20, 34, 0.05);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+
+  &[data-sport*='taekwondo'] {
+    border-top: 4px solid $taekwondo;
+  }
+
+  &[data-sport*='kickboxing'] {
+    border-top: 4px solid $kickboxing;
+  }
+
+  &[data-sport*='pilates'] {
+    border-top: 4px solid $pilates;
+  }
+
+  &[data-sport*='defensa'] {
+    border-top: 4px solid $defensa;
+  }
+
+  &[data-sport*='competici'] {
+    border-top: 4px solid $competicion;
+  }
+}
+
+.sport-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+
+  .sport-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    background: $surface-soft;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+
+    i {
+      font-size: 1.15rem;
+      color: #2f4f80;
+    }
+  }
+
+  .sport-title {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: $text-main;
+    line-height: 1.2;
+  }
+
+  .sport-subtitle {
+    margin: 0.18rem 0 0;
+    font-size: 0.78rem;
+    color: $text-muted;
+  }
+}
+
+.sport-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.sport-info-item {
+  border-radius: 11px;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  background: rgba(13, 110, 253, 0.03);
+  padding: 0.62rem 0.72rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+
+  i {
+    margin-top: 0.1rem;
+    font-size: 1rem;
+    color: $primary;
+
+    &.bi-check-circle-fill {
+      color: $success;
+    }
+
+    &.bi-x-circle-fill {
+      color: $danger;
+    }
+  }
+
+  .label {
+    display: block;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6d7f92;
+    font-weight: 700;
+  }
+
+  .value {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.92rem;
+    color: $text-main;
+    font-weight: 700;
+    line-height: 1.25;
+
+    &.exam-status.is-ready {
+      color: $success;
+    }
+
+    &.exam-status.is-pending {
+      color: $warning;
     }
   }
 }
 
-// Reduced motion support
-@media (prefers-reduced-motion: reduce) {
-  .hero-header,
-  .section-header,
+.empty-state {
+  text-align: center;
+  border: 1px dashed rgba(31, 42, 55, 0.22);
+  border-radius: $radius-lg;
+  padding: 2.5rem 1.2rem;
+  background: linear-gradient(180deg, #fff, #f9fcff);
+
+  .empty-icon {
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 0.8rem;
+    border-radius: 20px;
+    background: rgba(31, 42, 55, 0.07);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      font-size: 1.9rem;
+      color: #7b8794;
+    }
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: $text-main;
+  }
+
+  p {
+    margin: 0.45rem 0 0;
+    color: $text-muted;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .user-dashboard {
+    padding-top: 96px;
+  }
+
+  .hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .user-dashboard {
+    padding-top: 84px;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .dashboard-hero,
+  .dashboard-panel {
+    border-radius: 18px;
+  }
+
+  .dashboard-hero {
+    padding: 1rem;
+  }
+
+  .hero-title {
+    font-size: 1.7rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.93rem;
+  }
+
+  .hero-actions {
+    gap: 0.55rem;
+
+    .hero-btn {
+      flex: 1 1 190px;
+    }
+  }
+
+  .switcher-track {
+    flex-direction: column;
+  }
+
+  .switcher-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header {
+    margin-bottom: 0.85rem;
+
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+
   .groups-grid,
-  .sports-grid,
-  .group-card,
-  .sport-card,
-  .no-groups-container {
-    animation: none !important;
+  .sports-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-eyebrow {
+    font-size: 0.68rem;
   }
 
-  .group-card,
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.88rem;
+  }
+
+  .hero-btn {
+    min-height: 44px;
+    font-size: 0.86rem;
+    padding: 0.68rem 0.9rem;
+  }
+
+  .group-card {
+    padding: 0.8rem;
+  }
+
+  .group-icon {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+  }
+
   .sport-card {
-    &:hover {
-      transform: none !important;
-    }
-
-    .card-shine {
-      display: none;
-    }
-  }
-
-  .student-btn,
-  .btn-schedule {
-    &:hover,
-    &:active {
-      transform: none !important;
-    }
+    padding: 0.9rem;
   }
 }
 
-// High DPI displays
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .group-card,
-  .section-title-box,
-  .no-groups-container {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    }
-  }
-
-  .student-btn,
-  .btn-schedule {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-    &.active,
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-  }
-}
-
-// Dark mode support (future enhancement)
-@media (prefers-color-scheme: dark) {
-  // Prepared for future dark mode implementation
-  .hero-header::before {
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
