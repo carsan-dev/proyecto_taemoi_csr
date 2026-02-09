@@ -35,6 +35,7 @@ $full-color: #c62828;
 // ========================================
 .horarios-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f8f9fa;
   padding-top: 120px;
   padding-bottom: 4rem;
@@ -1273,57 +1274,70 @@ $full-color: #c62828;
 
 @media (max-width: 768px) {
   .horarios-page {
-    padding-top: 90px;
+    min-height: 100dvh;
+    padding-top: 84px;
+    padding-bottom: 1.5rem;
   }
 
   .hero-header {
-    padding: 2.5rem 1.5rem;
-    margin-bottom: 2rem;
+    padding: 1.9rem 0.95rem;
+    margin-bottom: 1.2rem;
 
     .page-title-section {
-      gap: 0.75rem;
+      gap: 0.55rem;
 
-      i { font-size: 3rem; }
-      h1 { font-size: 2rem; }
-      .hero-subtitle { font-size: 1rem; }
+      i { font-size: 2.2rem; }
+      h1 {
+        font-size: 1.55rem;
+        line-height: 1.22;
+      }
+      .hero-subtitle {
+        font-size: 0.88rem;
+        line-height: 1.35;
+      }
     }
   }
 
   .main-content {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
 
   .sport-legend {
-    gap: 0.625rem;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
 
     .legend-item {
-      padding: 0.5rem 1rem;
-      font-size: 0.85rem;
+      padding: 0.42rem 0.72rem;
+      font-size: 0.78rem;
+      border-left-width: 3px;
 
-      .legend-emoji { font-size: 1.1rem; }
+      .legend-emoji { font-size: 1rem; }
     }
   }
 
   .availability-legend-top {
-    padding: 1.25rem 1rem;
-    margin-bottom: 1.5rem;
+    padding: 0.9rem 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 14px;
 
     .legend-title {
-      font-size: 1rem;
-      margin-bottom: 0.875rem;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      gap: 0.4rem;
 
-      i { font-size: 1.15rem; }
+      i { font-size: 1rem; }
     }
 
     .legend-items {
-      gap: 1rem;
+      gap: 0.55rem;
     }
 
     .legend-item {
-      padding: 0.625rem 1.25rem;
-      font-size: 0.9rem;
+      padding: 0.42rem 0.72rem;
+      font-size: 0.8rem;
+      gap: 0.45rem;
 
-      i { font-size: 1.1rem; }
+      i { font-size: 0.92rem; }
     }
   }
 
@@ -1334,17 +1348,127 @@ $full-color: #c62828;
 
   .mobile-view {
     display: block;
-    margin-bottom: 2rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .day-tabs {
+    border-radius: 12px;
+    padding: 0.25rem;
+    margin-bottom: 0.8rem;
+
+    .day-tab {
+      min-width: 46px;
+      padding: 0.5rem 0.55rem;
+      font-size: 0.78rem;
+      border-radius: 10px;
+    }
   }
 
   .day-classes {
-    margin-bottom: 1rem;
+    margin-bottom: 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .mobile-class-card {
+    padding: 0.8rem;
+    border-radius: 14px;
+    gap: 0.65rem;
+
+    &:hover {
+      transform: none;
+      box-shadow: $shadow-sm;
+    }
+
+    .mobile-card-left {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+    }
+
+    .mobile-emoji { font-size: 1.25rem; }
+    .mobile-class-name { font-size: 0.9rem; }
+    .mobile-class-time { font-size: 0.78rem; }
+
+    .mobile-card-right {
+      gap: 0.3rem;
+
+      .bi-chevron-right { font-size: 1rem; }
+    }
+
+    .availability-badge {
+      width: 22px;
+      height: 22px;
+
+      i { font-size: 0.86rem; }
+    }
+  }
+
+  .no-classes {
+    padding: 1.5rem 0.9rem;
+    border-radius: 12px;
+    gap: 0.55rem;
+
+    i { font-size: 1.8rem; }
+    span { font-size: 0.88rem; }
+  }
+
+  .skeleton-container {
+    padding: 0.85rem;
+    border-radius: 14px;
+  }
+
+  .mobile-skeleton {
+    .skeleton-day-tabs {
+      margin-bottom: 0.75rem;
+
+      .skeleton-tab {
+        height: 36px;
+      }
+    }
+
+    .skeleton-card {
+      padding: 0.75rem;
+      border-radius: 12px;
+      gap: 0.7rem;
+
+      .skeleton-card-emoji {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+      }
+    }
+  }
+
+  .info-section {
+    gap: 0.8rem;
   }
 
   .info-card {
     flex-direction: column;
     text-align: center;
-    padding: 1.5rem;
+    padding: 1rem 0.85rem;
+    border-radius: 14px;
+    gap: 0.75rem;
+
+    .info-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+
+      i { font-size: 1.2rem; }
+    }
+
+    .info-content {
+      h2 {
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
+      }
+
+      p {
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+    }
   }
 
   // Mobile modal
@@ -1354,32 +1478,90 @@ $full-color: #c62828;
   }
 
   .modal-content {
-    border-radius: 25px 25px 0 0;
-    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    max-height: 88vh;
     animation: slideUpMobile 0.3s ease;
 
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      top: 0.7rem;
+      right: 0.7rem;
+      font-size: 0.95rem;
+    }
+
     .modal-header {
-      padding: 1.75rem 1.5rem;
+      padding: 1.15rem 0.95rem;
+      gap: 0.8rem;
 
-      .modal-emoji { font-size: 2.75rem; }
+      .modal-emoji { font-size: 2.05rem; }
 
-      .modal-title-info h2 {
-        font-size: 1.3rem;
+      .modal-title-info {
+        h2 { font-size: 1.02rem; }
+
+        .modal-schedule {
+          margin-top: 0.3rem;
+          font-size: 0.78rem;
+          gap: 0.35rem;
+        }
       }
     }
 
     .modal-body,
     .modal-footer {
-      padding: 1.25rem 1.5rem;
+      padding: 0.9rem 0.95rem;
     }
 
     .info-row {
       flex-wrap: wrap;
+      padding: 0.78rem;
+      gap: 0.62rem;
+      border-radius: 10px;
+      margin-bottom: 0.65rem;
+      border-left-width: 3px;
+
+      .info-icon-wrapper {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+
+        i { font-size: 0.95rem; }
+      }
+
+      .info-text {
+        .info-label {
+          font-size: 0.67rem;
+        }
+
+        .info-value {
+          font-size: 0.87rem;
+        }
+      }
 
       .availability-status {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.68rem;
+        gap: 0.25rem;
         width: 100%;
         justify-content: center;
-        margin-top: 0.5rem;
+        margin-top: 0.35rem;
+
+        i { font-size: 0.72rem; }
+      }
+    }
+
+    .capacity-bar {
+      height: 7px;
+    }
+
+    .modal-footer {
+      .btn-contacto {
+        border-radius: 10px;
+        padding: 0.72rem 0.95rem;
+        font-size: 0.86rem;
+        gap: 0.4rem;
+
+        i { font-size: 0.95rem; }
       }
     }
   }
@@ -1398,71 +1580,118 @@ $full-color: #c62828;
 
 @media (max-width: 480px) {
   .horarios-page {
-    padding-top: 80px;
+    min-height: 100dvh;
+    padding-top: 76px;
+    padding-bottom: 1rem;
   }
 
   .hero-header {
-    padding: 2rem 1rem;
-    margin-bottom: 1.5rem;
+    padding: 1.4rem 0.75rem;
+    margin-bottom: 1rem;
 
     .page-title-section {
-      i { font-size: 2rem; }
-      h1 { font-size: 1.75rem; }
-      .hero-subtitle { font-size: 0.95rem; }
+      i { font-size: 1.7rem; }
+      h1 { font-size: 1.3rem; }
+      .hero-subtitle { font-size: 0.8rem; }
     }
   }
 
   .sport-legend {
+    gap: 0.35rem;
+
     .legend-item {
       .legend-text { display: none; }
-      padding: 0.5rem 0.75rem;
+      padding: 0.35rem 0.55rem;
+
+      .legend-emoji { font-size: 0.88rem; }
     }
   }
 
   .availability-legend-top {
-    padding: 1rem 0.75rem;
-    border-radius: 15px;
+    padding: 0.75rem 0.6rem;
+    border-radius: 12px;
 
     .legend-title {
-      font-size: 0.95rem;
-      gap: 0.5rem;
+      font-size: 0.82rem;
+      gap: 0.35rem;
+      margin-bottom: 0.45rem;
 
-      i { font-size: 1rem; }
-      span { font-size: 0.9rem; }
+      i { font-size: 0.85rem; }
+      span { font-size: 0.8rem; }
     }
 
     .legend-items {
-      gap: 0.75rem;
+      gap: 0.45rem;
       flex-direction: column;
     }
 
     .legend-item {
-      padding: 0.5rem 1rem;
-      font-size: 0.85rem;
+      padding: 0.38rem 0.62rem;
+      font-size: 0.76rem;
       width: 100%;
       justify-content: center;
 
-      i { font-size: 1rem; }
+      i { font-size: 0.82rem; }
     }
   }
 
   .day-tabs .day-tab {
-    padding: 0.625rem 0.75rem;
-    font-size: 0.85rem;
-    min-width: 50px;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.74rem;
+    min-width: 42px;
   }
 
   .mobile-class-card {
-    padding: 1rem;
+    padding: 0.68rem;
+    gap: 0.5rem;
 
     .mobile-card-left {
-      width: 52px;
-      height: 52px;
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
     }
 
-    .mobile-emoji { font-size: 1.5rem; }
-    .mobile-class-name { font-size: 1rem; }
-    .mobile-class-time { font-size: 0.85rem; }
+    .mobile-emoji { font-size: 1.05rem; }
+    .mobile-class-name { font-size: 0.82rem; }
+    .mobile-class-time { font-size: 0.72rem; }
+
+    .mobile-card-right {
+      .bi-chevron-right { font-size: 0.9rem; }
+    }
+
+    .availability-badge {
+      width: 20px;
+      height: 20px;
+
+      i { font-size: 0.74rem; }
+    }
+  }
+
+  .info-card {
+    padding: 0.8rem 0.7rem;
+
+    .info-content {
+      h2 { font-size: 0.92rem; }
+      p { font-size: 0.78rem; }
+    }
+  }
+
+  .modal-content {
+    .modal-header {
+      padding: 0.95rem 0.75rem;
+
+      .modal-emoji { font-size: 1.8rem; }
+
+      .modal-title-info {
+        h2 { font-size: 0.92rem; }
+        .modal-schedule { font-size: 0.72rem; }
+      }
+    }
+
+    .modal-body,
+    .modal-footer {
+      padding: 0.75rem;
+    }
   }
 }
 
