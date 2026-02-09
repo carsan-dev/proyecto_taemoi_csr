@@ -208,21 +208,23 @@
                     <div class="sport-info-item">
                       <i class="bi bi-clock-history"></i>
                       <div>
-                        <span class="label">Antiguedad</span>
+                        <span class="label">Antig&uuml;edad</span>
                         <span class="value">{{ deporteItem.antiguedad }}</span>
                       </div>
                     </div>
                   }
 
-                  <div class="sport-info-item">
-                    <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen" [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
-                    <div>
-                      <span class="label">Estado de examen</span>
-                      <span class="value exam-status" [class.is-ready]="deporteItem.aptoParaExamen" [class.is-pending]="!deporteItem.aptoParaExamen">
-                        {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
-                      </span>
+                  @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA') {
+                    <div class="sport-info-item">
+                      <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen" [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
+                      <div>
+                        <span class="label">Estado de examen</span>
+                        <span class="value exam-status" [class.is-ready]="deporteItem.aptoParaExamen" [class.is-pending]="!deporteItem.aptoParaExamen">
+                          {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  }
                 </div>
               </article>
             }
