@@ -33,12 +33,12 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     private readonly alumnoService: AlumnoService
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       if (nombre && !sessionStorage.getItem('welcomeShown')) {
         Swal.fire({
-          title: 'Inicio de sesión exitoso',
-          text: `¡Bienvenido/a, ${nombre}!`,
+          title: 'Inicio de sesion exitoso',
+          text: `Bienvenido/a, ${nombre}`,
           icon: 'success',
           timer: 2000,
         });
@@ -53,17 +53,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
           this.selectedAlumno = alumnos[0];
           this.cargarGruposDelAlumno(this.selectedAlumno.id);
           this.cargarDeportesDelAlumno(this.selectedAlumno.id);
-        } else {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se encontraron alumnos asociados a este usuario.',
-            icon: 'error',
-          });
+          return;
         }
+
+        Swal.fire({
+          title: 'Error',
+          text: 'No se encontraron alumnos asociados a este usuario.',
+          icon: 'error',
+        });
       },
       error: () => {
         Swal.fire({
-          title: 'Error en la petición',
+          title: 'Error en la peticion',
           text: 'Error al obtener los alumnos.',
           icon: 'error',
         });
@@ -98,7 +99,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       },
       error: () => {
         Swal.fire({
-          title: 'Error en la petición',
+          title: 'Error en la peticion',
           text: 'Error al obtener los grupos del alumno.',
           icon: 'error',
         });
@@ -115,7 +116,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   obtenerEtiquetaColor(grupo: any): string {
     const deporte = this.normalizarDeporte(grupo);
-    if (deporte.includes('competici')) return 'Taekwondo Competición';
+    if (deporte.includes('competici')) return 'Taekwondo Competicion';
     if (deporte.includes('taekwondo')) return 'Taekwondo';
     if (deporte.includes('kickboxing')) return 'Kickboxing';
     if (deporte.includes('pilates')) return 'Pilates';
@@ -123,19 +124,32 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return 'Otro';
   }
 
+  getClaveDeporteGrupo(grupo: any): string {
+    const deporte = this.normalizarDeporte(grupo);
+    if (deporte.includes('competici')) return 'competicion';
+    if (deporte.includes('taekwondo')) return 'taekwondo';
+    if (deporte.includes('kickboxing')) return 'kickboxing';
+    if (deporte.includes('pilates')) return 'pilates';
+    if (deporte.includes('defensa')) return 'defensa';
+    return 'otro';
+  }
+
   obtenerClaseGrupo(grupo: any): string {
-    const etiqueta = this.obtenerEtiquetaColor(grupo);
-    return etiqueta.toLowerCase().replaceAll(/[^a-z0-9_ ]/gi, '').replaceAll(/\s+/g, '_');
+    return this.getClaveDeporteGrupo(grupo);
+  }
+
+  getIconoDeporteGrupo(grupo: any): string {
+    const deporteKey = this.getClaveDeporteGrupo(grupo);
+    if (deporteKey === 'competicion') return 'bi-trophy-fill';
+    if (deporteKey === 'taekwondo') return 'bi-lightning-charge-fill';
+    if (deporteKey === 'kickboxing') return 'bi-fire';
+    if (deporteKey === 'pilates') return 'bi-heart-pulse-fill';
+    if (deporteKey === 'defensa') return 'bi-shield-fill-check';
+    return 'bi-star-fill';
   }
 
   obtenerIconoDeporte(grupo: any): string {
-    const etiqueta = this.obtenerEtiquetaColor(grupo).toLowerCase();
-    if (etiqueta.includes('competición')) return '🏆';
-    if (etiqueta.includes('taekwondo')) return '🥋';
-    if (etiqueta.includes('kickboxing')) return '🥊';
-    if (etiqueta.includes('pilates')) return '🧘';
-    if (etiqueta.includes('defensa personal')) return '🛡️';
-    return '⭐';
+    return this.getIconoDeporteGrupo(grupo);
   }
 
   obtenerNombreDeporte(grupo: any): string {
@@ -146,17 +160,14 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   obtenerColorDeporte(grupo: any): string {
     const etiqueta = this.obtenerEtiquetaColor(grupo).toLowerCase();
-    if (etiqueta.includes('competición')) return '#f28b8b';
-    if (etiqueta.includes('taekwondo')) return '#a6bfe3';
-    if (etiqueta.includes('kickboxing')) return '#ffa573';
-    if (etiqueta.includes('pilates')) return '#a8d2d4';
-    if (etiqueta.includes('defensa personal')) return '#f8bbd0';
-    return '#6c757d';
+    if (etiqueta.includes('competici')) return '#d7b2e7';
+    if (etiqueta.includes('taekwondo')) return '#b8c8ea';
+    if (etiqueta.includes('kickboxing')) return '#ffd2b4';
+    if (etiqueta.includes('pilates')) return '#c4e3e5';
+    if (etiqueta.includes('defensa personal')) return '#f6cde0';
+    return '#dee2e6';
   }
 
-  /**
-   * Load all sports for the selected alumno
-   */
   cargarDeportesDelAlumno(alumnoId: number): void {
     this.cargandoDeportes = true;
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
@@ -176,38 +187,35 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Get deporte label for display
-   */
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
   }
 
-  /**
-   * Get grado style
-   */
   getGradoStyle(tipoGrado: string): string {
     return getGradoTextStyle(tipoGrado);
   }
 
-  /**
-   * Format date to Spanish format
-   */
   formatearFecha(fecha: string | Date | null): string {
     if (!fecha) return 'Sin fecha';
     const date = fecha instanceof Date ? fecha : new Date(fecha);
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
-  /**
-   * Get icon for sport
-   */
+  getIconoDeporteTarjeta(deporte: string): string {
+    const deporteLower = (deporte || '').toLowerCase();
+    if (deporteLower.includes('competici')) return 'bi-trophy-fill';
+    if (deporteLower.includes('taekwondo')) return 'bi-lightning-charge-fill';
+    if (deporteLower.includes('kickboxing')) return 'bi-fire';
+    if (deporteLower.includes('pilates')) return 'bi-heart-pulse-fill';
+    if (deporteLower.includes('defensa')) return 'bi-shield-fill-check';
+    return 'bi-star-fill';
+  }
+
   getIconoDeportePorNombre(deporte: string): string {
-    const deporteLower = deporte.toLowerCase();
-    if (deporteLower.includes('taekwondo')) return '🥋';
-    if (deporteLower.includes('kickboxing')) return '🥊';
-    if (deporteLower.includes('pilates')) return '🧘';
-    if (deporteLower.includes('defensa')) return '🛡️';
-    return '⭐';
+    return this.getIconoDeporteTarjeta(deporte);
+  }
+
+  getCantidadDeportesAptos(): number {
+    return this.deportesDelAlumno.filter((deporte) => deporte.aptoParaExamen).length;
   }
 }

@@ -1,737 +1,592 @@
-// ========================================
-// VARIABLES
-// ========================================
 @use 'sass:color';
 
-$primary-color: #007bff;
-$primary-dark: #0056b3;
 $dark-bg: #1b2b2e;
 $dark-accent: #284747;
-$text-light: #ffffff;
-$text-dark: #212529;
-$text-muted: #6c757d;
-$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
-$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$surface: #ffffff;
+$surface-soft: #f6f9fc;
+$text-main: #1f2a37;
+$text-muted: #66778a;
+$border-soft: rgba(31, 42, 55, 0.11);
+$shadow-sm: 0 8px 22px rgba(12, 27, 45, 0.08);
+$shadow-md: 0 14px 35px rgba(12, 27, 45, 0.12);
+$shadow-lg: 0 22px 48px rgba(9, 23, 40, 0.15);
+$radius-xl: 24px;
+$radius-lg: 18px;
+$radius-md: 14px;
+$transition: all 0.25s ease;
 
-// Sport Colors (matching horarios)
-$taekwondo-color: #0D47A1;
-$taekwondo-hover: #1976D2;
-$kickboxing-color: #ff4500;
-$kickboxing-hover: #e83e00;
-$pilates-color: #57A2A8;
-$pilates-hover: #468A8F;
-$defensa-color: #c2185b;
-$defensa-hover: #d81b60;
-$competicion-color: #7b1fa2;
-$competicion-hover: #8e24aa;
+$taekwondo: #0d47a1;
+$kickboxing: #ff4500;
+$pilates: #57a2a8;
+$defensa: #c2185b;
+$competicion: #7b1fa2;
 
-// ========================================
-// TURNOS PAGE
-// ========================================
-.turnos-page {
+.turnos-dashboard {
   min-height: 100vh;
-  background: #f8f9fa;
-  padding-top: 120px;
-  padding-bottom: 3rem;
+  padding: 108px 1rem 2.5rem;
+  background:
+    radial-gradient(1200px 500px at 110% -5%, rgba(13, 110, 253, 0.08), transparent),
+    radial-gradient(900px 450px at -10% 10%, rgba(33, 150, 243, 0.06), transparent),
+    #edf3f8;
 }
 
-// ========================================
-// HERO HEADER
-// ========================================
-.hero-header {
+.turnos-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.turnos-hero {
   position: relative;
-  background: linear-gradient(135deg, $dark-bg 0%, $dark-accent 100%);
-  padding: 2.5rem 2rem;
-  margin-bottom: 3rem;
   overflow: hidden;
+  border-radius: $radius-xl;
+  padding: 1.35rem;
+  color: #fff;
+  background: linear-gradient(135deg, rgba($dark-bg, 0.97), rgba($dark-accent, 0.96));
+  box-shadow: $shadow-lg;
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
-    animation: pulse 15s infinite;
-  }
+.hero-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.15), transparent 42%),
+    radial-gradient(circle at 14% 85%, rgba(13, 110, 253, 0.2), transparent 45%);
+}
 
-  .hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('../../../../../assets/media/Logo_escuela.svg') center/contain no-repeat;
-    opacity: 0.03;
-    pointer-events: none;
-  }
+.hero-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
 
-  .hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
+.btn-back {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 12px;
+  min-height: 42px;
+  padding: 0.58rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: $transition;
 
-  .btn-back {
-    align-self: flex-start;
-    padding: 0.8rem 1.5rem;
-    background: rgba($text-light, 0.1);
-    color: $text-light;
-    border: 2px solid rgba($text-light, 0.3);
-    border-radius: 12px;
+  i {
     font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: $transition;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    backdrop-filter: blur(10px);
-
-    i {
-      font-size: 1.2rem;
-    }
-
-    &:hover {
-      background: rgba($text-light, 0.2);
-      border-color: rgba($text-light, 0.5);
-      transform: translateY(-2px);
-    }
   }
 
-  .page-title-section {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    animation: fadeInDown 0.6s ease;
-
-    i {
-      font-size: 3rem;
-      color: $text-light;
-      opacity: 0.9;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: $text-light;
-      margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
   }
 }
 
-// ========================================
-// MAIN CONTENT
-// ========================================
-.main-content {
-  padding: 0 2rem;
+.hero-title-box {
+  min-width: 0;
+  text-align: right;
 
-  .content-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.38rem 0.72rem;
+    border: 1px solid rgba(255, 255, 255, 0.27);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  h1 {
+    margin: 0.62rem 0 0.2rem;
+    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+    line-height: 1.1;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.94rem;
+    color: rgba(255, 255, 255, 0.84);
   }
 }
 
-// ========================================
-// SPORT LEGEND
-// ========================================
+.hero-kpis {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.kpi-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.09);
+  padding: 0.72rem 0.8rem;
+  text-align: center;
+
+  .kpi-value {
+    display: block;
+    font-size: 1.38rem;
+    line-height: 1;
+    font-weight: 800;
+  }
+
+  .kpi-label {
+    display: block;
+    margin-top: 0.18rem;
+    font-size: 0.77rem;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 0.02em;
+  }
+}
+
+.schedule-panel {
+  background: $surface;
+  border: 1px solid $border-soft;
+  border-radius: $radius-xl;
+  padding: 1.2rem;
+  box-shadow: $shadow-sm;
+}
+
 .sport-legend {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
-  animation: fadeInUp 0.6s ease;
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
+}
 
-  .legend-item {
-    display: flex;
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid $border-soft;
+  background: $surface-soft;
+
+  .legend-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background: $text-light;
-    border-radius: 50px;
-    box-shadow: $shadow-sm;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: $text-dark;
-    transition: $transition;
-    border-left: 4px solid transparent;
+    justify-content: center;
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: $shadow-md;
+    i {
+      font-size: 0.86rem;
     }
+  }
 
-    .legend-emoji {
-      font-size: 1.25rem;
-    }
-
-    &.taekwondo {
-      border-left-color: $taekwondo-color;
-    }
-
-    &.kickboxing {
-      border-left-color: $kickboxing-color;
-    }
-
-    &.pilates {
-      border-left-color: $pilates-color;
-    }
-
-    &.defensa {
-      border-left-color: $defensa-color;
-    }
-
-    &.competicion {
-      border-left-color: $competicion-color;
-    }
+  .legend-text {
+    font-size: 0.78rem;
+    color: $text-main;
+    font-weight: 700;
   }
 }
 
-// ========================================
-// TIMETABLE CONTAINER
-// ========================================
-.timetable-container {
-  background: $text-light;
-  border-radius: 25px;
-  box-shadow: $shadow-lg;
-  overflow: hidden;
-  margin-bottom: 2rem;
-  animation: fadeInUp 0.6s ease 0.2s backwards;
+.table-wrap {
+  border: 1px solid $border-soft;
+  border-radius: $radius-lg;
+  overflow: auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
 
-  &.desktop-view {
-    display: block;
+.schedule-table {
+  min-width: 860px;
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 112px repeat(5, minmax(146px, 1fr));
+}
+
+.table-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(135deg, $dark-bg, $dark-accent);
+  color: #fff;
+}
+
+.time-head,
+.day-head {
+  min-height: 52px;
+  padding: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+
+  &:last-child {
+    border-right: 0;
   }
+}
+
+.day-head .day-short {
+  display: none;
+}
+
+.table-row {
+  border-bottom: 1px solid #e8eef5;
+
+  &:nth-child(odd) {
+    background: #fbfdff;
+  }
+}
+
+.time-cell {
+  padding: 0.58rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: $text-main;
+  background: linear-gradient(180deg, rgba(13, 110, 253, 0.07), rgba(13, 110, 253, 0.02));
+  border-right: 1px solid #e8eef5;
+
+  .sep {
+    font-size: 0.67rem;
+    color: $text-muted;
+  }
+}
+
+.day-cell {
+  min-height: 88px;
+  padding: 0.46rem;
+  border-right: 1px solid #e8eef5;
+  display: flex;
+
+  &:last-child {
+    border-right: 0;
+  }
+
+  &.has-class {
+    background: rgba(13, 110, 253, 0.03);
+  }
+}
+
+.class-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.class-pill {
+  border-radius: 11px;
+  padding: 0.45rem 0.5rem;
+  min-height: 56px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  box-shadow: 0 6px 12px rgba(8, 24, 39, 0.2);
+
+  &[data-sport='taekwondo'] {
+    background: linear-gradient(135deg, color.adjust($taekwondo, $lightness: 6%), $taekwondo);
+  }
+
+  &[data-sport='kickboxing'] {
+    background: linear-gradient(135deg, color.adjust($kickboxing, $lightness: 4%), $kickboxing);
+  }
+
+  &[data-sport='pilates'] {
+    background: linear-gradient(135deg, color.adjust($pilates, $lightness: 6%), $pilates);
+  }
+
+  &[data-sport='defensa'] {
+    background: linear-gradient(135deg, color.adjust($defensa, $lightness: 4%), $defensa);
+  }
+
+  &[data-sport='competicion'] {
+    background: linear-gradient(135deg, color.adjust($competicion, $lightness: 6%), $competicion);
+  }
+
+  &[data-sport='otro'] {
+    background: linear-gradient(135deg, #7c8796, #636f7f);
+  }
+}
+
+.pill-main {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+
+  i {
+    font-size: 0.82rem;
+  }
+}
+
+.pill-time {
+  font-size: 0.67rem;
+  opacity: 0.9;
 }
 
 .mobile-view {
   display: none;
 }
 
-.timetable {
-  width: 100%;
-}
-
-.timetable-header,
-.timetable-row {
-  display: grid;
-  grid-template-columns: 110px repeat(5, minmax(140px, 1fr));
-}
-
-.timetable-header {
-  background: linear-gradient(135deg, $dark-bg, $dark-accent);
-
-  .header-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1.25rem 1rem;
-    font-weight: 600;
-    color: $text-light;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-
-    &:last-child {
-      border-right: none;
-    }
-
-    i {
-      font-size: 1rem;
-      opacity: 0.8;
-    }
-
-    .day-short {
-      display: none;
-    }
-  }
-}
-
-.timetable-row {
-  border-bottom: 1px solid #e9ecef;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:nth-child(even) {
-    background: #fafbfc;
-  }
-}
-
-.time-column {
-  width: 110px;
-}
-
-.time-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 0.5rem;
-  background: linear-gradient(135deg, rgba($primary-color, 0.05), rgba($primary-color, 0.02));
-  border-right: 1px solid #e9ecef;
-  font-weight: 600;
-  color: $text-dark;
-  gap: 0.125rem;
-
-  .time-start,
-  .time-end {
-    font-size: 0.85rem;
-  }
-
-  .time-separator {
-    font-size: 0.7rem;
-    color: $text-muted;
-  }
-}
-
-.day-cell {
-  min-height: 110px;
-  padding: 0.75rem;
-  background: transparent;
-  transition: $transition;
-  border-right: 1px solid #e9ecef;
-  display: flex;
-  align-items: stretch;
-
-  &:last-child {
-    border-right: none;
-  }
-
-  &.has-class {
-    background: rgba($primary-color, 0.03);
-  }
-
-  &.empty {
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(0, 0, 0, 0.01) 10px,
-      rgba(0, 0, 0, 0.01) 20px
-    );
-  }
-}
-
-.class-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  width: 100%;
-}
-
-.class-block {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  min-height: 70px;
-  padding: 0.75rem 0.5rem;
-  border-radius: 15px;
-  position: relative;
-  transition: $transition;
-
-  &:hover {
-    transform: scale(1.03);
-    box-shadow: $shadow-md;
-  }
-
-  &.taekwondo {
-    background: $taekwondo-color;
-    box-shadow: 0 4px 12px rgba($taekwondo-color, 0.3);
-
-    &:hover {
-      background: $taekwondo-hover;
-    }
-  }
-
-  &.kickboxing {
-    background: $kickboxing-color;
-    box-shadow: 0 4px 12px rgba($kickboxing-color, 0.3);
-
-    &:hover {
-      background: $kickboxing-hover;
-    }
-  }
-
-  &.pilates {
-    background: $pilates-color;
-    box-shadow: 0 4px 12px rgba($pilates-color, 0.3);
-
-    &:hover {
-      background: $pilates-hover;
-    }
-  }
-
-  &.defensa {
-    background: $defensa-color;
-    box-shadow: 0 4px 12px rgba($defensa-color, 0.3);
-
-    &:hover {
-      background: $defensa-hover;
-    }
-  }
-
-  &.competicion {
-    background: $competicion-color;
-    box-shadow: 0 4px 12px rgba($competicion-color, 0.3);
-
-    &:hover {
-      background: $competicion-hover;
-    }
-  }
-
-  .class-emoji {
-    font-size: 1.35rem;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
-  }
-
-  .class-name {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: $text-light;
-    line-height: 1.2;
-    text-align: center;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  .class-time {
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: rgba($text-light, 0.9);
-    text-align: center;
-  }
-}
-
-// ========================================
-// MOBILE VIEW
-// ========================================
 .day-tabs {
   display: flex;
-  background: $text-light;
-  border-radius: 50px;
-  padding: 0.375rem;
-  margin-bottom: 1.25rem;
-  box-shadow: $shadow-sm;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
   overflow-x: auto;
+}
 
-  .day-tab {
-    flex: 1;
-    min-width: 55px;
-    padding: 0.75rem 1rem;
-    border: none;
-    background: transparent;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: $text-muted;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: $transition;
+.day-tab {
+  flex: 1;
+  min-width: 62px;
+  border: 1px solid $border-soft;
+  background: $surface-soft;
+  color: $text-muted;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 0.36rem 0.48rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: $transition;
 
-    &:hover {
-      background: #f1f5f9;
-      color: $text-dark;
-    }
+  small {
+    margin-top: 0.08rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
 
-    &.active {
-      background: linear-gradient(135deg, $dark-bg, $dark-accent);
-      color: white;
-    }
+  &.active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, $dark-bg, $dark-accent);
   }
 }
 
 .day-classes {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  margin-bottom: 1.5rem;
+  gap: 0.55rem;
 }
 
 .mobile-class-card {
+  border: 1px solid $border-soft;
+  background: #fff;
+  border-radius: 14px;
+  padding: 0.7rem 0.82rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: $text-light;
-  border-radius: 20px;
-  box-shadow: $shadow-sm;
-  transition: $transition;
+  gap: 0.65rem;
+  box-shadow: 0 5px 14px rgba(9, 20, 34, 0.05);
+}
 
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: $shadow-md;
+.mobile-left {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 11px;
+  background: $surface-soft;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  i {
+    font-size: 0.98rem;
+  }
+}
+
+.mobile-content {
+  flex: 1;
+  min-width: 0;
+
+  .mobile-name {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: $text-main;
+    line-height: 1.2;
   }
 
-  .mobile-card-left {
-    width: 60px;
-    height: 60px;
-    border-radius: 15px;
-    display: flex;
+  .mobile-time {
+    margin-top: 0.15rem;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: $shadow-sm;
-  }
-
-  &.taekwondo .mobile-card-left { background: $taekwondo-color; }
-  &.kickboxing .mobile-card-left { background: $kickboxing-color; }
-  &.pilates .mobile-card-left { background: $pilates-color; }
-  &.defensa .mobile-card-left { background: $defensa-color; }
-  &.competicion .mobile-card-left { background: $competicion-color; }
-
-  .mobile-emoji {
-    font-size: 1.75rem;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  }
-
-  .mobile-card-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .mobile-class-name {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: $text-dark;
-  }
-
-  .mobile-class-time {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.9rem;
+    gap: 0.3rem;
+    font-size: 0.8rem;
     color: $text-muted;
 
     i {
-      font-size: 0.8rem;
-    }
-  }
-
-  .mobile-card-right {
-    display: flex;
-    align-items: center;
-    color: $text-muted;
-
-    .bi-chevron-right {
-      font-size: 1.25rem;
+      font-size: 0.76rem;
     }
   }
 }
 
-.no-classes {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 3rem 1.5rem;
-  background: $text-light;
-  border-radius: 20px;
-  box-shadow: $shadow-sm;
-  color: $text-muted;
+.mobile-chevron {
+  color: #8ca0b5;
+  font-size: 1rem;
+}
+
+.empty-mini-state,
+.empty-state {
+  text-align: center;
+  border: 1px dashed rgba(31, 42, 55, 0.22);
+  border-radius: $radius-lg;
+  padding: 2.3rem 1.1rem;
+  background: linear-gradient(180deg, #fff, #f9fcff);
 
   i {
-    font-size: 3rem;
-    opacity: 0.4;
+    font-size: 1.9rem;
+    color: #7b8794;
   }
 
+  h3 {
+    margin: 0.55rem 0 0;
+    font-size: 1.14rem;
+    color: $text-main;
+  }
+
+  p,
   span {
-    font-size: 1.05rem;
-    font-weight: 500;
+    margin: 0.35rem 0 0;
+    color: $text-muted;
+    font-size: 0.9rem;
   }
 }
 
-// ========================================
-// EMPTY STATES
-// ========================================
-.no-groups-container {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: $text-light;
+.empty-state .empty-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto;
   border-radius: 20px;
-  box-shadow: $shadow-md;
-  animation: fadeInUp 0.6s ease 0.3s backwards;
-
-  .no-groups-icon {
-    font-size: 5rem;
-    color: $text-muted;
-    margin-bottom: 1.5rem;
-    opacity: 0.5;
-  }
-
-  .no-groups-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: $text-dark;
-    margin-bottom: 0.5rem;
-  }
-
-  .no-groups-text {
-    font-size: 1rem;
-    color: $text-muted;
-    margin: 0;
-  }
+  background: rgba(31, 42, 55, 0.07);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-// ========================================
-// ANIMATIONS
-// ========================================
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-// ========================================
-// RESPONSIVE
-// ========================================
 @media (max-width: 1024px) {
-  .timetable-header,
-  .timetable-row {
-    grid-template-columns: 90px repeat(5, minmax(120px, 1fr));
+  .turnos-dashboard {
+    padding-top: 96px;
   }
 
-  .time-column {
-    width: 90px;
+  .hero-top {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .header-cell {
+  .hero-title-box {
+    text-align: left;
+  }
+
+  .hero-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-head,
+  .table-row {
+    grid-template-columns: 92px repeat(5, minmax(126px, 1fr));
+  }
+
+  .day-head {
     .day-full {
       display: none;
     }
+
     .day-short {
-      display: block;
+      display: inline;
     }
   }
 }
 
 @media (max-width: 768px) {
-  .turnos-page {
-    padding-top: 90px;
+  .turnos-dashboard {
+    padding-top: 84px;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
-  .hero-header {
-    padding: 2rem 1rem;
+  .turnos-hero,
+  .schedule-panel {
+    border-radius: 18px;
+  }
 
-    .page-title-section {
-      i {
-        font-size: 2.5rem;
-      }
+  .turnos-hero {
+    padding: 1rem;
+  }
 
-      h1 {
-        font-size: 2rem;
-      }
+  .hero-title-box {
+    h1 {
+      font-size: 1.7rem;
     }
 
-    .btn-back {
-      padding: 0.7rem 1.2rem;
-      font-size: 0.95rem;
-    }
-  }
-
-  .main-content {
-    padding: 0 1rem;
-  }
-
-  .sport-legend {
-    gap: 0.625rem;
-
-    .legend-item {
-      padding: 0.5rem 1rem;
-      font-size: 0.85rem;
-
-      .legend-emoji {
-        font-size: 1.1rem;
-      }
+    p {
+      font-size: 0.9rem;
     }
   }
 
-  .timetable-container.desktop-view {
+  .hero-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .desktop-view {
     display: none;
   }
 
   .mobile-view {
     display: block;
   }
-
-  .no-groups-container {
-    padding: 3rem 1.5rem;
-  }
 }
 
 @media (max-width: 480px) {
-  .turnos-page {
-    padding-top: 80px;
+  .btn-back {
+    min-height: 40px;
+    font-size: 0.86rem;
   }
 
-  .hero-header {
-    padding: 1.75rem 1rem;
+  .hero-title-box {
+    h1 {
+      font-size: 1.52rem;
+    }
   }
 
-  .day-tabs .day-tab {
-    padding: 0.625rem 0.75rem;
-    font-size: 0.85rem;
-    min-width: 50px;
+  .day-tab {
+    min-width: 58px;
+    font-size: 0.78rem;
   }
 
   .mobile-class-card {
-    padding: 1rem;
-
-    .mobile-card-left {
-      width: 52px;
-      height: 52px;
-    }
-
-    .mobile-emoji {
-      font-size: 1.5rem;
-    }
-
-    .mobile-class-name {
-      font-size: 1rem;
-    }
-
-    .mobile-class-time {
-      font-size: 0.85rem;
-    }
+    padding: 0.64rem 0.7rem;
   }
 }
 
@@ -739,8 +594,7 @@ $competicion-hover: #8e24aa;
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }
