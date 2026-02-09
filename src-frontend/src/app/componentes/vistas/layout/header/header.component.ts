@@ -24,6 +24,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isHidden: boolean = false;
   adminMenuVisible: boolean = false;
   isMobileMenuOpen: boolean = false;
+  isMobileUserQuickMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
@@ -171,16 +172,26 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleMobileMenu(): void {
+    this.closeMobileUserQuickMenu();
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
     this.setBodyScrollLock(this.isMobileMenuOpen);
   }
 
   closeMobileMenu(): void {
+    this.closeMobileUserQuickMenu();
     if (!this.isMobileMenuOpen) {
       return;
     }
     this.isMobileMenuOpen = false;
     this.setBodyScrollLock(false);
+  }
+
+  toggleMobileUserQuickMenu(): void {
+    this.isMobileUserQuickMenuOpen = !this.isMobileUserQuickMenuOpen;
+  }
+
+  closeMobileUserQuickMenu(): void {
+    this.isMobileUserQuickMenuOpen = false;
   }
 
   private setBodyScrollLock(locked: boolean): void {
@@ -270,6 +281,10 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+    if (this.isMobileUserQuickMenuOpen && !target.closest('.mobile-user-quick-menu')) {
+      this.closeMobileUserQuickMenu();
+    }
+
     if (this.shouldIgnoreAdminClick(target)) {
       return;
     }

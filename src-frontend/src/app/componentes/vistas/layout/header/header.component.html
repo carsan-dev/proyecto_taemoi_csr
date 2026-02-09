@@ -27,7 +27,7 @@
           </a>
         </div>
         <a class="btn-login-mobile" [routerLink]="['/login']" aria-label="Iniciar sesión">
-          <i class="bi bi-person-circle"></i>
+          <i class="bi bi-box-arrow-in-right"></i>
         </a>
       </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -112,7 +112,7 @@
             </li>
             <li class="nav-item">
               <a class="btn btn-login" [routerLink]="['/login']" aria-label="Iniciar sesión">
-                <i class="bi bi-person-circle me-1"></i>Iniciar Sesión
+                <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
               </a>
             </li>
           </ul>
@@ -504,13 +504,26 @@
             <i class="bi bi-instagram"></i>
           </a>
         </div>
-        <a class="btn-my-classes-mobile" [routerLink]="['/userpage']" routerLinkActive="active">
-          <i class="bi bi-calendar2-check me-1"></i>
-          <span>Mis Clases</span>
-        </a>
-        <button class="btn-logout-mobile" (click)="cerrarSesion()" type="button" aria-label="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
-        </button>
+        <div class="mobile-user-quick-menu" [class.open]="isMobileUserQuickMenuOpen">
+          <button class="btn-account-mobile" type="button" (click)="toggleMobileUserQuickMenu()"
+            [attr.aria-expanded]="isMobileUserQuickMenuOpen" aria-label="Opciones de cuenta">
+            <i class="bi bi-person-circle"></i>
+          </button>
+          @if (isMobileUserQuickMenuOpen) {
+          <div class="mobile-user-quick-menu-panel" role="menu" aria-label="Opciones de cuenta">
+            <a class="mobile-user-quick-menu-item" [routerLink]="['/userpage']" routerLinkActive="active"
+              (click)="closeMobileUserQuickMenu()">
+              <i class="bi bi-calendar2-check"></i>
+              <span>Mis Clases</span>
+            </a>
+            <button class="mobile-user-quick-menu-item logout" type="button"
+              (click)="cerrarSesion(); closeMobileUserQuickMenu()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+          }
+        </div>
       </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserNav"
         aria-controls="navbarUserNav" aria-expanded="false" aria-label="Toggle navigation">

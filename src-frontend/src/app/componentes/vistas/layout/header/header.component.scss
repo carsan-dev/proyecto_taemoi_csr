@@ -242,18 +242,20 @@ header.fixed-header {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1));
-      border: 1px solid rgba(0, 123, 255, 0.3);
-      color: #007bff;
+      background: linear-gradient(135deg, rgba($text-light, 0.18), rgba($text-light, 0.08));
+      border: 1px solid rgba($text-light, 0.42);
+      color: $text-light;
       font-size: 1.25rem;
       align-items: center;
       justify-content: center;
       text-decoration: none;
       transition: all 0.2s ease;
       margin-left: auto;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 
       &:hover {
-        background: linear-gradient(135deg, rgba(0, 123, 255, 0.3), rgba(0, 123, 255, 0.2));
+        background: linear-gradient(135deg, rgba($text-light, 0.28), rgba($text-light, 0.14));
+        border-color: rgba($text-light, 0.45);
         transform: scale(1.05);
       }
 
@@ -590,6 +592,100 @@ header.fixed-header {
       margin-left: auto;
     }
 
+    .mobile-user-quick-menu {
+      position: relative;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .btn-account-mobile {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      border-radius: 50%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(135deg, rgba($pilates-color, 0.2), rgba($pilates-color, 0.08));
+      border: 1px solid rgba($pilates-color, 0.35);
+      color: $pilates-color;
+      font-size: 1.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      &:hover {
+        background: linear-gradient(135deg, rgba($pilates-color, 0.3), rgba($pilates-color, 0.15));
+        transform: scale(1.04);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+
+    .mobile-user-quick-menu-panel {
+      position: absolute;
+      top: calc(100% + 0.45rem);
+      right: 0;
+      min-width: 190px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.45rem;
+      border-radius: 12px;
+      border: 1px solid rgba($text-light, 0.12);
+      background: linear-gradient(135deg, rgba($dark-bg, 0.98), rgba($dark-accent, 0.98));
+      box-shadow: $shadow-lg;
+      animation: mobileAccountMenuIn 0.18s ease;
+    }
+
+    .mobile-user-quick-menu-item {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba($text-light, 0.06);
+      color: rgba($text-light, 0.95);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      i {
+        font-size: 0.95rem;
+      }
+
+      &:hover {
+        background: rgba($text-light, 0.12);
+      }
+
+      &.logout {
+        border-color: rgba($danger-color, 0.35);
+        background: rgba($danger-color, 0.14);
+        color: color.adjust($danger-color, $lightness: 25%);
+      }
+    }
+
+    @keyframes mobileAccountMenuIn {
+      from {
+        opacity: 0;
+        transform: translateY(-5px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
     .mobile-social-stack {
       display: flex;
       flex-direction: row;
@@ -859,10 +955,12 @@ header.fixed-header {
       .container-fluid {
         padding: 0 1rem;
         gap: 0.5rem;
+        flex-wrap: nowrap;
       }
 
       .header-actions-mobile {
         display: flex;
+        flex-wrap: nowrap;
       }
 
       .header-title-mobile {
@@ -873,11 +971,14 @@ header.fixed-header {
       }
 
       .btn-login-mobile,
-      .btn-logout-mobile {
+      .btn-logout-mobile,
+      .btn-account-mobile {
         display: inline-flex;
         margin-left: 0;
         width: 36px;
         height: 36px;
+        min-width: 36px;
+        min-height: 36px;
         font-size: 1rem;
       }
 
@@ -1091,6 +1192,7 @@ header.fixed-header {
     nav {
       .container-fluid {
         gap: 0.35rem;
+        flex-wrap: nowrap;
       }
 
       .header-actions-mobile {
@@ -1114,10 +1216,13 @@ header.fixed-header {
       }
 
       .btn-login-mobile,
-      .btn-logout-mobile {
+      .btn-logout-mobile,
+      .btn-account-mobile {
         margin-left: 0;
         width: 32px;
+        min-width: 32px;
         height: 32px;
+        min-height: 32px;
         font-size: 0.95rem;
         display: inline-flex;
         align-items: center;
@@ -1132,10 +1237,43 @@ header.fixed-header {
         }
       }
 
+      .btn-login-mobile i {
+        font-size: 1rem;
+      }
+
+      .btn-my-classes-mobile {
+        flex: 0 0 32px;
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        padding: 0;
+        gap: 0;
+        border-radius: 50%;
+        aspect-ratio: 1 / 1;
+        box-shadow: none;
+        flex-shrink: 0;
+        line-height: 1;
+
+        i {
+          margin-right: 0 !important;
+          font-size: 0.95rem;
+        }
+
+        span {
+          display: none;
+        }
+      }
+
       .social-link-compact {
         width: 32px;
         height: 32px;
         font-size: 0.95rem;
+      }
+
+      .mobile-user-quick-menu-panel {
+        right: 0;
+        min-width: 180px;
       }
 
       .header-logo-mobile {
@@ -1150,6 +1288,7 @@ header.fixed-header {
         padding: 0.75rem 0;
       }
     }
+
   }
 
   @media (max-width: 400px) {
