@@ -1133,8 +1133,12 @@ $defensa-hover: #d81b60;
     margin-bottom: 1rem;
 
     .reviewer-avatar {
+      flex: 0 0 48px;
       width: 48px;
+      min-width: 48px;
       height: 48px;
+      min-height: 48px;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: linear-gradient(135deg, $primary-color, $pilates-color);
       color: white;
@@ -1147,6 +1151,7 @@ $defensa-hover: #d81b60;
 
     .reviewer-info {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
@@ -1155,6 +1160,9 @@ $defensa-hover: #d81b60;
         font-weight: 600;
         color: $text-dark;
         font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .review-badge {
@@ -1173,8 +1181,12 @@ $defensa-hover: #d81b60;
     }
 
     .google-icon-small {
+      flex: 0 0 20px;
       width: 20px;
+      min-width: 20px;
       height: 20px;
+      min-height: 20px;
+      aspect-ratio: 1 / 1;
       opacity: 0.7;
     }
   }
@@ -1328,8 +1340,12 @@ $defensa-hover: #d81b60;
 
     .review-header {
       .reviewer-avatar {
+        flex: 0 0 40px;
         width: 40px;
+        min-width: 40px;
         height: 40px;
+        min-height: 40px;
+        aspect-ratio: 1 / 1;
         font-size: 1rem;
       }
     }
