@@ -25,6 +25,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   adminMenuVisible: boolean = false;
   isMobileMenuOpen: boolean = false;
   isMobileUserQuickMenuOpen: boolean = false;
+  isDesktopUserMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
@@ -105,6 +106,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
         if (event instanceof NavigationStart) {
           this.adminMenuVisible = false;
           this.closeMobileMenu();
+          this.closeDesktopUserMenu();
         }
         // Reset scroll tracking on navigation end to prevent stale lastScrollTop values
         if (event instanceof NavigationEnd) {
@@ -130,7 +132,12 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     // Update scrollbar width on resize (initial calculation is done in index.html)
     const windowRef = this.getWindowRef();
     if (windowRef !== undefined) {
-      this.resizeHandler = () => this.updateScrollbarWidth();
+      this.resizeHandler = () => {
+        this.updateScrollbarWidth();
+        if (windowRef.innerWidth < 992) {
+          this.closeDesktopUserMenu();
+        }
+      };
       windowRef.addEventListener('resize', this.resizeHandler);
     }
   }
@@ -172,6 +179,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleMobileMenu(): void {
+    this.closeDesktopUserMenu();
     this.closeMobileUserQuickMenu();
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
     this.setBodyScrollLock(this.isMobileMenuOpen);
@@ -192,6 +200,15 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeMobileUserQuickMenu(): void {
     this.isMobileUserQuickMenuOpen = false;
+  }
+
+  toggleDesktopUserMenu(): void {
+    this.closeMobileUserQuickMenu();
+    this.isDesktopUserMenuOpen = !this.isDesktopUserMenuOpen;
+  }
+
+  closeDesktopUserMenu(): void {
+    this.isDesktopUserMenuOpen = false;
   }
 
   private setBodyScrollLock(locked: boolean): void {
@@ -283,6 +300,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     const target = event.target as HTMLElement;
     if (this.isMobileUserQuickMenuOpen && !target.closest('.mobile-user-quick-menu')) {
       this.closeMobileUserQuickMenu();
+    }
+    if (this.isDesktopUserMenuOpen && !target.closest('.user-desktop-menu')) {
+      this.closeDesktopUserMenu();
     }
 
     if (this.shouldIgnoreAdminClick(target)) {
