@@ -12,6 +12,7 @@ import { Producto } from '../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 import { Documento } from '../../interfaces/documento';
+import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
 
 @Injectable({
   providedIn: 'root',
@@ -1300,6 +1301,22 @@ export class EndpointsService {
         params,
         withCredentials: true,
         responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerEstadoRetoDiario(alumnoId: number): Observable<RetoDiarioEstado> {
+    return this.http
+      .get<RetoDiarioEstado>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  completarRetoDiario(alumnoId: number): Observable<RetoDiarioEstado> {
+    return this.http
+      .put<RetoDiarioEstado>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario/completar`, {}, {
+        withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
