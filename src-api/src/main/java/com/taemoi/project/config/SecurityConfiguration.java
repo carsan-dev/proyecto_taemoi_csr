@@ -199,6 +199,9 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/productos-alumno/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.requestMatchers(HttpMethod.GET, "/api/convocatorias/alumnos/{alumnoId}")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/convocatorias/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/convocatorias/**")
