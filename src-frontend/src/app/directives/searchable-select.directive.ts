@@ -719,7 +719,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.renderer.setStyle(this.dropdownEl, 'top', `${Math.round(top)}px`);
     this.renderer.setStyle(this.dropdownEl, 'width', `${Math.round(width)}px`);
     this.renderer.setStyle(this.dropdownEl, 'max-height', `${Math.round(maxHeight)}px`);
-    this.renderer.setStyle(this.dropdownEl, 'z-index', '1040');
+    this.renderer.setStyle(this.dropdownEl, 'z-index', '980');
   }
 
   private getHeaderBottomBoundary(viewportPadding: number, gap: number): number {

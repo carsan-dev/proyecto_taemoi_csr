@@ -616,6 +616,23 @@ app-paginacion {
   }
 }
 
+// Keep dropdown over local containers/fixed bars without lifting the whole card above page headers.
+.admin-card.admin-select-card-open {
+  z-index: auto;
+}
+
+.admin-select-field-open {
+  z-index: auto;
+}
+
+.admin-select-combobox.is-open {
+  z-index: 500;
+}
+
+.admin-select-dropdown {
+  z-index: 510;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);
