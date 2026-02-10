@@ -201,7 +201,7 @@ $whatsapp-hover: #128C7E;
 // can overlap adjacent cards on mobile without being covered.
 .admin-select-card-open {
   position: relative;
-  z-index: 520;
+  z-index: auto;
   overflow: visible;
 }
 
@@ -393,6 +393,7 @@ $whatsapp-hover: #128C7E;
   right: 0;
   max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
   background: $text-light;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
@@ -401,14 +402,30 @@ $whatsapp-hover: #128C7E;
   display: none;
 }
 
+.admin-select-dropdown.is-floating {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  width: auto;
+  z-index: 1040;
+}
+
 .admin-select-dropdown.is-open {
   display: block;
+}
+
+.admin-select-dropdown.is-open-up {
+  top: auto;
 }
 
 .admin-select-option {
   padding: 0.6rem 0.85rem;
   cursor: pointer;
   transition: $transition-fast;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-select-option:hover,
