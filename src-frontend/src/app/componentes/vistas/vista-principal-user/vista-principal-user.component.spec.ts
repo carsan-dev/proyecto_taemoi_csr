@@ -29,19 +29,28 @@ describe('VistaPrincipalUserComponent', () => {
   };
 
   beforeEach(async () => {
+    window.localStorage.clear();
+
     authServiceSpy = jasmine.createSpyObj<AuthenticationService>(
       'AuthenticationService',
       ['obtenerNombreUsuario', 'obtenerTodosLosAlumnos']
     );
     endpointsServiceSpy = jasmine.createSpyObj<EndpointsService>(
       'EndpointsService',
-      ['obtenerGruposDelAlumno', 'obtenerDocumentosDeAlumno', 'descargarDocumentoAlumno'],
-      { gruposDelAlumno$: of([]) }
+      [
+        'obtenerGruposDelAlumno',
+        'obtenerTurnosDelAlumnoObservable',
+        'obtenerDocumentosDeAlumno',
+        'descargarDocumentoAlumno',
+        'obtenerEventos',
+      ],
+      { gruposDelAlumno$: of([]), eventos$: of([]) }
     );
     alumnoServiceSpy = jasmine.createSpyObj<AlumnoService>('AlumnoService', ['obtenerDeportesDelAlumno']);
 
     authServiceSpy.obtenerNombreUsuario.and.returnValue(of('usuario'));
     authServiceSpy.obtenerTodosLosAlumnos.and.returnValue(of(alumnosMock as any));
+    endpointsServiceSpy.obtenerTurnosDelAlumnoObservable.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
     endpointsServiceSpy.descargarDocumentoAlumno.and.returnValue(of(new Blob(['pdf'])));
     alumnoServiceSpy.obtenerDeportesDelAlumno.and.returnValue(of([]));
