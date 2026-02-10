@@ -81,6 +81,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   retoDiarioActual: string = '';
   rachaRetoDiario: number = 0;
   retoCompletadoHoy: boolean = false;
+  retoCountdownTexto: string = '';
+  retoCountdownUrgente: boolean = false;
   documentosVisiblesCount: number = 0;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
@@ -201,6 +203,9 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     ],
   };
   private countdownIntervalId: number | null = null;
+  private retoCountdownIntervalId: number | null = null;
+  private nextRetoResetAtEpochMs: number | null = null;
+  private recargandoRetoTrasReset: boolean = false;
   private primeraEmisionEventosRecibida: boolean = false;
   private documentosSeccionVisible: boolean = false;
   private documentosSectionObserver: IntersectionObserver | null = null;
@@ -300,6 +305,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.detenerActualizacionProximaClase();
+    this.detenerCountdownRetoDiario();
     this.desconectarObservadoresDocumentos();
     this.subscriptions.unsubscribe();
   }
@@ -902,13 +908,17 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
     this.rachaRetoDiario = 0;
     this.retoCompletadoHoy = false;
+    this.resetearCountdownRetoDiario();
     this.endpointsService.obtenerEstadoRetoDiario(alumnoId).subscribe({
       next: (estado: RetoDiarioEstado) => {
         this.aplicarEstadoRetoDiario(estado);
+        this.recargandoRetoTrasReset = false;
       },
       error: () => {
         this.rachaRetoDiario = 0;
         this.retoCompletadoHoy = false;
+        this.recargandoRetoTrasReset = false;
+        this.resetearCountdownRetoDiario();
       },
     });
   }
@@ -918,8 +928,13 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     if (retosDisponibles.length === 0) {
       return '5 min de movilidad suave';
     }
-    const index = Math.abs(Math.floor(fecha.getTime() / 86_400_000)) % retosDisponibles.length;
+    const index = Math.abs(this.obtenerIndiceDiaLocal(fecha)) % retosDisponibles.length;
     return retosDisponibles[index];
+  }
+
+  private obtenerIndiceDiaLocal(fecha: Date): number {
+    const inicioDiaLocal = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+    return Math.floor(inicioDiaLocal.getTime() / 86_400_000);
   }
 
   private obtenerRetosDiariosDisponibles(): string[] {
@@ -949,6 +964,108 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const racha = Number(estado?.racha ?? 0);
     this.rachaRetoDiario = Number.isFinite(racha) ? Math.max(0, Math.floor(racha)) : 0;
     this.retoCompletadoHoy = !!estado?.completadoHoy;
+
+    const nextResetRaw = Number(estado?.nextResetAtEpochMs);
+    if (Number.isFinite(nextResetRaw) && nextResetRaw > 0) {
+      this.nextRetoResetAtEpochMs = Math.floor(nextResetRaw);
+    } else {
+      this.nextRetoResetAtEpochMs = this.calcularProximoResetLocalEpochMs();
+    }
+
+    this.iniciarCountdownRetoDiario();
+  }
+
+  private iniciarCountdownRetoDiario(): void {
+    if (!globalThis.window?.setInterval) {
+      return;
+    }
+
+    this.detenerCountdownRetoDiario();
+    this.actualizarTextoCountdownRetoDiario();
+    this.retoCountdownIntervalId = globalThis.window.setInterval(() => {
+      this.actualizarTextoCountdownRetoDiario();
+    }, 1_000);
+  }
+
+  private detenerCountdownRetoDiario(): void {
+    if (this.retoCountdownIntervalId !== null) {
+      globalThis.window?.clearInterval(this.retoCountdownIntervalId);
+      this.retoCountdownIntervalId = null;
+    }
+  }
+
+  private resetearCountdownRetoDiario(): void {
+    this.detenerCountdownRetoDiario();
+    this.nextRetoResetAtEpochMs = null;
+    this.retoCountdownTexto = '';
+    this.retoCountdownUrgente = false;
+  }
+
+  private actualizarTextoCountdownRetoDiario(): void {
+    if (!this.nextRetoResetAtEpochMs || this.nextRetoResetAtEpochMs <= 0) {
+      this.retoCountdownTexto = '';
+      this.retoCountdownUrgente = false;
+      return;
+    }
+
+    const ahora = Date.now();
+    const restanteMs = this.nextRetoResetAtEpochMs - ahora;
+
+    if (restanteMs <= 0) {
+      this.retoCountdownTexto = this.retoCompletadoHoy
+        ? 'Cargando próximo reto...'
+        : 'Actualizando estado de racha...';
+      this.retoCountdownUrgente = false;
+      this.refrescarRetoTrasCambioDia();
+      return;
+    }
+
+    this.retoCountdownUrgente = restanteMs <= 3 * 60 * 60 * 1_000;
+    const restanteFormateado = this.formatearDuracionCountdown(restanteMs);
+    this.retoCountdownTexto = this.retoCompletadoHoy
+      ? `Próximo reto en ${restanteFormateado}`
+      : `Te quedan ${restanteFormateado} para mantener la racha`;
+  }
+
+  private refrescarRetoTrasCambioDia(): void {
+    if (this.recargandoRetoTrasReset) {
+      return;
+    }
+
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+
+    this.recargandoRetoTrasReset = true;
+    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+    this.cargarEstadoRetoDiario(alumnoId);
+  }
+
+  private formatearDuracionCountdown(restanteMs: number): string {
+    const totalSegundos = Math.max(0, Math.floor(restanteMs / 1_000));
+    const dias = Math.floor(totalSegundos / 86_400);
+    const horas = Math.floor((totalSegundos % 86_400) / 3_600);
+    const minutos = Math.floor((totalSegundos % 3_600) / 60);
+    const segundos = totalSegundos % 60;
+
+    if (dias > 0) {
+      return `${dias}d ${horas}h ${minutos}m`;
+    }
+    if (horas > 0) {
+      return `${horas}h ${minutos}m ${segundos}s`;
+    }
+    if (minutos > 0) {
+      return `${minutos}m ${segundos}s`;
+    }
+    return `${segundos}s`;
+  }
+
+  private calcularProximoResetLocalEpochMs(): number {
+    const ahora = new Date();
+    const proximoReset = new Date(ahora);
+    proximoReset.setHours(24, 0, 0, 0);
+    return proximoReset.getTime();
   }
 
   private marcarDocumentosComoVistos(): void {
@@ -1512,5 +1629,3 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return this.deportesDelAlumno.filter((deporte) => this.deporteUsaEstadoExamen(deporte.deporte)).length;
   }
 }
-
-

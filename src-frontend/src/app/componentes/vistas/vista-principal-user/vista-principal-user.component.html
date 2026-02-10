@@ -198,6 +198,13 @@
 
             <p class="challenge-task">Hoy: {{ retoDiarioActual }}</p>
 
+            @if (retoCountdownTexto) {
+            <p class="challenge-timer" [class.is-urgent]="retoCountdownUrgente">
+              <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-hourglass-split' : 'bi-alarm'"></i>
+              <span>{{ retoCountdownTexto }}</span>
+            </p>
+            }
+
             <button
               type="button"
               class="challenge-action-btn"
