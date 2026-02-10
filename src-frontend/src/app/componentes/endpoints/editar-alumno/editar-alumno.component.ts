@@ -1052,19 +1052,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   abrirDocumento(doc: any) {
-    if (!doc.url) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Documento no disponible',
-        text: 'No se encontró una URL para el documento.',
-      });
-      return;
-    }
-    // Abrir en una nueva pestaña
-    window.open(doc.url, '_blank');
+    this.descargarDocumento(doc, true);
   }
 
-  descargarDocumento(doc: any) {
+  descargarDocumento(doc: any, abrirEnNuevaPestana: boolean = false) {
     const alumnoId = this.alumno?.id ?? this.alumnoId;
 
     if (!doc?.id || !alumnoId) {
@@ -1079,6 +1070,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService.descargarDocumentoAlumno(alumnoId, doc.id).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
+
+        if (abrirEnNuevaPestana) {
+          globalThis.window?.open(url, '_blank', 'noopener');
+          setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
+          return;
+        }
+
         const link = document.createElement('a');
         link.href = url;
         link.download = doc.nombre || 'documento';
@@ -4799,3 +4797,5 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.editingBasicInfo = false;
   }
 }
+
+
