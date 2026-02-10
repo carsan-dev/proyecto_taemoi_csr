@@ -43,6 +43,7 @@ import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Imagen;
@@ -482,6 +483,24 @@ public class AlumnoController {
 		}
 		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
 		return ResponseEntity.ok(turnos);
+	}
+
+	@GetMapping("/{alumnoId}/reto-diario")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<RetoDiarioEstadoDTO> obtenerEstadoRetoDiario(@PathVariable Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+		return ResponseEntity.ok(alumnoService.obtenerEstadoRetoDiario(alumnoId));
+	}
+
+	@PutMapping("/{alumnoId}/reto-diario/completar")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<RetoDiarioEstadoDTO> completarRetoDiario(@PathVariable Long alumnoId) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+		return ResponseEntity.ok(alumnoService.completarRetoDiario(alumnoId));
 	}
 
 	/**
