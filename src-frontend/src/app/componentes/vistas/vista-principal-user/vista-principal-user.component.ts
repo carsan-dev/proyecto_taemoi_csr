@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -10,6 +10,7 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { ConvocatoriaDTO } from '../../../interfaces/convocatoria-dto';
 import { Documento } from '../../../interfaces/documento';
+import { RetoDiarioEstado } from '../../../interfaces/reto-diario-estado';
 import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
@@ -45,11 +46,6 @@ interface EstadoDeporteSnapshot {
   deporte: string;
   grado: string | null;
   aptoParaExamen: boolean;
-}
-
-interface RetoDiarioStorage {
-  fechaCompletado: string | null;
-  racha: number;
 }
 
 @Component({
@@ -90,16 +86,120 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
   private readonly documentosPageSize = 8;
-  private readonly retosDiarios: string[] = [
+  private readonly retosDiariosGenerales: string[] = [
     '5 min de movilidad de cadera y tobillo',
-    '3 x 30 s de plancha',
+    '3 x 30 s de plancha frontal',
+    '3 x 20 s de plancha lateral por lado',
     '20 sentadillas controladas',
-    '2 min de respiracion nasal y postura',
-    '3 x 10 puente de gluteo',
+    '2 min de respiración nasal y postura',
+    '3 x 10 puente de glúteo',
     '5 min de estiramientos de piernas',
     '3 x 12 elevaciones de gemelos',
+    '2 x 12 zancadas alternas',
     '3 min de guardia y desplazamientos suaves',
+    '3 x 12 rotaciones torácicas por lado',
+    '2 x 45 s de sentadilla isométrica en pared',
+    '4 min de movilidad de hombros y escápulas',
+    '3 x 12 bird-dog por lado',
+    '2 x 12 peso muerto a una pierna sin carga por lado',
+    '3 min de activación de tobillos y pies',
+    '2 x 10 flexiones inclinadas',
+    '4 min de estiramiento de cadena posterior',
   ];
+  private readonly retosDiariosPorDeporte: Record<string, string[]> = {
+    TAEKWONDO: [
+      '4 x 12 ap chagi por pierna',
+      '4 x 10 yop chagi por pierna',
+      '3 x 12 dollyo chagi por pierna',
+      '3 x 8 paso adelante + ap chagi por lado',
+      '3 x 8 paso atrás + contraataque por lado',
+      '5 min de guardia de taekwondo con rebote suave',
+      '3 x 10 rodilla arriba y extensión controlada por pierna',
+      '4 x 20 s equilibrio en pierna de apoyo por lado',
+      '3 x 8 combinación ap chagi + dollyo chagi por lado',
+      '3 x 10 bloqueos medios + altos por lado',
+      '2 x 90 s desplazamientos de combate con cambios de dirección',
+      '3 x 12 elevaciones de rodilla explosiva por lado',
+      '3 x 8 giro de cadera y pivote para técnica circular por lado',
+      '4 x 30 s trabajo de distancia sin impacto',
+      '3 x 10 chagi a altura media con control por pierna',
+      '2 x 2 min de sombra técnica de taekwondo',
+      '3 x 6 combinación 1-2 patadas por lado',
+      '3 x 12 saltos cortos de pies juntos',
+      '3 x 10 cámara de patada mantenida 2 s por lado',
+      '4 min de movilidad específica de cadera para patada',
+      'Ponerse el cinturón 1 vez',
+      '3 Combinaciones de patadas sin bajar la pierna',
+      '3 x 30 s apertura de piernas',
+      '3 x 12 piernas juntas llegar con las palmas al suelo sin doblar las rodillas'
+    ],
+    KICKBOXING: [
+      '4 x 20 s jab en sombra con técnica limpia',
+      '4 x 20 s jab-cross en sombra',
+      '3 x 15 low kick técnica por pierna',
+      '3 x 12 front kick por pierna',
+      '3 x 10 teep + paso atrás por lado',
+      '2 x 2 min de sombra con guardia alta',
+      '4 x 30 s de desplazamiento lateral en guardia',
+      '3 x 10 slip izquierda + slip derecha',
+      '3 x 10 bloqueo de low kick por lado',
+      '4 x 12 rodillazos al aire por lado',
+      '3 x 8 combinación jab-cross-low kick por lado',
+      '3 x 8 combinación jab-cross-hook por lado',
+      '2 x 90 s defensa activa sin bajar manos',
+      '3 x 12 uppercut al aire por lado',
+      '3 x 10 paso adelante + 1-2 por lado',
+      '3 x 10 paso atrás + contra 1-2 por lado',
+      '4 x 20 s de ritmo alto en sombra',
+      '3 x 10 chequeo de distancia con jab',
+      '2 x 2 min de condición física específica: cuerda o rebote',
+      '3 x 12 sentadilla + low kick técnica por lado',
+    ],
+    PILATES: [
+      '3 x 10 hundred modificado con control respiratorio',
+      '3 x 12 puente articulado de columna',
+      '3 x 10 roll down segmentado',
+      '3 x 10 dead bug controlado por lado',
+      '3 x 12 clam shell por lado',
+      '3 x 10 side kick en decúbito lateral por lado',
+      '3 x 8 swimming en colchoneta',
+      '3 x 10 cat-cow lento con respiración',
+      '3 x 10 movilización de columna torácica',
+      '3 x 10 single leg stretch por lado',
+      '3 x 8 double leg stretch controlado',
+      '2 x 60 s de plancha de antebrazos con alineación',
+      '3 x 10 elevación de pelvis unilateral por lado',
+      '3 x 10 apertura de cadera en cuadrupedia por lado',
+      '5 min de respiración costal lateral',
+      '3 x 12 elevaciones escapulares tumbado',
+      '3 x 10 articulación de hombros sin dolor',
+      '3 x 8 equilibrio en un pie con centro activo por lado',
+      '4 min de movilidad suave de columna y cadera',
+      '3 x 10 control del core en posición neutra',
+    ],
+    DEFENSA_PERSONAL_FEMENINA: [
+      '3 x 10 postura base + manos preparadas',
+      '3 x 12 desplazamiento lateral y salida de línea',
+      '3 x 10 palm strike al aire por lado',
+      '3 x 10 golpe de codo corto por lado',
+      '3 x 10 rodillazo frontal por lado',
+      '3 x 8 secuencia voz fuerte + paso atrás + guardia',
+      '2 x 2 min de práctica de distancia de seguridad',
+      '3 x 8 liberación de agarre de muñeca por lado',
+      '3 x 8 salida de agarre de ropa por lado',
+      '3 x 10 empuje y escape a espacio seguro',
+      '3 x 8 giro de cadera para salir de agarre por lado',
+      '3 x 10 combinación palm strike + escape',
+      '3 x 10 combinación rodillazo + salida lateral',
+      '2 x 90 s de simulación de reacción rápida',
+      '3 x 12 trabajo de base y equilibrio',
+      '3 x 8 defensa ante agarre frontal sin fuerza bruta',
+      '3 x 8 defensa ante aproximación con antebrazos',
+      '3 x 10 técnica corta de choque y separación',
+      '4 min de respiración para bajar estrés post-esfuerzo',
+      '3 x 8 secuencia simple: bloquear, golpear y salir',
+    ],
+  };
   private countdownIntervalId: number | null = null;
   private primeraEmisionEventosRecibida: boolean = false;
   private documentosSeccionVisible: boolean = false;
@@ -352,11 +452,13 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
         this.deportesDelAlumno = deportes ?? [];
+        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
         this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
         this.cargandoDeportes = false;
       },
       error: () => {
         this.deportesDelAlumno = [];
+        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
         this.novedadesEstadoDeportes = 0;
         this.detallesNovedadesEstado = [];
         this.cargandoDeportes = false;
@@ -455,25 +557,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const hoy = new Date();
-    const hoyKey = this.getDateKeyLocal(hoy);
-    const ayer = new Date(hoy);
-    ayer.setDate(ayer.getDate() - 1);
-    const ayerKey = this.getDateKeyLocal(ayer);
-
-    const storageActual = this.obtenerEstadoRetoDiarioStorage(alumnoId);
-    let nuevaRacha = 1;
-    if (storageActual.fechaCompletado === ayerKey) {
-      nuevaRacha = Math.max(0, storageActual.racha) + 1;
-    }
-
-    this.guardarEstadoRetoDiarioStorage(alumnoId, {
-      fechaCompletado: hoyKey,
-      racha: nuevaRacha,
+    this.endpointsService.completarRetoDiario(alumnoId).subscribe({
+      next: (estado: RetoDiarioEstado) => {
+        this.aplicarEstadoRetoDiario(estado);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo registrar el reto diario',
+          icon: 'error',
+        });
+      },
     });
-
-    this.rachaRetoDiario = nuevaRacha;
-    this.retoCompletadoHoy = true;
   }
 
   getResumenEstadoExamen(): string {
@@ -805,66 +900,55 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   private cargarEstadoRetoDiario(alumnoId: number): void {
     this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
-    const storage = this.obtenerEstadoRetoDiarioStorage(alumnoId);
-    const hoyKey = this.getDateKeyLocal(new Date());
-    const ayer = new Date();
-    ayer.setDate(ayer.getDate() - 1);
-    const ayerKey = this.getDateKeyLocal(ayer);
-
-    this.retoCompletadoHoy = storage.fechaCompletado === hoyKey;
-
-    if (storage.fechaCompletado === hoyKey || storage.fechaCompletado === ayerKey) {
-      this.rachaRetoDiario = Math.max(0, storage.racha);
-      return;
-    }
-
     this.rachaRetoDiario = 0;
+    this.retoCompletadoHoy = false;
+    this.endpointsService.obtenerEstadoRetoDiario(alumnoId).subscribe({
+      next: (estado: RetoDiarioEstado) => {
+        this.aplicarEstadoRetoDiario(estado);
+      },
+      error: () => {
+        this.rachaRetoDiario = 0;
+        this.retoCompletadoHoy = false;
+      },
+    });
   }
 
   private getRetoDiarioSegunFecha(fecha: Date): string {
-    const index = Math.abs(Math.floor(fecha.getTime() / 86_400_000)) % this.retosDiarios.length;
-    return this.retosDiarios[index];
+    const retosDisponibles = this.obtenerRetosDiariosDisponibles();
+    if (retosDisponibles.length === 0) {
+      return '5 min de movilidad suave';
+    }
+    const index = Math.abs(Math.floor(fecha.getTime() / 86_400_000)) % retosDisponibles.length;
+    return retosDisponibles[index];
   }
 
-  private getStorageKeyRetoDiario(alumnoId: number): string {
-    return `dashboard-user-reto-diario-${alumnoId}`;
+  private obtenerRetosDiariosDisponibles(): string[] {
+    const retos = [...this.retosDiariosGenerales];
+    const deportesActivos = new Set(
+      (this.deportesDelAlumno ?? [])
+        .filter((deporteItem) => deporteItem?.activo !== false)
+        .map((deporteItem) => this.normalizarClaveDeporteReto(deporteItem?.deporte))
+        .filter((deporte) => deporte.length > 0)
+    );
+
+    deportesActivos.forEach((deporte) => {
+      const retosDeporte = this.retosDiariosPorDeporte[deporte];
+      if (Array.isArray(retosDeporte) && retosDeporte.length > 0) {
+        retos.push(...retosDeporte);
+      }
+    });
+
+    return retos;
   }
 
-  private obtenerEstadoRetoDiarioStorage(alumnoId: number): RetoDiarioStorage {
-    const storage = this.obtenerStorageSeguro();
-    if (!storage) {
-      return { fechaCompletado: null, racha: 0 };
-    }
-
-    const raw = storage.getItem(this.getStorageKeyRetoDiario(alumnoId));
-    if (!raw) {
-      return { fechaCompletado: null, racha: 0 };
-    }
-
-    try {
-      const parsed = JSON.parse(raw);
-      return {
-        fechaCompletado: parsed?.fechaCompletado ? String(parsed.fechaCompletado) : null,
-        racha: Number.isInteger(Number(parsed?.racha)) ? Number(parsed.racha) : 0,
-      };
-    } catch {
-      return { fechaCompletado: null, racha: 0 };
-    }
+  private normalizarClaveDeporteReto(deporte: unknown): string {
+    return String(deporte ?? '').trim().toUpperCase();
   }
 
-  private guardarEstadoRetoDiarioStorage(alumnoId: number, data: RetoDiarioStorage): void {
-    const storage = this.obtenerStorageSeguro();
-    if (!storage) {
-      return;
-    }
-    storage.setItem(this.getStorageKeyRetoDiario(alumnoId), JSON.stringify(data));
-  }
-
-  private getDateKeyLocal(fecha: Date): string {
-    const year = fecha.getFullYear();
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const day = String(fecha.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  private aplicarEstadoRetoDiario(estado: RetoDiarioEstado | null | undefined): void {
+    const racha = Number(estado?.racha ?? 0);
+    this.rachaRetoDiario = Number.isFinite(racha) ? Math.max(0, Math.floor(racha)) : 0;
+    this.retoCompletadoHoy = !!estado?.completadoHoy;
   }
 
   private marcarDocumentosComoVistos(): void {
@@ -1428,3 +1512,5 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return this.deportesDelAlumno.filter((deporte) => this.deporteUsaEstadoExamen(deporte.deporte)).length;
   }
 }
+
+
