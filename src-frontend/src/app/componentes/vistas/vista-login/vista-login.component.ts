@@ -264,22 +264,41 @@ export class VistaLoginComponent implements OnInit {
 
   private obtenerErrorLogin(error: any): { title: string; message: string } {
     const status = error?.status;
+    const backendMessage =
+      error?.error?.mensaje ||
+      error?.error?.message ||
+      error?.error?.error;
+
     if (status === 0) {
       return {
         title: 'Error de conexion',
         message: 'No hemos podido conectar con el servidor.',
       };
     }
-    if (status === 401 || status === 403 || status === 404) {
+    if (status === 403) {
+      const normalizedMessage =
+        typeof backendMessage === 'string' ? backendMessage.toLowerCase() : '';
+
+      if (normalizedMessage.includes('alumnos activos')) {
+        return {
+          title: 'Cuenta inactiva',
+          message:
+            backendMessage ||
+            'Tu cuenta no tiene alumnos activos asociados. Contacta con administracion.',
+        };
+      }
+
+      return {
+        title: 'Acceso denegado',
+        message: backendMessage || 'No tienes permisos para iniciar sesion.',
+      };
+    }
+    if (status === 401 || status === 404) {
       return {
         title: 'Credenciales incorrectas',
         message: 'El correo o la contraseña no son correctos.',
       };
     }
-    const backendMessage =
-      error?.error?.mensaje ||
-      error?.error?.message ||
-      error?.error?.error;
     return {
       title: 'No se pudo iniciar sesion',
       message: backendMessage || 'Revisa tus datos e intentalo de nuevo.',
