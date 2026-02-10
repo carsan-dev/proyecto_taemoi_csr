@@ -4,15 +4,21 @@ public class RetoDiarioEstadoDTO {
 	private Integer racha;
 	private Boolean completadoHoy;
 	private String fechaCompletado;
+	private Long nextResetAtEpochMs;
 
 	public RetoDiarioEstadoDTO() {
 		// Constructor vacio
 	}
 
 	public RetoDiarioEstadoDTO(Integer racha, Boolean completadoHoy, String fechaCompletado) {
+		this(racha, completadoHoy, fechaCompletado, null);
+	}
+
+	public RetoDiarioEstadoDTO(Integer racha, Boolean completadoHoy, String fechaCompletado, Long nextResetAtEpochMs) {
 		this.racha = racha;
 		this.completadoHoy = completadoHoy;
 		this.fechaCompletado = fechaCompletado;
+		this.nextResetAtEpochMs = nextResetAtEpochMs;
 	}
 
 	public Integer getRacha() {
@@ -37,5 +43,13 @@ public class RetoDiarioEstadoDTO {
 
 	public void setFechaCompletado(String fechaCompletado) {
 		this.fechaCompletado = fechaCompletado;
+	}
+
+	public Long getNextResetAtEpochMs() {
+		return nextResetAtEpochMs;
+	}
+
+	public void setNextResetAtEpochMs(Long nextResetAtEpochMs) {
+		this.nextResetAtEpochMs = nextResetAtEpochMs;
 	}
 }

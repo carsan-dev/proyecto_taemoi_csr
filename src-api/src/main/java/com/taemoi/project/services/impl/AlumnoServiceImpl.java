@@ -756,11 +756,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 		int rachaPersistida = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
 		boolean completadoHoy = fechaCompletado != null && fechaCompletado.equals(hoy);
 		int rachaActual = calcularRachaActual(rachaPersistida, fechaCompletado, hoy);
+		long nextResetAtEpochMs = calcularProximoResetEpochMs();
 
 		return new RetoDiarioEstadoDTO(
 				rachaActual,
 				completadoHoy,
-				fechaCompletado != null ? fechaCompletado.toString() : null);
+				fechaCompletado != null ? fechaCompletado.toString() : null,
+				nextResetAtEpochMs);
 	}
 
 	@Override
@@ -786,7 +788,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		alumno.setRachaRetoDiario(nuevaRacha);
 		alumnoRepository.save(alumno);
 
-		return new RetoDiarioEstadoDTO(nuevaRacha, true, hoy.toString());
+		return new RetoDiarioEstadoDTO(nuevaRacha, true, hoy.toString(), calcularProximoResetEpochMs());
 	}
 
 	private int calcularRachaActual(int rachaPersistida, LocalDate fechaCompletado, LocalDate hoy) {
@@ -797,6 +799,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return Math.max(0, rachaPersistida);
 		}
 		return 0;
+	}
+
+	private long calcularProximoResetEpochMs() {
+		ZoneId zoneId = ZoneId.systemDefault();
+		return LocalDate.now(zoneId)
+				.plusDays(1)
+				.atStartOfDay(zoneId)
+				.toInstant()
+				.toEpochMilli();
 	}
 
 	private LocalDate toLocalDate(Date fecha) {
