@@ -590,6 +590,29 @@
                           <i class="bi bi-calendar-event"></i>
                           Convocatorias
                         </h6>
+                        @if (getProximaConvocatoriaPorDeporte(deporteItem.deporte); as convocatoriaAsignada) {
+                        <div class="convocatoria-status convocatoria-status-active">
+                          <span class="status-pill">
+                            <i class="bi bi-check-circle-fill"></i>
+                            Inscrito
+                          </span>
+                          <span class="convocatoria-status-text">
+                            Próxima: {{ convocatoriaAsignada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+                            @if (getCantidadConvocatoriasProximasPorDeporte(deporteItem.deporte) > 1) {
+                            <small class="ms-1">
+                              (+{{ getCantidadConvocatoriasProximasPorDeporte(deporteItem.deporte) - 1 }} más)
+                            </small>
+                            }
+                          </span>
+                        </div>
+                        } @else {
+                        <div class="convocatoria-status convocatoria-status-empty">
+                          <span class="status-pill status-pill-muted">
+                            <i class="bi bi-dash-circle"></i>
+                            Sin convocatoria próxima
+                          </span>
+                        </div>
+                        }
                         <div class="button-group-vertical">
                           <button class="admin-btn admin-btn-primary admin-btn-sm"
                             (click)="abrirModalConvocatoriasPorDeporte(deporteItem.deporte)">
