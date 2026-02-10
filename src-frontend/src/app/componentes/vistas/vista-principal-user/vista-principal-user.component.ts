@@ -8,6 +8,7 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
+import { ConvocatoriaDTO } from '../../../interfaces/convocatoria-dto';
 import { Documento } from '../../../interfaces/documento';
 import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
@@ -46,6 +47,11 @@ interface EstadoDeporteSnapshot {
   aptoParaExamen: boolean;
 }
 
+interface RetoDiarioStorage {
+  fechaCompletado: string | null;
+  racha: number;
+}
+
 @Component({
   selector: 'app-vista-principal-user',
   standalone: true,
@@ -65,16 +71,35 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   cargandoDeportes: boolean = false;
   documentosAlumno: Documento[] = [];
   cargandoDocumentos: boolean = false;
+  cargandoConvocatorias: boolean = false;
   eventosRecientes: any[] = [];
   novedadesDocumentos: number = 0;
   novedadesEventos: number = 0;
   novedadesEstadoDeportes: number = 0;
   detallesNovedadesEstado: string[] = [];
+  convocatoriasAlumno: ConvocatoriaDTO[] = [];
+  proximaConvocatoriaAlumno: ConvocatoriaDTO | null = null;
+  proximasConvocatoriasPorDeporte: ConvocatoriaDTO[] = [];
+  convocatoriasSecundarias: ConvocatoriaDTO[] = [];
+  mostrarConvocatoriasSecundarias: boolean = false;
+  retoDiarioActual: string = '';
+  rachaRetoDiario: number = 0;
+  retoCompletadoHoy: boolean = false;
   documentosVisiblesCount: number = 0;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
   private readonly documentosPageSize = 8;
+  private readonly retosDiarios: string[] = [
+    '5 min de movilidad de cadera y tobillo',
+    '3 x 30 s de plancha',
+    '20 sentadillas controladas',
+    '2 min de respiracion nasal y postura',
+    '3 x 10 puente de gluteo',
+    '5 min de estiramientos de piernas',
+    '3 x 12 elevaciones de gemelos',
+    '3 min de guardia y desplazamientos suaves',
+  ];
   private countdownIntervalId: number | null = null;
   private primeraEmisionEventosRecibida: boolean = false;
   private documentosSeccionVisible: boolean = false;
@@ -98,6 +123,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.inicializarRetoDiario();
+
     const nombreSubscription = this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       if (nombre && !sessionStorage.getItem('welcomeShown')) {
         Swal.fire({
@@ -120,6 +147,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
           this.cargarTurnosDelAlumno(this.selectedAlumno.id);
           this.cargarDeportesDelAlumno(this.selectedAlumno.id);
           this.cargarDocumentosDelAlumno(this.selectedAlumno.id);
+          this.cargarConvocatoriasDelAlumno(this.selectedAlumno.id);
+          this.cargarEstadoRetoDiario(this.selectedAlumno.id);
           return;
         }
 
@@ -145,10 +174,13 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   seleccionarAlumno(alumno: any): void {
     this.selectedAlumno = alumno;
+    this.mostrarConvocatoriasSecundarias = false;
     this.cargarGruposDelAlumno(alumno.id);
     this.cargarTurnosDelAlumno(alumno.id);
     this.cargarDeportesDelAlumno(alumno.id);
     this.cargarDocumentosDelAlumno(alumno.id);
+    this.cargarConvocatoriasDelAlumno(alumno.id);
+    this.cargarEstadoRetoDiario(alumno.id);
   }
 
   scrollToSection(sectionId: string): void {
@@ -413,6 +445,71 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return this.novedadesDocumentos + this.novedadesEventos + this.novedadesEstadoDeportes;
   }
 
+  completarRetoDiario(): void {
+    if (this.retoCompletadoHoy) {
+      return;
+    }
+
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+
+    const hoy = new Date();
+    const hoyKey = this.getDateKeyLocal(hoy);
+    const ayer = new Date(hoy);
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerKey = this.getDateKeyLocal(ayer);
+
+    const storageActual = this.obtenerEstadoRetoDiarioStorage(alumnoId);
+    let nuevaRacha = 1;
+    if (storageActual.fechaCompletado === ayerKey) {
+      nuevaRacha = Math.max(0, storageActual.racha) + 1;
+    }
+
+    this.guardarEstadoRetoDiarioStorage(alumnoId, {
+      fechaCompletado: hoyKey,
+      racha: nuevaRacha,
+    });
+
+    this.rachaRetoDiario = nuevaRacha;
+    this.retoCompletadoHoy = true;
+  }
+
+  getResumenEstadoExamen(): string {
+    const aptos = this.getCantidadDeportesAptosExaminables();
+    const total = this.getCantidadDeportesExaminables();
+    if (total === 0) {
+      return 'Sin deportes examinables';
+    }
+    return `Apto en ${aptos}/${total} deportes`;
+  }
+
+  getEstadoConvocatoriaTexto(): string {
+    if (this.cargandoConvocatorias) {
+      return 'Cargando convocatoria...';
+    }
+    if (!this.proximaConvocatoriaAlumno) {
+      return 'No apuntado a convocatoria';
+    }
+    const fecha = this.formatearFecha(this.proximaConvocatoriaAlumno.fechaConvocatoria);
+    return `Apuntado - ${fecha}`;
+  }
+
+  getProximaConvocatoriaDeporteLabel(): string {
+    if (!this.proximaConvocatoriaAlumno?.deporte) {
+      return '';
+    }
+    return this.getDeporteLabel(this.proximaConvocatoriaAlumno.deporte);
+  }
+
+  toggleConvocatoriasSecundarias(): void {
+    if (this.convocatoriasSecundarias.length === 0) {
+      return;
+    }
+    this.mostrarConvocatoriasSecundarias = !this.mostrarConvocatoriasSecundarias;
+  }
+
   getDocumentosVisibles(): Documento[] {
     return this.documentosAlumno.slice(0, this.documentosVisiblesCount);
   }
@@ -632,6 +729,142 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   private getStorageKeyDocumentos(alumnoId: number): string {
     return `dashboard-user-vistos-documentos-${alumnoId}`;
+  }
+
+  private cargarConvocatoriasDelAlumno(alumnoId: number): void {
+    this.cargandoConvocatorias = true;
+    this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
+      next: (convocatorias) => {
+        this.convocatoriasAlumno = Array.isArray(convocatorias) ? convocatorias : [];
+        this.proximasConvocatoriasPorDeporte = this.obtenerProximasConvocatoriasPorDeporte(this.convocatoriasAlumno);
+        this.proximaConvocatoriaAlumno = this.obtenerConvocatoriaProxima(this.proximasConvocatoriasPorDeporte);
+        this.convocatoriasSecundarias = this.proximasConvocatoriasPorDeporte.slice(1);
+        this.mostrarConvocatoriasSecundarias = false;
+        this.cargandoConvocatorias = false;
+      },
+      error: () => {
+        this.convocatoriasAlumno = [];
+        this.proximaConvocatoriaAlumno = null;
+        this.proximasConvocatoriasPorDeporte = [];
+        this.convocatoriasSecundarias = [];
+        this.mostrarConvocatoriasSecundarias = false;
+        this.cargandoConvocatorias = false;
+      },
+    });
+  }
+
+  private obtenerConvocatoriaProxima(convocatorias: ConvocatoriaDTO[]): ConvocatoriaDTO | null {
+    if (!Array.isArray(convocatorias) || convocatorias.length === 0) {
+      return null;
+    }
+    return convocatorias[0];
+  }
+
+  private obtenerProximasConvocatoriasPorDeporte(convocatorias: ConvocatoriaDTO[]): ConvocatoriaDTO[] {
+    if (!Array.isArray(convocatorias) || convocatorias.length === 0) {
+      return [];
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const futurasOrdenadas = convocatorias
+      .map((convocatoria) => ({
+        convocatoria,
+        fecha: this.parseFechaConvocatoria(convocatoria?.fechaConvocatoria),
+      }))
+      .filter((item) => item.fecha !== null && item.fecha.getTime() >= hoy.getTime())
+      .sort((a, b) => a.fecha!.getTime() - b.fecha!.getTime());
+
+    const porDeporte = new Map<string, ConvocatoriaDTO>();
+    for (const item of futurasOrdenadas) {
+      const deporteKey = this.normalizarTexto(item.convocatoria?.deporte || 'sin-deporte');
+      if (!porDeporte.has(deporteKey)) {
+        porDeporte.set(deporteKey, item.convocatoria);
+      }
+    }
+
+    return Array.from(porDeporte.values());
+  }
+
+  private parseFechaConvocatoria(fecha: string | null | undefined): Date | null {
+    if (!fecha) {
+      return null;
+    }
+
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed;
+  }
+
+  private inicializarRetoDiario(): void {
+    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+  }
+
+  private cargarEstadoRetoDiario(alumnoId: number): void {
+    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+    const storage = this.obtenerEstadoRetoDiarioStorage(alumnoId);
+    const hoyKey = this.getDateKeyLocal(new Date());
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerKey = this.getDateKeyLocal(ayer);
+
+    this.retoCompletadoHoy = storage.fechaCompletado === hoyKey;
+
+    if (storage.fechaCompletado === hoyKey || storage.fechaCompletado === ayerKey) {
+      this.rachaRetoDiario = Math.max(0, storage.racha);
+      return;
+    }
+
+    this.rachaRetoDiario = 0;
+  }
+
+  private getRetoDiarioSegunFecha(fecha: Date): string {
+    const index = Math.abs(Math.floor(fecha.getTime() / 86_400_000)) % this.retosDiarios.length;
+    return this.retosDiarios[index];
+  }
+
+  private getStorageKeyRetoDiario(alumnoId: number): string {
+    return `dashboard-user-reto-diario-${alumnoId}`;
+  }
+
+  private obtenerEstadoRetoDiarioStorage(alumnoId: number): RetoDiarioStorage {
+    const storage = this.obtenerStorageSeguro();
+    if (!storage) {
+      return { fechaCompletado: null, racha: 0 };
+    }
+
+    const raw = storage.getItem(this.getStorageKeyRetoDiario(alumnoId));
+    if (!raw) {
+      return { fechaCompletado: null, racha: 0 };
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      return {
+        fechaCompletado: parsed?.fechaCompletado ? String(parsed.fechaCompletado) : null,
+        racha: Number.isInteger(Number(parsed?.racha)) ? Number(parsed.racha) : 0,
+      };
+    } catch {
+      return { fechaCompletado: null, racha: 0 };
+    }
+  }
+
+  private guardarEstadoRetoDiarioStorage(alumnoId: number, data: RetoDiarioStorage): void {
+    const storage = this.obtenerStorageSeguro();
+    if (!storage) {
+      return;
+    }
+    storage.setItem(this.getStorageKeyRetoDiario(alumnoId), JSON.stringify(data));
+  }
+
+  private getDateKeyLocal(fecha: Date): string {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private marcarDocumentosComoVistos(): void {
@@ -1183,5 +1416,15 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   getCantidadDeportesAptos(): number {
     return this.deportesDelAlumno.filter((deporte) => deporte.aptoParaExamen).length;
+  }
+
+  getCantidadDeportesAptosExaminables(): number {
+    return this.deportesDelAlumno.filter(
+      (deporte) => this.deporteUsaEstadoExamen(deporte.deporte) && deporte.aptoParaExamen
+    ).length;
+  }
+
+  getCantidadDeportesExaminables(): number {
+    return this.deportesDelAlumno.filter((deporte) => this.deporteUsaEstadoExamen(deporte.deporte)).length;
   }
 }

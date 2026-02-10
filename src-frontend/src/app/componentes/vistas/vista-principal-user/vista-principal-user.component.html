@@ -180,6 +180,24 @@
             </div>
           </div>
         </article>
+
+        <article class="insight-card insight-challenge">
+          <div class="insight-head">
+            <span class="insight-icon"><i class="bi bi-lightning-charge-fill"></i></span>
+            <div>
+              <p class="insight-kicker">Racha</p>
+              <h2 class="insight-title">Reto diario</h2>
+            </div>
+          </div>
+
+          <!-- Reto diario temporalmente desactivado hasta definir contenido final -->
+          <div class="challenge-content challenge-content--placeholder">
+            <p class="challenge-dev-tag">En desarrollo</p>
+            <p class="challenge-dev-note">
+              Estamos preparando el reto diario para que tenga sentido real en tu rutina.
+            </p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -217,6 +235,58 @@
           <i class="bi bi-collection-fill"></i>
           <span>Ir a mis grupos</span>
         </button>
+      </div>
+    </section>
+
+    <section class="dashboard-panel panel-exam-status">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Examen</p>
+          <h2>Estado de examen y convocatoria</h2>
+        </div>
+      </header>
+
+      <div class="exam-status-grid">
+        <article class="exam-status-card">
+          <p class="exam-status-kicker">Aptitud actual</p>
+          <p class="exam-status-main">{{ getResumenEstadoExamen() }}</p>
+        </article>
+
+        <article class="exam-status-card">
+          <p class="exam-status-kicker">Convocatoria</p>
+          <p class="exam-status-main">{{ getEstadoConvocatoriaTexto() }}</p>
+          @if (proximaConvocatoriaAlumno) {
+          <p class="exam-status-detail">{{ getProximaConvocatoriaDeporteLabel() }}</p>
+
+          @if (convocatoriasSecundarias.length > 0) {
+          <button
+            type="button"
+            class="exam-more-toggle"
+            [attr.aria-expanded]="mostrarConvocatoriasSecundarias"
+            (click)="toggleConvocatoriasSecundarias()"
+          >
+            <span>
+              {{ mostrarConvocatoriasSecundarias ? 'Ocultar adicionales' : '+' + convocatoriasSecundarias.length + ' mas' }}
+            </span>
+            <i class="bi" [ngClass]="mostrarConvocatoriasSecundarias ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          @if (mostrarConvocatoriasSecundarias) {
+          <div class="exam-more-list">
+            @for (convocatoria of convocatoriasSecundarias; track $index) {
+            <div class="exam-more-item">
+              <span class="exam-more-sport">
+                <i class="bi" [ngClass]="getIconoDeportePorNombre(convocatoria.deporte || '')"></i>
+                {{ getDeporteLabel(convocatoria.deporte || 'Deporte') }}
+              </span>
+              <span class="exam-more-date">{{ formatearFecha(convocatoria.fechaConvocatoria) }}</span>
+            </div>
+            }
+          </div>
+          }
+          }
+          }
+        </article>
       </div>
     </section>
 
