@@ -2,6 +2,7 @@ package com.taemoi.project.services.impl;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,7 @@ import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.JwtService;
@@ -28,17 +30,20 @@ import com.taemoi.project.utils.EmailUtils;
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
 	private final UsuarioRepository usuarioRepository;
+	private final AlumnoRepository alumnoRepository;
 	private final LoginAttemptService loginAttemptService;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
 
 	public AuthenticationServiceImpl(UsuarioRepository usuarioRepository,
+									 AlumnoRepository alumnoRepository,
 									 LoginAttemptService loginAttemptService,
 									 PasswordEncoder passwordEncoder,
 									 JwtService jwtService,
 									 AuthenticationManager authenticationManager) {
 		this.usuarioRepository = usuarioRepository;
+		this.alumnoRepository = alumnoRepository;
 		this.loginAttemptService = loginAttemptService;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
@@ -94,9 +99,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 					.authenticate(new UsernamePasswordAuthenticationToken(email, request.getContrasena()));
 
 			SecurityContextHolder.getContext().setAuthentication(authentication);
-			loginAttemptService.loginSucceeded(email);
 
 			Usuario user = (Usuario) authentication.getPrincipal();
+			if (user.getRoles().contains(Roles.ROLE_USER)
+					&& !alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(email)) {
+				SecurityContextHolder.clearContext();
+				throw new DisabledException("No hay alumnos activos asociados a esta cuenta.");
+			}
+			loginAttemptService.loginSucceeded(email);
+
 			long expirationMillis = rememberMe ? 1000L * 60 * 60 * 24 * 30 : 1000L * 60 * 60 * 10;
 			String jwt = jwtService.generateToken(user, expirationMillis);
 			return new JwtAuthenticationResponse(jwt);
