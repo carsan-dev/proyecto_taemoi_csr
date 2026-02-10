@@ -18,8 +18,10 @@ export class EventosVistaComponent implements OnChanges {
   @Input() enableNavigation: boolean = true;
   @Input() showHero: boolean = true;
   @Input() previewMode: boolean = false;
+  @Input() showUserBackButton: boolean = false;
 
   @Output() eventoClick = new EventEmitter<number>();
+  @Output() backToUser = new EventEmitter<void>();
 
   private readonly loadedImages = new Set<number>();
 
@@ -43,6 +45,10 @@ export class EventosVistaComponent implements OnChanges {
       return;
     }
     this.eventoClick.emit(eventoId);
+  }
+
+  onBackToUser(): void {
+    this.backToUser.emit();
   }
 
   isImageLoaded(eventoId: number): boolean {

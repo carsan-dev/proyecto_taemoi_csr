@@ -70,6 +70,34 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 0 auto;
   }
 
+  .hero-user-back-btn {
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    background: rgba(255, 255, 255, 0.12);
+    color: $text-light;
+    border-radius: 999px;
+    min-height: 42px;
+    padding: 0.5rem 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: $transition;
+    margin-bottom: 1rem;
+
+    i {
+      font-size: 1rem;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
   .page-title-section {
     text-align: center;
     display: flex;
@@ -445,6 +473,13 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 1.6rem 0.95rem;
     margin-bottom: 1.1rem;
 
+    .hero-user-back-btn {
+      min-height: 38px;
+      font-size: 0.82rem;
+      padding: 0.42rem 0.82rem;
+      margin-bottom: 0.8rem;
+    }
+
     .page-title-section {
       gap: 0.5rem;
 
@@ -559,6 +594,13 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .hero-header {
     padding: 1.35rem 0.75rem;
     margin-bottom: 0.9rem;
+
+    .hero-user-back-btn {
+      min-height: 36px;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.75rem;
+      margin-bottom: 0.72rem;
+    }
 
     .page-title-section {
       i {
