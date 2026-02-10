@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
-import { Evento } from '../../../../interfaces/evento';
+import { Documento, Evento } from '../../../../interfaces/evento';
 import { CommonModule } from '@angular/common';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
 import { SeoService } from '../../../../servicios/generales/seo.service';
@@ -104,7 +104,29 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     return 'bi-file-earmark';
   }
 
-  descargarDocumento(url: string): void {
-    window.open(url, '_blank');
+  descargarDocumento(documento: Documento): void {
+    if (!documento?.id || !this.eventoId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo descargar el documento del evento.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id).subscribe({
+      next: (blob) => {
+        const url = globalThis.URL.createObjectURL(blob);
+        globalThis.window?.open(url, '_blank', 'noopener');
+        setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo descargar el documento del evento.',
+          icon: 'error',
+        });
+      },
+    });
   }
 }

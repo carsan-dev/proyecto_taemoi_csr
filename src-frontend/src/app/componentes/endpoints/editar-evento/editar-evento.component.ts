@@ -253,7 +253,32 @@ export class EditarEventoComponent implements OnInit {
   }
 
   descargarDocumento(documento: Documento): void {
-    window.open(documento.url, '_blank');
+    if (!documento?.id || !this.eventoId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo descargar el documento seleccionado.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id).subscribe({
+      next: (blob) => {
+        const url = globalThis.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = documento.nombre || 'documento';
+        link.click();
+        globalThis.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo descargar el documento.',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   getFileIcon(tipo: string): string {
