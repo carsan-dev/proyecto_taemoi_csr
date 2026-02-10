@@ -67,7 +67,7 @@
                 </div>
                 <div class="attachments-list">
                   @for (doc of evento.documentos; track doc.id) {
-                    <button class="attachment-item" (click)="descargarDocumento(doc.url)">
+                    <button class="attachment-item" (click)="descargarDocumento(doc)">
                       <div class="attachment-icon">
                         <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
                       </div>
