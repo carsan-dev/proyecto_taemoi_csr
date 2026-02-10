@@ -258,6 +258,45 @@ export class SeoService {
 
   private getRouteSchemas(path: string): JsonLdSchema[] {
     switch (path) {
+      case '/':
+      case '/inicio':
+        return [
+          this.buildFaqSchema(
+            [
+              {
+                question: 'Donde esta la escuela de taekwondo Moiskimdo en Umbrete?',
+                answer:
+                  'Estamos en Calle Parada de la Ciguena 36, 41806 Umbrete, Sevilla, en el Aljarafe sevillano. Facil acceso desde Sevilla y municipios cercanos.',
+              },
+              {
+                question: 'Que clases de artes marciales ofreceis en el Aljarafe y Sevilla?',
+                answer:
+                  'Ofrecemos clases de taekwondo, kickboxing light, pilates balance y defensa personal femenina para ninos, jovenes y adultos de todos los niveles.',
+              },
+              {
+                question: 'Hay clases de taekwondo para ninos en Umbrete?',
+                answer:
+                  'Si, tenemos grupos especificos para ninos desde 4 anos, jovenes y adultos. Cada grupo esta adaptado por edad y nivel de experiencia.',
+              },
+              {
+                question: 'Cual es el horario de las clases de artes marciales?',
+                answer:
+                  'Lunes 17:00-21:30, martes 17:00-21:00, miercoles y jueves 17:00-21:30, viernes 18:30-19:30. Consulta los horarios especificos de cada deporte en nuestra web.',
+              },
+              {
+                question: 'Cuanto cuestan las clases de taekwondo o kickboxing?',
+                answer:
+                  'Tenemos diferentes tarifas segun la edad y modalidad. Ofrecemos descuentos familiares y la primera clase es gratuita. Contactanos para informacion detallada.',
+              },
+              {
+                question: 'Necesito experiencia previa para apuntarme?',
+                answer:
+                  'No, aceptamos alumnos de todos los niveles. Tenemos grupos de iniciacion donde empezamos desde cero con atencion personalizada.',
+              },
+            ],
+            '/',
+          ),
+        ];
       case '/taekwondo':
         return [
           this.buildSportsServiceSchema(
@@ -282,7 +321,7 @@ export class SeoService {
               answer:
                 'La escuela esta en Umbrete, Sevilla, en Calle Parada de la Ciguena 36.',
             },
-          ]),
+          ], '/taekwondo'),
         ];
       case '/kickboxing':
         return [
@@ -310,7 +349,7 @@ export class SeoService {
               answer:
                 'Solo ropa comoda. Te orientamos con el material basico en la primera clase.',
             },
-          ]),
+          ], '/kickboxing'),
         ];
       case '/pilates':
         return [
@@ -337,7 +376,7 @@ export class SeoService {
               answer:
                 'Si. La escuela en Umbrete da servicio a alumnado de Aljarafe y Sevilla.',
             },
-          ]),
+          ], '/pilates'),
         ];
       case '/defensa-personal-femenina':
         return [
@@ -364,7 +403,7 @@ export class SeoService {
               answer:
                 'Si. La escuela de Umbrete recibe alumnas de Sevilla y municipios cercanos.',
             },
-          ]),
+          ], '/defensa-personal-femenina'),
         ];
       case '/horarios':
         return [
@@ -451,10 +490,15 @@ export class SeoService {
       question: string;
       answer: string;
     }>,
+    path: string,
   ): JsonLdSchema {
+    const faqId =
+      path === '/' ? `${this.baseUrl}/#faq` : `${this.baseUrl}${path}#faq`;
+
     return {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
+      '@id': faqId,
       mainEntity: questions.map((entry) => ({
         '@type': 'Question',
         name: entry.question,
