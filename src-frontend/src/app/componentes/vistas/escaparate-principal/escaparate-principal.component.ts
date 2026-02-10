@@ -27,6 +27,8 @@ import { SeoService } from '../../../servicios/generales/seo.service';
 export class EscaparatePrincipalComponent
   implements AfterViewInit, OnInit, OnDestroy
 {
+  private readonly autoRedirectSessionKey = 'escaparate-auth-autoredirect-done';
+
   @ViewChild('videoPresentacion')
   videoPresentacion!: ElementRef<HTMLVideoElement>;
 
@@ -63,10 +65,10 @@ export class EscaparatePrincipalComponent
     this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado) => {
       this.usuarioLogueado = estado;
-      this.redirigirSiAdmin(this.authService.getRolesActuales());
+      this.redirigirUsuarioAutenticado(this.authService.getRolesActuales());
     });
     this.authService.rolesCambio.subscribe((roles) => {
-      this.redirigirSiAdmin(roles);
+      this.redirigirUsuarioAutenticado(roles);
     });
 
     // Add Review Schema for SEO
@@ -326,15 +328,51 @@ export class EscaparatePrincipalComponent
     }
   }
 
-  private redirigirSiAdmin(roles: string[]): void {
+  private redirigirUsuarioAutenticado(roles: string[]): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
     if (!this.usuarioLogueado) {
       return;
     }
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
-      this.router.navigate(['/adminpage']);
+    if (!this.debeAutoRedirigirDesdeEscaparate()) {
+      return;
     }
+    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+      this.marcarAutoRedireccionEscaparate();
+      this.router.navigate(['/adminpage']);
+      return;
+    }
+    if (roles.includes('ROLE_USER')) {
+      this.marcarAutoRedireccionEscaparate();
+      this.router.navigate(['/userpage']);
+    }
+  }
+
+  private debeAutoRedirigirDesdeEscaparate(): boolean {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+
+    const urlActual = this.router.url.split('?')[0].split('#')[0];
+    if (urlActual !== '/' && urlActual !== '') {
+      return false;
+    }
+
+    const storage = globalThis.window?.sessionStorage;
+    if (!storage) {
+      return true;
+    }
+
+    return storage.getItem(this.autoRedirectSessionKey) !== 'true';
+  }
+
+  private marcarAutoRedireccionEscaparate(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const storage = globalThis.window?.sessionStorage;
+    storage?.setItem(this.autoRedirectSessionKey, 'true');
   }
 }
