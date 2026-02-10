@@ -1,6 +1,7 @@
 // Import shared admin styles
 @use '../../../componentes/admin-shared-styles.scss' as *;
 @use '../../../componentes/admin-mobile-forms.scss' as *;
+@use 'sass:color';
 
 // ========================================
 // COMPONENT-SPECIFIC STYLES FOR EDITAR-ALUMNO
@@ -981,6 +982,39 @@
         .convocatorias-section {
           padding-top: 1rem;
           border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+          .convocatoria-status {
+            margin-bottom: 0.75rem;
+          }
+
+          .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+          }
+
+          .convocatoria-status-active {
+            .status-pill {
+              background: rgba($success-color, 0.14);
+              color: color.adjust($success-color, $lightness: -12%);
+            }
+
+            .convocatoria-status-text {
+              display: block;
+              margin-top: 0.45rem;
+              font-size: 0.85rem;
+              color: $text-muted;
+            }
+          }
+
+          .status-pill-muted {
+            background: rgba($text-muted, 0.12);
+            color: color.adjust($text-muted, $lightness: -8%);
+          }
         }
       }
     }
