@@ -102,4 +102,38 @@ describe('VistaPrincipalUserComponent', () => {
     expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15);
     expect(endpointsServiceSpy.descargarDocumentoAlumno.calls.count()).toBe(2);
   });
+
+  it('debe marcar documentos como vistos al ir a la seccion de documentos', () => {
+    component.selectedAlumno = alumnosMock[0];
+    component.documentosAlumno = [documentoMock as any];
+    component.novedadesDocumentos = 1;
+    spyOn(component, 'scrollToSection');
+    window.localStorage.setItem('dashboard-user-vistos-documentos-1', JSON.stringify([]));
+
+    component.irADocumentos();
+
+    expect(component.scrollToSection).toHaveBeenCalledWith('mis-documentos');
+    expect(component.novedadesDocumentos).toBe(0);
+    expect(window.localStorage.getItem('dashboard-user-vistos-documentos-1')).toBe('[15]');
+  });
+
+  it('debe paginar documentos por bloques y cargar mas al avanzar', () => {
+    component.documentosAlumno = Array.from({ length: 18 }, (_, index) => ({
+      ...documentoMock,
+      id: index + 1,
+      nombre: `doc-${index + 1}.pdf`,
+    })) as any;
+
+    (component as any).reiniciarPaginacionDocumentos();
+    expect(component.getDocumentosVisibles().length).toBe(8);
+    expect(component.hayMasDocumentosPorCargar()).toBeTrue();
+
+    component.cargarMasDocumentos();
+    expect(component.getDocumentosVisibles().length).toBe(16);
+    expect(component.hayMasDocumentosPorCargar()).toBeTrue();
+
+    component.cargarMasDocumentos();
+    expect(component.getDocumentosVisibles().length).toBe(18);
+    expect(component.hayMasDocumentosPorCargar()).toBeFalse();
+  });
 });
