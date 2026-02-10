@@ -190,12 +190,23 @@
             </div>
           </div>
 
-          <!-- Reto diario temporalmente desactivado hasta definir contenido final -->
-          <div class="challenge-content challenge-content--placeholder">
-            <p class="challenge-dev-tag">En desarrollo</p>
-            <p class="challenge-dev-note">
-              Estamos preparando el reto diario para que tenga sentido real en tu rutina.
-            </p>
+          <div class="challenge-content">
+            <div class="challenge-streak">
+              <span class="challenge-streak-value">{{ rachaRetoDiario }}</span>
+              <span class="challenge-streak-label">d&iacute;as de racha</span>
+            </div>
+
+            <p class="challenge-task">Hoy: {{ retoDiarioActual }}</p>
+
+            <button
+              type="button"
+              class="challenge-action-btn"
+              [disabled]="retoCompletadoHoy"
+              (click)="completarRetoDiario()"
+            >
+              <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-check-circle-fill' : 'bi-lightning-charge-fill'"></i>
+              <span>{{ retoCompletadoHoy ? 'Completado hoy' : 'Marcar como hecho' }}</span>
+            </button>
           </div>
         </article>
       </div>
