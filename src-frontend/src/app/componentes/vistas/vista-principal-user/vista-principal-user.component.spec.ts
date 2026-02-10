@@ -41,6 +41,7 @@ describe('VistaPrincipalUserComponent', () => {
         'obtenerGruposDelAlumno',
         'obtenerTurnosDelAlumnoObservable',
         'obtenerDocumentosDeAlumno',
+        'obtenerUrlDescargaDocumentoAlumno',
         'descargarDocumentoAlumno',
         'obtenerEventos',
       ],
@@ -52,6 +53,9 @@ describe('VistaPrincipalUserComponent', () => {
     authServiceSpy.obtenerTodosLosAlumnos.and.returnValue(of(alumnosMock as any));
     endpointsServiceSpy.obtenerTurnosDelAlumnoObservable.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
+    endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.returnValue(
+      'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar'
+    );
     endpointsServiceSpy.descargarDocumentoAlumno.and.returnValue(of(new Blob(['pdf'])));
     alumnoServiceSpy.obtenerDeportesDelAlumno.and.returnValue(of([]));
 
@@ -101,6 +105,30 @@ describe('VistaPrincipalUserComponent', () => {
 
     expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15);
     expect(endpointsServiceSpy.descargarDocumentoAlumno.calls.count()).toBe(2);
+  });
+
+  it('debe usar URL directa en iOS para abrir y descargar documento', () => {
+    component.selectedAlumno = alumnosMock[1];
+    spyOnProperty(globalThis.navigator, 'userAgent', 'get').and.returnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    );
+
+    component.abrirDocumento(documentoMock);
+    component.descargarDocumento(documentoMock);
+
+    expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno).toHaveBeenCalledWith(2, 15);
+    expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.calls.count()).toBe(2);
+    expect(endpointsServiceSpy.descargarDocumentoAlumno).not.toHaveBeenCalled();
+    expect(window.open).toHaveBeenCalledWith(
+      'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar',
+      '_blank',
+      'noopener'
+    );
+    expect(window.open).toHaveBeenCalledWith(
+      'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar',
+      '_self',
+      undefined
+    );
   });
 
   it('debe marcar documentos como vistos al ir a la seccion de documentos', () => {
