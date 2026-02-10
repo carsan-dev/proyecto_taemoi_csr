@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +37,8 @@ import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.dtos.response.AlumnoParaUsuarioDTO;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
@@ -119,6 +122,9 @@ public class AuthenticationController {
 		} catch (LockedException e) {
 			return ResponseEntity.status(HttpStatus.LOCKED)
 					.body(Map.of("mensaje", "Cuenta bloqueada temporalmente."));
+		} catch (DisabledException e) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body(Map.of("mensaje", "No hay alumnos activos asociados a esta cuenta."));
 		} catch (BadCredentialsException e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(Map.of("mensaje", "Credenciales invalidas."));
@@ -257,9 +263,7 @@ public class AuthenticationController {
 			UsuarioConAlumnoAsociadoDTO usuarioDTO = new UsuarioConAlumnoAsociadoDTO();
 			usuarioDTO.setId(usuario.getId());
 			usuarioDTO.setEmail(usuario.getEmail());
-
-			AlumnoParaUsuarioDTO alumnoUsuarioDTO = AlumnoParaUsuarioDTO.deAlumno(usuario.getAlumno());
-			usuarioDTO.setAlumnoDTO(alumnoUsuarioDTO);
+			usuarioDTO.setAlumnoDTO(obtenerAlumnoVisibleParaUsuario(usuario));
 
 			return usuarioDTO;
 		} else {
@@ -280,7 +284,8 @@ public class AuthenticationController {
 		String email = authentication.getName();
 
 		// Buscar todos los alumnos con el email del usuario
-		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCase(EmailUtils.normalizeEmail(email));
+		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository
+				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(email));
 
 		// Convertir a DTOs
 		List<AlumnoParaUsuarioDTO> alumnosDTO = alumnos.stream()
@@ -288,6 +293,37 @@ public class AuthenticationController {
 				.collect(java.util.stream.Collectors.toList());
 
 		return ResponseEntity.ok(alumnosDTO);
+	}
+
+	private AlumnoParaUsuarioDTO obtenerAlumnoVisibleParaUsuario(Usuario usuario) {
+		if (usuario == null) {
+			return null;
+		}
+
+		if (!usuario.getRoles().contains(Roles.ROLE_USER)) {
+			Alumno alumnoAsociado = usuario.getAlumno();
+			if (alumnoAsociado != null && Boolean.TRUE.equals(alumnoAsociado.getActivo())) {
+				return AlumnoParaUsuarioDTO.deAlumno(alumnoAsociado);
+			}
+			return null;
+		}
+
+		List<Alumno> alumnosActivos = alumnoRepository
+				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(usuario.getEmail()));
+		if (alumnosActivos.isEmpty()) {
+			return null;
+		}
+
+		Alumno alumnoAsociado = usuario.getAlumno();
+		if (alumnoAsociado != null && alumnoAsociado.getId() != null) {
+			for (Alumno alumnoActivo : alumnosActivos) {
+				if (alumnoAsociado.getId().equals(alumnoActivo.getId())) {
+					return AlumnoParaUsuarioDTO.deAlumno(alumnoActivo);
+				}
+			}
+		}
+
+		return AlumnoParaUsuarioDTO.deAlumno(alumnosActivos.get(0));
 	}
 
 	/**
