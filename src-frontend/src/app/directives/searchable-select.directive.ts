@@ -27,6 +27,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private labelForBackup?: string;
   private fieldEl?: HTMLElement;
   private cardEl?: HTMLElement;
+  private detachOpenListeners: Array<() => void> = [];
+  private positionRafId?: number;
 
   constructor(
     private readonly elRef: ElementRef<HTMLSelectElement>,
@@ -46,6 +48,11 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       this.stableSub.unsubscribe();
     }
     this.detachListeners.forEach((detach) => detach());
+    this.stopDropdownPositionTracking();
+    if (this.positionRafId !== undefined) {
+      window.cancelAnimationFrame(this.positionRafId);
+      this.positionRafId = undefined;
+    }
     if (this.observer) {
       this.observer.disconnect();
     }
@@ -105,13 +112,14 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
 
     this.dropdownEl = this.renderer.createElement('div') as HTMLDivElement;
     this.renderer.addClass(this.dropdownEl, 'admin-select-dropdown');
+    this.renderer.addClass(this.dropdownEl, 'is-floating');
     this.renderer.setAttribute(this.dropdownEl, 'id', listboxId);
     this.renderer.setAttribute(this.dropdownEl, 'role', 'listbox');
 
     const parent = select.parentElement;
     this.renderer.insertBefore(parent, this.wrapperEl, select);
     this.renderer.appendChild(this.wrapperEl, this.inputEl);
-    this.renderer.appendChild(this.wrapperEl, this.dropdownEl);
+    this.renderer.appendChild(document.body, this.dropdownEl);
     this.renderer.appendChild(this.wrapperEl, select);
 
     this.hideSelect(select);
@@ -217,6 +225,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
         }
         const target = event.target as Node;
         if (this.wrapperEl.contains(target)) {
+          return;
+        }
+        if (this.dropdownEl && this.dropdownEl.contains(target)) {
           return;
         }
         this.closeDropdown(true);
@@ -399,6 +410,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     } else {
       this.setActiveToSelected();
     }
+
   }
 
   private handleKeydown(event: KeyboardEvent): void {
@@ -517,9 +529,11 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   }
 
   private openDropdown(resetActive: boolean, applyFilter: boolean = true): void {
-    if (!this.dropdownEl || !this.inputEl) {
+    if (!this.dropdownEl || !this.inputEl || !this.wrapperEl) {
       return;
     }
+
+    const wasClosed = !this.isOpen;
     this.isOpen = true;
     this.renderer.addClass(this.dropdownEl, 'is-open');
     this.renderer.addClass(this.wrapperEl, 'is-open');
@@ -536,6 +550,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     if (resetActive && applyFilter) {
       this.setActiveToSelected();
     }
+    if (wasClosed) {
+      this.startDropdownPositionTracking();
+    }
+    this.scheduleDropdownPositionUpdate();
   }
 
   private closeDropdown(restoreValue: boolean): void {
@@ -543,6 +561,11 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       return;
     }
     if (!this.isOpen) {
+      this.stopDropdownPositionTracking();
+      if (this.positionRafId !== undefined) {
+        window.cancelAnimationFrame(this.positionRafId);
+        this.positionRafId = undefined;
+      }
       if (this.fieldEl) {
         this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
       }
@@ -555,7 +578,13 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       return;
     }
     this.isOpen = false;
+    this.stopDropdownPositionTracking();
+    if (this.positionRafId !== undefined) {
+      window.cancelAnimationFrame(this.positionRafId);
+      this.positionRafId = undefined;
+    }
     this.renderer.removeClass(this.dropdownEl, 'is-open');
+    this.renderer.removeClass(this.dropdownEl, 'is-open-up');
     this.renderer.removeClass(this.wrapperEl, 'is-open');
     if (this.fieldEl) {
       this.renderer.removeClass(this.fieldEl, 'admin-select-field-open');
@@ -595,5 +624,133 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private startDropdownPositionTracking(): void {
+    if (this.detachOpenListeners.length > 0) {
+      return;
+    }
+
+    const onViewportChange = () => {
+      if (!this.isOpen) {
+        return;
+      }
+      this.scheduleDropdownPositionUpdate();
+    };
+
+    const addListener = (
+      target: EventTarget,
+      eventName: string,
+      options?: boolean | AddEventListenerOptions
+    ): void => {
+      target.addEventListener(eventName, onViewportChange, options);
+      this.detachOpenListeners.push(() => {
+        target.removeEventListener(eventName, onViewportChange, options);
+      });
+    };
+
+    addListener(window, 'resize', { passive: true });
+    addListener(window, 'orientationchange');
+    addListener(document, 'scroll', true);
+  }
+
+  private stopDropdownPositionTracking(): void {
+    this.detachOpenListeners.forEach((detach) => detach());
+    this.detachOpenListeners = [];
+  }
+
+  private scheduleDropdownPositionUpdate(): void {
+    if (this.positionRafId !== undefined) {
+      window.cancelAnimationFrame(this.positionRafId);
+    }
+    this.positionRafId = window.requestAnimationFrame(() => {
+      this.positionRafId = undefined;
+      this.updateDropdownPosition();
+    });
+  }
+
+  private updateDropdownPosition(): void {
+    if (!this.wrapperEl || !this.dropdownEl || !this.inputEl || !this.isOpen) {
+      return;
+    }
+
+    const gap = 4;
+    const viewportPadding = 8;
+    const minimumDropdownHeight = 120;
+    const desiredMaxHeight = 240;
+    const inputRect = this.inputEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const topBoundary = this.getHeaderBottomBoundary(viewportPadding, gap);
+
+    const width = Math.min(inputRect.width, viewportWidth - viewportPadding * 2);
+    let left = inputRect.left;
+    if (left + width > viewportWidth - viewportPadding) {
+      left = viewportWidth - viewportPadding - width;
+    }
+    if (left < viewportPadding) {
+      left = viewportPadding;
+    }
+
+    const availableBelow = Math.max(0, viewportHeight - inputRect.bottom - viewportPadding);
+    const availableAbove = Math.max(0, inputRect.top - topBoundary);
+    const requiredHeight = Math.min(desiredMaxHeight, Math.max(minimumDropdownHeight, this.dropdownEl.scrollHeight || 0));
+    const openUp = (
+      availableBelow < requiredHeight &&
+      availableAbove > availableBelow &&
+      availableAbove >= minimumDropdownHeight
+    );
+    const maxHeight = Math.max(
+      minimumDropdownHeight,
+      Math.min(desiredMaxHeight, openUp ? availableAbove - gap : availableBelow - gap)
+    );
+
+    let top = inputRect.bottom + gap;
+    if (openUp) {
+      top = Math.max(topBoundary, inputRect.top - gap - maxHeight);
+      this.renderer.addClass(this.dropdownEl, 'is-open-up');
+    } else {
+      top = Math.max(topBoundary, inputRect.bottom + gap);
+      this.renderer.removeClass(this.dropdownEl, 'is-open-up');
+    }
+
+    this.renderer.setStyle(this.dropdownEl, 'position', 'fixed');
+    this.renderer.setStyle(this.dropdownEl, 'left', `${Math.round(left)}px`);
+    this.renderer.setStyle(this.dropdownEl, 'top', `${Math.round(top)}px`);
+    this.renderer.setStyle(this.dropdownEl, 'width', `${Math.round(width)}px`);
+    this.renderer.setStyle(this.dropdownEl, 'max-height', `${Math.round(maxHeight)}px`);
+    this.renderer.setStyle(this.dropdownEl, 'z-index', '1040');
+  }
+
+  private getHeaderBottomBoundary(viewportPadding: number, gap: number): number {
+    const selectors = [
+      '.header-anonimo.fixed-header',
+      '.header-user.fixed-header',
+      '.admin-top-navbar',
+      'header.fixed-header',
+      '.navbar.fixed-top',
+      '.navbar.sticky-top',
+    ];
+
+    let boundaryTop = viewportPadding;
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll<HTMLElement>(selector);
+      elements.forEach((element) => {
+        const styles = window.getComputedStyle(element);
+        if (styles.display === 'none' || styles.visibility === 'hidden') {
+          return;
+        }
+        if (styles.position !== 'fixed' && styles.position !== 'sticky') {
+          return;
+        }
+        const rect = element.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+          return;
+        }
+        boundaryTop = Math.max(boundaryTop, Math.round(rect.bottom + gap));
+      });
+    }
+
+    return boundaryTop;
   }
 }
