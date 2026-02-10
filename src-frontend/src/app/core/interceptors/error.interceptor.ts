@@ -45,6 +45,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             return throwError(() => error);
 
           case 403:
+            if (esSolicitudAutenticacion(req.url)) {
+              return throwError(() => error);
+            }
             // Forbidden - access denied
             errorTitle = 'Acceso Denegado';
             errorMessage = 'No tienes permisos para realizar esta acción.';
@@ -52,6 +55,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             break;
 
           case 404:
+            if (esSolicitudAutenticacion(req.url)) {
+              return throwError(() => error);
+            }
             // Not Found
             errorTitle = 'No Encontrado';
             errorMessage = 'El recurso solicitado no existe.';
@@ -73,6 +79,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             break;
 
           case 0:
+            if (esSolicitudAutenticacion(req.url)) {
+              return throwError(() => error);
+            }
             // Network error (no response from server)
             // Podría ser una sesión expirada si el usuario estaba logueado
             if (error.error instanceof ProgressEvent && error.error.type === 'abort') {
