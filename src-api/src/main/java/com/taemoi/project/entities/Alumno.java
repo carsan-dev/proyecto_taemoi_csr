@@ -207,6 +207,13 @@ public class Alumno {
 	@OneToMany(mappedBy = "alumno")
 	private List<AlumnoConvocatoria> convocatorias = new ArrayList<>();
 
+	@Temporal(TemporalType.DATE)
+	@Column(nullable = true)
+	private Date fechaRetoDiarioCompletado;
+
+	@Column(nullable = true)
+	private Integer rachaRetoDiario = 0;
+
 	public Long getId() {
 		return id;
 	}
@@ -538,6 +545,22 @@ public class Alumno {
 
 	public void setConvocatorias(List<AlumnoConvocatoria> convocatorias) {
 		this.convocatorias = convocatorias;
+	}
+
+	public Date getFechaRetoDiarioCompletado() {
+		return fechaRetoDiarioCompletado;
+	}
+
+	public void setFechaRetoDiarioCompletado(Date fechaRetoDiarioCompletado) {
+		this.fechaRetoDiarioCompletado = fechaRetoDiarioCompletado;
+	}
+
+	public Integer getRachaRetoDiario() {
+		return rachaRetoDiario;
+	}
+
+	public void setRachaRetoDiario(Integer rachaRetoDiario) {
+		this.rachaRetoDiario = rachaRetoDiario;
 	}
 
 	public List<AlumnoDeporte> getDeportes() {
