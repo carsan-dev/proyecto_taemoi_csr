@@ -28,7 +28,7 @@
             <i class="bi bi-collection-play-fill"></i>
             <span>Mis clases</span>
           </button>
-          <button type="button" class="hero-btn btn-secondary-action" (click)="scrollToSection('mis-documentos')">
+          <button type="button" class="hero-btn btn-secondary-action" (click)="irADocumentos()">
             <i class="bi bi-file-earmark-text-fill"></i>
             <span>Mis documentos</span>
           </button>
@@ -97,7 +97,7 @@
             <span class="insight-icon"><i class="bi bi-clock-history"></i></span>
             <div>
               <p class="insight-kicker">Hoy te toca</p>
-              <h3>Pr&oacute;xima clase</h3>
+              <h2 class="insight-title">Pr&oacute;xima clase</h2>
             </div>
           </div>
 
@@ -139,7 +139,7 @@
             <span class="insight-icon"><i class="bi bi-bell-fill"></i></span>
             <div>
               <p class="insight-kicker">Novedades</p>
-              <h3>Desde tu &uacute;ltima visita</h3>
+              <h2 class="insight-title">Desde tu &uacute;ltima visita</h2>
             </div>
           </div>
 
@@ -197,7 +197,7 @@
           <span>Ver agenda semanal</span>
         </button>
 
-        <button type="button" class="quick-action-btn" (click)="scrollToSection('mis-documentos')">
+        <button type="button" class="quick-action-btn" (click)="irADocumentos()">
           <i class="bi bi-file-earmark-text-fill"></i>
           <span>Revisar documentos</span>
           @if (novedadesDocumentos > 0) {
@@ -376,7 +376,7 @@
     }
 
     @if (selectedAlumno) {
-    <section class="dashboard-panel panel-documents" id="mis-documentos">
+    <section class="dashboard-panel panel-documents" id="mis-documentos" #misDocumentosSection>
       <header class="panel-header">
         <div>
           <p class="panel-kicker">Documentaci&oacute;n</p>
@@ -388,7 +388,7 @@
       <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
       } @else if (documentosAlumno.length > 0) {
       <div class="documents-grid">
-        @for (documento of documentosAlumno; track documento.id) {
+        @for (documento of getDocumentosVisibles(); track documento.id) {
         <article class="document-card">
           <div class="document-main">
             <span class="document-icon">
@@ -413,6 +413,9 @@
         </article>
         }
       </div>
+      @if (hayMasDocumentosPorCargar()) {
+      <div #documentosSentinel class="documents-sentinel" aria-hidden="true"></div>
+      }
       } @else {
       <div class="empty-state">
         <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
