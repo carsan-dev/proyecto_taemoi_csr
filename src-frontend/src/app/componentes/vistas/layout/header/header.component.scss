@@ -1479,7 +1479,10 @@ header.fixed-header {
 }
 
 .mobile-header-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
   width: 100%;
   text-decoration: none;
   color: rgba($text-light, 0.9);
@@ -1493,9 +1496,36 @@ header.fixed-header {
   font: inherit;
   transition: $transition-fast;
 
+  i {
+    font-size: 1rem;
+    width: 1.2rem;
+    min-width: 1.2rem;
+    text-align: center;
+    color: rgba($text-light, 0.78);
+    transition: $transition-fast;
+  }
+
+  span {
+    flex: 1;
+  }
+
   &:hover {
     background: rgba($text-light, 0.12);
     border-color: rgba($text-light, 0.12);
+
+    i {
+      color: $text-light;
+    }
+  }
+
+  &.active {
+    background: rgba($primary-color, 0.24);
+    border-color: rgba($primary-color, 0.45);
+    color: $text-light;
+
+    i {
+      color: color.adjust($primary-color, $lightness: 22%);
+    }
   }
 
   &.sub {
@@ -1503,11 +1533,21 @@ header.fixed-header {
     font-size: 0.95rem;
     padding-left: 1.5rem;
     color: rgba($text-light, 0.8);
+
+    &.active {
+      background: rgba($primary-color, 0.2);
+      border-color: rgba($primary-color, 0.4);
+      color: $text-light;
+    }
   }
 
   &.logout {
     background: rgba($danger-color, 0.15);
     border: 1px solid rgba($danger-color, 0.35);
+
+    i {
+      color: rgba($danger-color, 0.95);
+    }
   }
 }
 
