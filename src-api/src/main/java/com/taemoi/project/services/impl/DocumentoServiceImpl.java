@@ -205,6 +205,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 			}
 
 			try {
+				rutaArchivo = resolvePathCaseInsensitive(rutaArchivo);
 				if (Files.exists(rutaArchivo)) {
 					Files.delete(rutaArchivo);
 				}
@@ -307,6 +308,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 				logger.info("Resolved relative path {} to absolute: {}", rutaDocumento, rutaArchivo);
 			}
 
+			rutaArchivo = resolvePathCaseInsensitive(rutaArchivo);
 			if (!Files.exists(rutaArchivo)) {
 				throw new RuntimeException("El archivo no existe en el sistema de archivos: " + rutaArchivo);
 			}
@@ -317,11 +319,72 @@ public class DocumentoServiceImpl implements DocumentoService {
 	}
 
 	/**
-	 * Busca una carpeta existente para el alumno basándose en el número de expediente.
-	 * La búsqueda es case-insensitive para manejar diferencias de capitalización.
+	 * Intenta resolver una ruta existente ignorando diferencias de mayusculas/minusculas
+	 * en cada segmento del path.
+	 *
+	 * @param rutaOriginal Ruta solicitada originalmente
+	 * @return Ruta real existente si se encuentra, o la original si no hay coincidencia
+	 * @throws IOException Si falla el acceso al sistema de archivos
+	 */
+	private Path resolvePathCaseInsensitive(Path rutaOriginal) throws IOException {
+		if (Files.exists(rutaOriginal)) {
+			return rutaOriginal;
+		}
+
+		Path rutaNormalizada = rutaOriginal.toAbsolutePath().normalize();
+		Path raiz = rutaNormalizada.getRoot();
+		if (raiz == null) {
+			return rutaOriginal;
+		}
+
+		Path actual = raiz;
+		for (Path segmento : rutaNormalizada) {
+			String nombreSegmento = segmento.toString();
+			Path candidato = actual.resolve(nombreSegmento);
+			if (Files.exists(candidato)) {
+				actual = candidato;
+				continue;
+			}
+
+			Path coincidencia = findUniquePathIgnoreCase(actual, nombreSegmento);
+			if (coincidencia == null) {
+				return rutaOriginal;
+			}
+
+			actual = coincidencia;
+		}
+
+		if (!rutaOriginal.equals(actual)) {
+			logger.warn("Resolved path with case-insensitive fallback: {} -> {}", rutaOriginal, actual);
+		}
+
+		return actual;
+	}
+
+	private Path findUniquePathIgnoreCase(Path directorio, String nombreEsperado) throws IOException {
+		if (!Files.isDirectory(directorio)) {
+			return null;
+		}
+
+		try (Stream<Path> hijos = Files.list(directorio)) {
+			List<Path> coincidencias = hijos
+					.filter(hijo -> hijo.getFileName().toString().equalsIgnoreCase(nombreEsperado))
+					.toList();
+
+			if (coincidencias.size() > 1) {
+				throw new IOException("Se encontraron varias coincidencias case-insensitive para '" + nombreEsperado
+						+ "' en '" + directorio + "'");
+			}
+
+			return coincidencias.isEmpty() ? null : coincidencias.get(0);
+		}
+	}
+	/**
+	 * Busca una carpeta existente para el alumno basandose en el numero de expediente.
+	 * La busqueda es case-insensitive para manejar diferencias de capitalizacion.
 	 *
 	 * @param rutaBase La ruta base donde buscar
-	 * @param numeroExpediente El número de expediente del alumno
+	 * @param numeroExpediente El numero de expediente del alumno
 	 * @return La ruta de la carpeta existente, o null si no existe
 	 * @throws IOException Si ocurre un error al listar directorios
 	 */
@@ -359,3 +422,5 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 	}
 }
+
+
