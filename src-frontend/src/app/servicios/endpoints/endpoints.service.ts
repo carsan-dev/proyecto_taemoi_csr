@@ -1161,6 +1161,10 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerUrlDescargaDocumentoAlumno(alumnoId: number, documentoId: number): string {
+    return `${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}/descargar`;
+  }
+
   descargarDocumentoAlumno(
     alumnoId: number,
     documentoId: number

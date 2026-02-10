@@ -507,6 +507,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.descargarDocumento(documento, true);
   }
 
+  private esDispositivoIOS(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    const userAgent = navigatorRef.userAgent ?? '';
+    const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
+    const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
+    return esIOSClasico || esIPadOS;
+  }
+
   descargarDocumento(documento: Documento, abrirEnNuevaPestana: boolean = false): void {
     const alumnoId = this.selectedAlumno?.id;
     if (!alumnoId || !documento?.id) {
@@ -515,6 +527,16 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         text: 'No se pudo procesar el documento seleccionado',
         icon: 'error',
       });
+      return;
+    }
+
+    if (this.esDispositivoIOS()) {
+      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoAlumno(alumnoId, documento.id);
+      globalThis.window?.open(
+        downloadUrl,
+        abrirEnNuevaPestana ? '_blank' : '_self',
+        abrirEnNuevaPestana ? 'noopener' : undefined
+      );
       return;
     }
 
