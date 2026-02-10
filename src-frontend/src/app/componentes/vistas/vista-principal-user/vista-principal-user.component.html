@@ -7,19 +7,19 @@
         <div class="hero-copy">
           <span class="hero-eyebrow">
             <i class="bi bi-stars"></i>
-            Area de alumnos
+            &Aacute;rea de alumnos
           </span>
           <h1 class="hero-title">Bienvenido/a</h1>
           @if (selectedAlumno) {
-            <p class="hero-subtitle">
-              <i class="bi bi-person-circle"></i>
-              {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
-            </p>
+          <p class="hero-subtitle">
+            <i class="bi bi-person-circle"></i>
+            {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+          </p>
           } @else {
-            <p class="hero-subtitle">
-              <i class="bi bi-person-circle"></i>
-              Cargando perfil de alumno...
-            </p>
+          <p class="hero-subtitle">
+            <i class="bi bi-person-circle"></i>
+            Cargando perfil de alumno...
+          </p>
           }
         </div>
 
@@ -40,24 +40,21 @@
       </div>
 
       @if (alumnos.length > 1) {
-        <div class="student-switcher" aria-label="Seleccion de alumno">
-          <div class="switcher-label">
-            <i class="bi bi-people-fill"></i>
-            <span>Seleccionar alumno</span>
-          </div>
-          <div class="switcher-track">
-            @for (alumno of alumnos; track alumno.id) {
-              <button
-                type="button"
-                class="switcher-pill"
-                [class.is-active]="selectedAlumno?.id === alumno.id"
-                (click)="seleccionarAlumno(alumno)">
-                <i class="bi bi-person-badge"></i>
-                <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
-              </button>
-            }
-          </div>
+      <div class="student-switcher" aria-label="Seleccion de alumno">
+        <div class="switcher-label">
+          <i class="bi bi-people-fill"></i>
+          <span>Seleccionar alumno</span>
         </div>
+        <div class="switcher-track">
+          @for (alumno of alumnos; track alumno.id) {
+          <button type="button" class="switcher-pill" [class.is-active]="selectedAlumno?.id === alumno.id"
+            (click)="seleccionarAlumno(alumno)">
+            <i class="bi bi-person-badge"></i>
+            <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+          </button>
+          }
+        </div>
+      </div>
       }
 
       <div class="hero-stats">
@@ -93,6 +90,134 @@
           </div>
         </article>
       </div>
+
+      <div class="hero-insights">
+        <article class="insight-card insight-today">
+          <div class="insight-head">
+            <span class="insight-icon"><i class="bi bi-clock-history"></i></span>
+            <div>
+              <p class="insight-kicker">Hoy te toca</p>
+              <h3>Pr&oacute;xima clase</h3>
+            </div>
+          </div>
+
+          @if (cargandoTurnos) {
+          <p class="insight-empty">Cargando horario...</p>
+          } @else if (proximaClase) {
+          <div class="today-content">
+            <div class="today-main">
+              <span class="today-day" [class.is-live]="proximaClase.enCurso">{{ proximaClase.etiquetaDia }}</span>
+              <span class="today-time">{{ proximaClase.horario }}</span>
+            </div>
+            <span class="today-sport">{{ proximaClase.deporte }}</span>
+            <p class="today-countdown">{{ proximaClase.cuentaAtras }}</p>
+
+            @if (proximasClasesPorDeporte.length > 0) {
+            <div class="today-by-sport">
+              <p class="today-by-sport-title">Otras pr&oacute;ximas por deporte</p>
+              <div class="today-by-sport-list">
+                @for (item of proximasClasesPorDeporte; track item.sportKey) {
+                <div class="sport-next-row">
+                  <span class="sport-next-name">
+                    <i class="bi" [ngClass]="item.sportIcon"></i>
+                    {{ item.sportLabel }}
+                  </span>
+                  <span class="sport-next-when">{{ item.clase.etiquetaDia }} &middot; {{ item.clase.horario }}</span>
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          } @else {
+          <p class="insight-empty">No tienes clases asignadas por ahora.</p>
+          }
+        </article>
+
+        <article class="insight-card insight-news">
+          <div class="insight-head">
+            <span class="insight-icon"><i class="bi bi-bell-fill"></i></span>
+            <div>
+              <p class="insight-kicker">Novedades</p>
+              <h3>Desde tu &uacute;ltima visita</h3>
+            </div>
+          </div>
+
+          <div class="news-content">
+            <p class="news-total">{{ getTotalNovedades() }} novedad{{ getTotalNovedades() === 1 ? '' : 'es' }}</p>
+            <div class="news-breakdown">
+              <span>Documentos: {{ novedadesDocumentos }}</span>
+              <span>Eventos: {{ novedadesEventos }}</span>
+              <span>Estado: {{ novedadesEstadoDeportes }}</span>
+            </div>
+            @if (detallesNovedadesEstado.length > 0) {
+            <div class="news-details">
+              @for (detalle of detallesNovedadesEstado; track detalle) {
+              <p class="news-detail-item">
+                <i class="bi bi-dot"></i>
+                <span>{{ detalle }}</span>
+              </p>
+              }
+            </div>
+            }
+            @if (getTotalNovedades() === 0) {
+            <p class="insight-empty">Est&aacute;s al dia. Te avisaremos cuando haya algo nuevo.</p>
+            }
+            <div class="news-events-preview">
+              <p class="news-events-title">Eventos recientes</p>
+              @if (eventosRecientes.length > 0) {
+              <div class="news-events-list">
+                @for (evento of eventosRecientes; track evento.id) {
+                <p class="news-event-item">
+                  <i class="bi bi-calendar-event-fill"></i>
+                  <span>{{ evento.titulo }}</span>
+                </p>
+                }
+              </div>
+              } @else {
+              <p class="news-events-empty">Sin eventos recientes.</p>
+              }
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashboard-panel panel-quick-actions">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Accesos directos</p>
+          <h2>Acciones R&aacute;pidas</h2>
+        </div>
+      </header>
+
+      <div class="quick-actions-grid">
+        <button type="button" class="quick-action-btn" [routerLink]="['/userpage/turnos']">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Ver agenda semanal</span>
+        </button>
+
+        <button type="button" class="quick-action-btn" (click)="scrollToSection('mis-documentos')">
+          <i class="bi bi-file-earmark-text-fill"></i>
+          <span>Revisar documentos</span>
+          @if (novedadesDocumentos > 0) {
+          <strong class="quick-badge">+{{ novedadesDocumentos }}</strong>
+          }
+        </button>
+
+        <button type="button" class="quick-action-btn" [routerLink]="['/eventos']">
+          <i class="bi bi-calendar-event-fill"></i>
+          <span>Ver eventos</span>
+          @if (novedadesEventos > 0) {
+          <strong class="quick-badge">+{{ novedadesEventos }}</strong>
+          }
+        </button>
+
+        <button type="button" class="quick-action-btn" (click)="scrollToSection('mis-grupos')">
+          <i class="bi bi-collection-fill"></i>
+          <span>Ir a mis grupos</span>
+        </button>
+      </div>
     </section>
 
     <section class="dashboard-panel" id="mis-grupos">
@@ -104,199 +229,198 @@
       </header>
 
       @if (selectedAlumno && (endpointsService.gruposDelAlumno$ | async); as grupos) {
-        @if (grupos.length > 0) {
-          <div class="groups-grid">
-            @for (grupo of grupos; track grupo.id) {
-              <article class="group-card" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
-                <div class="group-icon" [style.background]="obtenerColorDeporte(grupo)">
-                  <i class="bi" [ngClass]="getIconoDeporteGrupo(grupo)"></i>
-                </div>
-
-                <div class="group-content">
-                  <h3 class="group-name">{{ grupo.nombre }}</h3>
-
-                  <div class="group-meta-row">
-                    <span class="group-chip" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
-                      {{ obtenerNombreDeporte(grupo) }}
-                    </span>
-                    <span class="group-state">
-                      <i class="bi bi-check-circle-fill"></i>
-                      Activo
-                    </span>
-                  </div>
-                </div>
-              </article>
-            }
+      @if (grupos.length > 0) {
+      <div class="groups-grid">
+        @for (grupo of grupos; track grupo.id) {
+        <article class="group-card" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
+          <div class="group-icon" [style.background]="obtenerColorDeporte(grupo)">
+            <i class="bi" [ngClass]="getIconoDeporteGrupo(grupo)"></i>
           </div>
-        } @else {
-          <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-            <h3>No tienes grupos asignados</h3>
-            <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
+
+          <div class="group-content">
+            <h3 class="group-name">{{ grupo.nombre }}</h3>
+
+            <div class="group-meta-row">
+              <span class="group-chip" [attr.data-sport]="getClaveDeporteGrupo(grupo)">
+                {{ obtenerNombreDeporte(grupo) }}
+              </span>
+              <span class="group-state">
+                <i class="bi bi-check-circle-fill"></i>
+                Activo
+              </span>
+            </div>
           </div>
+        </article>
         }
+      </div>
       } @else {
-        <div class="empty-state">
-          <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-          <h3>No tienes grupos asignados</h3>
-          <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
-        </div>
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+        <h3>No tienes grupos asignados</h3>
+        <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
+      </div>
+      }
+      } @else {
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+        <h3>No tienes grupos asignados</h3>
+        <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
+      </div>
       }
     </section>
 
     @if (selectedAlumno) {
-      <section class="dashboard-panel panel-sports">
-        <header class="panel-header">
-          <div>
-            <p class="panel-kicker">Progreso</p>
-            <h2>Mis Deportes</h2>
+    <section class="dashboard-panel panel-sports">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Progreso</p>
+          <h2>Mis Deportes</h2>
+        </div>
+      </header>
+
+      @if (cargandoDeportes) {
+      <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
+      } @else if (deportesDelAlumno.length > 0) {
+      <div class="sports-grid">
+        @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+        <article class="sport-card" [attr.data-sport]="deporteItem.deporte.toLowerCase()">
+          <div class="sport-head">
+            <div class="sport-icon">
+              <i class="bi" [ngClass]="getIconoDeporteTarjeta(deporteItem.deporte)"></i>
+            </div>
+            <div>
+              <h3 class="sport-title">{{ getDeporteLabel(deporteItem.deporte) }}</h3>
+              <p class="sport-subtitle">Informaci&oacute;n del alumno</p>
+            </div>
           </div>
-        </header>
 
-        @if (cargandoDeportes) {
-          <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
-        } @else if (deportesDelAlumno.length > 0) {
-          <div class="sports-grid">
-            @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
-              <article class="sport-card" [attr.data-sport]="deporteItem.deporte.toLowerCase()">
-                <div class="sport-head">
-                  <div class="sport-icon">
-                    <i class="bi" [ngClass]="getIconoDeporteTarjeta(deporteItem.deporte)"></i>
-                  </div>
-                  <div>
-                    <h3 class="sport-title">{{ getDeporteLabel(deporteItem.deporte) }}</h3>
-                    <p class="sport-subtitle">Informacion del alumno</p>
-                  </div>
+          <div class="sport-info-list">
+            @if (deporteItem.grado) {
+            <div class="sport-info-item">
+              <i class="bi bi-award-fill"></i>
+              <div>
+                @let beltVisual = getBeltVisual(deporteItem.grado, deporteItem.deporte);
+                <span class="label">Grado actual</span>
+                <div class="grade-display">
+                  <span class="grade-belt" [class.is-split]="beltVisual.isSplit"
+                    [style.--belt-top-color]="beltVisual.topColor" [style.--belt-bottom-color]="beltVisual.bottomColor"
+                    [attr.aria-label]="'Cinturon ' + beltVisual.label" role="img">
+                    @if (beltVisual.isSplit) {
+                    <span class="grade-belt-half top" aria-hidden="true"></span>
+                    }
+                    @for (stripeOffset of beltVisual.stripeOffsets; track stripeOffset) {
+                    <span class="grade-belt-stripe" [style.right.px]="stripeOffset" aria-hidden="true"></span>
+                    }
+                  </span>
+                  <span class="grade-name">{{ beltVisual.label }}</span>
                 </div>
+              </div>
+            </div>
+            }
 
-                <div class="sport-info-list">
-                  @if (deporteItem.grado) {
-                    <div class="sport-info-item">
-                      <i class="bi bi-award-fill"></i>
-                      <div>
-                        @let beltVisual = getBeltVisual(deporteItem.grado, deporteItem.deporte);
-                        <span class="label">Grado actual</span>
-                        <div class="grade-display">
-                          <span class="grade-belt"
-                            [class.is-split]="beltVisual.isSplit"
-                            [style.--belt-top-color]="beltVisual.topColor"
-                            [style.--belt-bottom-color]="beltVisual.bottomColor"
-                            [attr.aria-label]="'Cinturon ' + beltVisual.label"
-                            role="img">
-                            @if (beltVisual.isSplit) {
-                              <span class="grade-belt-half top" aria-hidden="true"></span>
-                            }
-                            @for (stripeOffset of beltVisual.stripeOffsets; track stripeOffset) {
-                              <span class="grade-belt-stripe" [style.right.px]="stripeOffset" aria-hidden="true"></span>
-                            }
-                          </span>
-                          <span class="grade-name">{{ beltVisual.label }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  }
+            @if (deporteItem.fechaGrado) {
+            <div class="sport-info-item">
+              <i class="bi bi-calendar-event"></i>
+              <div>
+                <span class="label">Fecha de grado</span>
+                <span class="value">{{ formatearFecha(deporteItem.fechaGrado) }}</span>
+              </div>
+            </div>
+            }
 
-                  @if (deporteItem.fechaGrado) {
-                    <div class="sport-info-item">
-                      <i class="bi bi-calendar-event"></i>
-                      <div>
-                        <span class="label">Fecha de grado</span>
-                        <span class="value">{{ formatearFecha(deporteItem.fechaGrado) }}</span>
-                      </div>
-                    </div>
-                  }
+            @if (deporteItem.fechaAlta) {
+            <div class="sport-info-item">
+              <i class="bi bi-calendar-plus"></i>
+              <div>
+                <span class="label">Fecha de alta</span>
+                <span class="value">{{ formatearFecha(deporteItem.fechaAlta) }}</span>
+              </div>
+            </div>
+            }
 
-                  @if (deporteItem.fechaAlta) {
-                    <div class="sport-info-item">
-                      <i class="bi bi-calendar-plus"></i>
-                      <div>
-                        <span class="label">Fecha de alta</span>
-                        <span class="value">{{ formatearFecha(deporteItem.fechaAlta) }}</span>
-                      </div>
-                    </div>
-                  }
+            @if (deporteItem.antiguedad) {
+            <div class="sport-info-item">
+              <i class="bi bi-clock-history"></i>
+              <div>
+                <span class="label">Antig&uuml;edad</span>
+                <span class="value">{{ deporteItem.antiguedad }}</span>
+              </div>
+            </div>
+            }
 
-                  @if (deporteItem.antiguedad) {
-                    <div class="sport-info-item">
-                      <i class="bi bi-clock-history"></i>
-                      <div>
-                        <span class="label">Antig&uuml;edad</span>
-                        <span class="value">{{ deporteItem.antiguedad }}</span>
-                      </div>
-                    </div>
-                  }
-
-                  @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA') {
-                    <div class="sport-info-item">
-                      <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen" [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
-                      <div>
-                        <span class="label">Estado de examen</span>
-                        <span class="value exam-status" [class.is-ready]="deporteItem.aptoParaExamen" [class.is-pending]="!deporteItem.aptoParaExamen">
-                          {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
-                        </span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </article>
+            @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA') {
+            <div class="sport-info-item">
+              <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen"
+                [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>
+              <div>
+                <span class="label">Estado de examen</span>
+                <span class="value exam-status" [class.is-ready]="deporteItem.aptoParaExamen"
+                  [class.is-pending]="!deporteItem.aptoParaExamen">
+                  {{ deporteItem.aptoParaExamen ? 'Apto para examen' : 'No apto' }}
+                </span>
+              </div>
+            </div>
             }
           </div>
-        } @else {
-          <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-trophy"></i></div>
-            <h3>No practicas ningun deporte</h3>
-            <p>Ponte en contacto con la escuela para inscribirte.</p>
-          </div>
+        </article>
         }
-      </section>
+      </div>
+      } @else {
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-trophy"></i></div>
+        <h3>No practicas ning&uacute;n deporte</h3>
+        <p>Ponte en contacto con la escuela para inscribirte.</p>
+      </div>
+      }
+    </section>
     }
 
     @if (selectedAlumno) {
-      <section class="dashboard-panel panel-documents" id="mis-documentos">
-        <header class="panel-header">
-          <div>
-            <p class="panel-kicker">Documentacion</p>
-            <h2>Mis Documentos</h2>
-          </div>
-        </header>
+    <section class="dashboard-panel panel-documents" id="mis-documentos">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Documentaci&oacute;n</p>
+          <h2>Mis Documentos</h2>
+        </div>
+      </header>
 
-        @if (cargandoDocumentos) {
-          <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
-        } @else if (documentosAlumno.length > 0) {
-          <div class="documents-grid">
-            @for (documento of documentosAlumno; track documento.id) {
-              <article class="document-card">
-                <div class="document-main">
-                  <span class="document-icon">
-                    <i class="bi bi-file-earmark-pdf-fill"></i>
-                  </span>
-                  <div class="document-copy">
-                    <h3 class="document-name" [title]="documento.nombre">{{ documento.nombre }}</h3>
-                    <p class="document-type">{{ documento.tipo || 'Documento' }}</p>
-                  </div>
-                </div>
+      @if (cargandoDocumentos) {
+      <app-skeleton-card [type]="'grid'" [count]="2" [columns]="2"></app-skeleton-card>
+      } @else if (documentosAlumno.length > 0) {
+      <div class="documents-grid">
+        @for (documento of documentosAlumno; track documento.id) {
+        <article class="document-card">
+          <div class="document-main">
+            <span class="document-icon">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+            </span>
+            <div class="document-copy">
+              <h3 class="document-name" [title]="documento.nombre">{{ documento.nombre }}</h3>
+              <p class="document-type">{{ documento.tipo || 'Documento' }}</p>
+            </div>
+          </div>
 
-                <div class="document-actions">
-                  <button type="button" class="document-btn" (click)="abrirDocumento(documento)">
-                    <i class="bi bi-eye-fill"></i>
-                    <span>Ver</span>
-                  </button>
-                  <button type="button" class="document-btn" (click)="descargarDocumento(documento)">
-                    <i class="bi bi-download"></i>
-                    <span>Descargar</span>
-                  </button>
-                </div>
-              </article>
-            }
+          <div class="document-actions">
+            <button type="button" class="document-btn" (click)="abrirDocumento(documento)">
+              <i class="bi bi-eye-fill"></i>
+              <span>Ver</span>
+            </button>
+            <button type="button" class="document-btn" (click)="descargarDocumento(documento)">
+              <i class="bi bi-download"></i>
+              <span>Descargar</span>
+            </button>
           </div>
-        } @else {
-          <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
-            <h3>No hay documentos disponibles</h3>
-            <p>Cuando haya documentos asociados al alumno, apareceran aqui.</p>
-          </div>
+        </article>
         }
-      </section>
+      </div>
+      } @else {
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
+        <h3>No hay documentos disponibles</h3>
+        <p>Cuando haya documentos asociados al alumno, aparecer&aacute;n aqu&iacute;.</p>
+      </div>
+      }
+    </section>
     }
   </div>
 </div>
