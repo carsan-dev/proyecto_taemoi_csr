@@ -133,20 +133,59 @@
       <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
-      <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
+      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
+        <i class="bi bi-house-door" aria-hidden="true"></i>
+        <span>Inicio</span>
+      </a>
       <div class="mobile-header-section-title">¿Qué hacemos?</div>
-      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
-      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
-      <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-lightning-fill" aria-hidden="true"></i>
+        <span>Taekwondo</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-gem" aria-hidden="true"></i>
+        <span>Kickboxing</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+        <span>Pilates</span>
+      </a>
       <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
-        (click)="closeMobileMenu()">Defensa Personal Femenina</a>
+        routerLinkActive="active" (click)="closeMobileMenu()">
+        <i class="bi bi-shield-fill-check" aria-hidden="true"></i>
+        <span>Defensa Personal Femenina</span>
+      </a>
       <div class="mobile-header-section-title">Información</div>
-      <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
-      <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
-      <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
-      <a class="mobile-header-link" [routerLink]="['/contacto']" (click)="closeMobileMenu()">Contacto</a>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+        <span>Eventos</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        <span>Horarios</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-tag" aria-hidden="true"></i>
+        <span>Tarifas</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-envelope" aria-hidden="true"></i>
+        <span>Contacto</span>
+      </a>
       <div class="mobile-header-section-title">Cuenta</div>
-      <a class="mobile-header-link" [routerLink]="['/login']" (click)="closeMobileMenu()">Iniciar Sesión</a>
+      <a class="mobile-header-link" [routerLink]="['/login']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+        <span>Iniciar Sesión</span>
+      </a>
     </nav>
   </div>
 </div>
@@ -647,27 +686,66 @@
       <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
-      <a class="mobile-header-link" [routerLink]="['/']" (click)="closeMobileMenu()">Inicio</a>
+      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
+        <i class="bi bi-house-door" aria-hidden="true"></i>
+        <span>Inicio</span>
+      </a>
       <div class="mobile-header-section-title">¿Qué hacemos?</div>
-      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" (click)="closeMobileMenu()">Taekwondo</a>
-      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" (click)="closeMobileMenu()">Kickboxing</a>
-      <a class="mobile-header-link sub" [routerLink]="['/pilates']" (click)="closeMobileMenu()">Pilates</a>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-lightning-fill" aria-hidden="true"></i>
+        <span>Taekwondo</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-gem" aria-hidden="true"></i>
+        <span>Kickboxing</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+        <span>Pilates</span>
+      </a>
       <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
-        (click)="closeMobileMenu()">Defensa Personal Femenina</a>
+        routerLinkActive="active" (click)="closeMobileMenu()">
+        <i class="bi bi-shield-fill-check" aria-hidden="true"></i>
+        <span>Defensa Personal Femenina</span>
+      </a>
       <div class="mobile-header-section-title">Información</div>
-      <a class="mobile-header-link" [routerLink]="['/eventos']" (click)="closeMobileMenu()">Eventos</a>
-      <a class="mobile-header-link" [routerLink]="['/horarios']" (click)="closeMobileMenu()">Horarios</a>
-      <a class="mobile-header-link" [routerLink]="['/tarifas']" (click)="closeMobileMenu()">Tarifas</a>
-      <a class="mobile-header-link" [routerLink]="['/contacto']" (click)="closeMobileMenu()">Contacto</a>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+        <span>Eventos</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        <span>Horarios</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-tag" aria-hidden="true"></i>
+        <span>Tarifas</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-envelope" aria-hidden="true"></i>
+        <span>Contacto</span>
+      </a>
       <div class="mobile-header-section-title">Cuenta</div>
-      <a class="mobile-header-link" [routerLink]="['/userpage']" (click)="closeMobileMenu()">Mis Clases</a>
+      <a class="mobile-header-link" [routerLink]="['/userpage']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }" (click)="closeMobileMenu()">
+        <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+        <span>Mis Clases</span>
+      </a>
       <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">
-        Cerrar Sesión
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+        <span>Cerrar Sesión</span>
       </button>
     </nav>
   </div>
 </div>
 }
 }
-
 
