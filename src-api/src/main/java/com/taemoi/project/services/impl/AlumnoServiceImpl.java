@@ -25,6 +25,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.AlumnoDeporte;
@@ -742,6 +743,67 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		logger.info("Document {} successfully retrieved for alumno {}", documentoId, alumnoId);
 		return documento;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public RetoDiarioEstadoDTO obtenerEstadoRetoDiario(Long alumnoId) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+		LocalDate hoy = LocalDate.now();
+		LocalDate fechaCompletado = toLocalDate(alumno.getFechaRetoDiarioCompletado());
+		int rachaPersistida = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
+		boolean completadoHoy = fechaCompletado != null && fechaCompletado.equals(hoy);
+		int rachaActual = calcularRachaActual(rachaPersistida, fechaCompletado, hoy);
+
+		return new RetoDiarioEstadoDTO(
+				rachaActual,
+				completadoHoy,
+				fechaCompletado != null ? fechaCompletado.toString() : null);
+	}
+
+	@Override
+	@Transactional
+	public RetoDiarioEstadoDTO completarRetoDiario(Long alumnoId) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+
+		LocalDate hoy = LocalDate.now();
+		LocalDate fechaAnterior = toLocalDate(alumno.getFechaRetoDiarioCompletado());
+		int rachaAnterior = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
+		int nuevaRacha;
+
+		if (fechaAnterior != null && fechaAnterior.equals(hoy)) {
+			nuevaRacha = calcularRachaActual(rachaAnterior, fechaAnterior, hoy);
+		} else if (fechaAnterior != null && fechaAnterior.equals(hoy.minusDays(1))) {
+			nuevaRacha = rachaAnterior + 1;
+		} else {
+			nuevaRacha = 1;
+		}
+
+		alumno.setFechaRetoDiarioCompletado(Date.from(hoy.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+		alumno.setRachaRetoDiario(nuevaRacha);
+		alumnoRepository.save(alumno);
+
+		return new RetoDiarioEstadoDTO(nuevaRacha, true, hoy.toString());
+	}
+
+	private int calcularRachaActual(int rachaPersistida, LocalDate fechaCompletado, LocalDate hoy) {
+		if (fechaCompletado == null) {
+			return 0;
+		}
+		if (fechaCompletado.equals(hoy) || fechaCompletado.equals(hoy.minusDays(1))) {
+			return Math.max(0, rachaPersistida);
+		}
+		return 0;
+	}
+
+	private LocalDate toLocalDate(Date fecha) {
+		if (fecha == null) {
+			return null;
+		}
+		return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 	}
 
 	/**
