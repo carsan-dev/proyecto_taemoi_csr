@@ -91,6 +91,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   // Convocatorias
   convocatoriasDisponibles: any[] = [];
   convocatoriasDelAlumno: any[] = [];
+  proximaConvocatoriaPorDeporte: Record<string, any | null> = {};
+  cantidadConvocatoriasProximasPorDeporte: Record<string, number> = {};
   convocatoriaActual: any | null = null;
   mostrarModalConvocatorias = false;
   mostrarModalEliminarConvocatorias = false;
@@ -653,11 +655,69 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
       next: (convocatorias) => {
         this.convocatoriasDelAlumno = convocatorias;
+        this.recalcularResumenConvocatoriasPorDeporte();
       },
       error: () => {
         this.convocatoriasDelAlumno = [];
+        this.recalcularResumenConvocatoriasPorDeporte();
       },
     });
+  }
+
+  getProximaConvocatoriaPorDeporte(deporte: string): any | null {
+    const key = this.normalizarClaveDeporte(deporte);
+    return this.proximaConvocatoriaPorDeporte[key] ?? null;
+  }
+
+  getCantidadConvocatoriasProximasPorDeporte(deporte: string): number {
+    const key = this.normalizarClaveDeporte(deporte);
+    return this.cantidadConvocatoriasProximasPorDeporte[key] ?? 0;
+  }
+
+  private recalcularResumenConvocatoriasPorDeporte(): void {
+    this.proximaConvocatoriaPorDeporte = {};
+    this.cantidadConvocatoriasProximasPorDeporte = {};
+
+    const inicioHoy = new Date();
+    inicioHoy.setHours(0, 0, 0, 0);
+    const inicioHoyTs = inicioHoy.getTime();
+
+    const agrupadas = new Map<string, any[]>();
+    for (const convocatoria of this.convocatoriasDelAlumno ?? []) {
+      const deporteKey = this.normalizarClaveDeporte(convocatoria?.deporte);
+      if (!deporteKey) {
+        continue;
+      }
+      if (!agrupadas.has(deporteKey)) {
+        agrupadas.set(deporteKey, []);
+      }
+      agrupadas.get(deporteKey)!.push(convocatoria);
+    }
+
+    agrupadas.forEach((convocatorias, deporteKey) => {
+      const proximas = convocatorias
+        .map((conv) => ({
+          convocatoria: conv,
+          timestamp: this.obtenerTimestampConvocatoria(conv),
+        }))
+        .filter((item) => item.timestamp !== null && item.timestamp >= inicioHoyTs)
+        .sort((a, b) => a.timestamp! - b.timestamp!);
+
+      this.cantidadConvocatoriasProximasPorDeporte[deporteKey] = proximas.length;
+      this.proximaConvocatoriaPorDeporte[deporteKey] = proximas[0]?.convocatoria ?? null;
+    });
+  }
+
+  private normalizarClaveDeporte(deporte: unknown): string {
+    return String(deporte ?? '').trim().toUpperCase();
+  }
+
+  private obtenerTimestampConvocatoria(convocatoria: any): number | null {
+    if (!convocatoria?.fechaConvocatoria) {
+      return null;
+    }
+    const timestamp = new Date(convocatoria.fechaConvocatoria).getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
   }
 
   // ========== GRUPOS Y TURNOS ==========
