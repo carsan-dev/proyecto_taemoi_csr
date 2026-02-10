@@ -803,7 +803,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (fecha == null) {
 			return null;
 		}
-		return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		if (fecha instanceof java.sql.Date sqlDate) {
+			return sqlDate.toLocalDate();
+		}
+		return java.time.Instant.ofEpochMilli(fecha.getTime())
+				.atZone(ZoneId.systemDefault())
+				.toLocalDate();
 	}
 
 	/**
@@ -1430,7 +1435,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		try {
-			LocalDate fechaGrado = alumno.getFechaGrado().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			LocalDate fechaGrado = toLocalDate(alumno.getFechaGrado());
+			if (fechaGrado == null) {
+				return false;
+			}
 
 			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 
