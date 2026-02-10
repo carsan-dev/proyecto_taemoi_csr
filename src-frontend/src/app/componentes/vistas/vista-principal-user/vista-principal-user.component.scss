@@ -603,6 +603,37 @@ $competicion: #7b1fa2;
   line-height: 1.3;
 }
 
+.challenge-timer {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.24rem 0.54rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(8, 17, 31, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+
+  i {
+    font-size: 0.78rem;
+    color: #9fd0ff;
+  }
+
+  &.is-urgent {
+    border-color: rgba($warning, 0.55);
+    background: rgba($warning, 0.18);
+    color: #ffefc2;
+
+    i {
+      color: #ffd166;
+    }
+  }
+}
+
 .challenge-action-btn {
   margin-top: auto;
   width: 100%;
