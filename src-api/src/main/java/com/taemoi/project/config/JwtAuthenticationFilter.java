@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.taemoi.project.entities.Roles;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.UsuarioService;
 import org.slf4j.Logger;
@@ -30,10 +32,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
 	private final UsuarioService usuarioService;
+	private final AlumnoRepository alumnoRepository;
 
-	public JwtAuthenticationFilter(JwtService jwtService, UsuarioService usuarioService) {
+	public JwtAuthenticationFilter(JwtService jwtService, UsuarioService usuarioService, AlumnoRepository alumnoRepository) {
 		this.jwtService = jwtService;
 		this.usuarioService = usuarioService;
+		this.alumnoRepository = alumnoRepository;
 	}
 
 	/**
@@ -87,10 +91,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				// Cargar los detalles del usuario
 				UserDetails userDetails = usuarioService.loadUserByUsername(userEmail);
 
-				if (jwtService.isTokenValid(jwt, userDetails)) {
+				boolean roleUser = userDetails.getAuthorities().stream()
+						.anyMatch(authority -> Roles.ROLE_USER.toString().equals(authority.getAuthority()));
+				boolean hasActiveAlumno = !roleUser || alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(userEmail);
+
+				if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && hasActiveAlumno) {
 					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
 							null, userDetails.getAuthorities());
 					SecurityContextHolder.getContext().setAuthentication(authToken);
+				} else if (!hasActiveAlumno) {
+					logger.info(">>> JWT rechazado para usuario sin alumnos activos: {}", userEmail);
+					SecurityContextHolder.clearContext();
 				}
 
 			}

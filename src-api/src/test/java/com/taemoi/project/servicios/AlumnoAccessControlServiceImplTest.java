@@ -53,7 +53,7 @@ class AlumnoAccessControlServiceImplTest {
 	@Test
 	void canAccessAlumno_userAllowedWhenAlumnoBelongsToEmail() {
 		Authentication authentication = buildAuthentication("familia@taemoi.com", "ROLE_USER");
-		when(alumnoRepository.existsByIdAndEmailIgnoreCase(7L, "familia@taemoi.com")).thenReturn(true);
+		when(alumnoRepository.existsByIdAndEmailIgnoreCaseAndActivoTrue(7L, "familia@taemoi.com")).thenReturn(true);
 
 		boolean allowed = alumnoAccessControlService.canAccessAlumno(7L, authentication);
 
@@ -63,7 +63,7 @@ class AlumnoAccessControlServiceImplTest {
 	@Test
 	void canAccessAlumno_userDeniedWhenAlumnoDoesNotBelongToEmail() {
 		Authentication authentication = buildAuthentication("familia@taemoi.com", "ROLE_USER");
-		when(alumnoRepository.existsByIdAndEmailIgnoreCase(7L, "familia@taemoi.com")).thenReturn(false);
+		when(alumnoRepository.existsByIdAndEmailIgnoreCaseAndActivoTrue(7L, "familia@taemoi.com")).thenReturn(false);
 
 		boolean allowed = alumnoAccessControlService.canAccessAlumno(7L, authentication);
 
