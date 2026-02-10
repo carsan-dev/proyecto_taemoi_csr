@@ -601,15 +601,18 @@ $competicion: #7b1fa2;
 }
 
 .quick-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   min-width: 22px;
   height: 22px;
   border-radius: 999px;
   background: #f97316;
   color: #fff;
   font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
   padding: 0 0.45rem;
 }
 
