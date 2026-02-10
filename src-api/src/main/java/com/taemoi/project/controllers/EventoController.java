@@ -15,6 +15,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.entities.Roles;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.DocumentoService;
@@ -234,6 +238,13 @@ public class EventoController {
 			@PathVariable @NonNull Long eventoId,
 			@PathVariable @NonNull Long documentoId) {
 		try {
+			if (!tieneAccesoPrivilegiadoEventos()) {
+				Evento evento = eventoService.obtenerEventoPorId(eventoId);
+				if (!Boolean.TRUE.equals(evento.getVisible())) {
+					return ResponseEntity.notFound().build();
+				}
+			}
+
 			Documento documento = eventoService.obtenerDocumentoDeEvento(eventoId, documentoId);
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
 
@@ -247,6 +258,19 @@ public class EventoController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
+	}
+
+	private boolean tieneAccesoPrivilegiadoEventos() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()
+				|| authentication instanceof AnonymousAuthenticationToken) {
+			return false;
+		}
+
+		return authentication.getAuthorities().stream()
+				.map(authority -> authority.getAuthority())
+				.anyMatch(authority -> Roles.ROLE_ADMIN.toString().equals(authority)
+						|| Roles.ROLE_MANAGER.toString().equals(authority));
 	}
 
 	@PostMapping("/{eventoId}/documentos")
