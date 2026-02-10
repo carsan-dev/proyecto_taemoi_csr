@@ -4,6 +4,12 @@
     <div class="hero-header">
       <div class="hero-overlay"></div>
       <div class="hero-content">
+        @if (showUserBackButton && !previewMode) {
+          <button class="hero-user-back-btn" type="button" (click)="onBackToUser()">
+            <i class="bi bi-arrow-left-circle-fill"></i>
+            <span>Volver a mi area</span>
+          </button>
+        }
         <div class="page-title-section">
           <i class="bi bi-calendar-event"></i>
           <h1>Eventos de Taekwondo, Kickboxing y m&aacute;s en Umbrete y Sevilla</h1>

@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { EventosVistaComponent } from './eventos-vista.component';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 
 @Component({
   selector: 'app-eventos',
@@ -15,14 +16,27 @@ import { EventosVistaComponent } from './eventos-vista.component';
 export class EventosComponent implements OnInit, OnDestroy {
   eventos: any[] = [];
   isLoading: boolean = true;
+  showUserBackButton: boolean = false;
   private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     public endpointsService: EndpointsService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
+    this.actualizarBotonVolverUsuario();
+
+    const authSubscription = this.authService.usuarioLogueadoCambio.subscribe(() => {
+      this.actualizarBotonVolverUsuario();
+    });
+    const rolesSubscription = this.authService.rolesCambio.subscribe(() => {
+      this.actualizarBotonVolverUsuario();
+    });
+    this.subscriptions.add(authSubscription);
+    this.subscriptions.add(rolesSubscription);
+
     // Suscribirse al observable de eventos
     const eventosSubscription = this.endpointsService.eventos$.subscribe({
       next: (eventos) => {
@@ -51,5 +65,15 @@ export class EventosComponent implements OnInit, OnDestroy {
 
   verDetalle(id: number) {
     this.router.navigate(['/eventos', id]);
+  }
+
+  volverAreaUsuario(): void {
+    this.router.navigate(['/userpage']);
+  }
+
+  private actualizarBotonVolverUsuario(): void {
+    this.showUserBackButton =
+      this.authService.comprobarLogueado() &&
+      this.authService.tieneRolUser();
   }
 }

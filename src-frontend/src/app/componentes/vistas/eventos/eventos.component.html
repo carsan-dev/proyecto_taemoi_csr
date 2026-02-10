@@ -1,5 +1,7 @@
 <app-eventos-vista
   [eventos]="eventos"
   [isLoading]="isLoading"
+  [showUserBackButton]="showUserBackButton"
   (eventoClick)="verDetalle($event)"
+  (backToUser)="volverAreaUsuario()"
 ></app-eventos-vista>
