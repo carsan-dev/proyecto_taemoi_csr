@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import Swal from 'sweetalert2';
@@ -70,16 +70,32 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   novedadesEventos: number = 0;
   novedadesEstadoDeportes: number = 0;
   detallesNovedadesEstado: string[] = [];
+  documentosVisiblesCount: number = 0;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
+  private readonly documentosPageSize = 8;
   private countdownIntervalId: number | null = null;
+  private primeraEmisionEventosRecibida: boolean = false;
+  private documentosSeccionVisible: boolean = false;
+  private documentosSectionObserver: IntersectionObserver | null = null;
+  private documentosSentinelObserver: IntersectionObserver | null = null;
 
   constructor(
     public endpointsService: EndpointsService,
     private readonly authService: AuthenticationService,
     private readonly alumnoService: AlumnoService
   ) {}
+
+  @ViewChild('misDocumentosSection')
+  set misDocumentosSectionRef(sectionRef: ElementRef<HTMLElement> | undefined) {
+    this.configurarObservadorSeccionDocumentos(sectionRef?.nativeElement ?? null);
+  }
+
+  @ViewChild('documentosSentinel')
+  set documentosSentinelRef(sentinelRef: ElementRef<HTMLElement> | undefined) {
+    this.configurarObservadorSentinelDocumentos(sentinelRef?.nativeElement ?? null);
+  }
 
   ngOnInit(): void {
     const nombreSubscription = this.authService.obtenerNombreUsuario().subscribe((nombre) => {
@@ -145,8 +161,14 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
   }
 
+  irADocumentos(): void {
+    this.scrollToSection('mis-documentos');
+    this.marcarDocumentosComoVistos();
+  }
+
   ngOnDestroy(): void {
     this.detenerActualizacionProximaClase();
+    this.desconectarObservadoresDocumentos();
     this.subscriptions.unsubscribe();
   }
 
@@ -194,6 +216,14 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const eventosSubscription = this.endpointsService.eventos$.subscribe({
       next: (eventos) => {
         const listaEventos = Array.isArray(eventos) ? eventos : [];
+        if (!this.primeraEmisionEventosRecibida) {
+          this.primeraEmisionEventosRecibida = true;
+          // Ignora la emision inicial vacia del BehaviorSubject para no
+          // pisar el snapshot de "vistos" al recargar o iniciar sesion.
+          if (listaEventos.length === 0) {
+            return;
+          }
+        }
         this.eventosRecientes = listaEventos.slice(0, 3);
         this.actualizarNovedadesEventos(listaEventos);
       },
@@ -211,6 +241,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const idsActuales = this.obtenerIdsNumericos(eventos.map((evento) => evento?.id));
     const storageKey = 'dashboard-user-vistos-eventos';
     const idsVistos = this.obtenerIdsVistos(storageKey);
+
+    if (this.esCargaVaciaTransitoria(idsActuales, idsVistos)) {
+      this.novedadesEventos = 0;
+      return;
+    }
 
     if (idsVistos === null) {
       this.novedadesEventos = 0;
@@ -308,11 +343,16 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       next: (documentos: Documento[]) => {
         this.documentosAlumno = documentos ?? [];
         this.actualizarNovedadesDocumentos(alumnoId, this.documentosAlumno);
+        this.reiniciarPaginacionDocumentos();
+        if (this.documentosSeccionVisible) {
+          this.marcarDocumentosComoVistos();
+        }
         this.cargandoDocumentos = false;
       },
       error: () => {
         this.documentosAlumno = [];
         this.novedadesDocumentos = 0;
+        this.reiniciarPaginacionDocumentos();
         this.cargandoDocumentos = false;
         Swal.fire({
           title: 'Error',
@@ -373,10 +413,33 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return this.novedadesDocumentos + this.novedadesEventos + this.novedadesEstadoDeportes;
   }
 
+  getDocumentosVisibles(): Documento[] {
+    return this.documentosAlumno.slice(0, this.documentosVisiblesCount);
+  }
+
+  hayMasDocumentosPorCargar(): boolean {
+    return this.documentosVisiblesCount < this.documentosAlumno.length;
+  }
+
+  cargarMasDocumentos(): void {
+    if (!this.hayMasDocumentosPorCargar()) {
+      return;
+    }
+    this.documentosVisiblesCount = Math.min(
+      this.documentosVisiblesCount + this.documentosPageSize,
+      this.documentosAlumno.length
+    );
+  }
+
   private actualizarNovedadesDocumentos(alumnoId: number, documentos: Documento[]): void {
-    const storageKey = `dashboard-user-vistos-documentos-${alumnoId}`;
+    const storageKey = this.getStorageKeyDocumentos(alumnoId);
     const idsActuales = this.obtenerIdsNumericos(documentos.map((documento) => documento?.id));
     const idsVistos = this.obtenerIdsVistos(storageKey);
+
+    if (this.esCargaVaciaTransitoria(idsActuales, idsVistos)) {
+      this.novedadesDocumentos = 0;
+      return;
+    }
 
     if (idsVistos === null) {
       this.novedadesDocumentos = 0;
@@ -392,6 +455,12 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const storageKey = `dashboard-user-estado-deportes-${alumnoId}`;
     const estadoActual = this.generarSnapshotEstadoDeportes(deportes);
     const estadoPrevio = this.obtenerEstadoDeportesVisto(storageKey);
+
+    if (estadoPrevio !== null && estadoPrevio.length > 0 && estadoActual.length === 0) {
+      this.novedadesEstadoDeportes = 0;
+      this.detallesNovedadesEstado = [];
+      return;
+    }
 
     if (estadoPrevio === null) {
       this.novedadesEstadoDeportes = 0;
@@ -561,10 +630,96 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     storage.setItem(storageKey, JSON.stringify(ids));
   }
 
+  private getStorageKeyDocumentos(alumnoId: number): string {
+    return `dashboard-user-vistos-documentos-${alumnoId}`;
+  }
+
+  private marcarDocumentosComoVistos(): void {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+
+    const idsActuales = this.obtenerIdsNumericos(this.documentosAlumno.map((documento) => documento?.id));
+    this.guardarIdsVistos(this.getStorageKeyDocumentos(alumnoId), idsActuales);
+    this.novedadesDocumentos = 0;
+  }
+
+  private reiniciarPaginacionDocumentos(): void {
+    this.documentosVisiblesCount = Math.min(this.documentosPageSize, this.documentosAlumno.length);
+  }
+
+  private configurarObservadorSeccionDocumentos(element: HTMLElement | null): void {
+    if (this.documentosSectionObserver) {
+      this.documentosSectionObserver.disconnect();
+      this.documentosSectionObserver = null;
+    }
+
+    if (!element || !globalThis.window?.IntersectionObserver) {
+      this.documentosSeccionVisible = false;
+      return;
+    }
+
+    this.documentosSectionObserver = new globalThis.window.IntersectionObserver(
+      (entradas) => {
+        const entradaActiva = entradas[0];
+        this.documentosSeccionVisible = !!entradaActiva?.isIntersecting;
+        if (this.documentosSeccionVisible) {
+          this.marcarDocumentosComoVistos();
+        }
+      },
+      {
+        threshold: 0.35,
+      }
+    );
+
+    this.documentosSectionObserver.observe(element);
+  }
+
+  private configurarObservadorSentinelDocumentos(element: HTMLElement | null): void {
+    if (this.documentosSentinelObserver) {
+      this.documentosSentinelObserver.disconnect();
+      this.documentosSentinelObserver = null;
+    }
+
+    if (!element || !globalThis.window?.IntersectionObserver) {
+      return;
+    }
+
+    this.documentosSentinelObserver = new globalThis.window.IntersectionObserver(
+      (entradas) => {
+        if (entradas.some((entrada) => entrada.isIntersecting)) {
+          this.cargarMasDocumentos();
+        }
+      },
+      {
+        rootMargin: '0px 0px 280px 0px',
+        threshold: 0.01,
+      }
+    );
+
+    this.documentosSentinelObserver.observe(element);
+  }
+
+  private desconectarObservadoresDocumentos(): void {
+    if (this.documentosSectionObserver) {
+      this.documentosSectionObserver.disconnect();
+      this.documentosSectionObserver = null;
+    }
+    if (this.documentosSentinelObserver) {
+      this.documentosSentinelObserver.disconnect();
+      this.documentosSentinelObserver = null;
+    }
+  }
+
   private obtenerIdsNumericos(values: any[]): number[] {
     return values
       .map((value) => Number(value))
       .filter((value) => Number.isInteger(value) && value > 0);
+  }
+
+  private esCargaVaciaTransitoria(idsActuales: number[], idsVistos: Set<number> | null): boolean {
+    return idsActuales.length === 0 && idsVistos !== null && idsVistos.size > 0;
   }
 
   private iniciarActualizacionProximaClase(): void {
