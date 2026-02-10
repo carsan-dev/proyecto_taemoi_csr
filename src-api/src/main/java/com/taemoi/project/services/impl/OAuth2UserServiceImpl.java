@@ -66,6 +66,11 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
 			Usuario usuario = existingUser.get();
+			if (usuario.getRoles().contains(Roles.ROLE_USER)
+					&& !alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(email)) {
+				throw new IllegalArgumentException(
+						"No hay alumnos activos asociados a este email. Contacte con el administrador.");
+			}
 			if (usuario.getAuthProvider() != AuthProvider.GOOGLE) {
 				usuario.setAuthProvider(AuthProvider.GOOGLE);
 				usuarioRepository.save(usuario);
@@ -74,11 +79,11 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		}
 
 		// Buscar TODOS los alumnos con este email (puede haber múltiples)
-		List<Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCase(email);
+		List<Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email);
 		if (alumnos.isEmpty()) {
 			// No hay ningún alumno con este email, no se puede crear usuario
 			throw new IllegalArgumentException(
-				"No se encontró ningún alumno registrado con el email: " + email +
+				"No se encontró ningun alumno activo registrado con el email: " + email +
 				". Por favor, contacte con el administrador para registrarse."
 			);
 		}
@@ -119,3 +124,4 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		return savedUser;
 	}
 }
+

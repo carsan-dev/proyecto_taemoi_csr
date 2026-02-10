@@ -44,6 +44,6 @@ public class AlumnoAccessControlServiceImpl implements AlumnoAccessControlServic
 			return false;
 		}
 
-		return alumnoRepository.existsByIdAndEmailIgnoreCase(alumnoId, email);
+		return alumnoRepository.existsByIdAndEmailIgnoreCaseAndActivoTrue(alumnoId, email);
 	}
 }
