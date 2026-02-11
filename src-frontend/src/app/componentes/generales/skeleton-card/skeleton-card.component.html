@@ -62,6 +62,45 @@
   </div>
 }
 
+<!-- Tesoreria Skeleton (filters + summary + table) -->
+@if (type === 'tesoreria') {
+  <div class="skeleton-tesoreria">
+    <div class="skeleton-tesoreria-filters">
+      @for (item of [1, 2, 3, 4, 5]; track $index) {
+        <div class="skeleton-filter-item">
+          <div class="skeleton-filter-label"></div>
+          <div class="skeleton-filter-input"></div>
+        </div>
+      }
+    </div>
+
+    <div class="skeleton-tesoreria-summary">
+      @for (item of [1, 2, 3, 4]; track $index) {
+        <div class="skeleton-summary-card">
+          <div class="skeleton-summary-title"></div>
+          <div class="skeleton-summary-value"></div>
+          <div class="skeleton-summary-detail"></div>
+        </div>
+      }
+    </div>
+
+    <div class="skeleton-table skeleton-table-tesoreria">
+      <div class="skeleton-table-header">
+        @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+          <div class="skeleton-line"></div>
+        }
+      </div>
+      @for (item of items; track $index) {
+        <div class="skeleton-table-row">
+          @for (col of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+            <div class="skeleton-line"></div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
 <!-- Distribution Chart Skeleton (for sport distribution bars) -->
 @if (type === 'distribution') {
   <div class="skeleton-distribution">
