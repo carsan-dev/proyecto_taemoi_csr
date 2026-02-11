@@ -420,6 +420,14 @@
       </ul>
     </li>
 
+    <!-- Tesorería -->
+    <li>
+      <a class="menu-link" [routerLink]="['/tesoreriaCobros']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-cash-stack"></i>
+        <span>Tesorería y Cobros</span>
+      </a>
+    </li>
+
     <!-- Convocatorias Section -->
     <li class="menu-item-expandable">
       <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()"
