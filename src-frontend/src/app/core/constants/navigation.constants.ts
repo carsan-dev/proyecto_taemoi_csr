@@ -155,6 +155,16 @@ export const ADMIN_SIDEBAR_SECTIONS = [
     ],
   },
   {
+    title: 'TESORERÍA',
+    items: [
+      {
+        label: 'Cobros y deudas',
+        route: '/tesoreriaCobros',
+        icon: 'bi-cash-stack',
+      },
+    ],
+  },
+  {
     title: 'CONVOCATORIAS',
     items: [
       {

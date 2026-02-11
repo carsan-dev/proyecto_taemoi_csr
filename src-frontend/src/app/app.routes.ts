@@ -244,6 +244,12 @@ export const routes: Routes = [
     canActivate: [roleGuard],
   },
   {
+    path: 'tesoreriaCobros',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
+    canActivate: [roleGuard],
+  },
+  {
     path: 'convocatoriasListar',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
@@ -265,4 +271,3 @@ export const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
-
