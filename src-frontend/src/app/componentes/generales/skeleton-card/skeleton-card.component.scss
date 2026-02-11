@@ -179,6 +179,89 @@
   }
 }
 
+// Tesoreria layout skeleton
+.skeleton-tesoreria {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-tesoreria-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 8px 20px rgba(31, 77, 134, 0.08);
+}
+
+.skeleton-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skeleton-filter-label {
+  @include skeleton-shimmer;
+  height: 12px;
+  width: 55%;
+}
+
+.skeleton-filter-input {
+  @include skeleton-shimmer;
+  height: 38px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.skeleton-tesoreria-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.skeleton-summary-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 8px 18px rgba(44, 82, 130, 0.07);
+  padding: 0.9rem 1rem;
+}
+
+.skeleton-summary-title {
+  @include skeleton-shimmer;
+  height: 12px;
+  width: 45%;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-summary-value {
+  @include skeleton-shimmer;
+  height: 28px;
+  width: 62%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-summary-detail {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 70%;
+}
+
+.skeleton-table.skeleton-table-tesoreria {
+  margin: 0;
+  border-radius: 14px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 10px 22px rgba(45, 55, 72, 0.08);
+
+  .skeleton-table-header,
+  .skeleton-table-row {
+    grid-template-columns: repeat(8, minmax(80px, 1fr));
+  }
+}
+
 // Distribution Chart Skeleton
 .skeleton-distribution {
   display: flex;
@@ -482,6 +565,25 @@
 
   .skeleton-alerts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .skeleton-tesoreria-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-tesoreria-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-table.skeleton-table-tesoreria {
+    .skeleton-table-header,
+    .skeleton-table-row {
+      grid-template-columns: repeat(3, 1fr);
+
+      .skeleton-line:nth-child(n+4) {
+        display: none;
+      }
+    }
   }
 }
 

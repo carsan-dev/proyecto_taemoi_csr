@@ -13,6 +13,9 @@ import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 import { Documento } from '../../interfaces/documento';
 import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
+import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
+import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
+import { PaginatedResponse } from '../../interfaces/paginated-response';
 
 @Injectable({
   providedIn: 'root',
@@ -529,6 +532,21 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  actualizarEstadoCobro(
+    productoAlumnoId: number,
+    pagado: boolean
+  ): Observable<ProductoAlumnoDTO> {
+    return this.http
+      .put<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${productoAlumnoId}`,
+        { pagado },
+        {
+          withCredentials: true,
+        }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarProductoAlumno(id: number): Observable<any> {
     return this.http
       .delete<void>(`${this.urlBase}/productos-alumno/${id}`, {
@@ -659,6 +677,120 @@ export class EndpointsService {
         { withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTesoreriaResumen(
+    mes: number | null,
+    ano: number | null,
+    deporte: string = 'TODOS'
+  ): Observable<TesoreriaResumen> {
+    const params = this.construirParamsTesoreria(mes, ano, deporte);
+
+    return this.http
+      .get<TesoreriaResumen>(`${this.urlBase}/tesoreria/resumen`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTesoreriaMovimientos(
+    mes: number | null,
+    ano: number | null,
+    deporte: string = 'TODOS',
+    pagado?: boolean,
+    texto?: string,
+    page: number = 1,
+    size: number = 25
+  ): Observable<PaginatedResponse<TesoreriaMovimiento>> {
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+    const paramsConPaginacion = params
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http
+      .get<PaginatedResponse<TesoreriaMovimiento>>(`${this.urlBase}/tesoreria/movimientos`, {
+        params: paramsConPaginacion,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTesoreriaAniosDisponibles(): Observable<number[]> {
+    return this.http
+      .get<number[]>(`${this.urlBase}/tesoreria/anios-disponibles`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  exportarTesoreriaPDF(
+    mes: number | null,
+    ano: number | null,
+    deporte: string = 'TODOS',
+    pagado?: boolean,
+    texto?: string
+  ): Observable<Blob> {
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+
+    return this.http
+      .get(`${this.urlBase}/tesoreria/export/pdf`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  exportarTesoreriaCSV(
+    mes: number | null,
+    ano: number | null,
+    deporte: string = 'TODOS',
+    pagado?: boolean,
+    texto?: string
+  ): Observable<Blob> {
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+
+    return this.http
+      .get(`${this.urlBase}/tesoreria/export/csv`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  private construirParamsTesoreria(
+    mes: number | null,
+    ano: number | null,
+    deporte: string,
+    pagado?: boolean,
+    texto?: string
+  ): HttpParams {
+    let params = new HttpParams();
+
+    if (ano !== null && ano !== undefined) {
+      params = params.set('ano', ano.toString());
+    }
+
+    if (mes !== null && mes !== undefined) {
+      params = params.set('mes', mes.toString());
+    }
+
+    if (deporte && deporte !== 'TODOS') {
+      params = params.set('deporte', deporte);
+    }
+
+    if (pagado !== undefined && pagado !== null) {
+      params = params.set('pagado', pagado.toString());
+    }
+
+    const textoNormalizado = texto?.trim();
+    if (textoNormalizado) {
+      params = params.set('texto', textoNormalizado);
+    }
+
+    return params;
   }
 
   obtenerGrados(): Observable<any> {
