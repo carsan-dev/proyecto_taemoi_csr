@@ -25,7 +25,7 @@ $transition-speed: 0.3s;
 .contact-page {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 6rem 1rem 3rem;
+  padding: 5.2rem 0.9rem 1.25rem;
   background: $bg-light;
   display: flex;
   align-items: center;
@@ -34,7 +34,7 @@ $transition-speed: 0.3s;
 
   .contact-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 980px;
     margin: 0 auto;
   }
 
@@ -43,6 +43,7 @@ $transition-speed: 0.3s;
     grid-template-columns: 1fr 1.5fr;
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-radius: 20px;
+    margin-top: 0.35rem;
     overflow: hidden;
     box-shadow: $shadow-lg;
     animation: fadeInUp 0.6s ease;
@@ -71,7 +72,7 @@ $transition-speed: 0.3s;
   // ========================================
   .contact-left {
     background: linear-gradient(135deg, $dark-bg, $dark-accent);
-    padding: 3rem 2rem;
+    padding: 2.3rem 1.65rem;
     color: $text-light;
     display: flex;
     flex-direction: column;
@@ -98,9 +99,9 @@ $transition-speed: 0.3s;
     }
 
     .brand-icon {
-      width: 90px;
-      height: 90px;
-      margin: 0 auto 1.5rem;
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 1rem;
       background: linear-gradient(135deg, $primary-color, $primary-dark);
       border-radius: 50%;
       display: flex;
@@ -110,31 +111,31 @@ $transition-speed: 0.3s;
       animation: float 3s ease-in-out infinite;
 
       i {
-        font-size: 3rem;
+        font-size: 2.35rem;
         color: $text-light;
       }
     }
 
     .brand-title {
-      font-size: 2rem;
+      font-size: 1.72rem;
       font-weight: 700;
-      margin-bottom: 0.45rem;
+      margin-bottom: 0.3rem;
       letter-spacing: 0.02em;
       line-height: 1.2;
       text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.28);
     }
 
     .brand-subtitle {
-      font-size: 1.05rem;
-      margin-bottom: 2rem;
+      font-size: 0.96rem;
+      margin-bottom: 1.2rem;
       opacity: 0.9;
       font-weight: 300;
     }
 
     .brand-logo {
-      max-width: 200px;
+      max-width: 148px;
       height: auto;
-      margin: 2rem 0;
+      margin: 1.2rem 0;
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
       transition: transform $transition-speed ease;
 
@@ -144,7 +145,7 @@ $transition-speed: 0.3s;
     }
 
     .brand-features {
-      margin-top: 2rem;
+      margin-top: 1.2rem;
       width: 100%;
 
       .feature-item {
@@ -152,8 +153,8 @@ $transition-speed: 0.3s;
         align-items: center;
         justify-content: flex-start;
         gap: 1rem;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.75rem;
+        padding: 0.56rem 0.82rem;
+        margin-bottom: 0.56rem;
         background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(10px);
         border-radius: 12px;
@@ -161,13 +162,13 @@ $transition-speed: 0.3s;
         transition: all $transition-speed ease;
 
         i {
-          font-size: 1.2rem;
+          font-size: 1.05rem;
           color: $primary-color;
           min-width: 24px;
         }
 
         span {
-          font-size: 0.95rem;
+          font-size: 0.88rem;
           text-align: left;
         }
 
@@ -183,41 +184,41 @@ $transition-speed: 0.3s;
   // RIGHT SECTION - FORM
   // ========================================
   .contact-right {
-    padding: 3rem 2.5rem;
+    padding: 2.1rem 1.9rem;
     background: transparent;
     display: flex;
     flex-direction: column;
     justify-content: center;
 
     .form-header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.25rem;
       text-align: center;
 
       .form-title {
-        font-size: 2.1rem;
+        font-size: 1.82rem;
         font-weight: 700;
         color: $text-dark;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
       }
 
       .form-description {
         color: $text-muted-strong;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        font-size: 0.88rem;
+        line-height: 1.35;
       }
     }
 
     .contact-form {
       .form-group {
-        margin-bottom: 1.75rem;
+        margin-bottom: 1rem;
  
         .form-label {
           display: block;
-          margin: 0 0 0.45rem 0.15rem;
+          margin: 0 0 0.32rem 0.1rem;
           color: $text-muted-strong;
-          font-size: 0.8rem;
+          font-size: 0.76rem;
           font-weight: 700;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           line-height: 1.2;
         }
@@ -227,17 +228,17 @@ $transition-speed: 0.3s;
 
           .input-icon {
             position: absolute;
-            left: 1.2rem;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             color: $text-muted;
             transition: color $transition-speed ease;
             z-index: 2;
           }
 
           &.textarea-wrapper .input-icon {
-            top: 1.4rem;
+            top: 1.1rem;
             transform: none;
           }
 
@@ -245,10 +246,10 @@ $transition-speed: 0.3s;
           .form-select,
           .form-textarea {
             width: 100%;
-            padding: 1.2rem 1.2rem 1.2rem 3.5rem;
+            padding: 0.95rem 1rem 0.95rem 3rem;
             border: 2px solid $border-color;
-            border-radius: 12px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
             color: $text-dark;
             background: #ffffff;
             transition:
@@ -283,8 +284,8 @@ $transition-speed: 0.3s;
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 1.2rem center;
-            padding-right: 3.2rem;
+            background-position: right 1rem center;
+            padding-right: 2.75rem;
 
             option {
               color: $text-dark;
@@ -306,15 +307,15 @@ $transition-speed: 0.3s;
 
           .form-textarea {
             resize: vertical;
-            min-height: 140px;
-            padding-top: 1rem;
+            min-height: 112px;
+            padding-top: 0.9rem;
           }
         }
 
         .help-text {
           color: $text-muted;
-          font-size: 0.8rem;
-          margin-top: 0.35rem;
+          font-size: 0.76rem;
+          margin-top: 0.2rem;
           padding-left: 0.5rem;
         }
 
@@ -323,8 +324,8 @@ $transition-speed: 0.3s;
           align-items: center;
           gap: 0.5rem;
           color: $danger-color;
-          font-size: 0.85rem;
-          margin-top: 0.5rem;
+          font-size: 0.8rem;
+          margin-top: 0.34rem;
           padding-left: 0.5rem;
           animation: shake 0.3s ease;
 
@@ -335,19 +336,19 @@ $transition-speed: 0.3s;
       }
 
       .consent-group {
-        margin-top: -0.5rem;
+        margin-top: -0.15rem;
 
         .consent-checkbox {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          font-size: 0.9rem;
+          gap: 0.6rem;
+          font-size: 0.84rem;
           color: $text-muted-strong;
-          line-height: 1.4;
+          line-height: 1.3;
 
           input[type='checkbox'] {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             accent-color: $primary-color;
           }
 
@@ -366,21 +367,21 @@ $transition-speed: 0.3s;
       .form-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-top: 2rem;
+        gap: 0.75rem;
+        margin-top: 1.1rem;
 
         .btn {
-          padding: 1rem 1.6rem;
+          padding: 0.82rem 1rem;
           border: none;
           border-radius: 50px;
-          font-size: 1.05rem;
+          font-size: 0.93rem;
           font-weight: 600;
           cursor: pointer;
           transition: all $transition-speed ease;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           box-shadow: $shadow-md;
           position: relative;
           overflow: hidden;
@@ -404,7 +405,7 @@ $transition-speed: 0.3s;
           }
 
           i {
-            font-size: 1.3rem;
+            font-size: 1.08rem;
             position: relative;
             z-index: 1;
           }
@@ -452,18 +453,18 @@ $transition-speed: 0.3s;
 
   .badge-field {
     width: 100%;
-    padding: 1.9rem 1.5rem 1.4rem 3.5rem;
+    padding: 1.2rem 1rem 1rem 3rem;
     border: 2px solid $border-color;
-    border-radius: 16px;
+    border-radius: 12px;
     background: #ffffff;
     transition: all $transition-speed ease;
     display: grid;
-    gap: 1rem;
+    gap: 0.65rem;
 
     .badge-label {
-      font-size: 0.75rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: $primary-dark;
     }
@@ -471,7 +472,7 @@ $transition-speed: 0.3s;
     .badge-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem;
+      gap: 0.55rem;
     }
   }
 
@@ -484,18 +485,19 @@ $transition-speed: 0.3s;
     border: 2px solid rgba($primary-color, 0.25);
     background: #ffffff;
     color: $text-dark;
-    padding: 0.55rem 1.1rem;
+    padding: 0.42rem 0.86rem;
     border-radius: 50px;
     font-weight: 600;
+    font-size: 0.93rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.42rem;
     cursor: pointer;
     transition: all $transition-speed ease;
     box-shadow: $shadow-sm;
 
     i {
-      font-size: 1.05rem;
+      font-size: 0.92rem;
       color: $primary-color;
     }
 
@@ -564,15 +566,46 @@ $transition-speed: 0.3s;
   // ========================================
   // RESPONSIVE DESIGN
   // ========================================
+  @media (max-height: 880px) and (min-width: 769px) {
+    padding: 4.6rem 0.75rem 0.75rem;
+
+    .contact-card {
+      grid-template-columns: 1fr;
+      max-width: 720px;
+    }
+
+    .contact-left {
+      display: none;
+    }
+
+    .contact-right {
+      padding: 1.25rem 1.15rem 1rem;
+
+      .form-header {
+        margin-bottom: 0.9rem;
+      }
+
+      .contact-form {
+        .form-group {
+          margin-bottom: 0.78rem;
+        }
+
+        .form-actions {
+          margin-top: 0.75rem;
+        }
+      }
+    }
+  }
+
   @media (max-width: 992px) {
-    padding: 5rem 1rem 2rem;
+    padding: 4.8rem 0.85rem 1rem;
 
     .contact-card {
       grid-template-columns: 1fr;
     }
 
     .contact-left {
-      padding: 2.5rem 1.5rem;
+      padding: 2rem 1.3rem;
 
       .brand-title {
         font-size: 2rem;
@@ -583,8 +616,8 @@ $transition-speed: 0.3s;
       }
 
       .brand-logo {
-        max-width: 160px;
-        margin: 1.5rem 0;
+        max-width: 140px;
+        margin: 1rem 0;
       }
 
       .brand-features {
@@ -595,15 +628,15 @@ $transition-speed: 0.3s;
     }
 
     .contact-right {
-      padding: 2.5rem 1.5rem;
+      padding: 1.8rem 1.3rem;
 
       .form-header {
         .form-title {
-          font-size: 1.9rem;
+          font-size: 1.72rem;
         }
 
         .form-description {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
         }
       }
 
@@ -618,7 +651,7 @@ $transition-speed: 0.3s;
   @media (max-width: 768px) {
     min-height: 100dvh;
     align-items: flex-start;
-    padding: 4.5rem 0.75rem 1rem;
+    padding: 4.15rem 0.65rem 0.7rem;
 
     .contact-container {
       max-width: 560px;
@@ -633,7 +666,7 @@ $transition-speed: 0.3s;
     }
 
     .contact-right {
-      padding: 1.4rem 1rem 1.1rem;
+      padding: 1rem 0.85rem 0.8rem;
       justify-content: flex-start;
 
       .form-header {
@@ -641,12 +674,12 @@ $transition-speed: 0.3s;
         text-align: left;
 
         .form-title {
-          font-size: 1.55rem;
+          font-size: 1.42rem;
         }
 
         .form-description {
-          font-size: 0.87rem;
-          line-height: 1.35;
+          font-size: 0.8rem;
+          line-height: 1.3;
         }
       }
 
@@ -658,19 +691,19 @@ $transition-speed: 0.3s;
             .form-input,
             .form-select,
             .form-textarea {
-              padding: 1.05rem 1rem 1.05rem 3.1rem;
-              font-size: 0.94rem;
+              padding: 0.9rem 0.9rem 0.9rem 2.9rem;
+              font-size: 0.9rem;
             }
 
             .input-icon {
-              left: 0.95rem;
-              font-size: 1.15rem;
+              left: 0.86rem;
+              font-size: 1.02rem;
             }
           }
 
           .form-label {
-            font-size: 0.74rem;
-            margin-bottom: 0.35rem;
+            font-size: 0.7rem;
+            margin-bottom: 0.3rem;
             letter-spacing: 0.05em;
           }
 
@@ -689,20 +722,20 @@ $transition-speed: 0.3s;
 
         .form-actions {
           grid-template-columns: 1fr;
-          gap: 0.75rem;
-          margin-top: 1rem;
+          gap: 0.6rem;
+          margin-top: 0.75rem;
 
           .btn {
-            padding: 0.95rem 1.2rem;
-            font-size: 0.95rem;
+            padding: 0.82rem 1rem;
+            font-size: 0.88rem;
           }
         }
       }
     }
 
     .badge-field {
-      padding: 1.5rem 1rem 1rem 3.1rem;
-      gap: 0.75rem;
+      padding: 1rem 0.9rem 0.8rem 2.9rem;
+      gap: 0.55rem;
     }
 
     .sport-badge {
@@ -712,7 +745,7 @@ $transition-speed: 0.3s;
   }
 
   @media (max-width: 576px) {
-    padding: 4.25rem 0.5rem 0.9rem;
+    padding: 4rem 0.45rem 0.6rem;
 
     .contact-card {
       border-radius: 12px;
@@ -744,23 +777,23 @@ $transition-speed: 0.3s;
     }
 
     .contact-right {
-      padding: 1.2rem 0.9rem 1rem;
+      padding: 0.9rem 0.75rem 0.7rem;
 
       .form-header {
         .form-title {
-          font-size: 1.4rem;
+          font-size: 1.28rem;
         }
 
         .form-description {
-          font-size: 0.85rem;
+          font-size: 0.78rem;
         }
       }
 
       .contact-form {
         .form-group {
           .form-label {
-            font-size: 0.72rem;
-            margin-bottom: 0.32rem;
+            font-size: 0.68rem;
+            margin-bottom: 0.26rem;
             letter-spacing: 0.045em;
           }
 
@@ -768,8 +801,8 @@ $transition-speed: 0.3s;
             .form-input,
             .form-select,
             .form-textarea {
-              padding: 0.98rem 0.95rem 0.98rem 2.95rem;
-              font-size: 0.92rem;
+              padding: 0.84rem 0.82rem 0.84rem 2.65rem;
+              font-size: 0.86rem;
             }
 
             &.badge-wrapper {
@@ -779,19 +812,19 @@ $transition-speed: 0.3s;
             }
 
             .input-icon {
-              left: 0.9rem;
-              font-size: 1.08rem;
+              left: 0.8rem;
+              font-size: 0.96rem;
             }
           }
         }
 
         .form-actions {
           .btn {
-            padding: 0.88rem 1rem;
-            font-size: 0.9rem;
+            padding: 0.76rem 0.92rem;
+            font-size: 0.84rem;
 
             i {
-              font-size: 1.1rem;
+              font-size: 0.98rem;
             }
           }
         }

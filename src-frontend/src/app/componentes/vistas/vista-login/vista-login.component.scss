@@ -24,7 +24,7 @@ $transition-speed: 0.3s;
 .login-page {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 6rem 1rem 2rem;
+  padding: 5.2rem 0.9rem 1.25rem;
   background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%); // Subtle gradient matching site palette
   display: flex;
   align-items: center;
@@ -33,7 +33,7 @@ $transition-speed: 0.3s;
 
   .login-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 980px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
@@ -44,6 +44,7 @@ $transition-speed: 0.3s;
     grid-template-columns: 1fr 1fr;
     background: $text-light;
     border-radius: 20px;
+    margin-top: 0.35rem;
     overflow: hidden;
     box-shadow: $shadow-lg;
     animation: fadeInUp 0.6s ease;
@@ -54,7 +55,7 @@ $transition-speed: 0.3s;
   // ========================================
   .login-left {
     background: linear-gradient(135deg, $dark-bg, $dark-accent);
-    padding: 3rem 2rem;
+    padding: 2.3rem 1.65rem;
     color: $text-light;
     display: flex;
     flex-direction: column;
@@ -81,9 +82,9 @@ $transition-speed: 0.3s;
     }
 
     .brand-icon {
-      width: 90px;
-      height: 90px;
-      margin: 0 auto 1.5rem;
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 1rem;
       background: linear-gradient(135deg, $primary-color, $primary-hover);
       border-radius: 50%;
       display: flex;
@@ -93,30 +94,30 @@ $transition-speed: 0.3s;
       animation: float 3s ease-in-out infinite;
 
       i {
-        font-size: 3rem;
+        font-size: 2.35rem;
         color: $text-light;
       }
     }
 
     .brand-title {
-      font-size: 2.5rem;
+      font-size: 2rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
-      letter-spacing: 2px;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.04em;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .brand-subtitle {
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
+      font-size: 0.96rem;
+      margin-bottom: 1.2rem;
       opacity: 0.9;
       font-weight: 300;
     }
 
     .brand-logo {
-      max-width: 200px;
+      max-width: 148px;
       height: auto;
-      margin: 2rem 0;
+      margin: 1.2rem 0;
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
       transition: transform $transition-speed ease;
 
@@ -126,7 +127,7 @@ $transition-speed: 0.3s;
     }
 
     .brand-features {
-      margin-top: 2rem;
+      margin-top: 1.2rem;
       width: 100%;
 
       .feature-item {
@@ -134,8 +135,8 @@ $transition-speed: 0.3s;
         align-items: center;
         justify-content: flex-start;
         gap: 1rem;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.75rem;
+        padding: 0.56rem 0.82rem;
+        margin-bottom: 0.56rem;
         background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(10px);
         border-radius: 12px;
@@ -143,13 +144,13 @@ $transition-speed: 0.3s;
         transition: all $transition-speed ease;
 
         i {
-          font-size: 1.2rem;
+          font-size: 1.05rem;
           color: #4caf50;
           min-width: 24px;
         }
 
         span {
-          font-size: 0.95rem;
+          font-size: 0.88rem;
           text-align: left;
         }
 
@@ -165,27 +166,61 @@ $transition-speed: 0.3s;
   // RIGHT SECTION - LOGIN FORM
   // ========================================
   .login-right {
-    padding: 3rem 2.5rem;
+    padding: 2.1rem 1.9rem;
     background: $text-light;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+    color: #1f2937;
+
+    .mobile-back-link {
+      display: none;
+      align-items: center;
+      gap: 0.35rem;
+      align-self: flex-start;
+      color: #4b5563;
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.26rem 0.62rem;
+      border: 1px solid rgba(75, 85, 99, 0.35);
+      border-radius: 999px;
+      background: rgba(75, 85, 99, 0.08);
+      line-height: 1;
+      transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+
+      i {
+        font-size: 0.82rem;
+      }
+
+      &:hover {
+        color: $primary-color;
+        border-color: rgba($primary-color, 0.35);
+        background: rgba($primary-color, 0.1);
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgba($primary-color, 0.45);
+        outline-offset: 2px;
+      }
+    }
 
     .form-header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.2rem;
       text-align: center;
 
       .form-title {
-        font-size: 2.2rem;
+        font-size: 1.82rem;
         font-weight: 700;
         color: $text-dark;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
       }
 
       .form-description {
-        color: $text-muted;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        color: #4b5563;
+        font-size: 0.86rem;
+        line-height: 1.35;
       }
     }
 
@@ -226,15 +261,15 @@ $transition-speed: 0.3s;
 
     .login-form {
       .form-group {
-        margin-bottom: 1.75rem;
+        margin-bottom: 1rem;
 
         .form-label {
           display: block;
-          margin: 0 0 0.45rem 0.15rem;
+          margin: 0 0 0.32rem 0.1rem;
           color: #4b5563;
-          font-size: 0.8rem;
+          font-size: 0.76rem;
           font-weight: 700;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           line-height: 1.2;
         }
@@ -244,10 +279,10 @@ $transition-speed: 0.3s;
 
           .input-icon {
             position: absolute;
-            left: 1.2rem;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             color: $text-muted;
             transition: color $transition-speed ease;
             z-index: 2;
@@ -255,10 +290,10 @@ $transition-speed: 0.3s;
 
           .form-input {
             width: 100%;
-            padding: 1.2rem 1.2rem 1.2rem 3.5rem;
+            padding: 0.95rem 1rem 0.95rem 3rem;
             border: 2px solid $border-color;
-            border-radius: 12px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
             color: $text-dark;
             background: #ffffff;
             transition:
@@ -286,16 +321,16 @@ $transition-speed: 0.3s;
 
           .password-toggle {
             position: absolute;
-            right: 1rem;
+            right: 0.8rem;
             top: 50%;
             transform: translateY(-50%);
             background: transparent;
             border: none;
             color: $text-muted;
-            font-size: 1.3rem;
+            font-size: 1.16rem;
             cursor: pointer;
             transition: all $transition-speed ease;
-            padding: 0.5rem;
+            padding: 0.36rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -315,19 +350,20 @@ $transition-speed: 0.3s;
       }
 
       .password-rules {
-        margin-top: -0.5rem;
-        margin-bottom: 1.5rem;
+        margin-top: -0.2rem;
+        margin-bottom: 0.95rem;
         background: rgba($primary-color, 0.06);
         border: 1px solid rgba($primary-color, 0.18);
         border-radius: 12px;
-        padding: 0.9rem 1rem;
-        font-size: 0.9rem;
+        padding: 0.72rem 0.8rem;
+        font-size: 0.82rem;
         color: $text-muted;
 
         summary {
           margin: 0;
           font-weight: 600;
           color: $text-dark;
+          font-size: 0.88rem;
           cursor: pointer;
           list-style: none;
           display: flex;
@@ -339,8 +375,8 @@ $transition-speed: 0.3s;
 
           &::after {
             content: '+';
-            margin-left: auto;
-            font-size: 1rem;
+          margin-left: auto;
+            font-size: 0.95rem;
             line-height: 1;
             color: $primary-color;
           }
@@ -353,9 +389,9 @@ $transition-speed: 0.3s;
         ul {
           list-style: none;
           padding: 0;
-          margin: 0.6rem 0 0;
+          margin: 0.4rem 0 0;
           display: grid;
-          gap: 0.4rem;
+          gap: 0.24rem;
         }
 
         li {
@@ -374,19 +410,19 @@ $transition-speed: 0.3s;
       }
 
       .remember-group {
-        margin-top: -0.5rem;
+        margin-top: -0.1rem;
       }
 
       .remember-label {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        gap: 0.55rem;
+        padding: 0.58rem 0.75rem;
         border-radius: 12px;
         background: rgba($primary-color, 0.06);
         border: 1px solid $border-color;
         color: $text-muted;
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         cursor: pointer;
         user-select: none;
         transition: all $transition-speed ease;
@@ -446,12 +482,12 @@ $transition-speed: 0.3s;
       .forgot-link {
         display: flex;
         justify-content: flex-end;
-        margin-top: -0.75rem;
-        margin-bottom: 1.5rem;
+        margin-top: -0.2rem;
+        margin-bottom: 0.8rem;
 
         a {
           color: $primary-color;
-          font-size: 0.9rem;
+          font-size: 0.82rem;
           font-weight: 600;
           text-decoration: none;
           transition: color $transition-speed ease;
@@ -464,21 +500,21 @@ $transition-speed: 0.3s;
       }
 
       .form-actions {
-        margin-top: 2rem;
+        margin-top: 0.95rem;
 
         .btn-login {
           width: 100%;
-          padding: 1.2rem 1.5rem;
+          padding: 0.9rem 1rem;
           border: none;
           border-radius: 12px;
-          font-size: 1.1rem;
+          font-size: 0.96rem;
           font-weight: 600;
           cursor: pointer;
           transition: all $transition-speed ease;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.75rem;
+          gap: 0.55rem;
           box-shadow: $shadow-sm;
           background: linear-gradient(135deg, $dark-bg, $dark-accent);
           color: $text-light;
@@ -504,7 +540,7 @@ $transition-speed: 0.3s;
           }
 
           i {
-            font-size: 1.4rem;
+            font-size: 1.15rem;
             position: relative;
             z-index: 1;
           }
@@ -527,17 +563,17 @@ $transition-speed: 0.3s;
 
         .btn-google {
           width: 100%;
-          padding: 1.2rem 1.5rem;
+          padding: 0.9rem 1rem;
           border: 3px solid transparent;
           border-radius: 12px;
-          font-size: 1.1rem;
+          font-size: 0.96rem;
           font-weight: 600;
           cursor: pointer;
           transition: all $transition-speed ease;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.75rem;
+          gap: 0.55rem;
           box-shadow: $shadow-sm;
           background: $text-light;
           color: #5f6368; // Google gray text
@@ -569,7 +605,7 @@ $transition-speed: 0.3s;
           }
 
           i {
-            font-size: 1.4rem;
+            font-size: 1.15rem;
             position: relative;
             z-index: 1;
             background: linear-gradient(to bottom right, $google-blue, $google-red, $google-yellow, $google-green);
@@ -616,8 +652,8 @@ $transition-speed: 0.3s;
         display: flex;
         align-items: center;
         text-align: center;
-        margin: 1.5rem 0;
-        color: $text-muted;
+        margin: 0.9rem 0;
+        color: #4b5563;
 
         &::before,
         &::after {
@@ -628,8 +664,9 @@ $transition-speed: 0.3s;
 
         span {
           padding: 0 1rem;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 500;
+          color: #4b5563;
         }
       }
 
@@ -637,16 +674,16 @@ $transition-speed: 0.3s;
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         border-left: 4px solid #2196f3;
         border-radius: 8px;
-        padding: 1rem 1.2rem;
-        margin: 1.5rem 0;
+        padding: 0.7rem 0.8rem;
+        margin: 0.9rem 0;
         display: flex;
         align-items: flex-start;
-        gap: 0.8rem;
+        gap: 0.55rem;
         box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
 
         i {
           color: #2196f3;
-          font-size: 1.3rem;
+          font-size: 1.08rem;
           flex-shrink: 0;
           margin-top: 0.1rem;
         }
@@ -654,8 +691,8 @@ $transition-speed: 0.3s;
         p {
           margin: 0;
           color: #1565c0;
-          font-size: 0.9rem;
-          line-height: 1.5;
+          font-size: 0.82rem;
+          line-height: 1.35;
 
           strong {
             font-weight: 600;
@@ -669,7 +706,7 @@ $transition-speed: 0.3s;
       }
 
       .form-footer {
-        margin-top: 2rem;
+        margin-top: 0.9rem;
         text-align: center;
 
         .footer-link {
@@ -678,14 +715,14 @@ $transition-speed: 0.3s;
           gap: 0.5rem;
           color: $text-muted;
           text-decoration: none;
-          font-size: 0.95rem;
+          font-size: 0.86rem;
           font-weight: 500;
           transition: all $transition-speed ease;
-          padding: 0.5rem 1rem;
+          padding: 0.35rem 0.8rem;
           border-radius: 8px;
 
           i {
-            font-size: 1.1rem;
+            font-size: 0.96rem;
             transition: transform $transition-speed ease;
           }
 
@@ -702,34 +739,41 @@ $transition-speed: 0.3s;
     }
 
     .mode-switch {
-      margin-bottom: 2rem;
+      margin-bottom: 1.05rem;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      background: #f1f4f8;
+      background: #e8edf3;
       border-radius: 999px;
-      padding: 0.35rem;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+      padding: 0.28rem;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+      color: #334155;
 
       .switch-tab {
         flex: 1;
         border: none;
         background: transparent;
-        color: $text-muted;
+        color: #475569;
         font-weight: 600;
         cursor: pointer;
-        padding: 0.65rem 1rem;
+        padding: 0.52rem 0.8rem;
         border-radius: 999px;
         transition: all $transition-speed ease;
-        font-size: 0.95rem;
+        font-size: 0.88rem;
 
         &:hover {
-          color: $text-dark;
+          color: #1f2937;
+          background: rgba(15, 23, 42, 0.05);
+        }
+
+        &:focus-visible {
+          outline: 2px solid rgba($primary-color, 0.4);
+          outline-offset: 2px;
         }
 
         &.active {
-          background: linear-gradient(135deg, $dark-bg, $dark-accent);
+          background: linear-gradient(135deg, #143236, #23545a);
           color: $text-light;
           box-shadow: $shadow-sm;
         }
@@ -772,15 +816,54 @@ $transition-speed: 0.3s;
   // ========================================
   // RESPONSIVE DESIGN
   // ========================================
+  @media (max-height: 900px) and (min-width: 769px) {
+    padding: 4.6rem 0.75rem 0.75rem;
+
+    .login-card {
+      grid-template-columns: 1fr;
+      max-width: 720px;
+    }
+
+    .login-left {
+      display: none;
+    }
+
+    .login-right {
+      padding: 1.2rem 1.1rem 0.95rem;
+
+      .form-header {
+        margin-bottom: 0.85rem;
+      }
+
+      .mode-switch {
+        margin-bottom: 0.8rem;
+      }
+
+      .login-form {
+        .form-group {
+          margin-bottom: 0.72rem;
+        }
+
+        .form-actions {
+          margin-top: 0.72rem;
+        }
+
+        .info-message {
+          margin: 0.72rem 0;
+        }
+      }
+    }
+  }
+
   @media (max-width: 992px) {
-    padding: 5rem 1rem 2rem;
+    padding: 4.8rem 0.85rem 1rem;
 
     .login-card {
       grid-template-columns: 1fr;
     }
 
     .login-left {
-      padding: 2.5rem 1.5rem;
+      padding: 2rem 1.3rem;
 
       .brand-title {
         font-size: 2rem;
@@ -791,8 +874,8 @@ $transition-speed: 0.3s;
       }
 
       .brand-logo {
-        max-width: 160px;
-        margin: 1.5rem 0;
+        max-width: 140px;
+        margin: 1rem 0;
       }
 
       .brand-features {
@@ -803,15 +886,15 @@ $transition-speed: 0.3s;
     }
 
     .login-right {
-      padding: 2.5rem 1.5rem;
+      padding: 1.8rem 1.3rem;
 
       .form-header {
         .form-title {
-          font-size: 1.9rem;
+          font-size: 1.72rem;
         }
 
         .form-description {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
         }
       }
     }
@@ -819,15 +902,26 @@ $transition-speed: 0.3s;
 
   @media (max-width: 768px) {
     min-height: 100dvh;
-    align-items: flex-start;
-    padding: 4.5rem 0.75rem 1rem;
+    align-items: stretch;
+    padding:
+      clamp(4.1rem, calc(4.1rem + (100dvh - 760px) / 10), 5rem)
+      0.65rem
+      clamp(0.6rem, calc(0.6rem + (100dvh - 760px) / 18), 1.15rem);
 
     .login-container {
       max-width: 560px;
+      min-height: calc(
+        100dvh
+        - clamp(4.1rem, calc(4.1rem + (100dvh - 760px) / 10), 5rem)
+        - clamp(0.6rem, calc(0.6rem + (100dvh - 760px) / 18), 1.15rem)
+      );
+      display: flex;
     }
 
     .login-card {
       border-radius: 16px;
+      width: 100%;
+      min-height: 100%;
     }
 
     .login-left {
@@ -835,35 +929,61 @@ $transition-speed: 0.3s;
     }
 
     .login-right {
-      padding: 1.4rem 1rem 1.1rem;
+      padding:
+        clamp(1rem, calc(1rem + (100dvh - 760px) / 26), 1.6rem)
+        0.85rem
+        clamp(0.72rem, calc(0.72rem + (100dvh - 760px) / 30), 1.2rem);
       justify-content: flex-start;
+      min-height: 100%;
+
+      .mobile-back-link {
+        display: inline-flex;
+        margin-bottom: clamp(0.24rem, calc(0.24rem + (100dvh - 760px) / 60), 0.58rem);
+      }
 
       .form-header {
-        margin-bottom: 1rem;
+        margin-bottom: clamp(0.62rem, calc(0.62rem + (100dvh - 760px) / 44), 1.2rem);
         text-align: left;
 
         .form-title {
-          font-size: 1.55rem;
+          font-size: clamp(1.36rem, 1.1rem + 1.2dvh, 1.56rem);
         }
 
         .form-description {
-          font-size: 0.87rem;
-          line-height: 1.35;
+          font-size: clamp(0.78rem, 0.72rem + 0.35dvh, 0.86rem);
+          line-height: 1.3;
         }
       }
 
       .mode-switch {
-        margin-bottom: 1.1rem;
+        margin-bottom: clamp(0.75rem, calc(0.75rem + (100dvh - 760px) / 38), 1.25rem);
 
         .switch-tab {
-          font-size: 0.9rem;
-          padding: 0.58rem 0.7rem;
+          font-size: 0.82rem;
+          padding: 0.45rem 0.55rem;
         }
       }
 
       .login-form {
         .form-group {
-          margin-bottom: 1.05rem;
+          margin-bottom: clamp(0.7rem, 0.9dvh, 0.9rem);
+
+          .form-label {
+            font-size: 0.7rem;
+            margin-bottom: 0.28rem;
+          }
+
+          .input-wrapper {
+            .form-input {
+              padding: 0.88rem 0.88rem 0.88rem 2.8rem;
+              font-size: 0.88rem;
+            }
+
+            .input-icon {
+              left: 0.82rem;
+              font-size: 0.98rem;
+            }
+          }
         }
 
         .remember-group {
@@ -872,39 +992,58 @@ $transition-speed: 0.3s;
 
         .forgot-link {
           justify-content: flex-start;
-          margin-top: -0.35rem;
-          margin-bottom: 1rem;
+          margin-top: -0.1rem;
+          margin-bottom: clamp(0.48rem, 0.75dvh, 0.65rem);
         }
 
         .form-actions {
-          margin-top: 1rem;
+          margin-top: clamp(0.52rem, 0.8dvh, 0.72rem);
         }
 
         .divider {
-          margin: 1rem 0;
+          margin: clamp(0.5rem, 0.8dvh, 0.72rem) 0;
         }
 
         .info-message {
-          margin: 1rem 0;
-          padding: 0.8rem 0.9rem;
-          gap: 0.6rem;
+          margin: clamp(0.52rem, 0.8dvh, 0.72rem) 0;
+          padding: 0.62rem 0.7rem;
+          gap: 0.48rem;
         }
 
         .form-footer {
-          margin-top: 1rem;
+          display: none;
         }
 
         .password-rules {
           margin-top: 0;
-          margin-bottom: 1rem;
-          padding: 0.8rem 0.9rem;
+          margin-bottom: clamp(0.52rem, 0.8dvh, 0.72rem);
+          padding: 0.62rem 0.7rem;
+        }
+
+        .form-actions {
+          .btn-login,
+          .btn-google {
+            padding: 0.78rem 0.9rem;
+            font-size: 0.86rem;
+          }
         }
       }
     }
   }
 
   @media (max-width: 576px) {
-    padding: 5rem 0.5rem 1rem;
+    padding:
+      clamp(4rem, calc(4rem + (100dvh - 760px) / 12), 4.9rem)
+      0.45rem
+      clamp(0.52rem, calc(0.52rem + (100dvh - 760px) / 22), 1rem);
+
+    .login-container {
+      min-height: calc(
+        100dvh
+        - clamp(4rem, calc(4rem + (100dvh - 760px) / 12), 4.9rem)
+        - clamp(0.52rem, calc(0.52rem + (100dvh - 760px) / 22), 1rem)
+      );
+    }
 
     .login-card {
       border-radius: 12px;
@@ -951,44 +1090,57 @@ $transition-speed: 0.3s;
     }
 
     .login-right {
-      padding: 2rem 1rem;
+      padding:
+        clamp(0.94rem, calc(0.94rem + (100dvh - 760px) / 28), 1.42rem)
+        0.75rem
+        clamp(0.64rem, calc(0.64rem + (100dvh - 760px) / 32), 1rem);
+
+      .mobile-back-link {
+        font-size: clamp(0.7rem, 0.66rem + 0.2dvh, 0.76rem);
+        padding: 0.24rem 0.54rem;
+        margin-bottom: clamp(0.16rem, 0.45dvh, 0.3rem);
+
+        i {
+          font-size: clamp(0.74rem, 0.7rem + 0.2dvh, 0.82rem);
+        }
+      }
 
       .form-header {
-        margin-bottom: 2rem;
+        margin-bottom: clamp(0.68rem, 0.92dvh, 0.92rem);
 
         .form-title {
-          font-size: 1.65rem;
+          font-size: clamp(1.22rem, 1.02rem + 1.05dvh, 1.4rem);
         }
 
         .form-description {
-          font-size: 0.85rem;
+          font-size: clamp(0.74rem, 0.7rem + 0.28dvh, 0.82rem);
         }
       }
 
       .login-form {
         .form-group {
-          margin-bottom: 1.5rem;
+          margin-bottom: clamp(0.64rem, 0.86dvh, 0.86rem);
  
           .form-label {
-            font-size: 0.72rem;
-            margin-bottom: 0.35rem;
+            font-size: 0.68rem;
+            margin-bottom: 0.24rem;
             letter-spacing: 0.05em;
           }
 
           .input-wrapper {
             .form-input {
-              padding: 1.1rem 1.1rem 1.1rem 3.2rem;
-              font-size: 0.95rem;
+              padding: clamp(0.78rem, 1.05dvh, 0.92rem) 0.78rem clamp(0.78rem, 1.05dvh, 0.92rem) 2.56rem;
+              font-size: clamp(0.82rem, 0.76rem + 0.3dvh, 0.9rem);
             }
 
             .input-icon {
-              left: 1rem;
-              font-size: 1.2rem;
+              left: 0.76rem;
+              font-size: 0.92rem;
             }
 
             .password-toggle {
-              right: 0.75rem;
-              font-size: 1.2rem;
+              right: 0.62rem;
+              font-size: 1rem;
             }
           }
         }
@@ -996,25 +1148,72 @@ $transition-speed: 0.3s;
         .form-actions {
           .btn-login,
           .btn-google {
-            padding: 1.1rem 1.3rem;
-            font-size: 1rem;
+            padding: clamp(0.72rem, 1dvh, 0.84rem) 0.84rem;
+            font-size: clamp(0.8rem, 0.74rem + 0.3dvh, 0.9rem);
 
             i {
-              font-size: 1.3rem;
+              font-size: clamp(0.9rem, 0.84rem + 0.3dvh, 1rem);
             }
           }
         }
 
         .form-footer {
-          margin-top: 1.5rem;
+          display: none;
+        }
+      }
+    }
+  }
 
-          .footer-link {
-            font-size: 0.9rem;
+  @media (max-width: 576px) and (min-height: 840px) {
+    .login-right {
+      padding:
+        clamp(1.2rem, calc(0.4rem + 2.2dvh), 2.1rem)
+        0.75rem
+        clamp(1rem, calc(0.3rem + 1.8dvh), 1.8rem);
 
-            i {
-              font-size: 1rem;
-            }
+      .mobile-back-link {
+        margin-bottom: clamp(0.3rem, 0.8dvh, 0.7rem);
+      }
+
+      .form-header {
+        margin-bottom: clamp(0.9rem, 1.7dvh, 1.6rem);
+      }
+
+      .mode-switch {
+        margin-bottom: clamp(0.9rem, 1.5dvh, 1.4rem);
+      }
+
+      .login-form {
+        .form-group {
+          margin-bottom: clamp(0.85rem, 1.45dvh, 1.25rem);
+        }
+
+        .forgot-link {
+          margin-bottom: clamp(0.7rem, 1.2dvh, 1rem);
+        }
+
+        .form-actions {
+          margin-top: clamp(0.75rem, 1.2dvh, 1.05rem);
+
+          .btn-login,
+          .btn-google {
+            padding: clamp(0.8rem, 1.15dvh, 0.96rem) 0.9rem;
+            font-size: clamp(0.84rem, 0.78rem + 0.28dvh, 0.94rem);
           }
+        }
+
+        .divider {
+          margin: clamp(0.72rem, 1.2dvh, 1rem) 0;
+        }
+
+        .info-message {
+          margin: clamp(0.75rem, 1.2dvh, 1.05rem) 0 0.95rem;
+          padding: 0.78rem 0.85rem;
+        }
+
+        .password-rules {
+          margin-bottom: clamp(0.72rem, 1.2dvh, 1rem);
+          padding: 0.72rem 0.78rem;
         }
       }
     }
@@ -1024,27 +1223,27 @@ $transition-speed: 0.3s;
     .login-right {
       .form-header {
         .form-title {
-          font-size: 1.5rem;
+          font-size: 1.34rem;
         }
       }
 
       .login-form {
         .form-group {
           .form-label {
-            font-size: 0.7rem;
-            margin-bottom: 0.3rem;
+            font-size: 0.66rem;
+            margin-bottom: 0.22rem;
             letter-spacing: 0.045em;
           }
 
           .input-wrapper {
             .form-input {
-              padding: 1rem 1rem 1rem 3rem;
-              font-size: 0.9rem;
+              padding: 0.76rem 0.76rem 0.76rem 2.48rem;
+              font-size: 0.82rem;
             }
 
             .input-icon {
-              left: 0.9rem;
-              font-size: 1.1rem;
+              left: 0.74rem;
+              font-size: 0.9rem;
             }
           }
         }
@@ -1052,8 +1251,8 @@ $transition-speed: 0.3s;
         .form-actions {
           .btn-login,
           .btn-google {
-            padding: 1rem 1.2rem;
-            font-size: 0.95rem;
+            padding: 0.7rem 0.76rem;
+            font-size: 0.8rem;
           }
         }
       }
