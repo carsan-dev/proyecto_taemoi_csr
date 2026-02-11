@@ -35,7 +35,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     turnos: false,
     eventos: false,
     productos: false,
-    convocatorias: false
+    convocatorias: false,
+    administracion: false
   };
 
   // Scroll optimization
@@ -391,4 +392,3 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 }
-
