@@ -7,7 +7,7 @@
           <div class="brand-icon">
             <i class="bi bi-envelope-heart"></i>
           </div>
-          <h1 class="brand-title">Contacta con Moiskimdo en Umbrete, Aljarafe y Sevilla</h1>
+          <h1 class="brand-title">CONTACTA CON MOISKIMDO</h1>
           <p class="brand-subtitle">Estamos aqui para ayudarte a empezar</p>
           <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
           <div class="brand-features">
@@ -31,12 +31,13 @@
       <div class="contact-right">
         <div class="form-header">
           <h2 class="form-title">Contáctanos</h2>
-          <p class="form-description">Completa el formulario y nos pondremos en contacto contigo lo antes posible</p>
+          <p class="form-description">Completa el formulario y nos pondremos en contacto contigo lo antes posible. Estamos en Umbrete, en el Aljarafe, Sevilla.</p>
         </div>
 
         <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
           <!-- Name Field -->
           <div class="form-group">
+            <label for="nombre" class="form-label">Nombre</label>
             <div class="input-wrapper">
               <i class="bi bi-person-fill input-icon"></i>
               <input
@@ -44,9 +45,7 @@
                 class="form-input"
                 id="nombre"
                 formControlName="nombre"
-                placeholder=" "
                 [class.invalid]="contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched">
-              <label for="nombre" class="form-label">Nombre</label>
             </div>
             @if (contactForm.get('nombre')?.invalid && contactForm.get('nombre')?.touched) {
               <div class="error-message">
@@ -58,6 +57,7 @@
 
           <!-- Surname Field -->
           <div class="form-group">
+            <label for="apellidos" class="form-label">Apellidos</label>
             <div class="input-wrapper">
               <i class="bi bi-person-badge-fill input-icon"></i>
               <input
@@ -65,9 +65,7 @@
                 class="form-input"
                 id="apellidos"
                 formControlName="apellidos"
-                placeholder=" "
                 [class.invalid]="contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched">
-              <label for="apellidos" class="form-label">Apellidos</label>
             </div>
             @if (contactForm.get('apellidos')?.invalid && contactForm.get('apellidos')?.touched) {
               <div class="error-message">
@@ -79,6 +77,7 @@
 
           <!-- Email Field -->
           <div class="form-group">
+            <label for="email" class="form-label">Correo electrónico</label>
             <div class="input-wrapper">
               <i class="bi bi-envelope-fill input-icon"></i>
               <input
@@ -86,9 +85,7 @@
                 class="form-input"
                 id="email"
                 formControlName="email"
-                placeholder=" "
                 [class.invalid]="contactForm.get('email')?.invalid && contactForm.get('email')?.touched">
-              <label for="email" class="form-label">Correo electrónico</label>
             </div>
             @if (contactForm.get('email')?.invalid && contactForm.get('email')?.touched) {
               <div class="error-message">
@@ -100,6 +97,7 @@
 
           <!-- Subject Field -->
           <div class="form-group">
+            <label for="asunto" class="form-label">Asunto</label>
             <div class="input-wrapper select-wrapper">
               <i class="bi bi-tags-fill input-icon"></i>
               <select
@@ -114,7 +112,6 @@
                 <option value="Información sobre clases">Información sobre clases</option>
                 <option value="Otros">Otros motivos</option>
               </select>
-              <label for="asunto" class="form-label select-label">Asunto</label>
             </div>
             @if (contactForm.get('asunto')?.invalid && contactForm.get('asunto')?.touched) {
               <div class="error-message">
@@ -156,16 +153,15 @@
 
           <!-- Message Field -->
           <div class="form-group">
+            <label for="mensaje" class="form-label">Mensaje</label>
             <div class="input-wrapper textarea-wrapper">
               <i class="bi bi-chat-left-text-fill input-icon"></i>
               <textarea
                 class="form-textarea"
                 id="mensaje"
                 formControlName="mensaje"
-                placeholder=" "
                 rows="5"
                 [class.invalid]="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched"></textarea>
-              <label for="mensaje" class="form-label">Mensaje</label>
             </div>
             @if (contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched) {
               <div class="error-message">
