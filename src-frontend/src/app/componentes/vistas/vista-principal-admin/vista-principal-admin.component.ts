@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
@@ -17,6 +18,8 @@ interface DashboardStats {
   totalTurnos: number;
   alumnosPorDeporte: { [key: string]: number };
   alumnosAptos: number;
+  cobrosPendientesMes: number;
+  importePendienteMes: number;
   proximosEventos: any[];
 }
 
@@ -65,6 +68,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     totalTurnos: 0,
     alumnosPorDeporte: {},
     alumnosAptos: 0,
+    cobrosPendientesMes: 0,
+    importePendienteMes: 0,
     proximosEventos: []
   };
 
@@ -92,6 +97,13 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       ruta: '/convocatoriasListar',
       icono: 'bi bi-clipboard-check-fill',
       color: '#3182ce',
+    },
+    {
+      titulo: 'Tesorería y Cobros',
+      descripcion: 'Revisión de deudas, pendientes y cobros por mes.',
+      ruta: '/tesoreriaCobros',
+      icono: 'bi bi-cash-stack',
+      color: '#2f855a',
     },
     {
       titulo: 'Roles y Configuracion',
@@ -139,6 +151,13 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       icono: 'bi bi-clipboard-check',
       color: '#e74c3c'
     },
+    {
+      titulo: 'Tesorería',
+      descripcion: 'Control mensual de cobros y deudas',
+      ruta: '/tesoreriaCobros',
+      icono: 'bi bi-cash-coin',
+      color: '#16a085'
+    },
   ];
 
   constructor(
@@ -171,13 +190,21 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
 
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
+    const mesActual = this.fechaActual.getMonth() + 1;
+    const anoActual = this.fechaActual.getFullYear();
 
     // Fetch all data in parallel
     const sub = forkJoin({
       alumnos: this.endpointsService.obtenerTodosLosAlumnosSinPaginar(true),
       grupos: this.endpointsService.obtenerTodosLosGrupos(),
       turnos: this.endpointsService.obtenerTodosLosTurnos(),
-      alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen()
+      alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen(),
+      tesoreriaResumen: this.endpointsService.obtenerTesoreriaResumen(mesActual, anoActual, 'TODOS').pipe(
+        catchError((error) => {
+          console.warn('No se pudo cargar el resumen de tesorería para el dashboard:', error);
+          return of(null);
+        })
+      )
     }).subscribe({
       next: (data) => {
         // Process alumnos
@@ -208,6 +235,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
 
         // Process alumnos aptos
         this.stats.alumnosAptos = (data.alumnosAptos || []).length;
+        this.stats.cobrosPendientesMes = data.tesoreriaResumen?.totalPendientes || 0;
+        this.stats.importePendienteMes = data.tesoreriaResumen?.importePendiente || 0;
 
         this.cargandoEstadisticas = false;
         this.actualizarAlertasOperativas();
@@ -285,6 +314,26 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         ruta: '/alumnosListar',
         queryParams: { aptoParaExamen: 'true' },
         icono: 'bi bi-award-fill',
+      });
+    }
+
+    if (this.stats.cobrosPendientesMes > 0) {
+      const mes = this.fechaActual.getMonth() + 1;
+      const ano = this.fechaActual.getFullYear();
+      alertas.push({
+        id: 'cobros-pendientes-mes',
+        tipo: 'warning',
+        titulo: 'Cobros pendientes del mes',
+        descripcion: `${this.stats.cobrosPendientesMes} cobros pendientes (${this.stats.importePendienteMes.toFixed(2)} €) en ${mes}/${ano}.`,
+        accionTexto: 'Revisar tesorería',
+        ruta: '/tesoreriaCobros',
+        queryParams: {
+          estado: 'PENDIENTES',
+          mes: mes.toString(),
+          ano: ano.toString(),
+          deporte: 'TODOS',
+        },
+        icono: 'bi bi-cash-stack',
       });
     }
 
