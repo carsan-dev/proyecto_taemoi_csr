@@ -20,6 +20,26 @@ interface DashboardStats {
   proximosEventos: any[];
 }
 
+interface DashboardQuickAction {
+  titulo: string;
+  descripcion: string;
+  ruta: string;
+  icono: string;
+  color: string;
+  queryParams?: Record<string, string>;
+}
+
+interface DashboardAlert {
+  id: string;
+  tipo: 'critical' | 'warning' | 'info' | 'success';
+  titulo: string;
+  descripcion: string;
+  accionTexto: string;
+  ruta: string;
+  icono: string;
+  queryParams?: Record<string, string>;
+}
+
 @Component({
   selector: 'app-vista-principal-admin',
   standalone: true,
@@ -47,6 +67,40 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     alumnosAptos: 0,
     proximosEventos: []
   };
+
+  alertasOperativas: DashboardAlert[] = [];
+
+  operacionesPrioritarias: DashboardQuickAction[] = [
+    {
+      titulo: 'Revisar Aptos para Examen',
+      descripcion: 'Alumnos listos para promocionar en la siguiente convocatoria.',
+      ruta: '/alumnosListar',
+      queryParams: { aptoParaExamen: 'true' },
+      icono: 'bi bi-award-fill',
+      color: '#b83280',
+    },
+    {
+      titulo: 'Gestionar Bajas y Altas',
+      descripcion: 'Control rapido de alumnos inactivos y eliminaciones.',
+      ruta: '/alumnosEliminar',
+      icono: 'bi bi-person-x-fill',
+      color: '#dd6b20',
+    },
+    {
+      titulo: 'Preparar Convocatorias',
+      descripcion: 'Crear convocatorias, pagos e informe de examen.',
+      ruta: '/convocatoriasListar',
+      icono: 'bi bi-clipboard-check-fill',
+      color: '#3182ce',
+    },
+    {
+      titulo: 'Roles y Configuracion',
+      descripcion: 'Permisos de usuarios y limite global de turno.',
+      ruta: '/configuracion-sistema',
+      icono: 'bi bi-gear-fill',
+      color: '#2f855a',
+    },
+  ];
 
   // Navigation sections for quick access
   seccionesAdmin = [
@@ -156,10 +210,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         this.stats.alumnosAptos = (data.alumnosAptos || []).length;
 
         this.cargandoEstadisticas = false;
+        this.actualizarAlertasOperativas();
       },
       error: (err) => {
         console.error('Error loading statistics:', err);
         this.cargandoEstadisticas = false;
+        this.actualizarAlertasOperativas();
       }
     });
 
@@ -178,9 +234,97 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
           .slice(0, 4);
 
         this.cargandoEventos = false;
+        this.actualizarAlertasOperativas();
       }
     });
     this.subscriptions.add(eventosSub);
+  }
+
+  get eventosOcultos(): number {
+    return Math.max(this.stats.totalEventos - this.stats.eventosVisibles, 0);
+  }
+
+  private actualizarAlertasOperativas(): void {
+    if (this.cargandoEstadisticas || this.cargandoEventos) {
+      return;
+    }
+
+    const alertas: DashboardAlert[] = [];
+
+    if (this.stats.alumnosInactivos > 0) {
+      alertas.push({
+        id: 'alumnos-inactivos',
+        tipo: 'warning',
+        titulo: 'Alumnos inactivos pendientes',
+        descripcion: `${this.stats.alumnosInactivos} alumnos requieren revision de alta o baja.`,
+        accionTexto: 'Ir a bajas y altas',
+        ruta: '/alumnosEliminar',
+        icono: 'bi bi-person-x-fill',
+      });
+    }
+
+    if (this.eventosOcultos > 0) {
+      alertas.push({
+        id: 'eventos-ocultos',
+        tipo: 'info',
+        titulo: 'Eventos sin publicar',
+        descripcion: `${this.eventosOcultos} eventos estan ocultos en la web publica.`,
+        accionTexto: 'Revisar visibilidad',
+        ruta: '/eventosListar',
+        icono: 'bi bi-eye-slash-fill',
+      });
+    }
+
+    if (this.stats.alumnosAptos > 0) {
+      alertas.push({
+        id: 'aptos-examen',
+        tipo: 'info',
+        titulo: 'Alumnos listos para convocatoria',
+        descripcion: `${this.stats.alumnosAptos} alumnos figuran aptos para examen.`,
+        accionTexto: 'Abrir listado aptos',
+        ruta: '/alumnosListar',
+        queryParams: { aptoParaExamen: 'true' },
+        icono: 'bi bi-award-fill',
+      });
+    }
+
+    if (this.stats.totalTurnos === 0) {
+      alertas.push({
+        id: 'sin-turnos',
+        tipo: 'critical',
+        titulo: 'No hay turnos creados',
+        descripcion: 'Crea turnos para poder asignar alumnos y mantener horario activo.',
+        accionTexto: 'Crear turno',
+        ruta: '/turnosCrear',
+        icono: 'bi bi-calendar-plus-fill',
+      });
+    }
+
+    if (this.stats.totalGrupos === 0) {
+      alertas.push({
+        id: 'sin-grupos',
+        tipo: 'critical',
+        titulo: 'No hay grupos configurados',
+        descripcion: 'Crea grupos para organizar alumnado y asignaciones de turnos.',
+        accionTexto: 'Crear grupo',
+        ruta: '/gruposCrear',
+        icono: 'bi bi-people-fill',
+      });
+    }
+
+    if (alertas.length === 0) {
+      alertas.push({
+        id: 'operacion-estable',
+        tipo: 'success',
+        titulo: 'Operacion estable',
+        descripcion: 'No hay alertas operativas prioritarias en este momento.',
+        accionTexto: 'Ver dashboard',
+        ruta: '/adminpage',
+        icono: 'bi bi-check2-circle',
+      });
+    }
+
+    this.alertasOperativas = alertas;
   }
 
   getDeporteLabel(deporte: string): string {

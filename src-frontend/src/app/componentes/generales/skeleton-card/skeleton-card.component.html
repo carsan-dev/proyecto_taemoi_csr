@@ -100,6 +100,23 @@
   </div>
 }
 
+<!-- Alerts Skeleton (for admin operational alerts) -->
+@if (type === 'alerts') {
+  <div class="skeleton-alerts-grid">
+    @for (item of items; track $index) {
+      <div class="skeleton-alert-card">
+        <div class="skeleton-alert-icon"></div>
+        <div class="skeleton-alert-content">
+          <div class="skeleton-alert-title"></div>
+          <div class="skeleton-alert-text"></div>
+          <div class="skeleton-alert-text short"></div>
+          <div class="skeleton-alert-action"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
 <!-- Masonry Events Skeleton (for eventos page) -->
 @if (type === 'masonry') {
   <div class="skeleton-masonry" [style.columns]="columns">
