@@ -1,0 +1,220 @@
+<section class="tesoreria-page">
+  <header class="page-header">
+    <div>
+      <h1><i class="bi bi-cash-coin"></i> Tesoreria y Cobros</h1>
+      <p>Control de deudas, pagos pendientes y estado mensual por deporte.</p>
+    </div>
+    <div class="actualizacion">
+      <i class="bi bi-clock-history"></i>
+      <span>Actualizado: {{ fechaCarga | date:'dd/MM/yyyy HH:mm' }}</span>
+    </div>
+  </header>
+
+  <article class="filtros-card">
+    <div class="filtros-grid">
+      <div class="filtro">
+        <label for="mesFiltro">Mes</label>
+        <select id="mesFiltro" [(ngModel)]="filtroMes" [disabled]="filtroAno === null">
+          <option [ngValue]="null">Todos los meses</option>
+          @for (mes of meses; track mes.value) {
+            <option [ngValue]="mes.value">{{ mes.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <label for="anoFiltro">A&ntilde;o</label>
+        <select id="anoFiltro" [(ngModel)]="filtroAno" (ngModelChange)="onAnoChange()">
+          <option [ngValue]="null">Todos los a&ntilde;os (totales)</option>
+          @for (ano of anosDisponibles; track ano) {
+            <option [ngValue]="ano">{{ ano }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <label for="deporteFiltro">Deporte</label>
+        <select id="deporteFiltro" [(ngModel)]="filtroDeporte">
+          @for (deporte of deportes; track deporte.value) {
+            <option [value]="deporte.value">{{ deporte.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <label for="estadoFiltro">Estado</label>
+        <select id="estadoFiltro" [(ngModel)]="filtroEstado">
+          @for (estado of estados; track estado.value) {
+            <option [value]="estado.value">{{ estado.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro filtro-texto">
+        <label for="textoFiltro">Buscar</label>
+        <input
+          id="textoFiltro"
+          type="text"
+          placeholder="Alumno, concepto o categoria"
+          [(ngModel)]="filtroTexto"
+          (input)="onTextoFiltroChange()">
+      </div>
+    </div>
+
+    <div class="filtros-acciones">
+      <button type="button" class="btn-principal" (click)="aplicarFiltros()" [disabled]="cargando">
+        <i class="bi bi-funnel-fill"></i> Aplicar filtros
+      </button>
+      <button type="button" class="btn-secundario" (click)="limpiarFiltros()" [disabled]="cargando">
+        <i class="bi bi-arrow-counterclockwise"></i> Restablecer
+      </button>
+    </div>
+  </article>
+
+  @if (cargando) {
+    <app-skeleton-card [type]="'tesoreria'" [count]="6"></app-skeleton-card>
+  } @else {
+    <section class="resumen-grid">
+      <article class="resumen-card pendientes">
+        <p class="titulo">Importe pendiente</p>
+        <p class="valor">{{ resumen.importePendiente | number:'1.2-2' }} EUR</p>
+        <p class="detalle">{{ resumen.totalPendientes }} cobros pendientes</p>
+      </article>
+
+      <article class="resumen-card pagados">
+        <p class="titulo">Importe cobrado</p>
+        <p class="valor">{{ resumen.importePagado | number:'1.2-2' }} EUR</p>
+        <p class="detalle">{{ resumen.totalPagados }} cobros pagados</p>
+      </article>
+
+      <article class="resumen-card total">
+        <p class="titulo">Total generado</p>
+        <p class="valor">{{ resumen.importeTotal | number:'1.2-2' }} EUR</p>
+        <p class="detalle">{{ resumen.totalMovimientos }} movimientos</p>
+      </article>
+
+      <article class="resumen-card deuda">
+        <p class="titulo">Alumnos con deuda</p>
+        <p class="valor">{{ resumen.alumnosConPendientes }}</p>
+        <p class="detalle">{{ getPeriodoLabel(resumen.mes, resumen.ano) }}</p>
+      </article>
+    </section>
+
+    <article class="tabla-card">
+      <header class="tabla-header">
+        <div>
+          <h2>Movimientos de Cobro</h2>
+          <p>{{ getDeporteLabel(filtroDeporte) }} - {{ getPeriodoLabel(filtroMes, filtroAno) }}</p>
+        </div>
+        <div class="tabla-actions">
+          <button
+            type="button"
+            class="btn-exportar btn-exportar-pdf"
+            [disabled]="exportandoInforme"
+            (click)="exportarInformeDeudasPDF()">
+            @if (exportandoInforme) {
+              <i class="bi bi-hourglass-split"></i> Generando...
+            } @else {
+              <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            }
+          </button>
+          <button
+            type="button"
+            class="btn-exportar btn-exportar-csv"
+            [disabled]="exportandoInforme"
+            (click)="exportarInformeDeudasCSV()">
+            @if (exportandoInforme) {
+              <i class="bi bi-hourglass-split"></i> Generando...
+            } @else {
+              <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+            }
+          </button>
+        </div>
+      </header>
+
+      @if (movimientosFiltrados.length > 0) {
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Deporte</th>
+                <th>Concepto</th>
+                <th>Categoria</th>
+                <th>Fecha cargo</th>
+                <th>Importe</th>
+                <th>Estado</th>
+                <th>Fecha pago</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (movimiento of movimientosFiltrados; track trackByMovimientoId($index, movimiento)) {
+                <tr [class.fila-pendiente]="!movimiento.pagado">
+                  <td>
+                    @if (movimiento.alumnoId) {
+                      <a [routerLink]="['/alumnosEditar', movimiento.alumnoId]" class="alumno-link">
+                        {{ movimiento.alumnoNombreCompleto }}
+                      </a>
+                    } @else {
+                      <span>{{ movimiento.alumnoNombreCompleto }}</span>
+                    }
+                  </td>
+                  <td>{{ getDeporteLabel(movimiento.deporte) }}</td>
+                  <td class="concepto">{{ movimiento.concepto }}</td>
+                  <td>{{ movimiento.categoria }}</td>
+                  <td>{{ movimiento.fechaAsignacion | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ movimiento.precio | number:'1.2-2' }} EUR</td>
+                  <td>
+                    @if (movimiento.pagado) {
+                      <span class="estado-chip pagado">Pagado</span>
+                    } @else {
+                      <span class="estado-chip pendiente">Pendiente</span>
+                    }
+                  </td>
+                  <td>{{ movimiento.fechaPago ? (movimiento.fechaPago | date:'dd/MM/yyyy') : '-' }}</td>
+                  <td>
+                    @if (!movimiento.pagado) {
+                      <button
+                        type="button"
+                        class="btn-cobrar"
+                        [disabled]="procesandoCobroId === movimiento.productoAlumnoId"
+                        (click)="marcarComoPagado(movimiento)">
+                        @if (procesandoCobroId === movimiento.productoAlumnoId) {
+                          <i class="bi bi-hourglass-split"></i> Procesando
+                        } @else {
+                          <i class="bi bi-check-circle-fill"></i> Marcar pagado
+                        }
+                      </button>
+                    } @else {
+                      <span class="accion-hecha">Cobrado</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="tabla-footer">
+          <p class="tabla-meta">
+            Mostrando {{ movimientosFiltrados.length }} de {{ totalMovimientos }} movimientos
+          </p>
+          @if (totalPaginas > 1) {
+            <app-paginacion
+              [paginaActual]="paginaActual"
+              [totalPaginas]="totalPaginas"
+              [tamanoPagina]="tamanoPagina"
+              [deshabilitado]="cargando"
+              (pageChange)="cambiarPagina($event)">
+            </app-paginacion>
+          }
+        </div>
+      } @else {
+        <div class="sin-resultados">
+          <i class="bi bi-inbox"></i>
+          <p>No hay cobros para los filtros seleccionados.</p>
+        </div>
+      }
+    </article>
+  }
+</section>
