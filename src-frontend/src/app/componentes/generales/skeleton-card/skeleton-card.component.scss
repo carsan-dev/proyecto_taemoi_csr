@@ -300,6 +300,62 @@
   }
 }
 
+// Alerts Skeleton (for admin dashboard)
+.skeleton-alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.skeleton-alert-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.skeleton-alert-icon {
+  @include skeleton-shimmer;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.skeleton-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-alert-title {
+  @include skeleton-shimmer;
+  height: 18px;
+  width: 62%;
+  margin-bottom: 0.45rem;
+}
+
+.skeleton-alert-text {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 100%;
+  margin-bottom: 0.35rem;
+
+  &.short {
+    width: 78%;
+  }
+}
+
+.skeleton-alert-action {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 44%;
+  margin-top: 0.25rem;
+}
+
 // Masonry Events Skeleton (for eventos page)
 .skeleton-masonry {
   column-count: 5;
@@ -422,6 +478,10 @@
         padding: 0.875rem;
       }
     }
+  }
+
+  .skeleton-alerts-grid {
+    grid-template-columns: 1fr;
   }
 }
 

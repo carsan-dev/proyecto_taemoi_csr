@@ -185,6 +185,67 @@
     </div>
   </div>
 
+  <!-- Operational Alerts -->
+  <div class="alerts-section">
+    <div class="section-title">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <h2>Alertas Operativas</h2>
+    </div>
+
+    @if (cargandoEstadisticas || cargandoEventos) {
+      <app-skeleton-card [type]="'alerts'" [count]="3"></app-skeleton-card>
+    } @else {
+      <div class="alerts-grid">
+        @for (alerta of alertasOperativas; track alerta.id) {
+          <a
+            [routerLink]="[alerta.ruta]"
+            [queryParams]="alerta.queryParams"
+            class="alert-card"
+            [ngClass]="alerta.tipo">
+            <div class="alert-icon">
+              <i [class]="alerta.icono"></i>
+            </div>
+            <div class="alert-content">
+              <h4>{{ alerta.titulo }}</h4>
+              <p>{{ alerta.descripcion }}</p>
+              <span class="alert-action">
+                {{ alerta.accionTexto }} <i class="bi bi-arrow-right"></i>
+              </span>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Priority Operations -->
+  <div class="operations-section">
+    <div class="section-title">
+      <i class="bi bi-lightning-charge-fill"></i>
+      <h2>Operaciones Prioritarias</h2>
+    </div>
+    <div class="operations-grid">
+      @for (operacion of operacionesPrioritarias; track operacion.titulo) {
+        <a
+          [routerLink]="[operacion.ruta]"
+          [queryParams]="operacion.queryParams"
+          class="operation-card"
+          [style.--op-color]="operacion.color">
+          <div class="operation-icon">
+            <i [class]="operacion.icono"></i>
+          </div>
+          <div class="operation-content">
+            <h4>{{ operacion.titulo }}</h4>
+            <p>{{ operacion.descripcion }}</p>
+          </div>
+          <div class="operation-arrow">
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </a>
+      }
+    </div>
+  </div>
+
   <!-- Quick Access Section -->
   <div class="quick-access-section">
     <div class="section-title">
