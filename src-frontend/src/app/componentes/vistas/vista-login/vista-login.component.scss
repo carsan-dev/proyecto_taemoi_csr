@@ -228,6 +228,17 @@ $transition-speed: 0.3s;
       .form-group {
         margin-bottom: 1.75rem;
 
+        .form-label {
+          display: block;
+          margin: 0 0 0.45rem 0.15rem;
+          color: #4b5563;
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          line-height: 1.2;
+        }
+
         .input-wrapper {
           position: relative;
 
@@ -249,8 +260,10 @@ $transition-speed: 0.3s;
             border-radius: 12px;
             font-size: 1rem;
             color: $text-dark;
-            background: $text-light;
-            transition: all $transition-speed ease;
+            background: #ffffff;
+            transition:
+              border-color 0.22s ease,
+              box-shadow 0.22s ease;
             outline: none;
 
             &[type='date'] {
@@ -261,10 +274,6 @@ $transition-speed: 0.3s;
               }
             }
 
-            &::placeholder {
-              color: transparent;
-            }
-
             &:focus {
               border-color: $primary-color;
               box-shadow: 0 0 0 4px rgba($primary-color, 0.1);
@@ -272,37 +281,7 @@ $transition-speed: 0.3s;
               ~ .input-icon {
                 color: $primary-color;
               }
-
-              ~ .form-label {
-                top: -0.6rem;
-                left: 3rem;
-                font-size: 0.75rem;
-                color: $primary-color;
-                background: $text-light;
-                padding: 0 0.5rem;
-              }
             }
-
-            &:not(:placeholder-shown) ~ .form-label {
-              top: -0.6rem;
-              left: 3rem;
-              font-size: 0.75rem;
-              color: $primary-color;
-              background: $text-light;
-              padding: 0 0.5rem;
-            }
-          }
-
-          .form-label {
-            position: absolute;
-            left: 3.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: $text-muted;
-            font-size: 1rem;
-            pointer-events: none;
-            transition: all $transition-speed ease;
-            background: transparent;
           }
 
           .password-toggle {
@@ -989,6 +968,12 @@ $transition-speed: 0.3s;
       .login-form {
         .form-group {
           margin-bottom: 1.5rem;
+ 
+          .form-label {
+            font-size: 0.72rem;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.05em;
+          }
 
           .input-wrapper {
             .form-input {
@@ -999,11 +984,6 @@ $transition-speed: 0.3s;
             .input-icon {
               left: 1rem;
               font-size: 1.2rem;
-            }
-
-            .form-label {
-              left: 3.2rem;
-              font-size: 0.95rem;
             }
 
             .password-toggle {
@@ -1050,6 +1030,12 @@ $transition-speed: 0.3s;
 
       .login-form {
         .form-group {
+          .form-label {
+            font-size: 0.7rem;
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.045em;
+          }
+
           .input-wrapper {
             .form-input {
               padding: 1rem 1rem 1rem 3rem;
@@ -1059,11 +1045,6 @@ $transition-speed: 0.3s;
             .input-icon {
               left: 0.9rem;
               font-size: 1.1rem;
-            }
-
-            .form-label {
-              left: 3rem;
-              font-size: 0.9rem;
             }
           }
         }
