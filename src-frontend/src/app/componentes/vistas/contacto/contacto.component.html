@@ -160,7 +160,7 @@
                 class="form-textarea"
                 id="mensaje"
                 formControlName="mensaje"
-                rows="5"
+                rows="4"
                 [class.invalid]="contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched"></textarea>
             </div>
             @if (contactForm.get('mensaje')?.invalid && contactForm.get('mensaje')?.touched) {

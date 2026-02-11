@@ -29,6 +29,10 @@
 
       <!-- Right Section - Login & Register -->
       <div class="login-right">
+        <a href="/" class="mobile-back-link" aria-label="Volver al inicio">
+          <i class="bi bi-arrow-left"></i>
+          <span>Inicio</span>
+        </a>
         <div class="form-header">
           <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesión' }}</h2>
           @if (!mostrarRegistro) {
@@ -47,6 +51,11 @@
           <button
             type="button"
             class="switch-tab"
+            id="login-tab"
+            role="tab"
+            aria-controls="login-panel"
+            [attr.aria-selected]="!mostrarRegistro"
+            [attr.tabindex]="!mostrarRegistro ? 0 : -1"
             [class.active]="!mostrarRegistro"
             (click)="mostrarRegistro = false">
             Iniciar sesión
@@ -54,6 +63,11 @@
           <button
             type="button"
             class="switch-tab"
+            id="register-tab"
+            role="tab"
+            aria-controls="register-panel"
+            [attr.aria-selected]="mostrarRegistro"
+            [attr.tabindex]="mostrarRegistro ? 0 : -1"
             [class.active]="mostrarRegistro"
             (click)="mostrarRegistro = true">
             Crear cuenta
@@ -61,7 +75,14 @@
         </div>
 
         <div class="form-panel" [class.show-register]="mostrarRegistro">
-          <form (ngSubmit)="login()" class="login-form form-view login-view">
+          <form
+            (ngSubmit)="login()"
+            class="login-form form-view login-view"
+            id="login-panel"
+            role="tabpanel"
+            aria-labelledby="login-tab"
+            [attr.aria-hidden]="mostrarRegistro"
+            [attr.inert]="mostrarRegistro ? '' : null">
             <!-- Email Field -->
             <div class="form-group">
               <label for="email" class="form-label">Correo electrónico</label>
@@ -153,7 +174,15 @@
             </div>
           </form>
 
-          <form (ngSubmit)="solicitarRegistro()" class="login-form form-view register-view" novalidate>
+          <form
+            (ngSubmit)="solicitarRegistro()"
+            class="login-form form-view register-view"
+            id="register-panel"
+            role="tabpanel"
+            aria-labelledby="register-tab"
+            [attr.aria-hidden]="!mostrarRegistro"
+            [attr.inert]="mostrarRegistro ? null : ''"
+            novalidate>
             <!-- Email Field -->
             <div class="form-group">
               <label for="registroEmail" class="form-label">Correo electrónico</label>

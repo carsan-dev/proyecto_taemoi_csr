@@ -205,6 +205,6 @@ Actualizar precio productos
 
 ✔ Licencia kickboxing adulto 71.95, licencia kickboxing infantil 54.95
 
-Modificar los labels de los inputs públicos para un mejor diseño
+✔ Modificar los labels de los inputs públicos para un mejor diseño
 
 A FUTURO: Modificar campos legacy (tipoTarifa, Grado, AptoParaExamen, etc) en Alumno para usar los multideporte exclusivamente y refactorizar (50% completado) 
