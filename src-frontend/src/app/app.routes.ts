@@ -192,7 +192,8 @@ export const routes: Routes = [
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
     data: { seo: SEO_ROUTES.noIndex },
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent)
+    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
+    canActivate: [roleGuard],
   },
   {
     path: 'turnosCrear',
