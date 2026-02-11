@@ -19,12 +19,6 @@ $shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
 $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
 $transition-speed: 0.3s;
 
-@font-face {
-  font-family: "Osaka-Sans Serif";
-  src: url("../../../../assets/fonts/osaka-re.ttf") format("truetype");
-  font-display: swap;
-}
-
 // ========================================
 // CONTACT PAGE
 // ========================================
@@ -122,12 +116,12 @@ $transition-speed: 0.3s;
     }
 
     .brand-title {
-      font-family: "Osaka-Sans Serif", sans-serif;
-      font-size: 2.4rem;
+      font-size: 2rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.5px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      margin-bottom: 0.45rem;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.28);
     }
 
     .brand-subtitle {
@@ -200,7 +194,6 @@ $transition-speed: 0.3s;
       text-align: center;
 
       .form-title {
-        font-family: "Osaka-Sans Serif", sans-serif;
         font-size: 2.1rem;
         font-weight: 700;
         color: $text-dark;
@@ -217,6 +210,17 @@ $transition-speed: 0.3s;
     .contact-form {
       .form-group {
         margin-bottom: 1.75rem;
+ 
+        .form-label {
+          display: block;
+          margin: 0 0 0.45rem 0.15rem;
+          color: $text-muted-strong;
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          line-height: 1.2;
+        }
 
         .input-wrapper {
           position: relative;
@@ -237,11 +241,6 @@ $transition-speed: 0.3s;
             transform: none;
           }
 
-          &.textarea-wrapper .form-label {
-            top: 1.4rem;
-            transform: none;
-          }
-
           .form-input,
           .form-select,
           .form-textarea {
@@ -252,12 +251,10 @@ $transition-speed: 0.3s;
             font-size: 1rem;
             color: $text-dark;
             background: #ffffff;
-            transition: all $transition-speed ease;
+            transition:
+              border-color 0.22s ease,
+              box-shadow 0.22s ease;
             outline: none;
-
-            &::placeholder {
-              color: transparent;
-            }
 
             &:focus {
               border-color: $primary-color;
@@ -266,24 +263,6 @@ $transition-speed: 0.3s;
               ~ .input-icon {
                 color: $primary-color;
               }
-
-              ~ .form-label {
-                top: -0.6rem;
-                left: 3rem;
-                font-size: 0.75rem;
-                color: $primary-dark;
-                background: #ffffff;
-                padding: 0 0.5rem;
-              }
-            }
-
-            &:not(:placeholder-shown) ~ .form-label {
-              top: -0.6rem;
-              left: 3rem;
-              font-size: 0.75rem;
-              color: $primary-dark;
-              background: #ffffff;
-              padding: 0 0.5rem;
             }
 
             &.invalid {
@@ -318,38 +297,6 @@ $transition-speed: 0.3s;
             min-height: 150px;
           }
 
-          &.select-wrapper {
-            .form-select {
-              padding-top: 1.55rem;
-              padding-bottom: 0.95rem;
-            }
-
-            .form-label {
-              top: 0.6rem;
-              transform: none;
-              font-size: 0.75rem;
-              color: $primary-dark;
-              background: transparent;
-              padding: 0;
-            }
-
-            .form-select:focus ~ .form-label {
-              color: $primary-dark;
-            }
-          }
-
-          &.multi-select-wrapper {
-            .input-icon {
-              top: 1.4rem;
-              transform: none;
-            }
-
-            .form-select {
-              padding-top: 2.1rem;
-              padding-bottom: 1rem;
-            }
-          }
-
           &.badge-wrapper {
             .input-icon {
               top: 1.4rem;
@@ -360,19 +307,7 @@ $transition-speed: 0.3s;
           .form-textarea {
             resize: vertical;
             min-height: 140px;
-            padding-top: 1.6rem;
-          }
-
-          .form-label {
-            position: absolute;
-            left: 3.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: $text-muted;
-            font-size: 1rem;
-            pointer-events: none;
-            transition: all $transition-speed ease;
-            background: transparent;
+            padding-top: 1rem;
           }
         }
 
@@ -731,11 +666,12 @@ $transition-speed: 0.3s;
               left: 0.95rem;
               font-size: 1.15rem;
             }
+          }
 
-            .form-label {
-              left: 3.1rem;
-              font-size: 0.92rem;
-            }
+          .form-label {
+            font-size: 0.74rem;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.05em;
           }
 
           .help-text {
@@ -822,23 +758,18 @@ $transition-speed: 0.3s;
 
       .contact-form {
         .form-group {
+          .form-label {
+            font-size: 0.72rem;
+            margin-bottom: 0.32rem;
+            letter-spacing: 0.045em;
+          }
+
           .input-wrapper {
             .form-input,
             .form-select,
             .form-textarea {
               padding: 0.98rem 0.95rem 0.98rem 2.95rem;
               font-size: 0.92rem;
-            }
-
-            &.select-wrapper {
-              .form-select {
-                padding-top: 1.28rem;
-                padding-bottom: 0.78rem;
-              }
-
-              .form-label {
-                top: 0.52rem;
-              }
             }
 
             &.badge-wrapper {
@@ -850,11 +781,6 @@ $transition-speed: 0.3s;
             .input-icon {
               left: 0.9rem;
               font-size: 1.08rem;
-            }
-
-            .form-label {
-              left: 2.95rem;
-              font-size: 0.88rem;
             }
           }
         }

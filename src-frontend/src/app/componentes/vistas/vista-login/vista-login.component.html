@@ -64,6 +64,7 @@
           <form (ngSubmit)="login()" class="login-form form-view login-view">
             <!-- Email Field -->
             <div class="form-group">
+              <label for="email" class="form-label">Correo electrónico</label>
               <div class="input-wrapper">
                 <i class="bi bi-envelope-fill input-icon"></i>
                 <input
@@ -72,15 +73,14 @@
                   id="email"
                   name="email"
                   [(ngModel)]="credenciales.email"
-                  placeholder=" "
                   required
                   autocomplete="username">
-                <label for="email" class="form-label">Correo electrónico</label>
               </div>
             </div>
 
             <!-- Password Field -->
             <div class="form-group">
+              <label for="contrasena" class="form-label">Contraseña</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -90,10 +90,8 @@
                   id="contrasena"
                   name="contrasena"
                   [(ngModel)]="credenciales.contrasena"
-                  placeholder=" "
                   required
                   autocomplete="current-password">
-                <label for="contrasena" class="form-label">Contraseña</label>
                 <button
                   type="button"
                   class="password-toggle"
@@ -158,6 +156,7 @@
           <form (ngSubmit)="solicitarRegistro()" class="login-form form-view register-view" novalidate>
             <!-- Email Field -->
             <div class="form-group">
+              <label for="registroEmail" class="form-label">Correo electrónico</label>
               <div class="input-wrapper">
                 <i class="bi bi-envelope-fill input-icon"></i>
                 <input
@@ -166,15 +165,14 @@
                   id="registroEmail"
                   name="registroEmail"
                   [(ngModel)]="registro.email"
-                  placeholder=" "
                   required
                   autocomplete="username">
-                <label for="registroEmail" class="form-label">Correo electrónico</label>
               </div>
             </div>
 
             <!-- Birth Date Field -->
             <div class="form-group">
+              <label for="registroNacimiento" class="form-label">Fecha de nacimiento</label>
               <div class="input-wrapper">
                 <i class="bi bi-calendar-event input-icon"></i>
                 <input
@@ -183,15 +181,14 @@
                   id="registroNacimiento"
                   name="registroNacimiento"
                   [(ngModel)]="registro.fechaNacimiento"
-                  placeholder=" "
                   required
                   autocomplete="bday">
-                <label for="registroNacimiento" class="form-label">Fecha de nacimiento</label>
               </div>
             </div>
 
             <!-- Password Field -->
             <div class="form-group">
+              <label for="registroContrasena" class="form-label">Contraseña</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -201,10 +198,8 @@
                   id="registroContrasena"
                   name="registroContrasena"
                   [(ngModel)]="registro.contrasena"
-                  placeholder=" "
                   required
                   autocomplete="new-password">
-                <label for="registroContrasena" class="form-label">Contraseña</label>
                 <button
                   type="button"
                   class="password-toggle"
@@ -243,6 +238,7 @@
 
             <!-- Confirm Password -->
             <div class="form-group">
+              <label for="registroConfirmar" class="form-label">Confirmar contraseña</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -252,10 +248,8 @@
                   id="registroConfirmar"
                   name="registroConfirmar"
                   [(ngModel)]="registro.confirmarContrasena"
-                  placeholder=" "
                   required
                   autocomplete="new-password">
-                <label for="registroConfirmar" class="form-label">Confirmar contraseña</label>
                 <button
                   type="button"
                   class="password-toggle"
