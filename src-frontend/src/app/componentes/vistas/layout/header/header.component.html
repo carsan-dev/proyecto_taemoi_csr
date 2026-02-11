@@ -208,11 +208,6 @@
       </div>
     </a>
     <div class="navbar-actions">
-      <button class="btn-spotify-toggle" type="button" (click)="toggleSpotifyWidget()"
-        [class.is-active]="spotifyWidgetVisible" [attr.aria-pressed]="spotifyWidgetVisible"
-        aria-label="Mostrar reproductor de Spotify" title="Spotify">
-        <i class="bi bi-spotify"></i>
-      </button>
       <div class="admin-user-info">
         <i class="bi bi-person-circle"></i>
         @if (username) {
@@ -462,57 +457,6 @@
     </li>
   </ul>
 </nav>
-
-@if (spotifyWidgetVisible) {
-<section class="spotify-widget" aria-label="Reproductor de Spotify" #spotifyWidget [style.width.px]="spotifyWidgetWidth"
-  [style.height.px]="spotifyWidgetHeight">
-  <div class="spotify-widget-header">
-    <div class="spotify-widget-title">
-      <i class="bi bi-spotify"></i>
-      <span>Spotify</span>
-    </div>
-    <button class="spotify-close" type="button" (click)="toggleSpotifyWidget()" aria-label="Ocultar reproductor">
-      <i class="bi bi-x-lg"></i>
-    </button>
-  </div>
-  <div class="spotify-widget-body">
-    <label class="spotify-label" for="spotifyUrlInput">Enlace de Spotify</label>
-    <div class="spotify-input-row">
-      <input id="spotifyUrlInput" class="spotify-input" type="url" [(ngModel)]="spotifyUrlInput"
-        (keydown.enter)="guardarSpotifyUrl()" placeholder="https://open.spotify.com/playlist/..." />
-      <button class="spotify-save" type="button" (click)="guardarSpotifyUrl()" [disabled]="!spotifyControlsEnabled">
-        Guardar
-      </button>
-    </div>
-    <div class="spotify-actions">
-      <button class="spotify-open" type="button" (click)="abrirSpotify()"
-        [disabled]="!spotifyControlsEnabled || !spotifyOpenUrl">
-        <i class="bi bi-box-arrow-up-right"></i>
-        Abrir en Spotify
-      </button>
-      <span class="spotify-hint">En móvil, la reproducción completa se abre en la app.</span>
-    </div>
-    @if (spotifyError) {
-    <div class="spotify-error">{{ spotifyError }}</div>
-    }
-    @if (spotifyEmbedUrl) {
-    <iframe class="spotify-embed" [src]="spotifyEmbedUrl" width="100%" frameborder="0"
-      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"
-      title="Reproductor de Spotify"></iframe>
-    } @else {
-    <div class="spotify-empty">Pega un enlace para cargar tu música.</div>
-    }
-  </div>
-  <span class="spotify-resize-handle handle-tl" aria-hidden="true"
-    (pointerdown)="iniciarRedimension($event, 'tl')"></span>
-  <span class="spotify-resize-handle handle-tr" aria-hidden="true"
-    (pointerdown)="iniciarRedimension($event, 'tr')"></span>
-  <span class="spotify-resize-handle handle-bl" aria-hidden="true"
-    (pointerdown)="iniciarRedimension($event, 'bl')"></span>
-  <span class="spotify-resize-handle handle-br" aria-hidden="true"
-    (pointerdown)="iniciarRedimension($event, 'br')"></span>
-</section>
-}
 }
 
 @if (isAuthChecked && usuarioLogueado && isUser && !isAdmin) {
@@ -748,4 +692,3 @@
 </div>
 }
 }
-
