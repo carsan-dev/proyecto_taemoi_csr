@@ -113,7 +113,8 @@
 .btn-principal,
 .btn-secundario,
 .btn-cobrar,
-.btn-exportar {
+.btn-exportar,
+.btn-accion {
   border: none;
   border-radius: 8px;
   padding: 0.5rem 0.8rem;
@@ -310,6 +311,14 @@ tbody td {
   white-space: nowrap;
 }
 
+.notas-cell {
+  max-width: 240px;
+  min-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .fila-pendiente {
   background: #fffaf0;
 }
@@ -351,7 +360,7 @@ tbody td {
   background: #2f855a;
   color: #ffffff;
   width: auto;
-  min-width: 8.75rem;
+  min-width: 7.9rem;
   min-height: 2rem;
   flex-shrink: 0;
 }
@@ -364,6 +373,43 @@ tbody td {
 .btn-exportar .spinner-border {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+.acciones-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.btn-accion {
+  color: #fff;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  min-height: 1.9rem;
+}
+
+.btn-fecha {
+  background: #2563eb;
+}
+
+.btn-fecha:hover {
+  background: #1d4ed8;
+}
+
+.btn-nota {
+  background: #6b7280;
+}
+
+.btn-nota:hover {
+  background: #4b5563;
+}
+
+.btn-revertir {
+  background: #c53030;
+}
+
+.btn-revertir:hover {
+  background: #9b2c2c;
 }
 
 .accion-hecha {
@@ -439,6 +485,6 @@ tbody td {
   }
 
   table {
-    min-width: 820px;
+    min-width: 980px;
   }
 }
