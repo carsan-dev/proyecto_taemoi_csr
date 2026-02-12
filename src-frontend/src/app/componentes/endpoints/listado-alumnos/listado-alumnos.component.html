@@ -425,9 +425,15 @@
                       </label>
                       <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
                     </div>
-                    <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()">
-                      <i class="bi bi-cash-stack"></i>
-                      <span>Cargar Mensualidades</span>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()"
+                      [disabled]="procesandoMensualidadesGenerales">
+                      @if (procesandoMensualidadesGenerales) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Cargando...</span>
+                      } @else {
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Cargar Mensualidades</span>
+                      }
                     </button>
                   </div>
                 } @else {
@@ -461,9 +467,14 @@
                       <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
                     </div>
                     <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
-                      [disabled]="!alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
-                      <i class="bi bi-cash"></i>
-                      <span>Cargar Mensualidad</span>
+                      [disabled]="procesandoMensualidadIndividual || !alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
+                      @if (procesandoMensualidadIndividual) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Procesando...</span>
+                      } @else {
+                        <i class="bi bi-cash"></i>
+                        <span>Cargar Mensualidad</span>
+                      }
                     </button>
                   </div>
                 }
@@ -513,9 +524,15 @@
                       </label>
                       <input id="anoLicenciaGeneral" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionado" />
                     </div>
-                    <button class="admin-btn admin-btn-success w-100" (click)="cargarLicenciasGenerales()">
-                      <i class="bi bi-shield-check"></i>
-                      <span>Cargar Licencias</span>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarLicenciasGenerales()"
+                      [disabled]="procesandoLicenciasGenerales">
+                      @if (procesandoLicenciasGenerales) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Cargando...</span>
+                      } @else {
+                        <i class="bi bi-shield-check"></i>
+                        <span>Cargar Licencias</span>
+                      }
                     </button>
                   </div>
                 } @else {
@@ -549,9 +566,14 @@
                       <input id="anoLicenciaIndividual" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionadoIndividual" />
                     </div>
                     <button class="admin-btn admin-btn-primary w-100" (click)="cargarLicenciaIndividual()"
-                      [disabled]="!alumnoSeleccionado || !anoLicenciaSeleccionadoIndividual">
-                      <i class="bi bi-shield-check"></i>
-                      <span>Cargar Licencia</span>
+                      [disabled]="procesandoLicenciaIndividual || !alumnoSeleccionado || !anoLicenciaSeleccionadoIndividual">
+                      @if (procesandoLicenciaIndividual) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Procesando...</span>
+                      } @else {
+                        <i class="bi bi-shield-check"></i>
+                        <span>Cargar Licencia</span>
+                      }
                     </button>
                   </div>
                 }
@@ -614,10 +636,15 @@
               </div>
 
               <button class="admin-btn admin-btn-primary w-100 mt-4"
-                [disabled]="!mesAnoAsistencia || gruposSeleccionados.length === 0"
+                [disabled]="generandoListadoAsistencia || !mesAnoAsistencia || gruposSeleccionados.length === 0"
                 (click)="generarListadoAsistencia()">
-                <i class="bi bi-file-earmark-pdf-fill"></i>
-                <span>Generar Informe de Asistencia</span>
+                @if (generandoListadoAsistencia) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Generando...</span>
+                } @else {
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>Generar Informe de Asistencia</span>
+                }
               </button>
             </div>
           </div>
@@ -657,10 +684,15 @@
               </div>
 
               <button class="admin-btn admin-btn-success w-100 mt-4"
-                [disabled]="!mesAnoMensualidad"
+                [disabled]="generandoListadoMensualidades || !mesAnoMensualidad"
                 (click)="generarListadoMensualidadMensual()">
-                <i class="bi bi-file-earmark-text-fill"></i>
-                <span>Generar Informe de Mensualidades</span>
+                @if (generandoListadoMensualidades) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Generando...</span>
+                } @else {
+                  <i class="bi bi-file-earmark-text-fill"></i>
+                  <span>Generar Informe de Mensualidades</span>
+                }
               </button>
             </div>
           </div>

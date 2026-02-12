@@ -13,6 +13,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
+import { LoadingService } from '../../../servicios/generales/loading.service';
 
 // Register Spanish locale
 registerLocaleData(localeEs, 'es');
@@ -98,11 +99,14 @@ export class ListadoConvocatoriasComponent implements OnInit {
   alumnosCargadosCompletamente = false;
 
   alumnoSeleccionado: number | null = null;
+  generandoReporte: boolean = false;
+  actualizandoGrados: boolean = false;
   private readonly storageKey = 'listadoConvocatoriasEstado';
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    private readonly changeDetectorRef: ChangeDetectorRef,
+    private readonly loadingService: LoadingService
   ) {}
 
   ngOnInit(): void {
@@ -416,8 +420,20 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   procesarActualizacionDeGrados(convocatoria: any): void {
+    if (this.actualizandoGrados) {
+      return;
+    }
+
+    this.actualizandoGrados = true;
+    this.loadingService.show();
     this.endpointsService
       .actualizarGradosDeConvocatoria(convocatoria.id)
+      .pipe(
+        finalize(() => {
+          this.actualizandoGrados = false;
+          this.loadingService.hide();
+        })
+      )
       .subscribe({
         next: () => {
           Swal.fire({
@@ -608,52 +624,53 @@ export class ListadoConvocatoriasComponent implements OnInit {
   }
 
   generarReporte(convocatoria: any): void {
-    // Show loading message
-    Swal.fire({
-      title: 'Generando informe...',
-      text: 'Por favor, espere mientras se genera el PDF',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
+    if (!convocatoria?.id || this.generandoReporte) {
+      return;
+    }
 
-    this.endpointsService.descargarInformePDFConvocatoria(convocatoria.id).subscribe({
-      next: (blob: Blob) => {
-        // Close loading message
-        Swal.close();
+    this.generandoReporte = true;
+    this.loadingService.show();
 
-        // Create download link
-        const url = globalThis.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
+    this.endpointsService
+      .descargarInformePDFConvocatoria(convocatoria.id)
+      .pipe(
+        finalize(() => {
+          this.generandoReporte = false;
+          this.loadingService.hide();
+        })
+      )
+      .subscribe({
+        next: (blob: Blob) => {
+          // Create download link
+          const url = globalThis.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
 
-        // Format filename
-        const fechaStr = new Date(convocatoria.fechaConvocatoria).toLocaleDateString('es-ES').replaceAll('/', '_');
-        link.download = `informe_convocatoria_${convocatoria.deporte}_${fechaStr}.pdf`;
+          // Format filename
+          const fechaStr = new Date(convocatoria.fechaConvocatoria).toLocaleDateString('es-ES').replaceAll('/', '_');
+          link.download = `informe_convocatoria_${convocatoria.deporte}_${fechaStr}.pdf`;
 
-        // Trigger download
-        link.click();
+          // Trigger download
+          link.click();
 
-        // Cleanup
-        globalThis.URL.revokeObjectURL(url);
+          // Cleanup
+          globalThis.URL.revokeObjectURL(url);
 
-        Swal.fire({
-          title: 'Éxito',
-          text: 'El informe se ha descargado correctamente.',
-          icon: 'success',
-          timer: 2000,
-        });
-      },
-      error: () => {
-        Swal.close();
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo generar el informe.',
-          icon: 'error',
-        });
-      },
-    });
+          Swal.fire({
+            title: 'Éxito',
+            text: 'El informe se ha descargado correctamente.',
+            icon: 'success',
+            timer: 2000,
+          });
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo generar el informe.',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   private guardarEstadoPaginacion(): void {
