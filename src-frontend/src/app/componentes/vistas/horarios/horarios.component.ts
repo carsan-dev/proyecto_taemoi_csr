@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 interface TimeSlot {
   horaInicio: string;
@@ -24,7 +25,7 @@ interface TurnoEnCelda {
   templateUrl: './horarios.component.html',
   styleUrls: ['./horarios.component.scss'],
 })
-export class HorariosComponent implements OnInit {
+export class HorariosComponent implements OnInit, OnDestroy {
   usuarioLogueado: boolean = false;
   turnos: any[] = [];
   diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
@@ -40,6 +41,7 @@ export class HorariosComponent implements OnInit {
 
   // Mobile: selected day for tab view
   selectedDayIndex: number = 0;
+  private readonly subscriptions: Subscription = new Subscription();
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -52,7 +54,7 @@ export class HorariosComponent implements OnInit {
   }
 
   cargarLimiteTurno(): void {
-    this.endpointsService.obtenerLimiteTurno().subscribe({
+    const sub = this.endpointsService.obtenerLimiteTurno().subscribe({
       next: (limite) => {
         this.limiteTurno = limite;
       },
@@ -61,14 +63,16 @@ export class HorariosComponent implements OnInit {
         this.limiteTurno = 36;
       }
     });
+    this.subscriptions.add(sub);
   }
 
   obtenerTurnos() {
     this.isLoading = true;
-    this.endpointsService.obtenerTurnosDTO().subscribe({
+    const sub = this.endpointsService.obtenerTurnosDTO().subscribe({
       next: (response) => {
+        const turnosNormalizados = Array.isArray(response) ? response : [];
         // Filter out competition classes
-        this.turnos = response.filter((turno: any) => {
+        this.turnos = turnosNormalizados.filter((turno: any) => {
           const categoria = this.obtenerCategoria(turno).toLowerCase();
           return !categoria.includes('competici');
         });
@@ -84,11 +88,13 @@ export class HorariosComponent implements OnInit {
         });
       },
     });
+    this.subscriptions.add(sub);
   }
 
   buildTimetable(): void {
     // Extract unique time slots and sort them
     const timeSlotSet = new Map<string, TimeSlot>();
+    const celdasPorFranjaYDia = new Map<string, TurnoEnCelda>();
 
     this.turnos.forEach(turno => {
       const key = `${turno.horaInicio}-${turno.horaFin}`;
@@ -97,6 +103,22 @@ export class HorariosComponent implements OnInit {
           horaInicio: turno.horaInicio,
           horaFin: turno.horaFin,
           display: `${turno.horaInicio} - ${turno.horaFin}`
+        });
+      }
+
+      const dia = turno.diaSemana;
+      if (!dia) {
+        return;
+      }
+
+      const celdaKey = `${key}__${dia}`;
+      if (!celdasPorFranjaYDia.has(celdaKey)) {
+        const sport = this.obtenerEtiquetaColor(turno);
+        celdasPorFranjaYDia.set(celdaKey, {
+          turno: turno,
+          sport,
+          emoji: this.obtenerEmoticonoCategoria(sport),
+          displayName: this.obtenerNombreMostrado(turno)
         });
       }
     });
@@ -114,22 +136,8 @@ export class HorariosComponent implements OnInit {
       const dayMap = new Map<string, TurnoEnCelda | null>();
 
       this.diasSemana.forEach(dia => {
-        const turno = this.turnos.find(t =>
-          t.diaSemana === dia &&
-          t.horaInicio === slot.horaInicio &&
-          t.horaFin === slot.horaFin
-        );
-
-        if (turno) {
-          dayMap.set(dia, {
-            turno: turno,
-            sport: this.obtenerEtiquetaColor(turno),
-            emoji: this.obtenerEmoticonoCategoria(this.obtenerEtiquetaColor(turno)),
-            displayName: this.obtenerNombreMostrado(turno)
-          });
-        } else {
-          dayMap.set(dia, null);
-        }
+        const celdaKey = `${slotKey}__${dia}`;
+        dayMap.set(dia, celdasPorFranjaYDia.get(celdaKey) ?? null);
       });
 
       this.timetableGrid.set(slotKey, dayMap);
@@ -211,6 +219,10 @@ export class HorariosComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.selectedTurno = null;
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   calcularEdad(fechaNacimiento: Date): number {

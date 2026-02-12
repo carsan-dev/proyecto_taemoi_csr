@@ -9,6 +9,8 @@ import { throwError } from 'rxjs/internal/observable/throwError';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
 import { tap } from 'rxjs/internal/operators/tap';
 import { catchError } from 'rxjs/internal/operators/catchError';
+import { finalize } from 'rxjs/internal/operators/finalize';
+import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
 @Injectable({
   providedIn: 'root',
@@ -52,6 +54,8 @@ export class AuthenticationService {
     this.alumnoIdSubject.asObservable();
 
   private rolesCargados: boolean = false;
+  private alumnosAsociadosCache: any[] | null = null;
+  private alumnosAsociadosRequest$: Observable<any[]> | null = null;
 
   constructor(private readonly http: HttpClient) {
     this.verificarEstadoAutenticacion();
@@ -139,6 +143,8 @@ export class AuthenticationService {
     this.isManagerSubject.next(false);
     this.isUserSubject.next(false);
     this.rolesCargados = false;
+    this.alumnosAsociadosCache = null;
+    this.alumnosAsociadosRequest$ = null;
 
     // Limpiar sessionStorage
     if (globalThis.window?.sessionStorage) {
@@ -318,9 +324,37 @@ export class AuthenticationService {
   }
 
   // Obtener todos los alumnos asociados al email del usuario
-  obtenerTodosLosAlumnos(): Observable<any[]> {
-    return this.http
+  obtenerTodosLosAlumnos(forceRefresh: boolean = false): Observable<any[]> {
+    if (forceRefresh) {
+      this.alumnosAsociadosCache = null;
+      this.alumnosAsociadosRequest$ = null;
+    }
+
+    if (this.alumnosAsociadosCache) {
+      return of(this.alumnosAsociadosCache);
+    }
+
+    if (this.alumnosAsociadosRequest$) {
+      return this.alumnosAsociadosRequest$;
+    }
+
+    const request$ = this.http
       .get<any[]>(`${this.urlBase}/user/alumnos`, { withCredentials: true })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap((alumnos) => {
+          this.alumnosAsociadosCache = Array.isArray(alumnos) ? alumnos : [];
+        }),
+        finalize(() => {
+          this.alumnosAsociadosRequest$ = null;
+        }),
+        shareReplay(1),
+        catchError((error) => {
+          this.alumnosAsociadosCache = null;
+          return this.manejarError(error);
+        })
+      );
+
+    this.alumnosAsociadosRequest$ = request$;
+    return request$;
   }
 }

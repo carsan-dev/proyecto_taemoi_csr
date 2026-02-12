@@ -4,9 +4,12 @@ import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
 import { Turno } from '../../interfaces/turno';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
-import { throwError } from 'rxjs/internal/observable/throwError';
 import { Observable } from 'rxjs/internal/Observable';
+import { of } from 'rxjs/internal/observable/of';
+import { throwError } from 'rxjs/internal/observable/throwError';
 import { catchError } from 'rxjs/internal/operators/catchError';
+import { finalize } from 'rxjs/internal/operators/finalize';
+import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 import { tap } from 'rxjs/internal/operators/tap';
 import { Producto } from '../../interfaces/producto';
 import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
@@ -50,9 +53,24 @@ export class EndpointsService {
   private readonly eventosSubject = new BehaviorSubject<any[]>([]);
   public eventos$ = this.eventosSubject.asObservable();
 
+  private turnosDtoCache: any[] | null = null;
+  private turnosDtoRequest$: Observable<any[]> | null = null;
+  private eventosPublicosCache: any[] | null = null;
+  private eventosPublicosRequest$: Observable<any[]> | null = null;
+
   private manejarError(error: any) {
     console.error('Ocurrió un error', error);
     return throwError(() => error);
+  }
+
+  private limpiarCacheTurnosDTO(): void {
+    this.turnosDtoCache = null;
+    this.turnosDtoRequest$ = null;
+  }
+
+  private limpiarCacheEventosPublicos(): void {
+    this.eventosPublicosCache = null;
+    this.eventosPublicosRequest$ = null;
   }
 
   obtenerAlumnos(
@@ -127,6 +145,15 @@ export class EndpointsService {
   countAlumnos(): Observable<any[]> {
     return this.http
       .get<any[]>(`${this.urlBase}/alumnos/count`, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerDistribucionAlumnosPorDeporte(): Observable<Record<string, number>> {
+    return this.http
+      .get<Record<string, number>>(`${this.urlBase}/alumnos/deportes/distribucion`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders,
+      })
       .pipe(catchError(this.manejarError));
   }
 
@@ -932,7 +959,10 @@ export class EndpointsService {
       .post<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, null, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
   eliminarTurnoDeGrupo(grupoId: number, turnoId: number): Observable<any> {
@@ -940,7 +970,10 @@ export class EndpointsService {
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
   obtenerTurnos(): void {
@@ -960,10 +993,37 @@ export class EndpointsService {
       });
   }
 
-  obtenerTurnosDTO(): Observable<any> {
-    return this.http
-      .get<any>(`${this.urlBase}/turnos/dto`)
-      .pipe(catchError(this.manejarError));
+  obtenerTurnosDTO(forceRefresh: boolean = false): Observable<any[]> {
+    if (forceRefresh) {
+      this.limpiarCacheTurnosDTO();
+    }
+
+    if (this.turnosDtoCache) {
+      return of(this.turnosDtoCache);
+    }
+
+    if (this.turnosDtoRequest$) {
+      return this.turnosDtoRequest$;
+    }
+
+    const request$ = this.http
+      .get<any[]>(`${this.urlBase}/turnos/dto`)
+      .pipe(
+        tap((turnos) => {
+          this.turnosDtoCache = Array.isArray(turnos) ? turnos : [];
+        }),
+        finalize(() => {
+          this.turnosDtoRequest$ = null;
+        }),
+        shareReplay(1),
+        catchError((error) => {
+          this.turnosDtoCache = null;
+          return this.manejarError(error);
+        })
+      );
+
+    this.turnosDtoRequest$ = request$;
+    return request$;
   }
 
   obtenerTodosLosTurnos(): Observable<any[]> {
@@ -988,7 +1048,10 @@ export class EndpointsService {
       .post<any>(`${this.urlBase}/turnos/crear`, turnoData, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
   crearTurnoConGrupo(turnoData: any): Observable<any> {
@@ -996,7 +1059,10 @@ export class EndpointsService {
       .post<any>(`${this.urlBase}/turnos/crear-asignando-grupo`, turnoData, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
   actualizarTurno(turnoId: number, turnoData: any): Observable<any> {
@@ -1004,7 +1070,10 @@ export class EndpointsService {
       .put<any>(`${this.urlBase}/turnos/${turnoId}`, turnoData, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
   eliminarTurno(turnoId: number): Observable<any> {
@@ -1012,24 +1081,51 @@ export class EndpointsService {
       .delete<any>(`${this.urlBase}/turnos/${turnoId}`, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheTurnosDTO()),
+        catchError(this.manejarError)
+      );
   }
 
-  obtenerEventos(): void {
-    this.http
+  obtenerEventos(forceRefresh: boolean = false): void {
+    if (forceRefresh) {
+      this.limpiarCacheEventosPublicos();
+    }
+
+    if (this.eventosPublicosCache) {
+      this.eventosSubject.next(this.eventosPublicosCache);
+      return;
+    }
+
+    if (this.eventosPublicosRequest$) {
+      return;
+    }
+
+    const request$ = this.http
       .get<any[]>(`${this.urlBase}/eventos`)
-      .pipe(catchError(this.manejarError))
-      .subscribe({
-        next: (eventos) => {
-          // Ensure eventos is always an array
-          this.eventosSubject.next(Array.isArray(eventos) ? eventos : []);
-        },
-        error: (error) => {
-          console.error('Error al obtener los eventos:', error);
-          // Emit empty array on error to prevent .map() errors
+      .pipe(
+        tap((eventos) => {
+          const eventosNormalizados = Array.isArray(eventos) ? eventos : [];
+          this.eventosPublicosCache = eventosNormalizados;
+          this.eventosSubject.next(eventosNormalizados);
+        }),
+        finalize(() => {
+          this.eventosPublicosRequest$ = null;
+        }),
+        shareReplay(1),
+        catchError((error) => {
+          this.eventosPublicosCache = null;
           this.eventosSubject.next([]);
-        },
-      });
+          return this.manejarError(error);
+        })
+      );
+
+    this.eventosPublicosRequest$ = request$;
+    request$.subscribe({
+      error: (error) => {
+        console.error('Error al obtener los eventos:', error);
+      },
+    });
   }
 
   obtenerTodosLosEventos(): void {
@@ -1070,6 +1166,7 @@ export class EndpointsService {
       })
       .pipe(
         tap((nuevoEvento) => {
+          this.limpiarCacheEventosPublicos();
           const eventosActuales = this.eventosSubject.getValue();
           this.eventosSubject.next([...eventosActuales, nuevoEvento]);
         }),
@@ -1082,7 +1179,10 @@ export class EndpointsService {
       .put<any>(`${this.urlBase}/eventos/${id}`, formData, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheEventosPublicos()),
+        catchError(this.manejarError)
+      );
   }
 
   eliminarImagenEvento(id: number): Observable<any> {
@@ -1099,6 +1199,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError))
       .subscribe({
         next: () => {
+          this.limpiarCacheEventosPublicos();
           const eventosActuales = this.eventosSubject.getValue();
           const eventosActualizados = eventosActuales.filter(
             (evento) => evento.id !== id
@@ -1118,6 +1219,7 @@ export class EndpointsService {
       })
       .pipe(
         tap(() => {
+          this.limpiarCacheEventosPublicos();
           const eventosActuales = this.eventosSubject.getValue();
           const eventosActualizados = eventosActuales.map((evento) =>
             evento.id === id ? { ...evento, visible: !evento.visible } : evento
@@ -1133,7 +1235,10 @@ export class EndpointsService {
       .put<void>(`${this.urlBase}/eventos/orden`, ordenIds, {
         withCredentials: true,
       })
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap(() => this.limpiarCacheEventosPublicos()),
+        catchError(this.manejarError)
+      );
   }
 
   // ==================== DOCUMENTOS DE EVENTOS ====================

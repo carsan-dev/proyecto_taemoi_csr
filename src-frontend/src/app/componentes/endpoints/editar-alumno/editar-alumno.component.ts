@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { Subscription, concat, of } from 'rxjs';
+import { Subscription, concat, forkJoin, of } from 'rxjs';
 import { finalize, catchError, tap } from 'rxjs/operators';
 import {
   FormsModule,
@@ -212,6 +212,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   turnosDelAlumno: any[] = [];
   todosLosGrupos: any[] = [];
   todosLosTurnos: any[] = [];
+  private catalogoGruposTurnosCargado: boolean = false;
 
   // Para manipular el input file
   @ViewChild('inputFile', { static: false }) inputFile!: ElementRef;
@@ -270,6 +271,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarGrados();
+    this.cargarCatalogoGruposYTurnos();
 
     // Load the list of IDs first, then handle route changes
     this.cargarTodosLosAlumnosIds();
@@ -459,6 +461,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.cargarDocumentosAlumno(this.alumnoId);
             this.obtenerProductosAlumno(this.alumnoId);
             this.cargarConvocatoriasDelAlumno(this.alumnoId);
+            this.cargarCatalogoGruposYTurnos();
             this.cargarDeportesDelAlumno(this.alumnoId);
             this.cargarGruposYTurnos(this.alumnoId);
           }
@@ -726,43 +729,56 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Carga los grupos y turnos del alumno y todos los disponibles.
    */
   cargarGruposYTurnos(alumnoId: number): void {
-    // Cargar grupos del alumno
-    this.endpointsService.obtenerGruposDelAlumnoObservable(alumnoId).subscribe({
-      next: (grupos) => {
-        this.gruposDelAlumno = grupos || [];
-      },
-      error: () => {
-        this.gruposDelAlumno = [];
-      },
-    });
+    this.cargarCatalogoGruposYTurnos();
 
-    // Cargar turnos del alumno
-    this.endpointsService.obtenerTurnosDelAlumnoObservable(alumnoId).subscribe({
-      next: (turnos) => {
+    forkJoin({
+      grupos: this.endpointsService
+        .obtenerGruposDelAlumnoObservable(alumnoId)
+        .pipe(catchError(() => of([]))),
+      turnos: this.endpointsService
+        .obtenerTurnosDelAlumnoObservable(alumnoId)
+        .pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ grupos, turnos }) => {
+        this.gruposDelAlumno = grupos || [];
         this.turnosDelAlumno = turnos || [];
       },
       error: () => {
+        this.gruposDelAlumno = [];
         this.turnosDelAlumno = [];
       },
     });
+  }
 
-    // Cargar todos los grupos
-    this.endpointsService.obtenerTodosLosGrupos().subscribe({
-      next: (grupos) => {
+  private cargarCatalogoGruposYTurnos(): void {
+    if (this.catalogoGruposTurnosCargado) {
+      return;
+    }
+
+    let huboError = false;
+    forkJoin({
+      grupos: this.endpointsService.obtenerTodosLosGrupos().pipe(
+        catchError(() => {
+          huboError = true;
+          return of([]);
+        })
+      ),
+      turnos: this.endpointsService.obtenerTurnosDTO().pipe(
+        catchError(() => {
+          huboError = true;
+          return of([]);
+        })
+      ),
+    }).subscribe({
+      next: ({ grupos, turnos }) => {
         this.todosLosGrupos = grupos || [];
+        this.todosLosTurnos = turnos || [];
+        this.catalogoGruposTurnosCargado = !huboError;
       },
       error: () => {
         this.todosLosGrupos = [];
-      },
-    });
-
-    // Cargar todos los turnos
-    this.endpointsService.obtenerTurnosDTO().subscribe({
-      next: (turnos) => {
-        this.todosLosTurnos = turnos || [];
-      },
-      error: () => {
         this.todosLosTurnos = [];
+        this.catalogoGruposTurnosCargado = false;
       },
     });
   }

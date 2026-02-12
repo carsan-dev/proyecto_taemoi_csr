@@ -224,6 +224,13 @@ public class AlumnoController {
         return ResponseEntity.ok(total);
     }
 
+	@GetMapping("/deportes/distribucion")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@Transactional(readOnly = true)
+	public ResponseEntity<Map<String, Long>> obtenerDistribucionActivaPorDeporte() {
+		return ResponseEntity.ok(alumnoDeporteService.obtenerDistribucionActivaPorDeporte());
+	}
+
 	/**
 	 * Obtiene los grupos a los que pertenece un alumno especificado por su ID.
 	 *

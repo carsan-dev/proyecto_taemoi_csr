@@ -32,7 +32,7 @@
       } @else if (eventos.length > 0) {
         <!-- Masonry Grid -->
         <div class="masonry-grid">
-          @for (evento of eventos; track evento.id) {
+          @for (evento of visibleEventos; track evento.id) {
             <div
               class="event-card"
               (click)="onEventoClick(evento.id)"
@@ -68,6 +68,12 @@
             </div>
           }
         </div>
+        @if (hasMoreEventos) {
+          <div class="scroll-loader" aria-hidden="true">
+            <div #scrollSentinel class="scroll-sentinel"></div>
+            <span>Cargando m&aacute;s eventos...</span>
+          </div>
+        }
       } @else {
         <!-- Empty State -->
         <div class="empty-state">

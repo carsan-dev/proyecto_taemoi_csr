@@ -316,7 +316,7 @@
         </div>
       </header>
 
-      @if (selectedAlumno && (endpointsService.gruposDelAlumno$ | async); as grupos) {
+      @if (selectedAlumno) {
       @if (grupos.length > 0) {
       <div class="groups-grid">
         @for (grupo of grupos; track grupo.id) {
