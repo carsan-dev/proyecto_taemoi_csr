@@ -121,8 +121,11 @@
   font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .btn-principal {
@@ -342,10 +345,19 @@ tbody td {
 .btn-cobrar {
   background: #2f855a;
   color: #ffffff;
+  min-width: 8.75rem;
+  min-height: 2rem;
+  flex-shrink: 0;
 }
 
 .btn-cobrar:hover {
   background: #276749;
+}
+
+.btn-cobrar .spinner-border,
+.btn-exportar .spinner-border {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .accion-hecha {
