@@ -113,7 +113,8 @@
             [disabled]="exportandoInforme"
             (click)="exportarInformeDeudasPDF()">
             @if (exportandoInforme) {
-              <i class="bi bi-hourglass-split"></i> Generando...
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              Generando...
             } @else {
               <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
             }
@@ -124,7 +125,8 @@
             [disabled]="exportandoInforme"
             (click)="exportarInformeDeudasCSV()">
             @if (exportandoInforme) {
-              <i class="bi bi-hourglass-split"></i> Generando...
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              Generando...
             } @else {
               <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
             }
@@ -178,10 +180,11 @@
                       <button
                         type="button"
                         class="btn-cobrar"
-                        [disabled]="procesandoCobroId === movimiento.productoAlumnoId"
+                        [disabled]="estaProcesandoCobro(movimiento) || movimiento.productoAlumnoId === null || movimiento.productoAlumnoId === undefined"
                         (click)="marcarComoPagado(movimiento)">
-                        @if (procesandoCobroId === movimiento.productoAlumnoId) {
-                          <i class="bi bi-hourglass-split"></i> Procesando
+                        @if (estaProcesandoCobro(movimiento)) {
+                          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                          Procesando
                         } @else {
                           <i class="bi bi-check-circle-fill"></i> Marcar pagado
                         }
