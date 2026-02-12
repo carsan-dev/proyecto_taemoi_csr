@@ -137,7 +137,6 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
     radial-gradient(960px 300px at 110% 0%, rgba(40, 71, 71, 0.09), transparent 56%),
     linear-gradient(180deg, #ffffff, #f7fbff);
   box-shadow: $shadow-md;
-  animation: fadeInUp 0.48s ease;
 
   &::before {
     content: '';
@@ -268,7 +267,6 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(138deg, rgba(7, 25, 48, 0.84), rgba(7, 25, 48, 0.44));
-  backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -327,7 +325,6 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   top: 0.62rem;
   left: 0.62rem;
   z-index: 4;
-  backdrop-filter: blur(4px);
 }
 
 .showcase-main-title {
@@ -454,7 +451,6 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .event-tile {
-  --item-index: 0;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(13, 71, 161, 0.14);
@@ -464,8 +460,8 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  animation: fadeInUp 0.4s ease backwards;
-  animation-delay: calc(90ms + (var(--item-index) * 25ms));
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
 
   &:hover {
     transform: translateY(-2px);
@@ -611,18 +607,6 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
     color: $text-muted;
     font-size: 0.96rem;
     line-height: 1.6;
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

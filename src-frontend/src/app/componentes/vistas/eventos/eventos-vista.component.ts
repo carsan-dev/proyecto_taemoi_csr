@@ -1,6 +1,26 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  NgZone,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+
+type EventoFechaEstado = 'proximo' | 'hoy' | 'realizado' | 'sin-fecha';
+
+interface EventoVistaCacheEntry {
+  cacheKey: string;
+  item: any;
+}
 
 @Component({
   selector: 'app-eventos-vista',
@@ -8,9 +28,10 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
   imports: [CommonModule, SkeletonCardComponent],
   templateUrl: './eventos-vista.component.html',
   styleUrl: './eventos-vista.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '[class.preview]': 'previewMode'
-  }
+    '[class.preview]': 'previewMode',
+  },
 })
 export class EventosVistaComponent implements OnChanges, OnDestroy {
   @Input() eventos: any[] = [];
@@ -24,11 +45,15 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
   @Output() backToUser = new EventEmitter<void>();
 
   visibleEventos: any[] = [];
+  eventosDestacados: any[] = [];
+  eventoPrincipal: any | null = null;
+  eventosSecundarios: any[] = [];
+  hasMoreEventos: boolean = false;
   destacadoActualIndex: number = 0;
 
   private readonly loadedImages = new Set<number>();
-  private readonly initialBatchSize = 10;
-  private readonly batchSize = 8;
+  private readonly initialBatchSize = 8;
+  private readonly batchSize = 4;
   private readonly maxDestacados = 5;
   private readonly imageWidthListado = 720;
   private readonly imageWidthPreview = 560;
@@ -39,6 +64,13 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
   });
   private visibleCount: number = 0;
   private loadMoreObserver: IntersectionObserver | null = null;
+  private pendingLoadMore: boolean = false;
+  private eventoVistaCache = new WeakMap<any, EventoVistaCacheEntry>();
+
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    private readonly ngZone: NgZone
+  ) {}
 
   @ViewChild('scrollSentinel')
   set scrollSentinelRef(sentinelRef: ElementRef<HTMLElement> | undefined) {
@@ -58,11 +90,13 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
         }
       }
 
+      this.eventoVistaCache = new WeakMap<any, EventoVistaCacheEntry>();
       this.destacadoActualIndex = 0;
       this.reiniciarCargaProgresiva();
     }
 
     if (changes['previewMode'] && !changes['previewMode'].firstChange) {
+      this.eventoVistaCache = new WeakMap<any, EventoVistaCacheEntry>();
       this.reiniciarCargaProgresiva();
     }
   }
@@ -91,6 +125,7 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       return;
     }
     this.loadedImages.add(eventoId);
+    this.cdr.markForCheck();
   }
 
   onImageError(eventoId: number): void {
@@ -98,40 +133,7 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       return;
     }
     this.loadedImages.add(eventoId);
-  }
-
-  getEventoImageUrl(evento: any): string {
-    const fallback = '../../../../assets/media/default.webp';
-    const rawUrl = evento?.fotoEvento?.url;
-    if (!rawUrl) {
-      return fallback;
-    }
-    const width = this.previewMode ? this.imageWidthPreview : this.imageWidthListado;
-    const version = this.obtenerVersionImagen(evento?.fotoEvento);
-    const urlConAncho = this.agregarParametroAncho(rawUrl, width);
-    return this.agregarParametroVersion(urlConAncho, version);
-  }
-
-  get hasMoreEventos(): boolean {
-    return this.visibleCount < this.eventos.length;
-  }
-
-  get eventosDestacados(): any[] {
-    return this.visibleEventos.slice(0, this.maxDestacados);
-  }
-
-  get eventoPrincipal(): any | null {
-    const destacados = this.eventosDestacados;
-    if (destacados.length === 0) {
-      return null;
-    }
-
-    const indexSeguro = Math.min(this.destacadoActualIndex, destacados.length - 1);
-    return destacados[indexSeguro];
-  }
-
-  get eventosSecundarios(): any[] {
-    return this.visibleEventos.slice(this.maxDestacados);
+    this.cdr.markForCheck();
   }
 
   seleccionarDestacado(index: number, event?: Event): void {
@@ -140,6 +142,8 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       return;
     }
     this.destacadoActualIndex = index;
+    this.sincronizarEventoPrincipal();
+    this.cdr.markForCheck();
   }
 
   mostrarDestacadoAnterior(event: Event): void {
@@ -148,7 +152,10 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     if (totalDestacados <= 1) {
       return;
     }
-    this.destacadoActualIndex = (this.destacadoActualIndex - 1 + totalDestacados) % totalDestacados;
+    this.destacadoActualIndex =
+      (this.destacadoActualIndex - 1 + totalDestacados) % totalDestacados;
+    this.sincronizarEventoPrincipal();
+    this.cdr.markForCheck();
   }
 
   mostrarDestacadoSiguiente(event: Event): void {
@@ -158,48 +165,14 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       return;
     }
     this.destacadoActualIndex = (this.destacadoActualIndex + 1) % totalDestacados;
-  }
-
-  getEventoFechaTexto(evento: any): string | null {
-    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
-    if (!fecha) {
-      return null;
-    }
-    return this.formateadorFechaCorta.format(fecha);
-  }
-
-  getEventoFechaEtiqueta(evento: any): string | null {
-    const estado = this.getEventoFechaEstado(evento);
-    if (estado === 'sin-fecha') {
-      return null;
-    }
-    if (estado === 'hoy') {
-      return 'Hoy';
-    }
-    return estado === 'proximo' ? 'Próximo' : 'Realizado';
-  }
-
-  getEventoFechaEstado(evento: any): 'proximo' | 'hoy' | 'realizado' | 'sin-fecha' {
-    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
-    if (!fecha) {
-      return 'sin-fecha';
-    }
-
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const fechaMillis = fecha.getTime();
-    const hoyMillis = hoy.getTime();
-    if (fechaMillis === hoyMillis) {
-      return 'hoy';
-    }
-    return fechaMillis > hoyMillis ? 'proximo' : 'realizado';
+    this.sincronizarEventoPrincipal();
+    this.cdr.markForCheck();
   }
 
   private reiniciarCargaProgresiva(): void {
     const totalEventos = Array.isArray(this.eventos) ? this.eventos.length : 0;
     this.visibleCount = Math.min(totalEventos, this.initialBatchSize);
-    this.visibleEventos = this.eventos.slice(0, this.visibleCount);
-    this.ajustarIndiceDestacado();
+    this.actualizarEventoVisibleState();
   }
 
   private cargarMasEventos(): void {
@@ -208,8 +181,26 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     }
 
     this.visibleCount = Math.min(this.eventos.length, this.visibleCount + this.batchSize);
-    this.visibleEventos = this.eventos.slice(0, this.visibleCount);
+    this.actualizarEventoVisibleState();
+  }
+
+  private actualizarEventoVisibleState(): void {
+    const slice = this.eventos.slice(0, this.visibleCount);
+    this.visibleEventos = slice.map((evento) => this.enriquecerEventoVista(evento));
+    this.hasMoreEventos = this.visibleCount < this.eventos.length;
+    this.eventosDestacados = this.visibleEventos.slice(0, this.maxDestacados);
     this.ajustarIndiceDestacado();
+    this.sincronizarEventoPrincipal();
+    this.eventosSecundarios = this.visibleEventos.slice(this.maxDestacados);
+    this.cdr.markForCheck();
+  }
+
+  private sincronizarEventoPrincipal(): void {
+    if (this.eventosDestacados.length === 0) {
+      this.eventoPrincipal = null;
+      return;
+    }
+    this.eventoPrincipal = this.eventosDestacados[this.destacadoActualIndex] ?? null;
   }
 
   private desconectarObservadorCarga(): void {
@@ -224,25 +215,116 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     if (!sentinel || typeof IntersectionObserver === 'undefined') {
       if (typeof IntersectionObserver === 'undefined' && this.hasMoreEventos) {
         this.visibleCount = this.eventos.length;
-        this.visibleEventos = this.eventos.slice(0, this.visibleCount);
+        this.actualizarEventoVisibleState();
       }
       return;
     }
 
-    this.loadMoreObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          this.cargarMasEventos();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '500px 0px',
-        threshold: 0.01,
-      }
-    );
+    this.ngZone.runOutsideAngular(() => {
+      this.loadMoreObserver = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) {
+            return;
+          }
 
-    this.loadMoreObserver.observe(sentinel);
+          this.ngZone.run(() => this.solicitarCargaMas());
+        },
+        {
+          root: null,
+          rootMargin: '240px 0px',
+          threshold: 0.01,
+        }
+      );
+
+      this.loadMoreObserver.observe(sentinel);
+    });
+  }
+
+  private solicitarCargaMas(): void {
+    if (this.pendingLoadMore || !this.hasMoreEventos) {
+      return;
+    }
+    this.pendingLoadMore = true;
+    requestAnimationFrame(() => {
+      this.pendingLoadMore = false;
+      this.cargarMasEventos();
+    });
+  }
+
+  private enriquecerEventoVista(evento: any): any {
+    if (!evento || typeof evento !== 'object') {
+      return evento;
+    }
+
+    const cacheKey = this.crearClaveCache(evento);
+    const cache = this.eventoVistaCache.get(evento);
+    if (cache?.cacheKey === cacheKey) {
+      return cache.item;
+    }
+
+    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
+    const fechaEstado = this.obtenerEstadoFecha(fecha);
+    const fechaTexto = fecha ? this.formateadorFechaCorta.format(fecha) : null;
+    const fechaEtiqueta = this.obtenerEtiquetaFecha(fechaEstado);
+
+    const item = {
+      ...evento,
+      _imageUrl: this.construirEventoImageUrl(evento),
+      _fechaTexto: fechaTexto,
+      _fechaEtiqueta: fechaEtiqueta,
+      _fechaEstado: fechaEstado,
+    };
+
+    this.eventoVistaCache.set(evento, { cacheKey, item });
+    return item;
+  }
+
+  private crearClaveCache(evento: any): string {
+    const foto = evento?.fotoEvento;
+    const fotoKey = `${foto?.id ?? ''}|${foto?.nombre ?? ''}|${foto?.url ?? ''}`;
+    const fechaRaw = Array.isArray(evento?.fechaEvento)
+      ? evento.fechaEvento.join('-')
+      : String(evento?.fechaEvento ?? '');
+    const modo = this.previewMode ? 'preview' : 'listado';
+    return `${modo}|${fotoKey}|${fechaRaw}`;
+  }
+
+  private construirEventoImageUrl(evento: any): string {
+    const fallback = '../../../../assets/media/default.webp';
+    const rawUrl = evento?.fotoEvento?.url;
+    if (!rawUrl) {
+      return fallback;
+    }
+
+    const width = this.previewMode ? this.imageWidthPreview : this.imageWidthListado;
+    const version = this.obtenerVersionImagen(evento?.fotoEvento);
+    const urlConAncho = this.agregarParametroAncho(rawUrl, width);
+    return this.agregarParametroVersion(urlConAncho, version);
+  }
+
+  private obtenerEstadoFecha(fecha: Date | null): EventoFechaEstado {
+    if (!fecha) {
+      return 'sin-fecha';
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fechaMillis = fecha.getTime();
+    const hoyMillis = hoy.getTime();
+    if (fechaMillis === hoyMillis) {
+      return 'hoy';
+    }
+    return fechaMillis > hoyMillis ? 'proximo' : 'realizado';
+  }
+
+  private obtenerEtiquetaFecha(estado: EventoFechaEstado): string | null {
+    if (estado === 'sin-fecha') {
+      return null;
+    }
+    if (estado === 'hoy') {
+      return 'Hoy';
+    }
+    return estado === 'proximo' ? 'Pr\u00F3ximo' : 'Realizado';
   }
 
   private agregarParametroAncho(url: string, width: number): string {
