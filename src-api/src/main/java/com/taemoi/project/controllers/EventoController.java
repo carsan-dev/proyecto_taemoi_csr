@@ -125,6 +125,8 @@ public class EventoController {
 
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (Exception e) {
+			return new ResponseEntity<>("Error interno al guardar el evento.", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -150,6 +152,8 @@ public class EventoController {
 
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (Exception e) {
+			return new ResponseEntity<>("Error interno al actualizar el evento.", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
