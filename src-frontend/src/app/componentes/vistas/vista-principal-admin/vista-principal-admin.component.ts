@@ -54,6 +54,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
   nombreUsuario: string | null = '';
   usuarioLogueado: boolean = false;
   cargandoEstadisticas: boolean = true;
+  cargandoDistribucion: boolean = true;
   cargandoEventos: boolean = true;
   fechaActual: Date = new Date();
   private subscriptions: Subscription = new Subscription();
@@ -190,12 +191,14 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
 
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
+    this.cargandoDistribucion = true;
     const mesActual = this.fechaActual.getMonth() + 1;
     const anoActual = this.fechaActual.getFullYear();
 
     // Fetch all data in parallel
     const sub = forkJoin({
-      alumnos: this.endpointsService.obtenerTodosLosAlumnosSinPaginar(true),
+      alumnosTotales: this.endpointsService.obtenerAlumnos(1, 1, '', true, false),
+      alumnosActivos: this.endpointsService.obtenerAlumnos(1, 1, '', false, false),
       grupos: this.endpointsService.obtenerTodosLosGrupos(),
       turnos: this.endpointsService.obtenerTodosLosTurnos(),
       alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen(),
@@ -207,25 +210,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       )
     }).subscribe({
       next: (data) => {
-        // Process alumnos
-        const alumnos = data.alumnos || [];
-        this.stats.totalAlumnos = alumnos.length;
-        this.stats.alumnosActivos = alumnos.filter((a: any) => a.activo !== false).length;
-        this.stats.alumnosInactivos = alumnos.filter((a: any) => a.activo === false).length;
-
-        // Count by sport using deportes array
-        const deporteCount: { [key: string]: number } = {};
-        alumnos.forEach((alumno: any) => {
-          if (alumno.deportes && Array.isArray(alumno.deportes)) {
-            alumno.deportes.forEach((deporte: any) => {
-              if (deporte.activo !== false) {
-                const deporteNombre = deporte.deporte || 'OTRO';
-                deporteCount[deporteNombre] = (deporteCount[deporteNombre] || 0) + 1;
-              }
-            });
-          }
-        });
-        this.stats.alumnosPorDeporte = deporteCount;
+        const totalAlumnos = data.alumnosTotales?.totalElements ?? 0;
+        const alumnosActivos = data.alumnosActivos?.totalElements ?? 0;
+        this.stats.totalAlumnos = totalAlumnos;
+        this.stats.alumnosActivos = alumnosActivos;
+        this.stats.alumnosInactivos = Math.max(totalAlumnos - alumnosActivos, 0);
+        this.stats.alumnosPorDeporte = {};
 
         // Process grupos
         this.stats.totalGrupos = (data.grupos || []).length;
@@ -240,10 +230,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
 
         this.cargandoEstadisticas = false;
         this.actualizarAlertasOperativas();
+        this.cargarDistribucionPorDeporte();
       },
       error: (err) => {
         console.error('Error loading statistics:', err);
         this.cargandoEstadisticas = false;
+        this.cargandoDistribucion = false;
         this.actualizarAlertasOperativas();
       }
     });
@@ -267,6 +259,27 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       }
     });
     this.subscriptions.add(eventosSub);
+  }
+
+  private cargarDistribucionPorDeporte(): void {
+    const sub = this.endpointsService.obtenerDistribucionAlumnosPorDeporte().subscribe({
+      next: (distribucion) => {
+        const deporteCount: { [key: string]: number } = {};
+        Object.entries(distribucion ?? {}).forEach(([deporte, total]) => {
+          const totalNormalizado = Number(total);
+          if (Number.isFinite(totalNormalizado) && totalNormalizado > 0) {
+            deporteCount[deporte] = Math.floor(totalNormalizado);
+          }
+        });
+        this.stats.alumnosPorDeporte = deporteCount;
+        this.cargandoDistribucion = false;
+      },
+      error: () => {
+        this.stats.alumnosPorDeporte = {};
+        this.cargandoDistribucion = false;
+      },
+    });
+    this.subscriptions.add(sub);
   }
 
   get eventosOcultos(): number {

@@ -46,6 +46,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   alumnos: any[] = [];
   alumnosCompletos: any[] = []; // Full dataset for client-side filtering
   alumnosSeleccionables: any[] = [];
+  cargandoAlumnosSeleccionables: boolean = false;
+  private alumnosSeleccionablesCargados: boolean = false;
   paginaActual: number = 1;
   tamanoPagina: number = 9;
   totalPaginas: number = 0;
@@ -136,7 +138,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     } else {
       this.obtenerAlumnos();
     }
-    this.cargarTodosLosAlumnos();
 
     // Setup debounced search
     this.searchSubject
@@ -333,7 +334,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     });
 
     this.obtenerAlumnos();
-    this.cargarTodosLosAlumnos();
+    this.refrescarAlumnosSeleccionablesSiNecesario();
   }
 
   /**
@@ -351,7 +352,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       });
 
       this.obtenerAlumnos();
-      this.cargarTodosLosAlumnos();
+      this.refrescarAlumnosSeleccionablesSiNecesario();
     }
   }
 
@@ -826,11 +827,18 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarTodosLosAlumnos(): void {
+    if (this.alumnosSeleccionablesCargados || this.cargandoAlumnosSeleccionables) {
+      return;
+    }
+
+    this.cargandoAlumnosSeleccionables = true;
     this.endpointsService
       .obtenerAlumnosSinPaginar(this.mostrarInactivos)
+      .pipe(finalize(() => (this.cargandoAlumnosSeleccionables = false)))
       .subscribe({
         next: (response) => {
           this.alumnosSeleccionables = response;
+          this.alumnosSeleccionablesCargados = true;
         },
         error: () => {
           Swal.fire(
@@ -1070,6 +1078,28 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       this.obtenerAlumnos();
     }
 
+    this.refrescarAlumnosSeleccionablesSiNecesario();
+  }
+
+  cambiarMensualidadesTab(tab: 'general' | 'individual'): void {
+    this.mensualidadesTab = tab;
+    if (tab === 'individual') {
+      this.cargarTodosLosAlumnos();
+    }
+  }
+
+  cambiarLicenciasTab(tab: 'general' | 'individual'): void {
+    this.licenciasTab = tab;
+    if (tab === 'individual') {
+      this.cargarTodosLosAlumnos();
+    }
+  }
+
+  private refrescarAlumnosSeleccionablesSiNecesario(): void {
+    if (!this.alumnosSeleccionablesCargados) {
+      return;
+    }
+    this.alumnosSeleccionablesCargados = false;
     this.cargarTodosLosAlumnos();
   }
 

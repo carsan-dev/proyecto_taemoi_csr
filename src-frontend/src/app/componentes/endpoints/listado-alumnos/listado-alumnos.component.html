@@ -398,10 +398,10 @@
               </div>
               <div class="mensualidades-tabs">
               <div class="tabs-nav">
-                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'general'" (click)="mensualidadesTab = 'general'">
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'general'" (click)="cambiarMensualidadesTab('general')">
                   <span>Mensualidades generales</span>
                 </button>
-                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'individual'" (click)="mensualidadesTab = 'individual'">
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'individual'" (click)="cambiarMensualidadesTab('individual')">
                   <span>Mensualidades individuales</span>
                 </button>
               </div>
@@ -486,10 +486,10 @@
               </div>
               <div class="licencias-tabs">
               <div class="tabs-nav">
-                <button type="button" class="tab-item" [class.active]="licenciasTab === 'general'" (click)="licenciasTab = 'general'">
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'general'" (click)="cambiarLicenciasTab('general')">
                   <span>Licencias generales</span>
                 </button>
-                <button type="button" class="tab-item" [class.active]="licenciasTab === 'individual'" (click)="licenciasTab = 'individual'">
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'individual'" (click)="cambiarLicenciasTab('individual')">
                   <span>Licencias individuales</span>
                 </button>
               </div>

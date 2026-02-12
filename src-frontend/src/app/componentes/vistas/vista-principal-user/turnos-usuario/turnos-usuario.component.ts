@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { forkJoin, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
@@ -30,6 +30,11 @@ interface DeporteInfo {
   color: string;
 }
 
+interface HorariosAlumnoCache {
+  grupos: any[];
+  turnos: Turno[];
+}
+
 @Component({
   selector: 'app-turnos-usuario',
   standalone: true,
@@ -52,6 +57,8 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   alumnoId!: number;
 
   private readonly subscriptions: Subscription = new Subscription();
+  private readonly horariosAlumnoCache = new Map<number, HorariosAlumnoCache>();
+  private requestSeq: number = 0;
 
   constructor(
     public endpointsService: EndpointsService,
@@ -86,19 +93,19 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   private obtenerAlumnoInicial(alumnos: any[]): any | null {
-    const alumnoId = this.authService.getAlumnoId();
-    if (alumnoId) {
-      return alumnos.find((alumno) => alumno?.id === alumnoId) ?? alumnos[0];
+    const alumnoId = Number(this.authService.getAlumnoId());
+    if (Number.isInteger(alumnoId) && alumnoId > 0) {
+      return alumnos.find((alumno) => Number(alumno?.id) === alumnoId) ?? alumnos[0];
     }
     return alumnos[0] ?? null;
   }
 
   private inicializarAlumnoFallback(): void {
-    const alumnoId = this.authService.getAlumnoId();
-    if (alumnoId) {
+    const alumnoId = Number(this.authService.getAlumnoId());
+    if (Number.isInteger(alumnoId) && alumnoId > 0) {
       this.alumnoId = alumnoId;
       if (!this.selectedAlumno) {
-        this.selectedAlumno = this.alumnos.find((alumno) => alumno?.id === alumnoId) ?? null;
+        this.selectedAlumno = this.alumnos.find((alumno) => Number(alumno?.id) === alumnoId) ?? null;
       }
       this.cargarHorariosDelAlumno();
       return;
@@ -106,11 +113,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
     const usuarioSubscription = this.authService.obtenerUsuarioAutenticado().subscribe({
       next: (usuario) => {
-        const resolvedId = usuario?.alumnoDTO?.id ?? this.authService.getAlumnoId();
-        if (resolvedId) {
+        const resolvedId = Number(usuario?.alumnoDTO?.id ?? this.authService.getAlumnoId());
+        if (Number.isInteger(resolvedId) && resolvedId > 0) {
           this.alumnoId = resolvedId;
           this.selectedAlumno =
-            this.alumnos.find((alumno) => alumno?.id === resolvedId) ??
+            this.alumnos.find((alumno) => Number(alumno?.id) === resolvedId) ??
             usuario?.alumnoDTO ??
             this.selectedAlumno;
           this.cargarHorariosDelAlumno();
@@ -138,11 +145,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   seleccionarAlumno(alumno: any): void {
-    const nuevoAlumnoId = alumno?.id;
-    if (!nuevoAlumnoId) {
+    const nuevoAlumnoId = Number(alumno?.id);
+    if (!Number.isInteger(nuevoAlumnoId) || nuevoAlumnoId <= 0) {
       return;
     }
-    if (this.alumnoId === nuevoAlumnoId && this.selectedAlumno?.id === nuevoAlumnoId) {
+    if (this.alumnoId === nuevoAlumnoId && Number(this.selectedAlumno?.id) === nuevoAlumnoId) {
       return;
     }
 
@@ -152,31 +159,39 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   cargarHorariosDelAlumno(): void {
+    const cache = this.horariosAlumnoCache.get(this.alumnoId);
+    if (cache) {
+      this.aplicarHorariosAlumno(cache.grupos, cache.turnos);
+      return;
+    }
+
+    const requestId = ++this.requestSeq;
     this.cargando = true;
+    const subscription = this.endpointsService.obtenerTurnosDelAlumnoObservable(this.alumnoId).subscribe({
+      next: (turnos) => {
+        if (!this.esSolicitudVigente(requestId)) {
+          return;
+        }
 
-    const grupos$ = this.endpointsService.obtenerGruposDelAlumnoObservable(this.alumnoId);
-    const turnos$ = this.endpointsService.obtenerTurnosDelAlumnoObservable(this.alumnoId);
+        const turnosNormalizados = this.normalizarTurnos(Array.isArray(turnos) ? turnos : []);
+        if (turnosNormalizados.length > 0) {
+          this.horariosAlumnoCache.set(this.alumnoId, {
+            grupos: [],
+            turnos: turnosNormalizados,
+          });
+          this.aplicarHorariosAlumno([], turnosNormalizados);
+          return;
+        }
 
-    const subscription = forkJoin({ grupos: grupos$, turnos: turnos$ }).subscribe({
-      next: ({ grupos, turnos }) => {
-        this.grupos = Array.isArray(grupos) ? grupos : [];
-        this.allTurnos = this.normalizarTurnos(Array.isArray(turnos) ? turnos : []);
-        this.deportesUnicos = this.buildDeportesUnicos();
-        this.buildTimetable();
-        this.selectedDayIndex = this.obtenerPrimerDiaConTurnos();
-        this.cargando = false;
+        this.cargarGruposParaHorarioVacio(requestId, turnosNormalizados);
       },
       error: () => {
-        this.cargando = false;
-        this.deportesUnicos = [];
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron obtener los horarios del alumno.',
-          icon: 'error',
-        });
+        if (!this.esSolicitudVigente(requestId)) {
+          return;
+        }
+        this.aplicarEstadoErrorHorarios();
       },
     });
-
     this.subscriptions.add(subscription);
   }
 
@@ -252,6 +267,57 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  private cargarGruposParaHorarioVacio(requestId: number, turnosNormalizados: Turno[]): void {
+    const subscription = this.endpointsService.obtenerGruposDelAlumnoObservable(this.alumnoId).subscribe({
+      next: (grupos) => {
+        if (!this.esSolicitudVigente(requestId)) {
+          return;
+        }
+
+        const gruposNormalizados = Array.isArray(grupos) ? grupos : [];
+        this.horariosAlumnoCache.set(this.alumnoId, {
+          grupos: gruposNormalizados,
+          turnos: turnosNormalizados,
+        });
+        this.aplicarHorariosAlumno(gruposNormalizados, turnosNormalizados);
+      },
+      error: () => {
+        if (!this.esSolicitudVigente(requestId)) {
+          return;
+        }
+        this.aplicarEstadoErrorHorarios();
+      },
+    });
+    this.subscriptions.add(subscription);
+  }
+
+  private aplicarHorariosAlumno(grupos: any[], turnos: Turno[]): void {
+    this.grupos = grupos;
+    this.allTurnos = turnos;
+    this.deportesUnicos = this.buildDeportesUnicos();
+    this.buildTimetable();
+    this.selectedDayIndex = this.obtenerPrimerDiaConTurnos();
+    this.cargando = false;
+  }
+
+  private aplicarEstadoErrorHorarios(): void {
+    this.cargando = false;
+    this.grupos = [];
+    this.allTurnos = [];
+    this.deportesUnicos = [];
+    this.timeSlots = [];
+    this.timetableGrid = new Map();
+    Swal.fire({
+      title: 'Error',
+      text: 'No se pudieron obtener los horarios del alumno.',
+      icon: 'error',
+    });
+  }
+
+  private esSolicitudVigente(requestId: number): boolean {
+    return requestId === this.requestSeq;
   }
 
   private buildDeportesUnicos(): DeporteInfo[] {

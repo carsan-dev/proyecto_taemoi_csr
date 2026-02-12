@@ -1,6 +1,7 @@
 package com.taemoi.project.services;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.taemoi.project.entities.AlumnoDeporte;
@@ -110,6 +111,14 @@ public interface AlumnoDeporteService {
 	 * @return Optional con AlumnoDeporte si existe
 	 */
 	Optional<AlumnoDeporte> obtenerAlumnoDeporte(Long alumnoId, Deporte deporte);
+
+	/**
+	 * Obtiene la distribucion de inscripciones activas por deporte.
+	 * La clave del mapa es el nombre del deporte (enum.name()).
+	 *
+	 * @return mapa deporte -> cantidad de inscripciones activas
+	 */
+	Map<String, Long> obtenerDistribucionActivaPorDeporte();
 
 	/**
 	 * Actualiza el grado de un alumno en un deporte específico
