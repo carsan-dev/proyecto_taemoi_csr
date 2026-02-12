@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -104,6 +105,12 @@ public class AlumnoController {
 
 	@Value("${app.base.url}")
 	private String baseUrl;
+
+	@Value("${app.imagenes.directorio.linux:}")
+	private String directorioImagenesLinux;
+
+	@Value("${app.imagenes.directorio.windows:}")
+	private String directorioImagenesWindows;
 
 	/**
 	 * Inyección del servicio de alumno.
@@ -225,10 +232,16 @@ public class AlumnoController {
 			Imagen imagen = alumno.getFotoAlumno();
 
 			if (imagen == null || imagen.getRuta() == null) {
-				return ResponseEntity.notFound().build();
+				Path rutaFallback = resolverRutaImagenAlumno(imagen);
+				if (rutaFallback == null) {
+					return ResponseEntity.notFound().build();
+				}
 			}
 
-			Path rutaArchivo = Path.of(imagen.getRuta());
+			Path rutaArchivo = resolverRutaImagenAlumno(imagen);
+			if (rutaArchivo == null) {
+				return ResponseEntity.notFound().build();
+			}
 			Resource recurso = new UrlResource(rutaArchivo.toUri());
 			if (!recurso.exists()) {
 				return ResponseEntity.notFound().build();
@@ -1893,6 +1906,72 @@ public class AlumnoController {
 		long modificado = Files.getLastModifiedTime(rutaArchivo).toMillis();
 		String hash = Long.toHexString(tamano) + "-" + Long.toHexString(modificado) + "-" + ancho + "-" + formato;
 		return "\"" + hash + "\"";
+	}
+
+	private Path resolverRutaImagenAlumno(Imagen imagen) {
+		if (imagen == null) {
+			return null;
+		}
+
+		List<Path> candidatos = new ArrayList<>();
+		agregarCandidatoRuta(candidatos, imagen.getRuta());
+
+		String nombre = imagen.getNombre();
+		if (nombre != null && !nombre.isBlank()) {
+			agregarCandidatosDesdeBase(candidatos, directorioImagenesLinux, nombre);
+			agregarCandidatosDesdeBase(candidatos, directorioImagenesWindows, nombre);
+			agregarCandidatoRuta(candidatos, "/var/www/app/imagenes/alumnos/" + nombre);
+			agregarCandidatoRuta(candidatos, "/var/www/app/imagenes/" + nombre);
+			agregarCandidatoRuta(candidatos, "static_resources/imagenes/alumnos/" + nombre);
+		}
+
+		for (Path candidato : candidatos) {
+			try {
+				if (candidato != null && Files.exists(candidato) && Files.isRegularFile(candidato)) {
+					return candidato.toAbsolutePath().normalize();
+				}
+			} catch (Exception ignored) {
+				// Intentionally ignore invalid/unsupported candidate paths.
+			}
+		}
+
+		return null;
+	}
+
+	private void agregarCandidatoRuta(List<Path> candidatos, String ruta) {
+		if (ruta == null || ruta.isBlank()) {
+			return;
+		}
+		try {
+			candidatos.add(Path.of(expandirVariablesRuta(ruta)));
+		} catch (Exception ignored) {
+			// Ignore malformed paths coming from legacy DB rows.
+		}
+	}
+
+	private void agregarCandidatosDesdeBase(List<Path> candidatos, String baseDir, String nombreArchivo) {
+		if (baseDir == null || baseDir.isBlank() || nombreArchivo == null || nombreArchivo.isBlank()) {
+			return;
+		}
+		try {
+			Path base = Path.of(expandirVariablesRuta(baseDir));
+			candidatos.add(base.resolve(nombreArchivo));
+			candidatos.add(base.resolve("alumnos").resolve(nombreArchivo));
+		} catch (Exception ignored) {
+			// Ignore malformed configured directories.
+		}
+	}
+
+	private String expandirVariablesRuta(String ruta) {
+		if (ruta == null || ruta.isBlank()) {
+			return ruta;
+		}
+		String resultado = ruta;
+		String userProfile = System.getenv("USERPROFILE");
+		if (userProfile != null && !userProfile.isBlank()) {
+			resultado = resultado.replace("%USERPROFILE%", userProfile);
+		}
+		return resultado;
 	}
 
 	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
