@@ -56,12 +56,17 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
       evento.descripcion.length > 155
         ? evento.descripcion.substring(0, 152) + '...'
         : evento.descripcion;
+    const imageUrl = this.construirUrlImagenEvento(
+      evento.fotoEvento?.url,
+      undefined,
+      this.obtenerVersionImagenEvento(evento)
+    );
 
     this.seoService.updateDynamicSeo({
       title: `${evento.titulo} | Eventos Moiskimdo - Taekwondo en Umbrete`,
       description: descripcionCorta,
       keywords: `${evento.titulo}, evento taekwondo, competicion artes marciales, moiskimdo, umbrete, sevilla`,
-      ogImage: evento.fotoEvento?.url ?? undefined,
+      ogImage: imageUrl,
       canonical: `https://moiskimdo.es/eventos/${evento.id}`,
       breadcrumbs: [
         { name: 'Inicio', url: '/' },
@@ -74,9 +79,23 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     this.seoService.setEventSchema({
       name: evento.titulo,
       description: evento.descripcion,
-      image: evento.fotoEvento?.url ?? undefined,
+      image: imageUrl,
       url: `/eventos/${evento.id}`,
     });
+  }
+
+  getEventoImageUrl(width?: number): string {
+    const fallback = '../../../../assets/media/default.webp';
+    if (!this.evento?.fotoEvento?.url) {
+      return fallback;
+    }
+
+    const imageUrl = this.construirUrlImagenEvento(
+      this.evento.fotoEvento.url,
+      width,
+      this.obtenerVersionImagenEvento(this.evento)
+    );
+    return imageUrl ?? fallback;
   }
 
   abrirModalImagen(): void {
@@ -128,5 +147,36 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private construirUrlImagenEvento(
+    url: string | null | undefined,
+    width: number | undefined,
+    version: string
+  ): string | undefined {
+    if (!url) {
+      return undefined;
+    }
+
+    let resultado = url;
+    if (width && width > 0) {
+      resultado = this.actualizarParametroUrl(resultado, 'w', String(Math.floor(width)));
+    }
+    return this.actualizarParametroUrl(resultado, 'v', version);
+  }
+
+  private obtenerVersionImagenEvento(evento: Evento): string {
+    const version = evento?.fotoEvento?.id ?? evento?.fotoEvento?.nombre ?? '0';
+    return String(version);
+  }
+
+  private actualizarParametroUrl(url: string, key: string, value: string): string {
+    const valueSeguro = encodeURIComponent(value);
+    const regex = new RegExp(`([?&])${key}=[^&]*`);
+    if (regex.test(url)) {
+      return url.replace(regex, `$1${key}=${valueSeguro}`);
+    }
+    const separador = url.includes('?') ? '&' : '?';
+    return `${url}${separador}${key}=${valueSeguro}`;
   }
 }

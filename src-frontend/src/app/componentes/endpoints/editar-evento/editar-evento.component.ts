@@ -66,9 +66,7 @@ export class EditarEventoComponent implements OnInit {
             descripcion: evento.descripcion,
           });
 
-          this.imagenPreview = evento.fotoEvento?.url
-            ? evento.fotoEvento.url
-            : '../../../../assets/media/default.webp';
+          this.imagenPreview = this.obtenerUrlPreviewEvento(evento);
 
           this.documentosExistentes = evento.documentos || [];
         },
@@ -279,6 +277,29 @@ export class EditarEventoComponent implements OnInit {
         });
       },
     });
+  }
+
+  private obtenerUrlPreviewEvento(evento: Evento): string {
+    const fallback = '../../../../assets/media/default.webp';
+    const rawUrl = evento?.fotoEvento?.url;
+    if (!rawUrl) {
+      return fallback;
+    }
+
+    const version = String(evento?.fotoEvento?.id ?? evento?.fotoEvento?.nombre ?? '0');
+    let url = this.actualizarParametroUrl(rawUrl, 'w', '920');
+    url = this.actualizarParametroUrl(url, 'v', version);
+    return url;
+  }
+
+  private actualizarParametroUrl(url: string, key: string, value: string): string {
+    const valueSeguro = encodeURIComponent(value);
+    const regex = new RegExp(`([?&])${key}=[^&]*`);
+    if (regex.test(url)) {
+      return url.replace(regex, `$1${key}=${valueSeguro}`);
+    }
+    const separador = url.includes('?') ? '&' : '?';
+    return `${url}${separador}${key}=${valueSeguro}`;
   }
 
   getFileIcon(tipo: string): string {

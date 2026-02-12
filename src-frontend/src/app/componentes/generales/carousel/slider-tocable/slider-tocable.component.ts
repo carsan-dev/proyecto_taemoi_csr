@@ -158,7 +158,16 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
   }
 
   getImageUrl(evento: any): string {
-    return evento.fotoEvento?.url || '../../../../assets/media/default.webp';
+    const fallback = '../../../../assets/media/default.webp';
+    const rawUrl = evento?.fotoEvento?.url;
+    if (!rawUrl) {
+      return fallback;
+    }
+
+    const version = String(evento?.fotoEvento?.id ?? evento?.fotoEvento?.nombre ?? '0');
+    let url = this.actualizarParametroUrl(rawUrl, 'w', '900');
+    url = this.actualizarParametroUrl(url, 'v', version);
+    return url;
   }
 
   private advanceToNextSlide(): void {
@@ -208,5 +217,15 @@ export class SliderTocableComponent implements OnInit, OnDestroy {
       return;
     }
     this.startAutoRotation();
+  }
+
+  private actualizarParametroUrl(url: string, key: string, value: string): string {
+    const valueSeguro = encodeURIComponent(value);
+    const regex = new RegExp(`([?&])${key}=[^&]*`);
+    if (regex.test(url)) {
+      return url.replace(regex, `$1${key}=${valueSeguro}`);
+    }
+    const separador = url.includes('?') ? '&' : '?';
+    return `${url}${separador}${key}=${valueSeguro}`;
   }
 }

@@ -205,7 +205,7 @@
             @for (evento of stats.proximosEventos; track evento.id) {
               <div class="event-item">
                 <img class="event-thumbnail"
-                     [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+                     [src]="getEventoMiniaturaUrl(evento)"
                      [alt]="evento.titulo" loading="lazy">
                 <div class="event-info">
                   <span class="event-title">{{ evento.titulo }}</span>
