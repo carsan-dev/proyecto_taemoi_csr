@@ -169,9 +169,10 @@
         </div>
 
         @if (hasMoreEventos) {
-          <div class="scroll-loader" aria-hidden="true">
-            <div #scrollSentinel class="scroll-sentinel"></div>
-            <span>Cargando m&aacute;s eventos...</span>
+          <div class="scroll-loader">
+            <button type="button" class="load-more-btn" (click)="onCargarMasEventos()">
+              Cargar m&aacute;s eventos
+            </button>
           </div>
         }
       } @else {
