@@ -9,13 +9,17 @@
       <div class="action-buttons">
         <button class="admin-btn admin-btn-info"
                 (click)="generarReporte(convocatoriaSeleccionada)"
-                [disabled]="!convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
-          <i class="bi bi-file-earmark-text"></i>
-          @if (convocatoriaSeleccionada) {
+                [disabled]="generandoReporte || !convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
+          @if (generandoReporte) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>Generando...</span>
+          } @else if (convocatoriaSeleccionada) {
+            <i class="bi bi-file-earmark-text"></i>
             <span>
               Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
             </span>
           } @else {
+            <i class="bi bi-file-earmark-text"></i>
             <span>Generar Informe</span>
           }
         </button>
@@ -141,9 +145,14 @@
             <div class="action-section">
               <button class="admin-btn admin-btn-primary admin-btn-lg"
                       (click)="actualizarGrados(convocatoriaSeleccionada)"
-                      [disabled]="!alumnosInscritos || alumnosInscritos.length === 0">
-                <i class="bi bi-arrow-repeat"></i>
-                <span>Actualizar Grados de Todos los Alumnos</span>
+                      [disabled]="actualizandoGrados || !alumnosInscritos || alumnosInscritos.length === 0">
+                @if (actualizandoGrados) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Actualizando grados...</span>
+                } @else {
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span>Actualizar Grados de Todos los Alumnos</span>
+                }
               </button>
             </div>
 
