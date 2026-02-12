@@ -20,6 +20,7 @@ interface DashboardStats {
   alumnosAptos: number;
   cobrosPendientesMes: number;
   importePendienteMes: number;
+  erroresAuditoriaRecientes: number;
   proximosEventos: any[];
 }
 
@@ -51,6 +52,7 @@ interface DashboardAlert {
   styleUrl: './vista-principal-admin.component.scss',
 })
 export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
+  private readonly ventanaErroresAuditoriaDias: number = 7;
   nombreUsuario: string | null = '';
   usuarioLogueado: boolean = false;
   cargandoEstadisticas: boolean = true;
@@ -71,6 +73,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     alumnosAptos: 0,
     cobrosPendientesMes: 0,
     importePendienteMes: 0,
+    erroresAuditoriaRecientes: 0,
     proximosEventos: []
   };
 
@@ -105,6 +108,13 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       ruta: '/tesoreriaCobros',
       icono: 'bi bi-cash-stack',
       color: '#2f855a',
+    },
+    {
+      titulo: 'Auditoria de API',
+      descripcion: 'Consulta errores recientes y operaciones globales.',
+      ruta: '/auditoriaSistema',
+      icono: 'bi bi-bug-fill',
+      color: '#0f766e',
     },
     {
       titulo: 'Roles y Configuracion',
@@ -159,6 +169,13 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       icono: 'bi bi-cash-coin',
       color: '#16a085'
     },
+    {
+      titulo: 'Auditoria',
+      descripcion: 'Revisa trazas del sistema y errores recientes de la API',
+      ruta: '/auditoriaSistema',
+      icono: 'bi bi-journal-text',
+      color: '#0f766e'
+    },
   ];
 
   constructor(
@@ -194,6 +211,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     this.cargandoDistribucion = true;
     const mesActual = this.fechaActual.getMonth() + 1;
     const anoActual = this.fechaActual.getFullYear();
+    const fechaHastaErrores = this.formatearFechaLocal(new Date());
+    const fechaDesdeErrores = this.formatearFechaLocal(this.obtenerFechaDiasAtras(this.ventanaErroresAuditoriaDias));
 
     // Fetch all data in parallel
     const sub = forkJoin({
@@ -202,6 +221,20 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       grupos: this.endpointsService.obtenerTodosLosGrupos(),
       turnos: this.endpointsService.obtenerTodosLosTurnos(),
       alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen(),
+      auditoriaErroresRecientes: this.endpointsService.obtenerAuditoriaEventos(
+        {
+          desde: fechaDesdeErrores,
+          hasta: fechaHastaErrores,
+          resultado: 'ERROR',
+        },
+        1,
+        1
+      ).pipe(
+        catchError((error) => {
+          console.warn('No se pudieron cargar errores recientes de auditoria para el dashboard:', error);
+          return of(null);
+        })
+      ),
       tesoreriaResumen: this.endpointsService.obtenerTesoreriaResumen(mesActual, anoActual, 'TODOS').pipe(
         catchError((error) => {
           console.warn('No se pudo cargar el resumen de tesorería para el dashboard:', error);
@@ -227,6 +260,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         this.stats.alumnosAptos = (data.alumnosAptos || []).length;
         this.stats.cobrosPendientesMes = data.tesoreriaResumen?.totalPendientes || 0;
         this.stats.importePendienteMes = data.tesoreriaResumen?.importePendiente || 0;
+        this.stats.erroresAuditoriaRecientes = data.auditoriaErroresRecientes?.totalElements || 0;
 
         this.cargandoEstadisticas = false;
         this.actualizarAlertasOperativas();
@@ -350,6 +384,18 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       });
     }
 
+    if (this.stats.erroresAuditoriaRecientes > 0) {
+      alertas.push({
+        id: 'auditoria-errores-recientes',
+        tipo: 'critical',
+        titulo: 'Errores recientes en API',
+        descripcion: `${this.stats.erroresAuditoriaRecientes} errores en los ultimos ${this.ventanaErroresAuditoriaDias} dias.`,
+        accionTexto: 'Abrir auditoria',
+        ruta: '/auditoriaSistema',
+        icono: 'bi bi-bug-fill',
+      });
+    }
+
     if (this.stats.totalTurnos === 0) {
       alertas.push({
         id: 'sin-turnos',
@@ -387,6 +433,19 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     }
 
     this.alertasOperativas = alertas;
+  }
+
+  private obtenerFechaDiasAtras(dias: number): Date {
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() - dias);
+    return fecha;
+  }
+
+  private formatearFechaLocal(fecha: Date): string {
+    const ano = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
   }
 
   getDeporteLabel(deporte: string): string {
@@ -441,3 +500,4 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     return Object.keys(obj || {});
   }
 }
+
