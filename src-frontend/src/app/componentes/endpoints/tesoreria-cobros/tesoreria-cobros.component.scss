@@ -305,6 +305,11 @@ tbody td {
   vertical-align: middle;
 }
 
+.col-accion {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .fila-pendiente {
   background: #fffaf0;
 }
@@ -345,6 +350,7 @@ tbody td {
 .btn-cobrar {
   background: #2f855a;
   color: #ffffff;
+  width: auto;
   min-width: 8.75rem;
   min-height: 2rem;
   flex-shrink: 0;
