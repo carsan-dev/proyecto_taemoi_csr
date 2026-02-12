@@ -4,6 +4,15 @@
       <h1><i class="bi bi-journal-text"></i> Auditoria del sistema</h1>
       <p>Registro global de operaciones READ, CREATE, UPDATE y DELETE (exitosas y con error) ejecutadas en la API.</p>
     </div>
+    <button
+      type="button"
+      class="btn-actualizar"
+      (click)="actualizarAhora()"
+      [disabled]="cargando || cargandoDetalle"
+      aria-label="Actualizar ahora auditoria">
+      <i class="bi bi-arrow-clockwise" [class.spin]="cargando || cargandoDetalle"></i>
+      <span>{{ (cargando || cargandoDetalle) ? 'Actualizando...' : 'Actualizar ahora' }}</span>
+    </button>
   </header>
 
   <nav class="resultado-tabs" aria-label="Pestanas de auditoria por resultado">

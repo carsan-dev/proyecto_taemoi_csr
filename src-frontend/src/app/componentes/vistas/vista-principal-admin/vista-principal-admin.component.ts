@@ -210,6 +210,19 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  get dashboardCargando(): boolean {
+    return this.cargandoEstadisticas || this.cargandoDistribucion || this.cargandoEventos;
+  }
+
+  actualizarDashboardAhora(): void {
+    if (this.dashboardCargando) {
+      return;
+    }
+
+    this.fechaActual = new Date();
+    this.cargarEstadisticas();
+  }
+
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
     this.cargandoDistribucion = true;
