@@ -4,6 +4,10 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
+import {
+  ADMIN_HEADER_QUICK_LINKS,
+  AdminQuickNavigationItem,
+} from '../../../../core/constants/navigation.constants';
 
 @Component({
   selector: 'app-header',
@@ -41,6 +45,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Scroll optimization
   private readonly subscriptions = new Subscription();
+  readonly adminQuickLinks: AdminQuickNavigationItem[] = ADMIN_HEADER_QUICK_LINKS;
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -214,6 +219,21 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.expandedSections[section] = !this.expandedSections[section];
   }
 
+  isAdminQuickRouteActive(item: AdminQuickNavigationItem): boolean {
+    const currentPath = this.obtenerRutaActualSinQuery();
+    const prefixes = item.activePrefixes && item.activePrefixes.length > 0
+      ? item.activePrefixes
+      : [item.route];
+
+    if (item.exact) {
+      return prefixes.some((prefix) => currentPath === prefix);
+    }
+
+    return prefixes.some((prefix) =>
+      currentPath === prefix || currentPath.startsWith(`${prefix}/`)
+    );
+  }
+
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
     this.handleScrollEvent();
@@ -359,6 +379,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
         navbarCollapse.classList.remove('show');
       }
     }
+  }
+
+  private obtenerRutaActualSinQuery(): string {
+    const currentUrl = this.router.url || '';
+    return currentUrl.split('?')[0].split('#')[0];
   }
 
   cerrarSesion(): void {
