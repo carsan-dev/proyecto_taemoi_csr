@@ -19,6 +19,8 @@ import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
 import { PaginatedResponse } from '../../interfaces/paginated-response';
+import { AuditoriaEvento } from '../../interfaces/auditoria-evento';
+import { AuditoriaEventoDetalle } from '../../interfaces/auditoria-evento-detalle';
 
 @Injectable({
   providedIn: 'root',
@@ -546,7 +548,7 @@ export class EndpointsService {
 
   actualizarProductoAlumno(
     id: number,
-    detalles: ProductoAlumnoDTO
+    detalles: Partial<ProductoAlumnoDTO>
   ): Observable<ProductoAlumnoDTO> {
     return this.http
       .put<ProductoAlumnoDTO>(
@@ -561,12 +563,37 @@ export class EndpointsService {
 
   actualizarEstadoCobro(
     productoAlumnoId: number,
-    pagado: boolean
+    pagado: boolean,
+    fechaPago?: string | Date | null,
+    motivoCambio?: string | null
+  ): Observable<ProductoAlumnoDTO> {
+    const payload: Partial<ProductoAlumnoDTO> = { pagado };
+    if (fechaPago !== undefined) {
+      payload.fechaPago = fechaPago as any;
+    }
+    if (motivoCambio !== undefined) {
+      payload.motivoCambio = motivoCambio;
+    }
+
+    return this.http
+      .put<ProductoAlumnoDTO>(
+        `${this.urlBase}/productos-alumno/${productoAlumnoId}`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarCobroTesoreria(
+    productoAlumnoId: number,
+    cambios: Partial<ProductoAlumnoDTO>
   ): Observable<ProductoAlumnoDTO> {
     return this.http
       .put<ProductoAlumnoDTO>(
         `${this.urlBase}/productos-alumno/${productoAlumnoId}`,
-        { pagado },
+        cambios,
         {
           withCredentials: true,
         }
@@ -818,6 +845,73 @@ export class EndpointsService {
     }
 
     return params;
+  }
+
+  obtenerAuditoriaEventos(
+    filtros: {
+      desde?: string | null;
+      hasta?: string | null;
+      resultado?: string | null;
+      accion?: string | null;
+      modulo?: string | null;
+      usuario?: string | null;
+      endpoint?: string | null;
+      texto?: string | null;
+    },
+    page: number = 1,
+    size: number = 25
+  ): Observable<PaginatedResponse<AuditoriaEvento>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    if (filtros.desde) {
+      params = params.set('desde', filtros.desde);
+    }
+    if (filtros.hasta) {
+      params = params.set('hasta', filtros.hasta);
+    }
+    if (filtros.resultado) {
+      params = params.set('resultado', filtros.resultado);
+    }
+    if (filtros.accion) {
+      params = params.set('accion', filtros.accion);
+    }
+    if (filtros.modulo) {
+      params = params.set('modulo', filtros.modulo);
+    }
+    if (filtros.usuario) {
+      params = params.set('usuario', filtros.usuario.trim());
+    }
+    if (filtros.endpoint) {
+      params = params.set('endpoint', filtros.endpoint.trim());
+    }
+    if (filtros.texto) {
+      params = params.set('texto', filtros.texto.trim());
+    }
+
+    return this.http
+      .get<PaginatedResponse<AuditoriaEvento>>(`${this.urlBase}/admin/auditoria/eventos`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerAuditoriaEventoDetalle(id: number): Observable<AuditoriaEventoDetalle> {
+    return this.http
+      .get<AuditoriaEventoDetalle>(`${this.urlBase}/admin/auditoria/eventos/${id}`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerAuditoriaModulos(): Observable<string[]> {
+    return this.http
+      .get<string[]>(`${this.urlBase}/admin/auditoria/modulos`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
   }
 
   obtenerGrados(): Observable<any> {

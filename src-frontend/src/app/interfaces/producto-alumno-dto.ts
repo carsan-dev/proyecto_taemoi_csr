@@ -9,5 +9,6 @@ export interface ProductoAlumnoDTO {
     pagado: boolean;
     fechaPago: Date | null;
     notas: string;
+    motivoCambio?: string | null;
   }
   
