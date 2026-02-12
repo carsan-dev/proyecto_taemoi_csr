@@ -448,6 +448,38 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
+-- Table `taemoidb`.`auditoria_evento`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taemoidb`.`auditoria_evento` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `fecha_evento` DATETIME(6) NOT NULL,
+  `accion` VARCHAR(16) NOT NULL,
+  `metodo_http` VARCHAR(8) NOT NULL,
+  `endpoint` VARCHAR(512) NOT NULL,
+  `modulo` VARCHAR(80) NULL DEFAULT NULL,
+  `recurso_id` BIGINT NULL DEFAULT NULL,
+  `estado_http` INT NOT NULL,
+  `usuario_id` BIGINT NULL DEFAULT NULL,
+  `usuario_email` VARCHAR(160) NULL DEFAULT NULL,
+  `usuario_nombre` VARCHAR(180) NULL DEFAULT NULL,
+  `ip_cliente` VARCHAR(120) NULL DEFAULT NULL,
+  `user_agent` VARCHAR(400) NULL DEFAULT NULL,
+  `query_params_json` TEXT NULL DEFAULT NULL,
+  `payload_json` TEXT NULL DEFAULT NULL,
+  `payload_truncado` BIT(1) NOT NULL,
+  `resumen` VARCHAR(500) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_auditoria_evento_fecha` (`fecha_evento` ASC) VISIBLE,
+  INDEX `idx_auditoria_evento_accion` (`accion` ASC) VISIBLE,
+  INDEX `idx_auditoria_evento_modulo` (`modulo` ASC) VISIBLE,
+  INDEX `idx_auditoria_evento_usuario_email` (`usuario_email` ASC) VISIBLE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
 -- Table `taemoidb`.`usuario_rol`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `taemoidb`.`usuario_rol` (
