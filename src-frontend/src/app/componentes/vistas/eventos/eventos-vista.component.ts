@@ -48,7 +48,7 @@ export class EventosVistaComponent implements OnChanges {
   destacadoActualIndex: number = 0;
 
   private readonly loadedImages = new Set<number>();
-  private readonly initialBatchSize = 12;
+  private readonly initialBatchSize = 11;
   private readonly batchSize = 8;
   private readonly maxDestacados = 5;
   private readonly imageWidthListado = 720;
