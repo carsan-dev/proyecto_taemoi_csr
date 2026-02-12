@@ -285,32 +285,32 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.66rem;
-  font-weight: 760;
+  font-weight: 780;
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 14px rgba(5, 17, 33, 0.28);
 
   i {
     font-size: 0.78rem;
   }
 
   &.proximo {
-    color: #d9ebff;
-    background: rgba(34, 110, 216, 0.28);
-    border-color: rgba(153, 196, 255, 0.4);
+    background: rgba(22, 96, 205, 0.92);
+    border-color: rgba(177, 214, 255, 0.95);
   }
 
   &.hoy {
-    color: #d8ffe6;
-    background: rgba(24, 133, 74, 0.38);
-    border-color: rgba(170, 245, 203, 0.45);
+    background: rgba(18, 120, 68, 0.94);
+    border-color: rgba(183, 248, 214, 0.95);
   }
 
   &.realizado {
-    color: #e5e7eb;
-    background: rgba(107, 114, 128, 0.38);
-    border-color: rgba(209, 213, 219, 0.42);
+    background: rgba(71, 85, 105, 0.94);
+    border-color: rgba(222, 228, 239, 0.92);
   }
 }
 
