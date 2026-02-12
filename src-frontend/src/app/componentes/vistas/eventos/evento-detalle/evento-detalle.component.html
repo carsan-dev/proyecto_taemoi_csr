@@ -33,7 +33,7 @@
         <div class="visual-panel">
           <div class="image-container">
             <img
-              [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+              [src]="getEventoImageUrl(1280)"
               [alt]="evento.titulo"
               class="event-detail-img"
             />
@@ -99,7 +99,7 @@
           </button>
           <div class="modal-image-wrapper">
             <img
-              [src]="evento.fotoEvento?.url || '../../../../assets/media/default.webp'"
+              [src]="getEventoImageUrl(1800)"
               [alt]="evento.titulo"
               class="modal-img"
               loading="lazy"

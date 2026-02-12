@@ -28,6 +28,8 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
   private readonly loadedImages = new Set<number>();
   private readonly initialBatchSize = 10;
   private readonly batchSize = 8;
+  private readonly imageWidthListado = 720;
+  private readonly imageWidthPreview = 560;
   private visibleCount: number = 0;
   private loadMoreObserver: IntersectionObserver | null = null;
 
@@ -90,6 +92,18 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     this.loadedImages.add(eventoId);
   }
 
+  getEventoImageUrl(evento: any): string {
+    const fallback = '../../../../assets/media/default.webp';
+    const rawUrl = evento?.fotoEvento?.url;
+    if (!rawUrl) {
+      return fallback;
+    }
+    const width = this.previewMode ? this.imageWidthPreview : this.imageWidthListado;
+    const version = this.obtenerVersionImagen(evento?.fotoEvento);
+    const urlConAncho = this.agregarParametroAncho(rawUrl, width);
+    return this.agregarParametroVersion(urlConAncho, version);
+  }
+
   get hasMoreEventos(): boolean {
     return this.visibleCount < this.eventos.length;
   }
@@ -140,5 +154,28 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     );
 
     this.loadMoreObserver.observe(sentinel);
+  }
+
+  private agregarParametroAncho(url: string, width: number): string {
+    const widthValue = Math.max(160, Math.floor(width));
+    if (/([?&])w=\d+/.test(url)) {
+      return url.replace(/([?&])w=\d+/, `$1w=${widthValue}`);
+    }
+    const separador = url.includes('?') ? '&' : '?';
+    return `${url}${separador}w=${widthValue}`;
+  }
+
+  private agregarParametroVersion(url: string, version: string): string {
+    const versionSegura = encodeURIComponent(version);
+    if (/([?&])v=[^&]*/.test(url)) {
+      return url.replace(/([?&])v=[^&]*/, `$1v=${versionSegura}`);
+    }
+    const separador = url.includes('?') ? '&' : '?';
+    return `${url}${separador}v=${versionSegura}`;
+  }
+
+  private obtenerVersionImagen(fotoEvento: any): string {
+    const version = fotoEvento?.id ?? fotoEvento?.nombre ?? '0';
+    return String(version);
   }
 }

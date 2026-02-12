@@ -46,10 +46,11 @@
                   ></app-skeleton-card>
                 }
                 <img
-                  [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
+                  [src]="getEventoImageUrl(evento)"
                   class="event-img"
                   alt="{{ evento.titulo }}"
                   loading="lazy"
+                  decoding="async"
                   (load)="onImageLoad(evento.id)"
                   (error)="onImageError(evento.id)"
                   [class.is-loaded]="isImageLoaded(evento.id)"
