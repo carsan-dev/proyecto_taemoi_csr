@@ -10,6 +10,7 @@ import { EndpointsService } from '../../../servicios/endpoints/endpoints.service
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { LoadingService } from '../../../servicios/generales/loading.service';
 
 @Component({
   selector: 'app-crear-evento',
@@ -23,11 +24,13 @@ export class CrearEventoComponent implements OnInit {
   imagen: File | null = null;
   imagePreview: string | null = null;
   documentos: File[] = [];
+  guardandoEvento: boolean = false;
 
   constructor(
     private readonly endpointsService: EndpointsService,
     private readonly fb: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly loadingService: LoadingService
   ) {}
 
   ngOnInit(): void {
@@ -44,6 +47,10 @@ export class CrearEventoComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.guardandoEvento) {
+      return;
+    }
+
     if (this.eventoForm.invalid) {
       Swal.fire({
         title: 'Formulario inválido',
@@ -59,15 +66,18 @@ export class CrearEventoComponent implements OnInit {
       fechaEvento: this.eventoForm.value.fechaEvento || null,
     };
 
+    this.iniciarGuardadoEvento();
     this.endpointsService.crearEvento(eventoForm, this.imagen).subscribe({
       next: (eventoCreado: any) => {
         if (this.documentos.length > 0) {
           this.subirDocumentos(eventoCreado.id);
         } else {
+          this.finalizarGuardadoEvento();
           this.mostrarExitoYRedirigir();
         }
       },
       error: () => {
+        this.finalizarGuardadoEvento();
         Swal.fire({
           title: 'Error en la petición',
           text: 'No hemos podido crear el evento.',
@@ -86,17 +96,29 @@ export class CrearEventoComponent implements OnInit {
         next: () => {
           subidos++;
           if (subidos + errores === this.documentos.length) {
+            this.finalizarGuardadoEvento();
             this.mostrarExitoYRedirigir(errores);
           }
         },
         error: () => {
           errores++;
           if (subidos + errores === this.documentos.length) {
+            this.finalizarGuardadoEvento();
             this.mostrarExitoYRedirigir(errores);
           }
         },
       });
     });
+  }
+
+  private iniciarGuardadoEvento(): void {
+    this.guardandoEvento = true;
+    this.loadingService.show();
+  }
+
+  private finalizarGuardadoEvento(): void {
+    this.guardandoEvento = false;
+    this.loadingService.hide();
   }
 
   private mostrarExitoYRedirigir(erroresDocumentos: number = 0): void {
