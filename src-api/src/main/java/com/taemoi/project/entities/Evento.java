@@ -1,5 +1,6 @@
 package com.taemoi.project.entities;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -42,6 +44,9 @@ public class Evento {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private List<Documento> documentos = new ArrayList<>();
 
+	@Column(name = "fecha_evento")
+	private LocalDate fechaEvento;
+
 	private Boolean visible = true;
 	private Integer orden;
 
@@ -67,6 +72,14 @@ public class Evento {
 
 	public void setDescripcion(String descripcion) {
 		this.descripcion = descripcion;
+	}
+
+	public LocalDate getFechaEvento() {
+		return fechaEvento;
+	}
+
+	public void setFechaEvento(LocalDate fechaEvento) {
+		this.fechaEvento = fechaEvento;
 	}
 
 	public Imagen getFotoEvento() {

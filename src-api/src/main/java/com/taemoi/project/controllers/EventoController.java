@@ -81,6 +81,9 @@ public class EventoController {
 	@Autowired
 	private DocumentoService documentoService;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	@GetMapping
 	public List<Evento> obtenerEventosVisibles() {
 		List<Evento> eventos = eventoService.obtenerEventosVisibles();
@@ -113,7 +116,6 @@ public class EventoController {
 	public ResponseEntity<?> crearEvento(@RequestParam("nuevo") String eventoJson,
 			@RequestParam(required = false) MultipartFile file) {
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			Evento nuevoEvento = objectMapper.readValue(eventoJson, Evento.class);
 
 			// Guardar el evento y la imagen (si existe)
@@ -132,7 +134,6 @@ public class EventoController {
 			@RequestParam(required = false) MultipartFile file,
 			@RequestParam("eventoEditado") String eventoJson) {
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			Evento eventoActualizado = objectMapper.readValue(eventoJson, Evento.class);
 
 			Imagen nuevaImagen = null;
