@@ -1,6 +1,7 @@
 package com.taemoi.project.services.impl;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -80,7 +82,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
 	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
-	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN CINTURÓN ROJO BORDADO";
+	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN ROJO BORDADO";
 	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
 	private static final String DERECHO_RECOMPENSA_ROJO_BORDADO = "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA";
 
@@ -1227,6 +1229,29 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoSiguiente.obtenerNombreProducto(porRecompensa);
 	}
 
+	private Producto buscarProductoPorConcepto(String conceptoProducto, TipoGrado gradoSiguiente) {
+		Optional<Producto> productoExacto = productoRepository.findByConcepto(conceptoProducto);
+		if (productoExacto.isPresent()) {
+			return productoExacto.get();
+		}
+
+		String conceptoNormalizado = normalizarConcepto(conceptoProducto);
+		return productoRepository.findAll().stream()
+				.filter(producto -> normalizarConcepto(producto.getConcepto()).equals(conceptoNormalizado))
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Producto no encontrado para el grado: " + gradoSiguiente + " (" + conceptoProducto + ")"));
+	}
+
+	private String normalizarConcepto(String concepto) {
+		if (concepto == null) {
+			return "";
+		}
+
+		String sinAcentos = Normalizer.normalize(concepto, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+		return sinAcentos.replaceAll("\\s+", " ").trim().toUpperCase(Locale.ROOT);
+	}
+
 	@Override
 	@Transactional
 	public AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa,
@@ -1257,9 +1282,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
-
-		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
-				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
+		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -1336,8 +1359,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Obtener producto de recompensa asociado al siguiente grado
 		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, true, rojoBordado);
-		Producto producto = productoRepository.findByConcepto(conceptoProducto).orElseThrow(
-				() -> new IllegalArgumentException("Producto no encontrado para el grado: " + gradoSiguiente));
+		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);

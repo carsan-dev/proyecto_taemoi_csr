@@ -75,7 +75,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	@Override
 	public List<ConvocatoriaDTO> obtenerConvocatoriasDeAlumno(Long alumnoId) {
 		List<AlumnoConvocatoria> relaciones = alumnoConvocatoriaRepository.findByAlumnoId(alumnoId);
-		return relaciones.stream().map(ac -> convertirAConvocatoriaDTO(ac.getConvocatoria()))
+		return relaciones.stream()
+				.filter(ac -> !esConvocatoriaYaProcesada(ac))
+				.map(ac -> convertirAConvocatoriaDTO(ac.getConvocatoria()))
 				.collect(Collectors.toList());
 	}
 
@@ -259,5 +261,27 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		dto.setFechaConvocatoria(convocatoria.getFechaConvocatoria());
 		dto.setDeporte(convocatoria.getDeporte());
 		return dto;
+	}
+
+	private boolean esConvocatoriaYaProcesada(AlumnoConvocatoria alumnoConvocatoria) {
+		if (alumnoConvocatoria == null || alumnoConvocatoria.getGradoSiguiente() == null) {
+			return false;
+		}
+
+		AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
+		if (alumnoDeporte == null && alumnoConvocatoria.getAlumno() != null
+				&& alumnoConvocatoria.getConvocatoria() != null) {
+			Deporte deporteConvocatoria = alumnoConvocatoria.getConvocatoria().getDeporte();
+			alumnoDeporte = alumnoConvocatoria.getAlumno().getDeportes().stream()
+					.filter(ad -> ad.getDeporte() == deporteConvocatoria)
+					.findFirst()
+					.orElse(null);
+		}
+
+		if (alumnoDeporte == null || alumnoDeporte.getGrado() == null || alumnoDeporte.getGrado().getTipoGrado() == null) {
+			return false;
+		}
+
+		return alumnoDeporte.getGrado().getTipoGrado() == alumnoConvocatoria.getGradoSiguiente();
 	}
 }
