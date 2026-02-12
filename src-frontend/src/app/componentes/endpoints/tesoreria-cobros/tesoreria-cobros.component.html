@@ -147,7 +147,8 @@
                 <th>Importe</th>
                 <th>Estado</th>
                 <th>Fecha pago</th>
-                <th class="col-accion">Acci&oacute;n</th>
+                <th>Notas</th>
+                <th class="col-accion">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -175,23 +176,54 @@
                     }
                   </td>
                   <td>{{ movimiento.fechaPago ? (movimiento.fechaPago | date:'dd/MM/yyyy') : '-' }}</td>
+                  <td class="notas-cell" [title]="movimiento.notas || 'Sin notas'">
+                    {{ movimiento.notas || '-' }}
+                  </td>
                   <td class="col-accion">
-                    @if (!movimiento.pagado) {
+                    <div class="acciones-grid">
+                      @if (!movimiento.pagado) {
+                        <button
+                          type="button"
+                          class="btn-cobrar"
+                          [disabled]="estaProcesandoCobro(movimiento) || movimiento.productoAlumnoId === null || movimiento.productoAlumnoId === undefined"
+                          (click)="marcarComoPagado(movimiento)">
+                          @if (estaProcesandoCobro(movimiento)) {
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                            Procesando
+                          } @else {
+                            <i class="bi bi-check-circle-fill"></i> Marcar pagado
+                          }
+                        </button>
+                      }
+
+                      @if (movimiento.pagado) {
+                        <button
+                          type="button"
+                          class="btn-accion btn-fecha"
+                          [disabled]="estaProcesandoCobro(movimiento)"
+                          (click)="editarFechaPago(movimiento)">
+                          <i class="bi bi-calendar-event"></i> Fecha
+                        </button>
+
+                        @if (isAdmin) {
+                          <button
+                            type="button"
+                            class="btn-accion btn-revertir"
+                            [disabled]="estaProcesandoCobro(movimiento)"
+                            (click)="revertirCobro(movimiento)">
+                            <i class="bi bi-arrow-counterclockwise"></i> Revertir
+                          </button>
+                        }
+                      }
+
                       <button
                         type="button"
-                        class="btn-cobrar"
-                        [disabled]="estaProcesandoCobro(movimiento) || movimiento.productoAlumnoId === null || movimiento.productoAlumnoId === undefined"
-                        (click)="marcarComoPagado(movimiento)">
-                        @if (estaProcesandoCobro(movimiento)) {
-                          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                          Procesando
-                        } @else {
-                          <i class="bi bi-check-circle-fill"></i> Marcar pagado
-                        }
+                        class="btn-accion btn-nota"
+                        [disabled]="estaProcesandoCobro(movimiento)"
+                        (click)="editarNotas(movimiento)">
+                        <i class="bi bi-pencil-square"></i> Notas
                       </button>
-                    } @else {
-                      <span class="accion-hecha">Cobrado</span>
-                    }
+                    </div>
                   </td>
                 </tr>
               }

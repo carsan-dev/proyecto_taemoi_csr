@@ -9,11 +9,13 @@ import Swal from 'sweetalert2';
 import { TesoreriaMovimiento } from '../../../interfaces/tesoreria-movimiento';
 import { TesoreriaResumen } from '../../../interfaces/tesoreria-resumen';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { PaginatedResponse } from '../../../interfaces/paginated-response';
+import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 
 type EstadoFiltro = 'TODOS' | 'PENDIENTES' | 'PAGADOS';
 
@@ -64,7 +66,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   cargando: boolean = true;
   exportandoInforme: boolean = false;
-  procesandoCobroId: number | null = null;
+  isAdmin: boolean = false;
   fechaCarga: Date = new Date();
 
   resumen: TesoreriaResumen = {
@@ -88,14 +90,17 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   totalMovimientos: number = 0;
   private readonly destroy$ = new Subject<void>();
   private readonly textoFiltroSubject = new Subject<string>();
+  private readonly cobrosEnProceso = new Set<number>();
 
   constructor(
     private readonly endpointsService: EndpointsService,
+    private readonly authService: AuthenticationService,
     private readonly route: ActivatedRoute,
     private readonly loadingService: LoadingService
   ) {}
 
   ngOnInit(): void {
+    this.resolverPermisos();
     this.configurarBusquedaTexto();
     this.inicializarPantalla();
   }
@@ -129,7 +134,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   marcarComoPagado(movimiento: TesoreriaMovimiento): void {
     if (
       movimiento.pagado ||
-      this.procesandoCobroId === movimiento.productoAlumnoId ||
+      this.estaProcesandoCobro(movimiento) ||
       movimiento.productoAlumnoId === null ||
       movimiento.productoAlumnoId === undefined
     ) {
@@ -149,25 +154,123 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.procesandoCobroId = movimiento.productoAlumnoId;
-      this.loadingService.show();
-      this.endpointsService
-        .actualizarEstadoCobro(movimiento.productoAlumnoId, true)
-        .pipe(
-          finalize(() => {
-            this.procesandoCobroId = null;
-            this.loadingService.hide();
-          })
-        )
-        .subscribe({
-          next: () => {
-            showSuccessToast('Cobro actualizado como pagado');
-            this.cargarDatosTesoreria();
-          },
-          error: () => {
-            showErrorToast('No se pudo actualizar el estado del cobro');
-          },
-        });
+      this.actualizarCobro(
+        movimiento.productoAlumnoId,
+        { pagado: true },
+        'Cobro actualizado como pagado',
+        'No se pudo actualizar el estado del cobro'
+      );
+    });
+  }
+
+  editarNotas(movimiento: TesoreriaMovimiento): void {
+    if (movimiento.productoAlumnoId === null || movimiento.productoAlumnoId === undefined) {
+      return;
+    }
+
+    Swal.fire({
+      title: 'Editar notas',
+      input: 'textarea',
+      inputValue: movimiento.notas ?? '',
+      inputPlaceholder: 'Escribe una nota...',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#0f766e',
+      inputAttributes: {
+        maxlength: '255',
+      },
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      const notas = (result.value ?? '').toString();
+      this.actualizarCobro(
+        movimiento.productoAlumnoId,
+        { notas },
+        'Notas actualizadas correctamente',
+        'No se pudieron actualizar las notas'
+      );
+    });
+  }
+
+  editarFechaPago(movimiento: TesoreriaMovimiento): void {
+    if (
+      !movimiento.pagado ||
+      movimiento.productoAlumnoId === null ||
+      movimiento.productoAlumnoId === undefined
+    ) {
+      return;
+    }
+
+    const fechaActual = movimiento.fechaPago ? new Date(movimiento.fechaPago) : new Date();
+    const value = Number.isNaN(fechaActual.getTime())
+      ? new Date().toISOString().slice(0, 10)
+      : fechaActual.toISOString().slice(0, 10);
+
+    Swal.fire({
+      title: 'Editar fecha de pago',
+      input: 'date',
+      inputValue: value,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#0f766e',
+      inputValidator: (fecha) => {
+        if (!fecha) {
+          return 'Debes indicar una fecha de pago';
+        }
+        return null;
+      },
+    }).then((result) => {
+      if (!result.isConfirmed || !result.value) {
+        return;
+      }
+
+      const fechaPago = this.convertirFechaIsoMediodia(result.value);
+      this.actualizarCobro(
+        movimiento.productoAlumnoId,
+        { fechaPago },
+        'Fecha de pago actualizada',
+        'No se pudo actualizar la fecha de pago'
+      );
+    });
+  }
+
+  revertirCobro(movimiento: TesoreriaMovimiento): void {
+    if (
+      !this.isAdmin ||
+      !movimiento.pagado ||
+      movimiento.productoAlumnoId === null ||
+      movimiento.productoAlumnoId === undefined
+    ) {
+      return;
+    }
+
+    Swal.fire({
+      title: 'Revertir cobro',
+      text: `El cobro "${movimiento.concepto}" pasará a pendiente.`,
+      input: 'textarea',
+      inputLabel: 'Motivo (opcional)',
+      inputPlaceholder: 'Ejemplo: error de marcación',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revertir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#b91c1c',
+      icon: 'warning',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      const motivoCambio = (result.value ?? '').toString().trim() || null;
+      this.actualizarCobro(
+        movimiento.productoAlumnoId,
+        { pagado: false, motivoCambio },
+        'Cobro revertido a pendiente',
+        'No se pudo revertir el cobro'
+      );
     });
   }
 
@@ -217,7 +320,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     return (
       movimiento.productoAlumnoId !== null &&
       movimiento.productoAlumnoId !== undefined &&
-      this.procesandoCobroId === movimiento.productoAlumnoId
+      this.cobrosEnProceso.has(movimiento.productoAlumnoId)
     );
   }
 
@@ -497,5 +600,61 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     const estadoSegment = this.filtroEstado.toLowerCase();
     const deporteSegment = this.filtroDeporte.toLowerCase();
     return `tesoreria_${anoSegment}_${mesSegment}_${deporteSegment}_${estadoSegment}.csv`;
+  }
+
+  private actualizarCobro(
+    productoAlumnoId: number,
+    cambios: Partial<ProductoAlumnoDTO>,
+    mensajeOk: string,
+    mensajeError: string
+  ): void {
+    if (this.cobrosEnProceso.has(productoAlumnoId)) {
+      return;
+    }
+
+    this.cobrosEnProceso.add(productoAlumnoId);
+    this.loadingService.show();
+
+    this.endpointsService
+      .actualizarCobroTesoreria(productoAlumnoId, cambios)
+      .pipe(
+        finalize(() => {
+          this.cobrosEnProceso.delete(productoAlumnoId);
+          this.loadingService.hide();
+        })
+      )
+      .subscribe({
+        next: () => {
+          showSuccessToast(mensajeOk);
+          this.cargarDatosTesoreria();
+        },
+        error: (error) => {
+          if (error?.status === 403) {
+            showErrorToast('Solo administradores pueden revertir cobros');
+            return;
+          }
+          showErrorToast(mensajeError);
+        },
+      });
+  }
+
+  private convertirFechaIsoMediodia(fechaYyyyMmDd: string): Date {
+    return new Date(`${fechaYyyyMmDd}T12:00:00`);
+  }
+
+  private resolverPermisos(): void {
+    if (this.authService.rolesEstanCargados()) {
+      this.isAdmin = this.authService.tieneRolAdmin();
+      return;
+    }
+
+    this.authService.obtenerRoles().pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.isAdmin = this.authService.tieneRolAdmin();
+      },
+      error: () => {
+        this.isAdmin = false;
+      },
+    });
   }
 }
