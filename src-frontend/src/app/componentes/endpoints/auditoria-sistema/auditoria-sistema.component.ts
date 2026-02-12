@@ -73,6 +73,13 @@ export class AuditoriaSistemaComponent implements OnInit, OnDestroy {
     this.autoRefreshSubscription = null;
   }
 
+  actualizarAhora(): void {
+    if (this.cargando || this.cargandoDetalle) {
+      return;
+    }
+    this.cargarEventos(false);
+  }
+
   aplicarFiltros(): void {
     this.paginaActual = 1;
     this.cargarEventos();
