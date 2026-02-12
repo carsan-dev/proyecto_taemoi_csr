@@ -36,6 +36,17 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
   private readonly subscriptions: Subscription = new Subscription();
   private readonly visibilidadOverrides = new Map<number, boolean>();
   private movedTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private readonly formateadorFechaCorta = new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  private readonly formateadorFechaLarga = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
   @ViewChildren('eventoCard') private eventoCards!: QueryList<ElementRef<HTMLElement>>;
 
   constructor(public endpointsService: EndpointsService) {}
@@ -313,5 +324,94 @@ export class ListadoEventosComponent implements OnInit, OnDestroy {
     }
     const separador = url.includes('?') ? '&' : '?';
     return `${url}${separador}${key}=${valueSeguro}`;
+  }
+
+  getFechaEventoTexto(evento: any): string | null {
+    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
+    if (!fecha) {
+      return null;
+    }
+    return this.formateadorFechaCorta.format(fecha);
+  }
+
+  getEstadoFechaEvento(evento: any): 'proximo' | 'hoy' | 'realizado' | 'sin-fecha' {
+    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
+    if (!fecha) {
+      return 'sin-fecha';
+    }
+
+    const hoy = this.obtenerHoySinHora();
+    const fechaMillis = fecha.getTime();
+    const hoyMillis = hoy.getTime();
+    if (fechaMillis === hoyMillis) {
+      return 'hoy';
+    }
+    return fechaMillis > hoyMillis ? 'proximo' : 'realizado';
+  }
+
+  getEtiquetaFechaEvento(evento: any): string | null {
+    const estado = this.getEstadoFechaEvento(evento);
+    if (estado === 'sin-fecha') {
+      return null;
+    }
+    if (estado === 'hoy') {
+      return 'Hoy';
+    }
+    return estado === 'proximo' ? 'Próximo' : 'Realizado';
+  }
+
+  getFechaEventoTooltip(evento: any): string | null {
+    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
+    const etiqueta = this.getEtiquetaFechaEvento(evento);
+    if (!fecha || !etiqueta) {
+      return null;
+    }
+    const fechaLarga = this.formateadorFechaLarga.format(fecha);
+    const primeraMayuscula = fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1);
+    return `${etiqueta}: ${primeraMayuscula}`;
+  }
+
+  private parsearFechaEvento(fechaEvento: unknown): Date | null {
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (typeof fechaEvento === 'string' && fechaEvento.trim()) {
+      const match = fechaEvento.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) {
+        return null;
+      }
+      year = Number(match[1]);
+      month = Number(match[2]);
+      day = Number(match[3]);
+    } else if (Array.isArray(fechaEvento) && fechaEvento.length >= 3) {
+      year = Number(fechaEvento[0]);
+      month = Number(fechaEvento[1]);
+      day = Number(fechaEvento[2]);
+    } else {
+      return null;
+    }
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      return null;
+    }
+
+    const fecha = new Date(year, month - 1, day);
+    if (
+      fecha.getFullYear() !== year ||
+      fecha.getMonth() !== month - 1 ||
+      fecha.getDate() !== day
+    ) {
+      return null;
+    }
+
+    fecha.setHours(0, 0, 0, 0);
+    return fecha;
+  }
+
+  private obtenerHoySinHora(): Date {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return hoy;
   }
 }

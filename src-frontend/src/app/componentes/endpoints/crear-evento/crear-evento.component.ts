@@ -38,6 +38,7 @@ export class CrearEventoComponent implements OnInit {
     this.eventoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
       descripcion: ['', [Validators.required, Validators.maxLength(500)]],
+      fechaEvento: [''],
       visible: [true],
     });
   }
@@ -53,7 +54,10 @@ export class CrearEventoComponent implements OnInit {
       return;
     }
 
-    const eventoForm = this.eventoForm.value;
+    const eventoForm = {
+      ...this.eventoForm.value,
+      fechaEvento: this.eventoForm.value.fechaEvento || null,
+    };
 
     this.endpointsService.crearEvento(eventoForm, this.imagen).subscribe({
       next: (eventoCreado: any) => {

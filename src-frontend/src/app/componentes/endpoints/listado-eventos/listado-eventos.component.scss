@@ -87,6 +87,41 @@
   }
 }
 
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.62rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+
+  i {
+    font-size: 0.82rem;
+  }
+
+  &.proximo {
+    color: #0f4a8a;
+    background: #e9f2ff;
+    border-color: #c4dbff;
+  }
+
+  &.hoy {
+    color: #12693b;
+    background: #e7f8ef;
+    border-color: #bdecd0;
+  }
+
+  &.realizado {
+    color: #6b7280;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+  }
+}
+
 .admin-item-card {
   position: relative;
 

@@ -42,6 +42,7 @@ export class EditarEventoComponent implements OnInit {
     this.eventoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
       descripcion: ['', [Validators.required, Validators.maxLength(500)]],
+      fechaEvento: [''],
       fotoEvento: [null],
     });
   }
@@ -64,6 +65,7 @@ export class EditarEventoComponent implements OnInit {
           this.eventoForm.patchValue({
             titulo: evento.titulo,
             descripcion: evento.descripcion,
+            fechaEvento: this.normalizarFechaEventoInput(evento.fechaEvento),
           });
 
           this.imagenPreview = this.obtenerUrlPreviewEvento(evento);
@@ -84,7 +86,11 @@ export class EditarEventoComponent implements OnInit {
   actualizarEvento(): void {
     if (this.eventoForm.valid) {
       const formData = new FormData();
-      formData.append('eventoEditado', JSON.stringify(this.eventoForm.value));
+      const eventoEditado = {
+        ...this.eventoForm.value,
+        fechaEvento: this.eventoForm.value.fechaEvento || null,
+      };
+      formData.append('eventoEditado', JSON.stringify(eventoEditado));
 
       if (this.imagen) {
         formData.append('file', this.imagen);
@@ -316,5 +322,22 @@ export class EditarEventoComponent implements OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  private normalizarFechaEventoInput(fechaEvento: unknown): string {
+    if (typeof fechaEvento === 'string') {
+      return fechaEvento;
+    }
+
+    if (Array.isArray(fechaEvento) && fechaEvento.length >= 3) {
+      const year = Number(fechaEvento[0]);
+      const month = Number(fechaEvento[1]);
+      const day = Number(fechaEvento[2]);
+      if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+        return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+    }
+
+    return '';
   }
 }
