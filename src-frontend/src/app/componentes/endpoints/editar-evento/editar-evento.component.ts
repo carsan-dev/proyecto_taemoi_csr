@@ -12,6 +12,7 @@ import { Documento, Evento } from '../../../interfaces/evento';
 import Swal from 'sweetalert2';
 import { CommonModule, Location } from '@angular/common';
 import { finalize } from 'rxjs/operators';
+import { LoadingService } from '../../../servicios/generales/loading.service';
 
 @Component({
   selector: 'app-editar-evento',
@@ -31,13 +32,15 @@ export class EditarEventoComponent implements OnInit {
   documentosExistentes: Documento[] = [];
   documentosNuevos: File[] = [];
   subiendoDocumento: boolean = false;
+  guardandoEvento: boolean = false;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly location: Location
+    private readonly location: Location,
+    private readonly loadingService: LoadingService
   ) {
     this.eventoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
@@ -84,41 +87,52 @@ export class EditarEventoComponent implements OnInit {
   }
 
   actualizarEvento(): void {
-    if (this.eventoForm.valid) {
-      const formData = new FormData();
-      const eventoEditado = {
-        ...this.eventoForm.value,
-        fechaEvento: this.eventoForm.value.fechaEvento || null,
-      };
-      formData.append('eventoEditado', JSON.stringify(eventoEditado));
-
-      if (this.imagen) {
-        formData.append('file', this.imagen);
-      } else {
-        formData.append('file', 'null');
-      }
-
-      this.endpointsService
-        .actualizarEvento(this.eventoId, formData)
-        .subscribe({
-          next: (response) => {
-            Swal.fire({
-              title: 'Perfecto!',
-              text: 'El evento ha sido actualizado correctamente',
-              icon: 'success',
-              timer: 2000,
-            });
-            this.router.navigate(['/eventosListar']);
-          },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error!',
-              text: 'No se ha podido actualizar el evento',
-              icon: 'error',
-            });
-          },
-        });
+    if (!this.eventoForm.valid || this.guardandoEvento) {
+      return;
     }
+
+    const formData = new FormData();
+    const eventoEditado = {
+      ...this.eventoForm.value,
+      fechaEvento: this.eventoForm.value.fechaEvento || null,
+    };
+    formData.append('eventoEditado', JSON.stringify(eventoEditado));
+
+    if (this.imagen) {
+      formData.append('file', this.imagen);
+    } else {
+      formData.append('file', 'null');
+    }
+
+    this.guardandoEvento = true;
+    this.loadingService.show();
+
+    this.endpointsService
+      .actualizarEvento(this.eventoId, formData)
+      .pipe(
+        finalize(() => {
+          this.guardandoEvento = false;
+          this.loadingService.hide();
+        })
+      )
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Perfecto!',
+            text: 'El evento ha sido actualizado correctamente',
+            icon: 'success',
+            timer: 2000,
+          });
+          this.router.navigate(['/eventosListar']);
+        },
+        error: () => {
+          Swal.fire({
+            title: 'Error!',
+            text: 'No se ha podido actualizar el evento',
+            icon: 'error',
+          });
+        },
+      });
   }
 
   // Method to handle file selection and update image preview
