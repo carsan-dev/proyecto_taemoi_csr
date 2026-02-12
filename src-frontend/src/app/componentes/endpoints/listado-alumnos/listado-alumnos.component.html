@@ -130,7 +130,7 @@
             <div class="item-header">
               <a [routerLink]="['/alumnosEditar', alumno.id]">
                 <img class="item-image"
-                  [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                  [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=320&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
                   [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
               </a>
               <div class="item-title">
@@ -309,7 +309,7 @@
                   <td>
                     <a [routerLink]="['/alumnosEditar', alumno.id]">
                       <img class="table-avatar"
-                        [src]="alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp'"
+                        [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
                         [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
                     </a>
                   </td>
