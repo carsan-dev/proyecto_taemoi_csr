@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import { TesoreriaMovimiento } from '../../../interfaces/tesoreria-movimiento';
 import { TesoreriaResumen } from '../../../interfaces/tesoreria-resumen';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { LoadingService } from '../../../servicios/generales/loading.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
@@ -90,7 +91,8 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly endpointsService: EndpointsService,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly loadingService: LoadingService
   ) {}
 
   ngOnInit(): void {
@@ -125,7 +127,12 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   }
 
   marcarComoPagado(movimiento: TesoreriaMovimiento): void {
-    if (movimiento.pagado || this.procesandoCobroId === movimiento.productoAlumnoId) {
+    if (
+      movimiento.pagado ||
+      this.procesandoCobroId === movimiento.productoAlumnoId ||
+      movimiento.productoAlumnoId === null ||
+      movimiento.productoAlumnoId === undefined
+    ) {
       return;
     }
 
@@ -143,9 +150,15 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       }
 
       this.procesandoCobroId = movimiento.productoAlumnoId;
+      this.loadingService.show();
       this.endpointsService
         .actualizarEstadoCobro(movimiento.productoAlumnoId, true)
-        .pipe(finalize(() => (this.procesandoCobroId = null)))
+        .pipe(
+          finalize(() => {
+            this.procesandoCobroId = null;
+            this.loadingService.hide();
+          })
+        )
         .subscribe({
           next: () => {
             showSuccessToast('Cobro actualizado como pagado');
@@ -198,6 +211,14 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   trackByMovimientoId(_: number, movimiento: TesoreriaMovimiento): number {
     return movimiento.productoAlumnoId;
+  }
+
+  estaProcesandoCobro(movimiento: TesoreriaMovimiento): boolean {
+    return (
+      movimiento.productoAlumnoId !== null &&
+      movimiento.productoAlumnoId !== undefined &&
+      this.procesandoCobroId === movimiento.productoAlumnoId
+    );
   }
 
   cambiarPagina(pageNumber: number): void {
@@ -299,6 +320,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     }
 
     this.exportandoInforme = true;
+    this.loadingService.show();
     const pagado = this.convertirEstadoAPagado(this.filtroEstado);
 
     if (formato === 'pdf') {
@@ -310,7 +332,12 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
           pagado,
           this.filtroTexto
         )
-        .pipe(finalize(() => (this.exportandoInforme = false)))
+        .pipe(
+          finalize(() => {
+            this.exportandoInforme = false;
+            this.loadingService.hide();
+          })
+        )
         .subscribe({
           next: (pdfBlob: Blob) => {
             const fileURL = globalThis.URL.createObjectURL(pdfBlob);
@@ -328,11 +355,16 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       .exportarTesoreriaCSV(
         this.filtroMes,
         this.filtroAno,
-        this.filtroDeporte,
-        pagado,
-        this.filtroTexto
+      this.filtroDeporte,
+      pagado,
+      this.filtroTexto
+    )
+      .pipe(
+        finalize(() => {
+          this.exportandoInforme = false;
+          this.loadingService.hide();
+        })
       )
-      .pipe(finalize(() => (this.exportandoInforme = false)))
       .subscribe({
         next: (csvBlob: Blob) => {
           const url = globalThis.URL.createObjectURL(csvBlob);
