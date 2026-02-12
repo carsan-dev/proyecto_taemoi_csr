@@ -1901,7 +1901,8 @@ public class AlumnoController {
 			return false;
 		}
 		String subtype = mediaType.getSubtype() != null ? mediaType.getSubtype().toLowerCase() : "";
-		return !subtype.contains("svg");
+		// Evitamos redimensionado runtime para WebP por inestabilidad del decoder nativo en prod (SIGSEGV).
+		return !subtype.contains("svg") && !subtype.contains("webp");
 	}
 
 	private int normalizarAnchoImagen(Integer anchoSolicitado) {
