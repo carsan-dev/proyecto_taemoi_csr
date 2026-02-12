@@ -1,6 +1,7 @@
 ﻿import { RouterModule, Routes } from '@angular/router';
 import { NgModule } from '@angular/core';
 import { roleGuard } from './guards/role.guard';
+import { adminOnlyGuard } from './guards/admin-only.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -248,6 +249,12 @@ export const routes: Routes = [
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
     canActivate: [roleGuard],
+  },
+  {
+    path: 'auditoriaSistema',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
   },
   {
     path: 'convocatoriasListar',
