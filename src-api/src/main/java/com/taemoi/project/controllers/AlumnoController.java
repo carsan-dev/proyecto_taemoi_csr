@@ -5,6 +5,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -234,16 +235,28 @@ public class AlumnoController {
 			if (imagen == null || imagen.getRuta() == null) {
 				Path rutaFallback = resolverRutaImagenAlumno(imagen);
 				if (rutaFallback == null) {
+					ResponseEntity<Resource> redirect = construirRedireccionImagenAlumno(imagen);
+					if (redirect != null) {
+						return redirect;
+					}
 					return ResponseEntity.notFound().build();
 				}
 			}
 
 			Path rutaArchivo = resolverRutaImagenAlumno(imagen);
 			if (rutaArchivo == null) {
+				ResponseEntity<Resource> redirect = construirRedireccionImagenAlumno(imagen);
+				if (redirect != null) {
+					return redirect;
+				}
 				return ResponseEntity.notFound().build();
 			}
 			Resource recurso = new UrlResource(rutaArchivo.toUri());
 			if (!recurso.exists()) {
+				ResponseEntity<Resource> redirect = construirRedireccionImagenAlumno(imagen);
+				if (redirect != null) {
+					return redirect;
+				}
 				return ResponseEntity.notFound().build();
 			}
 
@@ -1908,6 +1921,42 @@ public class AlumnoController {
 		return "\"" + hash + "\"";
 	}
 
+	private ResponseEntity<Resource> construirRedireccionImagenAlumno(Imagen imagen) {
+		if (imagen == null) {
+			return null;
+		}
+
+		String nombre = imagen.getNombre();
+		String urlImagen = imagen.getUrl();
+		List<String> candidatos = new ArrayList<>();
+
+		if (urlImagen != null && !urlImagen.isBlank()) {
+			candidatos.add(urlImagen.trim());
+		}
+		if (nombre != null && !nombre.isBlank()) {
+			candidatos.add("/imagenes/alumnos/" + nombre);
+			if (baseUrl != null && !baseUrl.isBlank()) {
+				candidatos.add(baseUrl + "/imagenes/alumnos/" + nombre);
+			}
+		}
+
+		for (String candidato : candidatos) {
+			if (candidato == null || candidato.isBlank()) {
+				continue;
+			}
+			if (candidato.contains("/api/alumnos/")) {
+				continue;
+			}
+			try {
+				return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(candidato)).build();
+			} catch (Exception ignored) {
+				// Ignore invalid candidates and continue.
+			}
+		}
+
+		return null;
+	}
+
 	private Path resolverRutaImagenAlumno(Imagen imagen) {
 		if (imagen == null) {
 			return null;
@@ -1916,7 +1965,7 @@ public class AlumnoController {
 		List<Path> candidatos = new ArrayList<>();
 		agregarCandidatoRuta(candidatos, imagen.getRuta());
 
-		String nombre = imagen.getNombre();
+		String nombre = obtenerNombreImagenPrioritario(imagen);
 		if (nombre != null && !nombre.isBlank()) {
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesLinux, nombre);
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesWindows, nombre);
@@ -1936,6 +1985,37 @@ public class AlumnoController {
 		}
 
 		return null;
+	}
+
+	private String obtenerNombreImagenPrioritario(Imagen imagen) {
+		if (imagen == null) {
+			return null;
+		}
+		if (imagen.getNombre() != null && !imagen.getNombre().isBlank()) {
+			return imagen.getNombre().trim();
+		}
+		String nombreDesdeRuta = extraerNombreDesdeRuta(imagen.getRuta());
+		if (nombreDesdeRuta != null && !nombreDesdeRuta.isBlank()) {
+			return nombreDesdeRuta;
+		}
+		return extraerNombreDesdeRuta(imagen.getUrl());
+	}
+
+	private String extraerNombreDesdeRuta(String ruta) {
+		if (ruta == null || ruta.isBlank()) {
+			return null;
+		}
+		String normalizada = ruta.replace('\\', '/').trim();
+		int idx = normalizada.lastIndexOf('/');
+		if (idx < 0 || idx >= normalizada.length() - 1) {
+			return null;
+		}
+		String nombre = normalizada.substring(idx + 1);
+		int queryIndex = nombre.indexOf('?');
+		if (queryIndex >= 0) {
+			nombre = nombre.substring(0, queryIndex);
+		}
+		return nombre.isBlank() ? null : nombre;
 	}
 
 	private void agregarCandidatoRuta(List<Path> candidatos, String ruta) {
