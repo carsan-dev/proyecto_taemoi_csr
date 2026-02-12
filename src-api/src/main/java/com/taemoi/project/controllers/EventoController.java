@@ -14,8 +14,10 @@ import java.util.Map;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +64,8 @@ public class EventoController {
 	private static final int MIN_ANCHO_IMAGEN = 160;
 	private static final int MAX_ANCHO_IMAGEN = 2200;
 	private static final float CALIDAD_WEBP_REDIMENSION = 0.78f;
+	private static final long MAX_TAMANO_ORIGEN_RESIZE_BYTES = 8L * 1024 * 1024;
+	private static final long MAX_PIXELES_ORIGEN_RESIZE = 24_000_000L;
 
 	@Value("${app.base.url}")
 	private String baseUrl;
@@ -378,11 +382,30 @@ public class EventoController {
 		}
 
 		try {
-			BufferedImage original = ImageIO.read(rutaArchivo.toFile());
-			if (original == null || original.getWidth() <= 0 || original.getHeight() <= 0) {
+			long tamanoArchivo = Files.size(rutaArchivo);
+			if (tamanoArchivo > MAX_TAMANO_ORIGEN_RESIZE_BYTES) {
 				return null;
 			}
-			if (original.getWidth() <= anchoObjetivo) {
+
+			int[] dimensionesOriginales = obtenerDimensionesImagen(rutaArchivo);
+			if (dimensionesOriginales == null) {
+				return null;
+			}
+
+			int anchoOriginal = dimensionesOriginales[0];
+			int altoOriginal = dimensionesOriginales[1];
+			if (anchoOriginal <= 0 || altoOriginal <= 0) {
+				return null;
+			}
+			if (anchoOriginal <= anchoObjetivo) {
+				return null;
+			}
+			if ((long) anchoOriginal * altoOriginal > MAX_PIXELES_ORIGEN_RESIZE) {
+				return null;
+			}
+
+			BufferedImage original = ImageIO.read(rutaArchivo.toFile());
+			if (original == null || original.getWidth() <= 0 || original.getHeight() <= 0) {
 				return null;
 			}
 
@@ -410,6 +433,30 @@ public class EventoController {
 					.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + nombreImagen + "\"")
 					.header(HttpHeaders.ETAG, generarEtagImagen(rutaArchivo, anchoObjetivo, mediaTypeSalida.toString()))
 					.body(recurso);
+		} catch (Throwable e) {
+			return null;
+		}
+	}
+
+	private int[] obtenerDimensionesImagen(Path rutaArchivo) {
+		try (ImageInputStream input = ImageIO.createImageInputStream(rutaArchivo.toFile())) {
+			if (input == null) {
+				return null;
+			}
+			Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+			if (!readers.hasNext()) {
+				return null;
+			}
+
+			ImageReader reader = readers.next();
+			try {
+				reader.setInput(input);
+				int width = reader.getWidth(0);
+				int height = reader.getHeight(0);
+				return new int[] { width, height };
+			} finally {
+				reader.dispose();
+			}
 		} catch (Exception e) {
 			return null;
 		}
