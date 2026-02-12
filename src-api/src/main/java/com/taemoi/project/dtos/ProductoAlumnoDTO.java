@@ -13,6 +13,7 @@ public class ProductoAlumnoDTO {
 	private Boolean pagado;
 	private Date fechaPago;
 	private String notas;
+	private String motivoCambio;
 
 	public Long getId() {
 		return id;
@@ -92,6 +93,14 @@ public class ProductoAlumnoDTO {
 
 	public void setNotas(String notas) {
 		this.notas = notas;
+	}
+
+	public String getMotivoCambio() {
+		return motivoCambio;
+	}
+
+	public void setMotivoCambio(String motivoCambio) {
+		this.motivoCambio = motivoCambio;
 	}
 
 }
