@@ -38,6 +38,9 @@ public class SecurityConfiguration {
 	@Autowired
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+	@Autowired
+	private AuditoriaRequestFilter auditoriaRequestFilter;
+
 	/**
 	 * Inyección del servicio de usuario.
 	 */
@@ -233,6 +236,8 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/informes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.requestMatchers(HttpMethod.GET, "/api/admin/auditoria/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						.requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						.requestMatchers(HttpMethod.POST, "/api/mail/**").permitAll().anyRequest().authenticated())
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -264,6 +269,7 @@ public class SecurityConfiguration {
 							response.sendRedirect("/oauth2/authorization/google");
 						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+		http.addFilterAfter(auditoriaRequestFilter, JwtAuthenticationFilter.class);
 		return http.build();
 	}
 
