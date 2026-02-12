@@ -93,6 +93,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly documentosCache = new Map<number, Documento[]>();
   private readonly convocatoriasCache = new Map<number, ConvocatoriaDTO[]>();
   private readonly documentosPageSize = 8;
+  private readonly probabilidadRetoDeporte = 0.75;
   private readonly retosDiariosGenerales: string[] = [
     '5 min de movilidad de cadera y tobillo',
     '3 x 30 s de plancha frontal',
@@ -537,7 +538,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const deportesCache = this.deportesCache.get(alumnoId);
     if (deportesCache) {
       this.deportesDelAlumno = deportesCache;
-      this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+      this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
       this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
       this.cargandoDeportes = false;
       return;
@@ -553,7 +554,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         const deportesNormalizados = deportes ?? [];
         this.deportesDelAlumno = deportesNormalizados;
         this.deportesCache.set(alumnoId, deportesNormalizados);
-        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
         this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
         this.cargandoDeportes = false;
       },
@@ -563,7 +564,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         }
 
         this.deportesDelAlumno = [];
-        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
         this.novedadesEstadoDeportes = 0;
         this.detallesNovedadesEstado = [];
         this.cargandoDeportes = false;
@@ -1069,7 +1070,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private cargarEstadoRetoDiario(alumnoId: number): void {
-    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
     this.rachaRetoDiario = 0;
     this.retoCompletadoHoy = false;
     this.resetearCountdownRetoDiario();
@@ -1093,28 +1094,38 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getRetoDiarioSegunFecha(fecha: Date): string {
-    const retosDisponibles = this.obtenerRetosDiariosDisponibles();
-    if (retosDisponibles.length === 0) {
+  private getRetoDiarioSegunFecha(fecha: Date, alumnoId?: number): string {
+    const retosGenerales = [...this.retosDiariosGenerales];
+    const retosDeporte = this.obtenerRetosDiariosPorDeporteActivo();
+    if (retosGenerales.length === 0 && retosDeporte.length === 0) {
       return '5 min de movilidad suave';
     }
-    const index = Math.abs(this.obtenerIndiceDiaLocal(fecha)) % retosDisponibles.length;
-    return retosDisponibles[index];
+
+    const alumnoIdNormalizado = this.normalizarAlumnoIdReto(alumnoId);
+    const usaRetoDeporte = this.debeUsarRetoDeporte(fecha, alumnoIdNormalizado, retosDeporte.length > 0);
+    const retosCandidatos = usaRetoDeporte
+      ? retosDeporte
+      : (retosGenerales.length > 0 ? retosGenerales : retosDeporte);
+    const index = this.obtenerIndiceDeterminista(fecha, alumnoIdNormalizado, retosCandidatos.length, 'item');
+    return retosCandidatos[index];
   }
 
-  private obtenerIndiceDiaLocal(fecha: Date): number {
-    const inicioDiaLocal = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-    return Math.floor(inicioDiaLocal.getTime() / 86_400_000);
+  private debeUsarRetoDeporte(fecha: Date, alumnoId: number, hayRetosDeporte: boolean): boolean {
+    if (!hayRetosDeporte) {
+      return false;
+    }
+    const valorDeterminista = this.obtenerValorDeterminista(fecha, alumnoId, 'pool');
+    return valorDeterminista < this.probabilidadRetoDeporte;
   }
 
-  private obtenerRetosDiariosDisponibles(): string[] {
-    const retos = [...this.retosDiariosGenerales];
-    const deportesActivos = new Set(
+  private obtenerRetosDiariosPorDeporteActivo(): string[] {
+    const retos: string[] = [];
+    const deportesActivos = Array.from(new Set(
       (this.deportesDelAlumno ?? [])
         .filter((deporteItem) => deporteItem?.activo !== false)
         .map((deporteItem) => this.normalizarClaveDeporteReto(deporteItem?.deporte))
         .filter((deporte) => deporte.length > 0)
-    );
+    )).sort();
 
     deportesActivos.forEach((deporte) => {
       const retosDeporte = this.retosDiariosPorDeporte[deporte];
@@ -1128,6 +1139,35 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   private normalizarClaveDeporteReto(deporte: unknown): string {
     return String(deporte ?? '').trim().toUpperCase();
+  }
+
+  private normalizarAlumnoIdReto(alumnoId?: number): number {
+    const candidato = Number(alumnoId ?? this.selectedAlumno?.id ?? 0);
+    return Number.isInteger(candidato) && candidato > 0 ? candidato : 0;
+  }
+
+  private obtenerIndiceDeterminista(fecha: Date, alumnoId: number, longitud: number, canal: string): number {
+    if (!Number.isFinite(longitud) || longitud <= 0) {
+      return 0;
+    }
+    const valor = this.obtenerValorDeterminista(fecha, alumnoId, canal);
+    return Math.min(longitud - 1, Math.floor(valor * longitud));
+  }
+
+  private obtenerValorDeterminista(fecha: Date, alumnoId: number, canal: string): number {
+    const inicioDiaLocal = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+    const clave = `${alumnoId}|${inicioDiaLocal.getTime()}|${canal}`;
+    const hash = this.hashDeterminista(clave);
+    return hash / 4_294_967_296;
+  }
+
+  private hashDeterminista(valor: string): number {
+    let hash = 2_169_136_261;
+    for (let i = 0; i < valor.length; i += 1) {
+      hash ^= valor.charCodeAt(i);
+      hash = Math.imul(hash, 16_777_619);
+    }
+    return hash >>> 0;
   }
 
   private aplicarEstadoRetoDiario(estado: RetoDiarioEstado | null | undefined): void {
@@ -1208,7 +1248,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
 
     this.recargandoRetoTrasReset = true;
-    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
     this.cargarEstadoRetoDiario(alumnoId);
   }
 
