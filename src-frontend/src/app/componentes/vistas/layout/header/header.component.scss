@@ -1698,6 +1698,55 @@ header.fixed-header {
       }
     }
   }
+
+  .admin-quick-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.32rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-link {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba($text-light, 0.78);
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: $transition-fast;
+      flex: 0 0 auto;
+
+      i {
+        font-size: 1rem;
+      }
+
+      &:hover {
+        color: $text-light;
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+
+      &.active {
+        color: $text-light;
+        background: rgba($primary-color, 0.28);
+        border-color: rgba($primary-color, 0.48);
+        box-shadow: 0 0 0 1px rgba($primary-color, 0.2);
+      }
+    }
+  }
 }
 
 // ========================================
@@ -1973,6 +2022,14 @@ header.fixed-header {
 }
 
 // Responsive Design for Admin
+@media (max-width: 991.98px) {
+  .admin-top-navbar {
+    .admin-quick-nav {
+      display: none;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .admin-top-navbar {
     .navbar-brand {
@@ -1994,6 +2051,7 @@ header.fixed-header {
         }
       }
     }
+
   }
 
   .admin-sidebar {
@@ -2012,6 +2070,24 @@ header.fixed-header {
     .navbar-actions {
       .admin-user-info {
         display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 992px) {
+  .admin-top-navbar {
+    .admin-quick-nav {
+      gap: 0.25rem;
+      padding: 0.24rem 0.34rem;
+
+      .quick-link {
+        width: 32px;
+        height: 32px;
+
+        i {
+          font-size: 0.9rem;
+        }
       }
     }
   }

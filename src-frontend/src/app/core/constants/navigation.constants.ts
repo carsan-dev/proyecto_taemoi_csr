@@ -8,6 +8,11 @@ export interface NavigationItem {
   icon?: string;
 }
 
+export interface AdminQuickNavigationItem extends NavigationItem {
+  exact?: boolean;
+  activePrefixes?: string[];
+}
+
 export interface NavigationDropdownItem {
   label: string;
   items: NavigationItem[];
@@ -173,6 +178,77 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-clipboard-check-fill',
       },
     ],
+  },
+];
+
+/**
+ * Admin header quick-access items.
+ * Uses "listado" routes as canonical destinations for each module.
+ */
+export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
+  {
+    label: 'Dashboard',
+    route: '/adminpage',
+    icon: 'bi-speedometer2',
+    exact: true,
+    activePrefixes: ['/adminpage'],
+  },
+  {
+    label: 'Alumnos',
+    route: '/alumnosListar',
+    icon: 'bi-people',
+    activePrefixes: [
+      '/alumnosListar',
+      '/alumnosEditar',
+      '/alumnosCrear',
+      '/alumnosEliminar',
+      '/alumnos',
+    ],
+  },
+  {
+    label: 'Grupos y turnos',
+    route: '/gruposListar',
+    icon: 'bi-collection',
+    activePrefixes: [
+      '/gruposListar',
+      '/gruposCrear',
+      '/gruposEditar',
+      '/gestionarAlumnos',
+      '/seleccionarAlumnos',
+      '/gestionarTurnosAlumno',
+      '/turnosCrear',
+      '/turnosEditar',
+    ],
+  },
+  {
+    label: 'Eventos',
+    route: '/eventosListar',
+    icon: 'bi-calendar-check-fill',
+    activePrefixes: ['/eventosListar', '/eventosCrear', '/eventosEditar'],
+  },
+  {
+    label: 'Productos',
+    route: '/productosListar',
+    icon: 'bi-box-seam-fill',
+    activePrefixes: ['/productosListar', '/productosCrear', '/productosEditar'],
+  },
+  {
+    label: 'Tesorería',
+    route: '/tesoreriaCobros',
+    icon: 'bi-cash-stack',
+    activePrefixes: ['/tesoreriaCobros'],
+  },
+  {
+    label: 'Convocatorias',
+    route: '/convocatoriasListar',
+    icon: 'bi-clipboard-check-fill',
+    activePrefixes: ['/convocatoriasListar'],
+  },
+  {
+    label: 'Configuración',
+    route: '/configuracion-sistema',
+    icon: 'bi-sliders',
+    activePrefixes: ['/configuracion-sistema'],
   },
 ];
 

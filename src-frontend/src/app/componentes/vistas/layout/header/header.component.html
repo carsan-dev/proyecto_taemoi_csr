@@ -207,6 +207,18 @@
         <span class="brand-subtitle">Panel de Administración</span>
       </div>
     </a>
+    <nav class="admin-quick-nav" aria-label="Accesos rápidos de administración">
+      @for (item of adminQuickLinks; track item.route) {
+        <a
+          class="quick-link"
+          [routerLink]="[item.route]"
+          [class.active]="isAdminQuickRouteActive(item)"
+          [title]="item.label"
+          [attr.aria-label]="item.label">
+          <i class="bi {{ item.icon }}"></i>
+        </a>
+      }
+    </nav>
     <div class="navbar-actions">
       <div class="admin-user-info">
         <i class="bi bi-person-circle"></i>
