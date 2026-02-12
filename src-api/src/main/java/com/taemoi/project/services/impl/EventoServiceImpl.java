@@ -63,9 +63,7 @@ public class EventoServiceImpl implements EventoService {
 	public Evento guardarEvento(@NonNull Evento evento, MultipartFile archivoImagen) throws IOException {
 		ensureOrdenesGlobal();
 		if (archivoImagen != null && !archivoImagen.isEmpty()) {
-			// Guardar la imagen en el sistema de archivos y obtener la entidad `Imagen` con
-			// la ruta
-			Imagen imagenGuardada = imagenService.guardarImagen(archivoImagen);
+			Imagen imagenGuardada = imagenService.guardarImagenEvento(archivoImagen);
 
 			// Persist the Imagen entity before assigning it to the Evento entity
 			imagenRepository.save(imagenGuardada);
