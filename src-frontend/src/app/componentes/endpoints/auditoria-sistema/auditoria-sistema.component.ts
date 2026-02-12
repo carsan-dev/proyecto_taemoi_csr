@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { interval, Subscription } from 'rxjs';
 
 import { AuditoriaEvento } from '../../../interfaces/auditoria-evento';
 import { AuditoriaEventoDetalle } from '../../../interfaces/auditoria-evento-detalle';
@@ -20,7 +21,10 @@ type ResultadoFiltro = 'EXITOS' | 'ERRORES' | 'TODOS';
   templateUrl: './auditoria-sistema.component.html',
   styleUrl: './auditoria-sistema.component.scss',
 })
-export class AuditoriaSistemaComponent implements OnInit {
+export class AuditoriaSistemaComponent implements OnInit, OnDestroy {
+  private readonly autoRefreshIntervalMs = 30000;
+  private autoRefreshSubscription: Subscription | null = null;
+
   readonly acciones: Array<{ value: AccionFiltro; label: string }> = [
     { value: 'TODOS', label: 'Todas las acciones' },
     { value: 'READ', label: 'READ' },
@@ -61,6 +65,12 @@ export class AuditoriaSistemaComponent implements OnInit {
   ngOnInit(): void {
     this.cargarModulos();
     this.cargarEventos();
+    this.iniciarAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.autoRefreshSubscription?.unsubscribe();
+    this.autoRefreshSubscription = null;
   }
 
   aplicarFiltros(): void {
@@ -197,6 +207,15 @@ export class AuditoriaSistemaComponent implements OnInit {
           showErrorToast('No se pudieron cargar los eventos de auditoria');
         },
       });
+  }
+
+  private iniciarAutoRefresh(): void {
+    this.autoRefreshSubscription = interval(this.autoRefreshIntervalMs).subscribe(() => {
+      if (this.cargando || this.cargandoDetalle) {
+        return;
+      }
+      this.cargarEventos(false);
+    });
   }
 
   private mapearResultadoFiltro(resultado: ResultadoFiltro): string | null {

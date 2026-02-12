@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { Subscription, forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { interval, Subscription, forkJoin, of } from 'rxjs';
+import { catchError, skip } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
@@ -53,6 +53,8 @@ interface DashboardAlert {
 })
 export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
   private readonly ventanaErroresAuditoriaDias: number = 7;
+  private readonly autoRefreshIntervalMs: number = 30000;
+  private eventosSuscripcionInicializada = false;
   nombreUsuario: string | null = '';
   usuarioLogueado: boolean = false;
   cargandoEstadisticas: boolean = true;
@@ -199,7 +201,9 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.inicializarSuscripcionEventos();
     this.cargarEstadisticas();
+    this.iniciarAutoRefresh();
   }
 
   ngOnDestroy(): void {
@@ -209,6 +213,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
     this.cargandoDistribucion = true;
+    this.cargandoEventos = true;
+    this.endpointsService.obtenerTodosLosEventos();
     const mesActual = this.fechaActual.getMonth() + 1;
     const anoActual = this.fechaActual.getFullYear();
     const fechaHastaErrores = this.formatearFechaLocal(new Date());
@@ -275,24 +281,6 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(sub);
-
-    // Load events separately (uses BehaviorSubject pattern)
-    this.endpointsService.obtenerTodosLosEventos();
-    const eventosSub = this.endpointsService.eventos$.subscribe(eventos => {
-      if (eventos) {
-        this.stats.totalEventos = eventos.length;
-        this.stats.eventosVisibles = eventos.filter((e: any) => e.visible).length;
-
-        // Get visible events (up to 4)
-        this.stats.proximosEventos = eventos
-          .filter((e: any) => e.visible)
-          .slice(0, 4);
-
-        this.cargandoEventos = false;
-        this.actualizarAlertasOperativas();
-      }
-    });
-    this.subscriptions.add(eventosSub);
   }
 
   private cargarDistribucionPorDeporte(): void {
@@ -314,6 +302,38 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       },
     });
     this.subscriptions.add(sub);
+  }
+
+  private inicializarSuscripcionEventos(): void {
+    if (this.eventosSuscripcionInicializada) {
+      return;
+    }
+
+    const eventosSub = this.endpointsService.eventos$
+      .pipe(skip(1))
+      .subscribe((eventos) => {
+        this.stats.totalEventos = eventos.length;
+        this.stats.eventosVisibles = eventos.filter((evento: any) => evento.visible).length;
+        this.stats.proximosEventos = eventos
+          .filter((evento: any) => evento.visible)
+          .slice(0, 4);
+        this.cargandoEventos = false;
+        this.actualizarAlertasOperativas();
+      });
+
+    this.subscriptions.add(eventosSub);
+    this.eventosSuscripcionInicializada = true;
+  }
+
+  private iniciarAutoRefresh(): void {
+    const autoRefreshSub = interval(this.autoRefreshIntervalMs).subscribe(() => {
+      if (this.cargandoEstadisticas || this.cargandoDistribucion || this.cargandoEventos) {
+        return;
+      }
+      this.fechaActual = new Date();
+      this.cargarEstadisticas();
+    });
+    this.subscriptions.add(autoRefreshSub);
   }
 
   get eventosOcultos(): number {
