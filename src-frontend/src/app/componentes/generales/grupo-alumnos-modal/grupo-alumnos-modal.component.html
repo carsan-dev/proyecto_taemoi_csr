@@ -88,7 +88,7 @@
                   <div class="alumno-avatar">
                     @if (alumno.fotoAlumno?.url) {
                       <img
-                        [src]="alumno.fotoAlumno.url"
+                        [src]="alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')"
                         [alt]="alumno.nombre + ' ' + alumno.apellidos"
                         class="avatar-image" loading="lazy">
                     } @else {
