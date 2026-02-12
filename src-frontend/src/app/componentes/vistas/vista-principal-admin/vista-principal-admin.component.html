@@ -115,7 +115,7 @@
         <h3>Distribución por Deporte</h3>
       </div>
       <div class="card-body">
-        @if (cargandoEstadisticas) {
+        @if (cargandoDistribucion) {
           <app-skeleton-card [type]="'distribution'" [count]="4"></app-skeleton-card>
         } @else if (getObjectKeys(stats.alumnosPorDeporte).length > 0) {
           <div class="distribution-chart">

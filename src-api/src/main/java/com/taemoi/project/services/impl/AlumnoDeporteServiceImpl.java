@@ -3,8 +3,10 @@ package com.taemoi.project.services.impl;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -323,6 +325,19 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Override
 	public Optional<AlumnoDeporte> obtenerAlumnoDeporte(Long alumnoId, Deporte deporte) {
 		return alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Map<String, Long> obtenerDistribucionActivaPorDeporte() {
+		Map<String, Long> distribucion = new LinkedHashMap<>();
+		for (Deporte deporte : Deporte.values()) {
+			long total = alumnoDeporteRepository.countByDeporteAndActivoTrue(deporte);
+			if (total > 0) {
+				distribucion.put(deporte.name(), total);
+			}
+		}
+		return distribucion;
 	}
 
 	@Override

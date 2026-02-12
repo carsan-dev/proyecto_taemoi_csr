@@ -87,6 +87,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
+  private readonly gruposCache = new Map<number, any[]>();
+  private readonly turnosCache = new Map<number, Turno[]>();
+  private readonly deportesCache = new Map<number, AlumnoDeporteDTO[]>();
+  private readonly documentosCache = new Map<number, Documento[]>();
+  private readonly convocatoriasCache = new Map<number, ConvocatoriaDTO[]>();
   private readonly documentosPageSize = 8;
   private readonly retosDiariosGenerales: string[] = [
     '5 min de movilidad de cadera y tobillo',
@@ -210,6 +215,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private documentosSeccionVisible: boolean = false;
   private documentosSectionObserver: IntersectionObserver | null = null;
   private documentosSentinelObserver: IntersectionObserver | null = null;
+  private cargaDocumentosDiferidaId: number | null = null;
 
   constructor(
     public endpointsService: EndpointsService,
@@ -247,13 +253,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       next: (alumnos) => {
         if (alumnos && alumnos.length > 0) {
           this.alumnos = alumnos;
-          this.selectedAlumno = alumnos[0];
-          this.cargarGruposDelAlumno(this.selectedAlumno.id);
-          this.cargarTurnosDelAlumno(this.selectedAlumno.id);
-          this.cargarDeportesDelAlumno(this.selectedAlumno.id);
-          this.cargarDocumentosDelAlumno(this.selectedAlumno.id);
-          this.cargarConvocatoriasDelAlumno(this.selectedAlumno.id);
-          this.cargarEstadoRetoDiario(this.selectedAlumno.id);
+          this.seleccionarAlumno(alumnos[0]);
           return;
         }
 
@@ -278,14 +278,17 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   seleccionarAlumno(alumno: any): void {
+    const alumnoId = Number(alumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+    if (Number(this.selectedAlumno?.id) === alumnoId) {
+      return;
+    }
+
     this.selectedAlumno = alumno;
     this.mostrarConvocatoriasSecundarias = false;
-    this.cargarGruposDelAlumno(alumno.id);
-    this.cargarTurnosDelAlumno(alumno.id);
-    this.cargarDeportesDelAlumno(alumno.id);
-    this.cargarDocumentosDelAlumno(alumno.id);
-    this.cargarConvocatoriasDelAlumno(alumno.id);
-    this.cargarEstadoRetoDiario(alumno.id);
+    this.cargarDatosAlumno(alumnoId);
   }
 
   scrollToSection(sectionId: string): void {
@@ -299,23 +302,87 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   irADocumentos(): void {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (Number.isInteger(alumnoId) && alumnoId > 0) {
+      this.programarCargaDocumentos(alumnoId, true);
+    }
     this.scrollToSection('mis-documentos');
     this.marcarDocumentosComoVistos();
   }
 
   ngOnDestroy(): void {
+    this.cancelarCargaDiferidaDocumentos();
     this.detenerActualizacionProximaClase();
     this.detenerCountdownRetoDiario();
     this.desconectarObservadoresDocumentos();
     this.subscriptions.unsubscribe();
   }
 
+  private cargarDatosAlumno(alumnoId: number): void {
+    this.cancelarCargaDiferidaDocumentos();
+    this.cargarGruposDelAlumno(alumnoId);
+    this.cargarTurnosDelAlumno(alumnoId);
+    this.cargarDeportesDelAlumno(alumnoId);
+    this.programarCargaDocumentos(alumnoId);
+    this.cargarConvocatoriasDelAlumno(alumnoId);
+    this.cargarEstadoRetoDiario(alumnoId);
+  }
+
+  private esAlumnoSeleccionado(alumnoId: number): boolean {
+    return Number(this.selectedAlumno?.id) === alumnoId;
+  }
+
+  private cancelarCargaDiferidaDocumentos(): void {
+    if (this.cargaDocumentosDiferidaId === null) {
+      return;
+    }
+    globalThis.window?.clearTimeout(this.cargaDocumentosDiferidaId);
+    this.cargaDocumentosDiferidaId = null;
+  }
+
+  private programarCargaDocumentos(alumnoId: number, inmediata: boolean = false): void {
+    if (!this.esAlumnoSeleccionado(alumnoId)) {
+      return;
+    }
+
+    if (this.documentosCache.has(alumnoId)) {
+      this.cargarDocumentosDelAlumno(alumnoId);
+      return;
+    }
+
+    this.cancelarCargaDiferidaDocumentos();
+    if (inmediata || !globalThis.window?.setTimeout) {
+      this.cargarDocumentosDelAlumno(alumnoId);
+      return;
+    }
+
+    this.cargaDocumentosDiferidaId = globalThis.window.setTimeout(() => {
+      this.cargaDocumentosDiferidaId = null;
+      this.cargarDocumentosDelAlumno(alumnoId);
+    }, 350);
+  }
+
   cargarGruposDelAlumno(alumnoId: number): void {
-    const gruposSubscription = this.endpointsService.gruposDelAlumno$.subscribe({
+    const gruposCache = this.gruposCache.get(alumnoId);
+    if (gruposCache) {
+      this.grupos = gruposCache;
+      return;
+    }
+
+    this.endpointsService.obtenerGruposDelAlumnoObservable(alumnoId).subscribe({
       next: (grupos) => {
-        this.grupos = grupos;
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+        const gruposNormalizados = Array.isArray(grupos) ? grupos : [];
+        this.grupos = gruposNormalizados;
+        this.gruposCache.set(alumnoId, gruposNormalizados);
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+        this.grupos = [];
         Swal.fire({
           title: 'Error en la peticion',
           text: 'Error al obtener los grupos del alumno.',
@@ -323,20 +390,33 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         });
       },
     });
-
-    this.subscriptions.add(gruposSubscription);
-    this.endpointsService.obtenerGruposDelAlumno(alumnoId);
   }
 
   cargarTurnosDelAlumno(alumnoId: number): void {
+    const turnosCache = this.turnosCache.get(alumnoId);
+    if (turnosCache) {
+      this.turnosAlumno = turnosCache;
+      this.cargandoTurnos = false;
+      this.actualizarProximaClase();
+      return;
+    }
+
     this.cargandoTurnos = true;
     this.endpointsService.obtenerTurnosDelAlumnoObservable(alumnoId).subscribe({
       next: (turnos: any[]) => {
-        this.turnosAlumno = this.normalizarTurnos(turnos);
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+        const turnosNormalizados = this.normalizarTurnos(turnos);
+        this.turnosAlumno = turnosNormalizados;
+        this.turnosCache.set(alumnoId, turnosNormalizados);
         this.cargandoTurnos = false;
         this.actualizarProximaClase();
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
         this.turnosAlumno = [];
         this.proximaClase = null;
         this.proximasClasesPorDeporte = [];
@@ -454,15 +534,34 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   cargarDeportesDelAlumno(alumnoId: number): void {
+    const deportesCache = this.deportesCache.get(alumnoId);
+    if (deportesCache) {
+      this.deportesDelAlumno = deportesCache;
+      this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+      this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
+      this.cargandoDeportes = false;
+      return;
+    }
+
     this.cargandoDeportes = true;
     this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
       next: (deportes: AlumnoDeporteDTO[]) => {
-        this.deportesDelAlumno = deportes ?? [];
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
+        const deportesNormalizados = deportes ?? [];
+        this.deportesDelAlumno = deportesNormalizados;
+        this.deportesCache.set(alumnoId, deportesNormalizados);
         this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
         this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
         this.cargandoDeportes = false;
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
         this.deportesDelAlumno = [];
         this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
         this.novedadesEstadoDeportes = 0;
@@ -478,10 +577,28 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   cargarDocumentosDelAlumno(alumnoId: number): void {
+    const documentosCache = this.documentosCache.get(alumnoId);
+    if (documentosCache) {
+      this.documentosAlumno = documentosCache;
+      this.actualizarNovedadesDocumentos(alumnoId, this.documentosAlumno);
+      this.reiniciarPaginacionDocumentos();
+      if (this.documentosSeccionVisible) {
+        this.marcarDocumentosComoVistos();
+      }
+      this.cargandoDocumentos = false;
+      return;
+    }
+
     this.cargandoDocumentos = true;
     this.endpointsService.obtenerDocumentosDeAlumno(alumnoId).subscribe({
       next: (documentos: Documento[]) => {
-        this.documentosAlumno = documentos ?? [];
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
+        const documentosNormalizados = documentos ?? [];
+        this.documentosAlumno = documentosNormalizados;
+        this.documentosCache.set(alumnoId, documentosNormalizados);
         this.actualizarNovedadesDocumentos(alumnoId, this.documentosAlumno);
         this.reiniciarPaginacionDocumentos();
         if (this.documentosSeccionVisible) {
@@ -490,6 +607,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         this.cargandoDocumentos = false;
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
         this.documentosAlumno = [];
         this.novedadesDocumentos = 0;
         this.reiniciarPaginacionDocumentos();
@@ -855,10 +976,27 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private cargarConvocatoriasDelAlumno(alumnoId: number): void {
+    const convocatoriasCache = this.convocatoriasCache.get(alumnoId);
+    if (convocatoriasCache) {
+      this.convocatoriasAlumno = convocatoriasCache;
+      this.proximasConvocatoriasPorDeporte = this.obtenerProximasConvocatoriasPorDeporte(this.convocatoriasAlumno);
+      this.proximaConvocatoriaAlumno = this.obtenerConvocatoriaProxima(this.proximasConvocatoriasPorDeporte);
+      this.convocatoriasSecundarias = this.proximasConvocatoriasPorDeporte.slice(1);
+      this.mostrarConvocatoriasSecundarias = false;
+      this.cargandoConvocatorias = false;
+      return;
+    }
+
     this.cargandoConvocatorias = true;
     this.endpointsService.obtenerConvocatoriasDeAlumno(alumnoId).subscribe({
       next: (convocatorias) => {
-        this.convocatoriasAlumno = Array.isArray(convocatorias) ? convocatorias : [];
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
+        const convocatoriasNormalizadas = Array.isArray(convocatorias) ? convocatorias : [];
+        this.convocatoriasAlumno = convocatoriasNormalizadas;
+        this.convocatoriasCache.set(alumnoId, convocatoriasNormalizadas);
         this.proximasConvocatoriasPorDeporte = this.obtenerProximasConvocatoriasPorDeporte(this.convocatoriasAlumno);
         this.proximaConvocatoriaAlumno = this.obtenerConvocatoriaProxima(this.proximasConvocatoriasPorDeporte);
         this.convocatoriasSecundarias = this.proximasConvocatoriasPorDeporte.slice(1);
@@ -866,6 +1004,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         this.cargandoConvocatorias = false;
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
+
         this.convocatoriasAlumno = [];
         this.proximaConvocatoriaAlumno = null;
         this.proximasConvocatoriasPorDeporte = [];
@@ -933,10 +1075,16 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.resetearCountdownRetoDiario();
     this.endpointsService.obtenerEstadoRetoDiario(alumnoId).subscribe({
       next: (estado: RetoDiarioEstado) => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
         this.aplicarEstadoRetoDiario(estado);
         this.recargandoRetoTrasReset = false;
       },
       error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId)) {
+          return;
+        }
         this.rachaRetoDiario = 0;
         this.retoCompletadoHoy = false;
         this.recargandoRetoTrasReset = false;
@@ -1121,6 +1269,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         const entradaActiva = entradas[0];
         this.documentosSeccionVisible = !!entradaActiva?.isIntersecting;
         if (this.documentosSeccionVisible) {
+          const alumnoId = Number(this.selectedAlumno?.id);
+          if (Number.isInteger(alumnoId) && alumnoId > 0) {
+            this.programarCargaDocumentos(alumnoId, true);
+          }
           this.marcarDocumentosComoVistos();
         }
       },

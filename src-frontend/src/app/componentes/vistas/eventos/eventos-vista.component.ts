@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
@@ -12,7 +12,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
     '[class.preview]': 'previewMode'
   }
 })
-export class EventosVistaComponent implements OnChanges {
+export class EventosVistaComponent implements OnChanges, OnDestroy {
   @Input() eventos: any[] = [];
   @Input() isLoading: boolean = false;
   @Input() enableNavigation: boolean = true;
@@ -23,7 +23,18 @@ export class EventosVistaComponent implements OnChanges {
   @Output() eventoClick = new EventEmitter<number>();
   @Output() backToUser = new EventEmitter<void>();
 
+  visibleEventos: any[] = [];
+
   private readonly loadedImages = new Set<number>();
+  private readonly initialBatchSize = 10;
+  private readonly batchSize = 8;
+  private visibleCount: number = 0;
+  private loadMoreObserver: IntersectionObserver | null = null;
+
+  @ViewChild('scrollSentinel')
+  set scrollSentinelRef(sentinelRef: ElementRef<HTMLElement> | undefined) {
+    this.configurarObservadorCarga(sentinelRef?.nativeElement ?? null);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['eventos']) {
@@ -37,7 +48,17 @@ export class EventosVistaComponent implements OnChanges {
           this.loadedImages.delete(id);
         }
       }
+
+      this.reiniciarCargaProgresiva();
     }
+
+    if (changes['previewMode'] && !changes['previewMode'].firstChange) {
+      this.reiniciarCargaProgresiva();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.desconectarObservadorCarga();
   }
 
   onEventoClick(eventoId: number): void {
@@ -67,5 +88,57 @@ export class EventosVistaComponent implements OnChanges {
       return;
     }
     this.loadedImages.add(eventoId);
+  }
+
+  get hasMoreEventos(): boolean {
+    return this.visibleCount < this.eventos.length;
+  }
+
+  private reiniciarCargaProgresiva(): void {
+    const totalEventos = Array.isArray(this.eventos) ? this.eventos.length : 0;
+    this.visibleCount = Math.min(totalEventos, this.initialBatchSize);
+    this.visibleEventos = this.eventos.slice(0, this.visibleCount);
+  }
+
+  private cargarMasEventos(): void {
+    if (!this.hasMoreEventos) {
+      return;
+    }
+
+    this.visibleCount = Math.min(this.eventos.length, this.visibleCount + this.batchSize);
+    this.visibleEventos = this.eventos.slice(0, this.visibleCount);
+  }
+
+  private desconectarObservadorCarga(): void {
+    if (this.loadMoreObserver) {
+      this.loadMoreObserver.disconnect();
+      this.loadMoreObserver = null;
+    }
+  }
+
+  private configurarObservadorCarga(sentinel: HTMLElement | null): void {
+    this.desconectarObservadorCarga();
+    if (!sentinel || typeof IntersectionObserver === 'undefined') {
+      if (typeof IntersectionObserver === 'undefined' && this.hasMoreEventos) {
+        this.visibleCount = this.eventos.length;
+        this.visibleEventos = this.eventos.slice(0, this.visibleCount);
+      }
+      return;
+    }
+
+    this.loadMoreObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.cargarMasEventos();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '500px 0px',
+        threshold: 0.01,
+      }
+    );
+
+    this.loadMoreObserver.observe(sentinel);
   }
 }
