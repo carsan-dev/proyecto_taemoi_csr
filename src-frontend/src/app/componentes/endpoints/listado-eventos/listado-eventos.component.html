@@ -60,8 +60,8 @@
             </div>
             <div class="item-header">
               <img class="item-image"
-                [src]="evento.fotoEvento?.url ? evento.fotoEvento.url : '../../../../assets/media/default.webp'"
-                [alt]="evento.titulo" (click)="abrirModal(evento.fotoEvento?.url, evento.titulo)"
+                [src]="getEventoImageUrl(evento)"
+                [alt]="evento.titulo" (click)="abrirModal(getEventoModalUrl(evento), evento.titulo)"
                 style="cursor: zoom-in;" loading="lazy" />
               <div class="item-title">
                 <h4>
