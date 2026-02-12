@@ -168,6 +168,11 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         route: '/tesoreriaCobros',
         icon: 'bi-cash-stack',
       },
+      {
+        label: 'Auditoría sistema',
+        route: '/auditoriaSistema',
+        icon: 'bi-journal-text',
+      },
     ],
   },
   {
@@ -246,18 +251,25 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     priority: 3,
   },
   {
+    label: 'Auditoría',
+    route: '/auditoriaSistema',
+    icon: 'bi-journal-text',
+    activePrefixes: ['/auditoriaSistema'],
+    priority: 4,
+  },
+  {
     label: 'Convocatorias',
     route: '/convocatoriasListar',
     icon: 'bi-clipboard-check-fill',
     activePrefixes: ['/convocatoriasListar'],
-    priority: 4,
+    priority: 5,
   },
   {
     label: 'Configuración',
     route: '/configuracion-sistema',
     icon: 'bi-sliders',
     activePrefixes: ['/configuracion-sistema'],
-    priority: 8,
+    priority: 9,
   },
 ];
 
