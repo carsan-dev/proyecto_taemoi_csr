@@ -125,13 +125,18 @@
         <!-- Cards View -->
     @if (!cargando && vistaActual === 'cards') {
       <div class="admin-cards-grid mb-4">
-        @for (alumno of alumnosFiltrados; track alumno.id) {
+        @for (alumno of alumnosFiltrados; track alumno.id; let i = $index) {
           <div class="admin-item-card">
             <div class="item-header">
               <a [routerLink]="['/alumnosEditar', alumno.id]">
                 <img class="item-image"
                   [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=320&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
-                  [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
+                  [alt]="'Perfil de ' + alumno.nombre"
+                  [attr.loading]="i < 8 ? 'eager' : 'lazy'"
+                  [attr.fetchpriority]="i < 2 ? 'high' : 'auto'"
+                  decoding="async"
+                  width="80"
+                  height="80" />
               </a>
               <div class="item-title">
                 <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
@@ -303,14 +308,19 @@
             </tr>
           </thead>
           <tbody>
-            @for (alumno of alumnosFiltrados; track alumno.id) {
+            @for (alumno of alumnosFiltrados; track alumno.id; let i = $index) {
               @if (getResumenAlumno(alumno.id); as resumen) {
                 <tr [class.inactive-row]="alumno.activo === false">
                   <td>
                     <a [routerLink]="['/alumnosEditar', alumno.id]">
                       <img class="table-avatar"
                         [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
-                        [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
+                        [alt]="'Perfil de ' + alumno.nombre"
+                        [attr.loading]="i < 10 ? 'eager' : 'lazy'"
+                        [attr.fetchpriority]="i < 2 ? 'high' : 'auto'"
+                        decoding="async"
+                        width="40"
+                        height="40" />
                     </a>
                   </td>
                   <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>
