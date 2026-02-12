@@ -18,6 +18,17 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
   evento: Evento | null = null;
   eventoId!: number;
   modalImagenAbierto: boolean = false;
+  private readonly formateadorFechaCorta = new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  private readonly formateadorFechaLarga = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -81,6 +92,7 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
       description: evento.descripcion,
       image: imageUrl,
       url: `/eventos/${evento.id}`,
+      startDate: this.obtenerFechaIsoEvento(evento),
     });
   }
 
@@ -178,5 +190,97 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     }
     const separador = url.includes('?') ? '&' : '?';
     return `${url}${separador}${key}=${valueSeguro}`;
+  }
+
+  getFechaEventoTextoCorto(): string | null {
+    const fecha = this.parsearFechaEvento(this.evento?.fechaEvento);
+    if (!fecha) {
+      return null;
+    }
+    return this.formateadorFechaCorta.format(fecha);
+  }
+
+  getFechaEventoTextoLargo(): string | null {
+    const fecha = this.parsearFechaEvento(this.evento?.fechaEvento);
+    if (!fecha) {
+      return null;
+    }
+    const texto = this.formateadorFechaLarga.format(fecha);
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
+  getFechaEventoEstado(): 'proximo' | 'hoy' | 'realizado' | 'sin-fecha' {
+    const fecha = this.parsearFechaEvento(this.evento?.fechaEvento);
+    if (!fecha) {
+      return 'sin-fecha';
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fechaMillis = fecha.getTime();
+    const hoyMillis = hoy.getTime();
+    if (fechaMillis === hoyMillis) {
+      return 'hoy';
+    }
+    return fechaMillis > hoyMillis ? 'proximo' : 'realizado';
+  }
+
+  getEtiquetaFechaEvento(): string | null {
+    const estado = this.getFechaEventoEstado();
+    if (estado === 'sin-fecha') {
+      return null;
+    }
+    if (estado === 'hoy') {
+      return 'Hoy';
+    }
+    return estado === 'proximo' ? 'Próximo' : 'Realizado';
+  }
+
+  private obtenerFechaIsoEvento(evento: Evento): string | undefined {
+    const fecha = this.parsearFechaEvento(evento?.fechaEvento);
+    if (!fecha) {
+      return undefined;
+    }
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private parsearFechaEvento(fechaEvento: unknown): Date | null {
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (typeof fechaEvento === 'string' && fechaEvento.trim()) {
+      const match = fechaEvento.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) {
+        return null;
+      }
+      year = Number(match[1]);
+      month = Number(match[2]);
+      day = Number(match[3]);
+    } else if (Array.isArray(fechaEvento) && fechaEvento.length >= 3) {
+      year = Number(fechaEvento[0]);
+      month = Number(fechaEvento[1]);
+      day = Number(fechaEvento[2]);
+    } else {
+      return null;
+    }
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      return null;
+    }
+
+    const fecha = new Date(year, month - 1, day);
+    if (
+      fecha.getFullYear() !== year ||
+      fecha.getMonth() !== month - 1 ||
+      fecha.getDate() !== day
+    ) {
+      return null;
+    }
+    fecha.setHours(0, 0, 0, 0);
+    return fecha;
   }
 }

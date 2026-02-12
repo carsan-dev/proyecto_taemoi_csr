@@ -104,6 +104,23 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
   }
 
+  .hero-chip-date {
+    &.proximo {
+      background: rgba(34, 110, 216, 0.22);
+      border-color: rgba(153, 196, 255, 0.36);
+    }
+
+    &.hoy {
+      background: rgba(24, 133, 74, 0.28);
+      border-color: rgba(170, 245, 203, 0.4);
+    }
+
+    &.realizado {
+      background: rgba(107, 114, 128, 0.26);
+      border-color: rgba(209, 213, 219, 0.38);
+    }
+  }
+
   .hero-main {
     margin-top: 1rem;
     display: grid;
@@ -282,6 +299,33 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 
 .card-body {
   padding: 1.45rem 1.35rem;
+
+  .evento-date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    margin-bottom: 0.9rem;
+    padding: 0.58rem 0.7rem;
+    border-radius: 10px;
+    background: #edf4ff;
+    border: 1px solid #dbe8ff;
+
+    .evento-date-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #355a87;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .evento-date-value {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #153a69;
+      text-align: right;
+    }
+  }
 
   .description-text {
     margin: 0;
@@ -687,6 +731,19 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   .card-body {
     padding: 0.85rem;
 
+    .evento-date-row {
+      margin-bottom: 0.75rem;
+      padding: 0.5rem 0.55rem;
+
+      .evento-date-label {
+        font-size: 0.65rem;
+      }
+
+      .evento-date-value {
+        font-size: 0.75rem;
+      }
+    }
+
     .description-text {
       font-size: 0.86rem;
       line-height: 1.56;
@@ -814,6 +871,19 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 
   .card-body {
     padding: 0.74rem;
+
+    .evento-date-row {
+      margin-bottom: 0.62rem;
+      gap: 0.45rem;
+
+      .evento-date-label {
+        font-size: 0.62rem;
+      }
+
+      .evento-date-value {
+        font-size: 0.72rem;
+      }
+    }
 
     .description-text {
       font-size: 0.8rem;

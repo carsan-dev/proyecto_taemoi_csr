@@ -1,5 +1,4 @@
-﻿<div class="eventos-page">
-  <!-- Hero Header -->
+<div class="eventos-page">
   @if (showHero) {
     <div class="hero-header">
       <div class="hero-overlay"></div>
@@ -7,7 +6,7 @@
         @if (showUserBackButton && !previewMode) {
           <button class="hero-user-back-btn" type="button" (click)="onBackToUser()">
             <i class="bi bi-arrow-left-circle-fill"></i>
-            <span>Volver a mi area</span>
+            <span>Volver a mi &aacute;rea</span>
           </button>
         }
         <div class="page-title-section">
@@ -19,56 +18,156 @@
     </div>
   }
 
-  <!-- Main Content -->
   <div class="main-content">
     <div class="content-wrapper">
       @if (isLoading) {
-        <!-- Loading Skeleton -->
         <app-skeleton-card
           type="masonry"
           [count]="previewMode ? 4 : 8"
           [columns]="previewMode ? 1 : null"
         ></app-skeleton-card>
       } @else if (eventos.length > 0) {
-        <!-- Masonry Grid -->
-        <div class="masonry-grid">
-          @for (evento of visibleEventos; track evento.id) {
-            <div
-              class="event-card"
-              (click)="onEventoClick(evento.id)"
-            >
-              <div class="event-image-container" [class.is-loading]="!isImageLoaded(evento.id)">
-                @if (!isImageLoaded(evento.id)) {
-                  <app-skeleton-card
-                    type="image"
-                    class="event-image-skeleton"
-                    aria-hidden="true"
-                  ></app-skeleton-card>
-                }
-                <img
-                  [src]="getEventoImageUrl(evento)"
-                  class="event-img"
-                  alt="{{ evento.titulo }}"
-                  loading="lazy"
-                  decoding="async"
-                  (load)="onImageLoad(evento.id)"
-                  (error)="onImageError(evento.id)"
-                  [class.is-loaded]="isImageLoaded(evento.id)"
-                />
-                <div class="event-overlay">
-                  <i class="bi bi-zoom-in"></i>
-                </div>
-              </div>
-              <div class="event-info">
-                <h2 class="event-title">{{ evento.titulo }}</h2>
-                <p class="event-description">{{ evento.descripcion }}</p>
-                <div class="event-footer">
-                  <span class="view-more">Ver detalles <i class="bi bi-arrow-right"></i></span>
-                </div>
-              </div>
+        <div class="event-feed">
+          <header class="event-feed-header">
+            <div class="event-feed-title">
+              <p class="feed-kicker">Cartelera Taemoi</p>
+              <h2>Eventos en portada</h2>
+              <p class="feed-subtitle">
+                Descubre competiciones, exhibiciones y actividades especiales de nuestra escuela.
+              </p>
             </div>
+          </header>
+
+          @if (eventoPrincipal) {
+            <section class="showcase" aria-label="Eventos destacados">
+              <article class="showcase-main" (click)="onEventoClick(eventoPrincipal.id)">
+                <div class="event-image-container showcase-main-media" [class.is-loading]="!isImageLoaded(eventoPrincipal.id)">
+                  @if (!isImageLoaded(eventoPrincipal.id)) {
+                    <app-skeleton-card
+                      type="image"
+                      class="event-image-skeleton"
+                      aria-hidden="true"
+                    ></app-skeleton-card>
+                  }
+                  <img
+                    [src]="getEventoImageUrl(eventoPrincipal)"
+                    class="event-img"
+                    alt="{{ eventoPrincipal.titulo }}"
+                    loading="lazy"
+                    decoding="async"
+                    (load)="onImageLoad(eventoPrincipal.id)"
+                    (error)="onImageError(eventoPrincipal.id)"
+                    [class.is-loaded]="isImageLoaded(eventoPrincipal.id)"
+                  />
+                  @if (getEventoFechaTexto(eventoPrincipal)) {
+                    <span class="event-date-badge event-date-badge--overlay"
+                      [ngClass]="getEventoFechaEstado(eventoPrincipal)">
+                      <i class="bi bi-calendar3"></i>
+                      {{ getEventoFechaEtiqueta(eventoPrincipal) }} · {{ getEventoFechaTexto(eventoPrincipal) }}
+                    </span>
+                  }
+                  <div class="showcase-main-overlay"></div>
+                </div>
+
+                <div class="showcase-main-content">
+                  <span class="showcase-main-chip">Evento destacado</span>
+                  <h2 class="showcase-main-title">{{ eventoPrincipal.titulo }}</h2>
+                  <p class="showcase-main-description">{{ eventoPrincipal.descripcion }}</p>
+                  <span class="showcase-main-link">Ver detalles <i class="bi bi-arrow-right"></i></span>
+                </div>
+
+                @if (eventosDestacados.length > 1) {
+                  <div class="showcase-main-controls" (click)="$event.stopPropagation()">
+                    <button type="button" class="control-btn" aria-label="Evento destacado anterior" (click)="mostrarDestacadoAnterior($event)">
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" class="control-btn" aria-label="Evento destacado siguiente" (click)="mostrarDestacadoSiguiente($event)">
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+                  </div>
+                }
+              </article>
+
+              @if (eventosDestacados.length > 1) {
+                <div class="showcase-thumbs" role="tablist" aria-label="Seleccionar evento destacado">
+                  @for (evento of eventosDestacados; track evento.id; let i = $index) {
+                    <button
+                      type="button"
+                      role="tab"
+                      class="thumb-item"
+                      [class.is-active]="i === destacadoActualIndex"
+                      [attr.aria-selected]="i === destacadoActualIndex"
+                      (click)="seleccionarDestacado(i, $event)"
+                    >
+                      <div class="event-image-container thumb-media" [class.is-loading]="!isImageLoaded(evento.id)">
+                        @if (!isImageLoaded(evento.id)) {
+                          <app-skeleton-card
+                            type="image"
+                            class="event-image-skeleton"
+                            aria-hidden="true"
+                          ></app-skeleton-card>
+                        }
+                        <img
+                          [src]="getEventoImageUrl(evento)"
+                          class="event-img"
+                          alt="{{ evento.titulo }}"
+                          loading="lazy"
+                          decoding="async"
+                          (load)="onImageLoad(evento.id)"
+                          (error)="onImageError(evento.id)"
+                          [class.is-loaded]="isImageLoaded(evento.id)"
+                        />
+                      </div>
+                      <span class="thumb-title">{{ evento.titulo }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          @if (eventosSecundarios.length > 0) {
+            <section class="event-grid" aria-label="Cartelera completa">
+              @for (evento of eventosSecundarios; track evento.id; let i = $index) {
+                <article class="event-tile" [style.--item-index]="i" (click)="onEventoClick(evento.id)">
+                  <div class="event-image-container tile-media" [class.is-loading]="!isImageLoaded(evento.id)">
+                    @if (!isImageLoaded(evento.id)) {
+                      <app-skeleton-card
+                        type="image"
+                        class="event-image-skeleton"
+                        aria-hidden="true"
+                      ></app-skeleton-card>
+                    }
+                    <img
+                      [src]="getEventoImageUrl(evento)"
+                      class="event-img"
+                      alt="{{ evento.titulo }}"
+                      loading="lazy"
+                      decoding="async"
+                      (load)="onImageLoad(evento.id)"
+                      (error)="onImageError(evento.id)"
+                      [class.is-loaded]="isImageLoaded(evento.id)"
+                    />
+                    @if (getEventoFechaTexto(evento)) {
+                      <span class="event-date-badge event-date-badge--overlay"
+                        [ngClass]="getEventoFechaEstado(evento)">
+                        <i class="bi bi-calendar3"></i>
+                        {{ getEventoFechaEtiqueta(evento) }} · {{ getEventoFechaTexto(evento) }}
+                      </span>
+                    }
+                    <div class="tile-overlay"></div>
+                  </div>
+                  <div class="tile-content">
+                    <h3 class="tile-title">{{ evento.titulo }}</h3>
+                    <p class="tile-description">{{ evento.descripcion }}</p>
+                    <span class="tile-link">Ver detalles <i class="bi bi-arrow-right"></i></span>
+                  </div>
+                </article>
+              }
+            </section>
           }
         </div>
+
         @if (hasMoreEventos) {
           <div class="scroll-loader" aria-hidden="true">
             <div #scrollSentinel class="scroll-sentinel"></div>
@@ -76,7 +175,6 @@
           </div>
         }
       } @else {
-        <!-- Empty State -->
         <div class="empty-state">
           <div class="empty-state-icon">
             <i class="bi bi-calendar-x"></i>
