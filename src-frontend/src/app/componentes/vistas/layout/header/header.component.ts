@@ -29,9 +29,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
   username: string | null = null;
-  private windowScrollHandler?: () => void;
+  private documentScrollHandler?: (event: Event) => void;
   private resizeHandler?: () => void;
-  private scrollTicking = false;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -99,13 +98,17 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    const documentRef = this.getDocumentRef();
+    if (documentRef !== undefined) {
+      // Listen to document scroll events (same as botonscroll)
+      this.documentScrollHandler = (event: Event) => {
+        this.zone.run(() => this.handleScrollEvent(event));
+      };
+      documentRef.addEventListener('scroll', this.documentScrollHandler, true);
+    }
+
     const windowRef = this.getWindowRef();
     if (windowRef !== undefined) {
-      this.zone.runOutsideAngular(() => {
-        this.windowScrollHandler = () => this.scheduleScrollUpdate();
-        windowRef.addEventListener('scroll', this.windowScrollHandler, { passive: true });
-      });
-
       // Update scrollbar width on resize (initial calculation is done in index.html)
       this.resizeHandler = () => {
         this.updateScrollbarWidth();
@@ -137,14 +140,15 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.setBodyScrollLock(false);
 
-    // Clean up window scroll listener
-    const windowRef = this.getWindowRef();
-    if (this.windowScrollHandler && windowRef !== undefined) {
-      windowRef.removeEventListener('scroll', this.windowScrollHandler);
-      this.windowScrollHandler = undefined;
+    // Clean up document scroll listener
+    const documentRef = this.getDocumentRef();
+    if (this.documentScrollHandler && documentRef !== undefined) {
+      documentRef.removeEventListener('scroll', this.documentScrollHandler, true);
+      this.documentScrollHandler = undefined;
     }
 
     // Clean up resize listener
+    const windowRef = this.getWindowRef();
     if (this.resizeHandler && windowRef !== undefined) {
       windowRef.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = undefined;
@@ -230,16 +234,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
-  private scheduleScrollUpdate(): void {
-    if (this.scrollTicking) {
-      return;
-    }
-
-    this.scrollTicking = true;
-    requestAnimationFrame(() => {
-      this.scrollTicking = false;
-      this.handleScrollEvent();
-    });
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    this.handleScrollEvent();
   }
 
   private getWindowRef(): Window | undefined {
@@ -250,43 +247,41 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     return (globalThis as { document?: Document }).document;
   }
 
-  private handleScrollEvent(): void {
+  private handleScrollEvent(event?: Event): void {
     const windowRef = this.getWindowRef();
     const documentRef = this.getDocumentRef();
     if (windowRef !== undefined && documentRef !== undefined) {
-      const currentScrollTop = this.getEffectiveScrollTop(windowRef, documentRef);
-      const hiddenAnterior = this.isHidden;
-      let nuevoEstadoHidden = hiddenAnterior;
+      const currentScrollTop = this.getEffectiveScrollTop(event, windowRef, documentRef);
 
       // Siempre mostrar header en la parte superior
       if (currentScrollTop <= this.scrollThreshold) {
-        nuevoEstadoHidden = false;
+        this.isHidden = false;
         this.lastScrollTop = currentScrollTop;
       }
       // Scroll hacia abajo: ocultar
       else if (currentScrollTop > this.lastScrollTop && currentScrollTop > this.scrollThreshold) {
-        nuevoEstadoHidden = true;
+        this.isHidden = true;
       }
       // Scroll hacia arriba: mostrar
       else if (currentScrollTop < this.lastScrollTop) {
-        nuevoEstadoHidden = false;
+        this.isHidden = false;
       }
 
       this.lastScrollTop = Math.max(currentScrollTop, 0);
-      if (nuevoEstadoHidden !== hiddenAnterior) {
-        this.zone.run(() => {
-          this.isHidden = nuevoEstadoHidden;
-        });
-      }
+
+      // Collapse navbar when scrolling
+      this.collapseNavbar();
     }
   }
 
-  private getEffectiveScrollTop(windowRef: Window, documentRef: Document): number {
+  private getEffectiveScrollTop(event: Event | undefined, windowRef: Window, documentRef: Document): number {
+    const target = event?.target;
+    const targetScrollTop = target instanceof HTMLElement ? target.scrollTop : 0;
     const scrollingElement = documentRef.scrollingElement as HTMLElement | null;
     const scrollingElementTop = scrollingElement?.scrollTop ?? 0;
     const windowScrollTop = windowRef.scrollY || documentRef.documentElement.scrollTop || documentRef.body?.scrollTop || 0;
 
-    return Math.max(scrollingElementTop, windowScrollTop);
+    return Math.max(targetScrollTop, scrollingElementTop, windowScrollTop);
   }
 
   @HostListener('document:click', ['$event'])
