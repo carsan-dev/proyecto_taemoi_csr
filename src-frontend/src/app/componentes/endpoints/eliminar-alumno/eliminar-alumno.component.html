@@ -82,7 +82,11 @@
                 <td>
                   <img class="table-profile-image"
                     [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
-                    [alt]="'Perfil de ' + alumno.nombre" loading="lazy">
+                    [alt]="'Perfil de ' + alumno.nombre"
+                    loading="lazy"
+                    decoding="async"
+                    width="50"
+                    height="50">
                 </td>
                 <td>{{ alumno.nombre }}</td>
                 <td>{{ alumno.apellidos }}</td>

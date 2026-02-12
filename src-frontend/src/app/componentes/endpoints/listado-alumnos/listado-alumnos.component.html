@@ -125,15 +125,14 @@
         <!-- Cards View -->
     @if (!cargando && vistaActual === 'cards') {
       <div class="admin-cards-grid mb-4">
-        @for (alumno of alumnosFiltrados; track alumno.id; let i = $index) {
+        @for (alumno of alumnosFiltrados; track alumno.id) {
           <div class="admin-item-card">
             <div class="item-header">
               <a [routerLink]="['/alumnosEditar', alumno.id]">
                 <img class="item-image"
                   [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=320&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
                   [alt]="'Perfil de ' + alumno.nombre"
-                  [attr.loading]="i < 8 ? 'eager' : 'lazy'"
-                  [attr.fetchpriority]="i < 2 ? 'high' : 'auto'"
+                  loading="lazy"
                   decoding="async"
                   width="80"
                   height="80" />
@@ -308,7 +307,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (alumno of alumnosFiltrados; track alumno.id; let i = $index) {
+            @for (alumno of alumnosFiltrados; track alumno.id) {
               @if (getResumenAlumno(alumno.id); as resumen) {
                 <tr [class.inactive-row]="alumno.activo === false">
                   <td>
@@ -316,8 +315,7 @@
                       <img class="table-avatar"
                         [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
                         [alt]="'Perfil de ' + alumno.nombre"
-                        [attr.loading]="i < 10 ? 'eager' : 'lazy'"
-                        [attr.fetchpriority]="i < 2 ? 'high' : 'auto'"
+                        loading="lazy"
                         decoding="async"
                         width="40"
                         height="40" />
