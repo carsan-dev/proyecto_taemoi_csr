@@ -13,7 +13,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.entities.Alumno;
@@ -119,52 +124,82 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
-	    ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
-	            .orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+		ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
+				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
 
-	    if (detallesDTO.getCantidad() != null) {
-	        productoAlumno.setCantidad(detallesDTO.getCantidad());
-	    }
-	    if (detallesDTO.getPrecio() != null) {
-	        productoAlumno.setPrecio(detallesDTO.getPrecio());
-	    }
-	    if (detallesDTO.getConcepto() != null) {
-	        productoAlumno.setConcepto(detallesDTO.getConcepto());
-	    }
-	    if (detallesDTO.getNotas() != null) {
-	        productoAlumno.setNotas(detallesDTO.getNotas());
-	    }
+		if (detallesDTO.getCantidad() != null) {
+			productoAlumno.setCantidad(detallesDTO.getCantidad());
+		}
+		if (detallesDTO.getPrecio() != null) {
+			productoAlumno.setPrecio(detallesDTO.getPrecio());
+		}
+		if (detallesDTO.getConcepto() != null) {
+			productoAlumno.setConcepto(detallesDTO.getConcepto());
+		}
+		if (detallesDTO.getNotas() != null) {
+			productoAlumno.setNotas(detallesDTO.getNotas());
+		}
 
-	    Boolean pagadoAntes = productoAlumno.getPagado();
-	    Boolean pagadoAhora = detallesDTO.getPagado();
-	    if (pagadoAhora != null && !pagadoAhora.equals(pagadoAntes)) {
-	        productoAlumno.setPagado(pagadoAhora);
-	        productoAlumno.setFechaPago(pagadoAhora ? new Date() : null);
-	    }
+		boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
+		Boolean pagadoSolicitado = detallesDTO.getPagado();
+		boolean hayCambioEstadoPago = pagadoSolicitado != null && pagadoSolicitado != pagadoAntes;
 
-	    ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		if (hayCambioEstadoPago) {
+			if (pagadoAntes && !pagadoSolicitado && !usuarioActualEsAdmin()) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los administradores pueden revertir cobros pagados.");
+			}
+			productoAlumno.setPagado(pagadoSolicitado);
+		}
 
-	    alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
-	        .ifPresent(ac -> {
-	            ac.setCuantiaExamen(updatedProductoAlumno.getPrecio());
-	            ac.setPagado(updatedProductoAlumno.getPagado());
-	            alumnoConvocatoriaRepository.save(ac);
-	        });
+		if (Boolean.TRUE.equals(productoAlumno.getPagado())) {
+			if (detallesDTO.getFechaPago() != null) {
+				productoAlumno.setFechaPago(detallesDTO.getFechaPago());
+			} else if (hayCambioEstadoPago && Boolean.TRUE.equals(pagadoSolicitado)) {
+				productoAlumno.setFechaPago(new Date());
+			} else if (productoAlumno.getFechaPago() == null) {
+				productoAlumno.setFechaPago(new Date());
+			}
+		} else {
+			productoAlumno.setFechaPago(null);
+		}
 
-	    Alumno alumno = updatedProductoAlumno.getAlumno();
-	    String concepto = updatedProductoAlumno.getConcepto() != null 
-	            ? updatedProductoAlumno.getConcepto() 
-	            : "";
-	    boolean esProductoExamen = concepto.contains("DERECHO A EXAMEN")
-	                             || concepto.contains("PASE DE GRADO POR RECOMPENSA");
-	    alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
-	    alumnoRepository.save(alumno);
+		ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
 
-	    if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !Boolean.TRUE.equals(pagadoAntes)) {
-	    	activarGradoPorRecompensaPagada(updatedProductoAlumno);
-	    }
+		alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
+				.ifPresent(ac -> {
+					ac.setCuantiaExamen(updatedProductoAlumno.getPrecio());
+					ac.setPagado(updatedProductoAlumno.getPagado());
+					alumnoConvocatoriaRepository.save(ac);
+				});
 
-	    return convertirADTO(updatedProductoAlumno);
+		Alumno alumno = updatedProductoAlumno.getAlumno();
+		String concepto = updatedProductoAlumno.getConcepto() != null
+				? updatedProductoAlumno.getConcepto()
+				: "";
+		boolean esProductoExamen = concepto.contains("DERECHO A EXAMEN")
+				|| concepto.contains("PASE DE GRADO POR RECOMPENSA");
+		alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
+		alumnoRepository.save(alumno);
+
+		if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !pagadoAntes) {
+			activarGradoPorRecompensaPagada(updatedProductoAlumno);
+		}
+
+		return convertirADTO(updatedProductoAlumno);
+	}
+
+	private boolean usuarioActualEsAdmin() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || authentication.getAuthorities() == null) {
+			return false;
+		}
+
+		for (GrantedAuthority authority : authentication.getAuthorities()) {
+			if ("ROLE_ADMIN".equalsIgnoreCase(authority.getAuthority())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void activarGradoPorRecompensaPagada(ProductoAlumno productoAlumno) {
