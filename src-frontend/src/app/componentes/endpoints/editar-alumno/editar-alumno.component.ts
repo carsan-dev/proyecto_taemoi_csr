@@ -934,9 +934,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (this.mostrarFormulario) {
       // Copiamos el objeto actual del alumno en alumnoEditado
       this.alumnoEditado = { ...alumno };
-      this.imagenPreview = alumno.fotoAlumno?.url
-        ? alumno.fotoAlumno.url
-        : '../../../../assets/media/default.webp';
+      this.imagenPreview = null;
       this.tipoTarifaEditado = false;
       this.configurarFormulario(alumno);
 
@@ -1524,9 +1522,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarAlumno(this.alumnoId!);
       },
       error: () => {
-        this.imagenPreview = this.alumno?.fotoAlumno?.url
-          ? this.alumno.fotoAlumno.url
-          : '../../../../assets/media/default.webp';
+        this.imagenPreview = null;
         showErrorToast('No se pudo actualizar la imagen');
       },
     });

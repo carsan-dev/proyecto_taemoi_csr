@@ -47,7 +47,7 @@
               <div class="alumno-info">
                 <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-image-link">
                   <img class="alumno-image"
-                    [src]="(alumno.fotoAlumno && alumno.fotoAlumno.url) ? alumno.fotoAlumno.url : '../../../../../assets/media/default.webp'"
+                    [src]="(alumno.fotoAlumno && alumno.fotoAlumno.url) ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../../assets/media/default.webp'"
                     [alt]="'Perfil de ' + alumno.nombre" loading="lazy" />
                 </a>
                 <a [routerLink]="['/alumnosEditar', alumno.id]" class="alumno-name-link">

@@ -147,7 +147,7 @@
           <div class="profile-content">
             <div class="profile-image-wrapper" (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)" style="cursor: pointer;">
               <img class="profile-image"
-                [src]="imagenPreview || (alumno.fotoAlumno?.url ? alumno.fotoAlumno.url : '../../../../assets/media/default.webp')"
+                [src]="imagenPreview || (alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=420&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp')"
                 [alt]="'Foto de perfil de ' + alumno.nombre + ' ' + alumno.apellidos" loading="lazy" />
               <div class="profile-image-overlay">
                 <i class="bi bi-zoom-in"></i>
