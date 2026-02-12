@@ -50,7 +50,7 @@
                     ></app-skeleton-card>
                   }
                   <img
-                    [src]="getEventoImageUrl(eventoPrincipal)"
+                    [src]="eventoPrincipal._imageUrl"
                     class="event-img"
                     alt="{{ eventoPrincipal.titulo }}"
                     loading="lazy"
@@ -59,11 +59,11 @@
                     (error)="onImageError(eventoPrincipal.id)"
                     [class.is-loaded]="isImageLoaded(eventoPrincipal.id)"
                   />
-                  @if (getEventoFechaTexto(eventoPrincipal)) {
+                  @if (eventoPrincipal._fechaTexto) {
                     <span class="event-date-badge event-date-badge--overlay"
-                      [ngClass]="getEventoFechaEstado(eventoPrincipal)">
+                      [ngClass]="eventoPrincipal._fechaEstado">
                       <i class="bi bi-calendar3"></i>
-                      {{ getEventoFechaEtiqueta(eventoPrincipal) }} · {{ getEventoFechaTexto(eventoPrincipal) }}
+                      {{ eventoPrincipal._fechaEtiqueta }} &middot; {{ eventoPrincipal._fechaTexto }}
                     </span>
                   }
                   <div class="showcase-main-overlay"></div>
@@ -108,7 +108,7 @@
                           ></app-skeleton-card>
                         }
                         <img
-                          [src]="getEventoImageUrl(evento)"
+                          [src]="evento._imageUrl"
                           class="event-img"
                           alt="{{ evento.titulo }}"
                           loading="lazy"
@@ -128,8 +128,8 @@
 
           @if (eventosSecundarios.length > 0) {
             <section class="event-grid" aria-label="Cartelera completa">
-              @for (evento of eventosSecundarios; track evento.id; let i = $index) {
-                <article class="event-tile" [style.--item-index]="i" (click)="onEventoClick(evento.id)">
+              @for (evento of eventosSecundarios; track evento.id) {
+                <article class="event-tile" (click)="onEventoClick(evento.id)">
                   <div class="event-image-container tile-media" [class.is-loading]="!isImageLoaded(evento.id)">
                     @if (!isImageLoaded(evento.id)) {
                       <app-skeleton-card
@@ -139,7 +139,7 @@
                       ></app-skeleton-card>
                     }
                     <img
-                      [src]="getEventoImageUrl(evento)"
+                      [src]="evento._imageUrl"
                       class="event-img"
                       alt="{{ evento.titulo }}"
                       loading="lazy"
@@ -148,11 +148,11 @@
                       (error)="onImageError(evento.id)"
                       [class.is-loaded]="isImageLoaded(evento.id)"
                     />
-                    @if (getEventoFechaTexto(evento)) {
+                    @if (evento._fechaTexto) {
                       <span class="event-date-badge event-date-badge--overlay"
-                        [ngClass]="getEventoFechaEstado(evento)">
+                        [ngClass]="evento._fechaEstado">
                         <i class="bi bi-calendar3"></i>
-                        {{ getEventoFechaEtiqueta(evento) }} · {{ getEventoFechaTexto(evento) }}
+                        {{ evento._fechaEtiqueta }} &middot; {{ evento._fechaTexto }}
                       </span>
                     }
                     <div class="tile-overlay"></div>
