@@ -74,6 +74,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   mesAnoMensualidad!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
   gruposSeleccionados: string[] = [];
+  procesandoMensualidadesGenerales: boolean = false;
+  procesandoMensualidadIndividual: boolean = false;
+  procesandoLicenciasGenerales: boolean = false;
+  procesandoLicenciaIndividual: boolean = false;
+  generandoListadoAsistencia: boolean = false;
+  generandoListadoMensualidades: boolean = false;
 
   // Multi-sport data
   deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
@@ -1236,6 +1242,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarMensualidadesGenerales(): void {
+    if (this.procesandoMensualidadesGenerales) {
+      return;
+    }
+
     if (!this.mesAnoSeleccionado) {
       Swal.fire({
         title: 'Error',
@@ -1246,6 +1256,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     }
 
     // Show loading spinner
+    this.procesandoMensualidadesGenerales = true;
     this.loadingService.show();
 
     // Determine which service method to call based on sport selection
@@ -1264,7 +1275,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'todos los alumnos activos'
         : `alumnos activos de ${this.deporteSeleccionado}`;
 
-    serviceCall.pipe(finalize(() => this.loadingService.hide())).subscribe({
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoMensualidadesGenerales = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
         // Reload data using the current pagination mode
@@ -1281,6 +1297,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarMensualidadIndividual(): void {
+    if (this.procesandoMensualidadIndividual) {
+      return;
+    }
+
     if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
       Swal.fire({
         title: 'Error',
@@ -1308,7 +1328,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'todos los deportes'
         : this.deporteSeleccionadoIndividual;
 
-    serviceCall.subscribe({
+    this.procesandoMensualidadIndividual = true;
+    this.loadingService.show();
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoMensualidadIndividual = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
       },
@@ -1350,6 +1377,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   forzarCargarMensualidad(): void {
+    if (this.procesandoMensualidadIndividual) {
+      return;
+    }
+
     if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
       Swal.fire({
         title: 'Error',
@@ -1378,7 +1409,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'todos los deportes'
         : this.deporteSeleccionadoIndividual;
 
-    serviceCall.subscribe({
+    this.procesandoMensualidadIndividual = true;
+    this.loadingService.show();
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoMensualidadIndividual = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast('Productos faltantes de mensualidad y competidor cargados correctamente');
       },
@@ -1389,6 +1427,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarLicenciasGenerales(): void {
+    if (this.procesandoLicenciasGenerales) {
+      return;
+    }
+
     if (!this.anoLicenciaSeleccionado) {
       Swal.fire({
         title: 'Error',
@@ -1398,6 +1440,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.procesandoLicenciasGenerales = true;
     this.loadingService.show();
 
     const serviceCall = this.endpointsService.cargarLicenciasGenerales(
@@ -1410,7 +1453,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'alumnos activos'
         : `alumnos activos de ${this.deporteLicenciaSeleccionado}`;
 
-    serviceCall.pipe(finalize(() => this.loadingService.hide())).subscribe({
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoLicenciasGenerales = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast(
           `Licencias ${this.anoLicenciaSeleccionado} asignadas a ${deporteTexto}`
@@ -1430,6 +1478,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   cargarLicenciaIndividual(): void {
+    if (this.procesandoLicenciaIndividual) {
+      return;
+    }
+
     if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
       Swal.fire({
         title: 'Error',
@@ -1450,7 +1502,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'todos los deportes'
         : this.deporteLicenciaSeleccionadoIndividual;
 
-    serviceCall.subscribe({
+    this.procesandoLicenciaIndividual = true;
+    this.loadingService.show();
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoLicenciaIndividual = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast(
           `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
@@ -1480,6 +1539,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   forzarCargarLicenciaIndividual(): void {
+    if (this.procesandoLicenciaIndividual) {
+      return;
+    }
+
     if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
       Swal.fire({
         title: 'Error',
@@ -1501,7 +1564,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         ? 'todos los deportes'
         : this.deporteLicenciaSeleccionadoIndividual;
 
-    serviceCall.subscribe({
+    this.procesandoLicenciaIndividual = true;
+    this.loadingService.show();
+    serviceCall.pipe(
+      finalize(() => {
+        this.procesandoLicenciaIndividual = false;
+        this.loadingService.hide();
+      })
+    ).subscribe({
       next: () => {
         showSuccessToast(
           `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
@@ -1516,6 +1586,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   generarListadoAsistencia(): void {
+    if (this.generandoListadoAsistencia) {
+      return;
+    }
+
     if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
       Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error');
       return;
@@ -1530,9 +1604,15 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       )
     );
 
+    this.generandoListadoAsistencia = true;
     this.loadingService.show();
     forkJoin(solicitudes)
-      .pipe(finalize(() => this.loadingService.hide()))
+      .pipe(
+        finalize(() => {
+          this.generandoListadoAsistencia = false;
+          this.loadingService.hide();
+        })
+      )
       .subscribe({
         next: (resultados) => {
           const fallidos: string[] = [];
@@ -1564,15 +1644,34 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   generarListadoMensualidadMensual() {
+    if (this.generandoListadoMensualidades) {
+      return;
+    }
+
     if (!this.mesAnoMensualidad) {
       Swal.fire('Error', 'Debes seleccionar un mes y año', 'error');
       return;
     }
 
-    this.generarPdfConLoading(
-      this.endpointsService.generarListadoMensualidadMensual(this.mesAnoMensualidad, true),
-      'No se pudo generar el listado de mensualidad mensual'
-    );
+    this.generandoListadoMensualidades = true;
+    this.loadingService.show();
+    this.endpointsService
+      .generarListadoMensualidadMensual(this.mesAnoMensualidad, true)
+      .pipe(
+        finalize(() => {
+          this.generandoListadoMensualidades = false;
+          this.loadingService.hide();
+        })
+      )
+      .subscribe({
+        next: (pdfBlob: Blob) => {
+          const fileURL = URL.createObjectURL(pdfBlob);
+          window.open(fileURL, '_blank');
+        },
+        error: () => {
+          Swal.fire('Error', 'No se pudo generar el listado de mensualidad mensual', 'error');
+        },
+      });
   }
 
   private formatearNombreMensualidad(mesAno: string): string {
