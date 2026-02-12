@@ -86,6 +86,7 @@ public class EventoServiceImpl implements EventoService {
 			Evento eventoExistente = optionalEvento.get();
 			eventoExistente.setTitulo(eventoActualizado.getTitulo());
 			eventoExistente.setDescripcion(eventoActualizado.getDescripcion());
+			eventoExistente.setFechaEvento(eventoActualizado.getFechaEvento());
 
 			// Si hay una nueva imagen, primero debemos guardarla en la base de datos antes
 			// de asignarla

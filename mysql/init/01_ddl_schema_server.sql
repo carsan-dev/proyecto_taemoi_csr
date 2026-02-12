@@ -385,6 +385,8 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `taemoi_db`.`evento` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `descripcion` VARCHAR(500) NOT NULL,
+  `fecha_evento` DATE NULL DEFAULT NULL,
+  `orden` INT NULL DEFAULT NULL,
   `titulo` VARCHAR(100) NOT NULL,
   `foto_evento_id` BIGINT NULL DEFAULT NULL,
   `visible` BIT(1) NULL DEFAULT NULL,
