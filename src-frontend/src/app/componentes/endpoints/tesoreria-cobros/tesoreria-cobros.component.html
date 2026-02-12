@@ -142,12 +142,12 @@
                 <th>Alumno</th>
                 <th>Deporte</th>
                 <th>Concepto</th>
-                <th>Categoria</th>
+                <th>Categor&iacute;a</th>
                 <th>Fecha cargo</th>
                 <th>Importe</th>
                 <th>Estado</th>
                 <th>Fecha pago</th>
-                <th>Accion</th>
+                <th class="col-accion">Acci&oacute;n</th>
               </tr>
             </thead>
             <tbody>
@@ -175,7 +175,7 @@
                     }
                   </td>
                   <td>{{ movimiento.fechaPago ? (movimiento.fechaPago | date:'dd/MM/yyyy') : '-' }}</td>
-                  <td>
+                  <td class="col-accion">
                     @if (!movimiento.pagado) {
                       <button
                         type="button"
