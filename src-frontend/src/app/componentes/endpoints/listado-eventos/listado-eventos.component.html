@@ -66,6 +66,14 @@
               <div class="item-title">
                 <h4>
                   {{ evento.titulo }}
+                  @if (getFechaEventoTexto(evento)) {
+                  <span class="date-badge"
+                    [ngClass]="getEstadoFechaEvento(evento)"
+                    [attr.title]="getFechaEventoTooltip(evento)">
+                    <i class="bi bi-calendar3"></i>
+                    {{ getEtiquetaFechaEvento(evento) }} · {{ getFechaEventoTexto(evento) }}
+                  </span>
+                  }
                   @if (!isEventoVisible(evento)) {
                   <span class="visibility-badge oculto" title="Evento oculto en la página pública">
                     <i class="bi bi-eye-slash"></i>
