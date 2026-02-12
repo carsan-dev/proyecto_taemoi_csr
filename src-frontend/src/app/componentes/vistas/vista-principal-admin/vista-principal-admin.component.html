@@ -6,9 +6,20 @@
         <h1><i class="bi bi-speedometer2"></i> Panel de Administración</h1>
         <p>Bienvenido de nuevo{{ nombreUsuario ? ', ' + nombreUsuario : '' }}. Aquí tienes un resumen de tu escuela.</p>
       </div>
-      <div class="header-date">
-        <i class="bi bi-calendar3"></i>
-        <span>{{ formatDate(fechaActual) }}</span>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="refresh-btn"
+          (click)="actualizarDashboardAhora()"
+          [disabled]="dashboardCargando"
+          aria-label="Actualizar estadisticas del dashboard">
+          <i class="bi bi-arrow-clockwise" [class.spin]="dashboardCargando"></i>
+          <span>{{ dashboardCargando ? 'Actualizando...' : 'Actualizar ahora' }}</span>
+        </button>
+        <div class="header-date">
+          <i class="bi bi-calendar3"></i>
+          <span>{{ formatDate(fechaActual) }}</span>
+        </div>
       </div>
     </div>
   </div>
