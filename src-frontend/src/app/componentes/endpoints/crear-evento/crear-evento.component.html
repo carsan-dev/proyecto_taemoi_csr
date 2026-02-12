@@ -232,10 +232,15 @@
               <button
                 type="submit"
                 class="admin-btn admin-btn-primary"
-                [disabled]="eventoForm.invalid"
+                [disabled]="eventoForm.invalid || guardandoEvento"
                 aria-label="Crear nuevo evento">
-                <i class="bi bi-check-circle"></i>
-                <span>Crear Evento</span>
+                @if (guardandoEvento) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  <i class="bi bi-check-circle"></i>
+                  <span>Crear Evento</span>
+                }
               </button>
             </div>
           </form>

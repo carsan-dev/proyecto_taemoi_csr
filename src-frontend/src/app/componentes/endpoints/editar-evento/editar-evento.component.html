@@ -269,6 +269,7 @@
                 type="button"
                 class="admin-btn admin-btn-outline"
                 (click)="volver()"
+                [disabled]="guardandoEvento"
                 aria-label="Cancelar y volver al listado">
                 <i class="bi bi-x-circle"></i>
                 <span>Cancelar</span>
@@ -276,10 +277,15 @@
               <button
                 type="submit"
                 class="admin-btn admin-btn-primary"
-                [disabled]="eventoForm.invalid"
+                [disabled]="eventoForm.invalid || guardandoEvento"
                 aria-label="Actualizar evento">
-                <i class="bi bi-check-circle"></i>
-                <span>Actualizar Evento</span>
+                @if (guardandoEvento) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  <i class="bi bi-check-circle"></i>
+                  <span>Actualizar Evento</span>
+                }
               </button>
             </div>
           </form>
