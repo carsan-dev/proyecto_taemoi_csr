@@ -1,21 +1,39 @@
 package com.taemoi.project.controllers;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -74,6 +92,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/alumnos")
 public class AlumnoController {
 	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
+	private static final int MIN_ANCHO_IMAGEN = 120;
+	private static final int MAX_ANCHO_IMAGEN = 1800;
+	private static final float CALIDAD_WEBP_REDIMENSION = 0.76f;
+
+	@Value("${app.base.url}")
+	private String baseUrl;
 
 	/**
 	 * Inyección del servicio de alumno.
@@ -149,8 +173,18 @@ public class AlumnoController {
 		}
 
 		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Se encontraron alumnos, retornando respuesta.");
-		return ResponseEntity.ok(isPaged ? alumnos.map(AlumnoDTO::deAlumno)
-				: alumnos.getContent().stream().map(AlumnoDTO::deAlumno).collect(Collectors.toList()));
+		if (isPaged) {
+			Page<AlumnoDTO> alumnosDTO = alumnos
+					.map(AlumnoDTO::deAlumno)
+					.map(this::aplicarUrlImagenPublica);
+			return ResponseEntity.ok(alumnosDTO);
+		}
+
+		List<AlumnoDTO> alumnosDTO = alumnos.getContent().stream()
+				.map(AlumnoDTO::deAlumno)
+				.map(this::aplicarUrlImagenPublica)
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(alumnosDTO);
 	}
 
 	/**
@@ -165,9 +199,59 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
-		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id);
+		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id)
+				.map(this::aplicarUrlImagenPublica);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
+	}
+
+	@GetMapping("/{alumnoId}/imagen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<Resource> obtenerImagenAlumno(
+			@PathVariable @NonNull Long alumnoId,
+			@RequestParam(name = "w", required = false) Integer anchoSolicitado) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		try {
+			Alumno alumno = alumnoService.buscarAlumno(alumnoId);
+			Imagen imagen = alumno.getFotoAlumno();
+
+			if (imagen == null || imagen.getRuta() == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			Path rutaArchivo = Path.of(imagen.getRuta());
+			Resource recurso = new UrlResource(rutaArchivo.toUri());
+			if (!recurso.exists()) {
+				return ResponseEntity.notFound().build();
+			}
+
+			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+			if (imagen.getTipo() != null) {
+				try {
+					mediaType = MediaType.parseMediaType(imagen.getTipo());
+				} catch (Exception e) {
+					mediaType = MediaType.APPLICATION_OCTET_STREAM;
+				}
+			}
+
+			int anchoNormalizado = normalizarAnchoImagen(anchoSolicitado);
+			if (anchoNormalizado > 0) {
+				ResponseEntity<Resource> respuestaRedimensionada = intentarConstruirRespuestaRedimensionada(
+						rutaArchivo, mediaType, imagen.getNombre(), anchoNormalizado);
+				if (respuestaRedimensionada != null) {
+					return respuestaRedimensionada;
+				}
+			}
+
+			return construirRespuestaImagenOriginal(recurso, mediaType, imagen.getNombre(), rutaArchivo, anchoNormalizado);
+		} catch (AlumnoNoEncontradoException e) {
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 	
     @GetMapping("/{alumnoId}/documentos")
@@ -322,7 +406,7 @@ public class AlumnoController {
 			Alumno creado = alumnoService.crearAlumnoDesdeDTO(nuevoAlumnoDTO);
 
 			// Convertir el Alumno creado a DTO para la respuesta
-			AlumnoDTO creadoDTO = AlumnoDTO.deAlumno(creado);
+			AlumnoDTO creadoDTO = aplicarUrlImagenPublica(AlumnoDTO.deAlumno(creado));
 
 			// Retornar la respuesta con el Alumno creado en formato JSON
 			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
@@ -402,7 +486,7 @@ public class AlumnoController {
 			Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
 			// Enviar el MultipartFile directamente
 			Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
-			AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+			AlumnoDTO alumnoActualizadoDTO = aplicarUrlImagenPublica(AlumnoDTO.deAlumno(alumno));
 			return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 
 		} catch (IOException e) {
@@ -423,7 +507,7 @@ public class AlumnoController {
 			@Valid @RequestBody AlumnoObservacionesDTO request) {
 		Alumno alumno = alumnoService.actualizarObservaciones(id,
 				request != null ? request.getObservaciones() : null);
-		AlumnoDTO alumnoActualizadoDTO = AlumnoDTO.deAlumno(alumno);
+		AlumnoDTO alumnoActualizadoDTO = aplicarUrlImagenPublica(AlumnoDTO.deAlumno(alumno));
 		return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 	}
 
@@ -1498,7 +1582,8 @@ public class AlumnoController {
 			java.util.Date nuevaFecha = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.Alumno alumnoActualizado = alumnoService.actualizarFechaAltaInicial(id, nuevaFecha);
-			com.taemoi.project.dtos.AlumnoDTO dto = com.taemoi.project.dtos.AlumnoDTO.deAlumno(alumnoActualizado);
+			com.taemoi.project.dtos.AlumnoDTO dto =
+					aplicarUrlImagenPublica(com.taemoi.project.dtos.AlumnoDTO.deAlumno(alumnoActualizado));
 
 			return ResponseEntity.ok(dto);
 		} catch (IllegalArgumentException e) {
@@ -1522,7 +1607,7 @@ public class AlumnoController {
 			Alumno alumno = alumnoService.obtenerAlumnoPorId(id)
 					.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
 			com.taemoi.project.dtos.response.AlumnoConDeportesDTO dto =
-					com.taemoi.project.dtos.response.AlumnoConDeportesDTO.deAlumno(alumno);
+					aplicarUrlImagenPublica(com.taemoi.project.dtos.response.AlumnoConDeportesDTO.deAlumno(alumno));
 			return ResponseEntity.ok(dto);
 		} catch (AlumnoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
@@ -1545,6 +1630,7 @@ public class AlumnoController {
 			List<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(null, null, null, incluirInactivos);
 			List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO> alumnosDTO = alumnos.stream()
 					.map(com.taemoi.project.dtos.response.AlumnoConDeportesDTO::deAlumno)
+					.map(this::aplicarUrlImagenPublica)
 					.collect(Collectors.toList());
 			return ResponseEntity.ok(alumnosDTO);
 		} catch (Exception e) {
@@ -1607,6 +1693,151 @@ public class AlumnoController {
 				"message", "Error during categoria migration: " + e.getMessage()
 			));
 		}
+	}
+
+	private AlumnoDTO aplicarUrlImagenPublica(AlumnoDTO dto) {
+		if (dto == null || dto.getId() == null || dto.getFotoAlumno() == null) {
+			return dto;
+		}
+		dto.getFotoAlumno().setUrl(baseUrl + "/api/alumnos/" + dto.getId() + "/imagen");
+		return dto;
+	}
+
+	private com.taemoi.project.dtos.response.AlumnoConDeportesDTO aplicarUrlImagenPublica(
+			com.taemoi.project.dtos.response.AlumnoConDeportesDTO dto) {
+		if (dto == null || dto.getId() == null || dto.getFotoAlumno() == null) {
+			return dto;
+		}
+		dto.getFotoAlumno().setUrl(baseUrl + "/api/alumnos/" + dto.getId() + "/imagen");
+		return dto;
+	}
+
+	private ResponseEntity<Resource> construirRespuestaImagenOriginal(
+			Resource recurso,
+			MediaType mediaType,
+			String nombreImagen,
+			Path rutaArchivo,
+			int anchoNormalizado) throws IOException {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate())
+				.lastModified(Files.getLastModifiedTime(rutaArchivo).toMillis())
+				.header(HttpHeaders.VARY, "Accept-Encoding")
+				.contentType(mediaType)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + nombreImagen + "\"")
+				.header(HttpHeaders.ETAG, generarEtagImagen(rutaArchivo, anchoNormalizado, mediaType.toString()))
+				.body(recurso);
+	}
+
+	private ResponseEntity<Resource> intentarConstruirRespuestaRedimensionada(
+			Path rutaArchivo,
+			MediaType mediaTypeOriginal,
+			String nombreImagen,
+			int anchoObjetivo) {
+		if (!esImagenRasterRedimensionable(mediaTypeOriginal)) {
+			return null;
+		}
+
+		try {
+			BufferedImage original = ImageIO.read(rutaArchivo.toFile());
+			if (original == null || original.getWidth() <= 0 || original.getHeight() <= 0) {
+				return null;
+			}
+			if (original.getWidth() <= anchoObjetivo) {
+				return null;
+			}
+
+			int altoObjetivo = Math.max(1,
+					(int) Math.round((double) original.getHeight() * anchoObjetivo / original.getWidth()));
+			BufferedImage redimensionada = new BufferedImage(anchoObjetivo, altoObjetivo, BufferedImage.TYPE_3BYTE_BGR);
+
+			Graphics2D graphics = redimensionada.createGraphics();
+			graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			graphics.drawImage(original, 0, 0, anchoObjetivo, altoObjetivo, null);
+			graphics.dispose();
+
+			byte[] imagenBytes = codificarWebp(redimensionada, CALIDAD_WEBP_REDIMENSION);
+			MediaType mediaTypeSalida = MediaType.parseMediaType("image/webp");
+			ByteArrayResource recurso = new ByteArrayResource(imagenBytes);
+			long lastModified = Files.getLastModifiedTime(rutaArchivo).toMillis();
+
+			return ResponseEntity.ok()
+					.cacheControl(CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate())
+					.lastModified(lastModified)
+					.header(HttpHeaders.VARY, "Accept-Encoding")
+					.contentType(mediaTypeSalida)
+					.contentLength(imagenBytes.length)
+					.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + nombreImagen + "\"")
+					.header(HttpHeaders.ETAG, generarEtagImagen(rutaArchivo, anchoObjetivo, mediaTypeSalida.toString()))
+					.body(recurso);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private byte[] codificarWebp(BufferedImage imagen, float quality) throws IOException {
+		Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
+		if (!writers.hasNext()) {
+			writers = ImageIO.getImageWritersBySuffix("webp");
+		}
+		if (!writers.hasNext()) {
+			throw new IOException("No hay codificador WebP disponible.");
+		}
+
+		ImageWriter writer = writers.next();
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {
+			writer.setOutput(imageOutputStream);
+			ImageWriteParam writeParam = writer.getDefaultWriteParam();
+			if (writeParam.canWriteCompressed()) {
+				writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+				String[] compressionTypes = writeParam.getCompressionTypes();
+				if (compressionTypes != null && compressionTypes.length > 0) {
+					writeParam.setCompressionType(seleccionarTipoCompresion(compressionTypes));
+				}
+				writeParam.setCompressionQuality(quality);
+			}
+			writer.write(null, new IIOImage(imagen, null, null), writeParam);
+			imageOutputStream.flush();
+			return outputStream.toByteArray();
+		} finally {
+			writer.dispose();
+		}
+	}
+
+	private String seleccionarTipoCompresion(String[] compressionTypes) {
+		for (String type : compressionTypes) {
+			if (type != null && type.equalsIgnoreCase("Lossy")) {
+				return type;
+			}
+		}
+		return compressionTypes[0];
+	}
+
+	private boolean esImagenRasterRedimensionable(MediaType mediaType) {
+		if (mediaType == null || !mediaType.getType().equalsIgnoreCase("image")) {
+			return false;
+		}
+		String subtype = mediaType.getSubtype() != null ? mediaType.getSubtype().toLowerCase() : "";
+		return !subtype.contains("svg");
+	}
+
+	private int normalizarAnchoImagen(Integer anchoSolicitado) {
+		if (anchoSolicitado == null || anchoSolicitado <= 0) {
+			return 0;
+		}
+		if (anchoSolicitado < MIN_ANCHO_IMAGEN) {
+			return MIN_ANCHO_IMAGEN;
+		}
+		return Math.min(anchoSolicitado, MAX_ANCHO_IMAGEN);
+	}
+
+	private String generarEtagImagen(Path rutaArchivo, int ancho, String formato) throws IOException {
+		long tamano = Files.size(rutaArchivo);
+		long modificado = Files.getLastModifiedTime(rutaArchivo).toMillis();
+		String hash = Long.toHexString(tamano) + "-" + Long.toHexString(modificado) + "-" + ancho + "-" + formato;
+		return "\"" + hash + "\"";
 	}
 
 	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
