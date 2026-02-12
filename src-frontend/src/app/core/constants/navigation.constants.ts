@@ -11,6 +11,7 @@ export interface NavigationItem {
 export interface AdminQuickNavigationItem extends NavigationItem {
   exact?: boolean;
   activePrefixes?: string[];
+  priority?: number;
 }
 
 export interface NavigationDropdownItem {
@@ -192,6 +193,7 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-speedometer2',
     exact: true,
     activePrefixes: ['/adminpage'],
+    priority: 1,
   },
   {
     label: 'Alumnos',
@@ -204,6 +206,7 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
       '/alumnosEliminar',
       '/alumnos',
     ],
+    priority: 2,
   },
   {
     label: 'Grupos y turnos',
@@ -219,36 +222,42 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
       '/turnosCrear',
       '/turnosEditar',
     ],
+    priority: 5,
   },
   {
     label: 'Eventos',
     route: '/eventosListar',
     icon: 'bi-calendar-check-fill',
     activePrefixes: ['/eventosListar', '/eventosCrear', '/eventosEditar'],
+    priority: 6,
   },
   {
     label: 'Productos',
     route: '/productosListar',
     icon: 'bi-box-seam-fill',
     activePrefixes: ['/productosListar', '/productosCrear', '/productosEditar'],
+    priority: 7,
   },
   {
     label: 'Tesorería',
     route: '/tesoreriaCobros',
     icon: 'bi-cash-stack',
     activePrefixes: ['/tesoreriaCobros'],
+    priority: 3,
   },
   {
     label: 'Convocatorias',
     route: '/convocatoriasListar',
     icon: 'bi-clipboard-check-fill',
     activePrefixes: ['/convocatoriasListar'],
+    priority: 4,
   },
   {
     label: 'Configuración',
     route: '/configuracion-sistema',
     icon: 'bi-sliders',
     activePrefixes: ['/configuracion-sistema'],
+    priority: 8,
   },
 ];
 

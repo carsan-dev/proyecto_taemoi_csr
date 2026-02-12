@@ -2022,10 +2022,50 @@ header.fixed-header {
 }
 
 // Responsive Design for Admin
+@media (max-width: 1500px) {
+  .admin-top-navbar .admin-quick-nav .quick-link[data-priority='8'] {
+    display: none;
+  }
+}
+
+@media (max-width: 1380px) {
+  .admin-top-navbar .admin-quick-nav .quick-link[data-priority='7'] {
+    display: none;
+  }
+}
+
+@media (max-width: 1260px) {
+  .admin-top-navbar .admin-quick-nav .quick-link[data-priority='6'] {
+    display: none;
+  }
+}
+
+@media (max-width: 1160px) {
+  .admin-top-navbar .admin-quick-nav .quick-link[data-priority='5'] {
+    display: none;
+  }
+}
+
+@media (max-width: 1060px) {
+  .admin-top-navbar .admin-quick-nav .quick-link[data-priority='4'] {
+    display: none;
+  }
+}
+
 @media (max-width: 991.98px) {
   .admin-top-navbar {
     .admin-quick-nav {
-      display: none;
+      gap: 0.2rem;
+      padding: 0.2rem 0.25rem;
+
+      .quick-link {
+        width: 30px;
+        height: 30px;
+
+        i {
+          font-size: 0.85rem;
+        }
+      }
     }
   }
 }
@@ -2052,6 +2092,16 @@ header.fixed-header {
       }
     }
 
+    .admin-quick-nav {
+      .quick-link {
+        width: 28px;
+        height: 28px;
+
+        i {
+          font-size: 0.8rem;
+        }
+      }
+    }
   }
 
   .admin-sidebar {
@@ -2070,24 +2120,6 @@ header.fixed-header {
     .navbar-actions {
       .admin-user-info {
         display: none;
-      }
-    }
-  }
-}
-
-@media (max-width: 1280px) and (min-width: 992px) {
-  .admin-top-navbar {
-    .admin-quick-nav {
-      gap: 0.25rem;
-      padding: 0.24rem 0.34rem;
-
-      .quick-link {
-        width: 32px;
-        height: 32px;
-
-        i {
-          font-size: 0.9rem;
-        }
       }
     }
   }

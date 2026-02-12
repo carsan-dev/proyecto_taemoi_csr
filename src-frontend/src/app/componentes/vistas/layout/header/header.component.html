@@ -211,6 +211,7 @@
       @for (item of adminQuickLinks; track item.route) {
         <a
           class="quick-link"
+          [attr.data-priority]="item.priority ?? 99"
           [routerLink]="[item.route]"
           [class.active]="isAdminQuickRouteActive(item)"
           [title]="item.label"
