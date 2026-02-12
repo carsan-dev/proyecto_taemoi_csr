@@ -44,6 +44,7 @@
   max-height: 50px;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  background: linear-gradient(135deg, rgba($primary-color, 0.16), rgba($primary-color, 0.06));
   box-shadow: $shadow-sm;
   transition: $transition;
   border: 2px solid $background-light;

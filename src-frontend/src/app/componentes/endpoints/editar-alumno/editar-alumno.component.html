@@ -150,7 +150,6 @@
                 [src]="imagenPreview || (alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=420&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp')"
                 [alt]="'Foto de perfil de ' + alumno.nombre + ' ' + alumno.apellidos"
                 loading="eager"
-                fetchpriority="high"
                 decoding="async"
                 width="150"
                 height="150" />
