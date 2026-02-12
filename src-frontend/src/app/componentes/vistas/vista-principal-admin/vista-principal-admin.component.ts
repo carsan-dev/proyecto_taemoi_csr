@@ -340,6 +340,10 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     return Math.max(this.stats.totalEventos - this.stats.eventosVisibles, 0);
   }
 
+  mostrarAlertasPrimero(): boolean {
+    return this.alertasOperativas.some((alerta) => this.esAlertaUrgente(alerta.tipo));
+  }
+
   private actualizarAlertasOperativas(): void {
     if (this.cargandoEstadisticas || this.cargandoEventos) {
       return;
@@ -452,7 +456,28 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.alertasOperativas = alertas;
+    this.alertasOperativas = this.ordenarAlertasOperativas(alertas);
+  }
+
+  private ordenarAlertasOperativas(alertas: DashboardAlert[]): DashboardAlert[] {
+    return [...alertas].sort((a, b) => {
+      const prioridad = this.obtenerPrioridadAlerta(a.tipo) - this.obtenerPrioridadAlerta(b.tipo);
+      if (prioridad !== 0) {
+        return prioridad;
+      }
+      return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+    });
+  }
+
+  private obtenerPrioridadAlerta(tipo: DashboardAlert['tipo']): number {
+    if (tipo === 'critical') return 0;
+    if (tipo === 'warning') return 1;
+    if (tipo === 'info') return 2;
+    return 3;
+  }
+
+  private esAlertaUrgente(tipo: DashboardAlert['tipo']): boolean {
+    return tipo === 'critical' || tipo === 'warning';
   }
 
   private obtenerFechaDiasAtras(dias: number): Date {
