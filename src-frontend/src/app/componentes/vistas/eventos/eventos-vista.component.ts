@@ -3,15 +3,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  ElementRef,
   EventEmitter,
   Input,
-  NgZone,
   OnChanges,
-  OnDestroy,
   Output,
   SimpleChanges,
-  ViewChild,
 } from '@angular/core';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
@@ -33,7 +29,7 @@ interface EventoVistaCacheEntry {
     '[class.preview]': 'previewMode',
   },
 })
-export class EventosVistaComponent implements OnChanges, OnDestroy {
+export class EventosVistaComponent implements OnChanges {
   @Input() eventos: any[] = [];
   @Input() isLoading: boolean = false;
   @Input() enableNavigation: boolean = true;
@@ -52,8 +48,8 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
   destacadoActualIndex: number = 0;
 
   private readonly loadedImages = new Set<number>();
-  private readonly initialBatchSize = 8;
-  private readonly batchSize = 4;
+  private readonly initialBatchSize = 12;
+  private readonly batchSize = 8;
   private readonly maxDestacados = 5;
   private readonly imageWidthListado = 720;
   private readonly imageWidthPreview = 560;
@@ -63,19 +59,9 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     year: 'numeric',
   });
   private visibleCount: number = 0;
-  private loadMoreObserver: IntersectionObserver | null = null;
-  private pendingLoadMore: boolean = false;
   private eventoVistaCache = new WeakMap<any, EventoVistaCacheEntry>();
 
-  constructor(
-    private readonly cdr: ChangeDetectorRef,
-    private readonly ngZone: NgZone
-  ) {}
-
-  @ViewChild('scrollSentinel')
-  set scrollSentinelRef(sentinelRef: ElementRef<HTMLElement> | undefined) {
-    this.configurarObservadorCarga(sentinelRef?.nativeElement ?? null);
-  }
+  constructor(private readonly cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['eventos']) {
@@ -99,10 +85,6 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       this.eventoVistaCache = new WeakMap<any, EventoVistaCacheEntry>();
       this.reiniciarCargaProgresiva();
     }
-  }
-
-  ngOnDestroy(): void {
-    this.desconectarObservadorCarga();
   }
 
   onEventoClick(eventoId: number): void {
@@ -169,6 +151,10 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onCargarMasEventos(): void {
+    this.cargarMasEventos();
+  }
+
   private reiniciarCargaProgresiva(): void {
     const totalEventos = Array.isArray(this.eventos) ? this.eventos.length : 0;
     this.visibleCount = Math.min(totalEventos, this.initialBatchSize);
@@ -201,54 +187,6 @@ export class EventosVistaComponent implements OnChanges, OnDestroy {
       return;
     }
     this.eventoPrincipal = this.eventosDestacados[this.destacadoActualIndex] ?? null;
-  }
-
-  private desconectarObservadorCarga(): void {
-    if (this.loadMoreObserver) {
-      this.loadMoreObserver.disconnect();
-      this.loadMoreObserver = null;
-    }
-  }
-
-  private configurarObservadorCarga(sentinel: HTMLElement | null): void {
-    this.desconectarObservadorCarga();
-    if (!sentinel || typeof IntersectionObserver === 'undefined') {
-      if (typeof IntersectionObserver === 'undefined' && this.hasMoreEventos) {
-        this.visibleCount = this.eventos.length;
-        this.actualizarEventoVisibleState();
-      }
-      return;
-    }
-
-    this.ngZone.runOutsideAngular(() => {
-      this.loadMoreObserver = new IntersectionObserver(
-        (entries) => {
-          if (!entries.some((entry) => entry.isIntersecting)) {
-            return;
-          }
-
-          this.ngZone.run(() => this.solicitarCargaMas());
-        },
-        {
-          root: null,
-          rootMargin: '240px 0px',
-          threshold: 0.01,
-        }
-      );
-
-      this.loadMoreObserver.observe(sentinel);
-    });
-  }
-
-  private solicitarCargaMas(): void {
-    if (this.pendingLoadMore || !this.hasMoreEventos) {
-      return;
-    }
-    this.pendingLoadMore = true;
-    requestAnimationFrame(() => {
-      this.pendingLoadMore = false;
-      this.cargarMasEventos();
-    });
   }
 
   private enriquecerEventoVista(evento: any): any {
