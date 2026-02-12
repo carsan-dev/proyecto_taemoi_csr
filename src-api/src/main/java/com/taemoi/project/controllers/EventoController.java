@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -65,7 +66,8 @@ public class EventoController {
 	private static final int MAX_ANCHO_IMAGEN = 2200;
 	private static final float CALIDAD_WEBP_REDIMENSION = 0.78f;
 	private static final long MAX_TAMANO_ORIGEN_RESIZE_BYTES = 8L * 1024 * 1024;
-	private static final long MAX_PIXELES_ORIGEN_RESIZE = 24_000_000L;
+	private static final long MAX_PIXELES_ORIGEN_RESIZE = 12_000_000L;
+	private static final Semaphore RESIZE_SEMAPHORE = new Semaphore(2, true);
 
 	@Value("${app.base.url}")
 	private String baseUrl;
@@ -381,6 +383,10 @@ public class EventoController {
 			return null;
 		}
 
+		if (!RESIZE_SEMAPHORE.tryAcquire()) {
+			return null;
+		}
+
 		try {
 			long tamanoArchivo = Files.size(rutaArchivo);
 			if (tamanoArchivo > MAX_TAMANO_ORIGEN_RESIZE_BYTES) {
@@ -435,6 +441,8 @@ public class EventoController {
 					.body(recurso);
 		} catch (Throwable e) {
 			return null;
+		} finally {
+			RESIZE_SEMAPHORE.release();
 		}
 	}
 
