@@ -630,6 +630,13 @@
                             <span>Pasar de Grado por Recompensa</span>
                           </button>
                           }
+                          @if (deporteItem.deporte === 'KICKBOXING') {
+                          <button class="admin-btn admin-btn-warning admin-btn-sm"
+                            (click)="pasarGradoConDerechoExamen(deporteItem.deporte)">
+                            <i class="bi bi-journal-check"></i>
+                            <span>Añadir Derecho de Examen</span>
+                          </button>
+                          }
                         </div>
                       </div>
                       }

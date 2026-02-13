@@ -574,7 +574,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           next: (respuesta) => {
             const productoFinal = respuesta ?? productoActualizado;
             this.actualizarProductoEnListas(productoFinal);
-            if (this.alumnoId && this.isProductoRecompensa(productoFinal)) {
+            if (this.alumnoId && this.isProductoQueAfectaGrado(productoFinal)) {
               this.cargarDeportesDelAlumno(this.alumnoId, true);
             }
             showSuccessToast('Producto marcado como pagado y grado actualizado');
@@ -601,9 +601,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
   }
 
-  private isProductoRecompensa(producto: ProductoAlumnoDTO): boolean {
+  private isProductoQueAfectaGrado(producto: ProductoAlumnoDTO): boolean {
     const concepto = (producto?.concepto ?? '').toUpperCase();
-    return concepto.includes('RECOMPENSA');
+    return concepto.includes('RECOMPENSA') || concepto.includes('DERECHO A EXAMEN');
   }
 
   private captureScrollPositions(): {
@@ -4706,6 +4706,68 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     Swal.fire({
       title: 'Pasar de grado por recompensa',
       text: `Se actualizará el grado en ${this.getDeporteLabel(deporte)} una vez realizado el pago y se añadirá el producto de recompensa.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      ejecutarPase(false);
+    });
+  }
+
+  /**
+   * Pasa de grado con derecho de examen en el deporte indicado (para Kickboxing)
+   */
+  pasarGradoConDerechoExamen(deporte: string): void {
+    if (!this.alumnoId) {
+      return;
+    }
+
+    const ejecutarPase = (rojoBordado: boolean) => {
+      this.endpointsService.pasarGradoConDerechoExamen(this.alumnoId!, deporte, rojoBordado).subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Derecho de examen añadido',
+            text: `Se ha añadido el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado.`,
+            icon: 'success',
+            timer: 3000,
+          });
+          this.cargarDeportesDelAlumno(this.alumnoId!, true);
+          this.obtenerProductosAlumno(this.alumnoId!);
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: error.error || 'No se pudo añadir el derecho de examen',
+            icon: 'error',
+          });
+        },
+      });
+    };
+
+    const gradoActual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado;
+    if (this.requiereSeleccionCinturonRojo(deporte, gradoActual)) {
+      this.solicitarTipoCinturonRojo(
+        'Pasar a rojo',
+        `Se añadirá el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado. Selecciona el tipo de cinturón.`
+      ).then((rojoBordado) => {
+        if (rojoBordado === null) {
+          return;
+        }
+        ejecutarPase(rojoBordado);
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Añadir derecho de examen',
+      text: `Se añadirá el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
