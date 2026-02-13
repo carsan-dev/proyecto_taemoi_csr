@@ -444,6 +444,21 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  pasarGradoConDerechoExamen(
+    alumnoId: number,
+    deporte: string,
+    rojoBordado?: boolean
+  ): Observable<any> {
+    const payload = rojoBordado === undefined ? null : { rojoBordado };
+    return this.http
+      .post<any>(
+        `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/pase-examen`,
+        payload,
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerConvocatoriasDeAlumno(
     alumnoId: number
   ): Observable<ConvocatoriaDTO[]> {
