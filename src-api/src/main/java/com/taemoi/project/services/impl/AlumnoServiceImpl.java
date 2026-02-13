@@ -1230,7 +1230,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	private Producto buscarProductoPorConcepto(String conceptoProducto, TipoGrado gradoSiguiente) {
-		Optional<Producto> productoExacto = productoRepository.findByConcepto(conceptoProducto);
+		Optional<Producto> productoExacto = productoRepository.findFirstByConcepto(conceptoProducto);
 		if (productoExacto.isPresent()) {
 			return productoExacto.get();
 		}
@@ -1284,10 +1284,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
 		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
 
+		// Construir concepto con el nombre del deporte al final
+		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(convocatoria.getDeporte());
+
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(producto);
-		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setConcepto(conceptoConDeporte);
 		productoAlumno.setFechaAsignacion(new Date());
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPrecio(producto.getPrecio());
@@ -1327,6 +1330,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	@Transactional
 	public AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId, Deporte deporte, boolean rojoBordado) {
+		return pasarGradoInterno(alumnoId, deporte, rojoBordado, true);
+	}
+
+	@Override
+	@Transactional
+	public AlumnoDeporte pasarGradoConDerechoExamen(Long alumnoId, Deporte deporte, boolean rojoBordado) {
+		return pasarGradoInterno(alumnoId, deporte, rojoBordado, false);
+	}
+
+	/**
+	 * Método interno para pasar de grado (por recompensa o derecho de examen)
+	 */
+	private AlumnoDeporte pasarGradoInterno(Long alumnoId, Deporte deporte, boolean rojoBordado, boolean porRecompensa) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -1357,15 +1373,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 					"No se pudo determinar el siguiente grado del alumno para el deporte " + deporte);
 		}
 
-		// Obtener producto de recompensa asociado al siguiente grado
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, true, rojoBordado);
+		// Obtener producto asociado al siguiente grado (recompensa o derecho de examen)
+		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
 		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
+
+		// Construir concepto con el nombre del deporte al final
+		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(deporte);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setAlumnoDeporte(alumnoDeporte);
 		productoAlumno.setProducto(producto);
-		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setConcepto(conceptoConDeporte);
 		productoAlumno.setFechaAsignacion(new Date());
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPrecio(producto.getPrecio());
@@ -1374,6 +1393,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
 		return alumnoDeporte;
+	}
+
+	/**
+	 * Formatea el nombre del deporte para mostrarlo en el concepto
+	 */
+	private String formatearNombreDeporte(Deporte deporte) {
+		switch (deporte) {
+			case TAEKWONDO:
+				return "TAEKWONDO";
+			case KICKBOXING:
+				return "KICKBOXING";
+			default:
+				return deporte.name();
+		}
 	}
 
 
@@ -1510,7 +1543,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	    if (mensualidadCargada) {
 	        // Check if MENSUALIDAD product exists before trying to use it
-	        var optionalProductoMensualidad = productoRepository.findByConcepto("MENSUALIDAD");
+	        var optionalProductoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD");
 	        if (optionalProductoMensualidad.isEmpty()) {
 	            System.out.println("ADVERTENCIA: Producto 'MENSUALIDAD' no encontrado. " +
 	                    "Se omitirá la asignación automática de mensualidad para el alumno " + alumno.getId());

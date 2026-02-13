@@ -204,7 +204,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	private void activarGradoPorRecompensaPagada(ProductoAlumno productoAlumno) {
 		String concepto = productoAlumno.getConcepto();
+
+		// Buscar primero en productos de recompensa, luego en productos de examen
 		TipoGrado gradoObjetivo = TipoGrado.fromProductoRecompensa(concepto);
+		if (gradoObjetivo == null) {
+			gradoObjetivo = TipoGrado.fromProductoExamen(concepto);
+		}
+
 		if (gradoObjetivo == null) {
 			return;
 		}
@@ -251,7 +257,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		Producto productoReserva = productoRepository.findByConcepto("RESERVA DE PLAZA")
+		Producto productoReserva = productoRepository.findFirstByConcepto("RESERVA DE PLAZA")
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -299,7 +305,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		Producto productoReserva = productoRepository.findByConcepto("RESERVA DE PLAZA")
+		Producto productoReserva = productoRepository.findFirstByConcepto("RESERVA DE PLAZA")
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -326,7 +332,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		String etiquetaMes = nombreMensualidad.replace("MENSUALIDAD ", "");
 		String etiquetaMesUpper = etiquetaMes.toUpperCase(Locale.ROOT);
 
-		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		// Obtener todos los AlumnoDeporte activos
@@ -406,7 +412,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
 		}
 
-		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		// Obtener todos los AlumnoDeporte activos del deporte especificado
@@ -476,7 +482,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
-		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		// Obtener todos los deportes activos del alumno
@@ -827,7 +833,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		return productoRepository.findByConcepto(concepto)
+		return productoRepository.findFirstByConcepto(concepto)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto '" + concepto + "' no encontrado"));
 	}
 
@@ -1010,7 +1016,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Override
 	public void cargarMensualidadesMultiDeporte(String mesAno) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
-		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		// Obtener todos los AlumnoDeporte activos
@@ -1078,7 +1084,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 					"El alumno no practica el deporte " + deporte));
 
-		Producto productoMensualidad = productoRepository.findByConcepto("MENSUALIDAD")
+		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
 				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		String conceptoCompleto = nombreMensualidad + " - " + deporteEnum.name();
@@ -1199,7 +1205,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoTarifaCompetidor));
 
 		if (!yaExiste) {
-			Producto productoTarifaCompetidor = productoRepository.findByConcepto(nombreProducto)
+			Producto productoTarifaCompetidor = productoRepository.findFirstByConcepto(nombreProducto)
 					.orElseGet(() -> {
 						// Crear el producto si no existe
 						Producto nuevo = new Producto();

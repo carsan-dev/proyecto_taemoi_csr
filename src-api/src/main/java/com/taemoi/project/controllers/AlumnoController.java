@@ -971,6 +971,30 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Pasa de grado con derecho de examen (no recompensa) y asigna el producto correspondiente
+	 * POST /api/alumnos/{id}/deportes/{deporte}/pase-examen
+	 */
+	@PostMapping("/{id}/deportes/{deporte}/pase-examen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> pasarGradoConDerechoExamen(@PathVariable Long id, @PathVariable String deporte,
+			@RequestBody(required = false) Map<String, Object> params) {
+		try {
+			boolean rojoBordado = params != null && Boolean.TRUE.equals(params.get("rojoBordado"));
+			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoConDerechoExamen(id,
+					deporteEnum, rojoBordado);
+			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
+					.deAlumnoDeporte(alumnoDeporte);
+			return ResponseEntity.ok(dto);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al pasar de grado con derecho de examen", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al pasar de grado con derecho de examen");
+		}
+	}
+
+	/**
 	 * Actualiza el estado de aptoParaExamen para un deporte específico
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/apto-examen
 	 * Body: { "aptoParaExamen": true }

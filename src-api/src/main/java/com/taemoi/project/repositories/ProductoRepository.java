@@ -14,5 +14,5 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
 	Page<Producto> findByConceptoContaining(String concepto, Pageable pageable);
 
-	Optional<Producto> findByConcepto(String nombreProducto);
+	Optional<Producto> findFirstByConcepto(String nombreProducto);
 }
