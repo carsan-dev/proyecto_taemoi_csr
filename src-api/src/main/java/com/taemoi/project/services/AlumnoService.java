@@ -152,6 +152,13 @@ public interface AlumnoService {
 			com.taemoi.project.entities.Deporte deporte, boolean rojoBordado);
 
 	/**
+	 * Pasa de grado con derecho de examen (no recompensa) y asigna el producto correspondiente.
+	 * Cuando el producto se marque como pagado, se actualizará el grado.
+	 */
+	com.taemoi.project.entities.AlumnoDeporte pasarGradoConDerechoExamen(Long alumnoId,
+			com.taemoi.project.entities.Deporte deporte, boolean rojoBordado);
+
+	/**
 	 * Actualiza la fecha de alta inicial del alumno
 	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
 	 *
