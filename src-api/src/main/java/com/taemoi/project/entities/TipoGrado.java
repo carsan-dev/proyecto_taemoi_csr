@@ -93,9 +93,30 @@ public enum TipoGrado {
 		if (concepto == null) {
 			return null;
 		}
+		String conceptoUpper = concepto.toUpperCase();
 		for (TipoGrado tipo : TipoGrado.values()) {
 			if (tipo.tieneProductoRecompensa()
-					&& concepto.equalsIgnoreCase(tipo.obtenerNombreProducto(true))) {
+					&& conceptoUpper.contains(tipo.obtenerNombreProducto(true).toUpperCase())) {
+				return tipo;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Obtiene el TipoGrado correspondiente a un concepto de producto de examen.
+	 *
+	 * @param concepto El concepto del producto de examen.
+	 * @return El TipoGrado correspondiente, o null si no se encuentra.
+	 */
+	public static TipoGrado fromProductoExamen(String concepto) {
+		if (concepto == null) {
+			return null;
+		}
+		String conceptoUpper = concepto.toUpperCase();
+		for (TipoGrado tipo : TipoGrado.values()) {
+			if (tipo.tieneProductoExamen()
+					&& conceptoUpper.contains(tipo.obtenerNombreProducto(false).toUpperCase())) {
 				return tipo;
 			}
 		}

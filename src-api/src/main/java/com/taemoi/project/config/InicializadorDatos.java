@@ -257,7 +257,7 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * @param precio El precio del producto.
 	 */
 	private void crearProductoSiNoExiste(String concepto, Double precio) {
-		if (productoRepository.findByConcepto(concepto).isEmpty()) {
+		if (productoRepository.findFirstByConcepto(concepto).isEmpty()) {
 			Producto producto = new Producto();
 			producto.setConcepto(concepto);
 			producto.setPrecio(precio);
