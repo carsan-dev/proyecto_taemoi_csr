@@ -719,7 +719,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.renderer.setStyle(this.dropdownEl, 'top', `${Math.round(top)}px`);
     this.renderer.setStyle(this.dropdownEl, 'width', `${Math.round(width)}px`);
     this.renderer.setStyle(this.dropdownEl, 'max-height', `${Math.round(maxHeight)}px`);
-    this.renderer.setStyle(this.dropdownEl, 'z-index', '980');
+    // Keep floating dropdown above component modals (typically z-index: 1050).
+    this.renderer.setStyle(this.dropdownEl, 'z-index', '1080');
   }
 
   private getHeaderBottomBoundary(viewportPadding: number, gap: number): number {
