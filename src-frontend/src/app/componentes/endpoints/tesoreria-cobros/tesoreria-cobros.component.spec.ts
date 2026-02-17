@@ -59,6 +59,7 @@ describe('TesoreriaCobrosComponent', () => {
             fechaPago: '2026-01-02',
             precio: 35,
             notas: 'ok',
+            alumnoActivo: true,
           },
         ],
         totalPages: 1,
@@ -96,6 +97,19 @@ describe('TesoreriaCobrosComponent', () => {
 
   it('debe crear el componente', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('aplica por defecto el filtro de solo alumnos activos', () => {
+    expect(endpointsSpy.obtenerTesoreriaMovimientos).toHaveBeenCalledWith(
+      component.filtroMes,
+      component.filtroAno,
+      component.filtroDeporte,
+      false,
+      '',
+      true,
+      1,
+      25
+    );
   });
 
   it('no muestra boton de revertir para usuario no admin', () => {

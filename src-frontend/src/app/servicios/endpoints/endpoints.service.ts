@@ -808,9 +808,10 @@ export class EndpointsService {
   obtenerTesoreriaResumen(
     mes: number | null,
     ano: number | null,
-    deporte: string = 'TODOS'
+    deporte: string = 'TODOS',
+    soloActivos: boolean = true
   ): Observable<TesoreriaResumen> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, undefined, undefined, soloActivos);
 
     return this.http
       .get<TesoreriaResumen>(`${this.urlBase}/tesoreria/resumen`, {
@@ -826,10 +827,11 @@ export class EndpointsService {
     deporte: string = 'TODOS',
     pagado?: boolean,
     texto?: string,
+    soloActivos: boolean = true,
     page: number = 1,
     size: number = 25
   ): Observable<PaginatedResponse<TesoreriaMovimiento>> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos);
     const paramsConPaginacion = params
       .set('page', page.toString())
       .set('size', size.toString());
@@ -855,9 +857,10 @@ export class EndpointsService {
     ano: number | null,
     deporte: string = 'TODOS',
     pagado?: boolean,
-    texto?: string
+    texto?: string,
+    soloActivos: boolean = true
   ): Observable<Blob> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos);
 
     return this.http
       .get(`${this.urlBase}/tesoreria/export/pdf`, {
@@ -873,9 +876,10 @@ export class EndpointsService {
     ano: number | null,
     deporte: string = 'TODOS',
     pagado?: boolean,
-    texto?: string
+    texto?: string,
+    soloActivos: boolean = true
   ): Observable<Blob> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos);
 
     return this.http
       .get(`${this.urlBase}/tesoreria/export/csv`, {
@@ -891,7 +895,8 @@ export class EndpointsService {
     ano: number | null,
     deporte: string,
     pagado?: boolean,
-    texto?: string
+    texto?: string,
+    soloActivos?: boolean
   ): HttpParams {
     let params = new HttpParams();
 
@@ -914,6 +919,10 @@ export class EndpointsService {
     const textoNormalizado = texto?.trim();
     if (textoNormalizado) {
       params = params.set('texto', textoNormalizado);
+    }
+
+    if (soloActivos !== undefined && soloActivos !== null) {
+      params = params.set('soloActivos', soloActivos.toString());
     }
 
     return params;

@@ -63,6 +63,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   filtroDeporte: string = 'TODOS';
   filtroEstado: EstadoFiltro = 'PENDIENTES';
   filtroTexto: string = '';
+  filtroSoloActivos: boolean = true;
 
   cargando: boolean = true;
   exportandoInforme: boolean = false;
@@ -122,6 +123,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     this.filtroDeporte = 'TODOS';
     this.filtroEstado = 'PENDIENTES';
     this.filtroTexto = '';
+    this.filtroSoloActivos = true;
     this.paginaActual = 1;
     this.cargarDatosTesoreria();
   }
@@ -345,6 +347,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       this.filtroDeporte,
       pagado,
       this.filtroTexto,
+      this.filtroSoloActivos,
       this.paginaActual,
       this.tamanoPagina
     );
@@ -368,7 +371,8 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       resumen: this.endpointsService.obtenerTesoreriaResumen(
         this.filtroMes,
         this.filtroAno,
-        this.filtroDeporte
+        this.filtroDeporte,
+        this.filtroSoloActivos
       ),
       movimientos: movimientos$,
     })
@@ -391,6 +395,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     const anoParam = this.parsearEntero(params.get('ano'));
     const estadoParam = params.get('estado');
     const deporteParam = params.get('deporte');
+    const soloActivosParam = this.parsearBoolean(params.get('soloActivos'));
 
     if (anoParam !== null && anoParam >= 1900 && anoParam <= 2200) {
       this.filtroAno = anoParam;
@@ -414,6 +419,10 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       this.filtroDeporte = deporteParam;
     }
 
+    if (soloActivosParam !== null) {
+      this.filtroSoloActivos = soloActivosParam;
+    }
+
     this.normalizarPeriodo();
   }
 
@@ -433,7 +442,8 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
           this.filtroAno,
           this.filtroDeporte,
           pagado,
-          this.filtroTexto
+          this.filtroTexto,
+          this.filtroSoloActivos
         )
         .pipe(
           finalize(() => {
@@ -458,10 +468,11 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       .exportarTesoreriaCSV(
         this.filtroMes,
         this.filtroAno,
-      this.filtroDeporte,
-      pagado,
-      this.filtroTexto
-    )
+        this.filtroDeporte,
+        pagado,
+        this.filtroTexto,
+        this.filtroSoloActivos
+      )
       .pipe(
         finalize(() => {
           this.exportandoInforme = false;
@@ -594,12 +605,30 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
+  private parsearBoolean(value: string | null): boolean | null {
+    if (value === null) {
+      return null;
+    }
+
+    const normalizado = value.trim().toLowerCase();
+    if (normalizado === 'true') {
+      return true;
+    }
+
+    if (normalizado === 'false') {
+      return false;
+    }
+
+    return null;
+  }
+
   private obtenerNombreCSV(): string {
     const anoSegment = this.filtroAno === null ? 'total' : this.filtroAno.toString();
     const mesSegment = this.filtroMes === null ? 'todos_meses' : this.filtroMes.toString().padStart(2, '0');
     const estadoSegment = this.filtroEstado.toLowerCase();
     const deporteSegment = this.filtroDeporte.toLowerCase();
-    return `tesoreria_${anoSegment}_${mesSegment}_${deporteSegment}_${estadoSegment}.csv`;
+    const alumnosSegment = this.filtroSoloActivos ? 'activos' : 'todos_alumnos';
+    return `tesoreria_${anoSegment}_${mesSegment}_${deporteSegment}_${estadoSegment}_${alumnosSegment}.csv`;
   }
 
   private actualizarCobro(
