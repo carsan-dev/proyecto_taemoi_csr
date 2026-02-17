@@ -10,4 +10,5 @@ export interface TesoreriaMovimiento {
   fechaPago: string | Date | null;
   precio: number;
   notas: string | null;
+  alumnoActivo?: boolean;
 }

@@ -50,6 +50,14 @@
         </select>
       </div>
 
+      <div class="filtro filtro-check">
+        <label for="soloActivosFiltro">Alumnos</label>
+        <div class="check-wrapper">
+          <input id="soloActivosFiltro" type="checkbox" [(ngModel)]="filtroSoloActivos">
+          <span>Solo activos</span>
+        </div>
+      </div>
+
       <div class="filtro filtro-texto">
         <label for="textoFiltro">Buscar</label>
         <input
