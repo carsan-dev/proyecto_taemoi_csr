@@ -12,11 +12,14 @@ import { catchError } from 'rxjs/internal/operators/catchError';
 import { finalize } from 'rxjs/internal/operators/finalize';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
+export type PortalPreferido = 'admin' | 'user';
+
 @Injectable({
   providedIn: 'root',
 })
 export class AuthenticationService {
   private readonly urlBase = environment.apiUrl + '/auth';
+  private readonly vistaPreferidaStorageKey = 'taemoi_vista_preferida';
 
   private readonly usuarioLogueadoSubject: BehaviorSubject<boolean> =
     new BehaviorSubject<boolean>(false);
@@ -254,6 +257,56 @@ export class AuthenticationService {
     return roles.includes('ROLE_USER');
   }
 
+  tieneAccesoAdmin(roles: string[] = this.rolesSubject.value): boolean {
+    return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+  }
+
+  tieneAccesoUser(roles: string[] = this.rolesSubject.value): boolean {
+    return roles.includes('ROLE_USER');
+  }
+
+  tieneAccesoDual(roles: string[] = this.rolesSubject.value): boolean {
+    return this.tieneAccesoAdmin(roles) && this.tieneAccesoUser(roles);
+  }
+
+  guardarVistaPreferida(portal: PortalPreferido): void {
+    const storage = this.obtenerLocalStorage();
+    storage?.setItem(this.vistaPreferidaStorageKey, portal);
+  }
+
+  obtenerVistaPreferida(): PortalPreferido | null {
+    const storage = this.obtenerLocalStorage();
+    const valor = storage?.getItem(this.vistaPreferidaStorageKey);
+    return this.esPortalPreferido(valor) ? valor : null;
+  }
+
+  marcarVistaPreferidaSegunRuta(url: string): void {
+    const rutaNormalizada = this.normalizarRuta(url);
+    if (rutaNormalizada.startsWith('/adminpage')) {
+      this.guardarVistaPreferida('admin');
+      return;
+    }
+    if (rutaNormalizada.startsWith('/userpage')) {
+      this.guardarVistaPreferida('user');
+    }
+  }
+
+  resolverRutaInicioPorRoles(roles: string[] = this.rolesSubject.value): string {
+    const tieneAccesoAdmin = this.tieneAccesoAdmin(roles);
+    const tieneAccesoUser = this.tieneAccesoUser(roles);
+
+    if (tieneAccesoAdmin && tieneAccesoUser) {
+      return this.obtenerVistaPreferida() === 'user' ? '/userpage' : '/adminpage';
+    }
+    if (tieneAccesoAdmin) {
+      return '/adminpage';
+    }
+    if (tieneAccesoUser) {
+      return '/userpage';
+    }
+    return '/';
+  }
+
   actualizarEstadoLogueado(estado: boolean) {
     this.usuarioLogueadoSubject.next(estado);
   }
@@ -264,6 +317,18 @@ export class AuthenticationService {
 
   private extraerNombreUsuario(email: string): string {
     return email.substring(0, email.indexOf('@'));
+  }
+
+  private obtenerLocalStorage(): Storage | undefined {
+    return globalThis.window?.localStorage;
+  }
+
+  private esPortalPreferido(valor: string | null | undefined): valor is PortalPreferido {
+    return valor === 'admin' || valor === 'user';
+  }
+
+  private normalizarRuta(url: string): string {
+    return (url || '').split('?')[0].split('#')[0];
   }
 
   private manejarError(error: any) {
