@@ -634,6 +634,88 @@ $competicion: #7b1fa2;
   }
 }
 
+.challenge-reminder {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.1rem;
+  padding: 0.38rem 0.44rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(8, 17, 31, 0.24);
+}
+
+.challenge-reminder-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.challenge-reminder-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.challenge-reminder-subtitle {
+  font-size: 0.71rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.2;
+}
+
+.challenge-reminder-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 40px;
+  height: 23px;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+
+  &.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+}
+
+.challenge-reminder-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  transition: $transition;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+  }
+}
+
+.challenge-reminder-switch input:checked + .challenge-reminder-slider {
+  background: rgba(124, 236, 147, 0.44);
+  border-color: rgba(124, 236, 147, 0.72);
+}
+
+.challenge-reminder-switch input:checked + .challenge-reminder-slider::before {
+  transform: translateX(17px);
+}
+
 .challenge-action-btn {
   margin-top: auto;
   width: 100%;

@@ -221,6 +221,24 @@ export class AuthenticationService {
       );
   }
 
+  obtenerRecordatorioRachaEmail(): Observable<{ habilitado: boolean }> {
+    return this.http
+      .get<{ habilitado: boolean }>(`${this.urlBase}/user/recordatorios-racha-email`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  actualizarRecordatorioRachaEmail(habilitado: boolean): Observable<{ habilitado: boolean }> {
+    return this.http
+      .put<{ habilitado: boolean }>(
+        `${this.urlBase}/user/recordatorios-racha-email`,
+        { habilitado },
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   tieneRolAdmin(): boolean {
     const roles = this.rolesSubject.value;
     return roles.includes('ROLE_ADMIN');
