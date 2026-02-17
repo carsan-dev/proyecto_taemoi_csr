@@ -433,6 +433,12 @@
                       </label>
                       <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
                     </div>
+                    <div class="mb-3">
+                      <label for="fechaMensualidadGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaMensualidadGeneral" type="date" class="admin-form-control form-select" [(ngModel)]="fechaMensualidadGeneral" />
+                    </div>
                     <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()"
                       [disabled]="procesandoMensualidadesGenerales">
                       @if (procesandoMensualidadesGenerales) {
@@ -473,6 +479,12 @@
                         <i class="bi bi-calendar3 me-2"></i>Mes y Año:
                       </label>
                       <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaMensualidadIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaMensualidadIndividual" type="date" class="admin-form-control form-select" [(ngModel)]="fechaMensualidadIndividual" />
                     </div>
                     <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
                       [disabled]="procesandoMensualidadIndividual || !alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
@@ -532,6 +544,12 @@
                       </label>
                       <input id="anoLicenciaGeneral" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionado" />
                     </div>
+                    <div class="mb-3">
+                      <label for="fechaLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaLicenciaGeneral" type="date" class="admin-form-control form-select" [(ngModel)]="fechaLicenciaGeneral" />
+                    </div>
                     <button class="admin-btn admin-btn-success w-100" (click)="cargarLicenciasGenerales()"
                       [disabled]="procesandoLicenciasGenerales">
                       @if (procesandoLicenciasGenerales) {
@@ -572,6 +590,12 @@
                         <i class="bi bi-calendar3 me-2"></i>Año:
                       </label>
                       <input id="anoLicenciaIndividual" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionadoIndividual" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaLicenciaIndividual" type="date" class="admin-form-control form-select" [(ngModel)]="fechaLicenciaIndividual" />
                     </div>
                     <button class="admin-btn admin-btn-primary w-100" (click)="cargarLicenciaIndividual()"
                       [disabled]="procesandoLicenciaIndividual || !alumnoSeleccionado || !anoLicenciaSeleccionadoIndividual">

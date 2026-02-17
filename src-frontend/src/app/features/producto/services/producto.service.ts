@@ -164,11 +164,19 @@ export class ProductoService {
   /**
    * Load monthly fees for all students
    */
-  cargarMensualidadesGenerales(mesAno: string): Observable<any> {
+  cargarMensualidadesGenerales(
+    mesAno: string,
+    fechaAsignacion?: string | null
+  ): Observable<any> {
+    let params = new HttpParams();
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http.post(
       `${this.productoAlumnoBase}/mensualidades/general`,
       mesAno,
-      { withCredentials: true }
+      { params, withCredentials: true }
     );
   }
 
@@ -178,12 +186,20 @@ export class ProductoService {
   cargarMensualidadIndividual(
     alumnoId: number,
     mesAno: string,
-    forzar: boolean = false
+    forzar: boolean = false,
+    fechaAsignacion?: string | null
   ): Observable<any> {
+    let params = new HttpParams()
+      .set('alumnoId', alumnoId.toString())
+      .set('forzar', forzar.toString());
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http.post(
-      `${this.productoAlumnoBase}/mensualidades/individual?alumnoId=${alumnoId}&forzar=${forzar}`,
+      `${this.productoAlumnoBase}/mensualidades/individual`,
       mesAno,
-      { withCredentials: true }
+      { params, withCredentials: true }
     );
   }
 
@@ -243,17 +259,22 @@ export class ProductoService {
     alumnoId: number,
     deporte: string,
     mesAno: string,
-    forzar: boolean = false
+    forzar: boolean = false,
+    fechaAsignacion?: string | null
   ): Observable<any> {
     const params = new HttpParams()
       .set('alumnoId', alumnoId.toString())
       .set('deporte', deporte)
       .set('forzar', forzar.toString());
 
+    const paramsConFecha = fechaAsignacion
+      ? params.set('fechaAsignacion', fechaAsignacion)
+      : params;
+
     return this.http.post(
       `${this.productoAlumnoBase}/mensualidades/individual-deporte`,
       mesAno,
-      { params, withCredentials: true }
+      { params: paramsConFecha, withCredentials: true }
     );
   }
 }
