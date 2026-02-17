@@ -9,7 +9,7 @@ import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 
 public interface TesoreriaService {
 
-	TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte);
+	TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos);
 
 	Page<TesoreriaMovimientoDTO> obtenerMovimientos(
 			Integer mes,
@@ -17,12 +17,25 @@ public interface TesoreriaService {
 			String deporte,
 			Boolean pagado,
 			String texto,
+			Boolean soloActivos,
 			Integer page,
 			Integer size);
 
 	List<Integer> obtenerAniosDisponibles();
 
-	byte[] exportarMovimientosCSV(Integer mes, Integer ano, String deporte, Boolean pagado, String texto);
+	byte[] exportarMovimientosCSV(
+			Integer mes,
+			Integer ano,
+			String deporte,
+			Boolean pagado,
+			String texto,
+			Boolean soloActivos);
 
-	byte[] exportarMovimientosPDF(Integer mes, Integer ano, String deporte, Boolean pagado, String texto);
+	byte[] exportarMovimientosPDF(
+			Integer mes,
+			Integer ano,
+			String deporte,
+			Boolean pagado,
+			String texto,
+			Boolean soloActivos);
 }
