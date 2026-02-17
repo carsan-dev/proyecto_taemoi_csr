@@ -660,17 +660,36 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  cargarMensualidadesGenerales(mesAno: string): Observable<any> {
+  cargarMensualidadesGenerales(
+    mesAno: string,
+    fechaAsignacion?: string | null
+  ): Observable<any> {
+    let params = new HttpParams();
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
       .post(`${this.urlBase}/productos-alumno/mensualidades/general`, mesAno, {
+        params,
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  cargarMensualidadesPorDeporte(mesAno: string, deporte: string): Observable<any> {
+  cargarMensualidadesPorDeporte(
+    mesAno: string,
+    deporte: string,
+    fechaAsignacion?: string | null
+  ): Observable<any> {
+    let params = new HttpParams().set('deporte', deporte);
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
-      .post(`${this.urlBase}/productos-alumno/mensualidades/deporte?deporte=${deporte}`, mesAno, {
+      .post(`${this.urlBase}/productos-alumno/mensualidades/deporte`, mesAno, {
+        params,
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
@@ -679,23 +698,42 @@ export class EndpointsService {
   cargarMensualidadIndividual(
     alumnoId: number,
     mesAno: string,
-    forzar: boolean = false
+    forzar: boolean = false,
+    fechaAsignacion?: string | null
   ): Observable<any> {
+    let params = new HttpParams()
+      .set('alumnoId', alumnoId.toString())
+      .set('forzar', forzar.toString());
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
       .post(
-        `${this.urlBase}/productos-alumno/mensualidades/individual?alumnoId=${alumnoId}&forzar=${forzar}`,
+        `${this.urlBase}/productos-alumno/mensualidades/individual`,
         mesAno,
-        { withCredentials: true }
+        { params, withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
 
-  cargarLicenciasGenerales(ano: number, deporte: string): Observable<any> {
+  cargarLicenciasGenerales(
+    ano: number,
+    deporte: string,
+    fechaAsignacion?: string | null
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('ano', ano.toString())
+      .set('deporte', deporte);
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
       .post(
-        `${this.urlBase}/productos-alumno/licencias/general?ano=${ano}&deporte=${deporte}`,
+        `${this.urlBase}/productos-alumno/licencias/general`,
         null,
-        { withCredentials: true }
+        { params, withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
@@ -704,13 +742,23 @@ export class EndpointsService {
     alumnoId: number,
     ano: number,
     deporte: string,
-    forzar: boolean = false
+    forzar: boolean = false,
+    fechaAsignacion?: string | null
   ): Observable<any> {
+    let params = new HttpParams()
+      .set('alumnoId', alumnoId.toString())
+      .set('ano', ano.toString())
+      .set('deporte', deporte)
+      .set('forzar', forzar.toString());
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
       .post(
-        `${this.urlBase}/productos-alumno/licencias/individual?alumnoId=${alumnoId}&ano=${ano}&deporte=${deporte}&forzar=${forzar}`,
+        `${this.urlBase}/productos-alumno/licencias/individual`,
         null,
-        { withCredentials: true }
+        { params, withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }
@@ -727,13 +775,22 @@ export class EndpointsService {
     alumnoId: number,
     mesAno: string,
     deporte: string,
-    forzar: boolean = false
+    forzar: boolean = false,
+    fechaAsignacion?: string | null
   ): Observable<any> {
+    let params = new HttpParams()
+      .set('alumnoId', alumnoId.toString())
+      .set('deporte', deporte)
+      .set('forzar', forzar.toString());
+    if (fechaAsignacion) {
+      params = params.set('fechaAsignacion', fechaAsignacion);
+    }
+
     return this.http
       .post(
-        `${this.urlBase}/productos-alumno/mensualidades/individual-deporte?alumnoId=${alumnoId}&deporte=${deporte}&forzar=${forzar}`,
+        `${this.urlBase}/productos-alumno/mensualidades/individual-deporte`,
         mesAno,
-        { withCredentials: true }
+        { params, withCredentials: true }
       )
       .pipe(catchError(this.manejarError));
   }

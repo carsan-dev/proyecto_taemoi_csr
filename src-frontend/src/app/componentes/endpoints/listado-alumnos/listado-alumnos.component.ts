@@ -65,6 +65,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   deporteLicenciaSeleccionado: string = 'TODOS';
   anoLicenciaSeleccionadoIndividual: number = new Date().getFullYear();
   deporteLicenciaSeleccionadoIndividual: string = 'TODOS';
+  fechaMensualidadGeneral: string = this.obtenerFechaActualLocalYyyyMmDd();
+  fechaMensualidadIndividual: string = this.obtenerFechaActualLocalYyyyMmDd();
+  fechaLicenciaGeneral: string = this.obtenerFechaActualLocalYyyyMmDd();
+  fechaLicenciaIndividual: string = this.obtenerFechaActualLocalYyyyMmDd();
   licenciasTab: 'general' | 'individual' = 'general';
   mensualidadesTab: 'general' | 'individual' = 'general';
   mostrarModalInforme: boolean = false;
@@ -1259,15 +1263,21 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.procesandoMensualidadesGenerales = true;
     this.loadingService.show();
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaMensualidadGeneral
+    );
+
     // Determine which service method to call based on sport selection
     const serviceCall =
       this.deporteSeleccionado === 'TODOS'
         ? this.endpointsService.cargarMensualidadesGenerales(
-            this.mesAnoSeleccionado
+            this.mesAnoSeleccionado,
+            fechaAsignacion
           )
         : this.endpointsService.cargarMensualidadesPorDeporte(
             this.mesAnoSeleccionado,
-            this.deporteSeleccionado
+            this.deporteSeleccionado,
+            fechaAsignacion
           );
 
     const deporteTexto =
@@ -1310,17 +1320,25 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaMensualidadIndividual
+    );
+
     // Determine which service method to call based on sport selection
     const serviceCall =
       this.deporteSeleccionadoIndividual === 'TODOS'
         ? this.endpointsService.cargarMensualidadIndividual(
             this.alumnoSeleccionado,
-            this.mesAnoSeleccionadoIndividual
+            this.mesAnoSeleccionadoIndividual,
+            false,
+            fechaAsignacion
           )
         : this.endpointsService.cargarMensualidadIndividualPorDeporte(
             this.alumnoSeleccionado,
             this.mesAnoSeleccionadoIndividual,
-            this.deporteSeleccionadoIndividual
+            this.deporteSeleccionadoIndividual,
+            false,
+            fechaAsignacion
           );
 
     const deporteTexto =
@@ -1390,18 +1408,24 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaMensualidadIndividual
+    );
+
     const serviceCall =
       this.deporteSeleccionadoIndividual === 'TODOS'
         ? this.endpointsService.cargarMensualidadIndividual(
             this.alumnoSeleccionado,
             this.mesAnoSeleccionadoIndividual,
-            true
+            true,
+            fechaAsignacion
           )
         : this.endpointsService.cargarMensualidadIndividualPorDeporte(
             this.alumnoSeleccionado,
             this.mesAnoSeleccionadoIndividual,
             this.deporteSeleccionadoIndividual,
-            true
+            true,
+            fechaAsignacion
           );
 
     const deporteTexto =
@@ -1443,9 +1467,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.procesandoLicenciasGenerales = true;
     this.loadingService.show();
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaLicenciaGeneral
+    );
+
     const serviceCall = this.endpointsService.cargarLicenciasGenerales(
       this.anoLicenciaSeleccionado,
-      this.deporteLicenciaSeleccionado
+      this.deporteLicenciaSeleccionado,
+      fechaAsignacion
     );
 
     const deporteTexto =
@@ -1491,10 +1520,16 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaLicenciaIndividual
+    );
+
     const serviceCall = this.endpointsService.cargarLicenciaIndividual(
       this.alumnoSeleccionado,
       this.anoLicenciaSeleccionadoIndividual,
-      this.deporteLicenciaSeleccionadoIndividual
+      this.deporteLicenciaSeleccionadoIndividual,
+      false,
+      fechaAsignacion
     );
 
     const deporteTexto =
@@ -1552,11 +1587,16 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const fechaAsignacion = this.normalizarFechaAsignacion(
+      this.fechaLicenciaIndividual
+    );
+
     const serviceCall = this.endpointsService.cargarLicenciaIndividual(
       this.alumnoSeleccionado,
       this.anoLicenciaSeleccionadoIndividual,
       this.deporteLicenciaSeleccionadoIndividual,
-      true
+      true,
+      fechaAsignacion
     );
 
     const deporteTexto =
@@ -1691,6 +1731,21 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       'DICIEMBRE',
     ];
     return `${meses[Number.parseInt(mes, 10) - 1]} ${anio}`;
+  }
+
+  private obtenerFechaActualLocalYyyyMmDd(): string {
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = String(hoy.getMonth() + 1).padStart(2, '0');
+    const day = String(hoy.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private normalizarFechaAsignacion(
+    fecha: string | null | undefined
+  ): string | null {
+    const fechaLimpia = (fecha ?? '').trim();
+    return fechaLimpia.length > 0 ? fechaLimpia : null;
   }
 
   private formatearListaDeportes(deportes: unknown): string {
