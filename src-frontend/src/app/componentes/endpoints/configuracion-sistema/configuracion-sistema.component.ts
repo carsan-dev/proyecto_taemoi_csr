@@ -234,7 +234,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   resetearContrasena(usuario: Usuario): void {
     if (this.esCuentaGoogle(usuario)) {
-      showErrorToast('Las cuentas de Google no permiten restablecer contraseña.');
+      showErrorToast('Esta cuenta usa Google. El restablecimiento manual no aplica.');
       return;
     }
 
@@ -358,7 +358,12 @@ export class ConfiguracionSistemaComponent implements OnInit {
             showSuccessToast('Contraseña actualizada correctamente.');
           },
           error: (error) => {
-            const mensaje = error?.error?.message || 'No se pudo actualizar la contraseña.';
+            const mensaje =
+              error?.error?.mensaje ||
+              error?.error?.message ||
+              error?.error?.error ||
+              (error?.status === 403 ? 'No tienes permisos para restablecer contraseñas.' : null) ||
+              'No se pudo actualizar la contraseña.';
             showErrorToast(mensaje);
           },
         });
