@@ -1,6 +1,6 @@
 import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
-import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { AuthenticationService, PortalPreferido } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -20,11 +20,14 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioLogueado: boolean = false;
   isAdmin: boolean = false;
   isUser: boolean = false;
+  isUserRoute: boolean = false;
+  tieneAccesoDual: boolean = false;
   isHidden: boolean = false;
   adminMenuVisible: boolean = false;
   isMobileMenuOpen: boolean = false;
   isMobileUserQuickMenuOpen: boolean = false;
   isDesktopUserMenuOpen: boolean = false;
+  isAdminAccountMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
@@ -54,12 +57,19 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.actualizarContextoRuta(this.router.url);
+
     // Subscribe to authentication state changes
     this.subscriptions.add(
       this.authService.usuarioLogueadoCambio.subscribe((estado: boolean) => {
         this.usuarioLogueado = estado;
         if (estado) {
           this.comprobarRoles();
+        } else {
+          this.isAdmin = false;
+          this.isUser = false;
+          this.tieneAccesoDual = false;
+          this.isAuthChecked = true;
         }
       })
     );
@@ -87,11 +97,13 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.adminMenuVisible = false;
           this.closeMobileMenu();
           this.closeDesktopUserMenu();
+          this.closeAdminAccountMenu();
         }
         // Reset scroll tracking on navigation end to prevent stale lastScrollTop values
         if (event instanceof NavigationEnd) {
           this.lastScrollTop = 0;
           this.isHidden = false;
+          this.actualizarContextoRuta(event.urlAfterRedirects || event.url);
         }
       })
     );
@@ -157,6 +169,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleMobileMenu(): void {
     this.closeDesktopUserMenu();
+    this.closeAdminAccountMenu();
     this.closeMobileUserQuickMenu();
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
     this.setBodyScrollLock(this.isMobileMenuOpen);
@@ -181,11 +194,22 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDesktopUserMenu(): void {
     this.closeMobileUserQuickMenu();
+    this.closeAdminAccountMenu();
     this.isDesktopUserMenuOpen = !this.isDesktopUserMenuOpen;
   }
 
   closeDesktopUserMenu(): void {
     this.isDesktopUserMenuOpen = false;
+  }
+
+  toggleAdminAccountMenu(): void {
+    this.closeDesktopUserMenu();
+    this.closeMobileUserQuickMenu();
+    this.isAdminAccountMenuOpen = !this.isAdminAccountMenuOpen;
+  }
+
+  closeAdminAccountMenu(): void {
+    this.isAdminAccountMenuOpen = false;
   }
 
   private setBodyScrollLock(locked: boolean): void {
@@ -198,10 +222,28 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   comprobarRoles() {
     this.authService.getRoles().subscribe((roles: string[]) => {
-      this.isAdmin = roles.includes('ROLE_ADMIN');
-      this.isUser = roles.includes('ROLE_USER');
+      this.isAdmin = this.authService.tieneAccesoAdmin(roles);
+      this.isUser = this.authService.tieneAccesoUser(roles);
+      this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       this.isAuthChecked = true;
     });
+  }
+
+  get mostrarHeaderAdmin(): boolean {
+    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isAdmin) {
+      return false;
+    }
+    return !this.isUserRoute;
+  }
+
+  get mostrarHeaderUser(): boolean {
+    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isUser) {
+      return false;
+    }
+    if (!this.isAdmin) {
+      return true;
+    }
+    return this.isUserRoute;
   }
 
   toggleAdminMenu(): void {
@@ -210,6 +252,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeAdminMenu(): void {
     this.adminMenuVisible = false;
+    this.closeAdminAccountMenu();
     Object.keys(this.expandedSections).forEach(key => {
       this.expandedSections[key] = false;
     });
@@ -293,6 +336,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isDesktopUserMenuOpen && !target.closest('.user-desktop-menu')) {
       this.closeDesktopUserMenu();
     }
+    if (this.isAdminAccountMenuOpen && !target.closest('.admin-account-menu')) {
+      this.closeAdminAccountMenu();
+    }
 
     if (this.shouldIgnoreAdminClick(target)) {
       return;
@@ -311,7 +357,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
 
-    const clickedInsideMenu = target.closest('.admin-menu');
+    const clickedInsideMenu = target.closest('.admin-sidebar');
     if (!clickedInsideMenu) {
       this.adminMenuVisible = false;
     }
@@ -386,6 +432,35 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     return currentUrl.split('?')[0].split('#')[0];
   }
 
+  cambiarVistaUsuario(): void {
+    this.cambiarVista('user');
+  }
+
+  cambiarVistaAdmin(): void {
+    this.cambiarVista('admin');
+  }
+
+  private cambiarVista(portal: PortalPreferido): void {
+    this.authService.guardarVistaPreferida(portal);
+    this.closeAdminAccountMenu();
+    this.closeDesktopUserMenu();
+    this.closeMobileUserQuickMenu();
+    this.closeMobileMenu();
+    this.closeAdminMenu();
+    const rutaDestino = portal === 'admin' ? '/adminpage' : '/userpage';
+    this.router.navigate([rutaDestino]);
+  }
+
+  private actualizarContextoRuta(url: string): void {
+    const rutaActual = this.normalizarRuta(url);
+    this.isUserRoute = rutaActual.startsWith('/userpage');
+    this.authService.marcarVistaPreferidaSegunRuta(rutaActual);
+  }
+
+  private normalizarRuta(url: string): string {
+    return (url || '').split('?')[0].split('#')[0];
+  }
+
   cerrarSesion(): void {
     if (!this.usuarioLogueado) {
       Swal.fire({
@@ -412,6 +487,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
         });
 
         this.adminMenuVisible = false;
+        this.closeAdminAccountMenu();
         this.router.navigate(['/']);
       }
     });

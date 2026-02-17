@@ -237,16 +237,8 @@ export class VistaLoginComponent implements OnInit {
   }
 
   private redirigirSegunRol(roles: string[]) {
-    if (
-      this.authService.tieneRolAdmin() ||
-      this.authService.tieneRolManager()
-    ) {
-      this.router.navigate(['/adminpage']);
-    } else if (this.authService.tieneRolUser()) {
-      this.router.navigate(['/userpage']);
-    } else {
-      this.router.navigate(['/']);
-    }
+    const rutaDestino = this.authService.resolverRutaInicioPorRoles(roles);
+    this.router.navigate([rutaDestino]);
   }
 
   private setRememberMeCookie(): void {
