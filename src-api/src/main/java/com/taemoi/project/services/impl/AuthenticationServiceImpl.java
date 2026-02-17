@@ -101,7 +101,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			SecurityContextHolder.getContext().setAuthentication(authentication);
 
 			Usuario user = (Usuario) authentication.getPrincipal();
-			if (user.getRoles().contains(Roles.ROLE_USER)
+			if (requiereAlumnoActivo(user)
 					&& !alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(email)) {
 				SecurityContextHolder.clearContext();
 				throw new DisabledException("No hay alumnos activos asociados a esta cuenta.");
@@ -115,5 +115,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			loginAttemptService.loginFailed(email);
 			throw new BadCredentialsException("Credenciales inválidas.");
 		}
+	}
+
+	private boolean requiereAlumnoActivo(Usuario user) {
+		boolean roleUser = user.getRoles().contains(Roles.ROLE_USER);
+		boolean roleAdminOrManager = user.getRoles().contains(Roles.ROLE_ADMIN)
+				|| user.getRoles().contains(Roles.ROLE_MANAGER);
+		return roleUser && !roleAdminOrManager;
 	}
 }
