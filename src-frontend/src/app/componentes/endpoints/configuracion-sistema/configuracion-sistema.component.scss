@@ -2,6 +2,10 @@
 @use '../../admin-shared-styles.scss' as *;
 @use '../../admin-mobile-forms.scss' as *;
 
+.admin-container {
+  padding-bottom: 3.5rem;
+}
+
 .config-section {
   .section-header {
     display: flex;
@@ -181,6 +185,10 @@
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
+
+  .admin-btn.is-disabled {
+    opacity: 0.65;
+  }
 }
 
 .roles-search {
@@ -203,6 +211,10 @@
 }
 
 @media (max-width: 768px) {
+  .admin-container {
+    padding-bottom: 2.5rem;
+  }
+
   .info-card-header {
     flex-direction: column;
     align-items: flex-start;
