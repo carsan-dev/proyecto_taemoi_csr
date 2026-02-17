@@ -193,7 +193,7 @@
 }
 
 <!-- Header para administradores -->
-@if (isAuthChecked && isAdmin) {
+@if (mostrarHeaderAdmin) {
 <header class="admin-top-navbar">
   <div class="navbar-container">
     <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menú"
@@ -221,15 +221,31 @@
       }
     </nav>
     <div class="navbar-actions">
-      <div class="admin-user-info">
-        <i class="bi bi-person-circle"></i>
-        @if (username) {
-        <span class="username">{{ username }}</span>
+      <div class="admin-account-menu">
+        <button type="button" class="admin-account-toggle" (click)="toggleAdminAccountMenu()"
+          [class.is-open]="isAdminAccountMenuOpen" [attr.aria-expanded]="isAdminAccountMenuOpen"
+          aria-haspopup="menu" aria-label="Opciones de cuenta">
+          <i class="bi bi-person-circle"></i>
+          <span class="username" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
+          <i class="bi admin-account-chevron"
+            [ngClass]="isAdminAccountMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </button>
+        @if (isAdminAccountMenuOpen) {
+        <div class="admin-account-menu-panel" role="menu" aria-label="Opciones de cuenta admin">
+          @if (tieneAccesoDual) {
+          <button class="admin-account-menu-item" type="button" (click)="cambiarVistaUsuario()">
+            <i class="bi bi-calendar2-check"></i>
+            <span>Cambiar a usuario</span>
+          </button>
+          }
+          <button class="admin-account-menu-item logout" type="button"
+            (click)="cerrarSesion(); closeAdminAccountMenu()">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
         }
       </div>
-      <button class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
-        <i class="bi bi-box-arrow-right"></i>
-      </button>
     </div>
   </div>
 </header>
@@ -486,7 +502,7 @@
 </nav>
 }
 
-@if (isAuthChecked && usuarioLogueado && isUser && !isAdmin) {
+@if (mostrarHeaderUser) {
 <header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
@@ -526,6 +542,13 @@
               <i class="bi bi-calendar2-check"></i>
               <span>Mis Clases</span>
             </a>
+            @if (tieneAccesoDual) {
+            <button class="mobile-user-quick-menu-item" type="button"
+              (click)="cambiarVistaAdmin(); closeMobileUserQuickMenu()">
+              <i class="bi bi-shield-lock"></i>
+              <span>Cambiar a admin</span>
+            </button>
+            }
             <button class="mobile-user-quick-menu-item logout" type="button"
               (click)="cerrarSesion(); closeMobileUserQuickMenu()">
               <i class="bi bi-box-arrow-right"></i>
@@ -631,6 +654,13 @@
                   <i class="bi bi-calendar2-check"></i>
                   <span>Mis Clases</span>
                 </a>
+                @if (tieneAccesoDual) {
+                <button class="user-desktop-menu-item" type="button"
+                  (click)="cambiarVistaAdmin(); closeDesktopUserMenu()">
+                  <i class="bi bi-shield-lock"></i>
+                  <span>Cambiar a admin</span>
+                </button>
+                }
                 <button class="user-desktop-menu-item logout" type="button"
                   (click)="cerrarSesion(); closeDesktopUserMenu()">
                   <i class="bi bi-box-arrow-right"></i>
@@ -710,6 +740,12 @@
         <i class="bi bi-calendar2-check" aria-hidden="true"></i>
         <span>Mis Clases</span>
       </a>
+      @if (tieneAccesoDual) {
+      <button class="mobile-header-link" type="button" (click)="cambiarVistaAdmin(); closeMobileMenu()">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <span>Cambiar a admin</span>
+      </button>
+      }
       <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">
         <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         <span>Cerrar Sesión</span>

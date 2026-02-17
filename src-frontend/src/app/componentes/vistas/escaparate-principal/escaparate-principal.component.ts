@@ -338,14 +338,10 @@ export class EscaparatePrincipalComponent
     if (!this.debeAutoRedirigirDesdeEscaparate()) {
       return;
     }
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+    const rutaDestino = this.authService.resolverRutaInicioPorRoles(roles);
+    if (rutaDestino !== '/') {
       this.marcarAutoRedireccionEscaparate();
-      this.router.navigate(['/adminpage']);
-      return;
-    }
-    if (roles.includes('ROLE_USER')) {
-      this.marcarAutoRedireccionEscaparate();
-      this.router.navigate(['/userpage']);
+      this.router.navigate([rutaDestino]);
     }
   }
 
