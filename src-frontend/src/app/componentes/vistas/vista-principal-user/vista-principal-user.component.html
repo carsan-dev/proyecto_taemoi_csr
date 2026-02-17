@@ -205,6 +205,24 @@
             </p>
             }
 
+            <div class="challenge-reminder">
+              <label class="challenge-reminder-switch" [class.is-disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail">
+                <input
+                  type="checkbox"
+                  [checked]="recordatorioRachaEmailHabilitado"
+                  [disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail"
+                  (change)="onToggleRecordatorioRachaEmail($event)"
+                />
+                <span class="challenge-reminder-slider"></span>
+              </label>
+              <div class="challenge-reminder-copy">
+                <span class="challenge-reminder-title">Recordatorio por email</span>
+                <span class="challenge-reminder-subtitle">
+                  {{ guardandoRecordatorioRachaEmail ? 'Guardando...' : 'Avisar cuando queden menos de 3 horas' }}
+                </span>
+              </div>
+            </div>
+
             <button
               type="button"
               class="challenge-action-btn"
