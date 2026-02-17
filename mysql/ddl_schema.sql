@@ -412,6 +412,8 @@ CREATE TABLE IF NOT EXISTS `taemoidb`.`usuario` (
   `auth_provider` VARCHAR(20) NULL DEFAULT NULL,
   `reset_token_hash` VARCHAR(64) NULL DEFAULT NULL,
   `reset_token_expires_at` DATETIME NULL DEFAULT NULL,
+  `recordatorio_racha_email_habilitado` TINYINT(1) NOT NULL DEFAULT 0,
+  `ultimo_recordatorio_racha_reset` DATE NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `UK5171l57faosmj8myawaucatdw` (`email` ASC) VISIBLE,
   UNIQUE INDEX `UKiwqbs97sir17hipge3olmu6i6` (`alumno_id` ASC) VISIBLE,
