@@ -33,13 +33,15 @@ describe('VistaPrincipalUserComponent', () => {
 
     authServiceSpy = jasmine.createSpyObj<AuthenticationService>(
       'AuthenticationService',
-      ['obtenerNombreUsuario', 'obtenerTodosLosAlumnos']
+      ['obtenerNombreUsuario', 'obtenerTodosLosAlumnos', 'obtenerRecordatorioRachaEmail', 'actualizarRecordatorioRachaEmail']
     );
     endpointsServiceSpy = jasmine.createSpyObj<EndpointsService>(
       'EndpointsService',
       [
-        'obtenerGruposDelAlumno',
+        'obtenerGruposDelAlumnoObservable',
         'obtenerTurnosDelAlumnoObservable',
+        'obtenerConvocatoriasDeAlumno',
+        'obtenerEstadoRetoDiario',
         'obtenerDocumentosDeAlumno',
         'obtenerUrlDescargaDocumentoAlumno',
         'descargarDocumentoAlumno',
@@ -51,7 +53,17 @@ describe('VistaPrincipalUserComponent', () => {
 
     authServiceSpy.obtenerNombreUsuario.and.returnValue(of('usuario'));
     authServiceSpy.obtenerTodosLosAlumnos.and.returnValue(of(alumnosMock as any));
+    authServiceSpy.obtenerRecordatorioRachaEmail.and.returnValue(of({ habilitado: false }));
+    authServiceSpy.actualizarRecordatorioRachaEmail.and.returnValue(of({ habilitado: true }));
+    endpointsServiceSpy.obtenerGruposDelAlumnoObservable.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerTurnosDelAlumnoObservable.and.returnValue(of([] as any));
+    endpointsServiceSpy.obtenerConvocatoriasDeAlumno.and.returnValue(of([] as any));
+    endpointsServiceSpy.obtenerEstadoRetoDiario.and.returnValue(of({
+      racha: 0,
+      completadoHoy: false,
+      fechaCompletado: null,
+      nextResetAtEpochMs: null,
+    }));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
     endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.returnValue(
       'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar'
@@ -82,6 +94,22 @@ describe('VistaPrincipalUserComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('debe cargar la preferencia de recordatorio de racha al iniciar', () => {
+    expect(authServiceSpy.obtenerRecordatorioRachaEmail).toHaveBeenCalled();
+    expect(component.recordatorioRachaEmailHabilitado).toBeFalse();
+  });
+
+  it('debe actualizar la preferencia de recordatorio al cambiar el toggle', () => {
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = true;
+
+    component.onToggleRecordatorioRachaEmail({ target: input } as unknown as Event);
+
+    expect(authServiceSpy.actualizarRecordatorioRachaEmail).toHaveBeenCalledWith(true);
+    expect(component.recordatorioRachaEmailHabilitado).toBeTrue();
   });
 
   it('debe cargar documentos del alumno inicial al iniciar', () => {

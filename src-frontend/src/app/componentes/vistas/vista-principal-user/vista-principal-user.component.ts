@@ -83,6 +83,9 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   retoCompletadoHoy: boolean = false;
   retoCountdownTexto: string = '';
   retoCountdownUrgente: boolean = false;
+  recordatorioRachaEmailHabilitado: boolean = false;
+  cargandoRecordatorioRachaEmail: boolean = false;
+  guardandoRecordatorioRachaEmail: boolean = false;
   documentosVisiblesCount: number = 0;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
@@ -236,6 +239,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.inicializarRetoDiario();
+    this.cargarPreferenciaRecordatorioRachaEmail();
 
     const nombreSubscription = this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       if (nombre && !sessionStorage.getItem('welcomeShown')) {
@@ -721,6 +725,52 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
   }
 
+  onToggleRecordatorioRachaEmail(event: Event): void {
+    if (this.guardandoRecordatorioRachaEmail || this.cargandoRecordatorioRachaEmail) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const siguienteEstado = target.checked;
+    const estadoPrevio = this.recordatorioRachaEmailHabilitado;
+    if (siguienteEstado === estadoPrevio) {
+      return;
+    }
+
+    this.recordatorioRachaEmailHabilitado = siguienteEstado;
+    this.guardandoRecordatorioRachaEmail = true;
+
+    this.authService.actualizarRecordatorioRachaEmail(siguienteEstado).subscribe({
+      next: (response) => {
+        this.recordatorioRachaEmailHabilitado = !!response?.habilitado;
+        Swal.fire({
+          title: 'Recordatorio actualizado',
+          text: this.recordatorioRachaEmailHabilitado
+            ? 'Te avisaremos por email cuando queden menos de 3 horas.'
+            : 'Has desactivado los recordatorios por email.',
+          icon: 'success',
+          timer: 1800,
+          showConfirmButton: false,
+        });
+      },
+      error: () => {
+        this.recordatorioRachaEmailHabilitado = estadoPrevio;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo actualizar el recordatorio de racha.',
+          icon: 'error',
+        });
+      },
+      complete: () => {
+        this.guardandoRecordatorioRachaEmail = false;
+      },
+    });
+  }
+
   getResumenEstadoExamen(): string {
     const aptos = this.getCantidadDeportesAptosExaminables();
     const total = this.getCantidadDeportesExaminables();
@@ -1090,6 +1140,20 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         this.retoCompletadoHoy = false;
         this.recargandoRetoTrasReset = false;
         this.resetearCountdownRetoDiario();
+      },
+    });
+  }
+
+  private cargarPreferenciaRecordatorioRachaEmail(): void {
+    this.cargandoRecordatorioRachaEmail = true;
+    this.authService.obtenerRecordatorioRachaEmail().subscribe({
+      next: (response) => {
+        this.recordatorioRachaEmailHabilitado = !!response?.habilitado;
+        this.cargandoRecordatorioRachaEmail = false;
+      },
+      error: () => {
+        this.recordatorioRachaEmailHabilitado = false;
+        this.cargandoRecordatorioRachaEmail = false;
       },
     });
   }
