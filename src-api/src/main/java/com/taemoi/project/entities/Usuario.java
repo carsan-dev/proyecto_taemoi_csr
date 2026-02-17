@@ -1,6 +1,7 @@
 package com.taemoi.project.entities;
 
 import java.io.Serial;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
@@ -65,6 +66,12 @@ private String contrasena;
 
 	@Column(name = "reset_token_expires_at")
 	private LocalDateTime resetTokenExpiresAt;
+
+	@Column(name = "recordatorio_racha_email_habilitado", nullable = false)
+	private Boolean recordatorioRachaEmailHabilitado = false;
+
+	@Column(name = "ultimo_recordatorio_racha_reset")
+	private LocalDate ultimoRecordatorioRachaReset;
 
 	@ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
 	@Enumerated(EnumType.STRING)
@@ -182,6 +189,22 @@ private String contrasena;
 
 	public void setResetTokenExpiresAt(LocalDateTime resetTokenExpiresAt) {
 		this.resetTokenExpiresAt = resetTokenExpiresAt;
+	}
+
+	public Boolean getRecordatorioRachaEmailHabilitado() {
+		return recordatorioRachaEmailHabilitado;
+	}
+
+	public void setRecordatorioRachaEmailHabilitado(Boolean recordatorioRachaEmailHabilitado) {
+		this.recordatorioRachaEmailHabilitado = Boolean.TRUE.equals(recordatorioRachaEmailHabilitado);
+	}
+
+	public LocalDate getUltimoRecordatorioRachaReset() {
+		return ultimoRecordatorioRachaReset;
+	}
+
+	public void setUltimoRecordatorioRachaReset(LocalDate ultimoRecordatorioRachaReset) {
+		this.ultimoRecordatorioRachaReset = ultimoRecordatorioRachaReset;
 	}
 
 	public Long getId() {

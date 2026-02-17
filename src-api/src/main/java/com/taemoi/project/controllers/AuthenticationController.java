@@ -24,6 +24,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,11 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.PasswordResetEmailRequest;
 import com.taemoi.project.dtos.request.PasswordResetUpdateRequest;
+import com.taemoi.project.dtos.request.RecordatorioRachaEmailRequest;
 import com.taemoi.project.dtos.request.RegistroConfirmacionRequest;
 import com.taemoi.project.dtos.request.RegistroRequest;
 import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.dtos.response.AlumnoParaUsuarioDTO;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
+import com.taemoi.project.dtos.response.RecordatorioRachaEmailResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Roles;
@@ -269,6 +272,36 @@ public class AuthenticationController {
 		} else {
 			return null;
 		}
+	}
+
+	@GetMapping("/user/recordatorios-racha-email")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<RecordatorioRachaEmailResponse> obtenerRecordatorioRachaEmail() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+		Usuario usuario = usuarioService.encontrarPorEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+
+		boolean habilitado = Boolean.TRUE.equals(usuario.getRecordatorioRachaEmailHabilitado());
+		return ResponseEntity.ok(new RecordatorioRachaEmailResponse(habilitado));
+	}
+
+	@PutMapping("/user/recordatorios-racha-email")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<RecordatorioRachaEmailResponse> actualizarRecordatorioRachaEmail(
+			@Valid @RequestBody RecordatorioRachaEmailRequest request) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+		Usuario usuario = usuarioService.encontrarPorEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+
+		boolean habilitado = Boolean.TRUE.equals(request.getHabilitado());
+		usuario.setRecordatorioRachaEmailHabilitado(habilitado);
+		if (!habilitado) {
+			usuario.setUltimoRecordatorioRachaReset(null);
+		}
+		usuarioService.actualizarUsuario(usuario);
+		return ResponseEntity.ok(new RecordatorioRachaEmailResponse(habilitado));
 	}
 
 	/**
