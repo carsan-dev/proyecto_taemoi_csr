@@ -30,9 +30,10 @@ public class TesoreriaController {
 	public ResponseEntity<?> obtenerResumen(
 			@RequestParam(required = false) Integer mes,
 			@RequestParam(required = false) Integer ano,
-			@RequestParam(required = false) String deporte) {
+			@RequestParam(required = false) String deporte,
+			@RequestParam(required = false) Boolean soloActivos) {
 		try {
-			TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(mes, ano, deporte);
+			TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(mes, ano, deporte, soloActivos);
 			return ResponseEntity.ok(resumen);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
@@ -47,6 +48,7 @@ public class TesoreriaController {
 			@RequestParam(required = false) String deporte,
 			@RequestParam(required = false) Boolean pagado,
 			@RequestParam(required = false) String texto,
+			@RequestParam(required = false) Boolean soloActivos,
 			@RequestParam(defaultValue = "1") Integer page,
 			@RequestParam(defaultValue = "25") Integer size) {
 		try {
@@ -56,6 +58,7 @@ public class TesoreriaController {
 					deporte,
 					pagado,
 					texto,
+					soloActivos,
 					page,
 					size);
 			return ResponseEntity.ok(movimientos);
@@ -77,9 +80,10 @@ public class TesoreriaController {
 			@RequestParam(required = false) Integer ano,
 			@RequestParam(required = false) String deporte,
 			@RequestParam(required = false) Boolean pagado,
-			@RequestParam(required = false) String texto) {
+			@RequestParam(required = false) String texto,
+			@RequestParam(required = false) Boolean soloActivos) {
 		try {
-			byte[] csvBytes = tesoreriaService.exportarMovimientosCSV(mes, ano, deporte, pagado, texto);
+			byte[] csvBytes = tesoreriaService.exportarMovimientosCSV(mes, ano, deporte, pagado, texto, soloActivos);
 			String filename = construirNombreArchivo("csv", mes, ano, deporte, pagado);
 			return ResponseEntity.ok()
 					.contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
@@ -98,9 +102,10 @@ public class TesoreriaController {
 			@RequestParam(required = false) Integer ano,
 			@RequestParam(required = false) String deporte,
 			@RequestParam(required = false) Boolean pagado,
-			@RequestParam(required = false) String texto) {
+			@RequestParam(required = false) String texto,
+			@RequestParam(required = false) Boolean soloActivos) {
 		try {
-			byte[] pdfBytes = tesoreriaService.exportarMovimientosPDF(mes, ano, deporte, pagado, texto);
+			byte[] pdfBytes = tesoreriaService.exportarMovimientosPDF(mes, ano, deporte, pagado, texto, soloActivos);
 			String filename = construirNombreArchivo("pdf", mes, ano, deporte, pagado);
 			return ResponseEntity.ok()
 					.contentType(MediaType.APPLICATION_PDF)

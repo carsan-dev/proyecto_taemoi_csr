@@ -15,6 +15,7 @@ public class TesoreriaMovimientoDTO {
 	private Date fechaPago;
 	private Double precio;
 	private String notas;
+	private Boolean alumnoActivo;
 
 	public Long getProductoAlumnoId() {
 		return productoAlumnoId;
@@ -102,5 +103,13 @@ public class TesoreriaMovimientoDTO {
 
 	public void setNotas(String notas) {
 		this.notas = notas;
+	}
+
+	public Boolean getAlumnoActivo() {
+		return alumnoActivo;
+	}
+
+	public void setAlumnoActivo(Boolean alumnoActivo) {
+		this.alumnoActivo = alumnoActivo;
 	}
 }

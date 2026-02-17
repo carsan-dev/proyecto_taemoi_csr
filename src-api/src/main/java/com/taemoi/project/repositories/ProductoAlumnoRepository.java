@@ -100,6 +100,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"UPPER(COALESCE(adAlumno.nombre, '')) LIKE :texto OR " +
 					"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 					"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
+					"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
 					"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC",
 			countQuery = "SELECT COUNT(pa) FROM ProductoAlumno pa " +
 					"LEFT JOIN pa.alumnoDeporte ad " +
@@ -129,12 +130,14 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"UPPER(CONCAT(COALESCE(a.nombre, ''), ' ', COALESCE(a.apellidos, ''))) LIKE :texto OR " +
 					"UPPER(COALESCE(adAlumno.nombre, '')) LIKE :texto OR " +
 					"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
-					"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto)")
+					"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
+					"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
 	Page<ProductoAlumno> findMovimientosTesoreriaPaginados(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
 			@Param("pagado") Boolean pagado,
 			@Param("texto") String texto,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
@@ -170,12 +173,14 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"UPPER(COALESCE(adAlumno.nombre, '')) LIKE :texto OR " +
 			"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 			"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
 			"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC")
 	List<ProductoAlumno> findMovimientosTesoreriaFiltrados(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
 			@Param("pagado") Boolean pagado,
 			@Param("texto") String texto,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
@@ -213,12 +218,14 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"UPPER(COALESCE(adAlumno.nombre, '')) LIKE :texto OR " +
 			"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 			"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
 			"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC")
 	List<TesoreriaPeriodoBaseProjection> findMovimientosTesoreriaPeriodoBase(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
 			@Param("pagado") Boolean pagado,
 			@Param("texto") String texto,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
@@ -234,6 +241,8 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@Query("SELECT COUNT(pa) " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
+			"LEFT JOIN ad.alumno adAlumno " +
+			"LEFT JOIN pa.alumno a " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -249,11 +258,13 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"(:mesNombre IS NOT NULL AND (" +
 			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
-			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
 	Long contarMovimientosTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
 			@Param("pagado") Boolean pagado,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
@@ -262,6 +273,8 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@Query("SELECT COALESCE(SUM(COALESCE(pa.precio, 0)), 0) " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
+			"LEFT JOIN ad.alumno adAlumno " +
+			"LEFT JOIN pa.alumno a " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -277,11 +290,13 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"(:mesNombre IS NOT NULL AND (" +
 			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
-			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
 	Double sumarImporteMovimientosTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
 			@Param("pagado") Boolean pagado,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
@@ -305,10 +320,12 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"(:mesNombre IS NOT NULL AND (" +
 			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
-			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
 	Long contarAlumnosConPendientesTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
+			@Param("soloActivos") Boolean soloActivos,
 			@Param("ano") Integer ano,
 			@Param("anoTexto") String anoTexto,
 			@Param("mes") Integer mes,
