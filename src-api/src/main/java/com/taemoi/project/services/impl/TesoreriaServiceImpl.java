@@ -49,16 +49,18 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Override
-	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte) {
+	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos) {
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
+		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
 
 		if (!filtro.tieneFiltroPeriodo()) {
 			long totalMovimientos = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
 					null,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -67,6 +69,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.deporte,
 					filtro.deporteNombre,
 					true,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -75,6 +78,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.deporte,
 					filtro.deporteNombre,
 					false,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -83,6 +87,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.deporte,
 					filtro.deporteNombre,
 					null,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -91,6 +96,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.deporte,
 					filtro.deporteNombre,
 					true,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -99,6 +105,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.deporte,
 					filtro.deporteNombre,
 					false,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -106,6 +113,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			long alumnosConPendientes = valorSeguro(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
+					soloActivosNormalizado,
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
@@ -122,7 +130,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
-				obtenerMovimientosPeriodoBase(filtro, null, null);
+				obtenerMovimientosPeriodoBase(filtro, null, null, soloActivosNormalizado);
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientos =
 				filtrarMovimientosPeriodoBase(movimientosBase, filtro);
 		long totalMovimientos = movimientos.size();
@@ -165,6 +173,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			String deporte,
 			Boolean pagado,
 			String texto,
+			Boolean soloActivos,
 			Integer page,
 			Integer size) {
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
@@ -172,14 +181,20 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		int pageSize = size == null ? DEFAULT_PAGE_SIZE : Math.max(1, Math.min(size, MAX_PAGE_SIZE));
 		Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
+		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
 
 		if (!filtro.tieneFiltroPeriodo()) {
-			return obtenerPaginaMovimientosFiltrados(filtro, pagado, textoNormalizado, pageable)
+			return obtenerPaginaMovimientosFiltrados(
+					filtro,
+					pagado,
+					textoNormalizado,
+					soloActivosNormalizado,
+					pageable)
 					.map(this::convertirAMovimientoDTO);
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
-				obtenerMovimientosPeriodoBase(filtro, pagado, textoNormalizado);
+				obtenerMovimientosPeriodoBase(filtro, pagado, textoNormalizado, soloActivosNormalizado);
 		List<Long> idsFiltrados = filtrarMovimientosPeriodoBase(movimientosBase, filtro).stream()
 				.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getId)
 				.collect(Collectors.toList());
@@ -227,10 +242,21 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	}
 
 	@Override
-	public byte[] exportarMovimientosCSV(Integer mes, Integer ano, String deporte, Boolean pagado, String texto) {
+	public byte[] exportarMovimientosCSV(
+			Integer mes,
+			Integer ano,
+			String deporte,
+			Boolean pagado,
+			String texto,
+			Boolean soloActivos) {
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
-		List<TesoreriaMovimientoDTO> movimientos = obtenerMovimientosFiltrados(filtro, pagado, textoNormalizado).stream()
+		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
+		List<TesoreriaMovimientoDTO> movimientos = obtenerMovimientosFiltrados(
+				filtro,
+				pagado,
+				textoNormalizado,
+				soloActivosNormalizado).stream()
 				.map(this::convertirAMovimientoDTO)
 				.collect(Collectors.toList());
 
@@ -254,10 +280,21 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	}
 
 	@Override
-	public byte[] exportarMovimientosPDF(Integer mes, Integer ano, String deporte, Boolean pagado, String texto) {
+	public byte[] exportarMovimientosPDF(
+			Integer mes,
+			Integer ano,
+			String deporte,
+			Boolean pagado,
+			String texto,
+			Boolean soloActivos) {
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
-		List<TesoreriaMovimientoDTO> movimientos = obtenerMovimientosFiltrados(filtro, pagado, textoNormalizado).stream()
+		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
+		List<TesoreriaMovimientoDTO> movimientos = obtenerMovimientosFiltrados(
+				filtro,
+				pagado,
+				textoNormalizado,
+				soloActivosNormalizado).stream()
 				.map(this::convertirAMovimientoDTO)
 				.collect(Collectors.toList());
 		String html = generarHtmlInformeTesoreria(movimientos, filtro, pagado);
@@ -276,8 +313,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private List<ProductoAlumno> obtenerMovimientosFiltrados(
 			FiltroTesoreria filtro,
 			Boolean pagado,
-			String texto) {
-		List<ProductoAlumno> movimientosBase = obtenerMovimientosFiltradosBase(filtro, pagado, texto);
+			String texto,
+			Boolean soloActivos) {
+		List<ProductoAlumno> movimientosBase = obtenerMovimientosFiltradosBase(filtro, pagado, texto, soloActivos);
 		if (!filtro.tieneFiltroPeriodo()) {
 			return movimientosBase;
 		}
@@ -290,7 +328,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> obtenerMovimientosPeriodoBase(
 			FiltroTesoreria filtro,
 			Boolean pagado,
-			String texto) {
+			String texto,
+			Boolean soloActivos) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
 
@@ -299,6 +338,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.deporteNombre,
 				pagado,
 				texto,
+				soloActivos,
 				filtro.ano,
 				anoTexto,
 				filtro.mes,
@@ -320,7 +360,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private List<ProductoAlumno> obtenerMovimientosFiltradosBase(
 			FiltroTesoreria filtro,
 			Boolean pagado,
-			String texto) {
+			String texto,
+			Boolean soloActivos) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
 
@@ -329,6 +370,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.deporteNombre,
 				pagado,
 				texto,
+				soloActivos,
 				filtro.ano,
 				anoTexto,
 				filtro.mes,
@@ -339,6 +381,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro,
 			Boolean pagado,
 			String texto,
+			Boolean soloActivos,
 			Pageable pageable) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
@@ -348,6 +391,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.deporteNombre,
 				pagado,
 				texto,
+				soloActivos,
 				filtro.ano,
 				anoTexto,
 				filtro.mes,
@@ -421,6 +465,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		}
 
 		return "%" + limpio.toUpperCase(Locale.ROOT) + "%";
+	}
+
+	private Boolean normalizarSoloActivos(Boolean soloActivos) {
+		return soloActivos == null ? Boolean.TRUE : soloActivos;
 	}
 
 	private PeriodoMovimiento obtenerPeriodoMovimiento(String concepto, Date fechaAsignacion, Date fechaPago) {
@@ -526,6 +574,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		dto.setProductoAlumnoId(productoAlumno.getId());
 		dto.setAlumnoId(alumno != null ? alumno.getId() : null);
 		dto.setAlumnoNombreCompleto(obtenerNombreCompletoAlumno(alumno));
+		dto.setAlumnoActivo(alumno != null && !Boolean.FALSE.equals(alumno.getActivo()));
 		dto.setDeporte(obtenerDeporte(productoAlumno));
 		dto.setConcepto(productoAlumno.getConcepto());
 		dto.setCategoria(obtenerCategoria(productoAlumno.getConcepto()));

@@ -69,16 +69,17 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
+				any(),
 				any()))
 				.thenReturn(List.of(baseFebrero, baseEnero));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(mensualidadFebrero, mensualidadEnero));
 
-		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, 1, 25);
+		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, null, 1, 25);
 		assertEquals(1, febrero.getTotalElements());
 		assertTrue(febrero.getContent().get(0).getConcepto().contains("FEBRERO"));
 
-		Page<TesoreriaMovimientoDTO> enero = tesoreriaService.obtenerMovimientos(1, 2026, "TODOS", null, null, 1, 25);
+		Page<TesoreriaMovimientoDTO> enero = tesoreriaService.obtenerMovimientos(1, 2026, "TODOS", null, null, null, 1, 25);
 		assertEquals(1, enero.getTotalElements());
 		assertTrue(enero.getContent().get(0).getConcepto().contains("ENERO"));
 	}
@@ -104,15 +105,16 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
+				any(),
 				any()))
 				.thenReturn(List.of(baseLicencia));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(licencia));
 
-		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, 1, 25);
+		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, null, 1, 25);
 		assertEquals(0, febrero.getTotalElements());
 
-		Page<TesoreriaMovimientoDTO> enero = tesoreriaService.obtenerMovimientos(1, 2026, "TODOS", null, null, 1, 25);
+		Page<TesoreriaMovimientoDTO> enero = tesoreriaService.obtenerMovimientos(1, 2026, "TODOS", null, null, null, 1, 25);
 		assertEquals(1, enero.getTotalElements());
 	}
 
@@ -145,6 +147,7 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
+				eq(true),
 				eq(2026),
 				eq("2026"),
 				eq(2),
@@ -153,28 +156,28 @@ class TesoreriaServiceImplTest {
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(mensualidadFebrero));
 
-		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, 1, 25);
+		Page<TesoreriaMovimientoDTO> febrero = tesoreriaService.obtenerMovimientos(2, 2026, "TODOS", null, null, null, 1, 25);
 		assertEquals(1, febrero.getTotalElements());
 	}
 
 	@Test
 	void obtenerResumen_sinFiltroPeriodoUsaConsultasAgregadas() {
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), isNull(), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(10L);
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(6L);
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(false), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(4L);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), isNull(), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(350.0);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(240.0);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(false), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(110.0);
-		when(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(any(), any(), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(any(), any(), eq(true), isNull(), isNull(), isNull(), isNull()))
 				.thenReturn(3L);
 
-		TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(null, null, "TODOS");
+		TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(null, null, "TODOS", null);
 
 		assertEquals(10L, resumen.getTotalMovimientos());
 		assertEquals(6L, resumen.getTotalPagados());
@@ -184,6 +187,7 @@ class TesoreriaServiceImplTest {
 		assertEquals(110.0, resumen.getImportePendiente());
 		assertEquals(3L, resumen.getAlumnosConPendientes());
 		verify(productoAlumnoRepository, never()).findMovimientosTesoreriaFiltrados(
+				any(),
 				any(),
 				any(),
 				any(),
