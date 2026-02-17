@@ -93,7 +93,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 				boolean roleUser = userDetails.getAuthorities().stream()
 						.anyMatch(authority -> Roles.ROLE_USER.toString().equals(authority.getAuthority()));
-				boolean hasActiveAlumno = !roleUser || alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(userEmail);
+				boolean roleAdminOrManager = userDetails.getAuthorities().stream()
+						.anyMatch(authority -> Roles.ROLE_ADMIN.toString().equals(authority.getAuthority())
+								|| Roles.ROLE_MANAGER.toString().equals(authority.getAuthority()));
+				boolean requiereAlumnoActivo = roleUser && !roleAdminOrManager;
+				boolean hasActiveAlumno = !requiereAlumnoActivo
+						|| alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(userEmail);
 
 				if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && hasActiveAlumno) {
 					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
