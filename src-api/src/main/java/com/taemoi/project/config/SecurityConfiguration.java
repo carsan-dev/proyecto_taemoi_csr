@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -14,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
@@ -22,6 +20,9 @@ import com.taemoi.project.entities.Roles;
 import com.taemoi.project.services.UsuarioService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Configuración de seguridad para la aplicación.
@@ -89,6 +90,7 @@ public class SecurityConfiguration {
 		logger.info("Public images: /imagenes/** (except alumnos subdirectory)");
 		logger.info("========================================");
 
+		http.cors(cors -> {});
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**"))
 				.authorizeHttpRequests(request -> request
@@ -242,41 +244,82 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/informes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
-						.requestMatchers(HttpMethod.GET, "/api/admin/auditoria/**")
-						.hasAnyAuthority(Roles.ROLE_ADMIN.toString())
-						.requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
+						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						.requestMatchers(HttpMethod.POST, "/api/mail/**").permitAll().anyRequest().authenticated())
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(oauth2SuccessHandler)
 						.permitAll())
-				.exceptionHandling(exceptions -> exceptions
-						.defaultAuthenticationEntryPointFor(
-								new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-								request -> {
-									String uri = request.getRequestURI();
-									String contextPath = request.getContextPath();
-									String path = contextPath != null && !contextPath.isEmpty()
-											? uri.substring(contextPath.length())
-											: uri;
-									return "/api".equals(path) || path.startsWith("/api/");
-								})
+						.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, authException) -> {
-							// Redirect unauthenticated requests to OAuth2 login
 							String requestURI = request.getRequestURI();
 							logger.warn("========================================");
 							logger.warn("AUTHENTICATION ENTRY POINT TRIGGERED!");
 							logger.warn("Request URI: {}", requestURI);
 							logger.warn("Request Method: {}", request.getMethod());
 							logger.warn("Auth Exception: {}", authException.getMessage());
-							logger.warn("This should NOT happen for /imagenes/** (documents now require auth)");
 							logger.warn("========================================");
-							response.sendRedirect("/oauth2/authorization/google");
+							if (isApiRequest(request)) {
+								writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "No autenticado.");
+								return;
+							}
+							if (shouldRedirectToOAuthLogin(request)) {
+								response.sendRedirect("/oauth2/authorization/google");
+								return;
+							}
+							response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+						})
+						.accessDeniedHandler((request, response, accessDeniedException) -> {
+							logger.warn("========================================");
+							logger.warn("ACCESS DENIED HANDLER TRIGGERED!");
+							logger.warn("Request URI: {}", request.getRequestURI());
+							logger.warn("Request Method: {}", request.getMethod());
+							logger.warn("Access Denied Exception: {}", accessDeniedException.getMessage());
+							logger.warn("========================================");
+							if (isApiRequest(request)) {
+								writeJsonError(response, HttpServletResponse.SC_FORBIDDEN, "Acceso denegado.");
+								return;
+							}
+							response.sendError(HttpServletResponse.SC_FORBIDDEN);
 						}));
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.addFilterAfter(auditoriaRequestFilter, JwtAuthenticationFilter.class);
 		return http.build();
+	}
+
+	private boolean shouldRedirectToOAuthLogin(HttpServletRequest request) {
+		String acceptHeader = request.getHeader("Accept");
+		boolean expectsHtml = acceptHeader != null && acceptHeader.contains("text/html");
+		boolean safeNavigationMethod = "GET".equalsIgnoreCase(request.getMethod());
+		return safeNavigationMethod && expectsHtml && !isApiRequest(request);
+	}
+
+	private boolean isApiRequest(HttpServletRequest request) {
+		String path = getPathWithoutContext(request);
+		return "/api".equals(path) || path.startsWith("/api/");
+	}
+
+	private String getPathWithoutContext(HttpServletRequest request) {
+		String requestUri = request.getRequestURI();
+		String contextPath = request.getContextPath();
+		if (contextPath == null || contextPath.isEmpty()) {
+			return requestUri;
+		}
+		if (!requestUri.startsWith(contextPath)) {
+			return requestUri;
+		}
+		return requestUri.substring(contextPath.length());
+	}
+
+	private void writeJsonError(HttpServletResponse response, int status, String message) throws java.io.IOException {
+		if (response.isCommitted()) {
+			return;
+		}
+		response.setStatus(status);
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
+		response.getWriter().write("{\"mensaje\":\"" + message + "\"}");
 	}
 
 	/**
