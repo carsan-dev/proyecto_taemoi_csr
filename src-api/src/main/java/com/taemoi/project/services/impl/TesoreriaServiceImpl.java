@@ -7,8 +7,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,78 +51,111 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	@Override
 	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte) {
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
-		String anoTexto = filtro.ano != null ? String.valueOf(filtro.ano) : null;
-		String mesNombre = filtro.mes != null ? MESES_ES[filtro.mes - 1] : null;
+		String anoTexto = obtenerAnoTexto(filtro.ano);
+		String mesNombre = obtenerMesNombre(filtro.mes);
 
-		long totalMovimientos = toLong(productoAlumnoRepository.contarMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				null,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-		long totalPagados = toLong(productoAlumnoRepository.contarMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				Boolean.TRUE,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-		long totalPendientes = toLong(productoAlumnoRepository.contarMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				Boolean.FALSE,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-		double importeTotal = toDouble(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				null,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-		double importePagado = toDouble(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				Boolean.TRUE,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-		double importePendiente = toDouble(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				Boolean.FALSE,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
+		if (!filtro.tieneFiltroPeriodo()) {
+			long totalMovimientos = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					null,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			long totalPagados = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					true,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			long totalPendientes = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					false,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			double importeTotal = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					null,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			double importePagado = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					true,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			double importePendiente = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					false,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			long alumnosConPendientes = valorSeguro(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre));
+			return construirResumen(
+					filtro,
+					totalMovimientos,
+					totalPagados,
+					totalPendientes,
+					importeTotal,
+					importePagado,
+					importePendiente,
+					alumnosConPendientes);
+		}
 
-		long alumnosConPendientes = toLong(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(
-				filtro.deporte,
-				filtro.deporteNombre,
-				filtro.ano,
-				anoTexto,
-				filtro.mes,
-				mesNombre));
-
-		TesoreriaResumenDTO resumen = new TesoreriaResumenDTO();
-		resumen.setMes(filtro.mes);
-		resumen.setAno(filtro.ano);
-		resumen.setDeporte(filtro.deporte != null ? filtro.deporte.name() : "TODOS");
-		resumen.setTotalMovimientos(totalMovimientos);
-		resumen.setTotalPagados(totalPagados);
-		resumen.setTotalPendientes(totalPendientes);
-		resumen.setImporteTotal(importeTotal);
-		resumen.setImportePagado(importePagado);
-		resumen.setImportePendiente(importePendiente);
-		resumen.setAlumnosConPendientes(alumnosConPendientes);
-		return resumen;
+		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
+				obtenerMovimientosPeriodoBase(filtro, null, null);
+		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientos =
+				filtrarMovimientosPeriodoBase(movimientosBase, filtro);
+		long totalMovimientos = movimientos.size();
+		long totalPagados = movimientos.stream()
+				.filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
+				.count();
+		long totalPendientes = totalMovimientos - totalPagados;
+		double importeTotal = movimientos.stream()
+				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.sum();
+		double importePagado = movimientos.stream()
+				.filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
+				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.sum();
+		double importePendiente = movimientos.stream()
+				.filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
+				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.sum();
+		long alumnosConPendientes = movimientos.stream()
+				.filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
+				.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getAlumnoId)
+				.filter(Objects::nonNull)
+				.distinct()
+				.count();
+		return construirResumen(
+				filtro,
+				totalMovimientos,
+				totalPagados,
+				totalPendientes,
+				importeTotal,
+				importePagado,
+				importePendiente,
+				alumnosConPendientes);
 	}
 
 	@Override
@@ -136,23 +173,41 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
 
-		return obtenerPaginaMovimientosFiltrados(filtro, pagado, textoNormalizado, pageable)
-				.map(this::convertirAMovimientoDTO);
+		if (!filtro.tieneFiltroPeriodo()) {
+			return obtenerPaginaMovimientosFiltrados(filtro, pagado, textoNormalizado, pageable)
+					.map(this::convertirAMovimientoDTO);
+		}
+
+		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
+				obtenerMovimientosPeriodoBase(filtro, pagado, textoNormalizado);
+		List<Long> idsFiltrados = filtrarMovimientosPeriodoBase(movimientosBase, filtro).stream()
+				.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getId)
+				.collect(Collectors.toList());
+
+		int fromIndex = Math.min((int) pageable.getOffset(), idsFiltrados.size());
+		int toIndex = Math.min(fromIndex + pageable.getPageSize(), idsFiltrados.size());
+		List<Long> idsPagina = idsFiltrados.subList(fromIndex, toIndex);
+
+		List<ProductoAlumno> movimientosPagina = idsPagina.isEmpty()
+				? List.of()
+				: obtenerMovimientosPaginaPorIds(idsPagina);
+
+		Page<ProductoAlumno> pagina = new PageImpl<>(
+				movimientosPagina,
+				pageable,
+				idsFiltrados.size());
+
+		return pagina.map(this::convertirAMovimientoDTO);
 	}
 
 	@Override
 	public List<Integer> obtenerAniosDisponibles() {
 		TreeSet<Integer> anios = new TreeSet<>();
 		anios.addAll(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha());
+		aniadirAniosDesdeConceptos(anios, productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial());
 
 		List<String> conceptosSinFecha = productoAlumnoRepository.findConceptosTesoreriaSinFecha();
-		for (String concepto : conceptosSinFecha) {
-			PeriodoMovimiento periodo = extraerPeriodoDesdeConcepto(concepto);
-			Integer ano = periodo != null ? periodo.ano : null;
-			if (ano != null) {
-				anios.add(ano);
-			}
-		}
+		aniadirAniosDesdeConceptos(anios, conceptosSinFecha);
 
 		if (anios.isEmpty()) {
 			anios.add(LocalDate.now().getYear());
@@ -161,24 +216,14 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return new ArrayList<>(anios);
 	}
 
-	private long toLong(Object value) {
-		if (value == null) {
-			return 0L;
+	private void aniadirAniosDesdeConceptos(TreeSet<Integer> anios, List<String> conceptos) {
+		for (String concepto : conceptos) {
+			PeriodoMovimiento periodo = extraerPeriodoDesdeConcepto(concepto);
+			Integer ano = periodo != null ? periodo.ano : null;
+			if (ano != null) {
+				anios.add(ano);
+			}
 		}
-		if (value instanceof Number number) {
-			return number.longValue();
-		}
-		return 0L;
-	}
-
-	private double toDouble(Object value) {
-		if (value == null) {
-			return 0.0;
-		}
-		if (value instanceof Number number) {
-			return number.doubleValue();
-		}
-		return 0.0;
 	}
 
 	@Override
@@ -232,8 +277,52 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro,
 			Boolean pagado,
 			String texto) {
-		String anoTexto = filtro.ano != null ? String.valueOf(filtro.ano) : null;
-		String mesNombre = filtro.mes != null ? MESES_ES[filtro.mes - 1] : null;
+		List<ProductoAlumno> movimientosBase = obtenerMovimientosFiltradosBase(filtro, pagado, texto);
+		if (!filtro.tieneFiltroPeriodo()) {
+			return movimientosBase;
+		}
+
+		return movimientosBase.stream()
+				.filter(pa -> coincideConFiltroPeriodo(pa, filtro))
+				.collect(Collectors.toList());
+	}
+
+	private List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> obtenerMovimientosPeriodoBase(
+			FiltroTesoreria filtro,
+			Boolean pagado,
+			String texto) {
+		String anoTexto = obtenerAnoTexto(filtro.ano);
+		String mesNombre = obtenerMesNombre(filtro.mes);
+
+		return productoAlumnoRepository.findMovimientosTesoreriaPeriodoBase(
+				filtro.deporte,
+				filtro.deporteNombre,
+				pagado,
+				texto,
+				filtro.ano,
+				anoTexto,
+				filtro.mes,
+				mesNombre);
+	}
+
+	private List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> filtrarMovimientosPeriodoBase(
+			List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase,
+			FiltroTesoreria filtro) {
+		if (!filtro.tieneFiltroPeriodo()) {
+			return movimientosBase;
+		}
+
+		return movimientosBase.stream()
+				.filter(pa -> coincideConFiltroPeriodo(pa, filtro))
+				.collect(Collectors.toList());
+	}
+
+	private List<ProductoAlumno> obtenerMovimientosFiltradosBase(
+			FiltroTesoreria filtro,
+			Boolean pagado,
+			String texto) {
+		String anoTexto = obtenerAnoTexto(filtro.ano);
+		String mesNombre = obtenerMesNombre(filtro.mes);
 
 		return productoAlumnoRepository.findMovimientosTesoreriaFiltrados(
 				filtro.deporte,
@@ -251,8 +340,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			Boolean pagado,
 			String texto,
 			Pageable pageable) {
-		String anoTexto = filtro.ano != null ? String.valueOf(filtro.ano) : null;
-		String mesNombre = filtro.mes != null ? MESES_ES[filtro.mes - 1] : null;
+		String anoTexto = obtenerAnoTexto(filtro.ano);
+		String mesNombre = obtenerMesNombre(filtro.mes);
 
 		return productoAlumnoRepository.findMovimientosTesoreriaPaginados(
 				filtro.deporte,
@@ -264,6 +353,61 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.mes,
 				mesNombre,
 				pageable);
+	}
+
+	private List<ProductoAlumno> obtenerMovimientosPaginaPorIds(List<Long> idsOrdenados) {
+		List<ProductoAlumno> movimientos = productoAlumnoRepository.findMovimientosTesoreriaByIds(idsOrdenados);
+		Map<Long, ProductoAlumno> movimientosPorId = new HashMap<>();
+		for (ProductoAlumno movimiento : movimientos) {
+			movimientosPorId.put(movimiento.getId(), movimiento);
+		}
+		List<ProductoAlumno> ordenados = new ArrayList<>();
+		for (Long id : idsOrdenados) {
+			ProductoAlumno movimiento = movimientosPorId.get(id);
+			if (movimiento != null) {
+				ordenados.add(movimiento);
+			}
+		}
+		return ordenados;
+	}
+
+	private TesoreriaResumenDTO construirResumen(
+			FiltroTesoreria filtro,
+			long totalMovimientos,
+			long totalPagados,
+			long totalPendientes,
+			double importeTotal,
+			double importePagado,
+			double importePendiente,
+			long alumnosConPendientes) {
+		TesoreriaResumenDTO resumen = new TesoreriaResumenDTO();
+		resumen.setMes(filtro.mes);
+		resumen.setAno(filtro.ano);
+		resumen.setDeporte(filtro.deporte != null ? filtro.deporte.name() : "TODOS");
+		resumen.setTotalMovimientos(totalMovimientos);
+		resumen.setTotalPagados(totalPagados);
+		resumen.setTotalPendientes(totalPendientes);
+		resumen.setImporteTotal(importeTotal);
+		resumen.setImportePagado(importePagado);
+		resumen.setImportePendiente(importePendiente);
+		resumen.setAlumnosConPendientes(alumnosConPendientes);
+		return resumen;
+	}
+
+	private long valorSeguro(Long valor) {
+		return valor != null ? valor : 0L;
+	}
+
+	private double valorSeguro(Double valor) {
+		return valor != null ? valor : 0.0;
+	}
+
+	private String obtenerAnoTexto(Integer ano) {
+		return ano != null ? String.valueOf(ano) : null;
+	}
+
+	private String obtenerMesNombre(Integer mes) {
+		return mes != null ? MESES_ES[mes - 1] : null;
 	}
 
 	private String normalizarTextoBusqueda(String texto) {
@@ -279,22 +423,41 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return "%" + limpio.toUpperCase(Locale.ROOT) + "%";
 	}
 
-	private Integer obtenerAnoMovimiento(ProductoAlumno productoAlumno) {
-		PeriodoMovimiento periodo = obtenerPeriodoMovimiento(productoAlumno);
-		return periodo != null ? periodo.ano : null;
-	}
+	private PeriodoMovimiento obtenerPeriodoMovimiento(String concepto, Date fechaAsignacion, Date fechaPago) {
+		Date fechaReferencia = fechaAsignacion != null ? fechaAsignacion : fechaPago;
+		PeriodoMovimiento periodoFecha = obtenerPeriodoDesdeFecha(fechaReferencia);
+		PeriodoMovimiento periodoConcepto = extraerPeriodoDesdeConcepto(concepto);
 
-	private PeriodoMovimiento obtenerPeriodoMovimiento(ProductoAlumno productoAlumno) {
-		Date fechaReferencia = productoAlumno.getFechaAsignacion() != null
-				? productoAlumno.getFechaAsignacion()
-				: productoAlumno.getFechaPago();
-
-		if (fechaReferencia != null) {
-			LocalDate localDate = fechaReferencia.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-			return new PeriodoMovimiento(localDate.getYear(), localDate.getMonthValue());
+		if (esCategoriaConPeriodoPorConcepto(concepto)) {
+			if (periodoConcepto != null) {
+				Integer ano = periodoConcepto.ano != null
+						? periodoConcepto.ano
+						: (periodoFecha != null ? periodoFecha.ano : null);
+				Integer mes = periodoConcepto.mes != null
+						? periodoConcepto.mes
+						: (periodoFecha != null ? periodoFecha.mes : null);
+				if (ano != null || mes != null) {
+					return new PeriodoMovimiento(ano, mes);
+				}
+			}
+			return periodoFecha;
 		}
 
-		return extraerPeriodoDesdeConcepto(productoAlumno.getConcepto());
+		return periodoFecha != null ? periodoFecha : periodoConcepto;
+	}
+
+	private PeriodoMovimiento obtenerPeriodoDesdeFecha(Date fecha) {
+		if (fecha == null) {
+			return null;
+		}
+		LocalDate localDate = fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		return new PeriodoMovimiento(localDate.getYear(), localDate.getMonthValue());
+	}
+
+	private boolean esCategoriaConPeriodoPorConcepto(String concepto) {
+		String conceptoUpper = concepto != null ? concepto.toUpperCase(Locale.ROOT) : "";
+		return conceptoUpper.startsWith("MENSUALIDAD")
+				|| conceptoUpper.startsWith("TARIFA COMPETIDOR");
 	}
 
 	private PeriodoMovimiento extraerPeriodoDesdeConcepto(String concepto) {
@@ -305,9 +468,6 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		String conceptoUpper = concepto.toUpperCase(Locale.ROOT);
 		Matcher matcherAno = ANO_PATTERN.matcher(conceptoUpper);
 		Integer ano = matcherAno.find() ? Integer.parseInt(matcherAno.group(1)) : null;
-		if (ano == null) {
-			return null;
-		}
 
 		Integer mes = null;
 		for (int i = 0; i < MESES_ES.length; i++) {
@@ -317,7 +477,47 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			}
 		}
 
+		if (ano == null && mes == null) {
+			return null;
+		}
+
 		return new PeriodoMovimiento(ano, mes);
+	}
+
+	private boolean coincideConFiltroPeriodo(ProductoAlumno productoAlumno, FiltroTesoreria filtro) {
+		return coincideConFiltroPeriodo(
+				productoAlumno.getConcepto(),
+				productoAlumno.getFechaAsignacion(),
+				productoAlumno.getFechaPago(),
+				filtro);
+	}
+
+	private boolean coincideConFiltroPeriodo(
+			ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection productoAlumno,
+			FiltroTesoreria filtro) {
+		return coincideConFiltroPeriodo(
+				productoAlumno.getConcepto(),
+				productoAlumno.getFechaAsignacion(),
+				productoAlumno.getFechaPago(),
+				filtro);
+	}
+
+	private boolean coincideConFiltroPeriodo(
+			String concepto,
+			Date fechaAsignacion,
+			Date fechaPago,
+			FiltroTesoreria filtro) {
+		PeriodoMovimiento periodo = obtenerPeriodoMovimiento(concepto, fechaAsignacion, fechaPago);
+		if (periodo == null) {
+			return false;
+		}
+		if (filtro.ano != null && !filtro.ano.equals(periodo.ano)) {
+			return false;
+		}
+		if (filtro.mes != null && !filtro.mes.equals(periodo.mes)) {
+			return false;
+		}
+		return true;
 	}
 
 	private TesoreriaMovimientoDTO convertirAMovimientoDTO(ProductoAlumno productoAlumno) {
@@ -551,6 +751,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			this.deporteNombre = deporteNombre;
 			this.mes = mes;
 			this.ano = ano;
+		}
+
+		private boolean tieneFiltroPeriodo() {
+			return this.mes != null || this.ano != null;
 		}
 	}
 

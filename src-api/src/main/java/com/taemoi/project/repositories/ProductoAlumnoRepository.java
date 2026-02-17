@@ -1,5 +1,6 @@
 package com.taemoi.project.repositories;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +13,16 @@ import org.springframework.data.repository.query.Param;
 import com.taemoi.project.entities.ProductoAlumno;
 
 public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, Long> {
+	interface TesoreriaPeriodoBaseProjection {
+		Long getId();
+		String getConcepto();
+		Date getFechaAsignacion();
+		Date getFechaPago();
+		Boolean getPagado();
+		Double getPrecio();
+		Long getAlumnoId();
+	}
+
 	List<ProductoAlumno> findByAlumnoId(Long alumnoId);
 
 	Optional<ProductoAlumno> findByAlumnoIdAndProductoId(Long id, Long id2);
@@ -70,10 +81,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 					"AND (:ano IS NULL OR " +
 					"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-					"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+					"(:anoTexto IS NOT NULL AND (" +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 					"AND (:mes IS NULL OR " +
 					"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-					"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))) " +
+					"(:mesNombre IS NOT NULL AND (" +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 					"AND (:texto IS NULL OR " +
 					"UPPER(COALESCE(pa.concepto, '')) LIKE :texto OR " +
 					"UPPER(COALESCE(pa.notas, '')) LIKE :texto OR " +
@@ -94,10 +111,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 					"AND (:ano IS NULL OR " +
 					"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-					"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+					"(:anoTexto IS NOT NULL AND (" +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 					"AND (:mes IS NULL OR " +
 					"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-					"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))) " +
+					"(:mesNombre IS NOT NULL AND (" +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 					"AND (:texto IS NULL OR " +
 					"UPPER(COALESCE(pa.concepto, '')) LIKE :texto OR " +
 					"UPPER(COALESCE(pa.notas, '')) LIKE :texto OR " +
@@ -128,10 +151,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))) " +
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:texto IS NULL OR " +
 			"UPPER(COALESCE(pa.concepto, '')) LIKE :texto OR " +
 			"UPPER(COALESCE(pa.notas, '')) LIKE :texto OR " +
@@ -152,6 +181,56 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			@Param("mes") Integer mes,
 			@Param("mesNombre") String mesNombre);
 
+	@Query("SELECT pa.id AS id, pa.concepto AS concepto, pa.fechaAsignacion AS fechaAsignacion, " +
+			"pa.fechaPago AS fechaPago, pa.pagado AS pagado, pa.precio AS precio, " +
+			"COALESCE(a.id, adAlumno.id) AS alumnoId " +
+			"FROM ProductoAlumno pa " +
+			"LEFT JOIN pa.alumnoDeporte ad " +
+			"LEFT JOIN ad.alumno adAlumno " +
+			"LEFT JOIN pa.alumno a " +
+			"WHERE (:pagado IS NULL OR " +
+			"(:pagado = true AND pa.pagado = true) OR " +
+			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
+			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
+			"AND (:ano IS NULL OR " +
+			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
+			"AND (:mes IS NULL OR " +
+			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
+			"AND (:texto IS NULL OR " +
+			"UPPER(COALESCE(pa.concepto, '')) LIKE :texto OR " +
+			"UPPER(COALESCE(pa.notas, '')) LIKE :texto OR " +
+			"UPPER(COALESCE(a.nombre, '')) LIKE :texto OR " +
+			"UPPER(COALESCE(a.apellidos, '')) LIKE :texto OR " +
+			"UPPER(CONCAT(COALESCE(a.nombre, ''), ' ', COALESCE(a.apellidos, ''))) LIKE :texto OR " +
+			"UPPER(COALESCE(adAlumno.nombre, '')) LIKE :texto OR " +
+			"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
+			"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
+			"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC")
+	List<TesoreriaPeriodoBaseProjection> findMovimientosTesoreriaPeriodoBase(
+			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
+			@Param("deporteNombre") String deporteNombre,
+			@Param("pagado") Boolean pagado,
+			@Param("texto") String texto,
+			@Param("ano") Integer ano,
+			@Param("anoTexto") String anoTexto,
+			@Param("mes") Integer mes,
+			@Param("mesNombre") String mesNombre);
+
+	@Query("SELECT pa FROM ProductoAlumno pa " +
+			"LEFT JOIN FETCH pa.alumnoDeporte ad " +
+			"LEFT JOIN FETCH ad.alumno adAlumno " +
+			"LEFT JOIN FETCH pa.alumno a " +
+			"WHERE pa.id IN :ids")
+	List<ProductoAlumno> findMovimientosTesoreriaByIds(@Param("ids") List<Long> ids);
+
 	@Query("SELECT COUNT(pa) " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
@@ -161,10 +240,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))")
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
 	Long contarMovimientosTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -183,10 +268,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))")
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
 	Double sumarImporteMovimientosTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -205,10 +296,16 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :anoTexto IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))) " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
-			"(pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND :mesNombre IS NOT NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))")
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')))))")
 	Long contarAlumnosConPendientesTesoreria(
 			@Param("deporte") com.taemoi.project.entities.Deporte deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -226,6 +323,11 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
 			"WHERE pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND pa.concepto IS NOT NULL")
 	List<String> findConceptosTesoreriaSinFecha();
+
+	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
+			"WHERE pa.concepto IS NOT NULL " +
+			"AND (UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%')")
+	List<String> findConceptosTesoreriaConPeriodoPotencial();
 
 	List<ProductoAlumno> findByAlumnoDeporteId(Long alumnoDeporteId);
 
