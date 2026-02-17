@@ -106,5 +106,23 @@ class AuthenticationServiceImplTest {
 		assertEquals("jwt-token", response.getToken());
 		verify(alumnoRepository, never()).existsByEmailIgnoreCaseAndActivoTrue(any());
 	}
-}
 
+	@Test
+	void signin_roleAdminYUserSinAlumnoActivo_permiteLogin() {
+		LoginRequest request = new LoginRequest("admin@example.com", "password");
+		Usuario usuario = new Usuario();
+		usuario.setEmail("admin@example.com");
+		usuario.setContrasena("encoded");
+		usuario.setRoles(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER));
+
+		when(loginAttemptService.isBlocked("admin@example.com")).thenReturn(false);
+		when(authenticationManager.authenticate(any()))
+				.thenReturn(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
+		when(jwtService.generateToken(eq(usuario), any(Long.class))).thenReturn("jwt-token-admin");
+
+		JwtAuthenticationResponse response = authenticationService.signin(request);
+
+		assertEquals("jwt-token-admin", response.getToken());
+		verify(alumnoRepository, never()).existsByEmailIgnoreCaseAndActivoTrue(any());
+	}
+}

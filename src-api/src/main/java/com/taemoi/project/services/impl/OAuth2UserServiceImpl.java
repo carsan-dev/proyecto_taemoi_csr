@@ -66,7 +66,7 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
 			Usuario usuario = existingUser.get();
-			if (usuario.getRoles().contains(Roles.ROLE_USER)
+			if (requiereAlumnoActivo(usuario)
 					&& !alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(email)) {
 				throw new IllegalArgumentException(
 						"No hay alumnos activos asociados a este email. Contacte con el administrador.");
@@ -122,6 +122,13 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		alumnoRepository.save(primerAlumno);
 
 		return savedUser;
+	}
+
+	private boolean requiereAlumnoActivo(Usuario usuario) {
+		boolean roleUser = usuario.getRoles().contains(Roles.ROLE_USER);
+		boolean roleAdminOrManager = usuario.getRoles().contains(Roles.ROLE_ADMIN)
+				|| usuario.getRoles().contains(Roles.ROLE_MANAGER);
+		return roleUser && !roleAdminOrManager;
 	}
 }
 
