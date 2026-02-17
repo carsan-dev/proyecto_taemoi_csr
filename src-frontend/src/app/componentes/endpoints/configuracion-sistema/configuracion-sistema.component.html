@@ -190,14 +190,15 @@
                   </td>
                   <td class="text-center">
                     <div class="action-buttons">
-                      <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
+                      <button type="button" class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
                         [disabled]="!hasChanges(usuario)">
                         <i class="bi bi-save"></i>
                         <span>Guardar</span>
                       </button>
-                      <button class="admin-btn admin-btn-outline admin-btn-sm" (click)="resetearContrasena(usuario)"
-                        [disabled]="esCuentaGoogle(usuario)"
-                        [title]="esCuentaGoogle(usuario) ? 'Cuenta Google: no permite restablecer contrasena' : 'Restablecer contrasena'">
+                      <button type="button" class="admin-btn admin-btn-outline admin-btn-sm"
+                        [class.is-disabled]="esCuentaGoogle(usuario)"
+                        (click)="resetearContrasena(usuario)"
+                        [title]="esCuentaGoogle(usuario) ? 'Cuenta Google: no permite restablecer contraseña' : 'Restablecer contraseña'">
                         <i class="bi bi-key"></i>
                         <span>Restablecer</span>
                       </button>
