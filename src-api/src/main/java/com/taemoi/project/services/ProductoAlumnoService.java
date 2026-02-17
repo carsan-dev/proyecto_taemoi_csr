@@ -1,6 +1,7 @@
 package com.taemoi.project.services;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.entities.Alumno;
@@ -28,15 +29,15 @@ public interface ProductoAlumnoService {
 	 */
 	ProductoAlumnoDTO reservarPlazaPorDeporte(Long alumnoId, String deporte, String concepto, boolean pagado, boolean forzar);
 
-	void cargarMensualidadesGenerales(String mesAno);
+	void cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacion);
 
-	void cargarMensualidadesPorDeporte(String mesAno, String deporte);
+	void cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacion);
 
-	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar);
+	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar, LocalDate fechaAsignacion);
 
-	void cargarLicenciasGenerales(int ano, String deporte);
+	void cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacion);
 
-	void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar);
+	void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar, LocalDate fechaAsignacion);
 
 	void crearAltaLicenciaFederativa(Alumno alumno);
 
@@ -67,5 +68,6 @@ public interface ProductoAlumnoService {
 	 * @param mesAno Mes y año en formato "MM/YYYY"
 	 * @param forzar Si true, crea la mensualidad aunque ya exista
 	 */
-	void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar);
+	void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
+			LocalDate fechaAsignacion);
 }

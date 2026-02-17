@@ -326,7 +326,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadesGenerales(String mesAno) {
+	public void cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacionManual) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		String nombreMensualidadUpper = nombreMensualidad.toUpperCase(Locale.ROOT);
 		String etiquetaMes = nombreMensualidad.replace("MENSUALIDAD ", "");
@@ -355,7 +355,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.filter(Objects::nonNull)
 				.collect(java.util.stream.Collectors.toSet());
 
-		Date fechaAsignacion = new Date();
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
 			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
@@ -397,7 +397,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadesPorDeporte(String mesAno, String deporte) {
+	public void cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacionManual) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		String nombreMensualidadUpper = nombreMensualidad.toUpperCase(Locale.ROOT);
 		String etiquetaMes = nombreMensualidad.replace("MENSUALIDAD ", "");
@@ -437,7 +437,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.filter(Objects::nonNull)
 				.collect(java.util.stream.Collectors.toSet());
 
-		Date fechaAsignacion = new Date();
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
 
@@ -478,7 +478,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar) {
+	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar,
+			LocalDate fechaAsignacionManual) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
@@ -536,7 +537,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					tarifasCompetidorFaltantes);
 		}
 
-		Date fechaAsignacion = new Date();
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		boolean algunoCreado = false;
 		boolean tarifaCreada = false;
 		StringBuilder mensajesExistentes = new StringBuilder();
@@ -591,14 +592,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarLicenciasGenerales(int ano, String deporte) {
+	public void cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacionManual) {
 		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
 		LocalDate fechaInicio = obtenerFechaInicioLicencia(ano, esSegundaMitadDelAno);
 		LocalDate fechaFin = LocalDate.of(ano, 12, 31);
 
 		List<AlumnoDeporte> alumnosDeportes = obtenerAlumnosDeportesLicencia(deporte);
 		Set<String> conceptosExistentes = obtenerConceptosLicenciaExistentes();
-		Date fechaAsignacion = Date.from(fechaInicio.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
@@ -628,7 +629,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar) {
+	public void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar,
+			LocalDate fechaAsignacionManual) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
 
@@ -644,7 +646,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
 		LocalDate fechaInicio = obtenerFechaInicioLicencia(ano, esSegundaMitadDelAno);
 		LocalDate fechaFin = LocalDate.of(ano, 12, 31);
-		Date fechaAsignacion = Date.from(fechaInicio.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 
 		boolean algunoCreado = false;
 		StringBuilder mensajesExistentes = new StringBuilder();
@@ -800,6 +802,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return convertirADTO(savedProductoAlumno);
 	}
 
+
+	private Date resolverFechaAsignacion(LocalDate fechaAsignacion) {
+		if (fechaAsignacion == null) {
+			return new Date();
+		}
+		return Date.from(fechaAsignacion.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant());
+	}
 
 	private boolean esSegundaMitadDelAno() {
 		return LocalDate.now().getMonthValue() >= MES_CORTE_LICENCIA;
@@ -1063,7 +1072,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar) {
+	public void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
+			LocalDate fechaAsignacionManual) {
 		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
 
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -1125,7 +1135,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		Date fechaAsignacion = new Date();
+		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		boolean mensualidadCreada = false;
 		boolean tarifaCreada = false;
 

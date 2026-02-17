@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -107,17 +108,20 @@ public class ProductoAlumnoController {
 	
 	@PostMapping("/mensualidades/general")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> cargarMensualidadesGenerales(@RequestBody String nombreMensualidad) {
-		productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad);
+	public ResponseEntity<?> cargarMensualidadesGenerales(
+			@RequestBody String nombreMensualidad,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
+		productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad, fechaAsignacion);
 		return ResponseEntity.ok(Map.of("mensaje", "Mensualidades creadas correctamente."));
 	}
 
 	@PostMapping("/mensualidades/deporte")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarMensualidadesPorDeporte(@RequestBody String nombreMensualidad,
-			@RequestParam String deporte) {
+			@RequestParam String deporte,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte);
+			productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte, fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje",
 					"Mensualidades creadas correctamente para alumnos de " + deporte + "."));
 		} catch (IllegalArgumentException e) {
@@ -128,9 +132,11 @@ public class ProductoAlumnoController {
 	@PostMapping("/mensualidades/individual")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarMensualidadIndividual(@RequestParam Long alumnoId,
-			@RequestBody String nombreMensualidad, @RequestParam(defaultValue = "false") boolean forzar) {
+			@RequestBody String nombreMensualidad,
+			@RequestParam(defaultValue = "false") boolean forzar,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadIndividual(alumnoId, nombreMensualidad, forzar);
+			productoAlumnoService.cargarMensualidadIndividual(alumnoId, nombreMensualidad, forzar, fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje", "Mensualidad individual creada correctamente."));
 		} catch (MensualidadIncompletaException ex) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -161,9 +167,10 @@ public class ProductoAlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarLicenciasGenerales(
 			@RequestParam int ano,
-			@RequestParam(required = false, defaultValue = "TODOS") String deporte) {
+			@RequestParam(required = false, defaultValue = "TODOS") String deporte,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarLicenciasGenerales(ano, deporte);
+			productoAlumnoService.cargarLicenciasGenerales(ano, deporte, fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje", "Licencias creadas correctamente."));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
@@ -176,9 +183,10 @@ public class ProductoAlumnoController {
 			@RequestParam Long alumnoId,
 			@RequestParam int ano,
 			@RequestParam(required = false, defaultValue = "TODOS") String deporte,
-			@RequestParam(defaultValue = "false") boolean forzar) {
+			@RequestParam(defaultValue = "false") boolean forzar,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarLicenciaIndividual(alumnoId, ano, deporte, forzar);
+			productoAlumnoService.cargarLicenciaIndividual(alumnoId, ano, deporte, forzar, fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje", "Licencia individual creada correctamente."));
 		} catch (IllegalStateException ex) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -249,9 +257,11 @@ public class ProductoAlumnoController {
 			@RequestParam Long alumnoId,
 			@RequestParam String deporte,
 			@RequestBody String nombreMensualidad,
-			@RequestParam(defaultValue = "false") boolean forzar) {
+			@RequestParam(defaultValue = "false") boolean forzar,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar);
+			productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar,
+					fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje",
 				"Mensualidad individual creada correctamente para " + deporte + "."));
 		} catch (MensualidadIncompletaException ex) {
