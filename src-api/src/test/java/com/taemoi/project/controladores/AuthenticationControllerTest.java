@@ -2,6 +2,7 @@ package com.taemoi.project.controladores;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -14,10 +15,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.taemoi.project.controllers.AuthenticationController;
+import com.taemoi.project.dtos.request.RecordatorioRachaEmailRequest;
+import com.taemoi.project.dtos.response.RecordatorioRachaEmailResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Roles;
@@ -98,6 +102,44 @@ class AuthenticationControllerTest {
 		assertNotNull(response);
 		assertNotNull(response.getAlumnoDTO());
 		assertEquals(11L, response.getAlumnoDTO().getId());
+	}
+
+	@Test
+	void obtenerRecordatorioRachaEmail_devuelvePreferenciaActual() {
+		String email = "familia@example.com";
+		SecurityContextHolder.getContext()
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+
+		Usuario usuario = crearUsuario(101L, email, Set.of(Roles.ROLE_USER), null);
+		usuario.setRecordatorioRachaEmailHabilitado(true);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+
+		ResponseEntity<RecordatorioRachaEmailResponse> response = authenticationController.obtenerRecordatorioRachaEmail();
+
+		assertNotNull(response.getBody());
+		assertEquals(true, response.getBody().isHabilitado());
+	}
+
+	@Test
+	void actualizarRecordatorioRachaEmail_actualizaPreferencia() {
+		String email = "familia@example.com";
+		SecurityContextHolder.getContext()
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+
+		Usuario usuario = crearUsuario(102L, email, Set.of(Roles.ROLE_USER), null);
+		usuario.setRecordatorioRachaEmailHabilitado(false);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(usuarioService.actualizarUsuario(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		RecordatorioRachaEmailRequest request = new RecordatorioRachaEmailRequest();
+		request.setHabilitado(true);
+
+		ResponseEntity<RecordatorioRachaEmailResponse> response = authenticationController
+				.actualizarRecordatorioRachaEmail(request);
+
+		assertNotNull(response.getBody());
+		assertEquals(true, response.getBody().isHabilitado());
+		assertEquals(true, usuario.getRecordatorioRachaEmailHabilitado());
 	}
 
 	private Usuario crearUsuario(Long id, String email, Set<Roles> roles, Alumno alumno) {
