@@ -127,6 +127,17 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/documentos/{documentoId}/descargar")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
+						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
+						.requestMatchers(HttpMethod.GET,
+								"/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/temario")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
+						.requestMatchers(HttpMethod.GET,
+								"/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/imagen")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
