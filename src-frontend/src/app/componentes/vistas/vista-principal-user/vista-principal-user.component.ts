@@ -15,6 +15,7 @@ import { RetoDiarioRankingSemanal } from '../../../interfaces/reto-diario-rankin
 import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { MaterialesExamenUserComponent } from './materiales-examen-user/materiales-examen-user.component';
 
 interface BeltVisualData {
   topColor: string;
@@ -52,7 +53,7 @@ interface EstadoDeporteSnapshot {
 @Component({
   selector: 'app-vista-principal-user',
   standalone: true,
-  imports: [CommonModule, RouterModule, SkeletonCardComponent],
+  imports: [CommonModule, RouterModule, SkeletonCardComponent, MaterialesExamenUserComponent],
   templateUrl: './vista-principal-user.component.html',
   styleUrl: './vista-principal-user.component.scss',
 })

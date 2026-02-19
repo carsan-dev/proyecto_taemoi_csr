@@ -1,0 +1,110 @@
+@if (deportesConMaterial.length === 0) {
+<div class="materials-empty">
+  <i class="bi bi-camera-video-off"></i>
+  <p>No hay material de examen disponible para tus deportes activos.</p>
+</div>
+} @else {
+<div class="materials-shell">
+  @if (deportesConMaterial.length > 1) {
+  <div class="materials-sport-switcher">
+    @for (item of deportesConMaterial; track item.id) {
+    <button
+      type="button"
+      class="sport-switch-btn"
+      [class.is-active]="item.deporte === deporteSeleccionado"
+      (click)="onSeleccionarDeporte(item.deporte)"
+    >
+      {{ getDeporteLabel(item.deporte) }}
+    </button>
+    }
+  </div>
+  }
+
+  @if (cargando) {
+  <p class="materials-state">Cargando material...</p>
+  } @else if (errorCarga) {
+  <p class="materials-state is-error">{{ errorCarga }}</p>
+  } @else if (material) {
+  @if (!material.bloqueId) {
+  <p class="materials-state">Tu grado actual no tiene bloque de material asignado.</p>
+  } @else {
+  <div class="materials-meta">
+    <span class="materials-chip">
+      <i class="bi bi-award-fill"></i>
+      Grado actual: {{ material.gradoActual || 'Sin grado' }}
+    </span>
+    <span class="materials-chip">
+      <i class="bi bi-collection-play-fill"></i>
+      Bloque: {{ material.bloqueId }}
+    </span>
+  </div>
+
+  <div class="materials-content-grid">
+    <div class="materials-videos-panel">
+      <h3>Videos</h3>
+      @if (material.videos.length > 0) {
+      <div class="video-list">
+        @for (video of material.videos; track video.id) {
+        <button
+          type="button"
+          class="video-item-btn"
+          [class.is-active]="video.id === videoSeleccionado?.id"
+          (click)="onSeleccionarVideo(video)"
+        >
+          <span class="video-order">{{ video.order }}</span>
+          <span class="video-title">{{ video.title }}</span>
+        </button>
+        }
+      </div>
+      } @else {
+      <p class="materials-state">No hay videos en este bloque.</p>
+      }
+    </div>
+
+    <div class="materials-player-panel">
+      <h3>Reproductor</h3>
+      @if (videoSeleccionado && videoSeleccionadoUrl) {
+      <p class="player-title">{{ videoSeleccionado.title }}</p>
+      <video
+        class="video-player"
+        [src]="videoSeleccionadoUrl"
+        controls
+        preload="metadata"
+        playsinline
+        webkit-playsinline
+      ></video>
+      } @else {
+      <p class="materials-state">Selecciona un video para reproducirlo.</p>
+      }
+    </div>
+  </div>
+
+  <div class="materials-temario">
+    <h3>Temario PDF</h3>
+    @if (material.temario && temarioUrl) {
+    <div class="temario-actions">
+      <button type="button" class="temario-btn" (click)="toggleTemario()">
+        <i class="bi" [ngClass]="mostrarTemario ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+        {{ mostrarTemario ? 'Ocultar visor' : 'Ver temario' }}
+      </button>
+      <a class="temario-link" [href]="getTemarioUrl()" target="_blank" rel="noopener">
+        <i class="bi bi-box-arrow-up-right"></i>
+        Abrir en pestaña
+      </a>
+    </div>
+    @if (mostrarTemario) {
+    <iframe
+      class="temario-frame"
+      [src]="temarioUrl"
+      title="Temario del bloque de examen"
+      loading="lazy"
+    ></iframe>
+    }
+    } @else {
+    <p class="materials-state">No hay temario disponible para este bloque.</p>
+    }
+  </div>
+  }
+  }
+</div>
+}
