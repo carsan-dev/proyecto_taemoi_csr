@@ -162,10 +162,29 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
       documento.id,
       false
     );
-    const previewWindow = globalThis.window?.open(previewUrl, '_blank', 'noopener');
-    if (!previewWindow) {
-      globalThis.window?.location.assign(previewUrl);
+
+    if (this.esDispositivoIOS()) {
+      const previewWindow = globalThis.window?.open(previewUrl, '_blank', 'noopener');
+      if (!previewWindow) {
+        globalThis.window?.location.assign(previewUrl);
+      }
+      return;
     }
+
+    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id, false).subscribe({
+      next: (blob) => {
+        const url = globalThis.URL.createObjectURL(blob);
+        globalThis.window?.open(url, '_blank', 'noopener');
+        setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo abrir la vista previa del documento.',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   descargarDocumento(documento: Documento): void {
