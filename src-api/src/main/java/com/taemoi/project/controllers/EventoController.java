@@ -294,11 +294,12 @@ public class EventoController {
 				}
 			}
 			String nombreDocumento = asegurarNombreConExtension(documento.getNombre(), documento.getTipo());
+			String dispositionType = forceDownload ? "attachment" : "inline";
 
 			return ResponseEntity.ok()
 					.contentType(mediaType)
 					.header(HttpHeaders.CONTENT_DISPOSITION,
-							"attachment; filename=\"" + nombreDocumento + "\"")
+							dispositionType + "; filename=\"" + nombreDocumento + "\"")
 					.body(recurso);
 		} catch (EventoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
