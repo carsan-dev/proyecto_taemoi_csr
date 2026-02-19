@@ -162,7 +162,7 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
         this.eventoId,
         documento.id
       );
-      globalThis.window?.open(downloadUrl, '_blank', 'noopener');
+      globalThis.window?.location.assign(downloadUrl);
       return;
     }
 
