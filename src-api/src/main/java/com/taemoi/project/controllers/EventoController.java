@@ -284,11 +284,22 @@ public class EventoController {
 
 			Documento documento = eventoService.obtenerDocumentoDeEvento(eventoId, documentoId);
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+			if (documento.getTipo() != null && !documento.getTipo().isBlank()) {
+				try {
+					mediaType = MediaType.parseMediaType(documento.getTipo());
+				} catch (IllegalArgumentException ignored) {
+					mediaType = MediaType.APPLICATION_OCTET_STREAM;
+				}
+			}
+			String nombreDocumento = (documento.getNombre() == null || documento.getNombre().isBlank())
+					? "documento"
+					: documento.getNombre();
 
 			return ResponseEntity.ok()
-					.contentType(MediaType.parseMediaType(documento.getTipo()))
+					.contentType(mediaType)
 					.header(HttpHeaders.CONTENT_DISPOSITION,
-							"attachment; filename=\"" + documento.getNombre() + "\"")
+							"attachment; filename=\"" + nombreDocumento + "\"")
 					.body(recurso);
 		} catch (EventoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
