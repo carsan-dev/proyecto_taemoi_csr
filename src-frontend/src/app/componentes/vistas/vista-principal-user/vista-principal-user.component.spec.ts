@@ -42,6 +42,7 @@ describe('VistaPrincipalUserComponent', () => {
         'obtenerTurnosDelAlumnoObservable',
         'obtenerConvocatoriasDeAlumno',
         'obtenerEstadoRetoDiario',
+        'obtenerRankingRetoDiarioSemanal',
         'obtenerDocumentosDeAlumno',
         'obtenerUrlDescargaDocumentoAlumno',
         'descargarDocumentoAlumno',
@@ -64,6 +65,21 @@ describe('VistaPrincipalUserComponent', () => {
       fechaCompletado: null,
       nextResetAtEpochMs: null,
     }));
+    endpointsServiceSpy.obtenerRankingRetoDiarioSemanal.and.returnValue(of({
+      deporte: 'TAEKWONDO',
+      anioIso: 2026,
+      semanaIso: 8,
+      totalParticipantes: 1,
+      top: [
+        { posicion: 1, alias: 'Alumno U.', diasCompletados: 2, esUsuarioActual: true },
+      ],
+      miPosicion: {
+        posicion: 1,
+        alias: 'Alumno U.',
+        diasCompletados: 2,
+        diasParaSuperarSiguiente: null,
+      },
+    } as any));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
     endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.callFake(
       (_alumnoId: number, _documentoId: number, forzarDescarga: boolean = false) =>
@@ -158,6 +174,28 @@ describe('VistaPrincipalUserComponent', () => {
       'noopener'
     );
     expect(window.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('debe cargar ranking semanal cuando hay deportes activos', () => {
+    alumnoServiceSpy.obtenerDeportesDelAlumno.and.returnValue(of([
+      { id: 11, deporte: 'TAEKWONDO', activo: true, principal: true },
+    ] as any));
+
+    component.seleccionarAlumno(alumnosMock[1]);
+
+    expect(endpointsServiceSpy.obtenerRankingRetoDiarioSemanal).toHaveBeenCalledWith(2, 'TAEKWONDO', 10);
+    expect(component.rankingSemanal?.deporte).toBe('TAEKWONDO');
+  });
+
+  it('debe recargar ranking al cambiar el deporte del ranking', () => {
+    component.selectedAlumno = alumnosMock[0];
+    component.deportesRankingDisponibles = ['TAEKWONDO', 'KICKBOXING'];
+    component.deporteRankingSeleccionado = 'TAEKWONDO';
+
+    component.onSeleccionarDeporteRanking('KICKBOXING');
+
+    expect(endpointsServiceSpy.obtenerRankingRetoDiarioSemanal).toHaveBeenCalledWith(1, 'KICKBOXING', 10);
+    expect(component.deporteRankingSeleccionado).toBe('KICKBOXING');
   });
 
   it('debe marcar documentos como vistos al ir a la seccion de documentos', () => {
