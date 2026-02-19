@@ -46,6 +46,7 @@ describe('VistaPrincipalUserComponent', () => {
         'obtenerDocumentosDeAlumno',
         'obtenerUrlDescargaDocumentoAlumno',
         'descargarDocumentoAlumno',
+        'obtenerMaterialExamenAlumno',
         'obtenerEventos',
       ],
       { gruposDelAlumno$: of([]), eventos$: of([]) }
@@ -81,6 +82,13 @@ describe('VistaPrincipalUserComponent', () => {
       },
     } as any));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
+    endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(of({
+      deporte: 'TAEKWONDO',
+      gradoActual: null,
+      bloqueId: null,
+      temario: null,
+      videos: [],
+    } as any));
     endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.callFake(
       (_alumnoId: number, _documentoId: number, forzarDescarga: boolean = false) =>
         forzarDescarga

@@ -550,6 +550,22 @@
     }
 
     @if (selectedAlumno) {
+    <section class="dashboard-panel panel-exam-materials">
+      <header class="panel-header">
+        <div>
+          <p class="panel-kicker">Examen</p>
+          <h2>Materiales de examen</h2>
+        </div>
+      </header>
+
+      <app-materiales-examen-user
+        [alumnoId]="selectedAlumno?.id"
+        [deportes]="deportesDelAlumno"
+      ></app-materiales-examen-user>
+    </section>
+    }
+
+    @if (selectedAlumno) {
     <section class="dashboard-panel panel-documents" id="mis-documentos" #misDocumentosSection>
       <header class="panel-header">
         <div>
