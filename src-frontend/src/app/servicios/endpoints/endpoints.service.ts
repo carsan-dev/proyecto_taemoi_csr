@@ -1445,9 +1445,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerUrlDescargaDocumentoEvento(eventoId: number, documentoId: number): string {
+    return `${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}/descargar`;
+  }
+
   descargarDocumentoEvento(eventoId: number, documentoId: number): Observable<Blob> {
     return this.http
-      .get(`${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}/descargar`, {
+      .get(this.obtenerUrlDescargaDocumentoEvento(eventoId, documentoId), {
         withCredentials: true,
         responseType: 'blob',
       })
