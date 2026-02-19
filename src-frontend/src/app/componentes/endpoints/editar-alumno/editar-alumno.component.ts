@@ -4445,10 +4445,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   onFechaAltaChange(deporte: string, event: any): void {
     const fechaAlta = event.target.value;
-    if (!fechaAlta) {
-      return;
-    }
-
     const pending = this.pendingEstadisticasChanges.get(deporte) || {};
     pending.fechaAlta = fechaAlta;
     this.pendingEstadisticasChanges.set(deporte, pending);
@@ -4522,9 +4518,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const updates: any[] = [];
 
     if (pending.fechaAlta !== undefined) {
+      const fechaAltaValue = pending.fechaAlta === '' ? null : pending.fechaAlta;
       updates.push(
         this.alumnoService
-          .actualizarFechaAltaDeporte(this.alumnoId, deporte, pending.fechaAlta)
+          .actualizarFechaAltaDeporte(this.alumnoId, deporte, fechaAltaValue)
           .pipe(
             catchError((error) => {
               this.handleUpdateError('fecha de alta', error);
