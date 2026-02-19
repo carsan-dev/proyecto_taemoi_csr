@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+﻿import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,7 @@ import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 import { Documento } from '../../interfaces/documento';
 import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
+import { RetoDiarioRankingSemanal } from '../../interfaces/reto-diario-ranking-semanal';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
 import { PaginatedResponse } from '../../interfaces/paginated-response';
@@ -61,7 +62,7 @@ export class EndpointsService {
   private eventosPublicosRequest$: Observable<any[]> | null = null;
 
   private manejarError(error: any) {
-    console.error('Ocurrió un error', error);
+    console.error('OcurriÃ³ un error', error);
     return throwError(() => error);
   }
 
@@ -331,7 +332,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  // Obtener todos los alumnos aptos para examen (genérico)
+  // Obtener todos los alumnos aptos para examen (genÃ©rico)
   obtenerAlumnosAptosParaExamen(): Observable<any[]> {
     return this.http
       .get<any[]>(`${this.urlBase}/alumnos/aptos`, { withCredentials: true })
@@ -358,7 +359,7 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  // Obtener alumnos elegibles para una convocatoria específica basándose en el deporte
+  // Obtener alumnos elegibles para una convocatoria especÃ­fica basÃ¡ndose en el deporte
   obtenerAlumnosElegiblesParaConvocatoria(deporte: string): Observable<any[]> {
     const params = new HttpParams().set('deporte', deporte);
     return this.http
@@ -1751,6 +1752,24 @@ export class EndpointsService {
   completarRetoDiario(alumnoId: number): Observable<RetoDiarioEstado> {
     return this.http
       .put<RetoDiarioEstado>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario/completar`, {}, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerRankingRetoDiarioSemanal(
+    alumnoId: number,
+    deporte: string,
+    limit: number = 5
+  ): Observable<RetoDiarioRankingSemanal> {
+    const limitNormalizado = Math.max(1, Math.min(10, Math.floor(limit || 5)));
+    const params = new HttpParams()
+      .set('deporte', deporte)
+      .set('limit', limitNormalizado.toString());
+
+    return this.http
+      .get<RetoDiarioRankingSemanal>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario/ranking-semanal`, {
+        params,
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));
