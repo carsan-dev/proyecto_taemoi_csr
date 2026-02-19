@@ -1102,21 +1102,24 @@ public class AlumnoController {
 	/**
 	 * Actualiza la fecha de alta per-sport
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/fecha-alta
-	 * Body: { "fechaAlta": "2025-01-15" }
+	 * Body: { "fechaAlta": "2025-01-15" } o { "fechaAlta": null }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-alta")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> actualizarFechaAltaDeporte(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
+			if (!params.containsKey("fechaAlta")) {
+				return ResponseEntity.badRequest().body("El campo fechaAlta es requerido");
+			}
+
 			String fechaAltaStr = params.get("fechaAlta");
-			if (fechaAltaStr == null || fechaAltaStr.isBlank()) {
-				return ResponseEntity.badRequest().body("La fecha de alta es requerida");
+			java.util.Date fechaAlta = null;
+			if (fechaAltaStr != null && !fechaAltaStr.isBlank()) {
+				fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
 			}
 
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
-			java.util.Date fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
-
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarFechaAlta(id, deporteEnum, fechaAlta);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO

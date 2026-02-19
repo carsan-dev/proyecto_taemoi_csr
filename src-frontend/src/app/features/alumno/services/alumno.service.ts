@@ -430,12 +430,12 @@ export class AlumnoService {
    * Update fechaAlta for a specific sport
    * @param alumnoId Student ID
    * @param deporte Sport name
-   * @param fechaAlta Enrollment date (YYYY-MM-DD format)
+   * @param fechaAlta Enrollment date (YYYY-MM-DD format) or null to clear
    */
   actualizarFechaAltaDeporte(
     alumnoId: number,
     deporte: string,
-    fechaAlta: string
+    fechaAlta: string | null
   ): Observable<any> {
     return this.http.put<any>(
       `${this.urlBase}/${alumnoId}/deportes/${deporte}/fecha-alta`,
