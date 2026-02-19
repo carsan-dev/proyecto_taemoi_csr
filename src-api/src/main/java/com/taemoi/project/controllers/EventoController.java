@@ -293,9 +293,7 @@ public class EventoController {
 					mediaType = MediaType.APPLICATION_OCTET_STREAM;
 				}
 			}
-			String nombreDocumento = (documento.getNombre() == null || documento.getNombre().isBlank())
-					? "documento"
-					: documento.getNombre();
+			String nombreDocumento = asegurarNombreConExtension(documento.getNombre(), documento.getTipo());
 
 			return ResponseEntity.ok()
 					.contentType(mediaType)
@@ -320,6 +318,46 @@ public class EventoController {
 				.map(authority -> authority.getAuthority())
 				.anyMatch(authority -> Roles.ROLE_ADMIN.toString().equals(authority)
 						|| Roles.ROLE_MANAGER.toString().equals(authority));
+	}
+
+	private String asegurarNombreConExtension(String nombreDocumento, String mimeType) {
+		String nombreBase = (nombreDocumento == null || nombreDocumento.isBlank()) ? "documento" : nombreDocumento;
+		if (tieneExtension(nombreBase)) {
+			return nombreBase;
+		}
+
+		String extension = obtenerExtensionDesdeMime(mimeType);
+		if (extension == null) {
+			return nombreBase;
+		}
+		return nombreBase + "." + extension;
+	}
+
+	private boolean tieneExtension(String nombreArchivo) {
+		int indiceUltimoPunto = nombreArchivo.lastIndexOf('.');
+		return indiceUltimoPunto > 0 && indiceUltimoPunto < nombreArchivo.length() - 1;
+	}
+
+	private String obtenerExtensionDesdeMime(String mimeType) {
+		if (mimeType == null || mimeType.isBlank()) {
+			return null;
+		}
+
+		String normalizado = mimeType.split(";")[0].trim().toLowerCase();
+		return switch (normalizado) {
+			case "application/pdf" -> "pdf";
+			case "text/csv" -> "csv";
+			case "text/plain" -> "txt";
+			case "image/jpeg" -> "jpg";
+			case "image/png" -> "png";
+			case "image/webp" -> "webp";
+			case "image/gif" -> "gif";
+			case "application/msword" -> "doc";
+			case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx";
+			case "application/vnd.ms-excel" -> "xls";
+			case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> "xlsx";
+			default -> null;
+		};
 	}
 
 	@PostMapping("/{eventoId}/documentos")
