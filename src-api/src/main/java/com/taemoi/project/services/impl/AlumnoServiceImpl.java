@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -27,10 +31,14 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.RetoDiarioRankingItemResponse;
+import com.taemoi.project.dtos.response.RetoDiarioRankingMiPosicionResponse;
+import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.AlumnoRetoDiarioLog;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Convocatoria;
 import com.taemoi.project.entities.Deporte;
@@ -49,6 +57,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
+import com.taemoi.project.repositories.AlumnoRetoDiarioLogRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
@@ -160,6 +169,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private com.taemoi.project.repositories.AlumnoDeporteRepository alumnoDeporteRepository;
+
+	@Autowired
+	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
 
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
@@ -789,8 +801,323 @@ public class AlumnoServiceImpl implements AlumnoService {
 		alumno.setFechaRetoDiarioCompletado(Date.from(hoy.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 		alumno.setRachaRetoDiario(nuevaRacha);
 		alumnoRepository.save(alumno);
+		registrarLogRetoDiarioSiNoExiste(alumno, hoy);
 
 		return new RetoDiarioEstadoDTO(nuevaRacha, true, hoy.toString(), calcularProximoResetEpochMs());
+	}
+
+	@Override
+	@Transactional
+	public RetoDiarioRankingSemanalResponse obtenerRankingSemanalRetoDiario(Long alumnoId, Deporte deporte,
+			Integer limit) {
+		if (alumnoId == null) {
+			throw new IllegalArgumentException("El alumno es obligatorio.");
+		}
+		if (deporte == null) {
+			throw new IllegalArgumentException("El deporte es obligatorio.");
+		}
+
+		Alumno alumnoActual = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+		if (!Boolean.TRUE.equals(alumnoActual.getActivo())) {
+			throw new IllegalArgumentException("El alumno seleccionado no está activo.");
+		}
+		if (!alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(alumnoId, deporte)) {
+			throw new IllegalArgumentException("El deporte seleccionado no está activo para el alumno.");
+		}
+
+		int limiteTop = normalizarLimiteTop(limit);
+		LocalDate hoy = LocalDate.now();
+		WeekFields weekFields = WeekFields.ISO;
+		int anioIso = hoy.get(weekFields.weekBasedYear());
+		int semanaIso = hoy.get(weekFields.weekOfWeekBasedYear());
+
+		ejecutarBackfillSemanalSiNecesario(anioIso, semanaIso, hoy);
+
+		List<AlumnoDeporte> participantesDeporte = alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(deporte);
+		List<Long> alumnoIds = participantesDeporte.stream()
+				.map(AlumnoDeporte::getAlumno)
+				.filter(alumno -> alumno != null && alumno.getId() != null)
+				.map(Alumno::getId)
+				.distinct()
+				.toList();
+
+		Map<Long, AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection> puntuacionesPorAlumno = new HashMap<>();
+		if (!alumnoIds.isEmpty()) {
+			List<AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection> puntuaciones = alumnoRetoDiarioLogRepository
+					.obtenerPuntuacionesSemana(anioIso, semanaIso, alumnoIds);
+			for (AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection puntuacion : puntuaciones) {
+				puntuacionesPorAlumno.put(puntuacion.getAlumnoId(), puntuacion);
+			}
+		}
+
+		List<RankingSemanaParticipante> participantesRanking = participantesDeporte.stream()
+				.map(AlumnoDeporte::getAlumno)
+				.filter(alumno -> alumno != null && alumno.getId() != null)
+				.collect(Collectors.toMap(
+						Alumno::getId,
+						alumno -> construirParticipanteRanking(alumno, alumnoId, puntuacionesPorAlumno.get(alumno.getId())),
+						(p1, p2) -> p1))
+				.values().stream()
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		aplicarDesambiguacionAliasDuplicados(participantesRanking);
+
+		List<RankingSemanaParticipante> ranking = participantesRanking.stream()
+				.sorted(Comparator
+						.comparingInt(RankingSemanaParticipante::getDiasCompletados).reversed()
+						.thenComparing(RankingSemanaParticipante::getUltimaFechaCompletado,
+								Comparator.nullsLast(Comparator.reverseOrder()))
+						.thenComparing(RankingSemanaParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
+				.toList();
+
+		asignarPosicionesDensas(ranking);
+
+		List<RetoDiarioRankingItemResponse> top = ranking.stream()
+				.limit(limiteTop)
+				.map(item -> new RetoDiarioRankingItemResponse(
+						item.getPosicion(),
+						item.getAlias(),
+						item.getDiasCompletados(),
+						item.getEsUsuarioActual()))
+				.toList();
+
+		RankingSemanaParticipante participanteActual = ranking.stream()
+				.filter(RankingSemanaParticipante::getEsUsuarioActual)
+				.findFirst()
+				.orElseGet(() -> new RankingSemanaParticipante(
+						alumnoId,
+						construirAliasRanking(alumnoActual),
+						obtenerInicialSegundoApellido(alumnoActual),
+						0,
+						null,
+						true));
+
+		Integer diasParaSuperarSiguiente = calcularDiasParaSuperarSiguiente(participanteActual, ranking);
+		RetoDiarioRankingMiPosicionResponse miPosicion = new RetoDiarioRankingMiPosicionResponse(
+				participanteActual.getPosicion(),
+				participanteActual.getAlias(),
+				participanteActual.getDiasCompletados(),
+				diasParaSuperarSiguiente);
+
+		return new RetoDiarioRankingSemanalResponse(
+				deporte.name(),
+				anioIso,
+				semanaIso,
+				ranking.size(),
+				top,
+				miPosicion);
+	}
+
+	private void registrarLogRetoDiarioSiNoExiste(Alumno alumno, LocalDate fechaLocal) {
+		if (alumno == null || alumno.getId() == null || fechaLocal == null) {
+			return;
+		}
+		if (alumnoRetoDiarioLogRepository.existsByAlumnoIdAndFechaCompletado(alumno.getId(), fechaLocal)) {
+			return;
+		}
+		WeekFields weekFields = WeekFields.ISO;
+		AlumnoRetoDiarioLog log = new AlumnoRetoDiarioLog();
+		log.setAlumno(alumno);
+		log.setFechaCompletado(fechaLocal);
+		log.setAnioIso(fechaLocal.get(weekFields.weekBasedYear()));
+		log.setSemanaIso(fechaLocal.get(weekFields.weekOfWeekBasedYear()));
+		alumnoRetoDiarioLogRepository.save(log);
+	}
+
+	private void ejecutarBackfillSemanalSiNecesario(int anioIso, int semanaIso, LocalDate hoy) {
+		if (alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(anioIso, semanaIso)) {
+			return;
+		}
+
+		LocalDate inicioSemana = obtenerInicioSemanaIso(hoy);
+		LocalDate finSemana = inicioSemana.plusDays(6);
+		List<Alumno> alumnosActivos = alumnoRepository.findByActivoTrue();
+
+		for (Alumno alumno : alumnosActivos) {
+			if (alumno == null || alumno.getId() == null) {
+				continue;
+			}
+			LocalDate fechaFinRacha = toLocalDate(alumno.getFechaRetoDiarioCompletado());
+			int racha = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
+			if (fechaFinRacha == null || racha <= 0) {
+				continue;
+			}
+
+			LocalDate fechaInicioRacha = fechaFinRacha.minusDays(racha - 1L);
+			LocalDate inicioInterseccion = fechaInicioRacha.isAfter(inicioSemana) ? fechaInicioRacha : inicioSemana;
+			LocalDate finInterseccion = fechaFinRacha.isBefore(finSemana) ? fechaFinRacha : finSemana;
+
+			if (inicioInterseccion.isAfter(finInterseccion)) {
+				continue;
+			}
+
+			for (LocalDate fecha = inicioInterseccion; !fecha.isAfter(finInterseccion); fecha = fecha.plusDays(1)) {
+				if (fecha.isAfter(hoy)) {
+					continue;
+				}
+				registrarLogRetoDiarioSiNoExiste(alumno, fecha);
+			}
+		}
+	}
+
+	private LocalDate obtenerInicioSemanaIso(LocalDate fecha) {
+		WeekFields weekFields = WeekFields.ISO;
+		return fecha.with(weekFields.dayOfWeek(), 1);
+	}
+
+	private int normalizarLimiteTop(Integer limit) {
+		if (limit == null) {
+			return 10;
+		}
+		return Math.max(1, Math.min(10, limit));
+	}
+
+	private RankingSemanaParticipante construirParticipanteRanking(
+			Alumno alumno,
+			Long alumnoActualId,
+			AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection puntuacion) {
+		int dias = 0;
+		LocalDate ultimaFecha = null;
+		if (puntuacion != null) {
+			dias = puntuacion.getDiasCompletados() != null ? Math.max(0, puntuacion.getDiasCompletados().intValue()) : 0;
+			ultimaFecha = puntuacion.getUltimaFechaCompletado();
+		}
+		boolean esUsuarioActual = alumnoActualId != null && alumnoActualId.equals(alumno.getId());
+		return new RankingSemanaParticipante(
+				alumno.getId(),
+				construirAliasRanking(alumno),
+				obtenerInicialSegundoApellido(alumno),
+				dias,
+				ultimaFecha,
+				esUsuarioActual);
+	}
+
+	private void aplicarDesambiguacionAliasDuplicados(List<RankingSemanaParticipante> participantes) {
+		if (participantes == null || participantes.isEmpty()) {
+			return;
+		}
+
+		Map<String, Integer> conteoAliasBase = new HashMap<>();
+		for (RankingSemanaParticipante participante : participantes) {
+			String clave = normalizarClaveAlias(participante.getAliasBase());
+			conteoAliasBase.put(clave, conteoAliasBase.getOrDefault(clave, 0) + 1);
+		}
+
+		for (RankingSemanaParticipante participante : participantes) {
+			String clave = normalizarClaveAlias(participante.getAliasBase());
+			if (conteoAliasBase.getOrDefault(clave, 0) > 1) {
+				participante.aplicarInicialSegundoApellido();
+			}
+		}
+	}
+
+	private String normalizarClaveAlias(String aliasBase) {
+		if (aliasBase == null) {
+			return "";
+		}
+		return aliasBase.trim().toLowerCase(Locale.ROOT);
+	}
+
+	private void asignarPosicionesDensas(List<RankingSemanaParticipante> ranking) {
+		int posicionActual = 0;
+		Integer diasPrevios = null;
+		for (RankingSemanaParticipante participante : ranking) {
+			if (diasPrevios == null || participante.getDiasCompletados() != diasPrevios) {
+				posicionActual++;
+				diasPrevios = participante.getDiasCompletados();
+			}
+			participante.setPosicion(posicionActual);
+		}
+	}
+
+	private Integer calcularDiasParaSuperarSiguiente(RankingSemanaParticipante participanteActual,
+			List<RankingSemanaParticipante> rankingCompleto) {
+		if (participanteActual == null || participanteActual.getPosicion() == null || participanteActual.getPosicion() <= 1) {
+			return null;
+		}
+
+		int diasActuales = participanteActual.getDiasCompletados();
+		Integer diasSiguienteSuperior = rankingCompleto.stream()
+				.map(RankingSemanaParticipante::getDiasCompletados)
+				.filter(dias -> dias > diasActuales)
+				.min(Integer::compareTo)
+				.orElse(null);
+		if (diasSiguienteSuperior == null) {
+			return null;
+		}
+		return (diasSiguienteSuperior - diasActuales) + 1;
+	}
+
+	private String construirAliasRanking(Alumno alumno) {
+		if (alumno == null) {
+			return "Alumno";
+		}
+		String primerNombre = capitalizarNombreSimple(extraerPrimerSegmento(alumno.getNombre()));
+		String primerApellido = capitalizarNombreSimple(extraerPrimerSegmento(alumno.getApellidos()));
+
+		if (primerNombre.isBlank()) {
+			primerNombre = "Alumno";
+		}
+
+		return primerApellido.isBlank() ? primerNombre : primerNombre + " " + primerApellido;
+	}
+
+	private String obtenerInicialSegundoApellido(Alumno alumno) {
+		if (alumno == null || alumno.getApellidos() == null) {
+			return "";
+		}
+
+		String apellidos = alumno.getApellidos().trim();
+		if (apellidos.isBlank()) {
+			return "";
+		}
+
+		String[] partes = apellidos.split("\\s+");
+		if (partes.length < 2) {
+			return "";
+		}
+
+		String segundoApellido = capitalizarNombreSimple(partes[1]);
+		if (segundoApellido.isBlank()) {
+			return "";
+		}
+
+		return segundoApellido.substring(0, 1).toUpperCase(Locale.ROOT);
+	}
+
+	private String extraerPrimerSegmento(String texto) {
+		if (texto == null) {
+			return "";
+		}
+		String limpio = texto.trim();
+		if (limpio.isBlank()) {
+			return "";
+		}
+		return limpio.split("\\s+")[0];
+	}
+
+	private String capitalizarNombreSimple(String texto) {
+		if (texto == null || texto.isBlank()) {
+			return "";
+		}
+
+		String valor = texto.trim().toLowerCase(Locale.ROOT);
+		StringBuilder resultado = new StringBuilder(valor.length());
+		boolean capitalizar = true;
+
+		for (int i = 0; i < valor.length(); i++) {
+			char caracter = valor.charAt(i);
+			if (Character.isLetter(caracter)) {
+				resultado.append(capitalizar ? Character.toUpperCase(caracter) : caracter);
+				capitalizar = false;
+			} else {
+				resultado.append(caracter);
+				capitalizar = caracter == '-' || caracter == '\'';
+			}
+		}
+
+		return resultado.toString();
 	}
 
 	private int calcularRachaActual(int rachaPersistida, LocalDate fechaCompletado, LocalDate hoy) {
@@ -822,6 +1149,68 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return java.time.Instant.ofEpochMilli(fecha.getTime())
 				.atZone(ZoneId.systemDefault())
 				.toLocalDate();
+	}
+
+	private static class RankingSemanaParticipante {
+		private final Long alumnoId;
+		private final String aliasBase;
+		private final String inicialSegundoApellido;
+		private String alias;
+		private final int diasCompletados;
+		private final LocalDate ultimaFechaCompletado;
+		private final boolean esUsuarioActual;
+		private Integer posicion;
+
+		RankingSemanaParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int diasCompletados,
+				LocalDate ultimaFechaCompletado,
+				boolean esUsuarioActual) {
+			this.alumnoId = alumnoId;
+			this.aliasBase = aliasBase;
+			this.inicialSegundoApellido = inicialSegundoApellido == null ? "" : inicialSegundoApellido;
+			this.alias = aliasBase;
+			this.diasCompletados = diasCompletados;
+			this.ultimaFechaCompletado = ultimaFechaCompletado;
+			this.esUsuarioActual = esUsuarioActual;
+		}
+
+		public Long getAlumnoId() {
+			return alumnoId;
+		}
+
+		public String getAlias() {
+			return alias;
+		}
+
+		public String getAliasBase() {
+			return aliasBase;
+		}
+
+		public int getDiasCompletados() {
+			return diasCompletados;
+		}
+
+		public LocalDate getUltimaFechaCompletado() {
+			return ultimaFechaCompletado;
+		}
+
+		public boolean getEsUsuarioActual() {
+			return esUsuarioActual;
+		}
+
+		public Integer getPosicion() {
+			return posicion;
+		}
+
+		public void setPosicion(Integer posicion) {
+			this.posicion = posicion;
+		}
+
+		public void aplicarInicialSegundoApellido() {
+			if (inicialSegundoApellido == null || inicialSegundoApellido.isBlank()) {
+				return;
+			}
+			this.alias = aliasBase + " " + inicialSegundoApellido + ".";
+		}
 	}
 
 	/**
