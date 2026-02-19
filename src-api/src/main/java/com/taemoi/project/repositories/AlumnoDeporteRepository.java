@@ -39,6 +39,8 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	 */
 	List<AlumnoDeporte> findByDeporteAndActivoTrue(Deporte deporte);
 
+	boolean existsByAlumnoIdAndDeporteAndActivoTrue(Long alumnoId, Deporte deporte);
+
 	/**
 	 * Encuentra todos los deportes de un alumno con grado y categoria cargados (evita N+1)
 	 */
@@ -101,6 +103,11 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	       "LEFT JOIN FETCH ad.alumno a " +
 	       "WHERE ad.deporte = :deporte AND ad.activo = true")
 	List<AlumnoDeporte> findActivosByDeporteWithAlumno(@Param("deporte") Deporte deporte);
+
+	@Query("SELECT ad FROM AlumnoDeporte ad " +
+	       "JOIN FETCH ad.alumno a " +
+	       "WHERE ad.deporte = :deporte AND ad.activo = true AND a.activo = true")
+	List<AlumnoDeporte> findActivosConAlumnoActivoByDeporte(@Param("deporte") Deporte deporte);
 
 	/**
 	 * Encuentra competidores activos por deporte con alumno cargado

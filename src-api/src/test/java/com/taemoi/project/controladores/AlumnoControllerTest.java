@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.response.RetoDiarioRankingMiPosicionResponse;
+import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
@@ -147,5 +149,45 @@ class AlumnoControllerTest {
 		assertEquals(HttpStatus.OK, result.getStatusCode());
 		assertEquals(1, result.getBody().size());
 		assertEquals("autorizacion.pdf", result.getBody().get(0).getNombre());
+	}
+
+	@Test
+	void obtenerRankingSemanalRetoDiario_DebeDevolverForbiddenCuandoNoTieneAcceso() {
+		Long alumnoId = 1L;
+		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
+
+		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "TAEKWONDO", 10);
+
+		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
+	}
+
+	@Test
+	void obtenerRankingSemanalRetoDiario_DebeDevolverBadRequestSiDeporteEsInvalido() {
+		Long alumnoId = 1L;
+		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
+
+		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "OTRO_DEPORTE", 10);
+
+		assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+	}
+
+	@Test
+	void obtenerRankingSemanalRetoDiario_DebeDevolverOkCuandoDatosValidos() {
+		Long alumnoId = 1L;
+		RetoDiarioRankingSemanalResponse ranking = new RetoDiarioRankingSemanalResponse();
+		ranking.setDeporte("TAEKWONDO");
+		ranking.setAnioIso(2026);
+		ranking.setSemanaIso(8);
+		ranking.setTotalParticipantes(1);
+		ranking.setMiPosicion(new RetoDiarioRankingMiPosicionResponse(1, "Alumno U.", 3, null));
+
+		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
+		when(alumnoService.obtenerRankingSemanalRetoDiario(eq(alumnoId), eq(com.taemoi.project.entities.Deporte.TAEKWONDO),
+				eq(10))).thenReturn(ranking);
+
+		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "TAEKWONDO", 10);
+
+		assertEquals(HttpStatus.OK, result.getStatusCode());
+		assertEquals(ranking, result.getBody());
 	}
 }
