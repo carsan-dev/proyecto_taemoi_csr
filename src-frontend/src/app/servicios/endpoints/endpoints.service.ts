@@ -1445,8 +1445,13 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerUrlDescargaDocumentoEvento(eventoId: number, documentoId: number): string {
-    return `${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}/descargar`;
+  obtenerUrlDescargaDocumentoEvento(
+    eventoId: number,
+    documentoId: number,
+    forzarDescarga: boolean = false
+  ): string {
+    const base = `${this.urlBase}/eventos/${eventoId}/documentos/${documentoId}/descargar`;
+    return forzarDescarga ? `${base}?download=true` : base;
   }
 
   descargarDocumentoEvento(eventoId: number, documentoId: number): Observable<Blob> {
