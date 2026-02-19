@@ -79,13 +79,30 @@
                 </div>
                 <div class="attachments-list">
                   @for (doc of evento.documentos; track doc.id) {
-                    <button class="attachment-item" (click)="descargarDocumento(doc)">
+                    <div class="attachment-item">
                       <div class="attachment-icon">
                         <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
                       </div>
                       <span class="attachment-name">{{ doc.nombre }}</span>
-                      <i class="bi bi-download attachment-download"></i>
-                    </button>
+                      <div class="attachment-actions">
+                        <button
+                          type="button"
+                          class="attachment-action attachment-action-preview"
+                          (click)="previsualizarDocumento(doc)"
+                          title="Previsualizar"
+                        >
+                          <i class="bi bi-eye"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="attachment-action attachment-action-download"
+                          (click)="descargarDocumento(doc)"
+                          title="Descargar"
+                        >
+                          <i class="bi bi-download"></i>
+                        </button>
+                      </div>
+                    </div>
                   }
                 </div>
               </div>
