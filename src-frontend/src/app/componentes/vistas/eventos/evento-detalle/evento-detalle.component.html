@@ -85,6 +85,7 @@
                       </div>
                       <span class="attachment-name">{{ doc.nombre }}</span>
                       <div class="attachment-actions">
+                        @if (esDocumentoPrevisualizable(doc.tipo)) {
                         <button
                           type="button"
                           class="attachment-action attachment-action-preview"
@@ -93,6 +94,7 @@
                         >
                           <i class="bi bi-eye"></i>
                         </button>
+                        }
                         <button
                           type="button"
                           class="attachment-action attachment-action-download"

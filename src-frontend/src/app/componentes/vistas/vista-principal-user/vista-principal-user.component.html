@@ -507,10 +507,12 @@
           </div>
 
           <div class="document-actions">
+            @if (esDocumentoPrevisualizable(documento.tipo)) {
             <button type="button" class="document-btn" (click)="abrirDocumento(documento)">
               <i class="bi bi-eye-fill"></i>
               <span>Ver</span>
             </button>
+            }
             <button type="button" class="document-btn" (click)="descargarDocumento(documento)">
               <i class="bi bi-download"></i>
               <span>Descargar</span>
