@@ -176,7 +176,7 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
           return;
         }
         link.href = url;
-        link.download = documento.nombre || 'documento';
+        link.download = this.obtenerNombreDescarga(documento.nombre, documento.tipo);
         link.click();
         globalThis.URL.revokeObjectURL(url);
       },
@@ -188,6 +188,48 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private obtenerNombreDescarga(
+    nombre: string | null | undefined,
+    mimeType: string | null | undefined
+  ): string {
+    const base = (nombre ?? '').trim() || 'documento';
+    if (base.includes('.')) {
+      return base;
+    }
+    const extension = this.obtenerExtensionDesdeMime(mimeType);
+    return extension ? `${base}.${extension}` : base;
+  }
+
+  private obtenerExtensionDesdeMime(mimeType: string | null | undefined): string | null {
+    const mime = (mimeType ?? '').split(';')[0].trim().toLowerCase();
+    switch (mime) {
+      case 'application/pdf':
+        return 'pdf';
+      case 'text/csv':
+        return 'csv';
+      case 'text/plain':
+        return 'txt';
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      case 'image/gif':
+        return 'gif';
+      case 'application/msword':
+        return 'doc';
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return 'docx';
+      case 'application/vnd.ms-excel':
+        return 'xls';
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        return 'xlsx';
+      default:
+        return null;
+    }
   }
 
   private construirUrlImagenEvento(

@@ -1168,7 +1168,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
         const link = document.createElement('a');
         link.href = url;
-        link.download = doc.nombre || 'documento';
+        link.download = this.obtenerNombreDescarga(doc?.nombre, doc?.tipo);
         link.click();
         globalThis.URL.revokeObjectURL(url);
       },
@@ -1193,6 +1193,48 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
     const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
     return esIOSClasico || esIPadOS;
+  }
+
+  private obtenerNombreDescarga(
+    nombre: string | null | undefined,
+    mimeType: string | null | undefined
+  ): string {
+    const base = (nombre ?? '').trim() || 'documento';
+    if (base.includes('.')) {
+      return base;
+    }
+    const extension = this.obtenerExtensionDesdeMime(mimeType);
+    return extension ? `${base}.${extension}` : base;
+  }
+
+  private obtenerExtensionDesdeMime(mimeType: string | null | undefined): string | null {
+    const mime = (mimeType ?? '').split(';')[0].trim().toLowerCase();
+    switch (mime) {
+      case 'application/pdf':
+        return 'pdf';
+      case 'text/csv':
+        return 'csv';
+      case 'text/plain':
+        return 'txt';
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      case 'image/gif':
+        return 'gif';
+      case 'application/msword':
+        return 'doc';
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return 'docx';
+      case 'application/vnd.ms-excel':
+        return 'xls';
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        return 'xlsx';
+      default:
+        return null;
+    }
   }
 
   /**
