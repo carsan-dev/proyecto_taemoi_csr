@@ -1454,9 +1454,13 @@ export class EndpointsService {
     return forzarDescarga ? `${base}?download=true` : base;
   }
 
-  descargarDocumentoEvento(eventoId: number, documentoId: number): Observable<Blob> {
+  descargarDocumentoEvento(
+    eventoId: number,
+    documentoId: number,
+    forzarDescarga: boolean = false
+  ): Observable<Blob> {
     return this.http
-      .get(this.obtenerUrlDescargaDocumentoEvento(eventoId, documentoId), {
+      .get(this.obtenerUrlDescargaDocumentoEvento(eventoId, documentoId, forzarDescarga), {
         withCredentials: true,
         responseType: 'blob',
       })
@@ -1582,16 +1586,22 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerUrlDescargaDocumentoAlumno(alumnoId: number, documentoId: number): string {
-    return `${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}/descargar`;
+  obtenerUrlDescargaDocumentoAlumno(
+    alumnoId: number,
+    documentoId: number,
+    forzarDescarga: boolean = false
+  ): string {
+    const base = `${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}/descargar`;
+    return forzarDescarga ? `${base}?download=true` : base;
   }
 
   descargarDocumentoAlumno(
     alumnoId: number,
-    documentoId: number
+    documentoId: number,
+    forzarDescarga: boolean = false
   ): Observable<Blob> {
     return this.http
-      .get(`${this.urlBase}/alumnos/${alumnoId}/documentos/${documentoId}/descargar`, {
+      .get(this.obtenerUrlDescargaDocumentoAlumno(alumnoId, documentoId, forzarDescarga), {
         withCredentials: true,
         responseType: 'blob',
       })

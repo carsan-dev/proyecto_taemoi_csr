@@ -108,18 +108,31 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    */
   private generarPdfConLoading(
     observable$: import('rxjs').Observable<Blob>,
-    errorMessage: string
+    errorMessage: string,
+    filename: string = 'informe.pdf'
   ): void {
     this.loadingService.show();
     observable$.pipe(finalize(() => this.loadingService.hide())).subscribe({
       next: (pdfBlob: Blob) => {
-        const fileURL = URL.createObjectURL(pdfBlob);
-        window.open(fileURL, '_blank');
+        this.descargarBlob(pdfBlob, filename);
       },
       error: () => {
         Swal.fire('Error', errorMessage, 'error');
       },
     });
+  }
+
+  private descargarBlob(blob: Blob, filename: string): void {
+    const fileURL = globalThis.URL.createObjectURL(blob);
+    const link = globalThis.document?.createElement('a');
+    if (!link) {
+      globalThis.URL.revokeObjectURL(fileURL);
+      return;
+    }
+    link.href = fileURL;
+    link.download = filename;
+    link.click();
+    globalThis.URL.revokeObjectURL(fileURL);
   }
 
   ngOnInit(): void {
@@ -1705,8 +1718,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (pdfBlob: Blob) => {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          window.open(fileURL, '_blank');
+          const nombreArchivo = `listado_mensualidad_${this.formatearNombreMensualidad(this.mesAnoMensualidad)}.pdf`;
+          this.descargarBlob(pdfBlob, nombreArchivo);
         },
         error: () => {
           Swal.fire('Error', 'No se pudo generar el listado de mensualidad mensual', 'error');

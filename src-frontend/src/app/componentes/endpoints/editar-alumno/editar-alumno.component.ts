@@ -1141,7 +1141,22 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService.descargarDocumentoAlumno(alumnoId, doc.id).subscribe({
+    const forzarDescarga = !abrirEnNuevaPestana;
+    if (this.esDispositivoIOS()) {
+      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoAlumno(
+        alumnoId,
+        doc.id,
+        forzarDescarga
+      );
+      if (abrirEnNuevaPestana) {
+        globalThis.window?.open(downloadUrl, '_blank', 'noopener');
+      } else {
+        globalThis.window?.location.assign(downloadUrl);
+      }
+      return;
+    }
+
+    this.endpointsService.descargarDocumentoAlumno(alumnoId, doc.id, forzarDescarga).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
 
@@ -1166,6 +1181,18 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private esDispositivoIOS(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    const userAgent = navigatorRef.userAgent ?? '';
+    const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
+    const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
+    return esIOSClasico || esIPadOS;
   }
 
   /**

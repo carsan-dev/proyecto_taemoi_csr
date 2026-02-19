@@ -656,17 +656,22 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const forzarDescarga = !abrirEnNuevaPestana;
     if (this.esDispositivoIOS()) {
-      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoAlumno(alumnoId, documento.id);
-      globalThis.window?.open(
-        downloadUrl,
-        abrirEnNuevaPestana ? '_blank' : '_self',
-        abrirEnNuevaPestana ? 'noopener' : undefined
+      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoAlumno(
+        alumnoId,
+        documento.id,
+        forzarDescarga
       );
+      if (abrirEnNuevaPestana) {
+        globalThis.window?.open(downloadUrl, '_blank', 'noopener');
+      } else {
+        globalThis.window?.location.assign(downloadUrl);
+      }
       return;
     }
 
-    this.endpointsService.descargarDocumentoAlumno(alumnoId, documento.id).subscribe({
+    this.endpointsService.descargarDocumentoAlumno(alumnoId, documento.id, forzarDescarga).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
 

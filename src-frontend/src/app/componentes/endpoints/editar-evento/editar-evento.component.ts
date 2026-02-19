@@ -290,7 +290,7 @@ export class EditarEventoComponent implements OnInit {
       return;
     }
 
-    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id).subscribe({
+    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id, true).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
         const link = document.createElement('a');

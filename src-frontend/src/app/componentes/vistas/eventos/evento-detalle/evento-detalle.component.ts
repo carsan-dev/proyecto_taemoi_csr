@@ -167,11 +167,18 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id).subscribe({
+    this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id, true).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
-        globalThis.window?.open(url, '_blank', 'noopener');
-        setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
+        const link = globalThis.document?.createElement('a');
+        if (!link) {
+          globalThis.URL.revokeObjectURL(url);
+          return;
+        }
+        link.href = url;
+        link.download = documento.nombre || 'documento';
+        link.click();
+        globalThis.URL.revokeObjectURL(url);
       },
       error: () => {
         Swal.fire({
