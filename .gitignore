@@ -13,6 +13,11 @@ backups/
 *.tar.gz
 static_resources/documentos/Documentos_Alumnos_Moiskimdo/*
 static_resources/imagenes/alumnos/*
+static_resources/documentos/Materiales_Examen/**
+!static_resources/documentos/Materiales_Examen/
+!static_resources/documentos/Materiales_Examen/**/
+!static_resources/documentos/Materiales_Examen/README.md
+!static_resources/documentos/Materiales_Examen/**/.gitkeep
 
 # IDE
 .vscode/
