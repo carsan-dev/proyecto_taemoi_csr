@@ -135,6 +135,18 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     return 'bi-file-earmark';
   }
 
+  private esDispositivoIOS(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    const userAgent = navigatorRef.userAgent ?? '';
+    const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
+    const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
+    return esIOSClasico || esIPadOS;
+  }
+
   descargarDocumento(documento: Documento): void {
     if (!documento?.id || !this.eventoId) {
       Swal.fire({
@@ -142,6 +154,15 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
         text: 'No se pudo descargar el documento del evento.',
         icon: 'error',
       });
+      return;
+    }
+
+    if (this.esDispositivoIOS()) {
+      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoEvento(
+        this.eventoId,
+        documento.id
+      );
+      globalThis.window?.open(downloadUrl, '_blank', 'noopener');
       return;
     }
 

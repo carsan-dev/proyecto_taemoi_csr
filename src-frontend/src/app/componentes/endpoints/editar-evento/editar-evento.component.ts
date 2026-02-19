@@ -280,6 +280,15 @@ export class EditarEventoComponent implements OnInit {
       return;
     }
 
+    if (this.esDispositivoIOS()) {
+      const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoEvento(
+        this.eventoId,
+        documento.id
+      );
+      globalThis.window?.open(downloadUrl, '_self');
+      return;
+    }
+
     this.endpointsService.descargarDocumentoEvento(this.eventoId, documento.id).subscribe({
       next: (blob) => {
         const url = globalThis.URL.createObjectURL(blob);
@@ -297,6 +306,18 @@ export class EditarEventoComponent implements OnInit {
         });
       },
     });
+  }
+
+  private esDispositivoIOS(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    const userAgent = navigatorRef.userAgent ?? '';
+    const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
+    const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
+    return esIOSClasico || esIPadOS;
   }
 
   private obtenerUrlPreviewEvento(evento: Evento): string {
