@@ -400,6 +400,28 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
+-- Table `taemoidb`.`alumno_reto_diario_log`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taemoidb`.`alumno_reto_diario_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `alumno_id` BIGINT NOT NULL,
+  `fecha_completado` DATE NOT NULL,
+  `anio_iso` INT NOT NULL,
+  `semana_iso` INT NOT NULL,
+  `created_at` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `uk_alumno_reto_diario_log_alumno_fecha` (`alumno_id` ASC, `fecha_completado` ASC) VISIBLE,
+  INDEX `idx_alumno_reto_diario_log_semana` (`anio_iso` ASC, `semana_iso` ASC) VISIBLE,
+  INDEX `idx_alumno_reto_diario_log_alumno_semana` (`alumno_id` ASC, `anio_iso` ASC, `semana_iso` ASC) VISIBLE,
+  CONSTRAINT `FK_alumno_reto_diario_log_alumno`
+    FOREIGN KEY (`alumno_id`)
+    REFERENCES `taemoidb`.`alumno` (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
 -- Table `taemoidb`.`usuario`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `taemoidb`.`usuario` (
