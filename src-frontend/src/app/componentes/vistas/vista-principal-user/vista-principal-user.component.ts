@@ -630,6 +630,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   abrirDocumento(documento: Documento): void {
+    if (!this.esDocumentoPrevisualizable(documento?.tipo)) {
+      this.descargarDocumento(documento);
+      return;
+    }
     this.descargarDocumento(documento, true);
   }
 
@@ -712,6 +716,29 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
     const extension = this.obtenerExtensionDesdeMime(mimeType);
     return extension ? `${base}.${extension}` : base;
+  }
+
+  esDocumentoPrevisualizable(mimeType: string | null | undefined): boolean {
+    const mime = (mimeType ?? '').split(';')[0].trim().toLowerCase();
+    if (!mime) {
+      return false;
+    }
+
+    if (mime.startsWith('image/')) {
+      return true;
+    }
+
+    switch (mime) {
+      case 'application/pdf':
+      case 'text/plain':
+      case 'text/csv':
+      case 'application/json':
+      case 'text/xml':
+      case 'application/xml':
+        return true;
+      default:
+        return false;
+    }
   }
 
   private obtenerExtensionDesdeMime(mimeType: string | null | undefined): string | null {
