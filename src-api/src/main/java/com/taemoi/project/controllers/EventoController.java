@@ -273,7 +273,8 @@ public class EventoController {
 	@GetMapping("/{eventoId}/documentos/{documentoId}/descargar")
 	public ResponseEntity<Resource> descargarDocumento(
 			@PathVariable @NonNull Long eventoId,
-			@PathVariable @NonNull Long documentoId) {
+			@PathVariable @NonNull Long documentoId,
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean forceDownload) {
 		try {
 			if (!tieneAccesoPrivilegiadoEventos()) {
 				Evento evento = eventoService.obtenerEventoPorId(eventoId);
@@ -285,7 +286,7 @@ public class EventoController {
 			Documento documento = eventoService.obtenerDocumentoDeEvento(eventoId, documentoId);
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
 			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-			if (documento.getTipo() != null && !documento.getTipo().isBlank()) {
+			if (!forceDownload && documento.getTipo() != null && !documento.getTipo().isBlank()) {
 				try {
 					mediaType = MediaType.parseMediaType(documento.getTipo());
 				} catch (IllegalArgumentException ignored) {

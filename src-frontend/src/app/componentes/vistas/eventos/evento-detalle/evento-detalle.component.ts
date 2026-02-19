@@ -160,7 +160,8 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     if (this.esDispositivoIOS()) {
       const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoEvento(
         this.eventoId,
-        documento.id
+        documento.id,
+        true
       );
       globalThis.window?.location.assign(downloadUrl);
       return;
