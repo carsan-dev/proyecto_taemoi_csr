@@ -283,7 +283,8 @@ export class EditarEventoComponent implements OnInit {
     if (this.esDispositivoIOS()) {
       const downloadUrl = this.endpointsService.obtenerUrlDescargaDocumentoEvento(
         this.eventoId,
-        documento.id
+        documento.id,
+        true
       );
       globalThis.window?.open(downloadUrl, '_self');
       return;

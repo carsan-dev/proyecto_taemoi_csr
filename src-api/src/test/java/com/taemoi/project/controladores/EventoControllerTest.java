@@ -68,7 +68,7 @@ class EventoControllerTest {
 
 		when(eventoService.obtenerEventoPorId(eventoId)).thenReturn(eventoNoVisible);
 
-		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, false);
 
 		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 		verify(eventoService, never()).obtenerDocumentoDeEvento(anyLong(), anyLong());
@@ -92,7 +92,7 @@ class EventoControllerTest {
 		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
 		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("pdf".getBytes()));
 
-		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, false);
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		verify(eventoService, never()).obtenerEventoPorId(anyLong());
@@ -121,7 +121,7 @@ class EventoControllerTest {
 		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
 		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("pdf".getBytes()));
 
-		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, false);
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 	}
@@ -144,7 +144,31 @@ class EventoControllerTest {
 		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
 		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("pdf".getBytes()));
 
-		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, false);
+
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.getHeaders().getContentType());
+	}
+
+	@Test
+	void descargarDocumento_forceDownload_devuelveOctetStream() {
+		Long eventoId = 11L;
+		Long documentoId = 77L;
+		Documento documento = new Documento();
+		documento.setId(documentoId);
+		documento.setNombre("reglamento.pdf");
+		documento.setTipo("application/pdf");
+
+		Authentication manager = new UsernamePasswordAuthenticationToken(
+				"manager@taemoi.com",
+				"pass",
+				List.of(new SimpleGrantedAuthority("ROLE_MANAGER")));
+		SecurityContextHolder.getContext().setAuthentication(manager);
+
+		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
+		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("pdf".getBytes()));
+
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, true);
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.getHeaders().getContentType());
