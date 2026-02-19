@@ -321,12 +321,13 @@ public class AlumnoController {
 				}
 			}
 			String nombreDocumento = asegurarNombreConExtension(documento.getNombre(), documento.getTipo());
+			String dispositionType = forceDownload ? "attachment" : "inline";
 
 			logger.info("Sending document download response - Name: {}", documento.getNombre());
 			return ResponseEntity.ok()
 					.contentType(mediaType)
 					.header(HttpHeaders.CONTENT_DISPOSITION,
-							"attachment; filename=\"" + nombreDocumento + "\"")
+							dispositionType + "; filename=\"" + nombreDocumento + "\"")
 					.body(recurso);
 		} catch (Exception e) {
 			logger.error("Error downloading document - AlumnoId: {}, DocumentoId: {}. Error: {}",
