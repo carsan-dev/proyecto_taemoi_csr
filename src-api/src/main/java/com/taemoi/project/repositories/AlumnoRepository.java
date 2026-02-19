@@ -260,4 +260,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	// Obtener todos los alumnos activos por deportes
 	List<Alumno> findByActivoTrueAndDeporteIn(Collection<Deporte> deportes);
+
+	List<Alumno> findByActivoTrue();
 }

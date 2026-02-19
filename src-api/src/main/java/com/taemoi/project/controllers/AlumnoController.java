@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -67,7 +68,9 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
+import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
@@ -667,6 +670,46 @@ public class AlumnoController {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		return ResponseEntity.ok(alumnoService.completarRetoDiario(alumnoId));
+	}
+
+	@GetMapping("/{alumnoId}/reto-diario/ranking-semanal")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<?> obtenerRankingSemanalRetoDiario(
+			@PathVariable Long alumnoId,
+			@RequestParam(name = "deporte") String deporteParam,
+			@RequestParam(name = "limit", required = false) Integer limit) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		if (deporteParam == null || deporteParam.isBlank()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", "El parámetro deporte es obligatorio."));
+		}
+
+		if (limit != null && (limit < 1 || limit > 10)) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", "El parámetro limit debe estar entre 1 y 10."));
+		}
+
+		Deporte deporte;
+		try {
+			deporte = Deporte.valueOf(deporteParam.trim().toUpperCase(Locale.ROOT));
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", "Deporte inválido: " + deporteParam));
+		}
+
+		try {
+			RetoDiarioRankingSemanalResponse ranking = alumnoService.obtenerRankingSemanalRetoDiario(alumnoId, deporte,
+					limit);
+			return ResponseEntity.ok(ranking);
+		} catch (AlumnoNoEncontradoException ex) {
+			return ResponseEntity.notFound().build();
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "InvalidArgument", "message", ex.getMessage()));
+		}
 	}
 
 	/**
