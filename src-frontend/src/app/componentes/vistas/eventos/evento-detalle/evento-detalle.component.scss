@@ -370,19 +370,12 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.62rem;
   padding: 0.58rem 0.72rem;
-  cursor: pointer;
   text-align: left;
   transition: $transition;
 
   &:hover {
-    border-color: $primary-blue;
+    border-color: #c9d8f2;
     background: #f3f8ff;
-    transform: translateX(3px);
-
-    .attachment-download {
-      color: $primary-blue;
-      transform: translateY(1px);
-    }
   }
 
   .attachment-icon {
@@ -428,11 +421,48 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     text-overflow: ellipsis;
   }
 
-  .attachment-download {
-    color: #95a4be;
-    font-size: 0.95rem;
-    transition: $transition;
+  .attachment-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.36rem;
+    margin-left: auto;
     flex-shrink: 0;
+  }
+
+  .attachment-action {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d6e2f4;
+    border-radius: 8px;
+    background: #f8fbff;
+    color: #60708d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: $transition;
+    padding: 0;
+
+    i {
+      font-size: 0.88rem;
+      line-height: 1;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .attachment-action-preview:hover {
+    border-color: #93c5fd;
+    color: #1d4ed8;
+    background: #eff6ff;
+  }
+
+  .attachment-action-download:hover {
+    border-color: #86efac;
+    color: #15803d;
+    background: #f0fdf4;
   }
 }
 
@@ -778,8 +808,18 @@ $transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 0.76rem;
     }
 
-    .attachment-download {
-      font-size: 0.72rem;
+    .attachment-actions {
+      gap: 0.24rem;
+    }
+
+    .attachment-action {
+      width: 25px;
+      height: 25px;
+      border-radius: 7px;
+
+      i {
+        font-size: 0.7rem;
+      }
     }
   }
 

@@ -147,6 +147,27 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     return esIOSClasico || esIPadOS;
   }
 
+  previsualizarDocumento(documento: Documento): void {
+    if (!documento?.id || !this.eventoId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo abrir la vista previa del documento.',
+        icon: 'error',
+      });
+      return;
+    }
+
+    const previewUrl = this.endpointsService.obtenerUrlDescargaDocumentoEvento(
+      this.eventoId,
+      documento.id,
+      false
+    );
+    const previewWindow = globalThis.window?.open(previewUrl, '_blank', 'noopener');
+    if (!previewWindow) {
+      globalThis.window?.location.assign(previewUrl);
+    }
+  }
+
   descargarDocumento(documento: Documento): void {
     if (!documento?.id || !this.eventoId) {
       Swal.fire({
