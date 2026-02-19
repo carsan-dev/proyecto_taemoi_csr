@@ -4,7 +4,9 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
@@ -33,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -41,6 +45,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +59,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,6 +73,7 @@ import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.entities.Alumno;
@@ -84,6 +91,7 @@ import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
+import com.taemoi.project.services.MaterialExamenService;
 import com.taemoi.project.services.DocumentoService;
 
 import jakarta.persistence.EntityManager;
@@ -139,6 +147,9 @@ public class AlumnoController {
 
 	@Autowired
 	private DocumentoService documentoService;
+
+	@Autowired
+	private MaterialExamenService materialExamenService;
 	
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
@@ -847,6 +858,83 @@ public class AlumnoController {
 		} catch (Exception e) {
 			logger.error("Error al obtener deportes del alumno {}: {}", id, e.getMessage(), e);
 			return ResponseEntity.ok(java.util.Collections.emptyList());
+		}
+	}
+
+	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<?> obtenerMaterialExamen(
+			@PathVariable Long alumnoId,
+			@PathVariable String deporte) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		try {
+			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			MaterialExamenDTO material = materialExamenService.obtenerMaterialExamen(alumnoId, deporteEnum);
+			return ResponseEntity.ok(material);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			logger.error("Error al obtener material de examen. Alumno: {}, deporte: {}", alumnoId, deporte, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Error al obtener material de examen"));
+		}
+	}
+
+	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/temario")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<Resource> descargarTemarioMaterialExamen(
+			@PathVariable Long alumnoId,
+			@PathVariable String deporte) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		try {
+			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			MaterialExamenService.MaterialExamenArchivo temario = materialExamenService.obtenerTemario(alumnoId, deporteEnum);
+			if (!esTemarioPermitido(temario.getMimeType())) {
+				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+			}
+			return construirRespuestaArchivoInline(temario);
+		} catch (NoSuchElementException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		} catch (Exception e) {
+			logger.error("Error al descargar temario de material de examen. Alumno: {}, deporte: {}", alumnoId, deporte, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<Resource> streamVideoMaterialExamen(
+			@PathVariable Long alumnoId,
+			@PathVariable String deporte,
+			@PathVariable String videoFile,
+			@RequestHeader HttpHeaders requestHeaders) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		try {
+			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			MaterialExamenService.MaterialExamenArchivo video = materialExamenService.obtenerVideo(alumnoId, deporteEnum, videoFile);
+			if (!esVideoPermitido(video.getMimeType())) {
+				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+			}
+			return construirRespuestaVideoConRange(video, requestHeaders);
+		} catch (NoSuchElementException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		} catch (Exception e) {
+			logger.error("Error al servir video de material de examen. Alumno: {}, deporte: {}, video: {}",
+					alumnoId, deporte, videoFile, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 
@@ -2153,6 +2241,133 @@ public class AlumnoController {
 			candidatos.add(base.resolve("alumnos").resolve(nombreArchivo));
 		} catch (Exception ignored) {
 			// Ignore malformed configured directories.
+		}
+	}
+
+	private ResponseEntity<Resource> construirRespuestaArchivoInline(
+			MaterialExamenService.MaterialExamenArchivo archivo) throws IOException {
+		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
+		InputStreamResource resource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
+
+		return ResponseEntity.ok()
+				.contentType(mediaType)
+				.contentLength(archivo.getSize())
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+				.body(resource);
+	}
+
+	private ResponseEntity<Resource> construirRespuestaVideoConRange(
+			MaterialExamenService.MaterialExamenArchivo archivo,
+			HttpHeaders requestHeaders) throws IOException {
+		long fileSize = archivo.getSize();
+		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
+		List<HttpRange> ranges = requestHeaders.getRange();
+
+		if (ranges == null || ranges.isEmpty()) {
+			InputStreamResource fullResource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
+			return ResponseEntity.ok()
+					.contentType(mediaType)
+					.contentLength(fileSize)
+					.header(HttpHeaders.ACCEPT_RANGES, "bytes")
+					.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+					.body(fullResource);
+		}
+
+		HttpRange range = ranges.get(0);
+		long start = range.getRangeStart(fileSize);
+		long end = range.getRangeEnd(fileSize);
+
+		if (start >= fileSize || end >= fileSize || start > end) {
+			return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+					.header(HttpHeaders.CONTENT_RANGE, "bytes */" + fileSize)
+					.build();
+		}
+
+		long contentLength = end - start + 1;
+		InputStream source = Files.newInputStream(archivo.getPath());
+		skipFully(source, start);
+		InputStreamResource partialResource = new InputStreamResource(new LimitedInputStream(source, contentLength));
+
+		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+				.contentType(mediaType)
+				.contentLength(contentLength)
+				.header(HttpHeaders.ACCEPT_RANGES, "bytes")
+				.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+				.body(partialResource);
+	}
+
+	private void skipFully(InputStream source, long bytesToSkip) throws IOException {
+		long totalSkipped = 0;
+		while (totalSkipped < bytesToSkip) {
+			long skipped = source.skip(bytesToSkip - totalSkipped);
+			if (skipped <= 0) {
+				int read = source.read();
+				if (read == -1) {
+					throw new IOException("No se pudo posicionar el stream en el rango solicitado");
+				}
+				skipped = 1;
+			}
+			totalSkipped += skipped;
+		}
+	}
+
+	private MediaType parsearMediaTypeSeguro(String mediaTypeRaw, MediaType fallback) {
+		if (mediaTypeRaw == null || mediaTypeRaw.isBlank()) {
+			return fallback;
+		}
+		try {
+			return MediaType.parseMediaType(mediaTypeRaw);
+		} catch (Exception e) {
+			return fallback;
+		}
+	}
+
+	private boolean esTemarioPermitido(String mimeType) {
+		return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("application/pdf");
+	}
+
+	private boolean esVideoPermitido(String mimeType) {
+		if (mimeType == null) {
+			return false;
+		}
+		String normalized = mimeType.toLowerCase(Locale.ROOT);
+		return normalized.equals("video/mp4")
+				|| normalized.equals("video/webm")
+				|| normalized.equals("video/quicktime");
+	}
+
+	private static final class LimitedInputStream extends FilterInputStream {
+		private long remaining;
+
+		private LimitedInputStream(InputStream in, long maxBytes) {
+			super(in);
+			this.remaining = Math.max(0, maxBytes);
+		}
+
+		@Override
+		public int read() throws IOException {
+			if (remaining <= 0) {
+				return -1;
+			}
+			int read = super.read();
+			if (read >= 0) {
+				remaining--;
+			}
+			return read;
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			if (remaining <= 0) {
+				return -1;
+			}
+			int bytesToRead = (int) Math.min(len, remaining);
+			int read = super.read(b, off, bytesToRead);
+			if (read > 0) {
+				remaining -= read;
+			}
+			return read;
 		}
 	}
 
