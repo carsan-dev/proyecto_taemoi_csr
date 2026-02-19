@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -123,5 +124,29 @@ class EventoControllerTest {
 		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
+	}
+
+	@Test
+	void descargarDocumento_tipoMimeNulo_devuelveOctetStream() {
+		Long eventoId = 10L;
+		Long documentoId = 55L;
+		Documento documento = new Documento();
+		documento.setId(documentoId);
+		documento.setNombre("bases.pdf");
+		documento.setTipo(null);
+
+		Authentication manager = new UsernamePasswordAuthenticationToken(
+				"manager@taemoi.com",
+				"pass",
+				List.of(new SimpleGrantedAuthority("ROLE_MANAGER")));
+		SecurityContextHolder.getContext().setAuthentication(manager);
+
+		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
+		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("pdf".getBytes()));
+
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId);
+
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.getHeaders().getContentType());
 	}
 }
