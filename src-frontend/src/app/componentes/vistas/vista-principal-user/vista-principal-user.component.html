@@ -1,4 +1,4 @@
-<div class="user-dashboard">
+﻿<div class="user-dashboard">
   <div class="dashboard-shell">
     <section class="dashboard-hero">
       <div class="hero-pattern" aria-hidden="true"></div>
@@ -195,10 +195,11 @@
           </p>
 
           <div class="challenge-content">
-            <div class="challenge-streak">
-              <span class="challenge-streak-value">{{ rachaRetoDiario }}</span>
-              <span class="challenge-streak-label">d&iacute;as de racha</span>
-            </div>
+            <div class="challenge-main">
+              <div class="challenge-streak">
+                <span class="challenge-streak-value">{{ rachaRetoDiario }}</span>
+                <span class="challenge-streak-label">d&iacute;as de racha</span>
+              </div>
 
             <p class="challenge-task">Hoy: {{ retoDiarioActual }}</p>
 
@@ -236,6 +237,69 @@
               <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-check-circle-fill' : 'bi-lightning-charge-fill'"></i>
               <span>{{ retoCompletadoHoy ? 'Completado hoy' : 'Marcar como hecho' }}</span>
             </button>
+
+            </div>
+
+            <div class="challenge-side">
+              <div class="challenge-ranking">
+                <div class="challenge-ranking-head">
+                  <span class="challenge-ranking-title">Ranking semanal</span>
+                  @if (rankingSemanal) {
+                  <span class="challenge-ranking-meta">Semana {{ rankingSemanal.semanaIso }} &middot; {{ rankingSemanal.totalParticipantes }} participantes</span>
+                  }
+                </div>
+
+                @if (deportesRankingDisponibles.length > 0) {
+                <div class="challenge-ranking-chips">
+                  @for (deporte of deportesRankingDisponibles; track deporte) {
+                  <button
+                    type="button"
+                    class="challenge-ranking-chip"
+                    [class.is-active]="deporteRankingSeleccionado === deporte"
+                    (click)="onSeleccionarDeporteRanking(deporte)"
+                  >
+                    {{ getDeporteLabel(deporte) }}
+                  </button>
+                  }
+                </div>
+                }
+
+                @if (cargandoRankingSemanal) {
+                <p class="challenge-ranking-state">Cargando ranking...</p>
+                } @else if (errorRankingSemanal) {
+                <p class="challenge-ranking-state is-error">{{ errorRankingSemanal }}</p>
+                } @else if (rankingSemanal) {
+                <div class="challenge-ranking-list">
+                  @if (rankingSemanal.top.length > 0) {
+                  @for (item of rankingSemanal.top; track item.posicion + '-' + item.alias) {
+                  <div class="challenge-ranking-row" [class.is-me]="item.esUsuarioActual">
+                    <span class="rank-pos">#{{ item.posicion }}</span>
+                    <span class="rank-alias">{{ item.alias }}</span>
+                    <span class="rank-days">{{ item.diasCompletados }} d</span>
+                  </div>
+                  }
+                  } @else {
+                  <p class="challenge-ranking-state">Todav&iacute;a no hay registros esta semana.</p>
+                  }
+                </div>
+
+                @if (rankingSemanal.miPosicion) {
+                <div class="challenge-my-rank">
+                  <span class="my-rank-title">Tu posici&oacute;n</span>
+                  <span class="my-rank-value">#{{ rankingSemanal.miPosicion.posicion }} &middot; {{ rankingSemanal.miPosicion.alias }} &middot; {{ rankingSemanal.miPosicion.diasCompletados }} d&iacute;a(s)</span>
+                  @if (getTextoDiasParaSuperarSiguiente()) {
+                  <span class="my-rank-hint">{{ getTextoDiasParaSuperarSiguiente() }}</span>
+                  }
+                </div>
+                }
+                } @else if (deportesRankingDisponibles.length > 0) {
+                <p class="challenge-ranking-state">Selecciona un deporte para ver el ranking.</p>
+                } @else {
+                <p class="challenge-ranking-state">No hay deportes activos para mostrar ranking.</p>
+                }
+              </div>
+            </div>
+
           </div>
         </article>
       </div>
@@ -539,3 +603,5 @@
     }
   </div>
 </div>
+
+
