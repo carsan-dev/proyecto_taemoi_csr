@@ -1629,10 +1629,12 @@
                         title="Descargar documento">
                         <i class="bi bi-download"></i>
                       </button>
+                      @if (esDocumentoPrevisualizable(doc.tipo)) {
                       <button class="action-btn action-btn-primary" (click)="abrirDocumento(doc)"
                         title="Abrir documento">
                         <i class="bi bi-eye"></i>
                       </button>
+                      }
                       <button class="action-btn action-btn-danger" (click)="eliminarDocumento(doc.id)"
                         title="Eliminar documento">
                         <i class="bi bi-trash"></i>
