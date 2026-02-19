@@ -65,8 +65,11 @@ describe('VistaPrincipalUserComponent', () => {
       nextResetAtEpochMs: null,
     }));
     endpointsServiceSpy.obtenerDocumentosDeAlumno.and.returnValue(of([documentoMock] as any));
-    endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.returnValue(
-      'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar'
+    endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.callFake(
+      (_alumnoId: number, _documentoId: number, forzarDescarga: boolean = false) =>
+        forzarDescarga
+          ? 'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar?download=true'
+          : 'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar'
     );
     endpointsServiceSpy.descargarDocumentoAlumno.and.returnValue(of(new Blob(['pdf'])));
     alumnoServiceSpy.obtenerDeportesDelAlumno.and.returnValue(of([]));
@@ -131,7 +134,8 @@ describe('VistaPrincipalUserComponent', () => {
     component.abrirDocumento(documentoMock);
     component.descargarDocumento(documentoMock);
 
-    expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15);
+    expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15, false);
+    expect(endpointsServiceSpy.descargarDocumentoAlumno).toHaveBeenCalledWith(2, 15, true);
     expect(endpointsServiceSpy.descargarDocumentoAlumno.calls.count()).toBe(2);
   });
 
@@ -144,7 +148,8 @@ describe('VistaPrincipalUserComponent', () => {
     component.abrirDocumento(documentoMock);
     component.descargarDocumento(documentoMock);
 
-    expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno).toHaveBeenCalledWith(2, 15);
+    expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno).toHaveBeenCalledWith(2, 15, false);
+    expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno).toHaveBeenCalledWith(2, 15, true);
     expect(endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.calls.count()).toBe(2);
     expect(endpointsServiceSpy.descargarDocumentoAlumno).not.toHaveBeenCalled();
     expect(window.open).toHaveBeenCalledWith(
@@ -152,11 +157,7 @@ describe('VistaPrincipalUserComponent', () => {
       '_blank',
       'noopener'
     );
-    expect(window.open).toHaveBeenCalledWith(
-      'https://moiskimdo.es/api/alumnos/2/documentos/15/descargar',
-      '_self',
-      undefined
-    );
+    expect(window.open).toHaveBeenCalledTimes(1);
   });
 
   it('debe marcar documentos como vistos al ir a la seccion de documentos', () => {

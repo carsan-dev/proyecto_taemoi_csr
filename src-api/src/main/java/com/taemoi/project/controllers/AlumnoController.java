@@ -300,7 +300,8 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<Resource> descargarDocumento(
 			@PathVariable Long alumnoId,
-			@PathVariable Long documentoId) {
+			@PathVariable Long documentoId,
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean forceDownload) {
 		if (!usuarioPuedeAccederAlumno(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -311,7 +312,7 @@ public class AlumnoController {
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
 
 			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-			if (documento.getTipo() != null) {
+			if (!forceDownload && documento.getTipo() != null && !documento.getTipo().isBlank()) {
 				try {
 					mediaType = MediaType.parseMediaType(documento.getTipo());
 				} catch (Exception e) {
@@ -319,12 +320,15 @@ public class AlumnoController {
 							documento.getId(), documento.getTipo());
 				}
 			}
+			String nombreDocumento = (documento.getNombre() == null || documento.getNombre().isBlank())
+					? "documento"
+					: documento.getNombre();
 
 			logger.info("Sending document download response - Name: {}", documento.getNombre());
 			return ResponseEntity.ok()
 					.contentType(mediaType)
 					.header(HttpHeaders.CONTENT_DISPOSITION,
-							"attachment; filename=\"" + documento.getNombre() + "\"")
+							"attachment; filename=\"" + nombreDocumento + "\"")
 					.body(recurso);
 		} catch (Exception e) {
 			logger.error("Error downloading document - AlumnoId: {}, DocumentoId: {}. Error: {}",

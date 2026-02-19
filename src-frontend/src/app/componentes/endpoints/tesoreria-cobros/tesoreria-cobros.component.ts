@@ -454,8 +454,12 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (pdfBlob: Blob) => {
             const fileURL = globalThis.URL.createObjectURL(pdfBlob);
-            globalThis.open(fileURL, '_blank');
-            showSuccessToast('Informe PDF de tesoreria abierto correctamente');
+            const a = document.createElement('a');
+            a.href = fileURL;
+            a.download = this.obtenerNombrePDF();
+            a.click();
+            globalThis.URL.revokeObjectURL(fileURL);
+            showSuccessToast('Informe PDF de tesoreria descargado correctamente');
           },
           error: () => {
             showErrorToast('No se pudo generar el informe PDF de tesoreria');
@@ -629,6 +633,10 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     const deporteSegment = this.filtroDeporte.toLowerCase();
     const alumnosSegment = this.filtroSoloActivos ? 'activos' : 'todos_alumnos';
     return `tesoreria_${anoSegment}_${mesSegment}_${deporteSegment}_${estadoSegment}_${alumnosSegment}.csv`;
+  }
+
+  private obtenerNombrePDF(): string {
+    return this.obtenerNombreCSV().replace(/\.csv$/i, '.pdf');
   }
 
   private actualizarCobro(
