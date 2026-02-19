@@ -17,6 +17,7 @@ import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 import { Documento } from '../../interfaces/documento';
 import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
 import { RetoDiarioRankingSemanal } from '../../interfaces/reto-diario-ranking-semanal';
+import { MaterialExamenDTO } from '../../interfaces/material-examen';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
 import { PaginatedResponse } from '../../interfaces/paginated-response';
@@ -1607,6 +1608,28 @@ export class EndpointsService {
         responseType: 'blob',
       })
       .pipe(catchError(this.manejarError));
+  }
+
+  obtenerMaterialExamenAlumno(
+    alumnoId: number,
+    deporte: string
+  ): Observable<MaterialExamenDTO> {
+    return this.http
+      .get<MaterialExamenDTO>(
+        `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen`,
+        {
+          withCredentials: true,
+        }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerUrlTemarioMaterialExamenAlumno(alumnoId: number, deporte: string): string {
+    return `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/temario`;
+  }
+
+  obtenerUrlVideoMaterialExamenAlumno(alumnoId: number, deporte: string, videoFile: string): string {
+    return `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/videos/${encodeURIComponent(videoFile)}`;
   }
 
   generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {
