@@ -595,9 +595,12 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   cargarDocumentosDelAlumno(alumnoId: number): void {
     const documentosCache = this.documentosCache.get(alumnoId);
     if (documentosCache) {
+      const mismosDocumentosEnCache = this.documentosAlumno === documentosCache;
       this.documentosAlumno = documentosCache;
       this.actualizarNovedadesDocumentos(alumnoId, this.documentosAlumno);
-      this.reiniciarPaginacionDocumentos();
+      if (!mismosDocumentosEnCache) {
+        this.reiniciarPaginacionDocumentos();
+      }
       if (this.documentosSeccionVisible) {
         this.marcarDocumentosComoVistos();
       }
@@ -1576,7 +1579,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         if (this.documentosSeccionVisible) {
           const alumnoId = Number(this.selectedAlumno?.id);
           if (Number.isInteger(alumnoId) && alumnoId > 0) {
-            this.programarCargaDocumentos(alumnoId, true);
+            const documentosYaCargados = this.documentosCache.has(alumnoId);
+            if (!documentosYaCargados && !this.cargandoDocumentos) {
+              this.programarCargaDocumentos(alumnoId, true);
+            }
           }
           this.marcarDocumentosComoVistos();
         }
