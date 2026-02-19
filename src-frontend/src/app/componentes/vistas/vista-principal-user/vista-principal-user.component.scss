@@ -309,6 +309,10 @@ $competicion: #7b1fa2;
 
 .insight-challenge {
   --insight-accent: #8ce99a;
+  background:
+    radial-gradient(circle at 88% -24%, rgba(140, 233, 154, 0.22), transparent 54%),
+    rgba(255, 255, 255, 0.12);
+  border-color: rgba(160, 255, 178, 0.34);
 }
 
 .insight-kicker {
@@ -548,6 +552,27 @@ $competicion: #7b1fa2;
   flex-direction: column;
   gap: 0.45rem;
   height: 100%;
+}
+
+.challenge-priority-flag {
+  margin: -0.12rem 0 0.05rem;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 214, 102, 0.45);
+  background: rgba(245, 159, 0, 0.18);
+  color: #ffe7a1;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  i {
+    font-size: 0.72rem;
+  }
 }
 
 .challenge-content--placeholder {
@@ -1560,11 +1585,27 @@ $competicion: #7b1fa2;
   }
 
   .hero-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-insights {
     grid-template-columns: 1fr;
+  }
+
+  .insight-challenge {
+    order: -3;
+    border-color: rgba(160, 255, 178, 0.58);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 12px 24px rgba(26, 124, 69, 0.25);
+  }
+
+  .insight-today {
+    order: 1;
+  }
+
+  .insight-news {
+    order: 2;
   }
 
   .exam-status-grid {
@@ -1606,6 +1647,10 @@ $competicion: #7b1fa2;
     min-height: 44px;
     font-size: 0.86rem;
     padding: 0.68rem 0.9rem;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
   }
 
   .group-card {
