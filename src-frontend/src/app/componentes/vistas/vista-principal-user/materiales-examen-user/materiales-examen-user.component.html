@@ -1,4 +1,4 @@
-@if (deportesConMaterial.length === 0) {
+﻿@if (deportesConMaterial.length === 0) {
 <div class="materials-empty">
   <i class="bi bi-camera-video-off"></i>
   <p>No hay material de examen disponible para tus deportes activos.</p>
@@ -83,14 +83,14 @@
     <h3>Temario PDF</h3>
     @if (material.temario && temarioUrl) {
     <div class="temario-actions">
-      <button type="button" class="temario-btn" (click)="toggleTemario()">
-        <i class="bi" [ngClass]="mostrarTemario ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
-        {{ mostrarTemario ? 'Ocultar visor' : 'Ver temario' }}
-      </button>
-      <a class="temario-link" [href]="getTemarioUrl()" target="_blank" rel="noopener">
+      <a class="temario-link temario-link-primary" [href]="getTemarioUrl()" target="_blank" rel="noopener">
         <i class="bi bi-box-arrow-up-right"></i>
-        Abrir en pestaña
+        Abrir en pesta&ntilde;a
       </a>
+      <button type="button" class="temario-btn temario-btn-secondary" (click)="toggleTemario()">
+        <i class="bi" [ngClass]="mostrarTemario ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+        {{ mostrarTemario ? 'Ocultar visor' : 'Ver visor integrado' }}
+      </button>
     </div>
     @if (mostrarTemario) {
     <iframe
@@ -108,3 +108,4 @@
   }
 </div>
 }
+
