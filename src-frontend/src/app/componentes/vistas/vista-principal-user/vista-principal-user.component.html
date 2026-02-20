@@ -32,6 +32,10 @@
             <i class="bi bi-file-earmark-text-fill"></i>
             <span>Mis documentos</span>
           </button>
+          <button type="button" class="hero-btn btn-secondary-action btn-exam-action" (click)="irAMaterialesExamen()">
+            <i class="bi bi-journal-richtext"></i>
+            <span>Materiales de examen</span>
+          </button>
           <button type="button" class="hero-btn btn-secondary-action" [routerLink]="['/userpage/turnos']">
             <i class="bi bi-calendar-check-fill"></i>
             <span>Ver horarios</span>
@@ -327,6 +331,11 @@
           }
         </button>
 
+        <button type="button" class="quick-action-btn quick-action-btn--exam" (click)="irAMaterialesExamen()">
+          <i class="bi bi-journal-richtext"></i>
+          <span>Materiales de examen</span>
+        </button>
+
         <button type="button" class="quick-action-btn" [routerLink]="['/eventos']">
           <i class="bi bi-calendar-event-fill"></i>
           <span>Ver eventos</span>
@@ -342,11 +351,12 @@
       </div>
     </section>
 
-    <section class="dashboard-panel panel-exam-status">
+    <section class="dashboard-panel panel-exam-status panel-exam-materials" id="materiales-examen">
       <header class="panel-header">
         <div>
           <p class="panel-kicker">Examen</p>
-          <h2>Estado de examen y convocatoria</h2>
+          <h2>Estado y materiales de examen</h2>
+          <p class="panel-subtitle">Consulta tu aptitud, la convocatoria y todo el material de preparaci&oacute;n en un solo bloque.</p>
         </div>
       </header>
 
@@ -392,6 +402,20 @@
           }
         </article>
       </div>
+
+      @if (selectedAlumno) {
+      <div class="exam-materials-wrap">
+        <div class="exam-materials-head">
+          <h3>Materiales de preparaci&oacute;n</h3>
+          <p>Accede al temario y a los videos seg&uacute;n tu grado actual.</p>
+        </div>
+
+        <app-materiales-examen-user
+          [alumnoId]="selectedAlumno?.id"
+          [deportes]="deportesDelAlumno"
+        ></app-materiales-examen-user>
+      </div>
+      }
     </section>
 
     <section class="dashboard-panel" id="mis-grupos">
@@ -550,22 +574,6 @@
     }
 
     @if (selectedAlumno) {
-    <section class="dashboard-panel panel-exam-materials">
-      <header class="panel-header">
-        <div>
-          <p class="panel-kicker">Examen</p>
-          <h2>Materiales de examen</h2>
-        </div>
-      </header>
-
-      <app-materiales-examen-user
-        [alumnoId]="selectedAlumno?.id"
-        [deportes]="deportesDelAlumno"
-      ></app-materiales-examen-user>
-    </section>
-    }
-
-    @if (selectedAlumno) {
     <section class="dashboard-panel panel-documents" id="mis-documentos" #misDocumentosSection>
       <header class="panel-header">
         <div>
@@ -619,5 +627,3 @@
     }
   </div>
 </div>
-
-

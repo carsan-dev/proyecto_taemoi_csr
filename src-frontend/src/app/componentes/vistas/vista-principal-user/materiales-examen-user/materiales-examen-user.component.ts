@@ -28,9 +28,31 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   cargando: boolean = false;
   errorCarga: string | null = null;
   mostrarTemario: boolean = false;
+  descripcionBloqueActual: string | null = null;
 
   private materialSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
+  private readonly descripcionPreparacionPorGrado: Record<string, string> = {
+    BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
+    BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
+    AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO/NARANJA',
+    AMARILLO_NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA',
+    NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA/VERDE',
+    NARANJA_VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE',
+    VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE/AZUL',
+    VERDE_AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL',
+    AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL/ROJO',
+    AZUL_ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO',
+    ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 1\u00BA PUM / NEGRO 1\u00BA DAN',
+    ROJO_NEGRO_1_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 2\u00BA PUM',
+    ROJO_NEGRO_2_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
+    ROJO_NEGRO_3_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
+    NEGRO_1_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 2\u00BA DAN',
+    NEGRO_2_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 3\u00BA DAN',
+    NEGRO_3_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 4\u00BA DAN',
+    NEGRO_4_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 5\u00BA DAN',
+    NEGRO_5_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 6\u00BA DAN',
+  };
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -114,6 +136,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       .subscribe({
         next: (material) => {
           this.material = this.normalizarMaterial(material);
+          this.descripcionBloqueActual = this.obtenerDescripcionBloque(this.material);
           this.temarioUrl = this.material.temario?.downloadUrl
             ? this.sanitizer.bypassSecurityTrustResourceUrl(this.material.temario.downloadUrl)
             : null;
@@ -141,6 +164,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     };
   }
 
+  private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
+    const gradoNormalizado = (material.gradoActual || '').toUpperCase().trim();
+    if (!gradoNormalizado) {
+      return null;
+    }
+
+    return this.descripcionPreparacionPorGrado[gradoNormalizado] ?? null;
+  }
+
   private obtenerDeportesConMaterial(): AlumnoDeporteDTO[] {
     if (!Array.isArray(this.deportes)) {
       return [];
@@ -164,6 +196,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.errorCarga = null;
     this.cargando = false;
     this.mostrarTemario = false;
+    this.descripcionBloqueActual = null;
     this.lastFetchKey = null;
   }
 }

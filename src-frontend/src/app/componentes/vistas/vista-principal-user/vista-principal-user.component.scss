@@ -165,6 +165,15 @@ $competicion: #7b1fa2;
   border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
+.btn-exam-action {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.45), rgba(54, 150, 255, 0.32));
+  border-color: rgba(159, 208, 255, 0.52);
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.58), rgba(54, 150, 255, 0.4));
+  }
+}
+
 .student-switcher {
   position: relative;
   z-index: 1;
@@ -1046,6 +1055,26 @@ $competicion: #7b1fa2;
   box-shadow: $shadow-sm;
 }
 
+.panel-exam-materials {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(13, 110, 253, 0.2);
+  background:
+    radial-gradient(600px 180px at 100% 0%, rgba(13, 110, 253, 0.08), transparent),
+    linear-gradient(180deg, #f8fbff, #ffffff 55%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    top: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d6efd, #57a2ff);
+  }
+}
+
 .quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1078,6 +1107,20 @@ $competicion: #7b1fa2;
     transform: translateY(-2px);
     box-shadow: $shadow-md;
     border-color: rgba(13, 110, 253, 0.34);
+  }
+}
+
+.quick-action-btn--exam {
+  border-color: rgba(15, 136, 95, 0.26);
+  background: linear-gradient(180deg, #f5fffa, #ecfbf2);
+  color: #13513a;
+
+  i {
+    color: #107c57;
+  }
+
+  &:hover {
+    border-color: rgba(15, 136, 95, 0.44);
   }
 }
 
@@ -1196,6 +1239,35 @@ $competicion: #7b1fa2;
   font-weight: 700;
 }
 
+.exam-materials-wrap {
+  margin-top: 0.95rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(13, 110, 253, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.exam-materials-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.06rem;
+    color: $text-main;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    color: $text-muted;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -1217,6 +1289,14 @@ $competicion: #7b1fa2;
     font-size: clamp(1.3rem, 2vw, 1.65rem);
     line-height: 1.2;
     color: $text-main;
+  }
+
+  .panel-subtitle {
+    margin: 0.35rem 0 0;
+    color: $text-muted;
+    font-size: 0.9rem;
+    font-weight: 600;
+    max-width: 62ch;
   }
 }
 

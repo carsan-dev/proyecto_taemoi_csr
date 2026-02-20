@@ -322,6 +322,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.marcarDocumentosComoVistos();
   }
 
+  irAMaterialesExamen(): void {
+    this.scrollToSection('materiales-examen');
+  }
+
   ngOnDestroy(): void {
     this.cancelarCargaDiferidaDocumentos();
     this.detenerActualizacionProximaClase();
