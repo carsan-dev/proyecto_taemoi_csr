@@ -93,6 +93,7 @@ public class SecurityConfiguration {
 		http.cors(cors -> {});
 		http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**"))
+				.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
 				.authorizeHttpRequests(request -> request
 						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
