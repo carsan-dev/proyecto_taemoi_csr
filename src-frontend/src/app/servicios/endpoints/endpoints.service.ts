@@ -1621,7 +1621,10 @@ export class EndpointsService {
           withCredentials: true,
         }
       )
-      .pipe(catchError(this.manejarError));
+      .pipe(
+        tap((material) => this.normalizarUrlsMaterialExamen(material)),
+        catchError(this.manejarError)
+      );
   }
 
   obtenerUrlTemarioMaterialExamenAlumno(alumnoId: number, deporte: string): string {
@@ -1630,6 +1633,38 @@ export class EndpointsService {
 
   obtenerUrlVideoMaterialExamenAlumno(alumnoId: number, deporte: string, videoFile: string): string {
     return `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/videos/${encodeURIComponent(videoFile)}`;
+  }
+
+  private normalizarUrlsMaterialExamen(material: MaterialExamenDTO | null | undefined): void {
+    if (!material) {
+      return;
+    }
+
+    if (material.temario?.downloadUrl) {
+      material.temario.downloadUrl = this.resolverUrlApi(material.temario.downloadUrl);
+    }
+
+    if (!Array.isArray(material.videos)) {
+      material.videos = [];
+      return;
+    }
+
+    material.videos = material.videos.map((video) => ({
+      ...video,
+      streamUrl: this.resolverUrlApi(video?.streamUrl || ''),
+    }));
+  }
+
+  private resolverUrlApi(url: string): string {
+    if (!url) {
+      return url;
+    }
+
+    try {
+      return new URL(url, this.urlBase).toString();
+    } catch {
+      return url;
+    }
   }
 
   generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {
