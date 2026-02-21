@@ -283,7 +283,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 								extraerOrden(fileName),
 								path,
 								mime,
-								esMimePdf(mime)));
+								esMimePdf(mime) || "pdf".equals(extension(fileName))));
 					});
 		} catch (IOException e) {
 			logger.error("Error al listar documentos en {}", carpetaDocumentacion, e);

@@ -144,16 +144,11 @@ public class AuthenticationController {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
-		ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("jwt", jwtResponse.getToken())
-				.httpOnly(true)
-				.secure(isProduction)
-				.path("/")
-				.sameSite("Lax");
-		if (rememberMe) {
-			cookieBuilder.maxAge(Duration.ofDays(30));
-		}
-		resolverDominioCookie().ifPresent(cookieBuilder::domain);
-		response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
+		response.addHeader(HttpHeaders.SET_COOKIE,
+				construirCookieJwt(jwtResponse.getToken(), isProduction, rememberMe, false, null).toString());
+		resolverDominioCookie().ifPresent(domain -> response.addHeader(
+				HttpHeaders.SET_COOKIE,
+				construirCookieJwt(jwtResponse.getToken(), isProduction, rememberMe, false, domain).toString()));
 
 		// Retornar la respuesta con el cuerpo
 		return ResponseEntity.ok(jwtResponse);
@@ -198,14 +193,11 @@ public class AuthenticationController {
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
-		ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("jwt", "")
-				.httpOnly(true)
-				.secure(isProduction)
-				.path("/")
-				.maxAge(Duration.ZERO)
-				.sameSite("Lax");
-		resolverDominioCookie().ifPresent(cookieBuilder::domain);
-		response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
+		response.addHeader(HttpHeaders.SET_COOKIE,
+				construirCookieJwt("", isProduction, false, true, null).toString());
+		resolverDominioCookie().ifPresent(domain -> response.addHeader(
+				HttpHeaders.SET_COOKIE,
+				construirCookieJwt("", isProduction, false, true, domain).toString()));
 		return ResponseEntity.ok().build();
 	}
 
@@ -379,6 +371,30 @@ public class AuthenticationController {
 		} catch (Exception e) {
 			return Optional.empty();
 		}
+	}
+
+	private ResponseCookie construirCookieJwt(
+			String valor,
+			boolean secure,
+			boolean rememberMe,
+			boolean eliminar,
+			String domain) {
+		ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from("jwt", valor)
+				.httpOnly(true)
+				.secure(secure)
+				.path("/")
+				.sameSite("Lax");
+
+		if (eliminar) {
+			builder.maxAge(Duration.ZERO);
+		} else if (rememberMe) {
+			builder.maxAge(Duration.ofDays(30));
+		}
+
+		if (domain != null && !domain.isBlank()) {
+			builder.domain(domain);
+		}
+		return builder.build();
 	}
 
 	/**
