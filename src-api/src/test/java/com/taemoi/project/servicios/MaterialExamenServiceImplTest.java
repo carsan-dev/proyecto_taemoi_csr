@@ -71,6 +71,10 @@ class MaterialExamenServiceImplTest {
 		assertEquals(1, material.getVideos().get(0).getOrder());
 		assertEquals("02_tecnicas_base.mp4", material.getVideos().get(1).getId());
 		assertEquals(2, material.getVideos().get(1).getOrder());
+		assertNotNull(material.getDocumentos());
+		assertEquals(1, material.getDocumentos().size());
+		assertEquals("temario.pdf", material.getDocumentos().get(0).getFileName());
+		assertEquals(true, material.getDocumentos().get(0).isPreviewable());
 	}
 
 	@Test
@@ -114,6 +118,31 @@ class MaterialExamenServiceImplTest {
 		assertNull(material.getTemario());
 		assertNotNull(material.getVideos());
 		assertEquals(0, material.getVideos().size());
+		assertNotNull(material.getDocumentos());
+		assertEquals(0, material.getDocumentos().size());
+	}
+
+	@Test
+	void shouldResolveAdditionalDocumentsWithOrderAndPreviewable() throws Exception {
+		mockAlumnoConDeporte(13L, Deporte.TAEKWONDO, TipoGrado.AMARILLO);
+
+		Path bloque = crearBloque("taekwondo", "b02_amarillo_a_naranja");
+		Files.createDirectories(bloque.resolve("temario"));
+		Files.writeString(bloque.resolve("temario").resolve("temario.pdf"), "temario");
+		Files.createDirectories(bloque.resolve("documentacion"));
+		Files.writeString(bloque.resolve("documentacion").resolve("02_reglamento.pdf"), "pdf");
+		Files.writeString(bloque.resolve("documentacion").resolve("01_glosario.docx"), "docx");
+		Files.writeString(bloque.resolve("documentacion").resolve(".gitkeep"), "");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(13L, Deporte.TAEKWONDO);
+
+		assertNotNull(material.getDocumentos());
+		assertEquals(3, material.getDocumentos().size());
+		assertEquals("temario.pdf", material.getDocumentos().get(0).getFileName());
+		assertEquals("01_glosario.docx", material.getDocumentos().get(1).getFileName());
+		assertEquals(false, material.getDocumentos().get(1).isPreviewable());
+		assertEquals("02_reglamento.pdf", material.getDocumentos().get(2).getFileName());
+		assertEquals(true, material.getDocumentos().get(2).isPreviewable());
 	}
 
 	@Test
@@ -121,6 +150,13 @@ class MaterialExamenServiceImplTest {
 		assertThrows(
 				IllegalArgumentException.class,
 				() -> service.obtenerVideo(99L, Deporte.TAEKWONDO, "../secret.mp4"));
+	}
+
+	@Test
+	void shouldRejectInvalidDocumentFileName() {
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> service.obtenerDocumento(99L, Deporte.TAEKWONDO, "../secret.pdf"));
 	}
 
 	private void mockAlumnoConDeporte(Long alumnoId, Deporte deporte, TipoGrado grado) {
