@@ -68,11 +68,19 @@
   }
 }
 
+.materials-videos-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .video-list {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 0.42rem;
-  max-height: 320px;
+  max-height: none;
   overflow: auto;
   padding-right: 0.2rem;
 }
