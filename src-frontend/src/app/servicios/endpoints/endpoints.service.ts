@@ -1610,6 +1610,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  descargarArchivoPrivado(url: string): Observable<Blob> {
+    return this.http
+      .get(url, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerMaterialExamenAlumno(
     alumnoId: number,
     deporte: string
@@ -1646,13 +1655,22 @@ export class EndpointsService {
 
     if (!Array.isArray(material.videos)) {
       material.videos = [];
-      return;
+    } else {
+      material.videos = material.videos.map((video) => ({
+        ...video,
+        streamUrl: this.resolverUrlApi(video?.streamUrl || ''),
+      }));
     }
 
-    material.videos = material.videos.map((video) => ({
-      ...video,
-      streamUrl: this.resolverUrlApi(video?.streamUrl || ''),
-    }));
+    if (!Array.isArray(material.documentos)) {
+      material.documentos = [];
+    } else {
+      material.documentos = material.documentos.map((documento) => ({
+        ...documento,
+        openUrl: this.resolverUrlApi(documento?.openUrl || ''),
+        downloadUrl: this.resolverUrlApi(documento?.downloadUrl || ''),
+      }));
+    }
   }
 
   private resolverUrlApi(url: string): string {

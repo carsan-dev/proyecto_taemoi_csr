@@ -1,4 +1,4 @@
-﻿@if (deportesConMaterial.length === 0) {
+@if (deportesConMaterial.length === 0) {
 <div class="materials-empty">
   <i class="bi bi-camera-video-off"></i>
   <p>No hay material de examen disponible para tus deportes activos.</p>
@@ -79,33 +79,74 @@
     </div>
   </div>
 
-  <div class="materials-temario">
-    <h3>Temario PDF</h3>
-    @if (material.temario && temarioUrl) {
-    <div class="temario-actions">
-      <a class="temario-link temario-link-primary" [href]="getTemarioUrl()" target="_blank" rel="noopener">
-        <i class="bi bi-box-arrow-up-right"></i>
-        Abrir en pesta&ntilde;a
-      </a>
-      <button type="button" class="temario-btn temario-btn-secondary" (click)="toggleTemario()">
-        <i class="bi" [ngClass]="mostrarTemario ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
-        {{ mostrarTemario ? 'Ocultar visor' : 'Ver visor integrado' }}
-      </button>
+  <div class="materials-docs">
+    <h3>Documentaci&oacute;n</h3>
+    @if (material.documentos.length > 0) {
+    <div class="docs-grid">
+      <div class="docs-list">
+        @for (documento of material.documentos; track documento.id) {
+        <button
+          type="button"
+          class="doc-item-btn"
+          [class.is-active]="documento.id === documentoSeleccionado?.id"
+          (click)="onSeleccionarDocumento(documento)"
+        >
+          <span class="doc-order">{{ documento.order > 0 && documento.order < 10000 ? documento.order : 'DOC' }}</span>
+          <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+          @if (documento.previewable) {
+          <span class="doc-tag">PDF</span>
+          }
+        </button>
+        }
+      </div>
+
+      <div class="docs-detail">
+        @if (documentoSeleccionado) {
+        <p class="doc-selected-title">{{ documentoSeleccionado.title || documentoSeleccionado.fileName }}</p>
+
+        <div class="docs-actions">
+          @if (getDocumentoOpenUrl()) {
+          <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
+            <i class="bi bi-box-arrow-up-right"></i>
+            Abrir
+          </button>
+          }
+
+          @if (getDocumentoDownloadUrl()) {
+          <button type="button" class="docs-link docs-link-secondary" (click)="descargarDocumentoSeleccionado()">
+            <i class="bi bi-download"></i>
+            Descargar
+          </button>
+          }
+
+          @if (esDocumentoSeleccionadoPrevisualizable()) {
+          <button type="button" class="docs-btn" (click)="toggleDocumentoVisor()">
+            <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+            {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+          </button>
+          }
+        </div>
+
+        @if (!documentoSeleccionado.previewable) {
+        <p class="materials-state">Este formato no admite visor integrado en la web.</p>
+        }
+
+        @if (mostrarDocumentoVisor && documentoSeleccionadoUrl && documentoSeleccionado.previewable) {
+        <iframe
+          class="docs-frame"
+          [src]="documentoSeleccionadoUrl"
+          title="Documento de material de examen"
+          loading="lazy"
+        ></iframe>
+        }
+        }
+      </div>
     </div>
-    @if (mostrarTemario) {
-    <iframe
-      class="temario-frame"
-      [src]="temarioUrl"
-      title="Temario del bloque de examen"
-      loading="lazy"
-    ></iframe>
-    }
     } @else {
-    <p class="materials-state">No hay temario disponible para este bloque.</p>
+    <p class="materials-state">No hay documentaci&oacute;n disponible para este bloque.</p>
     }
   </div>
   }
   }
 </div>
 }
-

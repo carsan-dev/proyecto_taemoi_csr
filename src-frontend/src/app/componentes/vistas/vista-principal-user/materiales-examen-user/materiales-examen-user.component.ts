@@ -2,10 +2,15 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
-import { MaterialExamenDTO, MaterialExamenVideoDTO } from '../../../../interfaces/material-examen';
+import {
+  MaterialExamenDTO,
+  MaterialExamenDocumentoDTO,
+  MaterialExamenVideoDTO,
+} from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
 
 @Component({
@@ -24,10 +29,13 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   material: MaterialExamenDTO | null = null;
   videoSeleccionado: MaterialExamenVideoDTO | null = null;
   videoSeleccionadoUrl: SafeUrl | null = null;
-  temarioUrl: SafeResourceUrl | null = null;
+
+  documentoSeleccionado: MaterialExamenDocumentoDTO | null = null;
+  documentoSeleccionadoUrl: SafeResourceUrl | null = null;
+  mostrarDocumentoVisor: boolean = false;
+
   cargando: boolean = false;
   errorCarga: string | null = null;
-  mostrarTemario: boolean = false;
   descripcionBloqueActual: string | null = null;
 
   private materialSubscription: Subscription | null = null;
@@ -98,16 +106,96 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(video.streamUrl);
   }
 
-  toggleTemario(): void {
-    this.mostrarTemario = !this.mostrarTemario;
+  onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
+    this.documentoSeleccionado = documento;
+    this.mostrarDocumentoVisor = false;
+    this.documentoSeleccionadoUrl = documento.previewable && documento.openUrl
+      ? this.sanitizer.bypassSecurityTrustResourceUrl(documento.openUrl)
+      : null;
+  }
+
+  toggleDocumentoVisor(): void {
+    if (!this.esDocumentoSeleccionadoPrevisualizable()) {
+      return;
+    }
+    this.mostrarDocumentoVisor = !this.mostrarDocumentoVisor;
   }
 
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
   }
 
-  getTemarioUrl(): string | null {
-    return this.material?.temario?.downloadUrl ?? null;
+  getDocumentoOpenUrl(): string | null {
+    return this.documentoSeleccionado?.openUrl ?? null;
+  }
+
+  getDocumentoDownloadUrl(): string | null {
+    return this.documentoSeleccionado?.downloadUrl ?? this.documentoSeleccionado?.openUrl ?? null;
+  }
+
+  esDocumentoSeleccionadoPrevisualizable(): boolean {
+    return !!this.documentoSeleccionado?.previewable && !!this.documentoSeleccionadoUrl;
+  }
+
+  abrirDocumentoSeleccionado(): void {
+    if (!this.documentoSeleccionado?.previewable) {
+      this.descargarDocumentoSeleccionado();
+      return;
+    }
+    this.descargarDocumentoSeleccionado(true);
+  }
+
+  descargarDocumentoSeleccionado(abrirEnNuevaPestana: boolean = false): void {
+    const documento = this.documentoSeleccionado;
+    const url = abrirEnNuevaPestana ? this.getDocumentoOpenUrl() : this.getDocumentoDownloadUrl();
+
+    if (!documento || !url) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo procesar el documento seleccionado',
+        icon: 'error',
+      });
+      return;
+    }
+
+    if (this.esDispositivoIOS()) {
+      if (abrirEnNuevaPestana) {
+        globalThis.window?.open(url, '_blank', 'noopener');
+      } else {
+        globalThis.window?.location.assign(url);
+      }
+      return;
+    }
+
+    this.endpointsService.descargarArchivoPrivado(url).subscribe({
+      next: (blob) => {
+        const blobUrl = globalThis.URL.createObjectURL(blob);
+
+        if (abrirEnNuevaPestana) {
+          globalThis.window?.open(blobUrl, '_blank', 'noopener');
+          setTimeout(() => globalThis.URL.revokeObjectURL(blobUrl), 60_000);
+          return;
+        }
+
+        const link = globalThis.document?.createElement('a');
+        if (!link) {
+          globalThis.URL.revokeObjectURL(blobUrl);
+          return;
+        }
+
+        link.href = blobUrl;
+        link.download = this.obtenerNombreDescarga(documento.fileName, documento.mimeType);
+        link.click();
+        globalThis.URL.revokeObjectURL(blobUrl);
+      },
+      error: () => {
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo descargar el documento',
+          icon: 'error',
+        });
+      },
+    });
   }
 
   private cargarMaterialSeleccionado(force: boolean = false): void {
@@ -128,8 +216,9 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.material = null;
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
-    this.temarioUrl = null;
-    this.mostrarTemario = false;
+    this.documentoSeleccionado = null;
+    this.documentoSeleccionadoUrl = null;
+    this.mostrarDocumentoVisor = false;
 
     this.materialSubscription = this.endpointsService
       .obtenerMaterialExamenAlumno(this.alumnoId, this.deporteSeleccionado)
@@ -137,14 +226,13 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
         next: (material) => {
           this.material = this.normalizarMaterial(material);
           this.descripcionBloqueActual = this.obtenerDescripcionBloque(this.material);
-          this.temarioUrl = this.material.temario?.downloadUrl
-            ? this.sanitizer.bypassSecurityTrustResourceUrl(this.material.temario.downloadUrl)
-            : null;
 
           const primerVideo = this.material.videos[0] ?? null;
           if (primerVideo) {
             this.onSeleccionarVideo(primerVideo);
           }
+
+          this.seleccionarDocumentoInicial();
           this.cargando = false;
         },
         error: () => {
@@ -154,14 +242,134 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       });
   }
 
+  private seleccionarDocumentoInicial(): void {
+    const documentos = this.material?.documentos ?? [];
+    if (documentos.length === 0) {
+      return;
+    }
+
+    const primerPdf = documentos.find((documento) => documento.previewable && !!documento.openUrl);
+    this.onSeleccionarDocumento(primerPdf ?? documentos[0]);
+  }
+
   private normalizarMaterial(material: MaterialExamenDTO | null | undefined): MaterialExamenDTO {
+    const documentosCompat = this.obtenerDocumentosCompatibles(material);
+
     return {
       deporte: material?.deporte ?? this.deporteSeleccionado ?? '',
       gradoActual: material?.gradoActual ?? null,
       bloqueId: material?.bloqueId ?? null,
       temario: material?.temario ?? null,
+      documentos: documentosCompat,
       videos: Array.isArray(material?.videos) ? material!.videos : [],
     };
+  }
+
+  private obtenerDocumentosCompatibles(
+    material: MaterialExamenDTO | null | undefined
+  ): MaterialExamenDocumentoDTO[] {
+    const documentos = Array.isArray(material?.documentos)
+      ? material!.documentos.filter((documento) => !!documento?.openUrl || !!documento?.downloadUrl)
+      : [];
+
+    if (documentos.length > 0) {
+      return documentos;
+    }
+
+    if (!material?.temario?.downloadUrl) {
+      return [];
+    }
+
+    const fileName = material.temario.fileName || 'temario.pdf';
+    const openUrl = material.temario.downloadUrl;
+    const downloadUrl = this.agregarDownloadParam(openUrl);
+
+    return [
+      {
+        id: fileName,
+        fileName,
+        title: this.generarTituloDesdeArchivo(fileName),
+        order: 0,
+        mimeType: 'application/pdf',
+        previewable: true,
+        openUrl,
+        downloadUrl,
+      },
+    ];
+  }
+
+  private agregarDownloadParam(url: string): string {
+    if (!url) {
+      return url;
+    }
+
+    if (/[?&]download=/.test(url)) {
+      return url.replace(/([?&]download=)[^&]*/i, '$1true');
+    }
+
+    return url.includes('?') ? `${url}&download=true` : `${url}?download=true`;
+  }
+
+  private esDispositivoIOS(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    const userAgent = navigatorRef.userAgent ?? '';
+    const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
+    const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
+    return esIOSClasico || esIPadOS;
+  }
+
+  private obtenerNombreDescarga(
+    nombre: string | null | undefined,
+    mimeType: string | null | undefined
+  ): string {
+    const base = (nombre ?? '').trim() || 'documento';
+    if (base.includes('.')) {
+      return base;
+    }
+    const extension = this.obtenerExtensionDesdeMime(mimeType);
+    return extension ? `${base}.${extension}` : base;
+  }
+
+  private obtenerExtensionDesdeMime(mimeType: string | null | undefined): string | null {
+    const mime = (mimeType ?? '').split(';')[0].trim().toLowerCase();
+    switch (mime) {
+      case 'application/pdf':
+        return 'pdf';
+      case 'text/csv':
+        return 'csv';
+      case 'text/plain':
+        return 'txt';
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      case 'image/gif':
+        return 'gif';
+      case 'application/msword':
+        return 'doc';
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return 'docx';
+      case 'application/vnd.ms-excel':
+        return 'xls';
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        return 'xlsx';
+      default:
+        return null;
+    }
+  }
+
+  private generarTituloDesdeArchivo(fileName: string): string {
+    const nombreSinExtension = fileName.replace(/\.[^.]+$/, '');
+    return nombreSinExtension
+      .replace(/^\d{1,3}[_\-.\s]+/, '')
+      .replace(/[_-]+/g, ' ')
+      .trim();
   }
 
   private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
@@ -192,10 +400,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.material = null;
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
-    this.temarioUrl = null;
+    this.documentoSeleccionado = null;
+    this.documentoSeleccionadoUrl = null;
     this.errorCarga = null;
     this.cargando = false;
-    this.mostrarTemario = false;
+    this.mostrarDocumentoVisor = false;
     this.descripcionBloqueActual = null;
     this.lastFetchKey = null;
   }
