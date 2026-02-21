@@ -137,6 +137,24 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return !!this.documentoSeleccionado?.previewable && !!this.documentoSeleccionadoUrl;
   }
 
+  esDocumentoPrincipal(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
+    if (!documento) {
+      return false;
+    }
+    const nombre = (documento.fileName || '').toLowerCase();
+    return documento.order === 0 || nombre === 'temario.pdf' || nombre.startsWith('temario.');
+  }
+
+  getDocumentoBadge(documento: MaterialExamenDocumentoDTO | null | undefined): string {
+    if (this.esDocumentoPrincipal(documento)) {
+      return 'TEM';
+    }
+    if (!documento) {
+      return 'DOC';
+    }
+    return documento.order > 0 && documento.order < 10000 ? String(documento.order) : 'DOC';
+  }
+
   abrirDocumentoSeleccionado(): void {
     if (!this.documentoSeleccionado?.previewable) {
       this.descargarDocumentoSeleccionado();

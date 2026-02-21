@@ -89,9 +89,10 @@
           type="button"
           class="doc-item-btn"
           [class.is-active]="documento.id === documentoSeleccionado?.id"
+          [class.is-primary]="esDocumentoPrincipal(documento)"
           (click)="onSeleccionarDocumento(documento)"
         >
-          <span class="doc-order">{{ documento.order > 0 && documento.order < 10000 ? documento.order : 'DOC' }}</span>
+          <span class="doc-order" [class.is-primary]="esDocumentoPrincipal(documento)">{{ getDocumentoBadge(documento) }}</span>
           <span class="doc-title">{{ documento.title || documento.fileName }}</span>
           @if (documento.previewable) {
           <span class="doc-tag">PDF</span>
@@ -102,6 +103,9 @@
 
       <div class="docs-detail">
         @if (documentoSeleccionado) {
+        @if (esDocumentoPrincipal(documentoSeleccionado)) {
+        <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
+        }
         <p class="doc-selected-title">{{ documentoSeleccionado.title || documentoSeleccionado.fileName }}</p>
 
         <div class="docs-actions">
