@@ -156,10 +156,18 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   abrirDocumentoSeleccionado(): void {
-    if (!this.documentoSeleccionado?.previewable) {
+    const documento = this.documentoSeleccionado;
+    const openUrl = this.getDocumentoOpenUrl();
+    if (!documento?.previewable) {
       this.descargarDocumentoSeleccionado();
       return;
     }
+
+    if (openUrl && this.esDocumentoPdf(documento) && !this.esDispositivoMovil()) {
+      globalThis.window?.open(openUrl, '_blank', 'noopener');
+      return;
+    }
+
     this.descargarDocumentoSeleccionado(true);
   }
 
@@ -340,6 +348,20 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return esIOSClasico || esIPadOS;
   }
 
+  private esDispositivoMovil(): boolean {
+    const navigatorRef = globalThis.navigator;
+    if (!navigatorRef) {
+      return false;
+    }
+
+    if (this.esDispositivoIOS()) {
+      return true;
+    }
+
+    const userAgent = (navigatorRef.userAgent ?? '').toLowerCase();
+    return /android|webos|blackberry|iemobile|opera mini|mobile/.test(userAgent);
+  }
+
   private obtenerNombreDescarga(
     nombre: string | null | undefined,
     mimeType: string | null | undefined
@@ -380,6 +402,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       default:
         return null;
     }
+  }
+
+  private esDocumentoPdf(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
+    if (!documento) {
+      return false;
+    }
+    const mime = (documento.mimeType ?? '').split(';')[0].trim().toLowerCase();
+    return mime === 'application/pdf' || mime.endsWith('+pdf');
   }
 
   private generarTituloDesdeArchivo(fileName: string): string {
