@@ -73,6 +73,8 @@
         playsinline
         webkit-playsinline
       ></video>
+      } @else if (cargandoVideoSeleccionado) {
+      <p class="materials-state">Cargando video...</p>
       } @else {
       <p class="materials-state">Selecciona un video para reproducirlo.</p>
       }
@@ -133,6 +135,9 @@
 
         @if (!documentoSeleccionado.previewable) {
         <p class="materials-state">Este formato no admite visor integrado en la web.</p>
+        }
+        @if (cargandoDocumentoSeleccionado && documentoSeleccionado.previewable) {
+        <p class="materials-state">Preparando visor del documento...</p>
         }
 
         @if (mostrarDocumentoVisor && documentoSeleccionadoUrl && documentoSeleccionado.previewable) {

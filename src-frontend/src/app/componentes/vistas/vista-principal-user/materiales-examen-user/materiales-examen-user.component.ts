@@ -35,11 +35,17 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   mostrarDocumentoVisor: boolean = false;
 
   cargando: boolean = false;
+  cargandoVideoSeleccionado: boolean = false;
+  cargandoDocumentoSeleccionado: boolean = false;
   errorCarga: string | null = null;
   descripcionBloqueActual: string | null = null;
 
   private materialSubscription: Subscription | null = null;
+  private videoPrivadoSubscription: Subscription | null = null;
+  private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
+  private videoBlobUrl: string | null = null;
+  private documentoBlobUrl: string | null = null;
   private readonly descripcionPreparacionPorGrado: Record<string, string> = {
     BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
     BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
@@ -90,6 +96,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.materialSubscription?.unsubscribe();
+    this.videoPrivadoSubscription?.unsubscribe();
+    this.documentoPreviewSubscription?.unsubscribe();
+    this.revocarBlobVideo();
+    this.revocarBlobDocumento();
   }
 
   onSeleccionarDeporte(deporte: string): void {
@@ -103,15 +113,13 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   onSeleccionarVideo(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionado = video;
-    this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(video.streamUrl);
+    this.cargarVideoPrivadoSeleccionado(video);
   }
 
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
     this.documentoSeleccionado = documento;
     this.mostrarDocumentoVisor = false;
-    this.documentoSeleccionadoUrl = documento.previewable && documento.openUrl
-      ? this.sanitizer.bypassSecurityTrustResourceUrl(documento.openUrl)
-      : null;
+    this.cargarPreviewDocumentoSeleccionado(documento);
   }
 
   toggleDocumentoVisor(): void {
@@ -157,14 +165,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   abrirDocumentoSeleccionado(): void {
     const documento = this.documentoSeleccionado;
-    const openUrl = this.getDocumentoOpenUrl();
     if (!documento?.previewable) {
       this.descargarDocumentoSeleccionado();
-      return;
-    }
-
-    if (openUrl && this.esDocumentoPdf(documento) && !this.esDispositivoMovil()) {
-      globalThis.window?.open(openUrl, '_blank', 'noopener');
       return;
     }
 
@@ -184,21 +186,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    if (this.esDispositivoIOS()) {
-      if (abrirEnNuevaPestana) {
-        globalThis.window?.open(url, '_blank', 'noopener');
-      } else {
-        globalThis.window?.location.assign(url);
-      }
-      return;
-    }
-
     this.endpointsService.descargarArchivoPrivado(url).subscribe({
       next: (blob) => {
         const blobUrl = globalThis.URL.createObjectURL(blob);
 
-        if (abrirEnNuevaPestana) {
-          globalThis.window?.open(blobUrl, '_blank', 'noopener');
+        if (abrirEnNuevaPestana || this.esDispositivoIOS()) {
+          const popup = globalThis.window?.open(blobUrl, '_blank', 'noopener');
+          if (!popup && this.esDispositivoIOS()) {
+            globalThis.window?.location.assign(blobUrl);
+          }
           setTimeout(() => globalThis.URL.revokeObjectURL(blobUrl), 60_000);
           return;
         }
@@ -215,6 +211,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
         globalThis.URL.revokeObjectURL(blobUrl);
       },
       error: () => {
+        if (this.esDispositivoIOS()) {
+          if (abrirEnNuevaPestana) {
+            globalThis.window?.open(url, '_blank', 'noopener');
+          } else {
+            globalThis.window?.location.assign(url);
+          }
+          return;
+        }
         Swal.fire({
           title: 'Error',
           text: 'No se pudo descargar el documento',
@@ -238,8 +242,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
     this.materialSubscription?.unsubscribe();
     this.cargando = true;
+    this.cargandoVideoSeleccionado = false;
+    this.cargandoDocumentoSeleccionado = false;
     this.errorCarga = null;
     this.material = null;
+    this.videoPrivadoSubscription?.unsubscribe();
+    this.documentoPreviewSubscription?.unsubscribe();
+    this.revocarBlobVideo();
+    this.revocarBlobDocumento();
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
     this.documentoSeleccionado = null;
@@ -348,20 +358,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return esIOSClasico || esIPadOS;
   }
 
-  private esDispositivoMovil(): boolean {
-    const navigatorRef = globalThis.navigator;
-    if (!navigatorRef) {
-      return false;
-    }
-
-    if (this.esDispositivoIOS()) {
-      return true;
-    }
-
-    const userAgent = (navigatorRef.userAgent ?? '').toLowerCase();
-    return /android|webos|blackberry|iemobile|opera mini|mobile/.test(userAgent);
-  }
-
   private obtenerNombreDescarga(
     nombre: string | null | undefined,
     mimeType: string | null | undefined
@@ -404,14 +400,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private esDocumentoPdf(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
-    if (!documento) {
-      return false;
-    }
-    const mime = (documento.mimeType ?? '').split(';')[0].trim().toLowerCase();
-    return mime === 'application/pdf' || mime.endsWith('+pdf');
-  }
-
   private generarTituloDesdeArchivo(fileName: string): string {
     const nombreSinExtension = fileName.replace(/\.[^.]+$/, '');
     return nombreSinExtension
@@ -444,6 +432,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private resetearVista(): void {
     this.materialSubscription?.unsubscribe();
+    this.videoPrivadoSubscription?.unsubscribe();
+    this.documentoPreviewSubscription?.unsubscribe();
+    this.revocarBlobVideo();
+    this.revocarBlobDocumento();
     this.deporteSeleccionado = null;
     this.material = null;
     this.videoSeleccionado = null;
@@ -452,8 +444,99 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.documentoSeleccionadoUrl = null;
     this.errorCarga = null;
     this.cargando = false;
+    this.cargandoVideoSeleccionado = false;
+    this.cargandoDocumentoSeleccionado = false;
     this.mostrarDocumentoVisor = false;
     this.descripcionBloqueActual = null;
     this.lastFetchKey = null;
+  }
+
+  private cargarVideoPrivadoSeleccionado(video: MaterialExamenVideoDTO): void {
+    this.videoPrivadoSubscription?.unsubscribe();
+    this.revocarBlobVideo();
+    this.videoSeleccionadoUrl = null;
+
+    if (!video?.streamUrl) {
+      this.cargandoVideoSeleccionado = false;
+      return;
+    }
+
+    const videoId = video.id;
+    this.cargandoVideoSeleccionado = true;
+    this.videoPrivadoSubscription = this.endpointsService.descargarArchivoPrivado(video.streamUrl).subscribe({
+      next: (blob) => {
+        this.cargandoVideoSeleccionado = false;
+        if (this.videoSeleccionado?.id !== videoId) {
+          return;
+        }
+
+        const blobUrl = globalThis.URL.createObjectURL(blob);
+        this.videoBlobUrl = blobUrl;
+        this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(blobUrl);
+      },
+      error: () => {
+        this.cargandoVideoSeleccionado = false;
+        if (this.videoSeleccionado?.id !== videoId) {
+          return;
+        }
+        this.videoSeleccionadoUrl = null;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo cargar el video seleccionado.',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {
+    this.documentoPreviewSubscription?.unsubscribe();
+    this.revocarBlobDocumento();
+    this.documentoSeleccionadoUrl = null;
+
+    if (!documento?.previewable || !documento.openUrl) {
+      this.cargandoDocumentoSeleccionado = false;
+      return;
+    }
+
+    const documentoId = documento.id;
+    this.cargandoDocumentoSeleccionado = true;
+    this.documentoPreviewSubscription = this.endpointsService
+      .descargarArchivoPrivado(documento.openUrl)
+      .subscribe({
+        next: (blob) => {
+          this.cargandoDocumentoSeleccionado = false;
+          if (this.documentoSeleccionado?.id !== documentoId) {
+            return;
+          }
+
+          const blobUrl = globalThis.URL.createObjectURL(blob);
+          this.documentoBlobUrl = blobUrl;
+          this.documentoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+        },
+        error: () => {
+          this.cargandoDocumentoSeleccionado = false;
+          if (this.documentoSeleccionado?.id !== documentoId) {
+            return;
+          }
+          this.documentoSeleccionadoUrl = null;
+        },
+      });
+  }
+
+  private revocarBlobVideo(): void {
+    if (!this.videoBlobUrl) {
+      return;
+    }
+    globalThis.URL.revokeObjectURL(this.videoBlobUrl);
+    this.videoBlobUrl = null;
+  }
+
+  private revocarBlobDocumento(): void {
+    if (!this.documentoBlobUrl) {
+      return;
+    }
+    globalThis.URL.revokeObjectURL(this.documentoBlobUrl);
+    this.documentoBlobUrl = null;
   }
 }
