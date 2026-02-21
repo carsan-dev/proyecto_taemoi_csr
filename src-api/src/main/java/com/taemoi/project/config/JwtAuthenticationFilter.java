@@ -71,9 +71,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		try {
 			Cookie[] cookies = request.getCookies();
 			List<String> jwtCandidates = new ArrayList<>();
+			int jwtCookiesRecibidas = 0;
 			if (cookies != null) {
 				for (Cookie cookie : cookies) {
 					if ("jwt".equals(cookie.getName())) {
+						jwtCookiesRecibidas++;
 						String value = cookie.getValue();
 						if (value != null && !value.isBlank()) {
 							jwtCandidates.add(value.trim());
@@ -83,6 +85,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			}
 
 			if (jwtCandidates.isEmpty()) {
+				if (requestPath.contains("/material-examen/")) {
+					logger.warn(
+							">>> Sin JWT util para {} {} | jwtCookiesRecibidas={} | host={} | origin={} | referer={}",
+							method,
+							requestPath,
+							jwtCookiesRecibidas,
+							request.getHeader("Host"),
+							request.getHeader("Origin"),
+							request.getHeader("Referer"));
+				}
 				filterChain.doFilter(request, response);
 				return;
 			}
@@ -124,6 +136,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				}
 
 				if (!autenticado) {
+					if (requestPath.contains("/material-examen/")) {
+						logger.warn(
+								">>> JWT no valido para material-examen en {} {} | candidates={} | host={} | origin={} | referer={}",
+								method,
+								requestPath,
+								jwtCandidates.size(),
+								request.getHeader("Host"),
+								request.getHeader("Origin"),
+								request.getHeader("Referer"));
+					}
 					SecurityContextHolder.clearContext();
 				}
 			}
