@@ -1,4 +1,4 @@
-<div class="login-page">
+﻿<div class="login-page">
   <div class="login-container">
     <div class="login-card">
       <!-- Left Section - Branding -->
@@ -8,7 +8,7 @@
             <i class="bi bi-shield-lock-fill"></i>
           </div>
           <h1 class="brand-title">BIENVENIDO</h1>
-          <p class="brand-subtitle">Inicia sesión en tu cuenta</p>
+          <p class="brand-subtitle">Inicia sesi&oacute;n en tu cuenta</p>
           <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
           <div class="brand-features">
             <div class="feature-item">
@@ -17,7 +17,7 @@
             </div>
             <div class="feature-item">
               <i class="bi bi-check-circle-fill"></i>
-              <span>Gestión completa</span>
+              <span>Gesti&oacute;n completa</span>
             </div>
             <div class="feature-item">
               <i class="bi bi-check-circle-fill"></i>
@@ -34,10 +34,10 @@
           <span>Inicio</span>
         </a>
         <div class="form-header">
-          <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesión' }}</h2>
+          <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesi&oacute;n' }}</h2>
           @if (!mostrarRegistro) {
             <p class="form-description">
-              Accede con tu correo y contraseña.
+              Accede con tu correo y contrase&ntilde;a.
             </p>
           }
           @if (mostrarRegistro) {
@@ -58,7 +58,7 @@
             [attr.tabindex]="!mostrarRegistro ? 0 : -1"
             [class.active]="!mostrarRegistro"
             (click)="mostrarRegistro = false">
-            Iniciar sesión
+            Iniciar sesi&oacute;n
           </button>
           <button
             type="button"
@@ -85,7 +85,7 @@
             [attr.inert]="mostrarRegistro ? '' : null">
             <!-- Email Field -->
             <div class="form-group">
-              <label for="email" class="form-label">Correo electrónico</label>
+              <label for="email" class="form-label">Correo electr&oacute;nico</label>
               <div class="input-wrapper">
                 <i class="bi bi-envelope-fill input-icon"></i>
                 <input
@@ -101,7 +101,7 @@
 
             <!-- Password Field -->
             <div class="form-group">
-              <label for="contrasena" class="form-label">Contraseña</label>
+              <label for="contrasena" class="form-label">Contrase&ntilde;a</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -130,19 +130,19 @@
                   type="checkbox"
                   name="rememberMe"
                   [(ngModel)]="credenciales.rememberMe" />
-                <span>Recordarme 30 días</span>
+                <span>Recordarme 30 d&iacute;as</span>
               </label>
             </div>
 
             <div class="forgot-link">
-              <a href="/recuperar-contrasena">¿Has olvidado tu contraseña?</a>
+              <a href="/recuperar-contrasena">&iquest;Has olvidado tu contrase&ntilde;a?</a>
             </div>
 
             <!-- Submit Button -->
             <div class="form-actions">
               <button type="submit" class="btn btn-login">
                 <i class="bi bi-box-arrow-in-right"></i>
-                <span>Iniciar sesión</span>
+                <span>Iniciar sesi&oacute;n</span>
               </button>
             </div>
 
@@ -162,7 +162,7 @@
             <!-- Info Message for Students -->
             <div class="info-message">
               <i class="bi bi-info-circle-fill"></i>
-              <p><strong>Alumnos:</strong> Puedes crear cuenta con tu correo y fecha de nacimiento o continuar con Google.</p>
+              <p><strong>S&oacute;lo alumnos inscritos:</strong> inicia sesi&oacute;n con Google usando el correo registrado en tu ficha.</p>
             </div>
 
             <!-- Additional Links -->
@@ -183,41 +183,43 @@
             [attr.aria-hidden]="!mostrarRegistro"
             [attr.inert]="mostrarRegistro ? null : ''"
             novalidate>
-            <!-- Email Field -->
-            <div class="form-group">
-              <label for="registroEmail" class="form-label">Correo electrónico</label>
-              <div class="input-wrapper">
-                <i class="bi bi-envelope-fill input-icon"></i>
-                <input
-                  type="email"
-                  class="form-input"
-                  id="registroEmail"
-                  name="registroEmail"
-                  [(ngModel)]="registro.email"
-                  required
-                  autocomplete="username">
+            <div class="register-row">
+              <!-- Email Field -->
+              <div class="form-group">
+                <label for="registroEmail" class="form-label">Correo electr&oacute;nico</label>
+                <div class="input-wrapper">
+                  <i class="bi bi-envelope-fill input-icon"></i>
+                  <input
+                    type="email"
+                    class="form-input"
+                    id="registroEmail"
+                    name="registroEmail"
+                    [(ngModel)]="registro.email"
+                    required
+                    autocomplete="username">
+                </div>
               </div>
-            </div>
 
-            <!-- Birth Date Field -->
-            <div class="form-group">
-              <label for="registroNacimiento" class="form-label">Fecha de nacimiento</label>
-              <div class="input-wrapper">
-                <i class="bi bi-calendar-event input-icon"></i>
-                <input
-                  type="date"
-                  class="form-input"
-                  id="registroNacimiento"
-                  name="registroNacimiento"
-                  [(ngModel)]="registro.fechaNacimiento"
-                  required
-                  autocomplete="bday">
+              <!-- Birth Date Field -->
+              <div class="form-group">
+                <label for="registroNacimiento" class="form-label">Fecha de nacimiento</label>
+                <div class="input-wrapper">
+                  <i class="bi bi-calendar-event input-icon"></i>
+                  <input
+                    type="date"
+                    class="form-input"
+                    id="registroNacimiento"
+                    name="registroNacimiento"
+                    [(ngModel)]="registro.fechaNacimiento"
+                    required
+                    autocomplete="bday">
+                </div>
               </div>
             </div>
 
             <!-- Password Field -->
             <div class="form-group">
-              <label for="registroContrasena" class="form-label">Contraseña</label>
+              <label for="registroContrasena" class="form-label">Contrase&ntilde;a</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -240,23 +242,23 @@
             </div>
 
             <details class="password-rules" [open]="registro.contrasena.length > 0 || registro.confirmarContrasena.length > 0">
-              <summary>Requisitos de contraseña</summary>
+              <summary>Requisitos de contrase&ntilde;a</summary>
               <ul>
                 <li [class.ok]="registroTieneMinimo" [class.bad]="!registroTieneMinimo">
                   <i class="bi" [ngClass]="registroTieneMinimo ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
-                  Mínimo 8 caracteres
+                  M&iacute;nimo 8 caracteres
                 </li>
                 <li [class.ok]="registroTieneMayuscula" [class.bad]="!registroTieneMayuscula">
                   <i class="bi" [ngClass]="registroTieneMayuscula ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
-                  Al menos 1 mayúscula
+                  Al menos 1 may&uacute;scula
                 </li>
                 <li [class.ok]="registroTieneMinuscula" [class.bad]="!registroTieneMinuscula">
                   <i class="bi" [ngClass]="registroTieneMinuscula ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
-                  Al menos 1 minúscula
+                  Al menos 1 min&uacute;scula
                 </li>
                 <li [class.ok]="registroTieneNumero" [class.bad]="!registroTieneNumero">
                   <i class="bi" [ngClass]="registroTieneNumero ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
-                  Al menos 1 número
+                  Al menos 1 n&uacute;mero
                 </li>
                 <li [class.ok]="registroContrasenasCoinciden" [class.bad]="!registroContrasenasCoinciden && registro.confirmarContrasena.length">
                   <i class="bi" [ngClass]="registroContrasenasCoinciden ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
@@ -267,7 +269,7 @@
 
             <!-- Confirm Password -->
             <div class="form-group">
-              <label for="registroConfirmar" class="form-label">Confirmar contraseña</label>
+              <label for="registroConfirmar" class="form-label">Confirmar contrase&ntilde;a</label>
               <div class="input-wrapper">
                 <i class="bi bi-lock-fill input-icon"></i>
                 <input
@@ -314,3 +316,4 @@
     </div>
   </div>
 </div>
+
