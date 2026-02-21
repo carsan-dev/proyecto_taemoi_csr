@@ -1,8 +1,14 @@
 package com.taemoi.project.config;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Locale;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -32,6 +38,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	@Value("${spring.profiles.active:default}")
 	private String activeProfile;
+
+	@Value("${app.base.url:}")
+	private String appBaseUrl;
 
 	public OAuth2AuthenticationSuccessHandler(OAuth2UserService oauth2UserService,
 											  JwtService jwtService) {
@@ -68,30 +77,24 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			// Determinar si usar Secure basado en el perfil activo
 			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
-			// Crear cookie HTTP-Only con el JWT (usando Cookie estándar como en AuthenticationController)
-			jakarta.servlet.http.Cookie jwtCookie = new jakarta.servlet.http.Cookie("jwt", jwt);
-			jwtCookie.setHttpOnly(true);
-			jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
-			jwtCookie.setPath("/");
+			ResponseCookie.ResponseCookieBuilder jwtCookieBuilder = ResponseCookie.from("jwt", jwt)
+					.httpOnly(true)
+					.secure(isProduction)
+					.path("/")
+					.sameSite("Lax");
 			if (rememberMe) {
-				jwtCookie.setMaxAge(60 * 60 * 24 * 30); // 30 dias
-			} else {
-				jwtCookie.setMaxAge(-1); // Sesion hasta cerrar el navegador
+				jwtCookieBuilder.maxAge(Duration.ofDays(30));
 			}
-			if (isProduction) {
-				jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
-			}
+			resolverDominioCookie().ifPresent(jwtCookieBuilder::domain);
+			response.addHeader(HttpHeaders.SET_COOKIE, jwtCookieBuilder.build().toString());
 
-			// Agregar la cookie a la respuesta HTTP
-			response.addCookie(jwtCookie);
-			jakarta.servlet.http.Cookie rememberMeCookie = new jakarta.servlet.http.Cookie("rememberMe", null);
-			rememberMeCookie.setPath("/");
-			rememberMeCookie.setMaxAge(0);
-			rememberMeCookie.setSecure(isProduction);
-			if (isProduction) {
-				rememberMeCookie.setAttribute("SameSite", "Lax");
-			}
-			response.addCookie(rememberMeCookie);
+			ResponseCookie.ResponseCookieBuilder rememberMeBuilder = ResponseCookie.from("rememberMe", "")
+					.secure(isProduction)
+					.path("/")
+					.maxAge(Duration.ZERO)
+					.sameSite("Lax");
+			resolverDominioCookie().ifPresent(rememberMeBuilder::domain);
+			response.addHeader(HttpHeaders.SET_COOKIE, rememberMeBuilder.build().toString());
 
 			// Redirigir al frontend basado en el rol del usuario
 			String redirectPath;
@@ -114,6 +117,30 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			String errorUrl = frontendUrl + "/login?error=oauth_error&message=" +
 							  java.net.URLEncoder.encode("Error en la autenticación OAuth2", "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
+		}
+	}
+
+	private Optional<String> resolverDominioCookie() {
+		String baseUrl = (appBaseUrl != null && !appBaseUrl.isBlank()) ? appBaseUrl : frontendUrl;
+		if (baseUrl == null || baseUrl.isBlank()) {
+			return Optional.empty();
+		}
+
+		try {
+			String host = URI.create(baseUrl.trim()).getHost();
+			if (host == null || host.isBlank()) {
+				return Optional.empty();
+			}
+			host = host.toLowerCase(Locale.ROOT);
+			if ("localhost".equals(host) || host.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
+				return Optional.empty();
+			}
+			if (host.startsWith("www.")) {
+				host = host.substring(4);
+			}
+			return host.isBlank() ? Optional.empty() : Optional.of(host);
+		} catch (Exception e) {
+			return Optional.empty();
 		}
 	}
 }
