@@ -76,16 +76,20 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 			// Determinar si usar Secure basado en el perfil activo
 			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
-
-			response.addHeader(HttpHeaders.SET_COOKIE,
-					construirCookieJwt(jwt, isProduction, rememberMe, false, null).toString());
 			Optional<String> dominioCookie = resolverDominioCookie();
+
+			// Limpiar posibles cookies heredadas (host-only y domain) antes de fijar la canónica
+			response.addHeader(HttpHeaders.SET_COOKIE,
+					construirCookieJwt("", isProduction, false, true, null).toString());
 			if (dominioCookie.isPresent()) {
 				String domain = dominioCookie.get();
 				response.addHeader(
 						HttpHeaders.SET_COOKIE,
-						construirCookieJwt(jwt, isProduction, rememberMe, false, domain).toString());
+						construirCookieJwt("", isProduction, false, true, domain).toString());
 			}
+			String cookieDomain = dominioCookie.orElse(null);
+			response.addHeader(HttpHeaders.SET_COOKIE,
+					construirCookieJwt(jwt, isProduction, rememberMe, false, cookieDomain).toString());
 
 			response.addHeader(HttpHeaders.SET_COOKIE,
 					construirCookieRememberMe(isProduction, null).toString());
