@@ -1,6 +1,8 @@
 package com.taemoi.project.config;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -68,47 +70,62 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		try {
 			Cookie[] cookies = request.getCookies();
-			String jwt = null;
+			List<String> jwtCandidates = new ArrayList<>();
 			if (cookies != null) {
 				for (Cookie cookie : cookies) {
 					if ("jwt".equals(cookie.getName())) {
-						jwt = cookie.getValue();
-						break;
+						String value = cookie.getValue();
+						if (value != null && !value.isBlank()) {
+							jwtCandidates.add(value.trim());
+						}
 					}
 				}
 			}
 
-			if (jwt == null) {
+			if (jwtCandidates.isEmpty()) {
 				filterChain.doFilter(request, response);
 				return;
 			}
 
-			// Extraer el nombre de usuario del token JWT
-			final String userEmail = jwtService.extractUserName(jwt);
+			if (SecurityContextHolder.getContext().getAuthentication() == null) {
+				boolean autenticado = false;
+				for (String jwt : jwtCandidates) {
+					try {
+						final String userEmail = jwtService.extractUserName(jwt);
+						if (userEmail == null || userEmail.isBlank()) {
+							continue;
+						}
 
-			// Verificar que el usuario no esté autenticado ya
-			if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-				// Cargar los detalles del usuario
-				UserDetails userDetails = usuarioService.loadUserByUsername(userEmail);
+						UserDetails userDetails = usuarioService.loadUserByUsername(userEmail);
 
-				boolean roleUser = userDetails.getAuthorities().stream()
-						.anyMatch(authority -> Roles.ROLE_USER.toString().equals(authority.getAuthority()));
-				boolean roleAdminOrManager = userDetails.getAuthorities().stream()
-						.anyMatch(authority -> Roles.ROLE_ADMIN.toString().equals(authority.getAuthority())
-								|| Roles.ROLE_MANAGER.toString().equals(authority.getAuthority()));
-				boolean requiereAlumnoActivo = roleUser && !roleAdminOrManager;
-				boolean hasActiveAlumno = !requiereAlumnoActivo
-						|| alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(userEmail);
+						boolean roleUser = userDetails.getAuthorities().stream()
+								.anyMatch(authority -> Roles.ROLE_USER.toString().equals(authority.getAuthority()));
+						boolean roleAdminOrManager = userDetails.getAuthorities().stream()
+								.anyMatch(authority -> Roles.ROLE_ADMIN.toString().equals(authority.getAuthority())
+										|| Roles.ROLE_MANAGER.toString().equals(authority.getAuthority()));
+						boolean requiereAlumnoActivo = roleUser && !roleAdminOrManager;
+						boolean hasActiveAlumno = !requiereAlumnoActivo
+								|| alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(userEmail);
 
-				if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && hasActiveAlumno) {
-					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-							null, userDetails.getAuthorities());
-					SecurityContextHolder.getContext().setAuthentication(authToken);
-				} else if (!hasActiveAlumno) {
-					logger.info(">>> JWT rechazado para usuario sin alumnos activos: {}", userEmail);
-					SecurityContextHolder.clearContext();
+						if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && hasActiveAlumno) {
+							UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+									userDetails,
+									null,
+									userDetails.getAuthorities());
+							SecurityContextHolder.getContext().setAuthentication(authToken);
+							autenticado = true;
+							break;
+						} else if (!hasActiveAlumno) {
+							logger.info(">>> JWT rechazado para usuario sin alumnos activos: {}", userEmail);
+						}
+					} catch (Exception tokenEx) {
+						logger.warn(">>> JWT candidate inválido para {}: {}", requestPath, tokenEx.getMessage());
+					}
 				}
 
+				if (!autenticado) {
+					SecurityContextHolder.clearContext();
+				}
 			}
 		} catch (Exception e) {
 			// Token inválido o expirado - no autenticar al usuario
