@@ -888,7 +888,8 @@ public class AlumnoController {
 	public ResponseEntity<Resource> descargarTemarioMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte,
-			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download) {
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
+			@RequestHeader HttpHeaders requestHeaders) {
 		if (!usuarioPuedeAccederAlumno(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -899,9 +900,7 @@ public class AlumnoController {
 			if (!esTemarioPermitido(temario.getMimeType())) {
 				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
 			}
-			return download
-					? construirRespuestaArchivoAttachment(temario)
-					: construirRespuestaArchivoInline(temario);
+			return construirRespuestaArchivoConRange(temario, requestHeaders, download);
 		} catch (NoSuchElementException e) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		} catch (IllegalArgumentException e) {
@@ -918,7 +917,8 @@ public class AlumnoController {
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte,
 			@PathVariable String documentoFile,
-			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download) {
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
+			@RequestHeader HttpHeaders requestHeaders) {
 		if (!usuarioPuedeAccederAlumno(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -927,10 +927,8 @@ public class AlumnoController {
 			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo documento = materialExamenService
 					.obtenerDocumento(alumnoId, deporteEnum, documentoFile);
-			if (!download && esTemarioPermitido(documento.getMimeType())) {
-				return construirRespuestaArchivoInline(documento);
-			}
-			return construirRespuestaArchivoAttachment(documento);
+			boolean forzarDownload = download || !esTemarioPermitido(documento.getMimeType());
+			return construirRespuestaArchivoConRange(documento, requestHeaders, forzarDownload);
 		} catch (NoSuchElementException e) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		} catch (IllegalArgumentException e) {
@@ -2304,9 +2302,17 @@ public class AlumnoController {
 	private ResponseEntity<Resource> construirRespuestaVideoConRange(
 			MaterialExamenService.MaterialExamenArchivo archivo,
 			HttpHeaders requestHeaders) throws IOException {
+		return construirRespuestaArchivoConRange(archivo, requestHeaders, false);
+	}
+
+	private ResponseEntity<Resource> construirRespuestaArchivoConRange(
+			MaterialExamenService.MaterialExamenArchivo archivo,
+			HttpHeaders requestHeaders,
+			boolean download) throws IOException {
 		long fileSize = archivo.getSize();
 		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
 		List<HttpRange> ranges = requestHeaders.getRange();
+		String disposition = (download ? "attachment" : "inline") + "; filename=\"" + archivo.getFileName() + "\"";
 
 		if (ranges == null || ranges.isEmpty()) {
 			InputStreamResource fullResource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
@@ -2314,7 +2320,7 @@ public class AlumnoController {
 					.contentType(mediaType)
 					.contentLength(fileSize)
 					.header(HttpHeaders.ACCEPT_RANGES, "bytes")
-					.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+					.header(HttpHeaders.CONTENT_DISPOSITION, disposition)
 					.body(fullResource);
 		}
 
@@ -2338,7 +2344,7 @@ public class AlumnoController {
 				.contentLength(contentLength)
 				.header(HttpHeaders.ACCEPT_RANGES, "bytes")
 				.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize)
-				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+				.header(HttpHeaders.CONTENT_DISPOSITION, disposition)
 				.body(partialResource);
 	}
 
