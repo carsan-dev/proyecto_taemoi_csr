@@ -144,11 +144,18 @@ public class AuthenticationController {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
+		Optional<String> domainOpt = resolverDominioCookie();
+		// Limpiar posibles cookies heredadas (host-only y domain) antes de fijar la canónica
 		response.addHeader(HttpHeaders.SET_COOKIE,
-				construirCookieJwt(jwtResponse.getToken(), isProduction, rememberMe, false, null).toString());
-		resolverDominioCookie().ifPresent(domain -> response.addHeader(
-				HttpHeaders.SET_COOKIE,
-				construirCookieJwt(jwtResponse.getToken(), isProduction, rememberMe, false, domain).toString()));
+				construirCookieJwt("", isProduction, false, true, null).toString());
+		if (domainOpt.isPresent()) {
+			response.addHeader(HttpHeaders.SET_COOKIE,
+					construirCookieJwt("", isProduction, false, true, domainOpt.get()).toString());
+		}
+
+		String cookieDomain = domainOpt.orElse(null);
+		response.addHeader(HttpHeaders.SET_COOKIE,
+				construirCookieJwt(jwtResponse.getToken(), isProduction, rememberMe, false, cookieDomain).toString());
 
 		// Retornar la respuesta con el cuerpo
 		return ResponseEntity.ok(jwtResponse);
@@ -193,11 +200,13 @@ public class AuthenticationController {
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
+		Optional<String> domainOpt = resolverDominioCookie();
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
-		resolverDominioCookie().ifPresent(domain -> response.addHeader(
-				HttpHeaders.SET_COOKIE,
-				construirCookieJwt("", isProduction, false, true, domain).toString()));
+		if (domainOpt.isPresent()) {
+			response.addHeader(HttpHeaders.SET_COOKIE,
+					construirCookieJwt("", isProduction, false, true, domainOpt.get()).toString());
+		}
 		return ResponseEntity.ok().build();
 	}
 
