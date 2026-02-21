@@ -87,6 +87,7 @@ describe('VistaPrincipalUserComponent', () => {
       gradoActual: null,
       bloqueId: null,
       temario: null,
+      documentos: [],
       videos: [],
     } as any));
     endpointsServiceSpy.obtenerUrlDescargaDocumentoAlumno.and.callFake(
