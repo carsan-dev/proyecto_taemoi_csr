@@ -79,15 +79,22 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 			response.addHeader(HttpHeaders.SET_COOKIE,
 					construirCookieJwt(jwt, isProduction, rememberMe, false, null).toString());
-			resolverDominioCookie().ifPresent(domain -> response.addHeader(
-					HttpHeaders.SET_COOKIE,
-					construirCookieJwt(jwt, isProduction, rememberMe, false, domain).toString()));
+			Optional<String> dominioCookie = resolverDominioCookie();
+			if (dominioCookie.isPresent()) {
+				String domain = dominioCookie.get();
+				response.addHeader(
+						HttpHeaders.SET_COOKIE,
+						construirCookieJwt(jwt, isProduction, rememberMe, false, domain).toString());
+			}
 
 			response.addHeader(HttpHeaders.SET_COOKIE,
 					construirCookieRememberMe(isProduction, null).toString());
-			resolverDominioCookie().ifPresent(domain -> response.addHeader(
-					HttpHeaders.SET_COOKIE,
-					construirCookieRememberMe(isProduction, domain).toString()));
+			if (dominioCookie.isPresent()) {
+				String domain = dominioCookie.get();
+				response.addHeader(
+						HttpHeaders.SET_COOKIE,
+						construirCookieRememberMe(isProduction, domain).toString());
+			}
 
 			// Redirigir al frontend basado en el rol del usuario
 			String redirectPath;
