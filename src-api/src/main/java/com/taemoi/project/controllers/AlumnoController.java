@@ -887,7 +887,8 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<Resource> descargarTemarioMaterialExamen(
 			@PathVariable Long alumnoId,
-			@PathVariable String deporte) {
+			@PathVariable String deporte,
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download) {
 		if (!usuarioPuedeAccederAlumno(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -898,13 +899,45 @@ public class AlumnoController {
 			if (!esTemarioPermitido(temario.getMimeType())) {
 				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
 			}
-			return construirRespuestaArchivoInline(temario);
+			return download
+					? construirRespuestaArchivoAttachment(temario)
+					: construirRespuestaArchivoInline(temario);
 		} catch (NoSuchElementException e) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().build();
 		} catch (Exception e) {
 			logger.error("Error al descargar temario de material de examen. Alumno: {}, deporte: {}", alumnoId, deporte, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile}")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	public ResponseEntity<Resource> descargarDocumentoMaterialExamen(
+			@PathVariable Long alumnoId,
+			@PathVariable String deporte,
+			@PathVariable String documentoFile,
+			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download) {
+		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		try {
+			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			MaterialExamenService.MaterialExamenArchivo documento = materialExamenService
+					.obtenerDocumento(alumnoId, deporteEnum, documentoFile);
+			if (!download && esTemarioPermitido(documento.getMimeType())) {
+				return construirRespuestaArchivoInline(documento);
+			}
+			return construirRespuestaArchivoAttachment(documento);
+		} catch (NoSuchElementException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		} catch (Exception e) {
+			logger.error("Error al servir documento de material de examen. Alumno: {}, deporte: {}, documento: {}",
+					alumnoId, deporte, documentoFile, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
@@ -2246,13 +2279,25 @@ public class AlumnoController {
 
 	private ResponseEntity<Resource> construirRespuestaArchivoInline(
 			MaterialExamenService.MaterialExamenArchivo archivo) throws IOException {
+		return construirRespuestaArchivoConDisposition(archivo, false);
+	}
+
+	private ResponseEntity<Resource> construirRespuestaArchivoAttachment(
+			MaterialExamenService.MaterialExamenArchivo archivo) throws IOException {
+		return construirRespuestaArchivoConDisposition(archivo, true);
+	}
+
+	private ResponseEntity<Resource> construirRespuestaArchivoConDisposition(
+			MaterialExamenService.MaterialExamenArchivo archivo,
+			boolean download) throws IOException {
 		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
 		InputStreamResource resource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
+		String disposition = (download ? "attachment" : "inline") + "; filename=\"" + archivo.getFileName() + "\"";
 
 		return ResponseEntity.ok()
 				.contentType(mediaType)
 				.contentLength(archivo.getSize())
-				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.getFileName() + "\"")
+				.header(HttpHeaders.CONTENT_DISPOSITION, disposition)
 				.body(resource);
 	}
 

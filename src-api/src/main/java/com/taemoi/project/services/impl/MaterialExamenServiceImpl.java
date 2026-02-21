@@ -24,6 +24,7 @@ import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.ExamMaterialBlockConfig;
+import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.dtos.response.MaterialExamenTemarioDTO;
 import com.taemoi.project.dtos.response.MaterialExamenVideoDTO;
@@ -37,7 +38,7 @@ import com.taemoi.project.services.MaterialExamenService;
 public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	private static final Logger logger = LoggerFactory.getLogger(MaterialExamenServiceImpl.class);
-	private static final Pattern ORDEN_VIDEO_PATTERN = Pattern.compile("^(\\d{1,3})[_\\-.\\s]+(.+)$");
+	private static final Pattern ORDEN_ARCHIVO_PATTERN = Pattern.compile("^(\\d{1,3})[_\\-.\\s]+(.+)$");
 	private static final int ORDEN_POR_DEFECTO = 10_000;
 
 	@Value("${app.documentos.directorio.linux}")
@@ -81,6 +82,39 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 				.toList();
 		response.setVideos(videos);
 
+		List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
+		if (contexto.temario() != null) {
+			String fileName = contexto.temario().getFileName().toString();
+			String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte.name();
+			documentos.add(new MaterialExamenDocumentoDTO(
+					fileName,
+					fileName,
+					generarTituloDesdeArchivo(fileName),
+					0,
+					"application/pdf",
+					true,
+					baseUrl + "/material-examen/temario",
+					baseUrl + "/material-examen/temario?download=true"));
+		}
+
+		documentos.addAll(contexto.documentos().stream()
+				.map(documento -> {
+					String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+							+ "/material-examen/documentacion/"
+							+ UriUtils.encodePathSegment(documento.fileName(), StandardCharsets.UTF_8);
+					return new MaterialExamenDocumentoDTO(
+							documento.fileName(),
+							documento.fileName(),
+							documento.title(),
+							documento.order(),
+							documento.mimeType(),
+							documento.previewable(),
+							baseUrl,
+							baseUrl + "?download=true");
+				})
+				.toList());
+		response.setDocumentos(documentos);
+
 		return response;
 	}
 
@@ -97,7 +131,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	@Override
 	public MaterialExamenArchivo obtenerVideo(Long alumnoId, Deporte deporte, String videoFile) {
-		String nombreVideo = sanitizarNombreVideo(videoFile);
+		String nombreVideo = sanitizarNombreArchivo(videoFile, "video");
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 
 		Optional<VideoFileEntry> match = contexto.videos().stream()
@@ -106,6 +140,22 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		if (match.isEmpty()) {
 			throw new NoSuchElementException("No se encontro el video solicitado en el bloque de material actual");
+		}
+
+		return crearArchivo(match.get().path(), null);
+	}
+
+	@Override
+	public MaterialExamenArchivo obtenerDocumento(Long alumnoId, Deporte deporte, String documentoFile) {
+		String nombreDocumento = sanitizarNombreArchivo(documentoFile, "documento");
+		MaterialContext contexto = resolverContexto(alumnoId, deporte);
+
+		Optional<DocumentoFileEntry> match = contexto.documentos().stream()
+				.filter(documento -> documento.fileName().equalsIgnoreCase(nombreDocumento))
+				.findFirst();
+
+		if (match.isEmpty()) {
+			throw new NoSuchElementException("No se encontro el documento solicitado en el bloque de material actual");
 		}
 
 		return crearArchivo(match.get().path(), null);
@@ -135,7 +185,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		}
 
 		if (bloqueId == null || bloqueId.isBlank()) {
-			return new MaterialContext(gradoActual, null, null, List.of());
+			return new MaterialContext(gradoActual, null, null, List.of(), List.of());
 		}
 
 		Path carpetaBloque = obtenerRutaBaseDocumentos()
@@ -146,12 +196,13 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		if (!Files.isDirectory(carpetaBloque)) {
 			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
-			return new MaterialContext(gradoActual, bloqueId, null, List.of());
+			return new MaterialContext(gradoActual, bloqueId, null, List.of(), List.of());
 		}
 
 		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
 		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
-		return new MaterialContext(gradoActual, bloqueId, temario, videos);
+		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
+		return new MaterialContext(gradoActual, bloqueId, temario, videos, documentos);
 	}
 
 	private Path resolverTemario(Path carpetaTemario) {
@@ -213,6 +264,38 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return videos;
 	}
 
+	private List<DocumentoFileEntry> resolverDocumentacion(Path carpetaDocumentacion) {
+		if (!Files.isDirectory(carpetaDocumentacion)) {
+			return List.of();
+		}
+
+		List<DocumentoFileEntry> documentos = new ArrayList<>();
+		try (var stream = Files.list(carpetaDocumentacion)) {
+			stream
+					.filter(Files::isRegularFile)
+					.filter(this::esArchivoDocumentacionVisible)
+					.forEach(path -> {
+						String fileName = path.getFileName().toString();
+						String mime = detectarMime(path);
+						documentos.add(new DocumentoFileEntry(
+								fileName,
+								generarTituloDesdeArchivo(fileName),
+								extraerOrden(fileName),
+								path,
+								mime,
+								esMimePdf(mime)));
+					});
+		} catch (IOException e) {
+			logger.error("Error al listar documentos en {}", carpetaDocumentacion, e);
+			return List.of();
+		}
+
+		documentos.sort(
+				Comparator.comparing(DocumentoFileEntry::order)
+						.thenComparing(documento -> documento.fileName().toLowerCase(Locale.ROOT)));
+		return documentos;
+	}
+
 	private Map<String, IndexVideoEntry> cargarIndex(Path indexPath) {
 		if (!Files.isRegularFile(indexPath)) {
 			return Map.of();
@@ -242,7 +325,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	private int extraerOrden(String fileName) {
 		String base = sinExtension(fileName);
-		Matcher matcher = ORDEN_VIDEO_PATTERN.matcher(base);
+		Matcher matcher = ORDEN_ARCHIVO_PATTERN.matcher(base);
 		if (matcher.matches()) {
 			try {
 				return Integer.parseInt(matcher.group(1));
@@ -255,22 +338,30 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	private String generarTituloDesdeArchivo(String fileName) {
 		String base = sinExtension(fileName);
-		Matcher matcher = ORDEN_VIDEO_PATTERN.matcher(base);
+		Matcher matcher = ORDEN_ARCHIVO_PATTERN.matcher(base);
 		String limpio = matcher.matches() ? matcher.group(2) : base;
 		return limpio.replace('_', ' ').replace('-', ' ').trim();
 	}
 
-	private String sanitizarNombreVideo(String videoFile) {
-		if (videoFile == null || videoFile.isBlank()) {
-			throw new IllegalArgumentException("El nombre de video es obligatorio");
+	private String sanitizarNombreArchivo(String fileName, String tipoArchivo) {
+		if (fileName == null || fileName.isBlank()) {
+			throw new IllegalArgumentException("El nombre de " + tipoArchivo + " es obligatorio");
 		}
 
-		String cleaned = videoFile.trim();
+		String cleaned = fileName.trim();
 		if (cleaned.contains("..") || cleaned.contains("/") || cleaned.contains("\\") || cleaned.contains("%2f")
 				|| cleaned.contains("%2F") || cleaned.contains("%5c") || cleaned.contains("%5C")) {
-			throw new IllegalArgumentException("Nombre de video invalido");
+			throw new IllegalArgumentException("Nombre de " + tipoArchivo + " invalido");
 		}
 		return cleaned;
+	}
+
+	private boolean esArchivoDocumentacionVisible(Path path) {
+		String fileName = path.getFileName().toString();
+		if (fileName == null || fileName.isBlank()) {
+			return false;
+		}
+		return !fileName.startsWith(".") && !fileName.equalsIgnoreCase(".gitkeep");
 	}
 
 	private boolean esVideoPermitido(Path path) {
@@ -330,6 +421,10 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		};
 	}
 
+	private boolean esMimePdf(String mimeType) {
+		return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("application/pdf");
+	}
+
 	private Path obtenerRutaBaseDocumentos() {
 		String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 		String baseDir;
@@ -345,10 +440,24 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return Path.of(baseDir).normalize();
 	}
 
-	private record MaterialContext(String gradoActual, String bloqueId, Path temario, List<VideoFileEntry> videos) {
+	private record MaterialContext(
+			String gradoActual,
+			String bloqueId,
+			Path temario,
+			List<VideoFileEntry> videos,
+			List<DocumentoFileEntry> documentos) {
 	}
 
 	private record VideoFileEntry(String fileName, String title, Integer order, Path path) {
+	}
+
+	private record DocumentoFileEntry(
+			String fileName,
+			String title,
+			Integer order,
+			Path path,
+			String mimeType,
+			boolean previewable) {
 	}
 
 	private record IndexVideoEntry(String title, Integer order) {

@@ -139,6 +139,10 @@ public class SecurityConfiguration {
 								"/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
+						.requestMatchers(HttpMethod.GET,
+								"/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile}")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/imagen")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
