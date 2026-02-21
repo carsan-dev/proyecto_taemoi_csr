@@ -5,13 +5,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.time.Duration;
+import java.net.URI;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -50,7 +55,6 @@ import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.utils.EmailUtils;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -69,6 +73,9 @@ public class AuthenticationController {
 
 	@Value("${spring.profiles.active:default}")
 	private String activeProfile;
+
+	@Value("${app.base.url:}")
+	private String appBaseUrl;
 
 	/**
 	 * Inyección del servicio de autenticación.
@@ -137,22 +144,16 @@ public class AuthenticationController {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
-		// Crear la cookie HTTP-Only
-		Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
-		jwtCookie.setHttpOnly(true); // No accesible desde JavaScript
-		jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
-		jwtCookie.setPath("/"); // Disponible para todo el dominio
+		ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("jwt", jwtResponse.getToken())
+				.httpOnly(true)
+				.secure(isProduction)
+				.path("/")
+				.sameSite("Lax");
 		if (rememberMe) {
-			jwtCookie.setMaxAge(60 * 60 * 24 * 30); // 30 dias de validez
-		} else {
-			jwtCookie.setMaxAge(-1); // Sesion hasta cerrar el navegador
+			cookieBuilder.maxAge(Duration.ofDays(30));
 		}
-		if (isProduction) {
-			jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
-		}
-
-		// Agregar la cookie a la respuesta HTTP
-		response.addCookie(jwtCookie);
+		resolverDominioCookie().ifPresent(cookieBuilder::domain);
+		response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
 
 		// Retornar la respuesta con el cuerpo
 		return ResponseEntity.ok(jwtResponse);
@@ -197,16 +198,14 @@ public class AuthenticationController {
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
-		Cookie jwtCookie = new Cookie("jwt", null);
-		jwtCookie.setHttpOnly(true);
-		jwtCookie.setSecure(isProduction); // Solo HTTPS en producción
-		jwtCookie.setPath("/");
-		jwtCookie.setMaxAge(0); // Eliminar la cookie
-		if (isProduction) {
-			jwtCookie.setAttribute("SameSite", "Strict");
-		}
-
-		response.addCookie(jwtCookie);
+		ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("jwt", "")
+				.httpOnly(true)
+				.secure(isProduction)
+				.path("/")
+				.maxAge(Duration.ZERO)
+				.sameSite("Lax");
+		resolverDominioCookie().ifPresent(cookieBuilder::domain);
+		response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
 		return ResponseEntity.ok().build();
 	}
 
@@ -357,6 +356,29 @@ public class AuthenticationController {
 		}
 
 		return AlumnoParaUsuarioDTO.deAlumno(alumnosActivos.get(0));
+	}
+
+	private Optional<String> resolverDominioCookie() {
+		if (appBaseUrl == null || appBaseUrl.isBlank()) {
+			return Optional.empty();
+		}
+
+		try {
+			String host = URI.create(appBaseUrl.trim()).getHost();
+			if (host == null || host.isBlank()) {
+				return Optional.empty();
+			}
+			host = host.toLowerCase(Locale.ROOT);
+			if ("localhost".equals(host) || host.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
+				return Optional.empty();
+			}
+			if (host.startsWith("www.")) {
+				host = host.substring(4);
+			}
+			return host.isBlank() ? Optional.empty() : Optional.of(host);
+		} catch (Exception e) {
+			return Optional.empty();
+		}
 	}
 
 	/**
