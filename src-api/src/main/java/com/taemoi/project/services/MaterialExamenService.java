@@ -13,6 +13,8 @@ public interface MaterialExamenService {
 
 	MaterialExamenArchivo obtenerVideo(Long alumnoId, Deporte deporte, String videoFile);
 
+	MaterialExamenArchivo obtenerDocumento(Long alumnoId, Deporte deporte, String documentoFile);
+
 	class MaterialExamenArchivo {
 		private final Path path;
 		private final String fileName;

@@ -8,6 +8,7 @@ public class MaterialExamenDTO {
 	private String gradoActual;
 	private String bloqueId;
 	private MaterialExamenTemarioDTO temario;
+	private List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 	private List<MaterialExamenVideoDTO> videos = new ArrayList<>();
 
 	public MaterialExamenDTO() {
@@ -51,5 +52,13 @@ public class MaterialExamenDTO {
 
 	public void setVideos(List<MaterialExamenVideoDTO> videos) {
 		this.videos = videos;
+	}
+
+	public List<MaterialExamenDocumentoDTO> getDocumentos() {
+		return documentos;
+	}
+
+	public void setDocumentos(List<MaterialExamenDocumentoDTO> documentos) {
+		this.documentos = documentos;
 	}
 }
