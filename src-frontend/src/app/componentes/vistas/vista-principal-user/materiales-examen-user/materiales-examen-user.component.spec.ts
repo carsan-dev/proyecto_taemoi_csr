@@ -174,7 +174,7 @@ describe('MaterialesExamenUserComponent', () => {
     );
   });
 
-  it('debe abrir PDF por URL directa en desktop sin pasar por blob', () => {
+  it('debe abrir PDF por blob autenticado en desktop', () => {
     endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
       of({
         deporte: 'TAEKWONDO',
@@ -197,12 +197,16 @@ describe('MaterialesExamenUserComponent', () => {
       } as any)
     );
 
+    spyOn(globalThis.URL, 'createObjectURL').and.returnValue('blob://test-url');
+    spyOn(globalThis.URL, 'revokeObjectURL').and.stub();
     spyOn(window, 'open').and.returnValue(null);
     triggerInputs();
 
     component.abrirDocumentoSeleccionado();
 
-    expect(window.open).toHaveBeenCalledWith('https://example.com/reglamento.pdf', '_blank', 'noopener');
-    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+    expect(endpointsServiceSpy.descargarArchivoPrivado).toHaveBeenCalledWith(
+      'https://example.com/reglamento.pdf'
+    );
+    expect(window.open).toHaveBeenCalledWith('blob://test-url', '_blank', 'noopener');
   });
 });
