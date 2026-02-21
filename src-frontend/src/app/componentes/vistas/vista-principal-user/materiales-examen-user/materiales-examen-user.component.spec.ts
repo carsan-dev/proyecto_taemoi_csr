@@ -173,4 +173,36 @@ describe('MaterialesExamenUserComponent', () => {
       'https://example.com/reglamento.pdf?download=true'
     );
   });
+
+  it('debe abrir PDF por URL directa en desktop sin pasar por blob', () => {
+    endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
+      of({
+        deporte: 'TAEKWONDO',
+        gradoActual: 'AMARILLO',
+        bloqueId: 'b02_amarillo_a_naranja',
+        temario: null,
+        videos: [],
+        documentos: [
+          {
+            id: '02_reglamento.pdf',
+            fileName: '02_reglamento.pdf',
+            title: 'Reglamento',
+            order: 2,
+            mimeType: 'application/pdf',
+            previewable: true,
+            openUrl: 'https://example.com/reglamento.pdf',
+            downloadUrl: 'https://example.com/reglamento.pdf?download=true',
+          },
+        ],
+      } as any)
+    );
+
+    spyOn(window, 'open').and.returnValue(null);
+    triggerInputs();
+
+    component.abrirDocumentoSeleccionado();
+
+    expect(window.open).toHaveBeenCalledWith('https://example.com/reglamento.pdf', '_blank', 'noopener');
+    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+  });
 });
