@@ -99,6 +99,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   deporteRankingSeleccionado: string | null = null;
   deportesRankingDisponibles: string[] = [];
   documentosVisiblesCount: number = 0;
+  private readonly maxAlumnosSwitchPills = 8;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
@@ -328,6 +329,25 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return null;
     }
     return { alumnoId };
+  }
+
+  usarSelectorCompacto(): boolean {
+    return this.alumnos.length > this.maxAlumnosSwitchPills;
+  }
+
+  onSeleccionAlumnoDesdeSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement | null;
+    const alumnoId = Number.parseInt(target?.value ?? '', 10);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+
+    const alumno = this.alumnos.find((item) => Number(item?.id) === alumnoId);
+    if (!alumno) {
+      return;
+    }
+
+    this.seleccionarAlumno(alumno);
   }
 
   ngOnDestroy(): void {
