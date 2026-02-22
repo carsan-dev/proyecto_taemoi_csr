@@ -1,6 +1,6 @@
 .scroll-to-top-btn {
   position: fixed;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   z-index: 1000;
   border-radius: 50%;
@@ -26,10 +26,20 @@
     transform: translateY(2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
-
-  // En móvil ya no hay bottom nav, mantener pegado abajo con safe-area
 }
 
+@media (max-width: 768px) {
+  .scroll-to-top-btn {
+    right: 14px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    width: 54px;
+    height: 54px;
+    font-size: 1.35rem;
+  }
+}
 
-
-
+@media (max-width: 420px) {
+  .scroll-to-top-btn {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}

@@ -119,6 +119,13 @@
               </button>
               }
 
+              @if (documento.downloadUrl || documento.openUrl) {
+              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
+                <i class="bi bi-download"></i>
+                Descargar
+              </button>
+              }
+
               @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
               <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
                 <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
@@ -156,13 +163,6 @@
 
             @if (esDocumentoActivoEnMovil(documento)) {
             <div class="doc-mobile-actions">
-              @if (documento.openUrl) {
-              <button type="button" class="docs-link docs-link-primary" (click)="onAbrirDocumentoDesdeLista(documento)">
-                <i class="bi bi-box-arrow-up-right"></i>
-                Abrir
-              </button>
-              }
-
               @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
               <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
                 <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
@@ -182,10 +182,17 @@
       <div class="docs-detail">
         @if (documentoSeleccionado) {
         <div class="docs-actions" #docsActionsRef [style.margin-top.px]="docsActionsOffsetPx">
-          @if (getDocumentoOpenUrl()) {
+          @if (esDocumentoPrincipal(documentoSeleccionado) && getDocumentoOpenUrl()) {
           <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
             <i class="bi bi-box-arrow-up-right"></i>
             Abrir
+          </button>
+          }
+
+          @if (esDocumentoPrincipal(documentoSeleccionado) && getDocumentoDownloadUrl()) {
+          <button type="button" class="docs-link docs-link-secondary" (click)="descargarDocumentoSeleccionado()">
+            <i class="bi bi-download"></i>
+            Descargar
           </button>
           }
 
@@ -205,9 +212,15 @@
         <p class="materials-state">Este formato no admite visor integrado en la web.</p>
         }
         @if (documentoSeleccionado.previewable && !esVisorIntegradoCompatibleEnDispositivo()) {
+        @if (esDocumentoPrincipal(documentoSeleccionado)) {
         <p class="materials-state">
           En Android/iOS el visor integrado no est&aacute; disponible. Usa <strong>Abrir</strong> para ver el documento.
         </p>
+        } @else {
+        <p class="materials-state">
+          Este material complementario se abre en visor integrado protegido. No permite abrir externo ni descargar.
+        </p>
+        }
         }
         @if (cargandoDocumentoSeleccionado && documentoSeleccionado.previewable) {
         <p class="materials-state">Preparando visor del documento...</p>
@@ -219,6 +232,7 @@
           [src]="documentoSeleccionadoUrl"
           title="Documento de material de examen"
           loading="lazy"
+          (contextmenu)="onBloquearDescargaContenido($event)"
         ></iframe>
         }
         }
