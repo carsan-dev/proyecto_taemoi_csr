@@ -41,10 +41,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   descripcionBloqueActual: string | null = null;
 
   private materialSubscription: Subscription | null = null;
-  private videoPrivadoSubscription: Subscription | null = null;
   private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
-  private videoBlobUrl: string | null = null;
   private documentoBlobUrl: string | null = null;
   private readonly descripcionPreparacionPorGrado: Record<string, string> = {
     BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
@@ -96,9 +94,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.materialSubscription?.unsubscribe();
-    this.videoPrivadoSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
-    this.revocarBlobVideo();
     this.revocarBlobDocumento();
   }
 
@@ -246,9 +242,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.cargandoDocumentoSeleccionado = false;
     this.errorCarga = null;
     this.material = null;
-    this.videoPrivadoSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
-    this.revocarBlobVideo();
     this.revocarBlobDocumento();
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
@@ -432,9 +426,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private resetearVista(): void {
     this.materialSubscription?.unsubscribe();
-    this.videoPrivadoSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
-    this.revocarBlobVideo();
     this.revocarBlobDocumento();
     this.deporteSeleccionado = null;
     this.material = null;
@@ -452,8 +444,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private cargarVideoPrivadoSeleccionado(video: MaterialExamenVideoDTO): void {
-    this.videoPrivadoSubscription?.unsubscribe();
-    this.revocarBlobVideo();
     this.videoSeleccionadoUrl = null;
 
     if (!video?.streamUrl) {
@@ -461,32 +451,9 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    const videoId = video.id;
-    this.cargandoVideoSeleccionado = true;
-    this.videoPrivadoSubscription = this.endpointsService.descargarArchivoPrivado(video.streamUrl).subscribe({
-      next: (blob) => {
-        this.cargandoVideoSeleccionado = false;
-        if (this.videoSeleccionado?.id !== videoId) {
-          return;
-        }
-
-        const blobUrl = globalThis.URL.createObjectURL(blob);
-        this.videoBlobUrl = blobUrl;
-        this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(blobUrl);
-      },
-      error: () => {
-        this.cargandoVideoSeleccionado = false;
-        if (this.videoSeleccionado?.id !== videoId) {
-          return;
-        }
-        this.videoSeleccionadoUrl = null;
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo cargar el video seleccionado.',
-          icon: 'error',
-        });
-      },
-    });
+    // Use direct stream URL so the browser can start playback with HTTP range requests.
+    this.cargandoVideoSeleccionado = false;
+    this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(video.streamUrl);
   }
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {
@@ -522,14 +489,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
           this.documentoSeleccionadoUrl = null;
         },
       });
-  }
-
-  private revocarBlobVideo(): void {
-    if (!this.videoBlobUrl) {
-      return;
-    }
-    globalThis.URL.revokeObjectURL(this.videoBlobUrl);
-    this.videoBlobUrl = null;
   }
 
   private revocarBlobDocumento(): void {
