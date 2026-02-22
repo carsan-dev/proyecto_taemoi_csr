@@ -898,18 +898,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    if (!this.esVisorIntegradoCompatibleEnDispositivo() && !this.esDocumentoPrincipal(documento)) {
-      const openUrl = documento.openUrl;
-      if (!openUrl) {
-        this.cargandoDocumentoSeleccionado = false;
-        return;
-      }
-      const visorUrl = this.construirUrlVisorIntegradoProtegido(openUrl);
-      this.documentoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(visorUrl);
-      this.cargandoDocumentoSeleccionado = false;
-      return;
-    }
-
     const documentoId = documento.id;
     this.cargandoDocumentoSeleccionado = true;
     this.documentoPreviewSubscription = this.endpointsService
@@ -923,7 +911,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
           const blobUrl = globalThis.URL.createObjectURL(blob);
           this.documentoBlobUrl = blobUrl;
-          this.documentoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+          const visorUrl = this.construirUrlVisorIntegradoProtegido(blobUrl);
+          this.documentoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(visorUrl);
         },
         error: () => {
           this.cargandoDocumentoSeleccionado = false;
