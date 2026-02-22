@@ -11,6 +11,7 @@ import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { ConvocatoriaDTO } from '../../../interfaces/convocatoria-dto';
 import { Documento } from '../../../interfaces/documento';
 import { RetoDiarioEstado } from '../../../interfaces/reto-diario-estado';
+import { RetoDiarioRankingGeneral } from '../../../interfaces/reto-diario-ranking-general';
 import { RetoDiarioRankingSemanal } from '../../../interfaces/reto-diario-ranking-semanal';
 import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
@@ -91,6 +92,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   rankingSemanal: RetoDiarioRankingSemanal | null = null;
   cargandoRankingSemanal: boolean = false;
   errorRankingSemanal: string | null = null;
+  rankingGeneral: RetoDiarioRankingGeneral | null = null;
+  cargandoRankingGeneral: boolean = false;
+  errorRankingGeneral: string | null = null;
+  tipoRankingSeleccionado: 'SEMANAL' | 'GENERAL' = 'SEMANAL';
   deporteRankingSeleccionado: string | null = null;
   deportesRankingDisponibles: string[] = [];
   documentosVisiblesCount: number = 0;
@@ -568,7 +573,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       this.deportesDelAlumno = deportesCache;
       this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
       this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
-      this.prepararRankingSemanalDesdeDeportes(alumnoId);
+      this.prepararRankingsRetoDiarioDesdeDeportes(alumnoId);
       this.cargandoDeportes = false;
       return;
     }
@@ -585,7 +590,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         this.deportesCache.set(alumnoId, deportesNormalizados);
         this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
         this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
-        this.prepararRankingSemanalDesdeDeportes(alumnoId);
+        this.prepararRankingsRetoDiarioDesdeDeportes(alumnoId);
         this.cargandoDeportes = false;
       },
       error: () => {
@@ -819,7 +824,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       next: (estado: RetoDiarioEstado) => {
         this.aplicarEstadoRetoDiario(estado);
         if (this.deporteRankingSeleccionado) {
-          this.cargarRankingSemanalRetoDiario(alumnoId, this.deporteRankingSeleccionado);
+          this.cargarRankingsRetoDiario(alumnoId, this.deporteRankingSeleccionado);
         }
       },
       error: () => {
@@ -893,18 +898,27 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
 
     this.deporteRankingSeleccionado = deporteNormalizado;
-    this.cargarRankingSemanalRetoDiario(alumnoId, deporteNormalizado);
+    this.cargarRankingsRetoDiario(alumnoId, deporteNormalizado);
+  }
+
+  onSeleccionarTipoRanking(tipo: 'SEMANAL' | 'GENERAL'): void {
+    if (this.tipoRankingSeleccionado === tipo) {
+      return;
+    }
+    this.tipoRankingSeleccionado = tipo;
   }
 
   getTextoDiasParaSuperarSiguiente(): string {
-    const dias = this.rankingSemanal?.miPosicion?.diasParaSuperarSiguiente;
+    const dias = this.tipoRankingSeleccionado === 'GENERAL'
+      ? this.rankingGeneral?.miPosicion?.diasParaSuperarSiguiente
+      : this.rankingSemanal?.miPosicion?.diasParaSuperarSiguiente;
     if (dias === null || dias === undefined) {
       return '';
     }
     return `Te faltan ${dias} día(s) para superar al siguiente.`;
   }
 
-  private prepararRankingSemanalDesdeDeportes(alumnoId: number): void {
+  private prepararRankingsRetoDiarioDesdeDeportes(alumnoId: number): void {
     const deportesActivos = this.obtenerDeportesActivosParaRanking();
     this.deportesRankingDisponibles = deportesActivos;
 
@@ -912,6 +926,9 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       this.rankingSemanal = null;
       this.errorRankingSemanal = null;
       this.cargandoRankingSemanal = false;
+      this.rankingGeneral = null;
+      this.errorRankingGeneral = null;
+      this.cargandoRankingGeneral = false;
       this.deporteRankingSeleccionado = null;
       return;
     }
@@ -925,7 +942,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         : deportesActivos[0];
     }
 
-    this.cargarRankingSemanalRetoDiario(alumnoId, this.deporteRankingSeleccionado);
+    this.cargarRankingsRetoDiario(alumnoId, this.deporteRankingSeleccionado);
   }
 
   private obtenerDeportesActivosParaRanking(): string[] {
@@ -941,6 +958,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       .filter((deporte) => deporte.length > 0);
 
     return Array.from(new Set(deportesActivosOrdenados));
+  }
+
+  private cargarRankingsRetoDiario(alumnoId: number, deporte: string): void {
+    this.cargarRankingSemanalRetoDiario(alumnoId, deporte);
+    this.cargarRankingGeneralRetoDiario(alumnoId, deporte);
   }
 
   private cargarRankingSemanalRetoDiario(alumnoId: number, deporte: string): void {
@@ -983,10 +1005,54 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
   }
 
+  private cargarRankingGeneralRetoDiario(alumnoId: number, deporte: string): void {
+    const deporteNormalizado = (deporte || '').trim().toUpperCase();
+    if (!deporteNormalizado) {
+      return;
+    }
+
+    this.cargandoRankingGeneral = true;
+    this.errorRankingGeneral = null;
+
+    this.endpointsService.obtenerRankingRetoDiarioGeneral(alumnoId, deporteNormalizado, 5).subscribe({
+      next: (ranking) => {
+        if (!this.esAlumnoSeleccionado(alumnoId) || this.deporteRankingSeleccionado !== deporteNormalizado) {
+          return;
+        }
+        if (!ranking) {
+          this.rankingGeneral = null;
+          this.errorRankingGeneral = 'No hay datos de ranking disponibles.';
+          this.cargandoRankingGeneral = false;
+          return;
+        }
+
+        const top = Array.isArray(ranking?.top) ? ranking.top : [];
+        this.rankingGeneral = {
+          ...ranking,
+          deporte: ranking?.deporte || deporteNormalizado,
+          top,
+        };
+        this.cargandoRankingGeneral = false;
+      },
+      error: () => {
+        if (!this.esAlumnoSeleccionado(alumnoId) || this.deporteRankingSeleccionado !== deporteNormalizado) {
+          return;
+        }
+        this.rankingGeneral = null;
+        this.errorRankingGeneral = 'No se pudo cargar el ranking general.';
+        this.cargandoRankingGeneral = false;
+      },
+    });
+  }
+
   private resetearRankingSemanalRetoDiario(): void {
     this.rankingSemanal = null;
     this.cargandoRankingSemanal = false;
     this.errorRankingSemanal = null;
+    this.rankingGeneral = null;
+    this.cargandoRankingGeneral = false;
+    this.errorRankingGeneral = null;
+    this.tipoRankingSeleccionado = 'SEMANAL';
     this.deporteRankingSeleccionado = null;
     this.deportesRankingDisponibles = [];
   }
