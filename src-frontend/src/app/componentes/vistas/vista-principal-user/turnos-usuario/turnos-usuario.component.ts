@@ -87,6 +87,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
         const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
         if (alumnosNormalizados.length > 0) {
           this.alumnos = alumnosNormalizados;
+          if (this.debeEsperarSeleccionManual(alumnoIdSolicitado)) {
+            this.cargando = false;
+            this.selectedAlumno = null;
+            return;
+          }
           const alumnoInicial = this.obtenerAlumnoInicial(alumnosNormalizados, alumnoIdSolicitado);
           if (alumnoInicial) {
             this.seleccionarAlumno(alumnoInicial);
@@ -119,6 +124,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
         const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
         if (alumnosNormalizados.length > 0) {
           this.alumnos = alumnosNormalizados;
+          if (this.debeEsperarSeleccionManual(alumnoIdSolicitado)) {
+            this.cargando = false;
+            this.selectedAlumno = null;
+            return;
+          }
           const alumnoInicial = this.obtenerAlumnoInicial(alumnosNormalizados, alumnoIdSolicitado);
           if (alumnoInicial) {
             this.seleccionarAlumno(alumnoInicial);
@@ -132,6 +142,14 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       },
     });
     this.subscriptions.add(adminSubscription);
+  }
+
+  private debeEsperarSeleccionManual(alumnoIdSolicitado: number | null): boolean {
+    return (
+      alumnoIdSolicitado === null &&
+      this.authService.tieneAccesoAdmin() &&
+      this.alumnos.length > this.maxAlumnosSwitchPills
+    );
   }
 
   private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {

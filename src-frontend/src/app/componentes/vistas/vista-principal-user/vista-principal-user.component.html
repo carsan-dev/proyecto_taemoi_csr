@@ -18,7 +18,7 @@
           } @else {
           <p class="hero-subtitle">
             <i class="bi bi-person-circle"></i>
-            Cargando perfil de alumno...
+            Selecciona un alumno para continuar.
           </p>
           }
         </div>
@@ -62,6 +62,9 @@
             (change)="onSeleccionAlumnoDesdeSelect($event)"
             aria-label="Seleccionar alumno"
           >
+            @if (!selectedAlumno) {
+            <option value="" disabled>Selecciona un alumno...</option>
+            }
             @for (alumno of alumnos; track alumno.id) {
             <option [value]="alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
             }
@@ -589,8 +592,8 @@
       } @else {
       <div class="empty-state">
         <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-        <h3>No tienes grupos asignados</h3>
-        <p>Ponte en contacto con la escuela para unirte a un grupo.</p>
+        <h3>Selecciona un alumno</h3>
+        <p>Elige un alumno en el selector superior para ver sus grupos.</p>
       </div>
       }
     </section>
