@@ -328,13 +328,125 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   scrollToSection(sectionId: string): void {
-    if (typeof document === 'undefined') {
+    const documentRef = globalThis.document;
+    const windowRef = globalThis.window;
+    if (!documentRef || !windowRef) {
       return;
     }
-    const target = document.getElementById(sectionId);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const desplazar = (): boolean => {
+      const target = documentRef.getElementById(sectionId);
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+      this.scrollElementoConOffsetHeader(target, this.obtenerComportamientoScroll());
+      return true;
+    };
+
+    if (desplazar()) {
+      return;
     }
+
+    if (typeof windowRef.setTimeout === 'function') {
+      windowRef.setTimeout(() => {
+        desplazar();
+      }, 120);
+    }
+  }
+
+  private scrollElementoConOffsetHeader(target: HTMLElement, behavior: ScrollBehavior): void {
+    const documentRef = globalThis.document;
+    const windowRef = globalThis.window;
+    if (!documentRef || !windowRef) {
+      return;
+    }
+
+    const headerOffsetPx = this.obtenerOffsetHeaderFijo();
+    const extraSeparacionPx = 12;
+    const windowScrollTop =
+      windowRef.scrollY ||
+      documentRef.documentElement.scrollTop ||
+      documentRef.body?.scrollTop ||
+      0;
+    const targetRect = target.getBoundingClientRect();
+    const targetTopEnPagina = targetRect.top + windowScrollTop;
+    const destinoWindowTop = Math.max(0, Math.round(targetTopEnPagina - headerOffsetPx - extraSeparacionPx));
+
+    const content = documentRef.getElementById('content');
+    if (content instanceof HTMLElement && content.contains(target) && content.scrollHeight > content.clientHeight + 1) {
+      const contentRect = content.getBoundingClientRect();
+      const destinoContentTop = Math.max(
+        0,
+        Math.round(targetRect.top - contentRect.top + content.scrollTop - headerOffsetPx - extraSeparacionPx)
+      );
+      this.scrollContenedor(content, destinoContentTop, behavior);
+    }
+
+    this.scrollWindow(windowRef, destinoWindowTop, behavior);
+  }
+
+  private scrollWindow(windowRef: Window, top: number, behavior: ScrollBehavior): void {
+    try {
+      windowRef.scrollTo({ top, behavior });
+    } catch {
+      windowRef.scrollTo(0, top);
+    }
+  }
+
+  private scrollContenedor(element: HTMLElement, top: number, behavior: ScrollBehavior): void {
+    try {
+      if (typeof element.scrollTo === 'function') {
+        element.scrollTo({ top, behavior });
+      } else {
+        element.scrollTop = top;
+      }
+    } catch {
+      element.scrollTop = top;
+    }
+  }
+
+  private obtenerComportamientoScroll(): ScrollBehavior {
+    const windowRef = globalThis.window;
+    if (!windowRef?.matchMedia) {
+      return 'smooth';
+    }
+
+    return windowRef.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  }
+
+  private obtenerOffsetHeaderFijo(): number {
+    const documentRef = globalThis.document;
+    const windowRef = globalThis.window;
+    if (!documentRef || !windowRef) {
+      return 0;
+    }
+
+    const selectors = [
+      '.header-anonimo.fixed-header',
+      '.header-user.fixed-header',
+      '.admin-top-navbar',
+      'header.fixed-header',
+      '.navbar.fixed-top',
+      '.navbar.sticky-top',
+    ];
+
+    let maxBottom = 0;
+    selectors.forEach((selector) => {
+      const elements = documentRef.querySelectorAll<HTMLElement>(selector);
+      elements.forEach((element) => {
+        const styles = windowRef.getComputedStyle?.(element);
+        if (!styles || styles.display === 'none' || styles.visibility === 'hidden') {
+          return;
+        }
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+          return;
+        }
+        maxBottom = Math.max(maxBottom, rect.bottom);
+      });
+    });
+
+    return Math.max(0, Math.round(maxBottom));
   }
 
   irAMisClases(): void {
