@@ -64,7 +64,6 @@
     <div class="materials-player-panel">
       <h3>Reproductor</h3>
       @if (videoSeleccionado && videoSeleccionadoUrl) {
-      <p class="player-title">{{ videoSeleccionado.title }}</p>
       <video
         class="video-player"
         [src]="videoSeleccionadoUrl"
@@ -84,28 +83,57 @@
   <div class="materials-docs">
     <h3>Documentaci&oacute;n</h3>
     @if (material.documentos.length > 0) {
-    <div class="docs-grid">
+    @let docsTemario = getDocumentosTemarioPrincipal();
+    @let docsComplementarios = getDocumentosComplementarios();
+    <div class="docs-grid" #docsGridRef>
       <div class="docs-list">
-        @for (documento of material.documentos; track documento.id) {
-        <button
-          type="button"
-          class="doc-item-btn"
-          [class.is-active]="documento.id === documentoSeleccionado?.id"
-          [class.is-primary]="esDocumentoPrincipal(documento)"
-          (click)="onSeleccionarDocumento(documento)"
-        >
-          <span class="doc-order" [class.is-primary]="esDocumentoPrincipal(documento)">{{ getDocumentoBadge(documento) }}</span>
-          <span class="doc-title">{{ documento.title || documento.fileName }}</span>
-          @if (documento.previewable) {
-          <span class="doc-tag">PDF</span>
+        @if (docsTemario.length > 0) {
+        <section class="docs-section docs-section-primary">
+          <p class="docs-section-title is-primary">Temario principal</p>
+          @for (documento of docsTemario; track documento.id) {
+          <button
+            type="button"
+            class="doc-item-btn"
+            [class.is-active]="documento.id === documentoSeleccionado?.id"
+            [class.is-primary]="true"
+            (click)="onSeleccionarDocumento(documento)"
+          >
+            <span class="doc-order is-primary">{{ getDocumentoBadge(documento) }}</span>
+            <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+            @if (documento.previewable) {
+            <span class="doc-tag">PDF</span>
+            }
+          </button>
           }
-        </button>
+        </section>
         }
+
+        <section class="docs-section" [class.with-divider]="docsTemario.length > 0">
+          <p class="docs-section-title">Material complementario</p>
+          @if (docsComplementarios.length > 0) {
+          @for (documento of docsComplementarios; track documento.id) {
+          <button
+            type="button"
+            class="doc-item-btn"
+            [class.is-active]="documento.id === documentoSeleccionado?.id"
+            (click)="onSeleccionarDocumento(documento)"
+          >
+            <span class="doc-order">{{ getDocumentoBadge(documento) }}</span>
+            <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+            @if (documento.previewable) {
+            <span class="doc-tag">PDF</span>
+            }
+          </button>
+          }
+          } @else {
+          <p class="docs-section-empty">No hay material complementario disponible.</p>
+          }
+        </section>
       </div>
 
       <div class="docs-detail">
         @if (documentoSeleccionado) {
-        <div class="docs-actions">
+        <div class="docs-actions" #docsActionsRef [style.margin-top.px]="docsActionsOffsetPx">
           @if (getDocumentoOpenUrl()) {
           <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
             <i class="bi bi-box-arrow-up-right"></i>

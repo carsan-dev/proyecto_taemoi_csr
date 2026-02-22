@@ -124,13 +124,6 @@
   font-weight: 700;
 }
 
-.player-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.84rem;
-  color: #394a5c;
-  font-weight: 700;
-}
-
 .video-player {
   width: 100%;
   border-radius: 10px;
@@ -147,8 +140,8 @@
 .docs-detail {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: 56px;
+  justify-content: flex-start;
+  min-height: 0;
 }
 
 .docs-list {
@@ -158,6 +151,43 @@
   max-height: 320px;
   overflow: auto;
   padding-right: 0.2rem;
+}
+
+.docs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+
+  &.with-divider {
+    margin-top: 0.5rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed rgba(31, 42, 55, 0.18);
+  }
+}
+
+.docs-section-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4d627a;
+
+  &.is-primary {
+    color: #0f5d38;
+  }
+}
+
+.docs-section-empty {
+  margin: 0;
+  border-radius: 8px;
+  border: 1px dashed rgba(13, 110, 253, 0.24);
+  background: rgba(13, 110, 253, 0.05);
+  color: #4f6175;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 0.38rem 0.5rem;
 }
 
 .doc-item-btn {
@@ -235,20 +265,22 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: #0f5d38;
   background: rgba(35, 168, 98, 0.12);
   border: 1px solid rgba(35, 168, 98, 0.32);
   border-radius: 999px;
-  padding: 0.22rem 0.6rem;
+  padding: 0.32rem 0.72rem;
   flex: 0 0 auto;
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 .docs-actions {
   display: flex;
   align-items: center;
+  min-height: 42px;
   gap: 0.55rem;
   flex-wrap: wrap;
 
