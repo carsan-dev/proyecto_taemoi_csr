@@ -95,11 +95,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   retoDiarioInfoActual: RetoDiarioInfo = this.construirRetoDiarioInfo('');
   mostrarModalAyudaRetoDiario: boolean = false;
   readonly checklistRetoDiarioItems: string[] = [
-    'Calente 2-3 minutos antes de empezar.',
-    'Tengo clara la tecnica del ejercicio.',
-    'Complete el volumen indicado (o su version facil).',
+    'Caliente 2-3 minutos antes de empezar.',
+    'Tengo clara la técnica del ejercicio.',
+    'Complete el volumen indicado (o su versión fácil).',
     'No tuve dolor agudo durante el reto.',
-    'Mantuve respiracion controlada.',
+    'Mantuve respiración controlada.',
     'Hice una vuelta a la calma al terminar.',
   ];
   checklistRetoDiarioEstado: boolean[] = this.checklistRetoDiarioItems.map(() => false);
@@ -361,28 +361,77 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
+    try {
+      target.scrollIntoView({
+        behavior,
+        block: 'start',
+        inline: 'nearest',
+      });
+    } catch {
+      target.scrollIntoView(true);
+    }
+
     const headerOffsetPx = this.obtenerOffsetHeaderFijo();
     const extraSeparacionPx = 12;
+    const scrollMarginTopPx = this.obtenerScrollMarginTop(target, windowRef);
+    const ajusteNecesarioPx = Math.max(
+      0,
+      Math.round(headerOffsetPx + extraSeparacionPx - scrollMarginTopPx)
+    );
+    if (ajusteNecesarioPx <= 0) {
+      return;
+    }
+
+    const aplicarAjuste = () => this.ajustarScrollTrasAnclaje(target, ajusteNecesarioPx);
+    if (typeof windowRef.requestAnimationFrame === 'function') {
+      windowRef.requestAnimationFrame(aplicarAjuste);
+      return;
+    }
+    aplicarAjuste();
+  }
+
+  private ajustarScrollTrasAnclaje(target: HTMLElement, ajusteNecesarioPx: number): void {
+    const documentRef = globalThis.document;
+    const windowRef = globalThis.window;
+    if (!documentRef || !windowRef) {
+      return;
+    }
+
+    const content = documentRef.getElementById('content');
+    if (
+      content instanceof HTMLElement &&
+      content.contains(target) &&
+      this.esContenedorConScrollInterno(content, windowRef)
+    ) {
+      const destino = Math.max(0, content.scrollTop - ajusteNecesarioPx);
+      this.scrollContenedor(content, destino, 'auto');
+      return;
+    }
+
     const windowScrollTop =
       windowRef.scrollY ||
       documentRef.documentElement.scrollTop ||
       documentRef.body?.scrollTop ||
       0;
-    const targetRect = target.getBoundingClientRect();
-    const targetTopEnPagina = targetRect.top + windowScrollTop;
-    const destinoWindowTop = Math.max(0, Math.round(targetTopEnPagina - headerOffsetPx - extraSeparacionPx));
+    const destinoWindowTop = Math.max(0, Math.round(windowScrollTop - ajusteNecesarioPx));
+    this.scrollWindow(windowRef, destinoWindowTop, 'auto');
+  }
 
-    const content = documentRef.getElementById('content');
-    if (content instanceof HTMLElement && content.contains(target) && content.scrollHeight > content.clientHeight + 1) {
-      const contentRect = content.getBoundingClientRect();
-      const destinoContentTop = Math.max(
-        0,
-        Math.round(targetRect.top - contentRect.top + content.scrollTop - headerOffsetPx - extraSeparacionPx)
-      );
-      this.scrollContenedor(content, destinoContentTop, behavior);
+  private esContenedorConScrollInterno(element: HTMLElement, windowRef: Window): boolean {
+    const styles = windowRef.getComputedStyle?.(element);
+    const overflowY = (styles?.overflowY || '').toLowerCase();
+    const tieneScrollPropio =
+      overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+    return tieneScrollPropio && element.scrollHeight > element.clientHeight + 1;
+  }
+
+  private obtenerScrollMarginTop(target: HTMLElement, windowRef: Window): number {
+    const styles = windowRef.getComputedStyle?.(target);
+    if (!styles) {
+      return 0;
     }
-
-    this.scrollWindow(windowRef, destinoWindowTop, behavior);
+    const margin = Number.parseFloat(styles.scrollMarginTop || '0');
+    return Number.isFinite(margin) ? margin : 0;
   }
 
   private scrollWindow(windowRef: Window, top: number, behavior: ScrollBehavior): void {

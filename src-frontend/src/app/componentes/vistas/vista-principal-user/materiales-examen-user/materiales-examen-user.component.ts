@@ -148,13 +148,17 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
     this.mostrarDocumentoVisor =
-      visorEstabaAbierto && !!documento.previewable && this.esVisorIntegradoCompatibleEnDispositivo();
+      visorEstabaAbierto && this.puedeMostrarDocumentoEnVisorIntegrado(documento);
     this.cargarPreviewDocumentoSeleccionado(documento);
     this.programarRecalculoAlineacionDocs();
   }
 
   toggleDocumentoVisor(): void {
-    if (!this.esVisorIntegradoCompatibleEnDispositivo()) {
+    const documento = this.documentoSeleccionado;
+    if (!documento) {
+      return;
+    }
+    if (!this.esVisorIntegradoCompatibleEnDispositivo() && this.esDocumentoPrincipal(documento)) {
       this.abrirDocumentoSeleccionado();
       return;
     }
@@ -178,7 +182,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   getDocumentoDownloadUrl(): string | null {
-    return this.documentoSeleccionado?.downloadUrl ?? this.documentoSeleccionado?.openUrl ?? null;
+    const documento = this.documentoSeleccionado;
+    if (!documento || !this.puedeDescargarDocumento(documento)) {
+      return null;
+    }
+    return documento.downloadUrl ?? documento.openUrl ?? null;
   }
 
   esVisorIntegradoCompatibleEnDispositivo(): boolean {
@@ -206,11 +214,26 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (this.documentoSeleccionado?.id !== documento.id) {
       this.onSeleccionarDocumento(documento);
     }
+
+    if (!this.puedeAbrirDocumentoExterno(documento)) {
+      if (this.esDocumentoSeleccionadoPrevisualizable()) {
+        this.mostrarDocumentoVisor = true;
+        this.programarRecalculoAlineacionDocs();
+        return;
+      }
+      this.mostrarAvisoDocumentoComplementarioProtegido();
+      return;
+    }
+
     this.abrirDocumentoSeleccionado();
   }
 
   onDescargarDocumentoDesdeLista(documento: MaterialExamenDocumentoDTO): void {
     if (!documento) {
+      return;
+    }
+    if (!this.puedeDescargarDocumento(documento)) {
+      this.mostrarAvisoDocumentoComplementarioProtegido();
       return;
     }
     if (this.documentoSeleccionado?.id !== documento.id) {
@@ -225,7 +248,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
     if (this.documentoSeleccionado?.id !== documento.id) {
       this.onSeleccionarDocumento(documento);
-      if (!this.esVisorIntegradoCompatibleEnDispositivo()) {
+      if (!this.esVisorIntegradoCompatibleEnDispositivo() && this.esDocumentoPrincipal(documento)) {
         this.abrirDocumentoSeleccionado();
         return;
       }
@@ -237,11 +260,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   esDocumentoSeleccionadoPrevisualizable(): boolean {
-    return (
-      !!this.documentoSeleccionado?.previewable &&
-      !!this.documentoSeleccionadoUrl &&
-      this.esVisorIntegradoCompatibleEnDispositivo()
-    );
+    const documento = this.documentoSeleccionado;
+    if (!documento?.previewable || !this.documentoSeleccionadoUrl) {
+      return false;
+    }
+    return this.puedeMostrarDocumentoEnVisorIntegrado(documento);
   }
 
   esDocumentoPrincipal(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
@@ -250,6 +273,26 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
     const nombre = (documento.fileName || '').toLowerCase();
     return documento.order === 0 || nombre === 'temario.pdf' || nombre.startsWith('temario.');
+  }
+
+  puedeDescargarDocumento(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
+    return this.esDocumentoPrincipal(documento);
+  }
+
+  puedeAbrirDocumentoExterno(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
+    return this.esDocumentoPrincipal(documento);
+  }
+
+  private puedeMostrarDocumentoEnVisorIntegrado(
+    documento: MaterialExamenDocumentoDTO | null | undefined
+  ): boolean {
+    if (!documento?.previewable || !documento.openUrl) {
+      return false;
+    }
+    if (this.esVisorIntegradoCompatibleEnDispositivo()) {
+      return true;
+    }
+    return !this.esDocumentoPrincipal(documento);
   }
 
   getDocumentoBadge(documento: MaterialExamenDocumentoDTO | null | undefined): string {
@@ -273,6 +316,20 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   abrirDocumentoSeleccionado(): void {
+    const documento = this.documentoSeleccionado;
+    if (!documento) {
+      return;
+    }
+    if (!this.puedeAbrirDocumentoExterno(documento)) {
+      if (this.esDocumentoSeleccionadoPrevisualizable()) {
+        this.mostrarDocumentoVisor = true;
+        this.programarRecalculoAlineacionDocs();
+      } else {
+        this.mostrarAvisoDocumentoComplementarioProtegido();
+      }
+      return;
+    }
+
     const openUrl = this.getDocumentoOpenUrl();
     if (!openUrl) {
       Swal.fire({
@@ -289,10 +346,72 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
   }
 
-  descargarDocumentoSeleccionado(_abrirEnNuevaPestana: boolean = false): void {
+  descargarDocumentoSeleccionado(abrirEnNuevaPestana: boolean = false): void {
+    const documento = this.documentoSeleccionado;
+    if (!documento) {
+      return;
+    }
+    if (!this.puedeDescargarDocumento(documento)) {
+      this.mostrarAvisoDocumentoComplementarioProtegido();
+      return;
+    }
+
+    const url = abrirEnNuevaPestana ? this.getDocumentoOpenUrl() : this.getDocumentoDownloadUrl();
+    if (!url) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo procesar el documento seleccionado',
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.endpointsService.descargarArchivoPrivado(url).subscribe({
+      next: (blob) => {
+        const blobUrl = globalThis.URL.createObjectURL(blob);
+
+        if (abrirEnNuevaPestana || this.esDispositivoIOS()) {
+          const popup = globalThis.window?.open(blobUrl, '_blank', 'noopener');
+          if (!popup && this.esDispositivoIOS()) {
+            globalThis.window?.location.assign(blobUrl);
+          }
+          setTimeout(() => globalThis.URL.revokeObjectURL(blobUrl), 60_000);
+          return;
+        }
+
+        const link = globalThis.document?.createElement('a');
+        if (!link) {
+          globalThis.URL.revokeObjectURL(blobUrl);
+          return;
+        }
+
+        link.href = blobUrl;
+        link.download = this.obtenerNombreDescarga(documento.fileName, documento.mimeType);
+        link.click();
+        globalThis.URL.revokeObjectURL(blobUrl);
+      },
+      error: () => {
+        if (this.esDispositivoIOS()) {
+          if (abrirEnNuevaPestana) {
+            globalThis.window?.open(url, '_blank', 'noopener');
+          } else {
+            globalThis.window?.location.assign(url);
+          }
+          return;
+        }
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo descargar el documento',
+          icon: 'error',
+        });
+      },
+    });
+  }
+
+  private mostrarAvisoDocumentoComplementarioProtegido(): void {
     Swal.fire({
-      title: 'Descarga no disponible',
-      text: 'La descarga de documentos de materiales de examen está deshabilitada.',
+      title: 'No permitido',
+      text: 'El material complementario no se puede descargar ni abrir externamente.',
       icon: 'info',
       timer: 2200,
       showConfirmButton: false,
@@ -774,11 +893,19 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.revocarBlobDocumento();
     this.documentoSeleccionadoUrl = null;
 
-    if (
-      !documento?.previewable ||
-      !documento.openUrl ||
-      !this.esVisorIntegradoCompatibleEnDispositivo()
-    ) {
+    if (!this.puedeMostrarDocumentoEnVisorIntegrado(documento)) {
+      this.cargandoDocumentoSeleccionado = false;
+      return;
+    }
+
+    if (!this.esVisorIntegradoCompatibleEnDispositivo() && !this.esDocumentoPrincipal(documento)) {
+      const openUrl = documento.openUrl;
+      if (!openUrl) {
+        this.cargandoDocumentoSeleccionado = false;
+        return;
+      }
+      const visorUrl = this.construirUrlVisorIntegradoProtegido(openUrl);
+      this.documentoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(visorUrl);
       this.cargandoDocumentoSeleccionado = false;
       return;
     }
@@ -808,6 +935,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       });
   }
 
+  private construirUrlVisorIntegradoProtegido(openUrl: string): string {
+    const [baseUrl, fragmento = ''] = openUrl.split('#', 2);
+    const hashParams = new URLSearchParams(fragmento);
+    hashParams.set('toolbar', '0');
+    hashParams.set('navpanes', '0');
+    hashParams.set('statusbar', '0');
+    return `${baseUrl}#${hashParams.toString()}`;
+  }
+
   private revocarBlobDocumento(): void {
     if (!this.documentoBlobUrl) {
       return;
@@ -816,3 +952,4 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.documentoBlobUrl = null;
   }
 }
+
