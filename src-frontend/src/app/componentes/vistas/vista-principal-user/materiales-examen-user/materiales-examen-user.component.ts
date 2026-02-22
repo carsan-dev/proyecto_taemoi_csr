@@ -96,6 +96,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private pdfLoadingTask: PDFDocumentLoadingTask | null = null;
   private pdfDocument: PDFDocumentProxy | null = null;
   private pdfRenderTask: RenderTask | null = null;
+  private readonly mobileViewportMediaQuery =
+    '(max-width: 768px), (max-height: 540px) and (pointer: coarse)';
   private readonly descripcionPreparacionPorGrado: Record<string, string> = {
     BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
     BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
@@ -308,28 +310,16 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (!documento || !this.documentoSeleccionado) {
       return false;
     }
-    if (!globalThis.window?.matchMedia) {
-      return false;
-    }
 
-    return (
-      globalThis.window.matchMedia('(max-width: 768px)').matches &&
-      documento.id === this.documentoSeleccionado.id
-    );
+    return this.esVistaMovilActiva() && documento.id === this.documentoSeleccionado.id;
   }
 
   esVideoActivoEnMovil(video: MaterialExamenVideoDTO | null | undefined): boolean {
     if (!video || !this.videoSeleccionado) {
       return false;
     }
-    if (!globalThis.window?.matchMedia) {
-      return false;
-    }
 
-    return (
-      globalThis.window.matchMedia('(max-width: 768px)').matches &&
-      video.id === this.videoSeleccionado.id
-    );
+    return this.esVistaMovilActiva() && video.id === this.videoSeleccionado.id;
   }
 
   onAbrirDocumentoDesdeLista(documento: MaterialExamenDocumentoDTO): void {
@@ -1039,7 +1029,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    if (globalThis.window?.matchMedia('(max-width: 768px)').matches) {
+    if (this.esVistaMovilActiva()) {
       this.docsActionsOffsetPx = 0;
       return;
     }
@@ -1068,6 +1058,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     );
     const offset = Math.max(offsetMinimo, Math.min(offsetCrudo, offsetMaximo));
     this.docsActionsOffsetPx = Math.round(offset);
+  }
+
+  private esVistaMovilActiva(): boolean {
+    const windowRef = globalThis.window;
+    if (!windowRef || typeof windowRef.matchMedia !== 'function') {
+      return false;
+    }
+
+    return windowRef.matchMedia(this.mobileViewportMediaQuery).matches;
   }
 
   private cargarVideoSeleccionado(video: MaterialExamenVideoDTO): void {
@@ -1284,4 +1283,3 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.errorVisorPdf = null;
   }
 }
-
