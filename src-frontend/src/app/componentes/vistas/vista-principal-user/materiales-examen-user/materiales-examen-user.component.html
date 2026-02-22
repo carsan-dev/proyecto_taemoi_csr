@@ -40,29 +40,7 @@
   </div>
 
   <div class="materials-content-grid">
-    <div class="materials-videos-panel">
-      <h3>Videos</h3>
-      @if (material.videos.length > 0) {
-      <div class="video-list">
-        @for (video of material.videos; track video.id) {
-        <button
-          type="button"
-          class="video-item-btn"
-          [class.is-active]="video.id === videoSeleccionado?.id"
-          (click)="onSeleccionarVideo(video)"
-        >
-          <span class="video-order">{{ video.order }}</span>
-          <span class="video-title">{{ video.title }}</span>
-        </button>
-        }
-      </div>
-      } @else {
-      <p class="materials-state">No hay videos en este bloque.</p>
-      }
-    </div>
-
-    <div class="materials-player-panel">
-      <h3>Reproductor</h3>
+    <ng-template #videoPlayerTemplate>
       @if (videoSeleccionado && videoSeleccionadoUrl) {
       <video
         class="video-player"
@@ -81,6 +59,40 @@
       } @else {
       <p class="materials-state">Selecciona un video para reproducirlo.</p>
       }
+    </ng-template>
+
+    <div class="materials-videos-panel">
+      <h3>Videos</h3>
+      @if (material.videos.length > 0) {
+      <div class="video-list">
+        @for (video of material.videos; track video.id) {
+        <div class="video-item-wrap">
+          <button
+            type="button"
+            class="video-item-btn"
+            [class.is-active]="video.id === videoSeleccionado?.id"
+            (click)="onSeleccionarVideo(video)"
+          >
+            <span class="video-order">{{ video.order }}</span>
+            <span class="video-title">{{ video.title }}</span>
+          </button>
+
+          @if (esVideoActivoEnMovil(video)) {
+          <div class="video-mobile-player">
+            <ng-container [ngTemplateOutlet]="videoPlayerTemplate"></ng-container>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      } @else {
+      <p class="materials-state">No hay videos en este bloque.</p>
+      }
+    </div>
+
+    <div class="materials-player-panel">
+      <h3>Reproductor</h3>
+      <ng-container [ngTemplateOutlet]="videoPlayerTemplate"></ng-container>
     </div>
   </div>
 

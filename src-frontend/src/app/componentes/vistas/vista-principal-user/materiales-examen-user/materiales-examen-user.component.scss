@@ -85,6 +85,12 @@
   padding-right: 0.2rem;
 }
 
+.video-item-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
 .video-item-btn {
   border: 1px solid rgba(13, 110, 253, 0.2);
   border-radius: 10px;
@@ -102,6 +108,10 @@
     border-color: rgba(13, 110, 253, 0.48);
     background: rgba(13, 110, 253, 0.16);
   }
+}
+
+.video-mobile-player {
+  display: none;
 }
 
 .video-order {
@@ -544,6 +554,19 @@
     max-height: none;
     gap: 0.5rem;
     padding-right: 0;
+  }
+
+  .materials-player-panel {
+    display: none;
+  }
+
+  .video-mobile-player {
+    display: block;
+  }
+
+  .video-mobile-player .video-player {
+    max-height: 280px;
+    border-radius: 12px;
   }
 
   .video-item-btn,

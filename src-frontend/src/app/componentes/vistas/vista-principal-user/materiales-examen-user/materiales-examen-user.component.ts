@@ -318,6 +318,20 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     );
   }
 
+  esVideoActivoEnMovil(video: MaterialExamenVideoDTO | null | undefined): boolean {
+    if (!video || !this.videoSeleccionado) {
+      return false;
+    }
+    if (!globalThis.window?.matchMedia) {
+      return false;
+    }
+
+    return (
+      globalThis.window.matchMedia('(max-width: 768px)').matches &&
+      video.id === this.videoSeleccionado.id
+    );
+  }
+
   onAbrirDocumentoDesdeLista(documento: MaterialExamenDocumentoDTO): void {
     if (!documento) {
       return;
