@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:local": "ng build --configuration=local",
-    "build:production": "ng build --configuration=production"
+    "build:production": "ng build --configuration=production",
+    "audit:prod": "npm audit --omit=dev"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +31,7 @@
     "leaflet-minimap": "^3.6.1",
     "leaflet-routing-machine": "^3.2.12",
     "ngx-spinner": "19.0.0",
+    "pdfjs-dist": "^4.10.38",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.6.13",
     "tslib": "^2.8.1",
@@ -38,7 +40,7 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "^20.3.13",
     "@angular/cli": "^20.3.13",
-    "@angular/compiler-cli": "^20.3.15",
+    "@angular/compiler-cli": "^20.3.16",
     "@types/hammerjs": "^2.0.45",
     "@types/jasmine": "~5.1.0",
     "@types/leaflet": "^1.9.12",
@@ -47,7 +49,7 @@
     "jasmine-core": "5.12.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
+    "karma-coverage": "^2.2.1",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "5.9.3"
