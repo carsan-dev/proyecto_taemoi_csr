@@ -234,17 +234,15 @@
           title="Documento de material de examen"
           loading="lazy"
           (contextmenu)="onBloquearDescargaContenido($event)"
-          (load)="onDocumentoFrameLoad($event)"
         ></iframe>
         } @else {
         <iframe
           class="docs-frame"
           [src]="documentoSeleccionadoUrl"
-          sandbox="allow-same-origin allow-scripts"
+          sandbox="allow-scripts"
           title="Documento de material de examen"
           loading="lazy"
           (contextmenu)="onBloquearDescargaContenido($event)"
-          (load)="onDocumentoFrameLoad($event)"
         ></iframe>
         }
         }
