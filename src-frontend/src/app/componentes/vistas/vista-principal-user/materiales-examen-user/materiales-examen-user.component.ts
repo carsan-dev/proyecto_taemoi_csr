@@ -24,7 +24,10 @@ const baseHref = globalThis.document?.querySelector('base')?.getAttribute('href'
 const baseUrl = globalThis.location
   ? new URL(baseHref, globalThis.location.origin)
   : new URL('http://localhost/');
-GlobalWorkerOptions.workerSrc = new URL('assets/pdfjs/pdf.worker.min.mjs', baseUrl).toString();
+GlobalWorkerOptions.workerSrc = new URL(
+  'assets/pdfjs/pdf.worker.min.mjs?v=20260222-1',
+  baseUrl
+).toString();
 
 @Component({
   selector: 'app-materiales-examen-user',
