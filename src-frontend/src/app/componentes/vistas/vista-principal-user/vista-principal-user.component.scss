@@ -1510,6 +1510,12 @@ $competicion: #7b1fa2;
   }
 }
 
+#materiales-examen,
+#mis-grupos,
+#mis-documentos {
+  scroll-margin-top: 110px;
+}
+
 .groups-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -2167,6 +2173,12 @@ $competicion: #7b1fa2;
 
   .quick-actions-grid {
     grid-template-columns: 1fr;
+  }
+
+  #materiales-examen,
+  #mis-grupos,
+  #mis-documentos {
+    scroll-margin-top: 92px;
   }
 }
 
