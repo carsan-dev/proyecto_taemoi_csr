@@ -33,11 +33,18 @@ describe('VistaPrincipalUserComponent', () => {
 
     authServiceSpy = jasmine.createSpyObj<AuthenticationService>(
       'AuthenticationService',
-      ['obtenerNombreUsuario', 'obtenerTodosLosAlumnos', 'obtenerRecordatorioRachaEmail', 'actualizarRecordatorioRachaEmail']
+      [
+        'obtenerNombreUsuario',
+        'obtenerTodosLosAlumnos',
+        'obtenerRecordatorioRachaEmail',
+        'actualizarRecordatorioRachaEmail',
+        'tieneAccesoAdmin',
+      ]
     );
     endpointsServiceSpy = jasmine.createSpyObj<EndpointsService>(
       'EndpointsService',
       [
+        'obtenerAlumnosSinPaginar',
         'obtenerGruposDelAlumnoObservable',
         'obtenerTurnosDelAlumnoObservable',
         'obtenerConvocatoriasDeAlumno',
@@ -55,8 +62,10 @@ describe('VistaPrincipalUserComponent', () => {
 
     authServiceSpy.obtenerNombreUsuario.and.returnValue(of('usuario'));
     authServiceSpy.obtenerTodosLosAlumnos.and.returnValue(of(alumnosMock as any));
+    authServiceSpy.tieneAccesoAdmin.and.returnValue(false);
     authServiceSpy.obtenerRecordatorioRachaEmail.and.returnValue(of({ habilitado: false }));
     authServiceSpy.actualizarRecordatorioRachaEmail.and.returnValue(of({ habilitado: true }));
+    endpointsServiceSpy.obtenerAlumnosSinPaginar.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerGruposDelAlumnoObservable.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerTurnosDelAlumnoObservable.and.returnValue(of([] as any));
     endpointsServiceSpy.obtenerConvocatoriasDeAlumno.and.returnValue(of([] as any));

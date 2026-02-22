@@ -268,6 +268,14 @@
                 <i class="bi bi-pencil-square"></i>
                 <span>Editar</span>
               </button>
+              <button
+                class="admin-btn admin-btn-info admin-btn-sm"
+                [routerLink]="['/userpage']"
+                [queryParams]="{ alumnoId: alumno.id }"
+              >
+                <i class="bi bi-person-badge"></i>
+                <span>Vista user</span>
+              </button>
               @if (!isAlumnoActivo(alumno.id)) {
                 <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
                   <i class="bi bi-check-circle"></i>
@@ -357,6 +365,14 @@
                     <div class="table-actions">
                       <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
                         <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        class="admin-btn admin-btn-info admin-btn-sm"
+                        [routerLink]="['/userpage']"
+                        [queryParams]="{ alumnoId: alumno.id }"
+                        title="Abrir vista user"
+                      >
+                        <i class="bi bi-person-badge"></i>
                       </button>
                       @if (!isAlumnoActivo(alumno.id)) {
                         <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
