@@ -1197,9 +1197,9 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     try {
       const page = await pdf.getPage(this.paginaActualPdf);
       const viewportBase = page.getViewport({ scale: 1 });
-      const parentWidth = Math.max(260, (canvas.parentElement?.clientWidth ?? viewportBase.width) - 8);
+      const parentWidth = Math.max(1, (canvas.parentElement?.clientWidth ?? viewportBase.width) - 8);
       const fitScale = parentWidth / viewportBase.width;
-      const finalScale = Math.max(0.6, Math.min(3.2, fitScale * this.zoomPdf));
+      const finalScale = Math.max(0.1, Math.min(3.2, fitScale * this.zoomPdf));
       const viewport = page.getViewport({ scale: finalScale });
       const pixelRatio = Math.max(1, globalThis.window?.devicePixelRatio ?? 1);
       const context = canvas.getContext('2d', { alpha: false });
