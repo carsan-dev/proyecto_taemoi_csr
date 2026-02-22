@@ -227,15 +227,26 @@
         }
 
         @if (mostrarDocumentoVisor && documentoSeleccionadoUrl && documentoSeleccionado.previewable) {
+        @if (esDocumentoPrincipal(documentoSeleccionado)) {
         <iframe
           class="docs-frame"
           [src]="documentoSeleccionadoUrl"
-          [attr.sandbox]="esDocumentoPrincipal(documentoSeleccionado) ? null : 'allow-same-origin allow-scripts'"
           title="Documento de material de examen"
           loading="lazy"
           (contextmenu)="onBloquearDescargaContenido($event)"
           (load)="onDocumentoFrameLoad($event)"
         ></iframe>
+        } @else {
+        <iframe
+          class="docs-frame"
+          [src]="documentoSeleccionadoUrl"
+          sandbox="allow-same-origin allow-scripts"
+          title="Documento de material de examen"
+          loading="lazy"
+          (contextmenu)="onBloquearDescargaContenido($event)"
+          (load)="onDocumentoFrameLoad($event)"
+        ></iframe>
+        }
         }
         }
       </div>
