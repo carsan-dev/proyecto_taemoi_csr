@@ -412,12 +412,24 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   private inicializarAlumnoSeleccionado(alumnos: any[], alumnoIdSolicitado: number | null): void {
     this.alumnos = alumnos;
+    if (this.debeEsperarSeleccionManual(alumnoIdSolicitado)) {
+      this.selectedAlumno = null;
+      return;
+    }
     const alumnoInicial = this.obtenerAlumnoInicial(alumnos, alumnoIdSolicitado);
     if (alumnoInicial) {
       this.seleccionarAlumno(alumnoInicial);
       return;
     }
     this.mostrarErrorSinAlumnos();
+  }
+
+  private debeEsperarSeleccionManual(alumnoIdSolicitado: number | null): boolean {
+    return (
+      alumnoIdSolicitado === null &&
+      this.authService.tieneAccesoAdmin() &&
+      this.alumnos.length > this.maxAlumnosSwitchPills
+    );
   }
 
   private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {
