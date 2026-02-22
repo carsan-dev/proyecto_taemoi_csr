@@ -105,11 +105,6 @@
 
       <div class="docs-detail">
         @if (documentoSeleccionado) {
-        @if (esDocumentoPrincipal(documentoSeleccionado)) {
-        <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
-        }
-        <p class="doc-selected-title">{{ documentoSeleccionado.title || documentoSeleccionado.fileName }}</p>
-
         <div class="docs-actions">
           @if (getDocumentoOpenUrl()) {
           <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
@@ -130,6 +125,10 @@
             <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
             {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
           </button>
+          }
+
+          @if (esDocumentoPrincipal(documentoSeleccionado)) {
+          <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
           }
         </div>
 
