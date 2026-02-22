@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.Calendar;
 import java.util.Date;
@@ -45,6 +46,8 @@ import com.taemoi.project.utils.FechaUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class AlumnoServiceImplTest {
+
+	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
 
 	@Mock
 	private AlumnoRepository alumnoRepository;
@@ -208,7 +211,7 @@ public class AlumnoServiceImplTest {
 		alumno.setId(1L);
 		alumno.setActivo(true);
 		alumno.setRachaRetoDiario(2);
-		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now().minusDays(1)));
+		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now(RETO_DIARIO_ZONE_ID).minusDays(1)));
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumno));
 		when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -226,7 +229,7 @@ public class AlumnoServiceImplTest {
 		alumno.setId(1L);
 		alumno.setActivo(true);
 		alumno.setRachaRetoDiario(3);
-		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now()));
+		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now(RETO_DIARIO_ZONE_ID)));
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumno));
 		when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -269,7 +272,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
-		LocalDate hoy = LocalDate.now();
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
 		WeekFields weekFields = WeekFields.ISO;
 		int anioIso = hoy.get(weekFields.weekBasedYear());
 		int semanaIso = hoy.get(weekFields.weekOfWeekBasedYear());
@@ -359,7 +362,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.KICKBOXING))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
-		LocalDate hoy = LocalDate.now();
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
 
 		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreActual =
 				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {

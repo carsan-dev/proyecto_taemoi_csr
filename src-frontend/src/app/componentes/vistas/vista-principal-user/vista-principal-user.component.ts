@@ -104,6 +104,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly convocatoriasCache = new Map<number, ConvocatoriaDTO[]>();
   private readonly documentosPageSize = 8;
   private readonly probabilidadRetoDeporte = 0.75;
+  private readonly retoDiarioTimeZone = 'Europe/Madrid';
+  private readonly retoDiarioDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: this.retoDiarioTimeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    hourCycle: 'h23',
+  });
   private readonly retosDiariosGenerales: string[] = [
     'Movilidad de cadera y tobillo: 5 minutos',
     'Plancha frontal: 3 series de 30 segundos',
@@ -1427,10 +1439,42 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private obtenerValorDeterminista(fecha: Date, alumnoId: number, canal: string): number {
-    const inicioDiaLocal = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-    const clave = `${alumnoId}|${inicioDiaLocal.getTime()}|${canal}`;
+    const fechaClave = this.obtenerClaveFechaReto(fecha);
+    const clave = `${alumnoId}|${fechaClave}|${canal}`;
     const hash = this.hashDeterminista(clave);
     return hash / 4_294_967_296;
+  }
+
+  private obtenerClaveFechaReto(fecha: Date): string {
+    const partes = this.obtenerPartesFechaZonaReto(fecha);
+    const mes = String(partes.month).padStart(2, '0');
+    const dia = String(partes.day).padStart(2, '0');
+    return `${partes.year}-${mes}-${dia}`;
+  }
+
+  private obtenerPartesFechaZonaReto(fecha: Date): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  } {
+    const partes = this.retoDiarioDateTimeFormatter.formatToParts(fecha);
+    const leerParte = (tipo: string): number => {
+      const valor = partes.find((parte) => parte.type === tipo)?.value;
+      const numero = Number(valor);
+      return Number.isFinite(numero) ? numero : 0;
+    };
+
+    return {
+      year: leerParte('year'),
+      month: leerParte('month'),
+      day: leerParte('day'),
+      hour: leerParte('hour'),
+      minute: leerParte('minute'),
+      second: leerParte('second'),
+    };
   }
 
   private hashDeterminista(valor: string): number {
@@ -1545,9 +1589,46 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
   private calcularProximoResetLocalEpochMs(): number {
     const ahora = new Date();
-    const proximoReset = new Date(ahora);
-    proximoReset.setHours(24, 0, 0, 0);
-    return proximoReset.getTime();
+    const partesHoy = this.obtenerPartesFechaZonaReto(ahora);
+    const inicioDiaHoyUtc = Date.UTC(partesHoy.year, partesHoy.month - 1, partesHoy.day, 0, 0, 0, 0);
+    const inicioDiaMananaUtc = inicioDiaHoyUtc + 24 * 60 * 60 * 1_000;
+    const mananaUtc = new Date(inicioDiaMananaUtc);
+
+    return this.calcularEpochInicioDiaZonaReto(
+      mananaUtc.getUTCFullYear(),
+      mananaUtc.getUTCMonth() + 1,
+      mananaUtc.getUTCDate()
+    );
+  }
+
+  private calcularEpochInicioDiaZonaReto(year: number, month: number, day: number): number {
+    const objetivoUtc = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+    let estimado = objetivoUtc;
+
+    for (let i = 0; i < 3; i += 1) {
+      const offset = this.obtenerOffsetZonaRetoMs(estimado);
+      const ajustado = objetivoUtc - offset;
+      if (Math.abs(ajustado - estimado) < 1_000) {
+        return ajustado;
+      }
+      estimado = ajustado;
+    }
+
+    return estimado;
+  }
+
+  private obtenerOffsetZonaRetoMs(epochMs: number): number {
+    const partes = this.obtenerPartesFechaZonaReto(new Date(epochMs));
+    const pseudoUtc = Date.UTC(
+      partes.year,
+      partes.month - 1,
+      partes.day,
+      partes.hour,
+      partes.minute,
+      partes.second,
+      0
+    );
+    return pseudoUtc - epochMs;
   }
 
   private marcarDocumentosComoVistos(): void {

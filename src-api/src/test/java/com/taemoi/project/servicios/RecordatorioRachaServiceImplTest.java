@@ -53,7 +53,7 @@ class RecordatorioRachaServiceImplTest {
 
 	@BeforeEach
 	void setUp() {
-		zoneId = ZoneId.systemDefault();
+		zoneId = ZoneId.of("Europe/Madrid");
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderEnabled", true);
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderWindowHours", 3);
 		ReflectionTestUtils.setField(recordatorioRachaService, "frontendBaseUrl", "https://moiskimdo.es");
