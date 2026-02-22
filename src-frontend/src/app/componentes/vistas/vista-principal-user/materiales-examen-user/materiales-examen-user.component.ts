@@ -835,12 +835,22 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return [];
     }
 
-    return this.deportes.filter((item) =>
+    const deportesConMaterial = this.deportes.filter((item) =>
       !!item?.deporte &&
       !!item?.grado &&
       item.activo !== false &&
       (item.deporte === 'TAEKWONDO' || item.deporte === 'KICKBOXING')
     );
+
+    return deportesConMaterial
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        if (!!a.item.principal === !!b.item.principal) {
+          return a.index - b.index;
+        }
+        return a.item.principal ? -1 : 1;
+      })
+      .map(({ item }) => item);
   }
 
   private resetearVista(): void {
