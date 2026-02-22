@@ -142,12 +142,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
     const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
-    this.mostrarDocumentoVisor = false;
+    this.mostrarDocumentoVisor = visorEstabaAbierto && !!documento.previewable;
     this.cargarPreviewDocumentoSeleccionado(documento);
-    if (visorEstabaAbierto) {
-      this.programarScrollListaAlDocumentoSeleccionado();
-      return;
-    }
     this.programarRecalculoAlineacionDocs();
   }
 
