@@ -198,6 +198,7 @@
   &.is-primary {
     background: rgba(0, 104, 56, 0.18);
     color: #0f5d38;
+    font-size: 0.66rem;
   }
 }
 
@@ -393,6 +394,10 @@
     min-width: 32px;
     height: 28px;
     font-size: 0.8rem;
+  }
+
+  .doc-order.is-primary {
+    font-size: 0.72rem;
   }
 
   .video-title,
