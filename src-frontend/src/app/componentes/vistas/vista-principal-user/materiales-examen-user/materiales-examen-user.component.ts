@@ -61,6 +61,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private docsActionsRef: ElementRef<HTMLElement> | undefined;
   private docsResizeObserver: ResizeObserver | null = null;
   private rafAlineacionDocsId: number | null = null;
+  private rafScrollDocsId: number | null = null;
   private readonly descripcionPreparacionPorGrado: Record<string, string> = {
     BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
     BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
@@ -118,6 +119,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       globalThis.cancelAnimationFrame?.(this.rafAlineacionDocsId);
       this.rafAlineacionDocsId = null;
     }
+    if (this.rafScrollDocsId !== null) {
+      globalThis.cancelAnimationFrame?.(this.rafScrollDocsId);
+      this.rafScrollDocsId = null;
+    }
   }
 
   onSeleccionarDeporte(deporte: string): void {
@@ -135,9 +140,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
+    const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
     this.mostrarDocumentoVisor = false;
     this.cargarPreviewDocumentoSeleccionado(documento);
+    if (visorEstabaAbierto) {
+      this.programarScrollListaAlDocumentoSeleccionado();
+      return;
+    }
     this.programarRecalculoAlineacionDocs();
   }
 
@@ -146,6 +156,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
     this.mostrarDocumentoVisor = !this.mostrarDocumentoVisor;
+    if (!this.mostrarDocumentoVisor) {
+      this.programarScrollListaAlDocumentoSeleccionado();
+      return;
+    }
     this.programarRecalculoAlineacionDocs();
   }
 
@@ -621,6 +635,56 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     });
   }
 
+  private programarScrollListaAlDocumentoSeleccionado(): void {
+    if (typeof globalThis.requestAnimationFrame !== 'function') {
+      this.scrollListaAlDocumentoSeleccionado();
+      this.recalcularAlineacionDocs();
+      return;
+    }
+
+    if (this.rafScrollDocsId !== null) {
+      globalThis.cancelAnimationFrame?.(this.rafScrollDocsId);
+      this.rafScrollDocsId = null;
+    }
+
+    this.rafScrollDocsId = globalThis.requestAnimationFrame(() => {
+      this.rafScrollDocsId = globalThis.requestAnimationFrame(() => {
+        this.rafScrollDocsId = null;
+        this.scrollListaAlDocumentoSeleccionado();
+        this.recalcularAlineacionDocs();
+      });
+    });
+  }
+
+  private scrollListaAlDocumentoSeleccionado(): void {
+    if (this.mostrarDocumentoVisor) {
+      return;
+    }
+
+    const gridElement = this.docsGridRef?.nativeElement;
+    if (!gridElement) {
+      return;
+    }
+
+    const listaDocs = gridElement.querySelector<HTMLElement>('.docs-list');
+    const botonActivo = gridElement.querySelector<HTMLElement>('.doc-item-btn.is-active');
+    if (!listaDocs || !botonActivo) {
+      return;
+    }
+
+    const listaRect = listaDocs.getBoundingClientRect();
+    const botonRect = botonActivo.getBoundingClientRect();
+    const visibleCompleto = botonRect.top >= listaRect.top && botonRect.bottom <= listaRect.bottom;
+    if (visibleCompleto) {
+      return;
+    }
+
+    const topEnLista = botonRect.top - listaRect.top + listaDocs.scrollTop;
+    const destino = topEnLista - (listaDocs.clientHeight - botonRect.height) / 2;
+    const maxScroll = Math.max(0, listaDocs.scrollHeight - listaDocs.clientHeight);
+    listaDocs.scrollTop = Math.max(0, Math.min(destino, maxScroll));
+  }
+
   private recalcularAlineacionDocs(): void {
     const gridElement = this.docsGridRef?.nativeElement;
     const actionsElement = this.docsActionsRef?.nativeElement;
@@ -639,13 +703,25 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       this.docsActionsOffsetPx = 0;
       return;
     }
+    const listaDocs = gridElement.querySelector<HTMLElement>('.docs-list');
+    if (!listaDocs) {
+      this.docsActionsOffsetPx = 0;
+      return;
+    }
 
     const gridRect = gridElement.getBoundingClientRect();
+    const listaRect = listaDocs.getBoundingClientRect();
     const botonRect = botonActivo.getBoundingClientRect();
     const actionsRect = actionsElement.getBoundingClientRect();
     const centroBoton = botonRect.top - gridRect.top + botonRect.height / 2;
-    const offset = Math.max(0, Math.round(centroBoton - actionsRect.height / 2));
-    this.docsActionsOffsetPx = offset;
+    const offsetCrudo = centroBoton - actionsRect.height / 2;
+    const offsetMinimo = Math.max(0, listaRect.top - gridRect.top);
+    const offsetMaximo = Math.max(
+      offsetMinimo,
+      listaRect.bottom - gridRect.top - actionsRect.height
+    );
+    const offset = Math.max(offsetMinimo, Math.min(offsetCrudo, offsetMaximo));
+    this.docsActionsOffsetPx = Math.round(offset);
   }
 
   private cargarVideoSeleccionado(video: MaterialExamenVideoDTO): void {
