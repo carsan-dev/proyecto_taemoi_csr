@@ -31,6 +31,21 @@
             <i class="bi bi-people-fill"></i>
             <span>Seleccionar alumno</span>
           </div>
+          @if (usarSelectorCompacto()) {
+            <div class="switcher-select-wrap">
+              <select
+                class="switcher-select"
+                [value]="selectedAlumno?.id ?? ''"
+                (change)="onSeleccionAlumnoDesdeSelect($event)"
+                aria-label="Seleccionar alumno"
+              >
+                @for (alumno of alumnos; track alumno.id) {
+                  <option [value]="alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
+                }
+              </select>
+              <span class="switcher-meta">{{ alumnos.length }} alumnos</span>
+            </div>
+          } @else {
           <div class="switcher-track">
             @for (alumno of alumnos; track alumno.id) {
               <button
@@ -43,6 +58,7 @@
               </button>
             }
           </div>
+          }
         </div>
       }
 

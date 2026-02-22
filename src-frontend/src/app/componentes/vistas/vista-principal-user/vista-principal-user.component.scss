@@ -223,6 +223,45 @@ $competicion: #7b1fa2;
   }
 }
 
+.switcher-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.switcher-select {
+  flex: 1 1 280px;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(8, 17, 31, 0.42);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 0.6rem;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: rgba(159, 208, 255, 0.85);
+    box-shadow: 0 0 0 2px rgba(159, 208, 255, 0.2);
+  }
+
+  option {
+    color: #0f1b2a;
+    background: #ffffff;
+  }
+}
+
+.switcher-meta {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.74);
+}
+
 .hero-stats {
   position: relative;
   z-index: 1;
