@@ -35,15 +35,13 @@
             <div class="switcher-select-wrap">
               <select
                 class="switcher-select"
-                [value]="selectedAlumno?.id ?? ''"
+                [value]="getAlumnoSelectorValue()"
                 (change)="onSeleccionAlumnoDesdeSelect($event)"
                 aria-label="Seleccionar alumno"
               >
-                @if (!selectedAlumno) {
-                  <option value="" disabled>Selecciona un alumno...</option>
-                }
+                <option value="" [disabled]="bloquearPlaceholderSelectorAlumno">Selecciona un alumno...</option>
                 @for (alumno of alumnos; track alumno.id) {
-                  <option [value]="alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
+                  <option [value]="alumno.id.toString()">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
                 }
               </select>
               <span class="switcher-meta">{{ alumnos.length }} alumnos</span>
