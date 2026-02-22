@@ -109,7 +109,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   onSeleccionarVideo(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionado = video;
-    this.cargarVideoPrivadoSeleccionado(video);
+    this.cargarVideoSeleccionado(video);
   }
 
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
@@ -443,7 +443,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.lastFetchKey = null;
   }
 
-  private cargarVideoPrivadoSeleccionado(video: MaterialExamenVideoDTO): void {
+  private cargarVideoSeleccionado(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionadoUrl = null;
 
     if (!video?.streamUrl) {
