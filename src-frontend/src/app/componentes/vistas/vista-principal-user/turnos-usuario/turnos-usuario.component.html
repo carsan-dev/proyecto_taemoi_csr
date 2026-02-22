@@ -39,6 +39,9 @@
                 (change)="onSeleccionAlumnoDesdeSelect($event)"
                 aria-label="Seleccionar alumno"
               >
+                @if (!selectedAlumno) {
+                  <option value="" disabled>Selecciona un alumno...</option>
+                }
                 @for (alumno of alumnos; track alumno.id) {
                   <option [value]="alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
                 }
@@ -83,6 +86,12 @@
     <section class="schedule-panel">
       @if (cargando) {
         <app-skeleton-card [type]="'grid'" [count]="4" [columns]="2"></app-skeleton-card>
+      } @else if (!selectedAlumno) {
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-person-lines-fill"></i></div>
+          <h3>Selecciona un alumno</h3>
+          <p>Elige un alumno en el selector superior para ver su horario.</p>
+        </div>
       } @else if (allTurnos.length > 0) {
         @if (deportesUnicos.length > 0) {
           <div class="sport-legend">
