@@ -200,10 +200,15 @@ $competicion: #7b1fa2;
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .switcher-select {
   flex: 1 1 280px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   min-height: 40px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.34);
@@ -672,6 +677,22 @@ $competicion: #7b1fa2;
 
   .hero-kpis {
     grid-template-columns: 1fr;
+  }
+
+  .switcher-select-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .switcher-select {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .switcher-meta {
+    align-self: flex-start;
   }
 
   .desktop-view {

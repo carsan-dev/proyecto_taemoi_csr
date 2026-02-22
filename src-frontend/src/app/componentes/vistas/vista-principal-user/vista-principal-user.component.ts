@@ -1,6 +1,6 @@
 ﻿import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import Swal from 'sweetalert2';
 
@@ -10,6 +10,7 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { ConvocatoriaDTO } from '../../../interfaces/convocatoria-dto';
 import { Documento } from '../../../interfaces/documento';
+import { RetoDiarioInfo } from '../../../interfaces/reto-diario-info';
 import { RetoDiarioEstado } from '../../../interfaces/reto-diario-estado';
 import { RetoDiarioRankingGeneral } from '../../../interfaces/reto-diario-ranking-general';
 import { RetoDiarioRankingSemanal } from '../../../interfaces/reto-diario-ranking-semanal';
@@ -17,6 +18,7 @@ import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { MaterialesExamenUserComponent } from './materiales-examen-user/materiales-examen-user.component';
+import { RetoDiarioAyudaModalComponent } from './reto-diario-ayuda-modal/reto-diario-ayuda-modal.component';
 
 interface BeltVisualData {
   topColor: string;
@@ -51,10 +53,18 @@ interface EstadoDeporteSnapshot {
   aptoParaExamen: boolean;
 }
 
+type RetoDiarioCategoria = 'TECNICA' | 'FUERZA_CONTROL' | 'MOVILIDAD_RESPIRACION' | 'GENERAL';
+
 @Component({
   selector: 'app-vista-principal-user',
   standalone: true,
-  imports: [CommonModule, RouterModule, SkeletonCardComponent, MaterialesExamenUserComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SkeletonCardComponent,
+    MaterialesExamenUserComponent,
+    RetoDiarioAyudaModalComponent,
+  ],
   templateUrl: './vista-principal-user.component.html',
   styleUrl: './vista-principal-user.component.scss',
 })
@@ -82,6 +92,18 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   convocatoriasSecundarias: ConvocatoriaDTO[] = [];
   mostrarConvocatoriasSecundarias: boolean = false;
   retoDiarioActual: string = '';
+  retoDiarioInfoActual: RetoDiarioInfo = this.construirRetoDiarioInfo('');
+  mostrarModalAyudaRetoDiario: boolean = false;
+  readonly checklistRetoDiarioItems: string[] = [
+    'Calente 2-3 minutos antes de empezar.',
+    'Tengo clara la tecnica del ejercicio.',
+    'Complete el volumen indicado (o su version facil).',
+    'No tuve dolor agudo durante el reto.',
+    'Mantuve respiracion controlada.',
+    'Hice una vuelta a la calma al terminar.',
+  ];
+  checklistRetoDiarioEstado: boolean[] = this.checklistRetoDiarioItems.map(() => false);
+  checklistRetoDiarioRevisada: boolean = false;
   rachaRetoDiario: number = 0;
   retoCompletadoHoy: boolean = false;
   retoCountdownTexto: string = '';
@@ -111,6 +133,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly convocatoriasCache = new Map<number, ConvocatoriaDTO[]>();
   private readonly documentosPageSize = 8;
   private readonly probabilidadRetoDeporte = 0.75;
+  private checklistRetoDiarioClave: string = '';
   private readonly retoDiarioTimeZone = 'Europe/Madrid';
   private readonly retoDiarioDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: this.retoDiarioTimeZone,
@@ -251,7 +274,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     public endpointsService: EndpointsService,
     private readonly authService: AuthenticationService,
     private readonly alumnoService: AlumnoService,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
 
   @ViewChild('misDocumentosSection')
@@ -296,6 +320,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.mostrarModalAyudaRetoDiario = false;
+    this.resetearChecklistRetoDiario();
     this.selectedAlumno = alumno;
     this.mostrarConvocatoriasSecundarias = false;
     this.cargarDatosAlumno(alumnoId);
@@ -311,17 +337,44 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
   }
 
-  irADocumentos(): void {
-    const alumnoId = Number(this.selectedAlumno?.id);
-    if (Number.isInteger(alumnoId) && alumnoId > 0) {
-      this.programarCargaDocumentos(alumnoId, true);
+  irAMisClases(): void {
+    if (!this.asegurarAlumnoSeleccionado('ver las clases')) {
+      return;
     }
+    this.scrollToSection('mis-grupos');
+  }
+
+  irADocumentos(): void {
+    if (!this.asegurarAlumnoSeleccionado('ver documentos')) {
+      return;
+    }
+    const alumnoId = this.obtenerAlumnoIdSeleccionado();
+    if (alumnoId === null) {
+      return;
+    }
+    this.programarCargaDocumentos(alumnoId, true);
     this.scrollToSection('mis-documentos');
     this.marcarDocumentosComoVistos();
   }
 
   irAMaterialesExamen(): void {
+    if (!this.asegurarAlumnoSeleccionado('ver materiales de examen')) {
+      return;
+    }
     this.scrollToSection('materiales-examen');
+  }
+
+  irAHorarios(): void {
+    if (!this.asegurarAlumnoSeleccionado('ver horarios')) {
+      return;
+    }
+    const alumnoId = this.obtenerAlumnoIdSeleccionado();
+    if (alumnoId === null) {
+      return;
+    }
+    this.router.navigate(['/userpage/turnos'], {
+      queryParams: { alumnoId },
+    });
   }
 
   getTurnosQueryParams(): { alumnoId: number } | null {
@@ -370,6 +423,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private limpiarSeleccionAlumno(): void {
+    this.mostrarModalAyudaRetoDiario = false;
+    this.resetearChecklistRetoDiario();
     this.selectedAlumno = null;
     this.grupos = [];
     this.turnosAlumno = [];
@@ -486,6 +541,34 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
 
     const alumnoId = Number.parseInt(alumnoIdRaw, 10);
     return Number.isInteger(alumnoId) && alumnoId > 0 ? alumnoId : null;
+  }
+
+  private obtenerAlumnoIdSeleccionado(): number | null {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return null;
+    }
+    return alumnoId;
+  }
+
+  private asegurarAlumnoSeleccionado(accion: string): boolean {
+    if (this.obtenerAlumnoIdSeleccionado() !== null) {
+      return true;
+    }
+
+    if (this.alumnos.length === 1) {
+      this.seleccionarAlumno(this.alumnos[0]);
+      return true;
+    }
+
+    Swal.fire({
+      title: 'Selecciona un alumno',
+      text: `Para ${accion}, primero selecciona un alumno en el selector superior.`,
+      icon: 'info',
+      timer: 2200,
+      showConfirmButton: false,
+    });
+    return false;
   }
 
   private mostrarErrorSinAlumnos(): void {
@@ -724,7 +807,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const deportesCache = this.deportesCache.get(alumnoId);
     if (deportesCache) {
       this.deportesDelAlumno = deportesCache;
-      this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
+      this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date(), alumnoId));
       this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
       this.prepararRankingsRetoDiarioDesdeDeportes(alumnoId);
       this.cargandoDeportes = false;
@@ -741,7 +824,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         const deportesNormalizados = deportes ?? [];
         this.deportesDelAlumno = deportesNormalizados;
         this.deportesCache.set(alumnoId, deportesNormalizados);
-        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
+        this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date(), alumnoId));
         this.actualizarNovedadesEstadoDeportes(alumnoId, this.deportesDelAlumno);
         this.prepararRankingsRetoDiarioDesdeDeportes(alumnoId);
         this.cargandoDeportes = false;
@@ -752,7 +835,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         }
 
         this.deportesDelAlumno = [];
-        this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
+        this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date(), alumnoId));
         this.novedadesEstadoDeportes = 0;
         this.detallesNovedadesEstado = [];
         this.resetearRankingSemanalRetoDiario();
@@ -968,11 +1051,75 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const alumnoId = Number(this.selectedAlumno?.id);
-    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+    const alumnoId = this.obtenerAlumnoSeleccionadoId();
+    if (alumnoId === null) {
       return;
     }
 
+    if (!this.checklistRetoDiarioRevisada) {
+      this.mostrarConfirmacionChecklistPendiente(alumnoId);
+      return;
+    }
+
+    this.registrarCompletadoRetoDiario(alumnoId);
+  }
+
+  mostrarComoHacerRetoDiario(): void {
+    this.mostrarModalAyudaRetoDiario = true;
+  }
+
+  cerrarAyudaRetoDiario(): void {
+    this.mostrarModalAyudaRetoDiario = false;
+  }
+
+  onChecklistRetoDiarioItemChange(payload: { index: number; checked: boolean }): void {
+    const { index, checked } = payload;
+    if (!Number.isInteger(index) || index < 0 || index >= this.checklistRetoDiarioEstado.length) {
+      return;
+    }
+
+    const nuevoEstado = [...this.checklistRetoDiarioEstado];
+    nuevoEstado[index] = checked;
+    this.checklistRetoDiarioEstado = nuevoEstado;
+
+    if (!checked && this.checklistRetoDiarioRevisada) {
+      this.checklistRetoDiarioRevisada = false;
+    }
+  }
+
+  onChecklistRetoDiarioRevisadaChange(checked: boolean): void {
+    if (checked && !this.checklistRetoDiarioEstado.every((item) => item)) {
+      return;
+    }
+    this.checklistRetoDiarioRevisada = checked;
+  }
+
+  buscarExplicacionRetoDiario(): void {
+    const query = this.construirQueryBusquedaRetoDiario();
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    globalThis.window?.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  private mostrarConfirmacionChecklistPendiente(alumnoId: number): void {
+    Swal.fire({
+      title: 'Checklist no confirmada',
+      text: 'No has confirmado la checklist. ¿Quieres revisarla antes de marcar el reto?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Revisar checklist',
+      cancelButtonText: 'Marcar de todos modos',
+      reverseButtons: true,
+    }).then((resultado) => {
+      if (resultado.isConfirmed) {
+        this.mostrarComoHacerRetoDiario();
+        return;
+      }
+
+      this.registrarCompletadoRetoDiario(alumnoId);
+    });
+  }
+
+  private registrarCompletadoRetoDiario(alumnoId: number): void {
     this.endpointsService.completarRetoDiario(alumnoId).subscribe({
       next: (estado: RetoDiarioEstado) => {
         this.aplicarEstadoRetoDiario(estado);
@@ -988,6 +1135,30 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private obtenerAlumnoSeleccionadoId(): number | null {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return null;
+    }
+    return alumnoId;
+  }
+
+  private construirQueryBusquedaRetoDiario(): string {
+    const deporteContexto = this.getDeporteContextoBusquedaReto();
+    const titulo = this.retoDiarioInfoActual?.titulo || 'ejercicio tecnica';
+    return `${titulo} tecnica correcta ${deporteContexto} paso a paso`;
+  }
+
+  private getDeporteContextoBusquedaReto(): string {
+    const deporteActivo = this.deportesDelAlumno.find((item) => item?.activo !== false)?.deporte;
+    if (!deporteActivo) {
+      return 'entrenamiento deportivo';
+    }
+
+    const deporteLabel = this.getDeporteLabel(String(deporteActivo));
+    return deporteLabel.toLowerCase();
   }
 
   onToggleRecordatorioRachaEmail(event: Event): void {
@@ -1555,11 +1726,11 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private inicializarRetoDiario(): void {
-    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date());
+    this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date()));
   }
 
   private cargarEstadoRetoDiario(alumnoId: number): void {
-    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
+    this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date(), alumnoId));
     this.rachaRetoDiario = 0;
     this.retoCompletadoHoy = false;
     this.resetearCountdownRetoDiario();
@@ -1595,6 +1766,332 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
         this.cargandoRecordatorioRachaEmail = false;
       },
     });
+  }
+
+  private actualizarRetoDiarioActual(reto: string): void {
+    this.retoDiarioActual = reto;
+    this.retoDiarioInfoActual = this.construirRetoDiarioInfo(reto);
+    const nuevaClave = `${this.retoDiarioInfoActual.titulo}|${this.retoDiarioInfoActual.volumen}`;
+    if (this.checklistRetoDiarioClave !== nuevaClave) {
+      this.checklistRetoDiarioClave = nuevaClave;
+      this.resetearChecklistRetoDiario();
+    }
+  }
+
+  private resetearChecklistRetoDiario(): void {
+    this.checklistRetoDiarioEstado = this.checklistRetoDiarioItems.map(() => false);
+    this.checklistRetoDiarioRevisada = false;
+  }
+
+  private construirRetoDiarioInfo(reto: string): RetoDiarioInfo {
+    const retoLimpio = (reto || '').trim();
+    const { titulo, volumen } = this.extraerTituloYVolumenReto(retoLimpio);
+    const categoria = this.obtenerCategoriaRetoDiario(titulo);
+
+    return {
+      titulo,
+      volumen,
+      objetivo: this.obtenerObjetivoRetoDiario(categoria),
+      versionFacil: this.obtenerVersionFacilRetoDiario(categoria, volumen),
+      criterioCompletado: this.obtenerCriterioCompletadoRetoDiario(categoria, volumen),
+      pasosPrevios: this.obtenerPasosPreviosRetoDiario(categoria),
+      pasos: this.obtenerPasosRetoDiario(categoria, titulo, volumen),
+      tecnicaClave: this.obtenerTecnicaClaveRetoDiario(categoria, titulo),
+      erroresComunes: this.obtenerErroresComunesRetoDiario(categoria),
+      seguridad: this.obtenerMensajeSeguridadRetoDiario(categoria),
+    };
+  }
+
+  private extraerTituloYVolumenReto(reto: string): { titulo: string; volumen: string } {
+    const fallback = {
+      titulo: 'Movilidad suave',
+      volumen: '5 minutos',
+    };
+
+    if (!reto) {
+      return fallback;
+    }
+
+    const separador = reto.indexOf(':');
+    if (separador < 0) {
+      return {
+        titulo: reto.trim() || fallback.titulo,
+        volumen: fallback.volumen,
+      };
+    }
+
+    const titulo = reto.slice(0, separador).trim();
+    const volumen = reto.slice(separador + 1).trim();
+    return {
+      titulo: titulo || fallback.titulo,
+      volumen: volumen || fallback.volumen,
+    };
+  }
+
+  private obtenerCategoriaRetoDiario(titulo: string): RetoDiarioCategoria {
+    const valor = this.normalizarTexto(titulo);
+    const incluyeAlguno = (tokens: string[]): boolean => tokens.some((token) => valor.includes(token));
+
+    if (incluyeAlguno([
+      'chagi', 'jab', 'cross', 'hook', 'uppercut', 'kick', 'teep', 'guardia', 'bloque', 'desplazamiento',
+      'sombra', 'rodillazo', 'palm strike', 'agarre', 'escape', 'contraataque'
+    ])) {
+      return 'TECNICA';
+    }
+
+    if (incluyeAlguno([
+      'movilidad', 'estiramiento', 'rotaciones', 'respiracion', 'cat-cow', 'roll down', 'apertura', 'articulacion'
+    ])) {
+      return 'MOVILIDAD_RESPIRACION';
+    }
+
+    if (incluyeAlguno([
+      'plancha', 'sentadilla', 'zancadas', 'puente', 'bird-dog', 'dead bug', 'core', 'equilibrio',
+      'flexiones', 'gemelos', 'peso muerto', 'hundred', 'clam shell', 'swimming', 'elevacion'
+    ])) {
+      return 'FUERZA_CONTROL';
+    }
+
+    return 'GENERAL';
+  }
+
+  private obtenerObjetivoRetoDiario(categoria: RetoDiarioCategoria): string {
+    if (categoria === 'TECNICA') {
+      return 'Mejorar la técnica para rendir más en clase con menos esfuerzo.';
+    }
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return 'Ganar movilidad y respirar mejor para moverte sin rigidez.';
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return 'Desarrollar fuerza útil y estabilidad para proteger articulaciones.';
+    }
+    return 'Mantener el hábito diario y activar el cuerpo con buena técnica.';
+  }
+
+  private obtenerVersionFacilRetoDiario(categoria: RetoDiarioCategoria, volumen: string): string {
+    const volumenFacil = this.obtenerVolumenAdaptado(volumen, 0.6);
+
+    if (categoria === 'TECNICA') {
+      return `Haz ${volumenFacil}, a velocidad lenta, y para 45-60 segundos entre series.`;
+    }
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return `Haz ${volumenFacil} y trabaja solo en un rango cómodo, sin dolor.`;
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return `Haz ${volumenFacil}, con apoyo extra si hace falta, y descanso largo entre series.`;
+    }
+    return `Haz ${volumenFacil} a ritmo suave. Si dudas, reduce repeticiones antes que técnica.`;
+  }
+
+  private obtenerCriterioCompletadoRetoDiario(categoria: RetoDiarioCategoria, volumen: string): string {
+    if (categoria === 'TECNICA') {
+      return `Se completa al terminar ${volumen}, manteniendo equilibrio y guardia en la mayoría de repeticiones.`;
+    }
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return `Se completa al mantener ${volumen} con respiración controlada y sin molestias agudas.`;
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return `Se completa al terminar ${volumen} sin perder postura ni compensar con movimientos bruscos.`;
+    }
+    return `Se completa al finalizar ${volumen} con ritmo continuo y técnica limpia.`;
+  }
+
+  private obtenerPasosPreviosRetoDiario(categoria: RetoDiarioCategoria): string[] {
+    const pasos = [
+      'Prepara un espacio de al menos 2 metros y retira objetos que molesten.',
+      'Haz 2-3 minutos de calentamiento suave: tobillos, cadera, hombros y cuello.',
+      'Ten agua y un temporizador a mano para respetar descansos.',
+    ];
+
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      pasos[2] = 'Empieza con 3 respiraciones profundas para bajar tensión antes del ejercicio.';
+    }
+
+    return pasos;
+  }
+
+  private obtenerPasosRetoDiario(
+    categoria: RetoDiarioCategoria,
+    titulo: string,
+    volumen: string
+  ): string[] {
+
+    if (categoria === 'TECNICA') {
+      return [
+        `Colócate en postura base y empieza "${titulo}" siguiendo ${volumen}.`,
+        'Haz cada repetición lenta al principio, priorizando control y equilibrio.',
+        'Tras cada serie, descansa 30-45 segundos sin bajar del todo la concentración.',
+        'Si pierdes forma, reduce velocidad o repeticiones antes de continuar.',
+        'Termina con 1 minuto de respiración y movilidad suave.',
+      ];
+    }
+
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return [
+        `Realiza "${titulo}" durante ${volumen}, en rango cómodo y sin dolor.`,
+        'Inhala por nariz al preparar el movimiento y exhala al avanzar.',
+        'Mantén ritmo continuo, sin rebotes ni tirones.',
+        'Si notas bloqueo, reduce amplitud y aumenta control.',
+        'Acaba con 30 segundos de respiración tranquila.',
+      ];
+    }
+
+    if (categoria === 'FUERZA_CONTROL') {
+      return [
+        `Activa abdomen y glúteos, y completa "${titulo}" con ${volumen}.`,
+        'Usa un ritmo controlado: baja en 2 segundos y sube en 1 segundo.',
+        'Mantén cuello relajado y espalda estable durante toda la serie.',
+        'Descansa 45-60 segundos y reinicia cuando recuperes control.',
+        'Si no puedes mantener forma, reduce rango o repeticiones.',
+      ];
+    }
+
+    return [
+      `Realiza "${titulo}" respetando ${volumen}.`,
+      'Mantén una velocidad constante y postura estable.',
+      'Haz pausas cortas para recuperar si lo necesitas.',
+      'Prioriza siempre calidad de movimiento sobre cantidad.',
+      'Cierra con estiramiento ligero de 1 minuto.',
+    ];
+  }
+
+  private obtenerTecnicaClaveRetoDiario(categoria: RetoDiarioCategoria, titulo: string): string[] {
+    const baseTecnica = this.obtenerTecnicaBasePorCategoria(categoria);
+    const tecnicaEspecifica = this.obtenerTecnicaEspecificaPorTitulo(titulo);
+    return [...tecnicaEspecifica, ...baseTecnica];
+  }
+
+  private obtenerTecnicaBasePorCategoria(categoria: RetoDiarioCategoria): string[] {
+    if (categoria === 'TECNICA') {
+      return [
+        'Mantén la guardia activa en todo momento.',
+        'Controla la vuelta al punto inicial, no solo la acción principal.',
+      ];
+    }
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return [
+        'Busca una sensación de apertura, nunca dolor punzante.',
+        'Coordina movimiento y respiración para evitar tensiones.',
+      ];
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return [
+        'Mantén abdomen activo para estabilizar la zona lumbar.',
+        'La repetición cuenta solo si se hace con buena alineación.',
+      ];
+    }
+    return [
+      'Postura estable y respiración continua de principio a fin.',
+      'Mejor pocas repeticiones buenas que muchas con mala forma.',
+    ];
+  }
+
+  private obtenerTecnicaEspecificaPorTitulo(titulo: string): string[] {
+    const valor = this.normalizarTexto(titulo);
+
+    if (valor.includes('chagi')) {
+      return [
+        'Primero sube rodilla, después extiende la pierna.',
+        'Gira el pie de apoyo para proteger rodilla y cadera.',
+      ];
+    }
+    if (valor.includes('jab') || valor.includes('cross') || valor.includes('hook') || valor.includes('uppercut')) {
+      return [
+        'Golpea y recoge la mano rápido para volver a guardia.',
+        'Gira cadera y hombro, no lances solo el brazo.',
+      ];
+    }
+    if (valor.includes('agarre') || valor.includes('escape') || valor.includes('palm strike')) {
+      return [
+        'Prioriza crear espacio y salir a una zona segura.',
+        'Acompaña el movimiento con paso lateral para no quedarte en línea.',
+      ];
+    }
+    if (valor.includes('rodillazo')) {
+      return [
+        'Empuja cadera hacia delante al elevar la rodilla.',
+        'Mantén tronco firme y manos protegiendo la cara.',
+      ];
+    }
+    if (valor.includes('plancha')) {
+      return [
+        'Alinea hombros, cadera y tobillos en una sola línea.',
+        'Aprieta abdomen y glúteos para evitar hundir la zona lumbar.',
+      ];
+    }
+    if (valor.includes('sentadilla') || valor.includes('zancada')) {
+      return [
+        'Rodillas apuntando hacia la misma dirección que los pies.',
+        'Apoya bien toda la planta del pie y evita colapsar hacia dentro.',
+      ];
+    }
+    if (valor.includes('dead bug') || valor.includes('bird-dog') || valor.includes('hundred') || valor.includes('cat-cow')) {
+      return [
+        'Exhala durante el esfuerzo e inhala al volver.',
+        'Mantén control del abdomen durante todo el movimiento.',
+      ];
+    }
+
+    return ['Movimiento controlado, respiración fluida y postura estable.'];
+  }
+
+  private obtenerErroresComunesRetoDiario(categoria: RetoDiarioCategoria): string[] {
+    if (categoria === 'TECNICA') {
+      return [
+        'Ir demasiado rápido y perder postura en la segunda mitad.',
+        'Bajar las manos después de cada técnica.',
+        'No respetar descansos y llegar sin control a las últimas series.',
+      ];
+    }
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return [
+        'Rebotar para forzar amplitud.',
+        'Aguantar la respiración cuando cuesta.',
+        'Confundir tensión normal con dolor agudo.',
+      ];
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return [
+        'Compensar con cuello o espalda al fatigarte.',
+        'Contar repeticiones incompletas.',
+        'Reducir demasiado el descanso y perder calidad.',
+      ];
+    }
+
+    return [
+      'Priorizar cantidad sobre técnica.',
+      'Empezar sin calentamiento previo.',
+      'Ignorar señales de dolor agudo.',
+    ];
+  }
+
+  private obtenerMensajeSeguridadRetoDiario(categoria: RetoDiarioCategoria): string {
+    if (categoria === 'MOVILIDAD_RESPIRACION') {
+      return 'Debes notar tensión suave, nunca dolor punzante. Si aparece, para y reduce rango.';
+    }
+    if (categoria === 'TECNICA') {
+      return 'Entrena con control de distancia. Si pierdes equilibrio, pausa, reajusta y continúa.';
+    }
+    if (categoria === 'FUERZA_CONTROL') {
+      return 'No arquees la espalda para terminar repeticiones. Si ocurre, para y retoma con menos intensidad.';
+    }
+    return 'Si aparece mareo o dolor agudo, detén el ejercicio y consulta al entrenador.';
+  }
+
+  private obtenerVolumenAdaptado(volumen: string, factor: number): string {
+    const factorSeguro = Number.isFinite(factor) && factor > 0 ? factor : 0.6;
+    const numero = volumen.match(/(\d+(?:[.,]\d+)?)/);
+    if (!numero) {
+      return 'menos volumen y más descanso';
+    }
+
+    const valorOriginal = Number.parseFloat(numero[1].replace(',', '.'));
+    if (!Number.isFinite(valorOriginal) || valorOriginal <= 0) {
+      return 'menos volumen y más descanso';
+    }
+
+    const valorAdaptado = Math.max(1, Math.round(valorOriginal * factorSeguro));
+    return volumen.replace(numero[1], valorAdaptado.toString());
   }
 
   private getRetoDiarioSegunFecha(fecha: Date, alumnoId?: number): string {
@@ -1783,7 +2280,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     }
 
     this.recargandoRetoTrasReset = true;
-    this.retoDiarioActual = this.getRetoDiarioSegunFecha(new Date(), alumnoId);
+    this.actualizarRetoDiarioActual(this.getRetoDiarioSegunFecha(new Date(), alumnoId));
     this.cargarEstadoRetoDiario(alumnoId);
   }
 
