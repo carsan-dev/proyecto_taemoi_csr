@@ -1,0 +1,115 @@
+<div class="reto-modal-overlay" (click)="onOverlayClick($event)" role="presentation">
+  <section class="reto-modal-card" role="dialog" aria-modal="true" aria-labelledby="reto-diario-ayuda-titulo">
+    <button
+      type="button"
+      class="reto-modal-close"
+      aria-label="Cerrar ayuda del reto diario"
+      (click)="cerrar.emit()"
+    >
+      <i class="bi bi-x-lg"></i>
+    </button>
+
+    <header class="reto-modal-header">
+      <p class="reto-modal-kicker">Guia del reto</p>
+      <h2 id="reto-diario-ayuda-titulo">{{ reto.titulo }}</h2>
+      <p class="reto-modal-subtitle">
+        {{ reto.volumen }}
+      </p>
+    </header>
+
+    <div class="reto-modal-summary">
+      <article class="summary-item">
+        <span class="summary-label">Objetivo</span>
+        <p>{{ reto.objetivo }}</p>
+      </article>
+      <article class="summary-item">
+        <span class="summary-label">Cuando se considera completado</span>
+        <p>{{ reto.criterioCompletado }}</p>
+      </article>
+      <article class="summary-item">
+        <span class="summary-label">Version facil</span>
+        <p>{{ reto.versionFacil }}</p>
+      </article>
+      <article class="summary-item">
+        <span class="summary-label">Seguridad</span>
+        <p>{{ reto.seguridad }}</p>
+      </article>
+    </div>
+
+    <div class="reto-modal-grid">
+      <article class="reto-modal-block reto-modal-checklist">
+        <h3><i class="bi bi-clipboard2-check-fill"></i> Checklist previa</h3>
+        <p class="checklist-copy">Marca cada punto antes de dar por hecho el reto diario.</p>
+
+        <div class="checklist-list">
+          @for (item of checklistItems; track item; let idx = $index) {
+          <label class="checklist-item">
+            <input
+              type="checkbox"
+              [checked]="!!checklistMarcados[idx]"
+              (change)="onChecklistItemChange(idx, $event)"
+            />
+            <span>{{ item }}</span>
+          </label>
+          }
+        </div>
+
+        <label class="checklist-confirm" [class.is-disabled]="!checklistCompleta">
+          <input
+            type="checkbox"
+            [checked]="checklistConfirmada"
+            [disabled]="!checklistCompleta"
+            (change)="onChecklistConfirmadaChange($event)"
+          />
+          <span>He revisado la checklist completa.</span>
+        </label>
+      </article>
+
+      <article class="reto-modal-block">
+        <h3><i class="bi bi-play-circle-fill"></i> Antes de empezar</h3>
+        <ol>
+          @for (pasoPrevio of reto.pasosPrevios; track pasoPrevio) {
+          <li>{{ pasoPrevio }}</li>
+          }
+        </ol>
+      </article>
+
+      <article class="reto-modal-block">
+        <h3><i class="bi bi-list-check"></i> Paso a paso</h3>
+        <ol>
+          @for (paso of reto.pasos; track paso) {
+          <li>{{ paso }}</li>
+          }
+        </ol>
+      </article>
+
+      <article class="reto-modal-block">
+        <h3><i class="bi bi-bullseye"></i> Puntos tecnicos clave</h3>
+        <ul>
+          @for (punto of reto.tecnicaClave; track punto) {
+          <li>{{ punto }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="reto-modal-block">
+        <h3><i class="bi bi-exclamation-triangle-fill"></i> Errores que evitar</h3>
+        <ul>
+          @for (error of reto.erroresComunes; track error) {
+          <li>{{ error }}</li>
+          }
+        </ul>
+      </article>
+    </div>
+
+    <footer class="reto-modal-footer">
+      <button type="button" class="reto-modal-btn-secondary" (click)="buscarExplicacion.emit()">
+        <i class="bi bi-search"></i>
+        <span>Buscar explicación</span>
+      </button>
+      <button type="button" class="reto-modal-btn" (click)="cerrar.emit()">
+        Entendido
+      </button>
+    </footer>
+  </section>
+</div>

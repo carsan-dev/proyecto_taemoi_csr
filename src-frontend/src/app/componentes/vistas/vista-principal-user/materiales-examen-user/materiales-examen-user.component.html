@@ -91,19 +91,50 @@
         <section class="docs-section docs-section-primary">
           <p class="docs-section-title is-primary">Temario principal</p>
           @for (documento of docsTemario; track documento.id) {
-          <button
-            type="button"
-            class="doc-item-btn"
-            [class.is-active]="documento.id === documentoSeleccionado?.id"
-            [class.is-primary]="true"
-            (click)="onSeleccionarDocumento(documento)"
-          >
-            <span class="doc-order is-primary">{{ getDocumentoBadge(documento) }}</span>
-            <span class="doc-title">{{ documento.title || documento.fileName }}</span>
-            @if (documento.previewable) {
-            <span class="doc-tag">PDF</span>
+          <div class="doc-item-wrap">
+            <button
+              type="button"
+              class="doc-item-btn"
+              [class.is-active]="documento.id === documentoSeleccionado?.id"
+              [class.is-primary]="true"
+              (click)="onSeleccionarDocumento(documento)"
+            >
+              <span class="doc-order is-primary">{{ getDocumentoBadge(documento) }}</span>
+              <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+              @if (documento.previewable) {
+              <span class="doc-tag">PDF</span>
+              }
+            </button>
+
+            @if (esDocumentoActivoEnMovil(documento)) {
+            <div class="doc-mobile-actions">
+              @if (documento.openUrl) {
+              <button type="button" class="docs-link docs-link-primary" (click)="onAbrirDocumentoDesdeLista(documento)">
+                <i class="bi bi-box-arrow-up-right"></i>
+                Abrir
+              </button>
+              }
+
+              @if (documento.downloadUrl || documento.openUrl) {
+              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
+                <i class="bi bi-download"></i>
+                Descargar
+              </button>
+              }
+
+              @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
+              <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
+                <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+                {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+              </button>
+              }
+
+              @if (esDocumentoPrincipal(documento)) {
+              <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
+              }
+            </div>
             }
-          </button>
+          </div>
           }
         </section>
         }
@@ -112,18 +143,45 @@
           <p class="docs-section-title">Material complementario</p>
           @if (docsComplementarios.length > 0) {
           @for (documento of docsComplementarios; track documento.id) {
-          <button
-            type="button"
-            class="doc-item-btn"
-            [class.is-active]="documento.id === documentoSeleccionado?.id"
-            (click)="onSeleccionarDocumento(documento)"
-          >
-            <span class="doc-order">{{ getDocumentoBadge(documento) }}</span>
-            <span class="doc-title">{{ documento.title || documento.fileName }}</span>
-            @if (documento.previewable) {
-            <span class="doc-tag">PDF</span>
+          <div class="doc-item-wrap">
+            <button
+              type="button"
+              class="doc-item-btn"
+              [class.is-active]="documento.id === documentoSeleccionado?.id"
+              (click)="onSeleccionarDocumento(documento)"
+            >
+              <span class="doc-order">{{ getDocumentoBadge(documento) }}</span>
+              <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+              @if (documento.previewable) {
+              <span class="doc-tag">PDF</span>
+              }
+            </button>
+
+            @if (esDocumentoActivoEnMovil(documento)) {
+            <div class="doc-mobile-actions">
+              @if (documento.openUrl) {
+              <button type="button" class="docs-link docs-link-primary" (click)="onAbrirDocumentoDesdeLista(documento)">
+                <i class="bi bi-box-arrow-up-right"></i>
+                Abrir
+              </button>
+              }
+
+              @if (documento.downloadUrl || documento.openUrl) {
+              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
+                <i class="bi bi-download"></i>
+                Descargar
+              </button>
+              }
+
+              @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
+              <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
+                <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+                {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+              </button>
+              }
+            </div>
             }
-          </button>
+          </div>
           }
           } @else {
           <p class="docs-section-empty">No hay material complementario disponible.</p>

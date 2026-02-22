@@ -24,7 +24,7 @@
         </div>
 
         <div class="hero-actions">
-          <button type="button" class="hero-btn btn-primary-action" (click)="scrollToSection('mis-grupos')">
+          <button type="button" class="hero-btn btn-primary-action" (click)="irAMisClases()">
             <i class="bi bi-collection-play-fill"></i>
             <span>Mis clases</span>
           </button>
@@ -39,8 +39,7 @@
           <button
             type="button"
             class="hero-btn btn-secondary-action"
-            [routerLink]="['/userpage/turnos']"
-            [queryParams]="getTurnosQueryParams()"
+            (click)="irAHorarios()"
           >
             <i class="bi bi-calendar-check-fill"></i>
             <span>Ver horarios</span>
@@ -227,42 +226,57 @@
                 <span class="challenge-streak-label">d&iacute;as de racha</span>
               </div>
 
-            <p class="challenge-task">Hoy: {{ retoDiarioActual }}</p>
-
-            @if (retoCountdownTexto) {
-            <p class="challenge-timer" [class.is-urgent]="retoCountdownUrgente">
-              <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-hourglass-split' : 'bi-alarm'"></i>
-              <span>{{ retoCountdownTexto }}</span>
-            </p>
-            }
-
-            <div class="challenge-reminder">
-              <label class="challenge-reminder-switch" [class.is-disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail">
-                <input
-                  type="checkbox"
-                  [checked]="recordatorioRachaEmailHabilitado"
-                  [disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail"
-                  (change)="onToggleRecordatorioRachaEmail($event)"
-                />
-                <span class="challenge-reminder-slider"></span>
-              </label>
-              <div class="challenge-reminder-copy">
-                <span class="challenge-reminder-title">Recordatorio por email</span>
-                <span class="challenge-reminder-subtitle">
-                  {{ guardandoRecordatorioRachaEmail ? 'Guardando...' : 'Avisar cuando queden menos de 3 horas' }}
-                </span>
+              <div class="challenge-task-card">
+                <p class="challenge-task-kicker">Hoy toca</p>
+                <p class="challenge-task-title">{{ retoDiarioInfoActual.titulo }}</p>
+                <p class="challenge-task-volume">{{ retoDiarioInfoActual.volumen }}</p>
+                <p class="challenge-task-help"><strong>Objetivo:</strong> {{ retoDiarioInfoActual.objetivo }}</p>
+                <p class="challenge-task-help"><strong>Version facil:</strong> {{ retoDiarioInfoActual.versionFacil }}</p>
               </div>
-            </div>
 
-            <button
-              type="button"
-              class="challenge-action-btn"
-              [disabled]="retoCompletadoHoy"
-              (click)="completarRetoDiario()"
-            >
-              <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-check-circle-fill' : 'bi-lightning-charge-fill'"></i>
-              <span>{{ retoCompletadoHoy ? 'Completado hoy' : 'Marcar como hecho' }}</span>
-            </button>
+              <button type="button" class="challenge-help-btn" (click)="mostrarComoHacerRetoDiario()">
+                <i class="bi bi-question-circle-fill"></i>
+                <span>&iquest;Como se hace?</span>
+              </button>
+              <p class="challenge-checklist-status" [class.is-ready]="checklistRetoDiarioRevisada">
+                <i class="bi" [ngClass]="checklistRetoDiarioRevisada ? 'bi-patch-check-fill' : 'bi-clipboard2-check'"></i>
+                <span>{{ checklistRetoDiarioRevisada ? 'Checklist revisada' : 'Checklist pendiente de revisar' }}</span>
+              </p>
+
+              @if (retoCountdownTexto) {
+              <p class="challenge-timer" [class.is-urgent]="retoCountdownUrgente">
+                <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-hourglass-split' : 'bi-alarm'"></i>
+                <span>{{ retoCountdownTexto }}</span>
+              </p>
+              }
+
+              <div class="challenge-reminder">
+                <label class="challenge-reminder-switch" [class.is-disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail">
+                  <input
+                    type="checkbox"
+                    [checked]="recordatorioRachaEmailHabilitado"
+                    [disabled]="cargandoRecordatorioRachaEmail || guardandoRecordatorioRachaEmail"
+                    (change)="onToggleRecordatorioRachaEmail($event)"
+                  />
+                  <span class="challenge-reminder-slider"></span>
+                </label>
+                <div class="challenge-reminder-copy">
+                  <span class="challenge-reminder-title">Recordatorio por email</span>
+                  <span class="challenge-reminder-subtitle">
+                    {{ guardandoRecordatorioRachaEmail ? 'Guardando...' : 'Avisar cuando queden menos de 3 horas' }}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="challenge-action-btn"
+                [disabled]="retoCompletadoHoy"
+                (click)="completarRetoDiario()"
+              >
+                <i class="bi" [ngClass]="retoCompletadoHoy ? 'bi-check-circle-fill' : 'bi-lightning-charge-fill'"></i>
+                <span>{{ retoCompletadoHoy ? 'Completado hoy' : 'Marcar como hecho' }}</span>
+              </button>
 
             </div>
 
@@ -445,8 +459,7 @@
         <button
           type="button"
           class="quick-action-btn"
-          [routerLink]="['/userpage/turnos']"
-          [queryParams]="getTurnosQueryParams()"
+          (click)="irAHorarios()"
         >
           <i class="bi bi-calendar-check-fill"></i>
           <span>Ver agenda semanal</span>
@@ -473,7 +486,7 @@
           }
         </button>
 
-        <button type="button" class="quick-action-btn" (click)="scrollToSection('mis-grupos')">
+        <button type="button" class="quick-action-btn" (click)="irAMisClases()">
           <i class="bi bi-collection-fill"></i>
           <span>Ir a mis grupos</span>
         </button>
@@ -756,3 +769,16 @@
     }
   </div>
 </div>
+
+@if (mostrarModalAyudaRetoDiario) {
+<app-reto-diario-ayuda-modal
+  [reto]="retoDiarioInfoActual"
+  [checklistItems]="checklistRetoDiarioItems"
+  [checklistMarcados]="checklistRetoDiarioEstado"
+  [checklistConfirmada]="checklistRetoDiarioRevisada"
+  (checklistItemChange)="onChecklistRetoDiarioItemChange($event)"
+  (checklistConfirmadaChange)="onChecklistRetoDiarioRevisadaChange($event)"
+  (buscarExplicacion)="buscarExplicacionRetoDiario()"
+  (cerrar)="cerrarAyudaRetoDiario()"
+></app-reto-diario-ayuda-modal>
+}
