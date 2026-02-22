@@ -364,7 +364,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     const forzarListadoAdmin = tieneAccesoAdmin && alumnoIdSolicitado !== null;
 
     const origen$ = forzarListadoAdmin
-      ? this.endpointsService.obtenerAlumnosSinPaginar(true)
+      ? this.endpointsService.obtenerAlumnosSinPaginar(false)
       : this.authService.obtenerTodosLosAlumnos();
 
     const alumnosSubscription = origen$.subscribe({
@@ -394,7 +394,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private cargarAlumnosComoAdmin(alumnoIdSolicitado: number | null): void {
-    const adminSubscription = this.endpointsService.obtenerAlumnosSinPaginar(true).subscribe({
+    const adminSubscription = this.endpointsService.obtenerAlumnosSinPaginar(false).subscribe({
       next: (alumnos) => {
         const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
         if (alumnosNormalizados.length > 0) {
