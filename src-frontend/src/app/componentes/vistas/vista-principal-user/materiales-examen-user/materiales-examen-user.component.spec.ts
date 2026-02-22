@@ -135,7 +135,8 @@ describe('MaterialesExamenUserComponent', () => {
     triggerInputs();
 
     expect(component.material?.documentos.length).toBe(1);
-    expect(component.material?.documentos[0].fileName).toBe('temario.pdf');
+    expect(component.material?.documentos[0].fileName).toBe('Temario para cinturón Amarillo-Naranja.pdf');
+    expect(component.material?.documentos[0].title).toBe('Temario para cinturón Amarillo/Naranja');
     expect(component.material?.documentos[0].previewable).toBeTrue();
     expect(component.material?.documentos[0].downloadUrl).toContain('download=true');
   });
