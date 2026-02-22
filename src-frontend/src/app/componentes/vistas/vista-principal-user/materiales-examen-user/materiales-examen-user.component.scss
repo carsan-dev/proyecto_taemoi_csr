@@ -520,7 +520,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 540px) and (pointer: coarse) {
   .materials-shell {
     gap: 1.2rem;
   }
