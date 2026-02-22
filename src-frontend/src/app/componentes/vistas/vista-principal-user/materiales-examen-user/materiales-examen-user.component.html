@@ -68,9 +68,13 @@
         class="video-player"
         [src]="videoSeleccionadoUrl"
         controls
+        controlsList="nodownload noplaybackrate noremoteplayback"
+        disablePictureInPicture
+        disableRemotePlayback
         preload="auto"
         playsinline
         webkit-playsinline
+        (contextmenu)="onBloquearDescargaContenido($event)"
       ></video>
       } @else if (cargandoVideoSeleccionado) {
       <p class="materials-state">Cargando video...</p>
@@ -112,13 +116,6 @@
               <button type="button" class="docs-link docs-link-primary" (click)="onAbrirDocumentoDesdeLista(documento)">
                 <i class="bi bi-box-arrow-up-right"></i>
                 Abrir
-              </button>
-              }
-
-              @if (documento.downloadUrl || documento.openUrl) {
-              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
-                <i class="bi bi-download"></i>
-                Descargar
               </button>
               }
 
@@ -166,13 +163,6 @@
               </button>
               }
 
-              @if (documento.downloadUrl || documento.openUrl) {
-              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
-                <i class="bi bi-download"></i>
-                Descargar
-              </button>
-              }
-
               @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
               <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
                 <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
@@ -196,13 +186,6 @@
           <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
             <i class="bi bi-box-arrow-up-right"></i>
             Abrir
-          </button>
-          }
-
-          @if (getDocumentoDownloadUrl()) {
-          <button type="button" class="docs-link docs-link-secondary" (click)="descargarDocumentoSeleccionado()">
-            <i class="bi bi-download"></i>
-            Descargar
           </button>
           }
 
