@@ -90,6 +90,7 @@ import org.slf4j.LoggerFactory;
 public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
+	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
 	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
 	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN ROJO BORDADO";
 	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
@@ -765,7 +766,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-		LocalDate hoy = LocalDate.now();
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
 		LocalDate fechaCompletado = toLocalDate(alumno.getFechaRetoDiarioCompletado());
 		int rachaPersistida = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
 		boolean completadoHoy = fechaCompletado != null && fechaCompletado.equals(hoy);
@@ -785,7 +786,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
 
-		LocalDate hoy = LocalDate.now();
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
 		LocalDate fechaAnterior = toLocalDate(alumno.getFechaRetoDiarioCompletado());
 		int rachaAnterior = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
 		int nuevaRacha;
@@ -798,7 +799,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			nuevaRacha = 1;
 		}
 
-		alumno.setFechaRetoDiarioCompletado(Date.from(hoy.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+		// DATE column: persist date without timezone ambiguity.
+		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(hoy));
 		alumno.setRachaRetoDiario(nuevaRacha);
 		alumnoRepository.save(alumno);
 		registrarLogRetoDiarioSiNoExiste(alumno, hoy);
@@ -827,7 +829,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		int limiteTop = normalizarLimiteTop(limit);
-		LocalDate hoy = LocalDate.now();
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
 		WeekFields weekFields = WeekFields.ISO;
 		int anioIso = hoy.get(weekFields.weekBasedYear());
 		int semanaIso = hoy.get(weekFields.weekOfWeekBasedYear());
@@ -1131,10 +1133,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	private long calcularProximoResetEpochMs() {
-		ZoneId zoneId = ZoneId.systemDefault();
-		return LocalDate.now(zoneId)
+		return LocalDate.now(RETO_DIARIO_ZONE_ID)
 				.plusDays(1)
-				.atStartOfDay(zoneId)
+				.atStartOfDay(RETO_DIARIO_ZONE_ID)
 				.toInstant()
 				.toEpochMilli();
 	}
@@ -1147,7 +1148,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return sqlDate.toLocalDate();
 		}
 		return java.time.Instant.ofEpochMilli(fecha.getTime())
-				.atZone(ZoneId.systemDefault())
+				.atZone(RETO_DIARIO_ZONE_ID)
 				.toLocalDate();
 	}
 

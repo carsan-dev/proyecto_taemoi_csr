@@ -28,6 +28,7 @@ import com.taemoi.project.utils.EmailUtils;
 public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 
 	private static final Logger logger = LoggerFactory.getLogger(RecordatorioRachaServiceImpl.class);
+	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
 
 	private final UsuarioRepository usuarioRepository;
 	private final AlumnoRepository alumnoRepository;
@@ -42,7 +43,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 	@Value("${app.frontend.base-url:https://moiskimdo.es}")
 	private String frontendBaseUrl;
 
-	private Clock clock = Clock.systemDefaultZone();
+	private Clock clock = Clock.system(RETO_DIARIO_ZONE_ID);
 
 	public RecordatorioRachaServiceImpl(UsuarioRepository usuarioRepository,
 			AlumnoRepository alumnoRepository,
@@ -60,10 +61,11 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 			return;
 		}
 
-		ZoneId zoneId = ZoneId.systemDefault();
-		ZonedDateTime ahora = ZonedDateTime.now(clock).withZoneSameInstant(zoneId);
+		ZonedDateTime ahora = ZonedDateTime.now(clock).withZoneSameInstant(RETO_DIARIO_ZONE_ID);
 		int ventanaHoras = Math.max(1, streakReminderWindowHours);
-		ZonedDateTime proximoReset = LocalDate.now(clock.withZone(zoneId)).plusDays(1).atStartOfDay(zoneId);
+		ZonedDateTime proximoReset = LocalDate.now(clock.withZone(RETO_DIARIO_ZONE_ID))
+				.plusDays(1)
+				.atStartOfDay(RETO_DIARIO_ZONE_ID);
 		ZonedDateTime inicioVentana = proximoReset.minusHours(ventanaHoras);
 
 		if (ahora.isBefore(inicioVentana) || !ahora.isBefore(proximoReset)) {
@@ -167,7 +169,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 		if (fecha instanceof java.sql.Date sqlDate) {
 			return sqlDate.toLocalDate();
 		}
-		return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		return fecha.toInstant().atZone(RETO_DIARIO_ZONE_ID).toLocalDate();
 	}
 
 	private String construirHtmlRecordatorio(Usuario usuario, List<AlumnoRachaEnRiesgo> alumnosEnRiesgo, int ventanaHoras) {
