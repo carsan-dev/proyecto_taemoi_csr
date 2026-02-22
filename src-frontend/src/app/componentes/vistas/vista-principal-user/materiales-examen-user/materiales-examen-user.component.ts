@@ -57,6 +57,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
   private documentoBlobUrl: string | null = null;
+  private visorContextMenuCleanup: (() => void) | null = null;
   private docsGridRef: ElementRef<HTMLElement> | undefined;
   private docsActionsRef: ElementRef<HTMLElement> | undefined;
   private docsResizeObserver: ResizeObserver | null = null;
@@ -113,6 +114,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.materialSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
+    this.limpiarBloqueoContextoVisor();
     this.revocarBlobDocumento();
     this.docsResizeObserver?.disconnect();
     if (this.rafAlineacionDocsId !== null) {
@@ -142,6 +144,42 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   onBloquearDescargaContenido(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  onDocumentoFrameLoad(event: Event): void {
+    this.limpiarBloqueoContextoVisor();
+    const documento = this.documentoSeleccionado;
+    if (!documento || this.esDocumentoPrincipal(documento)) {
+      return;
+    }
+
+    const frame = event.target as HTMLIFrameElement | null;
+    if (!frame) {
+      return;
+    }
+
+    const bloquear = (evento: Event) => this.onBloquearDescargaContenido(evento);
+
+    try {
+      const frameDoc = frame.contentDocument;
+      const frameWin = frame.contentWindow;
+      if (!frameDoc && !frameWin) {
+        return;
+      }
+
+      frameDoc?.addEventListener('contextmenu', bloquear);
+      frameDoc?.addEventListener('dragstart', bloquear);
+      frameWin?.addEventListener('contextmenu', bloquear);
+
+      this.visorContextMenuCleanup = () => {
+        frameDoc?.removeEventListener('contextmenu', bloquear);
+        frameDoc?.removeEventListener('dragstart', bloquear);
+        frameWin?.removeEventListener('contextmenu', bloquear);
+      };
+    } catch {
+      // Some mobile PDF viewers run in isolated contexts where parent listeners are not allowed.
+      this.visorContextMenuCleanup = null;
+    }
   }
 
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
@@ -890,6 +928,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {
     this.documentoPreviewSubscription?.unsubscribe();
+    this.limpiarBloqueoContextoVisor();
     this.revocarBlobDocumento();
     this.documentoSeleccionadoUrl = null;
 
@@ -939,6 +978,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
     globalThis.URL.revokeObjectURL(this.documentoBlobUrl);
     this.documentoBlobUrl = null;
+  }
+
+  private limpiarBloqueoContextoVisor(): void {
+    if (!this.visorContextMenuCleanup) {
+      return;
+    }
+    this.visorContextMenuCleanup();
+    this.visorContextMenuCleanup = null;
   }
 }
 
