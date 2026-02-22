@@ -142,12 +142,17 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
     const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
-    this.mostrarDocumentoVisor = visorEstabaAbierto && !!documento.previewable;
+    this.mostrarDocumentoVisor =
+      visorEstabaAbierto && !!documento.previewable && this.esVisorIntegradoCompatibleEnDispositivo();
     this.cargarPreviewDocumentoSeleccionado(documento);
     this.programarRecalculoAlineacionDocs();
   }
 
   toggleDocumentoVisor(): void {
+    if (!this.esVisorIntegradoCompatibleEnDispositivo()) {
+      this.abrirDocumentoSeleccionado();
+      return;
+    }
     if (!this.esDocumentoSeleccionadoPrevisualizable()) {
       return;
     }
@@ -169,6 +174,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   getDocumentoDownloadUrl(): string | null {
     return this.documentoSeleccionado?.downloadUrl ?? this.documentoSeleccionado?.openUrl ?? null;
+  }
+
+  esVisorIntegradoCompatibleEnDispositivo(): boolean {
+    return !this.esDispositivoAndroid() && !this.esDispositivoIOS();
   }
 
   esDocumentoActivoEnMovil(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
@@ -211,6 +220,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
     if (this.documentoSeleccionado?.id !== documento.id) {
       this.onSeleccionarDocumento(documento);
+      if (!this.esVisorIntegradoCompatibleEnDispositivo()) {
+        this.abrirDocumentoSeleccionado();
+        return;
+      }
       this.mostrarDocumentoVisor = true;
       this.programarRecalculoAlineacionDocs();
       return;
@@ -219,7 +232,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   esDocumentoSeleccionadoPrevisualizable(): boolean {
-    return !!this.documentoSeleccionado?.previewable && !!this.documentoSeleccionadoUrl;
+    return (
+      !!this.documentoSeleccionado?.previewable &&
+      !!this.documentoSeleccionadoUrl &&
+      this.esVisorIntegradoCompatibleEnDispositivo()
+    );
   }
 
   esDocumentoPrincipal(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
@@ -252,6 +269,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   abrirDocumentoSeleccionado(): void {
     const documento = this.documentoSeleccionado;
+    const openUrl = this.getDocumentoOpenUrl();
+    if (documento?.previewable && openUrl && !this.esVisorIntegradoCompatibleEnDispositivo()) {
+      const popup = globalThis.window?.open(openUrl, '_blank', 'noopener');
+      if (!popup) {
+        globalThis.window?.location.assign(openUrl);
+      }
+      return;
+    }
+
     if (!documento?.previewable) {
       this.descargarDocumentoSeleccionado();
       return;
@@ -447,6 +473,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     const esIOSClasico = /iPad|iPhone|iPod/.test(userAgent);
     const esIPadOS = navigatorRef.platform === 'MacIntel' && navigatorRef.maxTouchPoints > 1;
     return esIOSClasico || esIPadOS;
+  }
+
+  private esDispositivoAndroid(): boolean {
+    const userAgent = globalThis.navigator?.userAgent ?? '';
+    return /Android/i.test(userAgent);
   }
 
   private obtenerNombreDescarga(
@@ -785,7 +816,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.revocarBlobDocumento();
     this.documentoSeleccionadoUrl = null;
 
-    if (!documento?.previewable || !documento.openUrl) {
+    if (
+      !documento?.previewable ||
+      !documento.openUrl ||
+      !this.esVisorIntegradoCompatibleEnDispositivo()
+    ) {
       this.cargandoDocumentoSeleccionado = false;
       return;
     }

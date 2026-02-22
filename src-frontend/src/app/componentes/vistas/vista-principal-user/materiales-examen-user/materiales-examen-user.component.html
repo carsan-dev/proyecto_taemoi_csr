@@ -221,6 +221,11 @@
         @if (!documentoSeleccionado.previewable) {
         <p class="materials-state">Este formato no admite visor integrado en la web.</p>
         }
+        @if (documentoSeleccionado.previewable && !esVisorIntegradoCompatibleEnDispositivo()) {
+        <p class="materials-state">
+          En Android/iOS el visor integrado no est&aacute; disponible. Usa <strong>Abrir</strong> para ver el documento.
+        </p>
+        }
         @if (cargandoDocumentoSeleccionado && documentoSeleccionado.previewable) {
         <p class="materials-state">Preparando visor del documento...</p>
         }
