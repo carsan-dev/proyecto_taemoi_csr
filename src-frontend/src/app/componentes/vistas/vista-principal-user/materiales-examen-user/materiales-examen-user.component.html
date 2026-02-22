@@ -89,6 +89,77 @@
     @if (material.documentos.length > 0) {
     @let docsTemario = getDocumentosTemarioPrincipal();
     @let docsComplementarios = getDocumentosComplementarios();
+    <ng-template #pdfCanvasViewerTemplate>
+      <div
+        class="pdf-canvas-viewer"
+        [class.is-expanded]="visorExpandido"
+        [style.--viewer-top-offset]="visorExpandidoTopOffsetPx + 'px'"
+        (contextmenu)="onBloquearDescargaContenido($event)"
+      >
+        <div class="pdf-canvas-toolbar">
+          <div class="pdf-toolbar-row">
+            <button
+              type="button"
+              class="pdf-toolbar-btn"
+              (click)="irAPaginaAnteriorPdf()"
+              [disabled]="paginaActualPdf <= 1 || cargandoPaginaPdf"
+            >
+              <i class="bi bi-chevron-left"></i>
+              Anterior
+            </button>
+            <span class="pdf-canvas-page">P&aacute;gina {{ paginaActualPdf }} / {{ totalPaginasPdf || 1 }}</span>
+            <button
+              type="button"
+              class="pdf-toolbar-btn"
+              (click)="irAPaginaSiguientePdf()"
+              [disabled]="!totalPaginasPdf || paginaActualPdf >= totalPaginasPdf || cargandoPaginaPdf"
+            >
+              Siguiente
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+
+          <div class="pdf-toolbar-row pdf-toolbar-row-secondary">
+            <button
+              type="button"
+              class="pdf-toolbar-btn is-icon"
+              (click)="reducirZoomPdf()"
+              [disabled]="zoomPdf <= 0.75 || cargandoPaginaPdf"
+              title="Reducir zoom"
+            >
+              <i class="bi bi-zoom-out"></i>
+            </button>
+            <span class="pdf-canvas-zoom">{{ getZoomPdfPorcentaje() }}%</span>
+            <button
+              type="button"
+              class="pdf-toolbar-btn is-icon"
+              (click)="aumentarZoomPdf()"
+              [disabled]="zoomPdf >= 2.2 || cargandoPaginaPdf"
+              title="Aumentar zoom"
+            >
+              <i class="bi bi-zoom-in"></i>
+            </button>
+            <button type="button" class="pdf-toolbar-btn pdf-toolbar-btn-full" (click)="toggleVisorExpandido()">
+              <i class="bi" [ngClass]="visorExpandido ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
+              <span>{{ visorExpandido ? 'Salir' : 'Expandir' }}</span>
+            </button>
+          </div>
+        </div>
+
+        @if (errorVisorPdf) {
+        <p class="materials-state is-error">{{ errorVisorPdf }}</p>
+        }
+
+        <div class="pdf-canvas-wrap">
+          <canvas #pdfCanvasRef class="pdf-canvas" (contextmenu)="onBloquearDescargaContenido($event)"></canvas>
+          @if (cargandoDocumentoSeleccionado || cargandoPaginaPdf) {
+          <div class="pdf-canvas-loading">
+            <span>Renderizando documento...</span>
+          </div>
+          }
+        </div>
+      </div>
+    </ng-template>
     <div class="docs-grid" #docsGridRef [class.is-visor-open]="mostrarDocumentoVisor">
       <div class="docs-list">
         @if (docsTemario.length > 0) {
@@ -136,6 +207,12 @@
               @if (esDocumentoPrincipal(documento)) {
               <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
               }
+
+              @if (mostrarDocumentoVisor && documento.previewable && esVisorCanvasComplementarioActivo()) {
+              <div class="doc-mobile-viewer">
+                <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
+              </div>
+              }
             </div>
             }
           </div>
@@ -168,6 +245,12 @@
                 <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
                 {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
               </button>
+              }
+
+              @if (mostrarDocumentoVisor && documento.previewable && esVisorCanvasComplementarioActivo()) {
+              <div class="doc-mobile-viewer">
+                <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
+              </div>
               }
             </div>
             }
@@ -215,76 +298,13 @@
         <p class="materials-state">Preparando visor del documento...</p>
         }
 
-        @if (mostrarDocumentoVisor && documentoSeleccionado.previewable && esVisorCanvasComplementarioActivo()) {
-        <div
-          class="pdf-canvas-viewer"
-          [class.is-expanded]="visorExpandido"
-          [style.--viewer-top-offset]="visorExpandidoTopOffsetPx + 'px'"
-          (contextmenu)="onBloquearDescargaContenido($event)"
-        >
-          <div class="pdf-canvas-toolbar">
-            <div class="pdf-toolbar-row">
-              <button
-                type="button"
-                class="pdf-toolbar-btn"
-                (click)="irAPaginaAnteriorPdf()"
-                [disabled]="paginaActualPdf <= 1 || cargandoPaginaPdf"
-              >
-                <i class="bi bi-chevron-left"></i>
-                Anterior
-              </button>
-              <span class="pdf-canvas-page">P&aacute;gina {{ paginaActualPdf }} / {{ totalPaginasPdf || 1 }}</span>
-              <button
-                type="button"
-                class="pdf-toolbar-btn"
-                (click)="irAPaginaSiguientePdf()"
-                [disabled]="!totalPaginasPdf || paginaActualPdf >= totalPaginasPdf || cargandoPaginaPdf"
-              >
-                Siguiente
-                <i class="bi bi-chevron-right"></i>
-              </button>
-            </div>
-
-            <div class="pdf-toolbar-row pdf-toolbar-row-secondary">
-              <button
-                type="button"
-                class="pdf-toolbar-btn is-icon"
-                (click)="reducirZoomPdf()"
-                [disabled]="zoomPdf <= 0.75 || cargandoPaginaPdf"
-                title="Reducir zoom"
-              >
-                <i class="bi bi-zoom-out"></i>
-              </button>
-              <span class="pdf-canvas-zoom">{{ getZoomPdfPorcentaje() }}%</span>
-              <button
-                type="button"
-                class="pdf-toolbar-btn is-icon"
-                (click)="aumentarZoomPdf()"
-                [disabled]="zoomPdf >= 2.2 || cargandoPaginaPdf"
-                title="Aumentar zoom"
-              >
-                <i class="bi bi-zoom-in"></i>
-              </button>
-              <button type="button" class="pdf-toolbar-btn pdf-toolbar-btn-full" (click)="toggleVisorExpandido()">
-                <i class="bi" [ngClass]="visorExpandido ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
-                <span>{{ visorExpandido ? 'Salir' : 'Expandir' }}</span>
-              </button>
-            </div>
-          </div>
-
-          @if (errorVisorPdf) {
-          <p class="materials-state is-error">{{ errorVisorPdf }}</p>
-          }
-
-          <div class="pdf-canvas-wrap">
-            <canvas #pdfCanvasRef class="pdf-canvas" (contextmenu)="onBloquearDescargaContenido($event)"></canvas>
-            @if (cargandoDocumentoSeleccionado || cargandoPaginaPdf) {
-            <div class="pdf-canvas-loading">
-              <span>Renderizando documento...</span>
-            </div>
-            }
-          </div>
-        </div>
+        @if (
+          mostrarDocumentoVisor &&
+          documentoSeleccionado.previewable &&
+          esVisorCanvasComplementarioActivo() &&
+          !esDocumentoActivoEnMovil(documentoSeleccionado)
+        ) {
+        <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
         }
         }
       </div>

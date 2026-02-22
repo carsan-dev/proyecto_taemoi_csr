@@ -258,6 +258,10 @@
   display: none;
 }
 
+.doc-mobile-viewer {
+  display: none;
+}
+
 .doc-title {
   font-size: 0.86rem;
   font-weight: 700;
@@ -571,6 +575,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .doc-mobile-viewer {
+    display: block;
+  }
+
+  .doc-mobile-viewer .pdf-canvas-viewer {
+    margin-top: 0.18rem;
   }
 
   .docs-actions {
