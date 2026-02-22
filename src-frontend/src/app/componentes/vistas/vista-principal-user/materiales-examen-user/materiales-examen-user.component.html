@@ -85,7 +85,7 @@
     @if (material.documentos.length > 0) {
     @let docsTemario = getDocumentosTemarioPrincipal();
     @let docsComplementarios = getDocumentosComplementarios();
-    <div class="docs-grid" #docsGridRef>
+    <div class="docs-grid" #docsGridRef [class.is-visor-open]="mostrarDocumentoVisor">
       <div class="docs-list">
         @if (docsTemario.length > 0) {
         <section class="docs-section docs-section-primary">

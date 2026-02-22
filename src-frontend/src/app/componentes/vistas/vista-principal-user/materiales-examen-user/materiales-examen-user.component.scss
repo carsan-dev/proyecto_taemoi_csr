@@ -153,6 +153,10 @@
   padding-right: 0.2rem;
 }
 
+.docs-grid.is-visor-open .docs-list {
+  max-height: none;
+}
+
 .docs-section {
   display: flex;
   flex-direction: column;
