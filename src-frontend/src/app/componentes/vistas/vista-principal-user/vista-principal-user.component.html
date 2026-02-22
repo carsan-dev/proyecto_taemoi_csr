@@ -276,8 +276,31 @@
                 <div class="challenge-ranking-list">
                   @if (rankingSemanal.top.length > 0) {
                   @for (item of rankingSemanal.top; track item.posicion + '-' + item.alias) {
-                  <div class="challenge-ranking-row" [class.is-me]="item.esUsuarioActual">
+                  <div
+                    class="challenge-ranking-row"
+                    [class.is-me]="item.esUsuarioActual"
+                    [class.is-gold]="item.posicion === 1"
+                    [class.is-silver]="item.posicion === 2"
+                    [class.is-bronze]="item.posicion === 3"
+                  >
+                    @if (item.posicion === 1) {
+                    <span class="rank-medal is-gold">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Oro
+                    </span>
+                    } @else if (item.posicion === 2) {
+                    <span class="rank-medal is-silver">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Plata
+                    </span>
+                    } @else if (item.posicion === 3) {
+                    <span class="rank-medal is-bronze">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Bronce
+                    </span>
+                    } @else {
                     <span class="rank-pos">#{{ item.posicion }}</span>
+                    }
                     <span class="rank-alias">{{ item.alias }}</span>
                     <span class="rank-days">{{ item.diasCompletados }} d</span>
                   </div>
