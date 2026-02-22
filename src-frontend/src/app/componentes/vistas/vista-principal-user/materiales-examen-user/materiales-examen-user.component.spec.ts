@@ -210,4 +210,43 @@ describe('MaterialesExamenUserComponent', () => {
     );
     expect(window.open).toHaveBeenCalledWith('blob://test-url', '_blank', 'noopener');
   });
+
+  it('debe desactivar visor integrado en Android y abrir por URL directa', () => {
+    endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
+      of({
+        deporte: 'TAEKWONDO',
+        gradoActual: 'AMARILLO',
+        bloqueId: 'b02_amarillo_a_naranja',
+        temario: null,
+        videos: [],
+        documentos: [
+          {
+            id: '02_reglamento.pdf',
+            fileName: '02_reglamento.pdf',
+            title: 'Reglamento',
+            order: 2,
+            mimeType: 'application/pdf',
+            previewable: true,
+            openUrl: 'https://example.com/reglamento.pdf',
+            downloadUrl: 'https://example.com/reglamento.pdf?download=true',
+          },
+        ],
+      } as any)
+    );
+
+    spyOnProperty(globalThis.navigator, 'userAgent', 'get').and.returnValue(
+      'Mozilla/5.0 (Linux; Android 14)'
+    );
+    spyOn(window, 'open').and.returnValue({} as Window);
+
+    triggerInputs();
+
+    expect(component.esVisorIntegradoCompatibleEnDispositivo()).toBeFalse();
+    expect(component.esDocumentoSeleccionadoPrevisualizable()).toBeFalse();
+    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+
+    component.toggleDocumentoVisor();
+
+    expect(window.open).toHaveBeenCalledWith('https://example.com/reglamento.pdf', '_blank', 'noopener');
+  });
 });
