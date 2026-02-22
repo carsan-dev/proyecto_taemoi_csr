@@ -8,6 +8,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -44,6 +45,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
@@ -2290,7 +2292,7 @@ public class AlumnoController {
 			boolean download) throws IOException {
 		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
 		InputStreamResource resource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
-		String disposition = (download ? "attachment" : "inline") + "; filename=\"" + archivo.getFileName() + "\"";
+		String disposition = construirContentDispositionSeguro(download, archivo.getFileName());
 
 		return ResponseEntity.ok()
 				.contentType(mediaType)
@@ -2312,7 +2314,7 @@ public class AlumnoController {
 		long fileSize = archivo.getSize();
 		MediaType mediaType = parsearMediaTypeSeguro(archivo.getMimeType(), MediaType.APPLICATION_OCTET_STREAM);
 		List<HttpRange> ranges = requestHeaders.getRange();
-		String disposition = (download ? "attachment" : "inline") + "; filename=\"" + archivo.getFileName() + "\"";
+		String disposition = construirContentDispositionSeguro(download, archivo.getFileName());
 
 		if (ranges == null || ranges.isEmpty()) {
 			InputStreamResource fullResource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
@@ -2361,6 +2363,14 @@ public class AlumnoController {
 			}
 			totalSkipped += skipped;
 		}
+	}
+
+	private String construirContentDispositionSeguro(boolean download, String fileName) {
+		String safeFileName = (fileName == null || fileName.isBlank()) ? "archivo" : fileName;
+		return ContentDisposition.builder(download ? "attachment" : "inline")
+				.filename(safeFileName, StandardCharsets.UTF_8)
+				.build()
+				.toString();
 	}
 
 	private MediaType parsearMediaTypeSeguro(String mediaTypeRaw, MediaType fallback) {
