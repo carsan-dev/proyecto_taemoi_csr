@@ -59,6 +59,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   private readonly subscriptions: Subscription = new Subscription();
   private readonly horariosAlumnoCache = new Map<number, HorariosAlumnoCache>();
+  private readonly maxAlumnosSwitchPills = 8;
   private requestSeq: number = 0;
 
   constructor(
@@ -214,6 +215,25 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     this.selectedAlumno = alumno;
     this.alumnoId = nuevoAlumnoId;
     this.cargarHorariosDelAlumno();
+  }
+
+  usarSelectorCompacto(): boolean {
+    return this.alumnos.length > this.maxAlumnosSwitchPills;
+  }
+
+  onSeleccionAlumnoDesdeSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement | null;
+    const alumnoId = Number.parseInt(target?.value ?? '', 10);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return;
+    }
+
+    const alumno = this.alumnos.find((item) => Number(item?.id) === alumnoId);
+    if (!alumno) {
+      return;
+    }
+
+    this.seleccionarAlumno(alumno);
   }
 
   cargarHorariosDelAlumno(): void {
