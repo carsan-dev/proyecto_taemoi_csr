@@ -20,10 +20,11 @@ import {
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
 
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+const baseHref = globalThis.document?.querySelector('base')?.getAttribute('href') ?? '/';
+const baseUrl = globalThis.location
+  ? new URL(baseHref, globalThis.location.origin)
+  : new URL('http://localhost/');
+GlobalWorkerOptions.workerSrc = new URL('assets/pdfjs/pdf.worker.min.mjs', baseUrl).toString();
 
 @Component({
   selector: 'app-materiales-examen-user',
