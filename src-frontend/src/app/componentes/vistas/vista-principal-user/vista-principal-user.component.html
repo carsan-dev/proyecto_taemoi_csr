@@ -36,7 +36,12 @@
             <i class="bi bi-journal-richtext"></i>
             <span>Materiales de examen</span>
           </button>
-          <button type="button" class="hero-btn btn-secondary-action" [routerLink]="['/userpage/turnos']">
+          <button
+            type="button"
+            class="hero-btn btn-secondary-action"
+            [routerLink]="['/userpage/turnos']"
+            [queryParams]="getTurnosQueryParams()"
+          >
             <i class="bi bi-calendar-check-fill"></i>
             <span>Ver horarios</span>
           </button>
@@ -420,7 +425,12 @@
       </header>
 
       <div class="quick-actions-grid">
-        <button type="button" class="quick-action-btn" [routerLink]="['/userpage/turnos']">
+        <button
+          type="button"
+          class="quick-action-btn"
+          [routerLink]="['/userpage/turnos']"
+          [queryParams]="getTurnosQueryParams()"
+        >
           <i class="bi bi-calendar-check-fill"></i>
           <span>Ver agenda semanal</span>
         </button>
