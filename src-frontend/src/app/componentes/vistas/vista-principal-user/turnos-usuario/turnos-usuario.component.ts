@@ -56,6 +56,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   timetableGrid: Map<string, Map<string, TurnoEnCelda[]>> = new Map();
   selectedDayIndex: number = 0;
   alumnoId!: number;
+  bloquearPlaceholderSelectorAlumno: boolean = false;
 
   private readonly subscriptions: Subscription = new Subscription();
   private readonly horariosAlumnoCache = new Map<number, HorariosAlumnoCache>();
@@ -97,6 +98,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
             this.seleccionarAlumno(alumnoInicial);
             return;
           }
+          if (alumnoIdSolicitado !== null) {
+            this.cargando = false;
+            this.selectedAlumno = null;
+            return;
+          }
         }
 
         if (!forzarListadoAdmin && tieneAccesoAdmin) {
@@ -134,6 +140,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
             this.seleccionarAlumno(alumnoInicial);
             return;
           }
+          if (alumnoIdSolicitado !== null) {
+            this.cargando = false;
+            this.selectedAlumno = null;
+            return;
+          }
         }
         this.inicializarAlumnoFallback();
       },
@@ -155,9 +166,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {
     if (alumnoIdSolicitado !== null) {
       const alumnoSolicitado = alumnos.find((alumno) => Number(alumno?.id) === alumnoIdSolicitado);
-      if (alumnoSolicitado) {
-        return alumnoSolicitado;
-      }
+      return alumnoSolicitado ?? null;
     }
 
     const alumnoIdSesion = Number(this.authService.getAlumnoId());
@@ -239,8 +248,32 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     return this.alumnos.length > this.maxAlumnosSwitchPills;
   }
 
+  getAlumnoSelectorValue(): string {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return '';
+    }
+
+    const existeEnLista = this.alumnos.some((alumno) => Number(alumno?.id) === alumnoId);
+    return existeEnLista ? alumnoId.toString() : '';
+  }
+
   onSeleccionAlumnoDesdeSelect(event: Event): void {
     const target = event.target as HTMLSelectElement | null;
+    const alumnoIdRaw = target?.value ?? '';
+    if (!alumnoIdRaw) {
+      this.bloquearPlaceholderSelectorAlumno = false;
+      this.selectedAlumno = null;
+      this.alumnoId = 0;
+      this.grupos = [];
+      this.allTurnos = [];
+      this.deportesUnicos = [];
+      this.timeSlots = [];
+      this.timetableGrid = new Map();
+      this.cargando = false;
+      return;
+    }
+
     const alumnoId = Number.parseInt(target?.value ?? '', 10);
     if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
       return;
@@ -251,6 +284,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.bloquearPlaceholderSelectorAlumno = true;
     this.seleccionarAlumno(alumno);
   }
 

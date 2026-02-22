@@ -99,6 +99,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   deporteRankingSeleccionado: string | null = null;
   deportesRankingDisponibles: string[] = [];
   documentosVisiblesCount: number = 0;
+  bloquearPlaceholderSelectorAlumno: boolean = false;
   private readonly maxAlumnosSwitchPills = 8;
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
@@ -335,8 +336,25 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return this.alumnos.length > this.maxAlumnosSwitchPills;
   }
 
+  getAlumnoSelectorValue(): string {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return '';
+    }
+
+    const existeEnLista = this.alumnos.some((alumno) => Number(alumno?.id) === alumnoId);
+    return existeEnLista ? alumnoId.toString() : '';
+  }
+
   onSeleccionAlumnoDesdeSelect(event: Event): void {
     const target = event.target as HTMLSelectElement | null;
+    const alumnoIdRaw = target?.value ?? '';
+    if (!alumnoIdRaw) {
+      this.bloquearPlaceholderSelectorAlumno = false;
+      this.limpiarSeleccionAlumno();
+      return;
+    }
+
     const alumnoId = Number.parseInt(target?.value ?? '', 10);
     if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
       return;
@@ -347,7 +365,23 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.bloquearPlaceholderSelectorAlumno = true;
     this.seleccionarAlumno(alumno);
+  }
+
+  private limpiarSeleccionAlumno(): void {
+    this.selectedAlumno = null;
+    this.grupos = [];
+    this.turnosAlumno = [];
+    this.cargandoTurnos = false;
+    this.proximaClase = null;
+    this.proximasClasesPorDeporte = [];
+    this.deportesDelAlumno = [];
+    this.documentosAlumno = [];
+    this.convocatoriasAlumno = [];
+    this.proximaConvocatoriaAlumno = null;
+    this.proximasConvocatoriasPorDeporte = [];
+    this.convocatoriasSecundarias = [];
   }
 
   ngOnDestroy(): void {
@@ -421,6 +455,10 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       this.seleccionarAlumno(alumnoInicial);
       return;
     }
+    if (alumnoIdSolicitado !== null) {
+      this.selectedAlumno = null;
+      return;
+    }
     this.mostrarErrorSinAlumnos();
   }
 
@@ -435,9 +473,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {
     if (alumnoIdSolicitado !== null) {
       const alumnoSolicitado = alumnos.find((alumno) => Number(alumno?.id) === alumnoIdSolicitado);
-      if (alumnoSolicitado) {
-        return alumnoSolicitado;
-      }
+      return alumnoSolicitado ?? null;
     }
     return alumnos[0] ?? null;
   }
