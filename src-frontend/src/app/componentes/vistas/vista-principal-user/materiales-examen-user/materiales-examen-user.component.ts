@@ -139,6 +139,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.cargarVideoSeleccionado(video);
   }
 
+  onBloquearDescargaContenido(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
     const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
@@ -268,76 +273,29 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   abrirDocumentoSeleccionado(): void {
-    const documento = this.documentoSeleccionado;
     const openUrl = this.getDocumentoOpenUrl();
-    if (documento?.previewable && openUrl && !this.esVisorIntegradoCompatibleEnDispositivo()) {
-      const popup = globalThis.window?.open(openUrl, '_blank', 'noopener');
-      if (!popup) {
-        globalThis.window?.location.assign(openUrl);
-      }
-      return;
-    }
-
-    if (!documento?.previewable) {
-      this.descargarDocumentoSeleccionado();
-      return;
-    }
-
-    this.descargarDocumentoSeleccionado(true);
-  }
-
-  descargarDocumentoSeleccionado(abrirEnNuevaPestana: boolean = false): void {
-    const documento = this.documentoSeleccionado;
-    const url = abrirEnNuevaPestana ? this.getDocumentoOpenUrl() : this.getDocumentoDownloadUrl();
-
-    if (!documento || !url) {
+    if (!openUrl) {
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo procesar el documento seleccionado',
+        text: 'No se pudo abrir el documento seleccionado',
         icon: 'error',
       });
       return;
     }
 
-    this.endpointsService.descargarArchivoPrivado(url).subscribe({
-      next: (blob) => {
-        const blobUrl = globalThis.URL.createObjectURL(blob);
+    const popup = globalThis.window?.open(openUrl, '_blank', 'noopener');
+    if (!popup) {
+      globalThis.window?.location.assign(openUrl);
+    }
+  }
 
-        if (abrirEnNuevaPestana || this.esDispositivoIOS()) {
-          const popup = globalThis.window?.open(blobUrl, '_blank', 'noopener');
-          if (!popup && this.esDispositivoIOS()) {
-            globalThis.window?.location.assign(blobUrl);
-          }
-          setTimeout(() => globalThis.URL.revokeObjectURL(blobUrl), 60_000);
-          return;
-        }
-
-        const link = globalThis.document?.createElement('a');
-        if (!link) {
-          globalThis.URL.revokeObjectURL(blobUrl);
-          return;
-        }
-
-        link.href = blobUrl;
-        link.download = this.obtenerNombreDescarga(documento.fileName, documento.mimeType);
-        link.click();
-        globalThis.URL.revokeObjectURL(blobUrl);
-      },
-      error: () => {
-        if (this.esDispositivoIOS()) {
-          if (abrirEnNuevaPestana) {
-            globalThis.window?.open(url, '_blank', 'noopener');
-          } else {
-            globalThis.window?.location.assign(url);
-          }
-          return;
-        }
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo descargar el documento',
-          icon: 'error',
-        });
-      },
+  descargarDocumentoSeleccionado(_abrirEnNuevaPestana: boolean = false): void {
+    Swal.fire({
+      title: 'Descarga no disponible',
+      text: 'La descarga de documentos de materiales de examen está deshabilitada.',
+      icon: 'info',
+      timer: 2200,
+      showConfirmButton: false,
     });
   }
 
