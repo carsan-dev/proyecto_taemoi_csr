@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -23,6 +23,18 @@ import { getDeporteLabel } from '../../../../enums/deporte';
 export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   @Input() alumnoId: number | null = null;
   @Input() deportes: AlumnoDeporteDTO[] = [];
+  @ViewChild('docsGridRef')
+  set docsGridRefSetter(ref: ElementRef<HTMLElement> | undefined) {
+    this.docsGridRef = ref;
+    this.reiniciarObservadorAlineacionDocs();
+    this.programarRecalculoAlineacionDocs();
+  }
+  @ViewChild('docsActionsRef')
+  set docsActionsRefSetter(ref: ElementRef<HTMLElement> | undefined) {
+    this.docsActionsRef = ref;
+    this.reiniciarObservadorAlineacionDocs();
+    this.programarRecalculoAlineacionDocs();
+  }
 
   deportesConMaterial: AlumnoDeporteDTO[] = [];
   deporteSeleccionado: string | null = null;
@@ -39,11 +51,16 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   cargandoDocumentoSeleccionado: boolean = false;
   errorCarga: string | null = null;
   descripcionBloqueActual: string | null = null;
+  docsActionsOffsetPx: number = 0;
 
   private materialSubscription: Subscription | null = null;
   private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
   private documentoBlobUrl: string | null = null;
+  private docsGridRef: ElementRef<HTMLElement> | undefined;
+  private docsActionsRef: ElementRef<HTMLElement> | undefined;
+  private docsResizeObserver: ResizeObserver | null = null;
+  private rafAlineacionDocsId: number | null = null;
   private readonly descripcionPreparacionPorGrado: Record<string, string> = {
     BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
     BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
@@ -96,6 +113,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.materialSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
     this.revocarBlobDocumento();
+    this.docsResizeObserver?.disconnect();
+    if (this.rafAlineacionDocsId !== null) {
+      globalThis.cancelAnimationFrame?.(this.rafAlineacionDocsId);
+      this.rafAlineacionDocsId = null;
+    }
   }
 
   onSeleccionarDeporte(deporte: string): void {
@@ -116,6 +138,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.documentoSeleccionado = documento;
     this.mostrarDocumentoVisor = false;
     this.cargarPreviewDocumentoSeleccionado(documento);
+    this.programarRecalculoAlineacionDocs();
   }
 
   toggleDocumentoVisor(): void {
@@ -123,6 +146,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return;
     }
     this.mostrarDocumentoVisor = !this.mostrarDocumentoVisor;
+    this.programarRecalculoAlineacionDocs();
   }
 
   getDeporteLabel(deporte: string): string {
@@ -157,6 +181,16 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       return 'DOC';
     }
     return documento.order > 0 && documento.order < 10000 ? String(documento.order) : 'DOC';
+  }
+
+  getDocumentosTemarioPrincipal(): MaterialExamenDocumentoDTO[] {
+    const documentos = this.material?.documentos ?? [];
+    return documentos.filter((documento) => this.esDocumentoPrincipal(documento));
+  }
+
+  getDocumentosComplementarios(): MaterialExamenDocumentoDTO[] {
+    const documentos = this.material?.documentos ?? [];
+    return documentos.filter((documento) => !this.esDocumentoPrincipal(documento));
   }
 
   abrirDocumentoSeleccionado(): void {
@@ -249,6 +283,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.documentoSeleccionado = null;
     this.documentoSeleccionadoUrl = null;
     this.mostrarDocumentoVisor = false;
+    this.docsActionsOffsetPx = 0;
 
     this.materialSubscription = this.endpointsService
       .obtenerMaterialExamenAlumno(this.alumnoId, this.deporteSeleccionado)
@@ -263,6 +298,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
           }
 
           this.seleccionarDocumentoInicial();
+          this.programarRecalculoAlineacionDocs();
           this.cargando = false;
         },
         error: () => {
@@ -546,7 +582,70 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.cargandoDocumentoSeleccionado = false;
     this.mostrarDocumentoVisor = false;
     this.descripcionBloqueActual = null;
+    this.docsActionsOffsetPx = 0;
     this.lastFetchKey = null;
+  }
+
+  private reiniciarObservadorAlineacionDocs(): void {
+    this.docsResizeObserver?.disconnect();
+    this.docsResizeObserver = null;
+
+    if (typeof globalThis.ResizeObserver !== 'function') {
+      return;
+    }
+
+    const gridRef = this.docsGridRef?.nativeElement;
+    if (!gridRef) {
+      return;
+    }
+
+    this.docsResizeObserver = new globalThis.ResizeObserver(() => {
+      this.programarRecalculoAlineacionDocs();
+    });
+    this.docsResizeObserver.observe(gridRef);
+  }
+
+  private programarRecalculoAlineacionDocs(): void {
+    if (typeof globalThis.requestAnimationFrame !== 'function') {
+      this.recalcularAlineacionDocs();
+      return;
+    }
+
+    if (this.rafAlineacionDocsId !== null) {
+      globalThis.cancelAnimationFrame?.(this.rafAlineacionDocsId);
+    }
+
+    this.rafAlineacionDocsId = globalThis.requestAnimationFrame(() => {
+      this.rafAlineacionDocsId = null;
+      this.recalcularAlineacionDocs();
+    });
+  }
+
+  private recalcularAlineacionDocs(): void {
+    const gridElement = this.docsGridRef?.nativeElement;
+    const actionsElement = this.docsActionsRef?.nativeElement;
+    if (!gridElement || !actionsElement || !this.documentoSeleccionado) {
+      this.docsActionsOffsetPx = 0;
+      return;
+    }
+
+    if (globalThis.window?.matchMedia('(max-width: 768px)').matches) {
+      this.docsActionsOffsetPx = 0;
+      return;
+    }
+
+    const botonActivo = gridElement.querySelector<HTMLElement>('.doc-item-btn.is-active');
+    if (!botonActivo) {
+      this.docsActionsOffsetPx = 0;
+      return;
+    }
+
+    const gridRect = gridElement.getBoundingClientRect();
+    const botonRect = botonActivo.getBoundingClientRect();
+    const actionsRect = actionsElement.getBoundingClientRect();
+    const centroBoton = botonRect.top - gridRect.top + botonRect.height / 2;
+    const offset = Math.max(0, Math.round(centroBoton - actionsRect.height / 2));
+    this.docsActionsOffsetPx = offset;
   }
 
   private cargarVideoSeleccionado(video: MaterialExamenVideoDTO): void {
