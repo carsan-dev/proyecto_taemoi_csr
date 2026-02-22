@@ -833,11 +833,31 @@ $competicion: #7b1fa2;
   gap: 0.45rem;
   border-radius: 8px;
   padding: 0.26rem 0.34rem;
+  border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.06);
 
   &.is-me {
     border: 1px solid rgba(124, 236, 147, 0.56);
     background: rgba(124, 236, 147, 0.18);
+  }
+
+  &.is-gold {
+    border-color: rgba(255, 219, 112, 0.58);
+    background: linear-gradient(135deg, rgba(255, 219, 112, 0.24), rgba(255, 181, 74, 0.13));
+  }
+
+  &.is-silver {
+    border-color: rgba(204, 221, 241, 0.54);
+    background: linear-gradient(135deg, rgba(196, 213, 233, 0.22), rgba(145, 170, 198, 0.12));
+  }
+
+  &.is-bronze {
+    border-color: rgba(229, 172, 127, 0.52);
+    background: linear-gradient(135deg, rgba(222, 154, 104, 0.2), rgba(162, 103, 69, 0.12));
+  }
+
+  &.is-me {
+    box-shadow: inset 0 0 0 1px rgba(124, 236, 147, 0.52);
   }
 }
 
@@ -845,6 +865,47 @@ $competicion: #7b1fa2;
   font-size: 0.72rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.86);
+}
+
+.rank-medal {
+  min-width: 64px;
+  min-height: 22px;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.26rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+
+  i {
+    font-size: 0.68rem;
+  }
+
+  &.is-gold {
+    color: #4d3400;
+    border-color: rgba(201, 143, 36, 0.55);
+    background: linear-gradient(135deg, #ffe9a8, #ffc452);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  &.is-silver {
+    color: #344b67;
+    border-color: rgba(111, 143, 179, 0.55);
+    background: linear-gradient(135deg, #ecf5ff, #bfcee0);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  &.is-bronze {
+    color: #5a2f15;
+    border-color: rgba(153, 92, 52, 0.55);
+    background: linear-gradient(135deg, #f4c89f, #cd8a58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  }
 }
 
 .rank-alias {
