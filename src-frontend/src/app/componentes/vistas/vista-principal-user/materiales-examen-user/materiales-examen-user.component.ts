@@ -171,6 +171,53 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return this.documentoSeleccionado?.downloadUrl ?? this.documentoSeleccionado?.openUrl ?? null;
   }
 
+  esDocumentoActivoEnMovil(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
+    if (!documento || !this.documentoSeleccionado) {
+      return false;
+    }
+    if (!globalThis.window?.matchMedia) {
+      return false;
+    }
+
+    return (
+      globalThis.window.matchMedia('(max-width: 768px)').matches &&
+      documento.id === this.documentoSeleccionado.id
+    );
+  }
+
+  onAbrirDocumentoDesdeLista(documento: MaterialExamenDocumentoDTO): void {
+    if (!documento) {
+      return;
+    }
+    if (this.documentoSeleccionado?.id !== documento.id) {
+      this.onSeleccionarDocumento(documento);
+    }
+    this.abrirDocumentoSeleccionado();
+  }
+
+  onDescargarDocumentoDesdeLista(documento: MaterialExamenDocumentoDTO): void {
+    if (!documento) {
+      return;
+    }
+    if (this.documentoSeleccionado?.id !== documento.id) {
+      this.onSeleccionarDocumento(documento);
+    }
+    this.descargarDocumentoSeleccionado();
+  }
+
+  onToggleVisorDesdeLista(documento: MaterialExamenDocumentoDTO): void {
+    if (!documento?.previewable) {
+      return;
+    }
+    if (this.documentoSeleccionado?.id !== documento.id) {
+      this.onSeleccionarDocumento(documento);
+      this.mostrarDocumentoVisor = true;
+      this.programarRecalculoAlineacionDocs();
+      return;
+    }
+    this.toggleDocumentoVisor();
+  }
+
   esDocumentoSeleccionadoPrevisualizable(): boolean {
     return !!this.documentoSeleccionado?.previewable && !!this.documentoSeleccionadoUrl;
   }
