@@ -1,1 +1,6 @@
-<i (click)="scrollArriba()" [hidden]="!mostrarBoton" class="scroll-to-top-btn bi bi-arrow-up"></i>
+<i
+  (click)="scrollArriba()"
+  [hidden]="!mostrarBoton"
+  [style.bottom]="bottomOffset"
+  class="scroll-to-top-btn bi bi-arrow-up"
+></i>
