@@ -1,5 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -63,7 +64,8 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   constructor(
     public endpointsService: EndpointsService,
     private readonly location: Location,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -71,20 +73,38 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   private inicializarAlumnos(): void {
-    const alumnosSubscription = this.authService.obtenerTodosLosAlumnos().subscribe({
+    const alumnoIdSolicitado = this.obtenerAlumnoIdSolicitado();
+    const tieneAccesoAdmin = this.authService.tieneAccesoAdmin();
+    const forzarListadoAdmin = tieneAccesoAdmin && alumnoIdSolicitado !== null;
+
+    const origen$ = forzarListadoAdmin
+      ? this.endpointsService.obtenerAlumnosSinPaginar(true)
+      : this.authService.obtenerTodosLosAlumnos();
+
+    const alumnosSubscription = origen$.subscribe({
       next: (alumnos) => {
-        if (Array.isArray(alumnos) && alumnos.length > 0) {
-          this.alumnos = alumnos;
-          const alumnoInicial = this.obtenerAlumnoInicial(alumnos);
+        const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
+        if (alumnosNormalizados.length > 0) {
+          this.alumnos = alumnosNormalizados;
+          const alumnoInicial = this.obtenerAlumnoInicial(alumnosNormalizados, alumnoIdSolicitado);
           if (alumnoInicial) {
             this.seleccionarAlumno(alumnoInicial);
             return;
           }
         }
 
+        if (!forzarListadoAdmin && tieneAccesoAdmin) {
+          this.cargarAlumnosComoAdmin(alumnoIdSolicitado);
+          return;
+        }
+
         this.inicializarAlumnoFallback();
       },
       error: () => {
+        if (!forzarListadoAdmin && tieneAccesoAdmin) {
+          this.cargarAlumnosComoAdmin(alumnoIdSolicitado);
+          return;
+        }
         this.inicializarAlumnoFallback();
       },
     });
@@ -92,12 +112,50 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     this.subscriptions.add(alumnosSubscription);
   }
 
-  private obtenerAlumnoInicial(alumnos: any[]): any | null {
-    const alumnoId = Number(this.authService.getAlumnoId());
-    if (Number.isInteger(alumnoId) && alumnoId > 0) {
-      return alumnos.find((alumno) => Number(alumno?.id) === alumnoId) ?? alumnos[0];
+  private cargarAlumnosComoAdmin(alumnoIdSolicitado: number | null): void {
+    const adminSubscription = this.endpointsService.obtenerAlumnosSinPaginar(true).subscribe({
+      next: (alumnos) => {
+        const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
+        if (alumnosNormalizados.length > 0) {
+          this.alumnos = alumnosNormalizados;
+          const alumnoInicial = this.obtenerAlumnoInicial(alumnosNormalizados, alumnoIdSolicitado);
+          if (alumnoInicial) {
+            this.seleccionarAlumno(alumnoInicial);
+            return;
+          }
+        }
+        this.inicializarAlumnoFallback();
+      },
+      error: () => {
+        this.inicializarAlumnoFallback();
+      },
+    });
+    this.subscriptions.add(adminSubscription);
+  }
+
+  private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {
+    if (alumnoIdSolicitado !== null) {
+      const alumnoSolicitado = alumnos.find((alumno) => Number(alumno?.id) === alumnoIdSolicitado);
+      if (alumnoSolicitado) {
+        return alumnoSolicitado;
+      }
+    }
+
+    const alumnoIdSesion = Number(this.authService.getAlumnoId());
+    if (Number.isInteger(alumnoIdSesion) && alumnoIdSesion > 0) {
+      return alumnos.find((alumno) => Number(alumno?.id) === alumnoIdSesion) ?? alumnos[0];
     }
     return alumnos[0] ?? null;
+  }
+
+  private obtenerAlumnoIdSolicitado(): number | null {
+    const alumnoIdRaw = this.route.snapshot.queryParamMap.get('alumnoId');
+    if (!alumnoIdRaw) {
+      return null;
+    }
+
+    const alumnoId = Number.parseInt(alumnoIdRaw, 10);
+    return Number.isInteger(alumnoId) && alumnoId > 0 ? alumnoId : null;
   }
 
   private inicializarAlumnoFallback(): void {

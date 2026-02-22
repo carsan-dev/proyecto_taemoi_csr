@@ -1,6 +1,6 @@
 ﻿import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import Swal from 'sweetalert2';
 
@@ -248,7 +248,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   constructor(
     public endpointsService: EndpointsService,
     private readonly authService: AuthenticationService,
-    private readonly alumnoService: AlumnoService
+    private readonly alumnoService: AlumnoService,
+    private readonly route: ActivatedRoute
   ) {}
 
   @ViewChild('misDocumentosSection')
@@ -278,29 +279,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     });
     this.subscriptions.add(nombreSubscription);
 
-    const alumnosSubscription = this.authService.obtenerTodosLosAlumnos().subscribe({
-      next: (alumnos) => {
-        if (alumnos && alumnos.length > 0) {
-          this.alumnos = alumnos;
-          this.seleccionarAlumno(alumnos[0]);
-          return;
-        }
-
-        Swal.fire({
-          title: 'Error',
-          text: 'No se encontraron alumnos asociados a este usuario.',
-          icon: 'error',
-        });
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error en la peticion',
-          text: 'Error al obtener los alumnos.',
-          icon: 'error',
-        });
-      },
-    });
-    this.subscriptions.add(alumnosSubscription);
+    this.cargarAlumnosDisponibles();
 
     this.inicializarNovedadesEventos();
     this.iniciarActualizacionProximaClase();
@@ -343,12 +322,118 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     this.scrollToSection('materiales-examen');
   }
 
+  getTurnosQueryParams(): { alumnoId: number } | null {
+    const alumnoId = Number(this.selectedAlumno?.id);
+    if (!Number.isInteger(alumnoId) || alumnoId <= 0) {
+      return null;
+    }
+    return { alumnoId };
+  }
+
   ngOnDestroy(): void {
     this.cancelarCargaDiferidaDocumentos();
     this.detenerActualizacionProximaClase();
     this.detenerCountdownRetoDiario();
     this.desconectarObservadoresDocumentos();
     this.subscriptions.unsubscribe();
+  }
+
+  private cargarAlumnosDisponibles(): void {
+    const alumnoIdSolicitado = this.obtenerAlumnoIdSolicitado();
+    const tieneAccesoAdmin = this.authService.tieneAccesoAdmin();
+    const forzarListadoAdmin = tieneAccesoAdmin && alumnoIdSolicitado !== null;
+
+    const origen$ = forzarListadoAdmin
+      ? this.endpointsService.obtenerAlumnosSinPaginar(true)
+      : this.authService.obtenerTodosLosAlumnos();
+
+    const alumnosSubscription = origen$.subscribe({
+      next: (alumnos) => {
+        const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
+        if (alumnosNormalizados.length > 0) {
+          this.inicializarAlumnoSeleccionado(alumnosNormalizados, alumnoIdSolicitado);
+          return;
+        }
+
+        if (!forzarListadoAdmin && tieneAccesoAdmin) {
+          this.cargarAlumnosComoAdmin(alumnoIdSolicitado);
+          return;
+        }
+
+        this.mostrarErrorSinAlumnos();
+      },
+      error: () => {
+        if (!forzarListadoAdmin && tieneAccesoAdmin) {
+          this.cargarAlumnosComoAdmin(alumnoIdSolicitado);
+          return;
+        }
+        this.mostrarErrorCargaAlumnos();
+      },
+    });
+    this.subscriptions.add(alumnosSubscription);
+  }
+
+  private cargarAlumnosComoAdmin(alumnoIdSolicitado: number | null): void {
+    const adminSubscription = this.endpointsService.obtenerAlumnosSinPaginar(true).subscribe({
+      next: (alumnos) => {
+        const alumnosNormalizados = Array.isArray(alumnos) ? alumnos : [];
+        if (alumnosNormalizados.length > 0) {
+          this.inicializarAlumnoSeleccionado(alumnosNormalizados, alumnoIdSolicitado);
+          return;
+        }
+        this.mostrarErrorSinAlumnos();
+      },
+      error: () => {
+        this.mostrarErrorCargaAlumnos();
+      },
+    });
+    this.subscriptions.add(adminSubscription);
+  }
+
+  private inicializarAlumnoSeleccionado(alumnos: any[], alumnoIdSolicitado: number | null): void {
+    this.alumnos = alumnos;
+    const alumnoInicial = this.obtenerAlumnoInicial(alumnos, alumnoIdSolicitado);
+    if (alumnoInicial) {
+      this.seleccionarAlumno(alumnoInicial);
+      return;
+    }
+    this.mostrarErrorSinAlumnos();
+  }
+
+  private obtenerAlumnoInicial(alumnos: any[], alumnoIdSolicitado: number | null): any | null {
+    if (alumnoIdSolicitado !== null) {
+      const alumnoSolicitado = alumnos.find((alumno) => Number(alumno?.id) === alumnoIdSolicitado);
+      if (alumnoSolicitado) {
+        return alumnoSolicitado;
+      }
+    }
+    return alumnos[0] ?? null;
+  }
+
+  private obtenerAlumnoIdSolicitado(): number | null {
+    const alumnoIdRaw = this.route.snapshot.queryParamMap.get('alumnoId');
+    if (!alumnoIdRaw) {
+      return null;
+    }
+
+    const alumnoId = Number.parseInt(alumnoIdRaw, 10);
+    return Number.isInteger(alumnoId) && alumnoId > 0 ? alumnoId : null;
+  }
+
+  private mostrarErrorSinAlumnos(): void {
+    Swal.fire({
+      title: 'Error',
+      text: 'No se encontraron alumnos para mostrar en esta vista.',
+      icon: 'error',
+    });
+  }
+
+  private mostrarErrorCargaAlumnos(): void {
+    Swal.fire({
+      title: 'Error en la peticion',
+      text: 'Error al obtener los alumnos.',
+      icon: 'error',
+    });
   }
 
   private cargarDatosAlumno(alumnoId: number): void {
