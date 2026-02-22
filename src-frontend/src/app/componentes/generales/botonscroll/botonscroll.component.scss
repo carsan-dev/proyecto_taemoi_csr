@@ -31,7 +31,6 @@
 @media (max-width: 768px) {
   .scroll-to-top-btn {
     right: 14px;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     width: 54px;
     height: 54px;
     font-size: 1.35rem;
@@ -40,6 +39,6 @@
 
 @media (max-width: 420px) {
   .scroll-to-top-btn {
-    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    right: 12px;
   }
 }
