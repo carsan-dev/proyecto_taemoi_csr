@@ -239,7 +239,7 @@
         <iframe
           class="docs-frame"
           [src]="documentoSeleccionadoUrl"
-          sandbox="allow-scripts"
+          sandbox="allow-same-origin"
           title="Documento de material de examen"
           loading="lazy"
           (contextmenu)="onBloquearDescargaContenido($event)"
