@@ -26,7 +26,7 @@ $transition-speed: 0.3s;
   min-height: 100vh;
   min-height: 100dvh;
   padding: 4.8rem 0.9rem 0.65rem;
-  background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%); // Subtle gradient matching site palette
+  background: #f8f9fa;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -807,7 +807,7 @@ $transition-speed: 0.3s;
   // ========================================
   // RESPONSIVE DESIGN
   // ========================================
-  @media (max-height: 980px) and (min-width: 993px) {
+  @media (max-height: 860px) and (min-width: 993px) {
     padding: 4.35rem 0.8rem 0.75rem;
 
     .login-container {
