@@ -31,6 +31,9 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralItemResponse;
+import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralMiPosicionResponse;
+import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingItemResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingMiPosicionResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
@@ -911,6 +914,99 @@ public class AlumnoServiceImpl implements AlumnoService {
 				miPosicion);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public RetoDiarioRankingGeneralResponse obtenerRankingGeneralRetoDiario(Long alumnoId, Deporte deporte,
+			Integer limit) {
+		if (alumnoId == null) {
+			throw new IllegalArgumentException("El alumno es obligatorio.");
+		}
+		if (deporte == null) {
+			throw new IllegalArgumentException("El deporte es obligatorio.");
+		}
+
+		Alumno alumnoActual = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+		if (!Boolean.TRUE.equals(alumnoActual.getActivo())) {
+			throw new IllegalArgumentException("El alumno seleccionado no est\u00E1 activo.");
+		}
+		if (!alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(alumnoId, deporte)) {
+			throw new IllegalArgumentException("El deporte seleccionado no est\u00E1 activo para el alumno.");
+		}
+
+		int limiteTop = normalizarLimiteTop(limit);
+
+		List<AlumnoDeporte> participantesDeporte = alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(deporte);
+		List<Long> alumnoIds = participantesDeporte.stream()
+				.map(AlumnoDeporte::getAlumno)
+				.filter(alumno -> alumno != null && alumno.getId() != null)
+				.map(Alumno::getId)
+				.distinct()
+				.toList();
+
+		Map<Long, HistoricoRetoDiarioStats> historicoPorAlumno = calcularHistoricoRetoDiarioPorAlumno(alumnoIds);
+
+		List<RankingGeneralParticipante> participantesRanking = participantesDeporte.stream()
+				.map(AlumnoDeporte::getAlumno)
+				.filter(alumno -> alumno != null && alumno.getId() != null)
+				.collect(Collectors.toMap(
+						Alumno::getId,
+						alumno -> construirParticipanteRankingGeneral(alumno, alumnoId, historicoPorAlumno.get(alumno.getId())),
+						(p1, p2) -> p1))
+				.values().stream()
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		aplicarDesambiguacionAliasDuplicadosGeneral(participantesRanking);
+
+		List<RankingGeneralParticipante> ranking = participantesRanking.stream()
+				.sorted(Comparator
+						.comparingInt(RankingGeneralParticipante::getMejorRacha).reversed()
+						.thenComparing(Comparator.comparingInt(RankingGeneralParticipante::getDiasCompletadosTotales)
+								.reversed())
+						.thenComparing(RankingGeneralParticipante::getUltimaFechaCompletado,
+								Comparator.nullsLast(Comparator.reverseOrder()))
+						.thenComparing(RankingGeneralParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
+				.toList();
+
+		asignarPosicionesDensasPorMejorRacha(ranking);
+
+		List<RetoDiarioRankingGeneralItemResponse> top = ranking.stream()
+				.limit(limiteTop)
+				.map(item -> new RetoDiarioRankingGeneralItemResponse(
+						item.getPosicion(),
+						item.getAlias(),
+						item.getMejorRacha(),
+						item.getDiasCompletadosTotales(),
+						item.getEsUsuarioActual()))
+				.toList();
+
+		RankingGeneralParticipante participanteActual = ranking.stream()
+				.filter(RankingGeneralParticipante::getEsUsuarioActual)
+				.findFirst()
+				.orElseGet(() -> new RankingGeneralParticipante(
+						alumnoId,
+						construirAliasRanking(alumnoActual),
+						obtenerInicialSegundoApellido(alumnoActual),
+						0,
+						0,
+						null,
+						true));
+
+		Integer diasParaSuperarSiguiente = calcularDiasParaSuperarSiguienteGeneral(participanteActual, ranking);
+		RetoDiarioRankingGeneralMiPosicionResponse miPosicion = new RetoDiarioRankingGeneralMiPosicionResponse(
+				participanteActual.getPosicion(),
+				participanteActual.getAlias(),
+				participanteActual.getMejorRacha(),
+				participanteActual.getDiasCompletadosTotales(),
+				diasParaSuperarSiguiente);
+
+		return new RetoDiarioRankingGeneralResponse(
+				deporte.name(),
+				ranking.size(),
+				top,
+				miPosicion);
+	}
+
 	private void registrarLogRetoDiarioSiNoExiste(Alumno alumno, LocalDate fechaLocal) {
 		if (alumno == null || alumno.getId() == null || fechaLocal == null) {
 			return;
@@ -1051,6 +1147,113 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return (diasSiguienteSuperior - diasActuales) + 1;
 	}
 
+	private Map<Long, HistoricoRetoDiarioStats> calcularHistoricoRetoDiarioPorAlumno(List<Long> alumnoIds) {
+		Map<Long, HistoricoRetoDiarioStats> historicoPorAlumno = new HashMap<>();
+		if (alumnoIds == null || alumnoIds.isEmpty()) {
+			return historicoPorAlumno;
+		}
+
+		List<AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection> registros = alumnoRetoDiarioLogRepository
+				.obtenerFechasCompletadoHistorico(alumnoIds);
+
+		for (AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection registro : registros) {
+			if (registro == null || registro.getAlumnoId() == null || registro.getFechaCompletado() == null) {
+				continue;
+			}
+
+			HistoricoRetoDiarioStats stats = historicoPorAlumno.computeIfAbsent(
+					registro.getAlumnoId(),
+					ignored -> new HistoricoRetoDiarioStats());
+			stats.registrarFechaCompletado(registro.getFechaCompletado());
+		}
+
+		return historicoPorAlumno;
+	}
+
+	private RankingGeneralParticipante construirParticipanteRankingGeneral(
+			Alumno alumno,
+			Long alumnoActualId,
+			HistoricoRetoDiarioStats historico) {
+		int mejorRacha = 0;
+		int diasCompletadosTotales = 0;
+		LocalDate ultimaFecha = null;
+
+		if (historico != null) {
+			mejorRacha = historico.getMejorRacha();
+			diasCompletadosTotales = historico.getDiasCompletadosTotales();
+			ultimaFecha = historico.getUltimaFechaCompletado();
+		}
+
+		int rachaPersistida = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
+		if (rachaPersistida > 0) {
+			mejorRacha = Math.max(mejorRacha, rachaPersistida);
+			diasCompletadosTotales = Math.max(diasCompletadosTotales, rachaPersistida);
+			LocalDate fechaPersistida = toLocalDate(alumno.getFechaRetoDiarioCompletado());
+			if (fechaPersistida != null && (ultimaFecha == null || fechaPersistida.isAfter(ultimaFecha))) {
+				ultimaFecha = fechaPersistida;
+			}
+		}
+
+		boolean esUsuarioActual = alumnoActualId != null && alumnoActualId.equals(alumno.getId());
+		return new RankingGeneralParticipante(
+				alumno.getId(),
+				construirAliasRanking(alumno),
+				obtenerInicialSegundoApellido(alumno),
+				mejorRacha,
+				diasCompletadosTotales,
+				ultimaFecha,
+				esUsuarioActual);
+	}
+
+	private void aplicarDesambiguacionAliasDuplicadosGeneral(List<RankingGeneralParticipante> participantes) {
+		if (participantes == null || participantes.isEmpty()) {
+			return;
+		}
+
+		Map<String, Integer> conteoAliasBase = new HashMap<>();
+		for (RankingGeneralParticipante participante : participantes) {
+			String clave = normalizarClaveAlias(participante.getAliasBase());
+			conteoAliasBase.put(clave, conteoAliasBase.getOrDefault(clave, 0) + 1);
+		}
+
+		for (RankingGeneralParticipante participante : participantes) {
+			String clave = normalizarClaveAlias(participante.getAliasBase());
+			if (conteoAliasBase.getOrDefault(clave, 0) > 1) {
+				participante.aplicarInicialSegundoApellido();
+			}
+		}
+	}
+
+	private void asignarPosicionesDensasPorMejorRacha(List<RankingGeneralParticipante> ranking) {
+		int posicionActual = 0;
+		Integer mejorRachaPrevia = null;
+		for (RankingGeneralParticipante participante : ranking) {
+			if (mejorRachaPrevia == null || participante.getMejorRacha() != mejorRachaPrevia) {
+				posicionActual++;
+				mejorRachaPrevia = participante.getMejorRacha();
+			}
+			participante.setPosicion(posicionActual);
+		}
+	}
+
+	private Integer calcularDiasParaSuperarSiguienteGeneral(RankingGeneralParticipante participanteActual,
+			List<RankingGeneralParticipante> rankingCompleto) {
+		if (participanteActual == null || participanteActual.getPosicion() == null || participanteActual.getPosicion() <= 1) {
+			return null;
+		}
+
+		int mejorRachaActual = participanteActual.getMejorRacha();
+		Integer mejorRachaSuperior = rankingCompleto.stream()
+				.map(RankingGeneralParticipante::getMejorRacha)
+				.filter(racha -> racha > mejorRachaActual)
+				.min(Integer::compareTo)
+				.orElse(null);
+		if (mejorRachaSuperior == null) {
+			return null;
+		}
+		return (mejorRachaSuperior - mejorRachaActual) + 1;
+	}
+
 	private String construirAliasRanking(Alumno alumno) {
 		if (alumno == null) {
 			return "Alumno";
@@ -1150,6 +1353,113 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return java.time.Instant.ofEpochMilli(fecha.getTime())
 				.atZone(RETO_DIARIO_ZONE_ID)
 				.toLocalDate();
+	}
+
+	private static class HistoricoRetoDiarioStats {
+		private int mejorRacha;
+		private int rachaActual;
+		private int diasCompletadosTotales;
+		private LocalDate ultimaFechaCompletado;
+		private LocalDate fechaAnterior;
+
+		void registrarFechaCompletado(LocalDate fecha) {
+			if (fecha == null) {
+				return;
+			}
+
+			if (fechaAnterior != null) {
+				if (fecha.equals(fechaAnterior)) {
+					return;
+				}
+				rachaActual = fecha.equals(fechaAnterior.plusDays(1)) ? rachaActual + 1 : 1;
+			} else {
+				rachaActual = 1;
+			}
+
+			diasCompletadosTotales++;
+			mejorRacha = Math.max(mejorRacha, rachaActual);
+			ultimaFechaCompletado = fecha;
+			fechaAnterior = fecha;
+		}
+
+		int getMejorRacha() {
+			return mejorRacha;
+		}
+
+		int getDiasCompletadosTotales() {
+			return diasCompletadosTotales;
+		}
+
+		LocalDate getUltimaFechaCompletado() {
+			return ultimaFechaCompletado;
+		}
+	}
+
+	private static class RankingGeneralParticipante {
+		private final Long alumnoId;
+		private final String aliasBase;
+		private final String inicialSegundoApellido;
+		private String alias;
+		private final int mejorRacha;
+		private final int diasCompletadosTotales;
+		private final LocalDate ultimaFechaCompletado;
+		private final boolean esUsuarioActual;
+		private Integer posicion;
+
+		RankingGeneralParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int mejorRacha,
+				int diasCompletadosTotales, LocalDate ultimaFechaCompletado, boolean esUsuarioActual) {
+			this.alumnoId = alumnoId;
+			this.aliasBase = aliasBase;
+			this.inicialSegundoApellido = inicialSegundoApellido == null ? "" : inicialSegundoApellido;
+			this.alias = aliasBase;
+			this.mejorRacha = mejorRacha;
+			this.diasCompletadosTotales = diasCompletadosTotales;
+			this.ultimaFechaCompletado = ultimaFechaCompletado;
+			this.esUsuarioActual = esUsuarioActual;
+		}
+
+		public Long getAlumnoId() {
+			return alumnoId;
+		}
+
+		public String getAlias() {
+			return alias;
+		}
+
+		public String getAliasBase() {
+			return aliasBase;
+		}
+
+		public int getMejorRacha() {
+			return mejorRacha;
+		}
+
+		public int getDiasCompletadosTotales() {
+			return diasCompletadosTotales;
+		}
+
+		public LocalDate getUltimaFechaCompletado() {
+			return ultimaFechaCompletado;
+		}
+
+		public boolean getEsUsuarioActual() {
+			return esUsuarioActual;
+		}
+
+		public Integer getPosicion() {
+			return posicion;
+		}
+
+		public void setPosicion(Integer posicion) {
+			this.posicion = posicion;
+		}
+
+		public void aplicarInicialSegundoApellido() {
+			if (inicialSegundoApellido == null || inicialSegundoApellido.isBlank()) {
+				return;
+			}
+			this.alias = aliasBase + " " + inicialSegundoApellido + ".";
+		}
 	}
 
 	private static class RankingSemanaParticipante {
