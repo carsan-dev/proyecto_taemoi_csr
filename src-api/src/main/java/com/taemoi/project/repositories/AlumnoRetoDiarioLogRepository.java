@@ -26,11 +26,24 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 			@Param("semanaIso") Integer semanaIso,
 			@Param("alumnoIds") List<Long> alumnoIds);
 
+	@Query("SELECT l.alumno.id AS alumnoId, l.fechaCompletado AS fechaCompletado "
+			+ "FROM AlumnoRetoDiarioLog l "
+			+ "WHERE l.alumno.id IN :alumnoIds "
+			+ "ORDER BY l.alumno.id ASC, l.fechaCompletado ASC")
+	List<AlumnoRetoDiarioFechaProjection> obtenerFechasCompletadoHistorico(
+			@Param("alumnoIds") List<Long> alumnoIds);
+
 	interface AlumnoRetoDiarioScoreProjection {
 		Long getAlumnoId();
 
 		Long getDiasCompletados();
 
 		LocalDate getUltimaFechaCompletado();
+	}
+
+	interface AlumnoRetoDiarioFechaProjection {
+		Long getAlumnoId();
+
+		LocalDate getFechaCompletado();
 	}
 }

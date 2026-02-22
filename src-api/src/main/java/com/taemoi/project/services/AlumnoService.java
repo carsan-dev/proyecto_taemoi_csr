@@ -13,6 +13,7 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
+import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.entities.Alumno;
@@ -114,6 +115,8 @@ public interface AlumnoService {
 	RetoDiarioEstadoDTO completarRetoDiario(Long alumnoId);
 
 	RetoDiarioRankingSemanalResponse obtenerRankingSemanalRetoDiario(Long alumnoId, Deporte deporte, Integer limit);
+
+	RetoDiarioRankingGeneralResponse obtenerRankingGeneralRetoDiario(Long alumnoId, Deporte deporte, Integer limit);
 
 	// ==================== MÉTODOS MULTI-DEPORTE ====================
 
