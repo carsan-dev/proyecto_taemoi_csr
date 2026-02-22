@@ -785,6 +785,36 @@ $competicion: #7b1fa2;
   color: rgba(255, 255, 255, 0.72);
 }
 
+.challenge-ranking-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  padding: 0.16rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.challenge-ranking-tab {
+  border: 0;
+  border-radius: 999px;
+  min-height: 24px;
+  padding: 0.18rem 0.54rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.86);
+  background: transparent;
+  cursor: pointer;
+  transition: $transition;
+
+  &.is-active {
+    color: #10304d;
+    background: linear-gradient(135deg, #dff2ff, #a6d8ff);
+    box-shadow: 0 3px 8px rgba(22, 82, 138, 0.25);
+  }
+}
+
 .challenge-ranking-chips {
   display: flex;
   flex-wrap: wrap;

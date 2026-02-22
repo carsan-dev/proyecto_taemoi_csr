@@ -247,10 +247,30 @@
             <div class="challenge-side">
               <div class="challenge-ranking">
                 <div class="challenge-ranking-head">
-                  <span class="challenge-ranking-title">Ranking semanal</span>
-                  @if (rankingSemanal) {
+                  <span class="challenge-ranking-title">Ranking reto diario</span>
+                  @if (tipoRankingSeleccionado === 'SEMANAL' && rankingSemanal) {
                   <span class="challenge-ranking-meta">Semana {{ rankingSemanal.semanaIso }} &middot; {{ rankingSemanal.totalParticipantes }} participantes</span>
+                  } @else if (tipoRankingSeleccionado === 'GENERAL' && rankingGeneral) {
+                  <span class="challenge-ranking-meta">Hist&oacute;rico &middot; {{ rankingGeneral.totalParticipantes }} participantes</span>
                   }
+                </div>
+                <div class="challenge-ranking-tabs">
+                  <button
+                    type="button"
+                    class="challenge-ranking-tab"
+                    [class.is-active]="tipoRankingSeleccionado === 'SEMANAL'"
+                    (click)="onSeleccionarTipoRanking('SEMANAL')"
+                  >
+                    Semanal
+                  </button>
+                  <button
+                    type="button"
+                    class="challenge-ranking-tab"
+                    [class.is-active]="tipoRankingSeleccionado === 'GENERAL'"
+                    (click)="onSeleccionarTipoRanking('GENERAL')"
+                  >
+                    General
+                  </button>
                 </div>
 
                 @if (deportesRankingDisponibles.length > 0) {
@@ -268,8 +288,9 @@
                 </div>
                 }
 
+                @if (tipoRankingSeleccionado === 'SEMANAL') {
                 @if (cargandoRankingSemanal) {
-                <p class="challenge-ranking-state">Cargando ranking...</p>
+                <p class="challenge-ranking-state">Cargando ranking semanal...</p>
                 } @else if (errorRankingSemanal) {
                 <p class="challenge-ranking-state is-error">{{ errorRankingSemanal }}</p>
                 } @else if (rankingSemanal) {
@@ -321,6 +342,64 @@
                 }
                 } @else if (deportesRankingDisponibles.length > 0) {
                 <p class="challenge-ranking-state">Selecciona un deporte para ver el ranking.</p>
+                } @else {
+                <p class="challenge-ranking-state">No hay deportes activos para mostrar ranking.</p>
+                }
+                } @else if (deportesRankingDisponibles.length > 0) {
+                @if (cargandoRankingGeneral) {
+                <p class="challenge-ranking-state">Cargando ranking general...</p>
+                } @else if (errorRankingGeneral) {
+                <p class="challenge-ranking-state is-error">{{ errorRankingGeneral }}</p>
+                } @else if (rankingGeneral) {
+                <div class="challenge-ranking-list">
+                  @if (rankingGeneral.top.length > 0) {
+                  @for (item of rankingGeneral.top; track item.posicion + '-' + item.alias; let idx = $index) {
+                  <div
+                    class="challenge-ranking-row"
+                    [class.is-me]="item.esUsuarioActual"
+                    [class.is-gold]="idx === 0"
+                    [class.is-silver]="idx === 1"
+                    [class.is-bronze]="idx === 2"
+                  >
+                    @if (idx === 0) {
+                    <span class="rank-medal is-gold">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Oro
+                    </span>
+                    } @else if (idx === 1) {
+                    <span class="rank-medal is-silver">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Plata
+                    </span>
+                    } @else if (idx === 2) {
+                    <span class="rank-medal is-bronze">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                      Bronce
+                    </span>
+                    } @else {
+                    <span class="rank-pos">#{{ idx + 1 }}</span>
+                    }
+                    <span class="rank-alias">{{ item.alias }}</span>
+                    <span class="rank-days">{{ item.mejorRacha }} d</span>
+                  </div>
+                  }
+                  } @else {
+                  <p class="challenge-ranking-state">Todav&iacute;a no hay registros hist&oacute;ricos.</p>
+                  }
+                </div>
+
+                @if (rankingGeneral.miPosicion) {
+                <div class="challenge-my-rank">
+                  <span class="my-rank-title">Tu posici&oacute;n</span>
+                  <span class="my-rank-value">#{{ rankingGeneral.miPosicion.posicion }} &middot; {{ rankingGeneral.miPosicion.alias }} &middot; {{ rankingGeneral.miPosicion.mejorRacha }} d&iacute;a(s) de racha m&aacute;x. &middot; {{ rankingGeneral.miPosicion.diasCompletadosTotales }} completados</span>
+                  @if (getTextoDiasParaSuperarSiguiente()) {
+                  <span class="my-rank-hint">{{ getTextoDiasParaSuperarSiguiente() }}</span>
+                  }
+                </div>
+                }
+                } @else {
+                <p class="challenge-ranking-state">Selecciona un deporte para ver el ranking.</p>
+                }
                 } @else {
                 <p class="challenge-ranking-state">No hay deportes activos para mostrar ranking.</p>
                 }
