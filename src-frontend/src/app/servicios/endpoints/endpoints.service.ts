@@ -16,6 +16,7 @@ import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { ConvocatoriaDTO } from '../../interfaces/convocatoria-dto';
 import { Documento } from '../../interfaces/documento';
 import { RetoDiarioEstado } from '../../interfaces/reto-diario-estado';
+import { RetoDiarioRankingGeneral } from '../../interfaces/reto-diario-ranking-general';
 import { RetoDiarioRankingSemanal } from '../../interfaces/reto-diario-ranking-semanal';
 import { MaterialExamenDTO } from '../../interfaces/material-examen';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
@@ -1845,6 +1846,24 @@ export class EndpointsService {
 
     return this.http
       .get<RetoDiarioRankingSemanal>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario/ranking-semanal`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerRankingRetoDiarioGeneral(
+    alumnoId: number,
+    deporte: string,
+    limit: number = 5
+  ): Observable<RetoDiarioRankingGeneral> {
+    const limitNormalizado = Math.max(1, Math.min(10, Math.floor(limit || 5)));
+    const params = new HttpParams()
+      .set('deporte', deporte)
+      .set('limit', limitNormalizado.toString());
+
+    return this.http
+      .get<RetoDiarioRankingGeneral>(`${this.urlBase}/alumnos/${alumnoId}/reto-diario/ranking-general`, {
         params,
         withCredentials: true,
       })
