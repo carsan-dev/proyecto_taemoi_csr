@@ -303,14 +303,18 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       : [];
 
     if (documentos.length > 0) {
-      return documentos;
+      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.gradoActual));
     }
 
     if (!material?.temario?.downloadUrl) {
       return [];
     }
 
-    const fileName = material.temario.fileName || 'temario.pdf';
+    const fileName = this.construirNombreTemarioParaGrado(
+      material?.gradoActual,
+      material.temario.fileName,
+      'application/pdf'
+    );
     const openUrl = material.temario.downloadUrl;
     const downloadUrl = this.agregarDownloadParam(openUrl);
 
@@ -318,7 +322,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       {
         id: fileName,
         fileName,
-        title: this.generarTituloDesdeArchivo(fileName),
+        title: this.construirTituloTemarioParaGrado(material?.gradoActual),
         order: 0,
         mimeType: 'application/pdf',
         previewable: true,
@@ -392,6 +396,108 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       default:
         return null;
     }
+  }
+
+  private normalizarNombreTemarioDocumento(
+    documento: MaterialExamenDocumentoDTO,
+    gradoActual: string | null | undefined
+  ): MaterialExamenDocumentoDTO {
+    if (!this.esDocumentoPrincipal(documento)) {
+      return documento;
+    }
+
+    const fileName = this.construirNombreTemarioParaGrado(
+      gradoActual,
+      documento.fileName,
+      documento.mimeType
+    );
+
+    return {
+      ...documento,
+      fileName,
+      title: this.construirTituloTemarioParaGrado(gradoActual),
+    };
+  }
+
+  private construirNombreTemarioParaGrado(
+    gradoActual: string | null | undefined,
+    fileNameOriginal: string | null | undefined,
+    mimeType: string | null | undefined
+  ): string {
+    const extension =
+      this.extraerExtensionDesdeNombre(fileNameOriginal) ||
+      this.obtenerExtensionDesdeMime(mimeType) ||
+      'pdf';
+    const titulo = this.construirTituloTemarioParaGrado(gradoActual);
+    const baseSanitizada = titulo
+      .replace(/\s*\/\s*/g, '-')
+      .replace(/[\\:*?"<>|]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `${baseSanitizada}.${extension}`;
+  }
+
+  private construirTituloTemarioParaGrado(gradoActual: string | null | undefined): string {
+    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(gradoActual);
+    if (!etiquetaCinturon) {
+      return 'Temario';
+    }
+    return `Temario para cintur\u00F3n ${etiquetaCinturon}`;
+  }
+
+  private obtenerEtiquetaCinturonObjetivo(gradoActual: string | null | undefined): string | null {
+    const gradoNormalizado = (gradoActual || '').toUpperCase().trim();
+    if (!gradoNormalizado) {
+      return null;
+    }
+
+    const descripcion = this.descripcionPreparacionPorGrado[gradoNormalizado];
+    if (!descripcion) {
+      return null;
+    }
+
+    const prefijo = 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ';
+    if (!descripcion.startsWith(prefijo)) {
+      return null;
+    }
+
+    return this.formatearEtiquetaCinturon(descripcion.substring(prefijo.length));
+  }
+
+  private formatearEtiquetaCinturon(etiquetaRaw: string): string {
+    const normalizada = (etiquetaRaw || '')
+      .replace(/\s*\/\s*/g, '/')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+    let resultado = '';
+    let capitalizar = true;
+    for (const caracter of normalizada) {
+      const esLetra = caracter.toLowerCase() !== caracter.toUpperCase();
+      if (esLetra) {
+        resultado += capitalizar ? caracter.toUpperCase() : caracter;
+        capitalizar = false;
+        continue;
+      }
+
+      resultado += caracter;
+      capitalizar = caracter === ' ' || caracter === '/' || caracter === '-';
+    }
+
+    return resultado;
+  }
+
+  private extraerExtensionDesdeNombre(fileName: string | null | undefined): string | null {
+    const nombre = (fileName || '').trim();
+    if (!nombre) {
+      return null;
+    }
+    const indice = nombre.lastIndexOf('.');
+    if (indice < 0 || indice >= nombre.length - 1) {
+      return null;
+    }
+    return nombre.substring(indice + 1).toLowerCase();
   }
 
   private generarTituloDesdeArchivo(fileName: string): string {
