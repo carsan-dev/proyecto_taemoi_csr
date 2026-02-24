@@ -89,7 +89,7 @@ export class CrearAlumnoComponent implements OnInit {
       fechaNacimiento: ['', Validators.required],
       nif: [
         '',
-        [Validators.required, Validators.pattern('^[0-9]{8}[A-Za-z]$')],
+        [Validators.pattern('^[0-9]{8}[A-Za-z]$')],
       ],
       direccion: ['', Validators.required],
       telefono: [
@@ -520,6 +520,9 @@ export class CrearAlumnoComponent implements OnInit {
     }
 
     const alumnoData = this.alumnoData.getRawValue();
+    const nifNormalizado =
+      typeof alumnoData.nif === 'string' ? alumnoData.nif.trim().toUpperCase() : '';
+    alumnoData.nif = nifNormalizado === '' ? null : nifNormalizado;
 
     // For each sport, set fechaAltaInicial to fechaAlta if not provided
     if (alumnoData.deportesInicial) {

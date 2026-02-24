@@ -94,16 +94,12 @@
                     <label for="nif">
                       <i class="bi bi-card-text"></i>
                       NIF / DNI
-                      <span class="required">*</span>
                     </label>
-                    <input type="text" class="admin-form-control" id="nif" name="nif" formControlName="nif" required
-                      placeholder="12345678A" aria-label="NIF o DNI" aria-required="true" />
+                    <input type="text" class="admin-form-control" id="nif" name="nif" formControlName="nif"
+                      placeholder="12345678A (opcional)" aria-label="NIF o DNI" />
                     @if (alumnoData.get('nif')?.errors && alumnoData.get('nif')?.touched) {
                     <div class="invalid-feedback">
                       <i class="bi bi-exclamation-circle"></i>
-                      @if (alumnoData.get('nif')?.errors?.['required']) {
-                      <span>El DNI es obligatorio</span>
-                      }
                       @if (alumnoData.get('nif')?.errors?.['pattern']) {
                       <div>Formato inválido (8 números y una
                         letra)</div>
