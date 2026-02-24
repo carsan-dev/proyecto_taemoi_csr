@@ -12,6 +12,7 @@ import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
+import com.taemoi.project.utils.NifUtils;
 
 /**
  * DTO que representa un alumno con todos sus deportes
@@ -77,7 +78,7 @@ public class AlumnoConDeportesDTO {
 		dto.setApellidos(alumno.getApellidos());
 		dto.setNumeroExpediente(alumno.getNumeroExpediente());
 		dto.setFechaNacimiento(alumno.getFechaNacimiento());
-		dto.setNif(alumno.getNif());
+		dto.setNif(NifUtils.normalizeForStorage(alumno.getNif()));
 		dto.setDireccion(alumno.getDireccion());
 		dto.setObservaciones(alumno.getObservaciones());
 		dto.setTelefono(alumno.getTelefono());

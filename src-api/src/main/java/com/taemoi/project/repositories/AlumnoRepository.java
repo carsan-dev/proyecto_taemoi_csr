@@ -41,6 +41,10 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	 */
 	Optional<Alumno> findByNif(String nif);
 
+	boolean existsByNif(String nif);
+
+	boolean existsByNifAndIdNot(String nif, Long id);
+
 	/**
 	 * Busca una página de alumnos cuyo nombre contenga la cadena especificada,
 	 * ignorando mayúsculas y minúsculas.
