@@ -240,7 +240,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         fechaNacimiento: ['', Validators.required],
         nif: [
           '',
-          [Validators.required, Validators.pattern(String.raw`^\d{8}[A-Za-z]$`)],
+          [Validators.pattern(String.raw`^\d{8}[A-Za-z]$`)],
         ],
         email: ['', [Validators.required, Validators.email]],
         telefono: [
@@ -1011,7 +1011,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   actualizarAlumno(id: number) {
     const formData = new FormData();
-    formData.append('alumnoEditado', JSON.stringify(this.alumnoForm.value));
+    const alumnoEditado = { ...this.alumnoForm.value };
+    const nifNormalizado =
+      typeof alumnoEditado.nif === 'string' ? alumnoEditado.nif.trim().toUpperCase() : alumnoEditado.nif;
+    alumnoEditado.nif = nifNormalizado === '' ? null : nifNormalizado;
+    formData.append('alumnoEditado', JSON.stringify(alumnoEditado));
 
     // Si el usuario ha eliminado la imagen (o nunca la tuvo), gestionamos el file 'null'
     if (this.alumnoEditado.fotoAlumno === null) {
@@ -4879,7 +4883,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   private validateNif(value: any): string | null {
     if (this.isBlank(value)) {
-      return 'El DNI es obligatorio';
+      return null;
     }
     const nifValue = String(value).trim();
     if (!/^\d{8}[A-Za-z]$/.test(nifValue)) {
@@ -4974,6 +4978,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Format fechaBaja - use null if empty string
     const fechaBajaValue = this.pendingBasicInfoChanges.fechaBaja ?? (this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null);
     const fechaBaja = fechaBajaValue === '' ? null : fechaBajaValue;
+    const nifRawValue = this.pendingBasicInfoChanges.nif ?? this.alumno.nif;
+    const nifNormalizado =
+      typeof nifRawValue === 'string' ? nifRawValue.trim().toUpperCase() : nifRawValue;
+    const nif = nifNormalizado === '' ? null : nifNormalizado;
 
     // Merge pending changes with current alumno data - include ALL required fields for backend validation
     const updatedData = {
@@ -4982,7 +4990,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       apellidos: this.pendingBasicInfoChanges.apellidos ?? this.alumno.apellidos,
       direccion: this.pendingBasicInfoChanges.direccion ?? this.alumno.direccion,
       fechaNacimiento: this.pendingBasicInfoChanges.fechaNacimiento ?? formatDate(this.alumno.fechaNacimiento),
-      nif: this.pendingBasicInfoChanges.nif ?? this.alumno.nif,
+      nif: nif,
       email: this.pendingBasicInfoChanges.email ?? this.alumno.email,
       telefono: telefonoInt,
       telefono2: telefono2Int,
