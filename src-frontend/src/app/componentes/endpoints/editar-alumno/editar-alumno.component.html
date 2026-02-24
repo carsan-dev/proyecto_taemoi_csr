@@ -1254,14 +1254,13 @@
                   <label for="nif">
                     <i class="bi bi-card-text"></i>
                     DNI
-                    @if (editingBasicInfo) {<span class="required">*</span>}
                   </label>
                   @if (editingBasicInfo) {
                     <input type="text" id="nif" class="admin-form-control"
                            [class.is-invalid]="hasBasicInfoError('nif')"
                            [value]="getDisplayedBasicInfo('nif')"
                            (input)="onBasicInfoChange('nif', $event)"
-                           placeholder="12345678A" />
+                           placeholder="12345678A (opcional)" />
                     @if (hasBasicInfoError('nif')) {
                       <div class="invalid-feedback">
                         <i class="bi bi-exclamation-circle"></i>
