@@ -53,7 +53,7 @@ public class Alumno {
 	@Temporal(TemporalType.DATE)
 	private Date fechaNacimiento;
 
-	@NotBlank(message = "El NIF no puede estar en blanco")
+	@Column(length = 9, nullable = true)
 	@Size(min = 9, max = 9, message = "El NIF debe tener 9 caracteres")
 	private String nif;
 
