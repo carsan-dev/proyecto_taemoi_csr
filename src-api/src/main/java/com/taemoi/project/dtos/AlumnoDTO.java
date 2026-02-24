@@ -13,6 +13,7 @@ import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.NifUtils;
 
 public class AlumnoDTO {
 	private final Long id;
@@ -444,7 +445,7 @@ public class AlumnoDTO {
 		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : alumno.getAptoParaExamen();
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
-				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
+				alumno.getNumeroExpediente(), NifUtils.normalizeForStorage(alumno.getNif()), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
 				alumno.getObservaciones(), cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
 				alumno.getAutorizacionWeb(),
@@ -544,7 +545,7 @@ public class AlumnoDTO {
 		Boolean aptoParaExamen = deporteSeleccionado.getAptoParaExamen();
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
-				alumno.getNumeroExpediente(), alumno.getNif(), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
+				alumno.getNumeroExpediente(), NifUtils.normalizeForStorage(alumno.getNif()), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
 				alumno.getObservaciones(), cuantiaTarifa, tipoTarifa, rolFamiliar, grupoFamiliar,
 				alumno.getFechaAlta(), alumno.getFechaAltaInicial(), antiguedad, alumno.getFechaBaja(), alumno.getActivo(),
 				alumno.getAutorizacionWeb(),

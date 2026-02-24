@@ -80,6 +80,7 @@ import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
+import com.taemoi.project.utils.NifUtils;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -327,10 +328,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
+		String nifNormalizado = NifUtils.normalizeForStorage(nuevoAlumnoDTO.getNif());
+
 		// Verificar si el Alumno ya existe
-		Optional<Alumno> alumnoExistente = alumnoRepository.findByNif(nuevoAlumnoDTO.getNif());
-		if (alumnoExistente.isPresent()) {
-			throw new AlumnoDuplicadoException("El alumno con NIF " + nuevoAlumnoDTO.getNif() + " ya existe.");
+		if (nifNormalizado != null && alumnoRepository.existsByNif(nifNormalizado)) {
+			throw new AlumnoDuplicadoException("El alumno con NIF " + nifNormalizado + " ya existe.");
 		}
 
 		// Crear nuevo Alumno
@@ -338,7 +340,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
 		nuevoAlumno.setApellidos(nuevoAlumnoDTO.getApellidos());
 		nuevoAlumno.setFechaNacimiento(nuevoAlumnoDTO.getFechaNacimiento());
-		nuevoAlumno.setNif(nuevoAlumnoDTO.getNif());
+		nuevoAlumno.setNif(nifNormalizado);
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 		String normalizedEmail = EmailUtils.normalizeEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setEmail(normalizedEmail);
@@ -566,7 +568,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			// Actualizar otros campos del alumno
-			alumnoExistente.setNif(alumnoActualizado.getNif());
+			String nifNormalizado = NifUtils.normalizeForStorage(alumnoActualizado.getNif());
+			if (nifNormalizado != null && alumnoRepository.existsByNifAndIdNot(nifNormalizado, id)) {
+				throw new AlumnoDuplicadoException("El alumno con NIF " + nifNormalizado + " ya existe.");
+			}
+			alumnoExistente.setNif(nifNormalizado);
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
 			Usuario usuario = alumnoExistente.getUsuario();
