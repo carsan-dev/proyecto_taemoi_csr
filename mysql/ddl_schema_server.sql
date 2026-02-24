@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno` (
   `fecha_licencia` DATE NULL DEFAULT NULL,
   `fecha_nacimiento` DATE NOT NULL,
   `fecha_peso` DATE NULL DEFAULT NULL,
-  `nif` VARCHAR(9) NOT NULL,
+  `nif` VARCHAR(9) NULL DEFAULT NULL,
   `nombre` VARCHAR(255) NOT NULL,
   `numero_expediente` INT NOT NULL,
   `numero_licencia` INT NULL DEFAULT NULL,
