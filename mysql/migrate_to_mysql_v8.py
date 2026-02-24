@@ -597,9 +597,9 @@ def write_alumnos(f, schema: str, rows: List[Dict[str, Any]], stats: Dict):
         if apellidos == "NULL":
             apellidos = "'Sin Apellidos'"
 
-        # NIF (required, 9 chars)
+        # NIF (optional, 9 chars)
         nif_clean = clean_nif(r.get("DNI") or r.get("NIF"))
-        nif = sql_str_or_null(nif_clean) if nif_clean else "'00000000Z'"
+        nif = sql_str_or_null(nif_clean)
 
         # Direccion (required)
         direccion = sql_str_or_null(r.get("Direccion"))
