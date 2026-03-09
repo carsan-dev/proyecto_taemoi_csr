@@ -118,6 +118,10 @@
 
 .filtro-checkbox {
   grid-column: span 2;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: #f8fafc;
 }
 
 .checkbox-label {
@@ -130,8 +134,37 @@
 }
 
 .checkbox-label input {
-  width: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid #0f766e;
+  border-radius: 4px;
+  background: #ffffff;
   margin: 0;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.checkbox-label input::before {
+  content: '';
+  width: 0.62rem;
+  height: 0.62rem;
+  transform: scale(0);
+  transition: transform 0.12s ease-in-out;
+  box-shadow: inset 1em 1em #0f766e;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 82% 0, 43% 62%);
+}
+
+.checkbox-label input:checked::before {
+  transform: scale(1);
+}
+
+.checkbox-label input:focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
 }
 
 .filtro-help {
@@ -211,11 +244,14 @@ th {
 
 .resumen-cell {
   min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .ruido-chip {
   display: inline-block;
-  margin-top: 0.3rem;
   border-radius: 999px;
   padding: 0.14rem 0.5rem;
   font-size: 0.72rem;
