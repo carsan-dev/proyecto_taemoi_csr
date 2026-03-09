@@ -48,6 +48,7 @@ export class AuditoriaSistemaComponent implements OnInit, OnDestroy {
   filtroUsuario: string = '';
   filtroEndpoint: string = '';
   filtroTexto: string = '';
+  incluirRuido: boolean = false;
 
   cargando = true;
   cargandoDetalle = false;
@@ -103,8 +104,14 @@ export class AuditoriaSistemaComponent implements OnInit, OnDestroy {
     this.filtroUsuario = '';
     this.filtroEndpoint = '';
     this.filtroTexto = '';
+    this.incluirRuido = false;
     this.paginaActual = 1;
     this.detalleSeleccionado = null;
+    this.cargarEventos();
+  }
+
+  alCambiarIncluirRuido(): void {
+    this.paginaActual = 1;
     this.cargarEventos();
   }
 
@@ -195,6 +202,7 @@ export class AuditoriaSistemaComponent implements OnInit, OnDestroy {
           usuario: this.filtroUsuario || null,
           endpoint: this.filtroEndpoint || null,
           texto: this.filtroTexto || null,
+          incluirRuido: this.incluirRuido,
         },
         this.paginaActual,
         this.tamanoPagina
