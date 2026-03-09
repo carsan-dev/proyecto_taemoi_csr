@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +34,52 @@ import com.taemoi.project.repositories.AuditoriaEventoRepository;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.UsuarioService;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+
 @Service
 public class AuditoriaServiceImpl implements AuditoriaService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AuditoriaServiceImpl.class);
 	private static final int DEFAULT_PAGE_SIZE = 25;
 	private static final int MAX_PAGE_SIZE = 200;
+	private static final Set<String> MODULOS_API_CONOCIDOS = Set.of(
+			"admin",
+			"auth",
+			"alumnos",
+			"eventos",
+			"grados",
+			"grupos",
+			"informes",
+			"mail",
+			"pagos",
+			"productos",
+			"productos-alumno",
+			"tesoreria",
+			"turnos",
+			"convocatorias");
+	private static final Set<Integer> ESTADOS_HTTP_RUIDO_ESCANER = Set.of(401, 403, 404, 405, 415);
+	private static final List<String> FRAGMENTOS_ENDPOINT_RUIDO_ESCANER = List.of(
+			"/upload",
+			"/files",
+			"/documents",
+			"/attachments",
+			"/multipart",
+			"/bulk",
+			"/batch",
+			"/blob",
+			"/storage",
+			"/assets",
+			"/resources",
+			"/catalog",
+			"/content",
+			"/import",
+			"/drive",
+			"/s3",
+			"/v1/",
+			"/v2/");
 
 	private final AuditoriaEventoRepository auditoriaEventoRepository;
 	private final UsuarioService usuarioService;
@@ -97,7 +138,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			String endpoint,
 			String texto,
 			Integer page,
-			Integer size) {
+			Integer size,
+			Boolean incluirRuido) {
 		Specification<AuditoriaEvento> spec = Specification.where(null);
 		spec = spec.and(filtroFechaDesde(desde))
 				.and(filtroFechaHasta(hasta))
@@ -107,6 +149,9 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 				.and(filtroUsuario(usuario))
 				.and(filtroEndpoint(endpoint))
 				.and(filtroTextoLibre(texto));
+		if (!Boolean.TRUE.equals(incluirRuido)) {
+			spec = spec.and(filtroExcluirRuidoEscaner());
+		}
 
 		int pageNumber = page == null || page < 1 ? 1 : page;
 		int pageSize = size == null ? DEFAULT_PAGE_SIZE : Math.max(1, Math.min(size, MAX_PAGE_SIZE));
@@ -153,6 +198,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 		dto.setUsuarioNombre(evento.getUsuarioNombre());
 		dto.setResumen(evento.getResumen());
 		dto.setPayloadTruncado(evento.getPayloadTruncado());
+		dto.setRuidoEscaner(esRuidoEscaner(evento));
 		return dto;
 	}
 
@@ -175,6 +221,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 		dto.setPayloadJson(evento.getPayloadJson());
 		dto.setPayloadTruncado(evento.getPayloadTruncado());
 		dto.setResumen(evento.getResumen());
+		dto.setRuidoEscaner(esRuidoEscaner(evento));
 		return dto;
 	}
 
@@ -344,5 +391,75 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 				cb.like(cb.upper(cb.coalesce(root.get("resumen"), "")), valor),
 				cb.like(cb.upper(cb.coalesce(root.get("payloadJson"), "")), valor),
 				cb.like(cb.upper(cb.coalesce(root.get("queryParamsJson"), "")), valor));
+	}
+
+	private Specification<AuditoriaEvento> filtroExcluirRuidoEscaner() {
+		return (root, query, cb) -> cb.not(construirPredicadoRuidoEscaner(root, cb));
+	}
+
+	private Predicate construirPredicadoRuidoEscaner(Root<AuditoriaEvento> root, CriteriaBuilder cb) {
+		Expression<String> endpointLower = cb.lower(cb.coalesce(root.get("endpoint").as(String.class), ""));
+		Expression<String> moduloLower = cb.lower(cb.coalesce(root.get("modulo").as(String.class), ""));
+		Expression<String> usuarioEmailLimpio = cb.trim(cb.coalesce(root.get("usuarioEmail").as(String.class), ""));
+
+		Predicate endpointApi = cb.like(endpointLower, "/api/%");
+		Predicate endpointSospechoso = cb.disjunction();
+		for (String fragmento : FRAGMENTOS_ENDPOINT_RUIDO_ESCANER) {
+			endpointSospechoso = cb.or(endpointSospechoso, cb.like(endpointLower, "%" + fragmento + "%"));
+		}
+
+		Predicate estadoSospechoso = root.get("estadoHttp").in(ESTADOS_HTTP_RUIDO_ESCANER);
+		Predicate accionEscritura = root.get("accion").in(
+				AuditoriaAccion.CREATE,
+				AuditoriaAccion.UPDATE,
+				AuditoriaAccion.DELETE);
+		Predicate anonimo = cb.and(
+				cb.isNull(root.get("usuarioId")),
+				cb.equal(cb.length(usuarioEmailLimpio), 0));
+		Predicate moduloDesconocido = cb.not(moduloLower.in(MODULOS_API_CONOCIDOS));
+
+		return cb.and(
+				endpointApi,
+				endpointSospechoso,
+				estadoSospechoso,
+				accionEscritura,
+				anonimo,
+				moduloDesconocido);
+	}
+
+	private boolean esRuidoEscaner(AuditoriaEvento evento) {
+		if (evento == null) {
+			return false;
+		}
+		String endpoint = normalizarTexto(evento.getEndpoint());
+		if (!endpoint.startsWith("/api/")) {
+			return false;
+		}
+		if (!esAccionEscritura(evento.getAccion())) {
+			return false;
+		}
+		if (evento.getEstadoHttp() == null || !ESTADOS_HTTP_RUIDO_ESCANER.contains(evento.getEstadoHttp())) {
+			return false;
+		}
+		boolean anonimo = evento.getUsuarioId() == null
+				&& (evento.getUsuarioEmail() == null || evento.getUsuarioEmail().trim().isEmpty());
+		if (!anonimo) {
+			return false;
+		}
+		String modulo = normalizarTexto(evento.getModulo());
+		if (MODULOS_API_CONOCIDOS.contains(modulo)) {
+			return false;
+		}
+		return FRAGMENTOS_ENDPOINT_RUIDO_ESCANER.stream().anyMatch(endpoint::contains);
+	}
+
+	private boolean esAccionEscritura(AuditoriaAccion accion) {
+		return accion == AuditoriaAccion.CREATE
+				|| accion == AuditoriaAccion.UPDATE
+				|| accion == AuditoriaAccion.DELETE;
+	}
+
+	private String normalizarTexto(String texto) {
+		return texto == null ? "" : texto.trim().toLowerCase(Locale.ROOT);
 	}
 }
