@@ -12,4 +12,5 @@ export interface AuditoriaEvento {
   usuarioNombre: string | null;
   resumen: string | null;
   payloadTruncado: boolean;
+  ruidoEscaner?: boolean | null;
 }

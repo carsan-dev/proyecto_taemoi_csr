@@ -116,6 +116,29 @@
   grid-column: span 2;
 }
 
+.filtro-checkbox {
+  grid-column: span 2;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: auto;
+  margin: 0;
+}
+
+.filtro-help {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
 .filtros-acciones {
   display: flex;
   gap: 0.6rem;
@@ -184,6 +207,22 @@ th {
 .endpoint-cell {
   font-family: Consolas, 'Courier New', monospace;
   font-size: 0.83rem;
+}
+
+.resumen-cell {
+  min-width: 190px;
+}
+
+.ruido-chip {
+  display: inline-block;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .estado-error {
@@ -283,6 +322,10 @@ th {
     grid-column: span 2;
   }
 
+  .filtro-checkbox {
+    grid-column: span 2;
+  }
+
   .detalle-grid {
     grid-template-columns: 1fr;
   }
@@ -305,6 +348,10 @@ th {
   }
 
   .filtro-texto {
+    grid-column: span 1;
+  }
+
+  .filtro-checkbox {
     grid-column: span 1;
   }
 }

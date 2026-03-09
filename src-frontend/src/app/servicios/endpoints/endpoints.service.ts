@@ -941,6 +941,7 @@ export class EndpointsService {
       usuario?: string | null;
       endpoint?: string | null;
       texto?: string | null;
+      incluirRuido?: boolean | null;
     },
     page: number = 1,
     size: number = 25
@@ -972,6 +973,9 @@ export class EndpointsService {
     }
     if (filtros.texto) {
       params = params.set('texto', filtros.texto.trim());
+    }
+    if (filtros.incluirRuido !== undefined && filtros.incluirRuido !== null) {
+      params = params.set('incluirRuido', filtros.incluirRuido.toString());
     }
 
     return this.http

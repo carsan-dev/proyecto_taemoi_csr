@@ -16,4 +16,5 @@ export interface AuditoriaEventoDetalle {
   payloadJson: string | null;
   payloadTruncado: boolean;
   resumen: string | null;
+  ruidoEscaner?: boolean | null;
 }
