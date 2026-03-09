@@ -39,7 +39,8 @@ public class AuditoriaController {
 			@RequestParam(required = false) String endpoint,
 			@RequestParam(required = false) String texto,
 			@RequestParam(defaultValue = "1") Integer page,
-			@RequestParam(defaultValue = "25") Integer size) {
+			@RequestParam(defaultValue = "25") Integer size,
+			@RequestParam(defaultValue = "false") Boolean incluirRuido) {
 		return ResponseEntity.ok(auditoriaService.obtenerEventos(
 				desde,
 				hasta,
@@ -50,7 +51,8 @@ public class AuditoriaController {
 				endpoint,
 				texto,
 				page,
-				size));
+				size,
+				incluirRuido));
 	}
 
 	@GetMapping("/eventos/{id}")

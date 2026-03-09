@@ -32,7 +32,8 @@ public interface AuditoriaService {
 			String endpoint,
 			String texto,
 			Integer page,
-			Integer size);
+			Integer size,
+			Boolean incluirRuido);
 
 	AuditoriaEventoDetalleDTO obtenerEventoPorId(Long id);
 
