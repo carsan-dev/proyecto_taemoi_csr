@@ -17,6 +17,7 @@ public class AuditoriaEventoDTO {
 	private String usuarioNombre;
 	private String resumen;
 	private Boolean payloadTruncado;
+	private Boolean ruidoEscaner;
 
 	public Long getId() {
 		return id;
@@ -120,5 +121,13 @@ public class AuditoriaEventoDTO {
 
 	public void setPayloadTruncado(Boolean payloadTruncado) {
 		this.payloadTruncado = payloadTruncado;
+	}
+
+	public Boolean getRuidoEscaner() {
+		return ruidoEscaner;
+	}
+
+	public void setRuidoEscaner(Boolean ruidoEscaner) {
+		this.ruidoEscaner = ruidoEscaner;
 	}
 }
