@@ -81,7 +81,7 @@ describe('AuditoriaSistemaComponent', () => {
   it('carga eventos y modulos al iniciar', () => {
     expect(endpointsSpy.obtenerAuditoriaModulos).toHaveBeenCalled();
     expect(endpointsSpy.obtenerAuditoriaEventos).toHaveBeenCalledWith(
-      jasmine.objectContaining({ resultado: 'EXITO' }),
+      jasmine.objectContaining({ resultado: 'EXITO', incluirRuido: false }),
       1,
       25
     );
@@ -92,7 +92,7 @@ describe('AuditoriaSistemaComponent', () => {
     component.cambiarPestanaResultado('ERRORES');
 
     expect(endpointsSpy.obtenerAuditoriaEventos).toHaveBeenCalledWith(
-      jasmine.objectContaining({ resultado: 'ERROR' }),
+      jasmine.objectContaining({ resultado: 'ERROR', incluirRuido: false }),
       1,
       25
     );

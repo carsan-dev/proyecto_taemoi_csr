@@ -73,6 +73,18 @@
         <label for="filtroTexto">Texto libre</label>
         <input id="filtroTexto" type="text" placeholder="Resumen o payload" [(ngModel)]="filtroTexto" />
       </div>
+
+      <div class="filtro filtro-checkbox">
+        <label for="filtroIncluirRuido" class="checkbox-label">
+          <input
+            id="filtroIncluirRuido"
+            type="checkbox"
+            [(ngModel)]="incluirRuido"
+            (change)="alCambiarIncluirRuido()"/>
+          Mostrar ruido (scanner/bot)
+        </label>
+        <small class="filtro-help">Incluye intentos anónimos automáticos de escaneo de endpoints.</small>
+      </div>
     </div>
 
     <div class="filtros-acciones">
@@ -122,7 +134,12 @@
                   </td>
                   <td class="endpoint-cell">{{ evento.endpoint }}</td>
                   <td [class.estado-error]="evento.estadoHttp >= 400">{{ evento.estadoHttp }}</td>
-                  <td>{{ evento.resumen || '-' }}</td>
+                  <td class="resumen-cell">
+                    <span>{{ evento.resumen || '-' }}</span>
+                    @if (evento.ruidoEscaner) {
+                      <span class="ruido-chip">scanner/bot</span>
+                    }
+                  </td>
                   <td class="col-accion">
                     <button type="button" class="btn-detalle" (click)="verDetalle(evento)" [disabled]="cargandoDetalle">
                       <i class="bi bi-search"></i> Ver detalle
@@ -171,6 +188,7 @@
         <p><strong>Modulo:</strong> {{ detalleSeleccionado.modulo || '-' }}</p>
         <p><strong>Recurso ID:</strong> {{ detalleSeleccionado.recursoId ?? '-' }}</p>
         <p><strong>Estado HTTP:</strong> {{ detalleSeleccionado.estadoHttp }}</p>
+        <p><strong>Clasificacion:</strong> {{ detalleSeleccionado.ruidoEscaner ? 'SCANNER_BOT' : 'NORMAL' }}</p>
         <p><strong>IP:</strong> {{ detalleSeleccionado.ipCliente || '-' }}</p>
         <p><strong>User-Agent:</strong> {{ detalleSeleccionado.userAgent || '-' }}</p>
       </div>
