@@ -336,27 +336,27 @@
                   <div
                     class="challenge-ranking-row"
                     [class.is-me]="item.esUsuarioActual"
-                    [class.is-gold]="idx === 0"
-                    [class.is-silver]="idx === 1"
-                    [class.is-bronze]="idx === 2"
+                    [class.is-gold]="item.posicion === 1"
+                    [class.is-silver]="item.posicion === 2"
+                    [class.is-bronze]="item.posicion === 3"
                   >
-                    @if (idx === 0) {
+                    @if (item.posicion === 1) {
                     <span class="rank-medal is-gold">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Oro
                     </span>
-                    } @else if (idx === 1) {
+                    } @else if (item.posicion === 2) {
                     <span class="rank-medal is-silver">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Plata
                     </span>
-                    } @else if (idx === 2) {
+                    } @else if (item.posicion === 3) {
                     <span class="rank-medal is-bronze">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Bronce
                     </span>
                     } @else {
-                    <span class="rank-pos">#{{ idx + 1 }}</span>
+                    <span class="rank-pos">#{{ item.posicion ?? (idx + 1) }}</span>
                     }
                     <span class="rank-alias">{{ item.alias }}</span>
                     <span class="rank-days">{{ item.diasCompletados }} d</span>
@@ -393,27 +393,27 @@
                   <div
                     class="challenge-ranking-row"
                     [class.is-me]="item.esUsuarioActual"
-                    [class.is-gold]="idx === 0"
-                    [class.is-silver]="idx === 1"
-                    [class.is-bronze]="idx === 2"
+                    [class.is-gold]="item.posicion === 1"
+                    [class.is-silver]="item.posicion === 2"
+                    [class.is-bronze]="item.posicion === 3"
                   >
-                    @if (idx === 0) {
+                    @if (item.posicion === 1) {
                     <span class="rank-medal is-gold">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Oro
                     </span>
-                    } @else if (idx === 1) {
+                    } @else if (item.posicion === 2) {
                     <span class="rank-medal is-silver">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Plata
                     </span>
-                    } @else if (idx === 2) {
+                    } @else if (item.posicion === 3) {
                     <span class="rank-medal is-bronze">
                       <i class="bi bi-award-fill" aria-hidden="true"></i>
                       Bronce
                     </span>
                     } @else {
-                    <span class="rank-pos">#{{ idx + 1 }}</span>
+                    <span class="rank-pos">#{{ item.posicion ?? (idx + 1) }}</span>
                     }
                     <span class="rank-alias">{{ item.alias }}</span>
                     <span class="rank-days">{{ item.mejorRacha }} d</span>
