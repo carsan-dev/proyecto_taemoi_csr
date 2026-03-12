@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.Calendar;
@@ -293,6 +294,11 @@ public class AlumnoServiceImplTest {
 					public LocalDate getUltimaFechaCompletado() {
 						return hoy.minusDays(1);
 					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.minusDays(1).atTime(9, 0);
+					}
 				};
 
 		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
@@ -310,6 +316,11 @@ public class AlumnoServiceImplTest {
 					@Override
 					public LocalDate getUltimaFechaCompletado() {
 						return hoy;
+					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.atTime(16, 0);
 					}
 				};
 
@@ -380,6 +391,11 @@ public class AlumnoServiceImplTest {
 					public LocalDate getUltimaFechaCompletado() {
 						return hoy.minusDays(1);
 					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.minusDays(1).atTime(9, 0);
+					}
 				};
 
 		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
@@ -398,6 +414,11 @@ public class AlumnoServiceImplTest {
 					public LocalDate getUltimaFechaCompletado() {
 						return hoy;
 					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.atTime(16, 0);
+					}
 				};
 
 		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
@@ -410,6 +431,96 @@ public class AlumnoServiceImplTest {
 		assertEquals("Carlos Sanchez R.", ranking.getMiPosicion().getAlias());
 		assertEquals("Carlos Sanchez M.", ranking.getTop().get(0).getAlias());
 		assertEquals("Carlos Sanchez R.", ranking.getTop().get(1).getAlias());
+	}
+
+	@Test
+	public void testObtenerRankingSemanalRetoDiario_DesempataPorHoraCuandoEmpateEnDiasYFecha() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("alumno");
+		alumnoActual.setApellidos("actual perez");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("rival");
+		alumnoRival.setApellidos("uno lopez");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
+				.thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreActual =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 1L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.atTime(7, 0);
+					}
+				};
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 2L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public LocalDateTime getUltimaMarcaCompletado() {
+						return hoy.atTime(16, 0);
+					}
+				};
+
+		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
+				.thenReturn(List.of(scoreActual, scoreRival));
+
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
+		assertEquals("Alumno Actual", ranking.getTop().get(1).getAlias());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
 	}
 
 	@Test
@@ -473,8 +584,62 @@ public class AlumnoServiceImplTest {
 		assertEquals(Integer.valueOf(2), ranking.getMiPosicion().getDiasParaSuperarSiguiente());
 	}
 
+	@Test
+	public void testObtenerRankingGeneralRetoDiario_DesempataPorHoraCuandoEmpateTotal() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("alumno");
+		alumnoActual.setApellidos("actual perez");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("rival");
+		alumnoRival.setApellidos("uno lopez");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate base = LocalDate.of(2026, 2, 1);
+		var a1d1 = crearFechaProjection(1L, base, base.atTime(8, 0));
+		var a1d2 = crearFechaProjection(1L, base.plusDays(1), base.plusDays(1).atTime(8, 0));
+		var a1d3 = crearFechaProjection(1L, base.plusDays(2), base.plusDays(2).atTime(7, 0));
+		var a2d1 = crearFechaProjection(2L, base, base.atTime(8, 30));
+		var a2d2 = crearFechaProjection(2L, base.plusDays(1), base.plusDays(1).atTime(8, 30));
+		var a2d3 = crearFechaProjection(2L, base.plusDays(2), base.plusDays(2).atTime(16, 0));
+
+		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
+				.thenReturn(List.of(a1d1, a1d2, a1d3, a2d1, a2d2, a2d3));
+
+		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
+		assertEquals("Alumno Actual", ranking.getTop().get(1).getAlias());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
+	}
+
 	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
 			LocalDate fechaCompletado) {
+		return crearFechaProjection(alumnoId, fechaCompletado, fechaCompletado.atTime(12, 0));
+	}
+
+	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
+			LocalDate fechaCompletado, LocalDateTime createdAt) {
 		return new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection() {
 			@Override
 			public Long getAlumnoId() {
@@ -484,6 +649,11 @@ public class AlumnoServiceImplTest {
 			@Override
 			public LocalDate getFechaCompletado() {
 				return fechaCompletado;
+			}
+
+			@Override
+			public LocalDateTime getCreatedAt() {
+				return createdAt;
 			}
 		};
 	}
