@@ -3,6 +3,7 @@ package com.taemoi.project.services.impl;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
@@ -879,6 +880,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 						.comparingInt(RankingSemanaParticipante::getDiasCompletados).reversed()
 						.thenComparing(RankingSemanaParticipante::getUltimaFechaCompletado,
 								Comparator.nullsLast(Comparator.reverseOrder()))
+						.thenComparing(RankingSemanaParticipante::getUltimaMarcaCompletado,
+								Comparator.nullsLast(Comparator.reverseOrder()))
 						.thenComparing(RankingSemanaParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
 				.toList();
 
@@ -901,6 +904,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 						construirAliasRanking(alumnoActual),
 						obtenerInicialSegundoApellido(alumnoActual),
 						0,
+						null,
 						null,
 						true));
 
@@ -971,6 +975,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 								.reversed())
 						.thenComparing(RankingGeneralParticipante::getUltimaFechaCompletado,
 								Comparator.nullsLast(Comparator.reverseOrder()))
+						.thenComparing(RankingGeneralParticipante::getUltimaMarcaCompletado,
+								Comparator.nullsLast(Comparator.reverseOrder()))
 						.thenComparing(RankingGeneralParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
 				.toList();
 
@@ -995,6 +1001,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 						obtenerInicialSegundoApellido(alumnoActual),
 						0,
 						0,
+						null,
 						null,
 						true));
 
@@ -1083,9 +1090,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 			AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection puntuacion) {
 		int dias = 0;
 		LocalDate ultimaFecha = null;
+		LocalDateTime ultimaMarca = null;
 		if (puntuacion != null) {
 			dias = puntuacion.getDiasCompletados() != null ? Math.max(0, puntuacion.getDiasCompletados().intValue()) : 0;
 			ultimaFecha = puntuacion.getUltimaFechaCompletado();
+			ultimaMarca = puntuacion.getUltimaMarcaCompletado();
 		}
 		boolean esUsuarioActual = alumnoActualId != null && alumnoActualId.equals(alumno.getId());
 		return new RankingSemanaParticipante(
@@ -1094,6 +1103,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				obtenerInicialSegundoApellido(alumno),
 				dias,
 				ultimaFecha,
+				ultimaMarca,
 				esUsuarioActual);
 	}
 
@@ -1170,7 +1180,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			HistoricoRetoDiarioStats stats = historicoPorAlumno.computeIfAbsent(
 					registro.getAlumnoId(),
 					ignored -> new HistoricoRetoDiarioStats());
-			stats.registrarFechaCompletado(registro.getFechaCompletado());
+			stats.registrarFechaCompletado(registro.getFechaCompletado(), registro.getCreatedAt());
 		}
 
 		return historicoPorAlumno;
@@ -1183,11 +1193,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 		int mejorRacha = 0;
 		int diasCompletadosTotales = 0;
 		LocalDate ultimaFecha = null;
+		LocalDateTime ultimaMarca = null;
 
 		if (historico != null) {
 			mejorRacha = historico.getMejorRacha();
 			diasCompletadosTotales = historico.getDiasCompletadosTotales();
 			ultimaFecha = historico.getUltimaFechaCompletado();
+			ultimaMarca = historico.getUltimaMarcaCompletado();
 		}
 
 		int rachaPersistida = alumno.getRachaRetoDiario() != null ? Math.max(0, alumno.getRachaRetoDiario()) : 0;
@@ -1197,6 +1209,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			LocalDate fechaPersistida = toLocalDate(alumno.getFechaRetoDiarioCompletado());
 			if (fechaPersistida != null && (ultimaFecha == null || fechaPersistida.isAfter(ultimaFecha))) {
 				ultimaFecha = fechaPersistida;
+				ultimaMarca = null;
 			}
 		}
 
@@ -1208,6 +1221,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				mejorRacha,
 				diasCompletadosTotales,
 				ultimaFecha,
+				ultimaMarca,
 				esUsuarioActual);
 	}
 
@@ -1366,9 +1380,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private int rachaActual;
 		private int diasCompletadosTotales;
 		private LocalDate ultimaFechaCompletado;
+		private LocalDateTime ultimaMarcaCompletado;
 		private LocalDate fechaAnterior;
 
-		void registrarFechaCompletado(LocalDate fecha) {
+		void registrarFechaCompletado(LocalDate fecha, LocalDateTime marcaCompletado) {
 			if (fecha == null) {
 				return;
 			}
@@ -1385,6 +1400,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			diasCompletadosTotales++;
 			mejorRacha = Math.max(mejorRacha, rachaActual);
 			ultimaFechaCompletado = fecha;
+			ultimaMarcaCompletado = marcaCompletado;
 			fechaAnterior = fecha;
 		}
 
@@ -1399,6 +1415,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		LocalDate getUltimaFechaCompletado() {
 			return ultimaFechaCompletado;
 		}
+
+		LocalDateTime getUltimaMarcaCompletado() {
+			return ultimaMarcaCompletado;
+		}
 	}
 
 	private static class RankingGeneralParticipante {
@@ -1409,11 +1429,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private final int mejorRacha;
 		private final int diasCompletadosTotales;
 		private final LocalDate ultimaFechaCompletado;
+		private final LocalDateTime ultimaMarcaCompletado;
 		private final boolean esUsuarioActual;
 		private Integer posicion;
 
 		RankingGeneralParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int mejorRacha,
-				int diasCompletadosTotales, LocalDate ultimaFechaCompletado, boolean esUsuarioActual) {
+				int diasCompletadosTotales, LocalDate ultimaFechaCompletado, LocalDateTime ultimaMarcaCompletado,
+				boolean esUsuarioActual) {
 			this.alumnoId = alumnoId;
 			this.aliasBase = aliasBase;
 			this.inicialSegundoApellido = inicialSegundoApellido == null ? "" : inicialSegundoApellido;
@@ -1421,6 +1443,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			this.mejorRacha = mejorRacha;
 			this.diasCompletadosTotales = diasCompletadosTotales;
 			this.ultimaFechaCompletado = ultimaFechaCompletado;
+			this.ultimaMarcaCompletado = ultimaMarcaCompletado;
 			this.esUsuarioActual = esUsuarioActual;
 		}
 
@@ -1446,6 +1469,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		public LocalDate getUltimaFechaCompletado() {
 			return ultimaFechaCompletado;
+		}
+
+		public LocalDateTime getUltimaMarcaCompletado() {
+			return ultimaMarcaCompletado;
 		}
 
 		public boolean getEsUsuarioActual() {
@@ -1475,11 +1502,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private String alias;
 		private final int diasCompletados;
 		private final LocalDate ultimaFechaCompletado;
+		private final LocalDateTime ultimaMarcaCompletado;
 		private final boolean esUsuarioActual;
 		private Integer posicion;
 
 		RankingSemanaParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int diasCompletados,
-				LocalDate ultimaFechaCompletado,
+				LocalDate ultimaFechaCompletado, LocalDateTime ultimaMarcaCompletado,
 				boolean esUsuarioActual) {
 			this.alumnoId = alumnoId;
 			this.aliasBase = aliasBase;
@@ -1487,6 +1515,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			this.alias = aliasBase;
 			this.diasCompletados = diasCompletados;
 			this.ultimaFechaCompletado = ultimaFechaCompletado;
+			this.ultimaMarcaCompletado = ultimaMarcaCompletado;
 			this.esUsuarioActual = esUsuarioActual;
 		}
 
@@ -1508,6 +1537,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		public LocalDate getUltimaFechaCompletado() {
 			return ultimaFechaCompletado;
+		}
+
+		public LocalDateTime getUltimaMarcaCompletado() {
+			return ultimaMarcaCompletado;
 		}
 
 		public boolean getEsUsuarioActual() {
