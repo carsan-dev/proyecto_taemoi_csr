@@ -13,7 +13,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.Calendar;
@@ -296,8 +295,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.minusDays(1).atTime(9, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 11L;
 					}
 				};
 
@@ -319,8 +318,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.atTime(16, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 22L;
 					}
 				};
 
@@ -393,8 +392,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.minusDays(1).atTime(9, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 11L;
 					}
 				};
 
@@ -416,8 +415,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.atTime(16, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 22L;
 					}
 				};
 
@@ -434,7 +433,7 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-	public void testObtenerRankingSemanalRetoDiario_DesempataPorHoraCuandoEmpateEnDiasYFecha() {
+	public void testObtenerRankingSemanalRetoDiario_DesempataPorOrdenInsercionCuandoEmpateEnDiasYFecha() {
 		Alumno alumnoActual = new Alumno();
 		alumnoActual.setId(1L);
 		alumnoActual.setNombre("alumno");
@@ -483,8 +482,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.atTime(7, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 101L;
 					}
 				};
 
@@ -506,8 +505,8 @@ public class AlumnoServiceImplTest {
 					}
 
 					@Override
-					public LocalDateTime getUltimaMarcaCompletado() {
-						return hoy.atTime(16, 0);
+					public Long getUltimaMarcaCompletadoId() {
+						return 202L;
 					}
 				};
 
@@ -614,12 +613,12 @@ public class AlumnoServiceImplTest {
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate base = LocalDate.of(2026, 2, 1);
-		var a1d1 = crearFechaProjection(1L, base, base.atTime(8, 0));
-		var a1d2 = crearFechaProjection(1L, base.plusDays(1), base.plusDays(1).atTime(8, 0));
-		var a1d3 = crearFechaProjection(1L, base.plusDays(2), base.plusDays(2).atTime(7, 0));
-		var a2d1 = crearFechaProjection(2L, base, base.atTime(8, 30));
-		var a2d2 = crearFechaProjection(2L, base.plusDays(1), base.plusDays(1).atTime(8, 30));
-		var a2d3 = crearFechaProjection(2L, base.plusDays(2), base.plusDays(2).atTime(16, 0));
+		var a1d1 = crearFechaProjection(1L, base, 1L);
+		var a1d2 = crearFechaProjection(1L, base.plusDays(1), 2L);
+		var a1d3 = crearFechaProjection(1L, base.plusDays(2), 3L);
+		var a2d1 = crearFechaProjection(2L, base, 4L);
+		var a2d2 = crearFechaProjection(2L, base.plusDays(1), 5L);
+		var a2d3 = crearFechaProjection(2L, base.plusDays(2), 6L);
 
 		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
 				.thenReturn(List.of(a1d1, a1d2, a1d3, a2d1, a2d2, a2d3));
@@ -635,11 +634,11 @@ public class AlumnoServiceImplTest {
 
 	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
 			LocalDate fechaCompletado) {
-		return crearFechaProjection(alumnoId, fechaCompletado, fechaCompletado.atTime(12, 0));
+		return crearFechaProjection(alumnoId, fechaCompletado, 1L);
 	}
 
 	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
-			LocalDate fechaCompletado, LocalDateTime createdAt) {
+			LocalDate fechaCompletado, Long logId) {
 		return new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection() {
 			@Override
 			public Long getAlumnoId() {
@@ -652,8 +651,8 @@ public class AlumnoServiceImplTest {
 			}
 
 			@Override
-			public LocalDateTime getCreatedAt() {
-				return createdAt;
+			public Long getLogId() {
+				return logId;
 			}
 		};
 	}
