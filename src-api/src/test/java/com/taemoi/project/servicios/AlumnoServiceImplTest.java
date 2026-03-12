@@ -433,7 +433,7 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-	public void testObtenerRankingSemanalRetoDiario_DesempataPorOrdenInsercionCuandoEmpateEnDiasYFecha() {
+	public void testObtenerRankingSemanalRetoDiario_DesempataPorPrimeraInsercionCuandoEmpateEnDiasYFecha() {
 		Alumno alumnoActual = new Alumno();
 		alumnoActual.setId(1L);
 		alumnoActual.setNombre("alumno");
@@ -516,8 +516,8 @@ public class AlumnoServiceImplTest {
 		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
 
 		assertNotNull(ranking);
-		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
-		assertEquals("Alumno Actual", ranking.getTop().get(1).getAlias());
+		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
+		assertEquals("Rival Uno", ranking.getTop().get(1).getAlias());
 		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
 		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
 	}
@@ -626,8 +626,8 @@ public class AlumnoServiceImplTest {
 		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
 
 		assertNotNull(ranking);
-		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
-		assertEquals("Alumno Actual", ranking.getTop().get(1).getAlias());
+		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
+		assertEquals("Rival Uno", ranking.getTop().get(1).getAlias());
 		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
 		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
 	}
