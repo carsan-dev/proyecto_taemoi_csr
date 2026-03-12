@@ -880,7 +880,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 						.thenComparing(RankingSemanaParticipante::getUltimaFechaCompletado,
 								Comparator.nullsLast(Comparator.reverseOrder()))
 						.thenComparing(RankingSemanaParticipante::getUltimaMarcaCompletado,
-								Comparator.nullsLast(Comparator.reverseOrder()))
+								Comparator.nullsLast(Comparator.naturalOrder()))
 						.thenComparing(RankingSemanaParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
 				.toList();
 
@@ -975,7 +975,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 						.thenComparing(RankingGeneralParticipante::getUltimaFechaCompletado,
 								Comparator.nullsLast(Comparator.reverseOrder()))
 						.thenComparing(RankingGeneralParticipante::getUltimaMarcaCompletado,
-								Comparator.nullsLast(Comparator.reverseOrder()))
+								Comparator.nullsLast(Comparator.naturalOrder()))
 						.thenComparing(RankingGeneralParticipante::getAlias, String.CASE_INSENSITIVE_ORDER))
 				.toList();
 
