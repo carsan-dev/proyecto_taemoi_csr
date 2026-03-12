@@ -3,7 +3,6 @@ package com.taemoi.project.services.impl;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
@@ -1090,11 +1089,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 			AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection puntuacion) {
 		int dias = 0;
 		LocalDate ultimaFecha = null;
-		LocalDateTime ultimaMarca = null;
+		Long ultimaMarca = null;
 		if (puntuacion != null) {
 			dias = puntuacion.getDiasCompletados() != null ? Math.max(0, puntuacion.getDiasCompletados().intValue()) : 0;
 			ultimaFecha = puntuacion.getUltimaFechaCompletado();
-			ultimaMarca = puntuacion.getUltimaMarcaCompletado();
+			ultimaMarca = puntuacion.getUltimaMarcaCompletadoId();
 		}
 		boolean esUsuarioActual = alumnoActualId != null && alumnoActualId.equals(alumno.getId());
 		return new RankingSemanaParticipante(
@@ -1180,7 +1179,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			HistoricoRetoDiarioStats stats = historicoPorAlumno.computeIfAbsent(
 					registro.getAlumnoId(),
 					ignored -> new HistoricoRetoDiarioStats());
-			stats.registrarFechaCompletado(registro.getFechaCompletado(), registro.getCreatedAt());
+			stats.registrarFechaCompletado(registro.getFechaCompletado(), registro.getLogId());
 		}
 
 		return historicoPorAlumno;
@@ -1193,7 +1192,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		int mejorRacha = 0;
 		int diasCompletadosTotales = 0;
 		LocalDate ultimaFecha = null;
-		LocalDateTime ultimaMarca = null;
+		Long ultimaMarca = null;
 
 		if (historico != null) {
 			mejorRacha = historico.getMejorRacha();
@@ -1380,10 +1379,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private int rachaActual;
 		private int diasCompletadosTotales;
 		private LocalDate ultimaFechaCompletado;
-		private LocalDateTime ultimaMarcaCompletado;
+		private Long ultimaMarcaCompletado;
 		private LocalDate fechaAnterior;
 
-		void registrarFechaCompletado(LocalDate fecha, LocalDateTime marcaCompletado) {
+		void registrarFechaCompletado(LocalDate fecha, Long marcaCompletado) {
 			if (fecha == null) {
 				return;
 			}
@@ -1416,7 +1415,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return ultimaFechaCompletado;
 		}
 
-		LocalDateTime getUltimaMarcaCompletado() {
+		Long getUltimaMarcaCompletado() {
 			return ultimaMarcaCompletado;
 		}
 	}
@@ -1429,12 +1428,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private final int mejorRacha;
 		private final int diasCompletadosTotales;
 		private final LocalDate ultimaFechaCompletado;
-		private final LocalDateTime ultimaMarcaCompletado;
+		private final Long ultimaMarcaCompletado;
 		private final boolean esUsuarioActual;
 		private Integer posicion;
 
 		RankingGeneralParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int mejorRacha,
-				int diasCompletadosTotales, LocalDate ultimaFechaCompletado, LocalDateTime ultimaMarcaCompletado,
+				int diasCompletadosTotales, LocalDate ultimaFechaCompletado, Long ultimaMarcaCompletado,
 				boolean esUsuarioActual) {
 			this.alumnoId = alumnoId;
 			this.aliasBase = aliasBase;
@@ -1471,7 +1470,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return ultimaFechaCompletado;
 		}
 
-		public LocalDateTime getUltimaMarcaCompletado() {
+		public Long getUltimaMarcaCompletado() {
 			return ultimaMarcaCompletado;
 		}
 
@@ -1502,12 +1501,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		private String alias;
 		private final int diasCompletados;
 		private final LocalDate ultimaFechaCompletado;
-		private final LocalDateTime ultimaMarcaCompletado;
+		private final Long ultimaMarcaCompletado;
 		private final boolean esUsuarioActual;
 		private Integer posicion;
 
 		RankingSemanaParticipante(Long alumnoId, String aliasBase, String inicialSegundoApellido, int diasCompletados,
-				LocalDate ultimaFechaCompletado, LocalDateTime ultimaMarcaCompletado,
+				LocalDate ultimaFechaCompletado, Long ultimaMarcaCompletado,
 				boolean esUsuarioActual) {
 			this.alumnoId = alumnoId;
 			this.aliasBase = aliasBase;
@@ -1539,7 +1538,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return ultimaFechaCompletado;
 		}
 
-		public LocalDateTime getUltimaMarcaCompletado() {
+		public Long getUltimaMarcaCompletado() {
 			return ultimaMarcaCompletado;
 		}
 

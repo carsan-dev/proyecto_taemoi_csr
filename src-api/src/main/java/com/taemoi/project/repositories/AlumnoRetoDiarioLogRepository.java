@@ -1,7 +1,6 @@
 package com.taemoi.project.repositories;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,7 +18,7 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 	boolean existsByAnioIsoAndSemanaIso(Integer anioIso, Integer semanaIso);
 
 	@Query("SELECT l.alumno.id AS alumnoId, COUNT(l.id) AS diasCompletados, MAX(l.fechaCompletado) AS ultimaFechaCompletado, "
-			+ "MAX(l.createdAt) AS ultimaMarcaCompletado "
+			+ "MAX(l.id) AS ultimaMarcaCompletadoId "
 			+ "FROM AlumnoRetoDiarioLog l "
 			+ "WHERE l.anioIso = :anioIso AND l.semanaIso = :semanaIso AND l.alumno.id IN :alumnoIds "
 			+ "GROUP BY l.alumno.id")
@@ -28,10 +27,10 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 			@Param("semanaIso") Integer semanaIso,
 			@Param("alumnoIds") List<Long> alumnoIds);
 
-	@Query("SELECT l.alumno.id AS alumnoId, l.fechaCompletado AS fechaCompletado, l.createdAt AS createdAt "
+	@Query("SELECT l.alumno.id AS alumnoId, l.fechaCompletado AS fechaCompletado, l.id AS logId "
 			+ "FROM AlumnoRetoDiarioLog l "
 			+ "WHERE l.alumno.id IN :alumnoIds "
-			+ "ORDER BY l.alumno.id ASC, l.fechaCompletado ASC")
+			+ "ORDER BY l.alumno.id ASC, l.fechaCompletado ASC, l.id ASC")
 	List<AlumnoRetoDiarioFechaProjection> obtenerFechasCompletadoHistorico(
 			@Param("alumnoIds") List<Long> alumnoIds);
 
@@ -42,7 +41,7 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 
 		LocalDate getUltimaFechaCompletado();
 
-		LocalDateTime getUltimaMarcaCompletado();
+		Long getUltimaMarcaCompletadoId();
 	}
 
 	interface AlumnoRetoDiarioFechaProjection {
@@ -50,6 +49,6 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 
 		LocalDate getFechaCompletado();
 
-		LocalDateTime getCreatedAt();
+		Long getLogId();
 	}
 }
