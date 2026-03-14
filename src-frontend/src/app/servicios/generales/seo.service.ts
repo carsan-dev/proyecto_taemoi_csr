@@ -281,7 +281,7 @@ export class SeoService {
               {
                 question: 'Cual es el horario de las clases de artes marciales?',
                 answer:
-                  'Lunes 17:00-21:30, martes 17:00-21:00, miercoles y jueves 17:00-21:30, viernes 18:30-19:30. Consulta los horarios especificos de cada deporte en nuestra web.',
+                  'Lunes 17:00-21:05, martes 17:00-21:00, miercoles 17:00-21:05, jueves 17:00-21:30, viernes 18:30-19:30. Consulta los horarios especificos de cada deporte en nuestra web.',
               },
               {
                 question: 'Cuanto cuestan las clases de taekwondo o kickboxing?',
