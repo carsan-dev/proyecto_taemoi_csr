@@ -302,9 +302,7 @@ ALTER TABLE alumno
 
 ## Script de Migración Access → MySQL
 
-### Archivo: `mysql/migrate_to_mysql_v8.py`
-
-Este script ya tiene implementada la lógica para migrar datos de Access a MySQL, incluyendo la creación de registros `alumno_deporte` a partir de los campos legacy de `alumno`.
+Nota de estado: el script legacy `mysql/migrate_to_mysql_v8.py` fue retirado del repositorio al sanear datos sensibles. La migración histórica debe considerarse cerrada y los nuevos entornos deben partir de backup privado + migraciones controladas.
 
 ### Cambios necesarios después de la migración:
 
@@ -383,4 +381,4 @@ Access Database
 - Hacer commits pequeños y frecuentes
 - Documentar cambios en CHANGELOG.md
 - Actualizar CLAUDE.md después de completar la migración
-- **IMPORTANTE**: Actualizar `mysql/migrate_to_mysql_v8.py` junto con los cambios de entidad
+- **IMPORTANTE**: No reintroducir scripts de migración con datos reales en el repositorio público

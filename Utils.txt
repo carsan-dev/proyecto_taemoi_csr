@@ -72,17 +72,9 @@ Hacer copia de seguridad de la base de datos en el servidor
 
   sudo /usr/local/bin/mysql_backup_usb.sh
 
-Migrar data para local: 
+Migraciones legacy retiradas del repositorio.
 
-python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_local.sql" --env local --schema taemoidb
-
-Migrar data para server: 
-
-python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_server.sql" --env server --schema taemoi_db
-
-Migrar data para docker: 
-
-python migrate_to_mysql_v8.py --access "C:\Users\croly\Documents\proyecto_taemoi_csr\CLUBMOISKIMDO_AUX.mdb" --out "C:\Users\croly\Documents\proyecto_taemoi_csr\migration_docker.sql" --env docker --schema taemoi_db
+La restauracion de datos debe hacerse desde una copia de seguridad privada, fuera de Git.
 
 TODO:
 
@@ -175,7 +167,7 @@ Actualizar precio productos
 
 ✔ Modificar licencia federativa en la migración o el propio campo para usar la licencia del deporte y no la general o migrarse bien
 
-✔ Migrar categoria_id de alumno a alumno_deporte (ya incluido en migrate_to_mysql_v8.py - regenerar migration SQL y aplicar)
+✔ Migrar categoria_id de alumno a alumno_deporte
 
 ✔ Corregir categoria ID mismatch (IDs viejos 6-10 vs nuevos 1-5) - ahora usa asignación por edad en vez de copiar IDs
 
