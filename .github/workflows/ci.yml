@@ -52,7 +52,7 @@ jobs:
 
       - name: Create Chrome wrapper for CI
         run: |
-          printf '%s\n' '#!/usr/bin/env bash' "\"$CHROME_PATH\" --no-sandbox --disable-setuid-sandbox \"\$@\"" > ./chrome-no-sandbox
+          printf '%s\n' '#!/usr/bin/env bash' "exec \"$CHROME_PATH\" --no-sandbox --disable-setuid-sandbox \"\$@\"" > ./chrome-no-sandbox
           chmod +x ./chrome-no-sandbox
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
