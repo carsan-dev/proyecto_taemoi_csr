@@ -173,4 +173,30 @@ class EventoControllerTest {
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.getHeaders().getContentType());
 	}
+
+	@Test
+	void descargarDocumento_docxSinForceDownload_seSirveComoAdjuntoSeguro() {
+		Long eventoId = 12L;
+		Long documentoId = 88L;
+		Documento documento = new Documento();
+		documento.setId(documentoId);
+		documento.setNombre("bases.docx");
+		documento.setTipo("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+		Authentication manager = new UsernamePasswordAuthenticationToken(
+				"manager@taemoi.com",
+				"pass",
+				List.of(new SimpleGrantedAuthority("ROLE_MANAGER")));
+		SecurityContextHolder.getContext().setAuthentication(manager);
+
+		when(eventoService.obtenerDocumentoDeEvento(eventoId, documentoId)).thenReturn(documento);
+		when(documentoService.obtenerRecursoDocumento(documento)).thenReturn(new ByteArrayResource("docx".getBytes()));
+
+		ResponseEntity<Resource> response = eventoController.descargarDocumento(eventoId, documentoId, false);
+
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.getHeaders().getContentType());
+		assertEquals("attachment; filename=\"bases.docx\"",
+				response.getHeaders().getFirst("Content-Disposition"));
+	}
 }

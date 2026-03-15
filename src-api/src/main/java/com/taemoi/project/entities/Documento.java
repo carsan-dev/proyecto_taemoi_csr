@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -22,7 +23,8 @@ public class Documento {
 	private String nombre;
 
 	@NotBlank(message = "El tipo (MIME) no puede estar en blanco")
-	@Size(max = 50, message = "El tipo no puede tener más de 50 caracteres")
+	@Size(max = 150, message = "El tipo no puede tener más de 150 caracteres")
+	@Column(length = 150, nullable = false)
 	private String tipo; // MIME type (application/pdf, application/msword, etc.)
 
 	private String url;

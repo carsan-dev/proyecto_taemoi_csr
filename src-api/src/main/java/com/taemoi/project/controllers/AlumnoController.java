@@ -96,6 +96,7 @@ import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.MaterialExamenService;
 import com.taemoi.project.services.DocumentoService;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -328,17 +329,9 @@ public class AlumnoController {
 			logger.info("Document found - Name: {}, Path: {}", documento.getNombre(), documento.getRuta());
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
 
-			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-			if (!forceDownload && documento.getTipo() != null && !documento.getTipo().isBlank()) {
-				try {
-					mediaType = MediaType.parseMediaType(documento.getTipo());
-				} catch (Exception e) {
-					logger.warn("Tipo MIME inva1lido para documento {}: {}. Se usara application/octet-stream",
-							documento.getId(), documento.getTipo());
-				}
-			}
+			MediaType mediaType = DocumentoSecurityUtils.resolverMediaTypeRespuesta(documento.getTipo(), forceDownload);
 			String nombreDocumento = asegurarNombreConExtension(documento.getNombre(), documento.getTipo());
-			String dispositionType = forceDownload ? "attachment" : "inline";
+			String dispositionType = DocumentoSecurityUtils.resolverDispositionType(documento.getTipo(), forceDownload);
 
 			logger.info("Sending document download response - Name: {}", documento.getNombre());
 			return ResponseEntity.ok()
