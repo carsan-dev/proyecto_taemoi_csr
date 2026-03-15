@@ -72,3 +72,8 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Local notes and lock files no longer tracked
+/Utils.txt
+/package-lock.json
+/src-frontend/package-lock.json
