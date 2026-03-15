@@ -50,12 +50,19 @@ jobs:
         id: chrome
         uses: browser-actions/setup-chrome@v1
 
+      - name: Create Chrome wrapper for CI
+        run: |
+          printf '%s\n' '#!/usr/bin/env bash' "\"$CHROME_PATH\" --no-sandbox --disable-setuid-sandbox \"\$@\"" > ./chrome-no-sandbox
+          chmod +x ./chrome-no-sandbox
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Run frontend tests
         env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+          CHROME_BIN: ${{ github.workspace }}/src-frontend/chrome-no-sandbox
         run: npm test -- --watch=false --browsers=ChromeHeadless
 
       - name: Build frontend for production
