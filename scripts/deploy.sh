@@ -74,10 +74,10 @@ fi
 # Load environment variables to check database name
 source .env
 
-# Verify database name matches migration script
+# Verify database name matches schema bootstrap
 if [ "$ENVIRONMENT" = "production" ]; then
     if [ "$MYSQL_DATABASE" != "taemoi_db" ]; then
-        warn "MYSQL_DATABASE should be 'taemoi_db' for production (migration_server.sql expects this)"
+        warn "MYSQL_DATABASE should be 'taemoi_db' for production (01_ddl_schema_server.sql expects this)"
         warn "Current value: $MYSQL_DATABASE"
         echo -e "${YELLOW}Continue anyway? (y/n)${NC}"
         read -r response
@@ -129,7 +129,7 @@ for i in {1..60}; do
     fi
 done
 
-# Check if schema and migration were executed
+# Check if schema bootstrap was executed
 if [ "$ENVIRONMENT" = "production" ]; then
     step "Verifying database initialization..."
 
@@ -140,20 +140,19 @@ if [ "$ENVIRONMENT" = "production" ]; then
     else
         warn "No tables found. DDL script may not have executed."
         warn "Check: docker-compose -f $COMPOSE_FILE logs database"
-        warn "Init files should be in mysql/init/: 01_ddl_schema_server.sql, 02_migration_server.sql"
+        warn "Init files should include mysql/init/01_ddl_schema_server.sql"
     fi
 
-    # Check if data was migrated (check alumno table row count)
-    if [ "$TABLE_CHECK" -gt 1 ]; then
-        ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SELECT COUNT(*) FROM alumno;" 2>/dev/null | tail -n 1)
-        if [ "$ALUMNO_COUNT" -gt 0 ]; then
-            success "Data migrated (02_migration_server.sql executed - ${ALUMNO_COUNT} students found)"
-        else
-            warn "No student data found. Migration script may not have executed."
-            warn "Check: docker-compose -f $COMPOSE_FILE logs database"
-        fi
-    fi
-fi
+	# Check if data was restored (check alumno table row count)
+	    if [ "$TABLE_CHECK" -gt 1 ]; then
+	        ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SELECT COUNT(*) FROM alumno;" 2>/dev/null | tail -n 1)
+	        if [ "$ALUMNO_COUNT" -gt 0 ]; then
+	            success "Data available in alumno (${ALUMNO_COUNT} students found)"
+	        else
+	            warn "No student data found in alumno. Restore the private backup or use APP_BOOTSTRAP_ADMIN_* for first access."
+	        fi
+	    fi
+	fi
 
 # Wait for backend
 echo "Waiting for backend..."
@@ -233,15 +232,15 @@ echo "  - Enter container:  docker-compose -f $COMPOSE_FILE exec <service> bash"
 echo ""
 if [ "$ENVIRONMENT" = "production" ]; then
     echo "Production-specific commands:"
-    echo "  - Check DB migration: docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SHOW TABLES;'"
-    echo "  - Manual migration:   docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < mysql/init/migration_server.sql"
+    echo "  - Check schema:      docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SHOW TABLES;'"
+    echo "  - Restore backup:    docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /secure/path/private_backup.sql"
     echo ""
 fi
 echo "Next steps:"
 echo "  1. Test the application in your browser"
 echo "  2. Check logs if any services show issues: docker-compose -f $COMPOSE_FILE logs -f backend"
 if [ "$ENVIRONMENT" = "production" ]; then
-    echo "  3. Verify database migration completed successfully"
+    echo "  3. Restore and verify the private database backup if needed"
     echo "  4. Configure SSL/HTTPS certificates (if not done)"
     echo "  5. Setup automated backups"
     echo "  6. Configure firewall rules"
