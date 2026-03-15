@@ -4,20 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.CustomUserDetails;
 import com.taemoi.project.services.impl.JwtServiceImpl;
 
 
-@SpringBootTest
 public class JwtServiceImplTest {
 
-	@Autowired
-	private JwtServiceImpl jwtService = new JwtServiceImpl();
+	private JwtServiceImpl jwtService;
+
+	@BeforeEach
+	void setUp() {
+		jwtService = new JwtServiceImpl();
+		String secret = Base64.getEncoder()
+				.encodeToString("01234567890123456789012345678901".getBytes(StandardCharsets.UTF_8));
+		ReflectionTestUtils.setField(jwtService, "jwtSigningKey", secret);
+	}
 
 	@Test
 	public void testGenerarToken() {

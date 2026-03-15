@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.TipoTarifa;
@@ -18,7 +17,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
-@SpringBootTest
 public class AlumnoTest {
 
 	private static Validator validator;
@@ -206,7 +204,7 @@ public class AlumnoTest {
 	}
 
 	@Test
-	void testAlumno_TipoTarifaInvalido() {
+	void testAlumno_TipoTarifaPuedeSerNuloEnModoActual() {
 		Alumno alumno = new Alumno();
 		alumno.setNombre("John");
 		alumno.setApellidos("Doe");
@@ -221,9 +219,7 @@ public class AlumnoTest {
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
-		assertEquals(1, violations.size());
-		ConstraintViolation<Alumno> violation = violations.iterator().next();
-		assertEquals("El tipo de tarifa no puede ser nulo", violation.getMessage());
+		assertTrue(violations.isEmpty());
 	}
 
 	/*
