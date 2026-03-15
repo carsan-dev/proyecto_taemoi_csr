@@ -1,9 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { of } from 'rxjs/internal/observable/of';
-import { catchError } from 'rxjs/internal/operators/catchError';
-import { map } from 'rxjs/internal/operators/map';
-import { take } from 'rxjs/internal/operators/take';
+import { catchError, map, of, take } from 'rxjs';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
 
 export const adminOnlyGuard: CanActivateFn = () => {

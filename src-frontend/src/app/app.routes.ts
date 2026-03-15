@@ -266,7 +266,7 @@ export const routes: Routes = [
     path: 'configuracion-sistema',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
-    canActivate: [roleGuard],
+    canActivate: [roleGuard, adminOnlyGuard],
   },
   {
     path: '**',

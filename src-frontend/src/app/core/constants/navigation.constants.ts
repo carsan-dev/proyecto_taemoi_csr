@@ -12,6 +12,7 @@ export interface AdminQuickNavigationItem extends NavigationItem {
   exact?: boolean;
   activePrefixes?: string[];
   priority?: number;
+  adminOnly?: boolean;
 }
 
 export interface NavigationDropdownItem {
@@ -256,6 +257,7 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-journal-text',
     activePrefixes: ['/auditoriaSistema'],
     priority: 4,
+    adminOnly: true,
   },
   {
     label: 'Convocatorias',
@@ -270,6 +272,7 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-sliders',
     activePrefixes: ['/configuracion-sistema'],
     priority: 9,
+    adminOnly: true,
   },
 ];
 

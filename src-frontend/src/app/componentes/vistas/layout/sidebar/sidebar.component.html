@@ -117,12 +117,14 @@
           <span class="nav-link" [routerLink]="['/tesoreriaCobros']" routerLinkActive="active">Cobros y deudas</span>
         </a>
       </li>
+      @if (isAdminOnly) {
       <li class="mx-4">
         <a (click)="cerrarSidebar()" class="text-white d-flex align-items-center text-decoration-none">
           <i class="bi bi-journal-text fs-4 me-2"></i>
           <span class="nav-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active">Auditoría sistema</span>
         </a>
       </li>
+      }
     </ul>
     <ul class="list-unstyled mt-5">
       <li class="mx-4">

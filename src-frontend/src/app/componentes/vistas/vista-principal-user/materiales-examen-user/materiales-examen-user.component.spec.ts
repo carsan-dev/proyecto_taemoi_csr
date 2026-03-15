@@ -151,14 +151,14 @@ describe('MaterialesExamenUserComponent', () => {
         videos: [],
         documentos: [
           {
-            id: '02_reglamento.pdf',
-            fileName: '02_reglamento.pdf',
-            title: 'Reglamento',
-            order: 2,
-            mimeType: 'application/pdf',
-            previewable: true,
-            openUrl: 'https://example.com/reglamento.pdf',
-            downloadUrl: 'https://example.com/reglamento.pdf?download=true',
+            id: 'temario.pdf',
+            fileName: 'temario.pdf',
+            title: 'Temario',
+            order: 0,
+            mimeType: 'text/plain',
+            previewable: false,
+            openUrl: 'https://example.com/temario.pdf',
+            downloadUrl: 'https://example.com/temario.pdf?download=true',
           },
         ],
       } as any)
@@ -171,11 +171,11 @@ describe('MaterialesExamenUserComponent', () => {
     component.descargarDocumentoSeleccionado();
 
     expect(endpointsServiceSpy.descargarArchivoPrivado).toHaveBeenCalledWith(
-      'https://example.com/reglamento.pdf?download=true'
+      'https://example.com/temario.pdf?download=true'
     );
   });
 
-  it('debe abrir PDF por blob autenticado en desktop', () => {
+  it('debe abrir documento principal por URL controlada', () => {
     endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
       of({
         deporte: 'TAEKWONDO',
@@ -185,33 +185,29 @@ describe('MaterialesExamenUserComponent', () => {
         videos: [],
         documentos: [
           {
-            id: '02_reglamento.pdf',
-            fileName: '02_reglamento.pdf',
-            title: 'Reglamento',
-            order: 2,
-            mimeType: 'application/pdf',
-            previewable: true,
-            openUrl: 'https://example.com/reglamento.pdf',
-            downloadUrl: 'https://example.com/reglamento.pdf?download=true',
+            id: 'temario.pdf',
+            fileName: 'temario.pdf',
+            title: 'Temario',
+            order: 0,
+            mimeType: 'text/plain',
+            previewable: false,
+            openUrl: 'https://example.com/temario.pdf',
+            downloadUrl: 'https://example.com/temario.pdf?download=true',
           },
         ],
       } as any)
     );
 
-    spyOn(globalThis.URL, 'createObjectURL').and.returnValue('blob://test-url');
-    spyOn(globalThis.URL, 'revokeObjectURL').and.stub();
-    spyOn(window, 'open').and.returnValue(null);
+    spyOn(window, 'open').and.returnValue({} as Window);
     triggerInputs();
 
     component.abrirDocumentoSeleccionado();
 
-    expect(endpointsServiceSpy.descargarArchivoPrivado).toHaveBeenCalledWith(
-      'https://example.com/reglamento.pdf'
-    );
-    expect(window.open).toHaveBeenCalledWith('blob://test-url', '_blank', 'noopener');
+    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+    expect(window.open).toHaveBeenCalledWith('https://example.com/temario.pdf', '_blank', 'noopener');
   });
 
-  it('debe desactivar visor integrado en Android y abrir por URL directa', () => {
+  it('debe permitir abrir el visor integrado en Android para PDF previsualizable', () => {
     endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
       of({
         deporte: 'TAEKWONDO',
@@ -237,16 +233,16 @@ describe('MaterialesExamenUserComponent', () => {
     spyOnProperty(globalThis.navigator, 'userAgent', 'get').and.returnValue(
       'Mozilla/5.0 (Linux; Android 14)'
     );
-    spyOn(window, 'open').and.returnValue({} as Window);
 
     triggerInputs();
 
-    expect(component.esVisorIntegradoCompatibleEnDispositivo()).toBeFalse();
-    expect(component.esDocumentoSeleccionadoPrevisualizable()).toBeFalse();
-    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+    expect(component.esDocumentoSeleccionadoPrevisualizable()).toBeTrue();
+    expect(endpointsServiceSpy.descargarArchivoPrivado).toHaveBeenCalledWith(
+      'https://example.com/reglamento.pdf'
+    );
 
     component.toggleDocumentoVisor();
 
-    expect(window.open).toHaveBeenCalledWith('https://example.com/reglamento.pdf', '_blank', 'noopener');
+    expect(component.mostrarDocumentoVisor).toBeTrue();
   });
 });

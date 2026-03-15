@@ -19,6 +19,7 @@ import {
 export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioLogueado: boolean = false;
   isAdmin: boolean = false;
+  isAdminOnly: boolean = false;
   isUser: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
@@ -50,6 +51,10 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   readonly adminQuickLinks: AdminQuickNavigationItem[] = ADMIN_HEADER_QUICK_LINKS;
 
+  get visibleAdminQuickLinks(): AdminQuickNavigationItem[] {
+    return this.adminQuickLinks.filter((item) => !item.adminOnly || this.isAdminOnly);
+  }
+
   constructor(
     private readonly authService: AuthenticationService,
     private readonly router: Router,
@@ -67,6 +72,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.comprobarRoles();
         } else {
           this.isAdmin = false;
+          this.isAdminOnly = false;
           this.isUser = false;
           this.tieneAccesoDual = false;
           this.isAuthChecked = true;
@@ -223,6 +229,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   comprobarRoles() {
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
+      this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       this.isAuthChecked = true;
