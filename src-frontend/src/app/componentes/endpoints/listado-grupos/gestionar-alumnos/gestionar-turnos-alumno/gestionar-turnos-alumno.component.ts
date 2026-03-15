@@ -7,7 +7,7 @@ import { showSuccessToast, showErrorToast } from '../../../../../utils/toast.uti
 import { Turno } from '../../../../../interfaces/turno';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs/internal/Subscription';
+import { Subscription } from 'rxjs';
 import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
 import { finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../../../directives/searchable-select.directive';
