@@ -8,6 +8,7 @@ import {
   ADMIN_HEADER_QUICK_LINKS,
   AdminQuickNavigationItem,
 } from '../../../../core/constants/navigation.constants';
+import { resolverPortalContexto } from '../../../../app.routes';
 
 @Component({
   selector: 'app-header',
@@ -460,7 +461,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private actualizarContextoRuta(url: string): void {
     const rutaActual = this.normalizarRuta(url);
-    this.isUserRoute = rutaActual.startsWith('/userpage');
+    this.isUserRoute = resolverPortalContexto(rutaActual) === 'user';
     this.authService.marcarVistaPreferidaSegunRuta(rutaActual);
   }
 

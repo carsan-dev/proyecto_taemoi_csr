@@ -188,7 +188,12 @@
               "src/apple-touch-icon.png",
               "src/robots.txt",
               "src/sitemap.xml",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/build",
+                "output": "assets/pdfjs"
+              }
             ],
             "styles": [
               "src/styles.scss"
@@ -198,6 +203,7 @@
               "src/app/app.routes.spec.ts",
               "src/app/guards/role.guard.spec.ts",
               "src/app/guards/admin-only.guard.spec.ts",
+              "src/app/servicios/endpoints/endpoints.service.spec.ts",
               "src/app/componentes/vistas/layout/header/header.component.spec.ts",
               "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.component.spec.ts"
             ]

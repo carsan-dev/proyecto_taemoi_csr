@@ -7,11 +7,8 @@ import { AuthenticationService } from '../servicios/authentication/authenticatio
 
 describe('adminOnlyGuard', () => {
   const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
-  const rolesSubject = new BehaviorSubject<string[]>([]);
   const authServiceMock = {
-    rolesCambio: rolesSubject.asObservable(),
-    rolesEstanCargados: jasmine.createSpy('rolesEstanCargados'),
-    obtenerRoles: jasmine.createSpy('obtenerRoles'),
+    resolverRolesDisponibles: jasmine.createSpy('resolverRolesDisponibles'),
   } as unknown as AuthenticationService;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
@@ -26,10 +23,8 @@ describe('adminOnlyGuard', () => {
   }
 
   beforeEach(() => {
-    rolesSubject.next([]);
     routerSpy.navigate.calls.reset();
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).calls.reset();
-    (authServiceMock.obtenerRoles as jasmine.Spy).calls.reset();
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).calls.reset();
 
     TestBed.configureTestingModule({
       providers: [
@@ -40,8 +35,9 @@ describe('adminOnlyGuard', () => {
   });
 
   it('permite acceso a admin', async () => {
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).and.returnValue(true);
-    rolesSubject.next(['ROLE_ADMIN']);
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_ADMIN']).asObservable()
+    );
 
     const result = await resolveGuardResult(executeGuard({} as any, {} as any));
 
@@ -50,8 +46,9 @@ describe('adminOnlyGuard', () => {
   });
 
   it('deniega acceso a manager', async () => {
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).and.returnValue(false);
-    (authServiceMock.obtenerRoles as jasmine.Spy).and.returnValue(new BehaviorSubject(['ROLE_MANAGER']).asObservable());
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_MANAGER']).asObservable()
+    );
 
     const result = await resolveGuardResult(executeGuard({} as any, {} as any));
 

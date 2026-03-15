@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
 
 export type PortalPreferido = 'admin' | 'user';
 
@@ -196,6 +196,14 @@ export class AuthenticationService {
 
   getRoles(): Observable<string[]> {
     return this.rolesCambio;
+  }
+
+  resolverRolesDisponibles(): Observable<string[]> {
+    if (this.rolesEstanCargados()) {
+      return this.rolesCambio.pipe(take(1));
+    }
+
+    return this.obtenerRoles().pipe(take(1));
   }
 
   // Nuevo método para obtener los roles actuales

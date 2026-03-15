@@ -8,11 +8,8 @@ import { AuthenticationService } from '../servicios/authentication/authenticatio
 
 describe('roleGuard', () => {
   const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
-  const rolesSubject = new BehaviorSubject<string[]>([]);
   const authServiceMock = {
-    rolesCambio: rolesSubject.asObservable(),
-    rolesEstanCargados: jasmine.createSpy('rolesEstanCargados'),
-    obtenerRoles: jasmine.createSpy('obtenerRoles'),
+    resolverRolesDisponibles: jasmine.createSpy('resolverRolesDisponibles'),
   } as unknown as AuthenticationService;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
@@ -27,10 +24,8 @@ describe('roleGuard', () => {
   }
 
   beforeEach(() => {
-    rolesSubject.next([]);
     routerSpy.navigate.calls.reset();
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).calls.reset();
-    (authServiceMock.obtenerRoles as jasmine.Spy).calls.reset();
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).calls.reset();
 
     TestBed.configureTestingModule({
       providers: [
@@ -41,32 +36,49 @@ describe('roleGuard', () => {
   });
 
   it('permite acceso de manager a rutas de gestión', async () => {
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).and.returnValue(true);
-    rolesSubject.next(['ROLE_MANAGER']);
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_MANAGER']).asObservable()
+    );
 
-    const result = await resolveGuardResult(executeGuard({} as any, { url: '/alumnosListar' } as any));
+    const result = await resolveGuardResult(
+      executeGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER'] } } as any, { url: '/alumnosListar' } as any)
+    );
 
     expect(result).toBeTrue();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 
   it('deniega acceso de user a rutas de gestión', async () => {
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).and.returnValue(true);
-    rolesSubject.next(['ROLE_USER']);
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_USER']).asObservable()
+    );
 
-    const result = await resolveGuardResult(executeGuard({} as any, { url: '/alumnosListar' } as any));
+    const result = await resolveGuardResult(
+      executeGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER'] } } as any, { url: '/alumnosListar' } as any)
+    );
 
     expect(result).toBeFalse();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('permite acceso de user al portal de usuario', async () => {
-    (authServiceMock.rolesEstanCargados as jasmine.Spy).and.returnValue(false);
-    (authServiceMock.obtenerRoles as jasmine.Spy).and.returnValue(new BehaviorSubject(['ROLE_USER']).asObservable());
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_USER']).asObservable()
+    );
 
-    const result = await resolveGuardResult(executeGuard({} as any, { url: '/userpage' } as any));
+    const result = await resolveGuardResult(
+      executeGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] } } as any, { url: '/userpage' } as any)
+    );
 
     expect(result).toBeTrue();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
+  });
+
+  it('deniega acceso si la ruta no declara requiredRoles', async () => {
+    const result = await resolveGuardResult(executeGuard({ data: {} } as any, { url: '/alumnosListar' } as any));
+
+    expect(result).toBeFalse();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(authServiceMock.resolverRolesDisponibles).not.toHaveBeenCalled();
   });
 });

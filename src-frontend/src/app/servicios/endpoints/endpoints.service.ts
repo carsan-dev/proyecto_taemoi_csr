@@ -1629,26 +1629,41 @@ export class EndpointsService {
         }
       )
       .pipe(
-        tap((material) => this.normalizarUrlsMaterialExamen(material)),
+        tap((material) => this.normalizarUrlsMaterialExamen(material, alumnoId, deporte)),
         catchError(this.manejarError)
       );
   }
 
-  obtenerUrlTemarioMaterialExamenAlumno(alumnoId: number, deporte: string): string {
-    return `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/temario`;
+  obtenerUrlTemarioMaterialExamenAlumno(alumnoId: number, deporte: string, download: boolean = false): string {
+    const url = `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/temario`;
+    return download ? `${url}?download=true` : url;
   }
 
   obtenerUrlVideoMaterialExamenAlumno(alumnoId: number, deporte: string, videoFile: string): string {
     return `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/videos/${encodeURIComponent(videoFile)}`;
   }
 
-  private normalizarUrlsMaterialExamen(material: MaterialExamenDTO | null | undefined): void {
+  obtenerUrlDocumentoMaterialExamenAlumno(
+    alumnoId: number,
+    deporte: string,
+    documentoFile: string,
+    download: boolean = false
+  ): string {
+    const baseUrl = `${this.urlBase}/alumnos/${alumnoId}/deportes/${deporte}/material-examen/documentacion/${encodeURIComponent(documentoFile)}`;
+    return download ? `${baseUrl}?download=true` : baseUrl;
+  }
+
+  private normalizarUrlsMaterialExamen(
+    material: MaterialExamenDTO | null | undefined,
+    alumnoId: number,
+    deporte: string
+  ): void {
     if (!material) {
       return;
     }
 
-    if (material.temario?.downloadUrl) {
-      material.temario.downloadUrl = this.resolverUrlApi(material.temario.downloadUrl);
+    if (material.temario?.fileName) {
+      material.temario.downloadUrl = this.obtenerUrlTemarioMaterialExamenAlumno(alumnoId, deporte, true);
     }
 
     if (!Array.isArray(material.videos)) {
@@ -1656,7 +1671,9 @@ export class EndpointsService {
     } else {
       material.videos = material.videos.map((video) => ({
         ...video,
-        streamUrl: this.resolverUrlApi(video?.streamUrl || ''),
+        streamUrl: video?.id
+          ? this.obtenerUrlVideoMaterialExamenAlumno(alumnoId, deporte, video.id)
+          : '',
       }));
     }
 
@@ -1665,22 +1682,29 @@ export class EndpointsService {
     } else {
       material.documentos = material.documentos.map((documento) => ({
         ...documento,
-        openUrl: this.resolverUrlApi(documento?.openUrl || ''),
-        downloadUrl: this.resolverUrlApi(documento?.downloadUrl || ''),
+        openUrl: this.esDocumentoTemarioMaterialExamen(documento, material.temario?.fileName)
+          ? this.obtenerUrlTemarioMaterialExamenAlumno(alumnoId, deporte)
+          : documento?.fileName
+            ? this.obtenerUrlDocumentoMaterialExamenAlumno(alumnoId, deporte, documento.fileName)
+            : '',
+        downloadUrl: this.esDocumentoTemarioMaterialExamen(documento, material.temario?.fileName)
+          ? this.obtenerUrlTemarioMaterialExamenAlumno(alumnoId, deporte, true)
+          : documento?.fileName
+            ? this.obtenerUrlDocumentoMaterialExamenAlumno(alumnoId, deporte, documento.fileName, true)
+            : '',
       }));
     }
   }
 
-  private resolverUrlApi(url: string): string {
-    if (!url) {
-      return url;
+  private esDocumentoTemarioMaterialExamen(
+    documento: MaterialExamenDTO['documentos'][number] | null | undefined,
+    temarioFileName: string | null | undefined
+  ): boolean {
+    if (!documento || !temarioFileName) {
+      return false;
     }
 
-    try {
-      return new URL(url, this.urlBase).toString();
-    } catch {
-      return url;
-    }
+    return documento.order === 0 && documento.fileName === temarioFileName;
   }
 
   generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {

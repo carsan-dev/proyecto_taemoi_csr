@@ -10,6 +10,7 @@ describe('HeaderComponent', () => {
       rolesCambio: new Subject<string[]>(),
       comprobarLogueado: () => false,
       getRoles: () => of([]),
+      marcarVistaPreferidaSegunRuta: jasmine.createSpy('marcarVistaPreferidaSegunRuta'),
       tieneAccesoAdmin: (roles: string[]) => roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
       tieneAccesoUser: (roles: string[]) => roles.includes('ROLE_USER'),
       tieneAccesoDual: (roles: string[]) => roles.includes('ROLE_USER') && (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')),
@@ -49,5 +50,17 @@ describe('HeaderComponent', () => {
 
     expect(routes).toContain('/auditoriaSistema');
     expect(routes).toContain('/configuracion-sistema');
+  });
+
+  it('detecta el portal user usando metadata de rutas', () => {
+    (component as any).actualizarContextoRuta('/userpage/turnos');
+
+    expect(component.isUserRoute).toBeTrue();
+  });
+
+  it('detecta el portal admin usando metadata de rutas', () => {
+    (component as any).actualizarContextoRuta('/alumnosListar');
+
+    expect(component.isUserRoute).toBeFalse();
   });
 });
