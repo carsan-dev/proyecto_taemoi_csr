@@ -2,8 +2,11 @@ package com.taemoi.project.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Deporte;
@@ -39,6 +42,8 @@ import com.taemoi.project.utils.EmailUtils;
 @Component
 public class InicializadorDatos implements CommandLineRunner {
 
+	private static final Logger logger = LoggerFactory.getLogger(InicializadorDatos.class);
+
 	@Autowired
 	private UsuarioRepository usuarioRepository;
 
@@ -59,6 +64,18 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Value("${app.bootstrap.admin.email:}")
+	private String bootstrapAdminEmail;
+
+	@Value("${app.bootstrap.admin.password:}")
+	private String bootstrapAdminPassword;
+
+	@Value("${app.bootstrap.admin.nombre:Admin}")
+	private String bootstrapAdminNombre;
+
+	@Value("${app.bootstrap.admin.apellidos:Bootstrap}")
+	private String bootstrapAdminApellidos;
 
 	/**
 	 * Método que se ejecuta al arrancar la aplicación para inicializar datos en la
@@ -183,9 +200,19 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
 	private void generarUsuarios() {
-		crearUsuarioSiNoExiste("moiskimdotaekwondo@gmail.com", "Moiskimdo", "Taekwondo", "09012013",
+		if (bootstrapAdminEmail == null || bootstrapAdminEmail.isBlank()
+				|| bootstrapAdminPassword == null || bootstrapAdminPassword.isBlank()) {
+			logger.warn("No se ha configurado APP_BOOTSTRAP_ADMIN_EMAIL/APP_BOOTSTRAP_ADMIN_PASSWORD. "
+					+ "No se creara ningun administrador por defecto en una base de datos vacia.");
+			return;
+		}
+
+		crearUsuarioSiNoExiste(
+				bootstrapAdminEmail,
+				bootstrapAdminNombre,
+				bootstrapAdminApellidos,
+				bootstrapAdminPassword,
 				Roles.ROLE_ADMIN);
-		crearUsuarioSiNoExiste("crolyx16@gmail.com", "Carlos", "Sanchez Roman", "16082017", Roles.ROLE_ADMIN);
 	}
 
 	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {

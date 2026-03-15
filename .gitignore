@@ -11,6 +11,7 @@ certbot/conf/
 certbot/www/
 backups/
 *.tar.gz
+*.mdb
 static_resources/documentos/Documentos_Alumnos_Moiskimdo/*
 static_resources/imagenes/alumnos/*
 static_resources/documentos/Materiales_Examen/**
