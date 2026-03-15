@@ -57,6 +57,7 @@ import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 @RestController
 @RequestMapping("/api/eventos")
@@ -100,13 +101,15 @@ public class EventoController {
 	}
 
 	@GetMapping("/{eventoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<Evento> obtenerEventoPorId(@PathVariable @NonNull Long eventoId) {
 		try {
 			Evento evento = eventoService.obtenerEventoPorId(eventoId);
+			if (!Boolean.TRUE.equals(evento.getVisible()) && !tieneAccesoPrivilegiadoEventos()) {
+				return ResponseEntity.notFound().build();
+			}
 			aplicarUrlImagenPublica(evento);
 			return ResponseEntity.ok(evento);
-		} catch (TurnoNoEncontradoException e) {
+		} catch (EventoNoEncontradoException | TurnoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
 		}
 	}
@@ -285,16 +288,9 @@ public class EventoController {
 
 			Documento documento = eventoService.obtenerDocumentoDeEvento(eventoId, documentoId);
 			Resource recurso = documentoService.obtenerRecursoDocumento(documento);
-			MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-			if (!forceDownload && documento.getTipo() != null && !documento.getTipo().isBlank()) {
-				try {
-					mediaType = MediaType.parseMediaType(documento.getTipo());
-				} catch (IllegalArgumentException ignored) {
-					mediaType = MediaType.APPLICATION_OCTET_STREAM;
-				}
-			}
+			MediaType mediaType = DocumentoSecurityUtils.resolverMediaTypeRespuesta(documento.getTipo(), forceDownload);
 			String nombreDocumento = asegurarNombreConExtension(documento.getNombre(), documento.getTipo());
-			String dispositionType = forceDownload ? "attachment" : "inline";
+			String dispositionType = DocumentoSecurityUtils.resolverDispositionType(documento.getTipo(), forceDownload);
 
 			return ResponseEntity.ok()
 					.contentType(mediaType)
