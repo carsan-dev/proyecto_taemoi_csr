@@ -61,11 +61,11 @@ EOF
 }
 
 check_env() {
-    if [ ! -f ".env.production" ]; then
-        log_error ".env.production file not found!"
+    if [ ! -f ".env" ]; then
+        log_error ".env file not found!"
         exit 1
     fi
-    source .env.production
+    source .env
 }
 
 cmd_start() {
@@ -146,24 +146,29 @@ cmd_backup_db() {
 }
 
 cmd_backup_files() {
+    check_env
     log_info "Backing up uploaded files..."
     mkdir -p backups
 
     BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+    IMAGES_PATH=${APP_IMAGENES_HOST_PATH:-/opt/taemoi/static_resources/imagenes}
+    DOCUMENTS_PATH=${APP_DOCUMENTOS_HOST_PATH:-/opt/taemoi/static_resources/documentos}
 
     # Backup images
-    log_info "Backing up images..."
-    docker run --rm \
-        -v taemoi_app_imagenes:/source \
-        -v $(pwd)/backups:/backup \
-        alpine tar czf /backup/imagenes_${BACKUP_DATE}.tar.gz -C /source .
+    if [ -d "$IMAGES_PATH" ]; then
+        log_info "Backing up images from $IMAGES_PATH..."
+        tar czf "backups/imagenes_${BACKUP_DATE}.tar.gz" -C "$IMAGES_PATH" .
+    else
+        log_warn "Images path not found: $IMAGES_PATH"
+    fi
 
     # Backup documents
-    log_info "Backing up documents..."
-    docker run --rm \
-        -v taemoi_app_documentos:/source \
-        -v $(pwd)/backups:/backup \
-        alpine tar czf /backup/documentos_${BACKUP_DATE}.tar.gz -C /source .
+    if [ -d "$DOCUMENTS_PATH" ]; then
+        log_info "Backing up documents from $DOCUMENTS_PATH..."
+        tar czf "backups/documentos_${BACKUP_DATE}.tar.gz" -C "$DOCUMENTS_PATH" .
+    else
+        log_warn "Documents path not found: $DOCUMENTS_PATH"
+    fi
 
     log_info "File backups created in backups/ directory"
 }

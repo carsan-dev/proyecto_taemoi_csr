@@ -7,7 +7,6 @@ services:
       - .env
     volumes:
       - db_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -37,6 +36,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-false}
       JWT_SECRET: ${JWT_SECRET}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
@@ -49,15 +49,8 @@ services:
       APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
       APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
-      # Option 1: Named volumes (commented out - not used)
-      # - app_imagenes:/var/www/app/imagenes
-      # - app_documentos:/var/www/app/documentos
-
-      # Option 2: Bind mounts (ACTIVE - serves files directly from host)
-      # Using absolute paths to match migration SQL file locations
-      # Read-write to allow file uploads
-      - /opt/taemoi/static_resources/imagenes:/var/www/app/imagenes
-      - /opt/taemoi/static_resources/documentos:/var/www/app/documentos
+      - ${APP_IMAGENES_HOST_PATH:-/opt/taemoi/static_resources/imagenes}:/var/www/app/imagenes
+      - ${APP_DOCUMENTOS_HOST_PATH:-/opt/taemoi/static_resources/documentos}:/var/www/app/documentos
     networks:
       - taemoi-network
     healthcheck:
@@ -111,10 +104,5 @@ networks:
 volumes:
   db_data:
     driver: local
-  # app_imagenes and app_documentos not needed - using bind mounts instead
-  # app_imagenes:
-  #   driver: local
-  # app_documentos:
-  #   driver: local
   nginx_cache:
     driver: local

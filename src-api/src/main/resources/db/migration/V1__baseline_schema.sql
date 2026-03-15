@@ -1,3 +1,6 @@
+-- Baseline schema managed by Flyway.
+-- Derived from the existing TaeMoi schema without destructive bootstrap statements.
+
 -- MySQL Workbench Forward Engineering
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
@@ -14,14 +17,11 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema taemoi_db
 -- -----------------------------------------------------
-DROP SCHEMA IF EXISTS `taemoi_db`;
-CREATE SCHEMA IF NOT EXISTS `taemoi_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
-USE `taemoi_db` ;
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`imagen`
+-- Table `imagen`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`imagen` (
+CREATE TABLE IF NOT EXISTS `imagen` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(200) NOT NULL,
   `ruta` VARCHAR(500) NOT NULL,
@@ -35,9 +35,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`categoria`
+-- Table `categoria`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`categoria` (
+CREATE TABLE IF NOT EXISTS `categoria` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(255) NOT NULL,
   `tipo_categoria` ENUM('CADETE', 'INFANTIL', 'JUNIOR', 'PRECADETE', 'SENIOR') NULL DEFAULT NULL,
@@ -49,9 +49,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`grado`
+-- Table `grado`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`grado` (
+CREATE TABLE IF NOT EXISTS `grado` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `tipo_grado` ENUM('AMARILLO', 'AMARILLO_NARANJA', 'AZUL', 'AZUL_ROJO', 'BLANCO', 'BLANCO_AMARILLO', 'NARANJA', 'NARANJA_VERDE', 'NEGRO_1_DAN', 'NEGRO_2_DAN', 'NEGRO_3_DAN', 'NEGRO_4_DAN', 'NEGRO_5_DAN', 'ROJO', 'ROJO_NEGRO_1_PUM', 'ROJO_NEGRO_2_PUM', 'ROJO_NEGRO_3_PUM', 'VERDE', 'VERDE_AZUL') NOT NULL,
   PRIMARY KEY (`id`))
@@ -62,12 +62,12 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno`
+-- Table `alumno`
 -- -----------------------------------------------------
 -- IMPORTANT: Many fields are now nullable for multi-sport mode.
 -- In multi-sport mode, per-sport data is stored in alumno_deporte table.
 -- Legacy single-sport mode still uses these fields.
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno` (
+CREATE TABLE IF NOT EXISTS `alumno` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
   `apellidos` VARCHAR(255) NOT NULL,
@@ -107,13 +107,13 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno` (
   INDEX `FKid01ntlqpypy38pi2bk0nlof3` (`grado_id` ASC) VISIBLE,
   CONSTRAINT `FK35h62thngrq0o15s2www7u451`
     FOREIGN KEY (`foto_alumno_id`)
-    REFERENCES `taemoi_db`.`imagen` (`id`),
+    REFERENCES `imagen` (`id`),
   CONSTRAINT `FK3sss574xtkjpgdljygxm19glf`
     FOREIGN KEY (`categoria_id`)
-    REFERENCES `taemoi_db`.`categoria` (`id`),
+    REFERENCES `categoria` (`id`),
   CONSTRAINT `FKid01ntlqpypy38pi2bk0nlof3`
     FOREIGN KEY (`grado_id`)
-    REFERENCES `taemoi_db`.`grado` (`id`))
+    REFERENCES `grado` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -121,9 +121,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`producto`
+-- Table `producto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`producto` (
+CREATE TABLE IF NOT EXISTS `producto` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `concepto` VARCHAR(255) NULL DEFAULT NULL,
   `precio` DOUBLE NULL DEFAULT NULL,
@@ -135,11 +135,11 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno_deporte`
+-- Table `alumno_deporte`
 -- -----------------------------------------------------
 -- Per-sport data for multi-sport mode
 -- Each student can have multiple sports with independent configuration
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_deporte` (
+CREATE TABLE IF NOT EXISTS `alumno_deporte` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `activo` BIT(1) NOT NULL,
   `principal` BIT(1) NOT NULL DEFAULT 0,
@@ -173,13 +173,13 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_deporte` (
   INDEX `FKcategoria_alumno_deporte_init` (`categoria_id` ASC) VISIBLE,
   CONSTRAINT `FK9fr1k4ow5l16qts5508vqk9wn`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`),
+    REFERENCES `alumno` (`id`),
   CONSTRAINT `FKirt39noykqeplscbxi32tb786`
     FOREIGN KEY (`grado_id`)
-    REFERENCES `taemoi_db`.`grado` (`id`),
+    REFERENCES `grado` (`id`),
   CONSTRAINT `FKcategoria_alumno_deporte_init`
     FOREIGN KEY (`categoria_id`)
-    REFERENCES `taemoi_db`.`categoria` (`id`))
+    REFERENCES `categoria` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -187,9 +187,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`producto_alumno`
+-- Table `producto_alumno`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`producto_alumno` (
+CREATE TABLE IF NOT EXISTS `producto_alumno` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `cantidad` INT NULL DEFAULT NULL,
   `concepto` VARCHAR(255) NULL DEFAULT NULL,
@@ -207,13 +207,13 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`producto_alumno` (
   INDEX `FKmi1jp8li7aa59orox8hohl213` (`alumno_deporte_id` ASC) VISIBLE,
   CONSTRAINT `FK5aq2e0hk0dllyuil2f7rn526r`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`),
+    REFERENCES `alumno` (`id`),
   CONSTRAINT `FKhr3yv7e998cyd9np3nod2uo0j`
     FOREIGN KEY (`producto_id`)
-    REFERENCES `taemoi_db`.`producto` (`id`),
+    REFERENCES `producto` (`id`),
   CONSTRAINT `FKmi1jp8li7aa59orox8hohl213`
     FOREIGN KEY (`alumno_deporte_id`)
-    REFERENCES `taemoi_db`.`alumno_deporte` (`id`))
+    REFERENCES `alumno_deporte` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -221,9 +221,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`convocatoria`
+-- Table `convocatoria`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`convocatoria` (
+CREATE TABLE IF NOT EXISTS `convocatoria` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `deporte` ENUM('DEFENSA_PERSONAL_FEMENINA', 'KICKBOXING', 'PILATES', 'TAEKWONDO') NOT NULL,
   `fecha_convocatoria` DATE NOT NULL,
@@ -235,9 +235,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno_convocatoria`
+-- Table `alumno_convocatoria`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_convocatoria` (
+CREATE TABLE IF NOT EXISTS `alumno_convocatoria` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `cuantia_examen` DOUBLE NOT NULL,
   `fecha_pago` DATE NULL DEFAULT NULL,
@@ -255,16 +255,16 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_convocatoria` (
   INDEX `FKgor9jlkap0uaen39m2eon5ct8` (`alumno_deporte_id` ASC) VISIBLE,
   CONSTRAINT `FK7i5raysl38e3apc5kow9mtii2`
     FOREIGN KEY (`producto_alumno_id`)
-    REFERENCES `taemoi_db`.`producto_alumno` (`id`),
+    REFERENCES `producto_alumno` (`id`),
   CONSTRAINT `FKgor9jlkap0uaen39m2eon5ct8`
     FOREIGN KEY (`alumno_deporte_id`)
-    REFERENCES `taemoi_db`.`alumno_deporte` (`id`),
+    REFERENCES `alumno_deporte` (`id`),
   CONSTRAINT `FKpm62kpl6nbmqiuach08e2t3sk`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`),
+    REFERENCES `alumno` (`id`),
   CONSTRAINT `FKqwjl8svxuu5mywp3cnosoewrk`
     FOREIGN KEY (`convocatoria_id`)
-    REFERENCES `taemoi_db`.`convocatoria` (`id`))
+    REFERENCES `convocatoria` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -272,9 +272,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`grupo`
+-- Table `grupo`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`grupo` (
+CREATE TABLE IF NOT EXISTS `grupo` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(50) NOT NULL,
   `tipo` VARCHAR(255) NULL DEFAULT NULL,
@@ -287,28 +287,28 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno_grupo`
+-- Table `alumno_grupo`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_grupo` (
+CREATE TABLE IF NOT EXISTS `alumno_grupo` (
   `grupo_id` BIGINT NOT NULL,
   `alumno_id` BIGINT NOT NULL,
   INDEX `FK9m58u5wqf6fc2i5qur535qic6` (`alumno_id` ASC) VISIBLE,
   INDEX `FKc3q87xf5n31xgpfun4b7jndg0` (`grupo_id` ASC) VISIBLE,
   CONSTRAINT `FK9m58u5wqf6fc2i5qur535qic6`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`),
+    REFERENCES `alumno` (`id`),
   CONSTRAINT `FKc3q87xf5n31xgpfun4b7jndg0`
     FOREIGN KEY (`grupo_id`)
-    REFERENCES `taemoi_db`.`grupo` (`id`))
+    REFERENCES `grupo` (`id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`turno`
+-- Table `turno`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`turno` (
+CREATE TABLE IF NOT EXISTS `turno` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `dia_semana` VARCHAR(255) NOT NULL,
   `hora_fin` VARCHAR(255) NOT NULL,
@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`turno` (
   INDEX `FKp5gxotvxjlr365k51g04k28ar` (`grupo_id` ASC) VISIBLE,
   CONSTRAINT `FKp5gxotvxjlr365k51g04k28ar`
     FOREIGN KEY (`grupo_id`)
-    REFERENCES `taemoi_db`.`grupo` (`id`))
+    REFERENCES `grupo` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -327,28 +327,28 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno_turno`
+-- Table `alumno_turno`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_turno` (
+CREATE TABLE IF NOT EXISTS `alumno_turno` (
   `alumno_id` BIGINT NOT NULL,
   `turno_id` BIGINT NOT NULL,
   INDEX `FKfoc1h7mfnqjam1hnegu45moyt` (`turno_id` ASC) VISIBLE,
   INDEX `FKl8eyv28lwnv3gqgthkf1eatuf` (`alumno_id` ASC) VISIBLE,
   CONSTRAINT `FKfoc1h7mfnqjam1hnegu45moyt`
     FOREIGN KEY (`turno_id`)
-    REFERENCES `taemoi_db`.`turno` (`id`),
+    REFERENCES `turno` (`id`),
   CONSTRAINT `FKl8eyv28lwnv3gqgthkf1eatuf`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`))
+    REFERENCES `alumno` (`id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`configuracion_sistema`
+-- Table `configuracion_sistema`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`configuracion_sistema` (
+CREATE TABLE IF NOT EXISTS `configuracion_sistema` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `clave` VARCHAR(255) NOT NULL,
   `valor` INT NOT NULL,
@@ -359,9 +359,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`documento`
+-- Table `documento`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`documento` (
+CREATE TABLE IF NOT EXISTS `documento` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(200) NOT NULL,
   `ruta` VARCHAR(500) NOT NULL,
@@ -372,7 +372,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`documento` (
   INDEX `FK33wv3r0e5tl1xy0hw27g55p2l` (`alumno_id` ASC) VISIBLE,
   CONSTRAINT `FK33wv3r0e5tl1xy0hw27g55p2l`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`))
+    REFERENCES `alumno` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -380,9 +380,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`evento`
+-- Table `evento`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`evento` (
+CREATE TABLE IF NOT EXISTS `evento` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `descripcion` VARCHAR(500) NOT NULL,
   `fecha_evento` DATE NULL DEFAULT NULL,
@@ -394,7 +394,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`evento` (
   UNIQUE INDEX `UK4181ienduxeq2ridhuwd3qvwk` (`foto_evento_id` ASC) VISIBLE,
   CONSTRAINT `FK8r4xhbhw72x5gsalwsmf6km67`
     FOREIGN KEY (`foto_evento_id`)
-    REFERENCES `taemoi_db`.`imagen` (`id`))
+    REFERENCES `imagen` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -402,9 +402,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`alumno_reto_diario_log`
+-- Table `alumno_reto_diario_log`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_reto_diario_log` (
+CREATE TABLE IF NOT EXISTS `alumno_reto_diario_log` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `alumno_id` BIGINT NOT NULL,
   `fecha_completado` DATE NOT NULL,
@@ -417,16 +417,16 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`alumno_reto_diario_log` (
   INDEX `idx_alumno_reto_diario_log_alumno_semana` (`alumno_id` ASC, `anio_iso` ASC, `semana_iso` ASC) VISIBLE,
   CONSTRAINT `FK_alumno_reto_diario_log_alumno_init`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`))
+    REFERENCES `alumno` (`id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`usuario`
+-- Table `usuario`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`usuario` (
+CREATE TABLE IF NOT EXISTS `usuario` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `apellidos` VARCHAR(50) NOT NULL,
   `contrasena` VARCHAR(255) NOT NULL,
@@ -443,7 +443,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`usuario` (
   UNIQUE INDEX `UKiwqbs97sir17hipge3olmu6i6` (`alumno_id` ASC) VISIBLE,
   CONSTRAINT `FKs2jdpk0wmqgyj2i2jer600y8b`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`))
+    REFERENCES `alumno` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -451,9 +451,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`registro_pendiente`
+-- Table `registro_pendiente`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`registro_pendiente` (
+CREATE TABLE IF NOT EXISTS `registro_pendiente` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `email` VARCHAR(255) NOT NULL,
   `alumno_id` BIGINT NOT NULL,
@@ -466,7 +466,7 @@ CREATE TABLE IF NOT EXISTS `taemoi_db`.`registro_pendiente` (
   INDEX `FK_registro_pendiente_alumno` (`alumno_id` ASC) VISIBLE,
   CONSTRAINT `FK_registro_pendiente_alumno`
     FOREIGN KEY (`alumno_id`)
-    REFERENCES `taemoi_db`.`alumno` (`id`))
+    REFERENCES `alumno` (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8mb4
@@ -474,9 +474,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`auditoria_evento`
+-- Table `auditoria_evento`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`auditoria_evento` (
+CREATE TABLE IF NOT EXISTS `auditoria_evento` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `fecha_evento` DATETIME(6) NOT NULL,
   `accion` VARCHAR(16) NOT NULL,
@@ -506,15 +506,15 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `taemoi_db`.`usuario_rol`
+-- Table `usuario_rol`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `taemoi_db`.`usuario_rol` (
+CREATE TABLE IF NOT EXISTS `usuario_rol` (
   `usuario_id` BIGINT NOT NULL,
   `roles` ENUM('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER') NULL DEFAULT NULL,
   INDEX `FKbyfgloj439r9wr9smrms9u33r` (`usuario_id` ASC) VISIBLE,
   CONSTRAINT `FKbyfgloj439r9wr9smrms9u33r`
     FOREIGN KEY (`usuario_id`)
-    REFERENCES `taemoi_db`.`usuario` (`id`))
+    REFERENCES `usuario` (`id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
