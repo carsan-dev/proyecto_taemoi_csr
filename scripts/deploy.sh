@@ -136,17 +136,17 @@ if [ "$ENVIRONMENT" = "production" ]; then
     echo ""
     step "Verifying Flyway migration state..."
     FLYWAY_HISTORY=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
-        mysql -Nse "SHOW TABLES LIKE 'flyway_schema_history';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+        mysql -h localhost -Nse "SHOW TABLES LIKE 'flyway_schema_history';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
     if [ "$FLYWAY_HISTORY" = "flyway_schema_history" ]; then
         MIGRATION_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
-            mysql -Nse "SELECT COUNT(*) FROM flyway_schema_history;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+            mysql -h localhost -Nse "SELECT COUNT(*) FROM flyway_schema_history;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
         success "Flyway activo (${MIGRATION_COUNT:-0} entradas en flyway_schema_history)"
 
         ALUMNO_TABLE=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
-            mysql -Nse "SHOW TABLES LIKE 'alumno';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+            mysql -h localhost -Nse "SHOW TABLES LIKE 'alumno';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
         if [ "$ALUMNO_TABLE" = "alumno" ]; then
             ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
-                mysql -Nse "SELECT COUNT(*) FROM alumno;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+                mysql -h localhost -Nse "SELECT COUNT(*) FROM alumno;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
             if [ "${ALUMNO_COUNT:-0}" -gt 0 ]; then
                 success "Data available in alumno (${ALUMNO_COUNT} students found)"
             else
@@ -220,8 +220,8 @@ echo "  - Enter container:  docker-compose -f $COMPOSE_FILE exec <service> bash"
 echo ""
 if [ "$ENVIRONMENT" = "production" ]; then
     echo "Production-specific commands:"
-    echo "  - Check schema:      docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SELECT * FROM flyway_schema_history;'"
-    echo "  - Restore backup:    docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /secure/path/private_backup.sql"
+    echo "  - Check schema:      docker-compose -f $COMPOSE_FILE exec database mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SELECT * FROM flyway_schema_history;'"
+    echo "  - Restore backup:    docker-compose -f $COMPOSE_FILE exec -T database mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /secure/path/private_backup.sql"
     echo ""
 fi
 echo "Next steps:"

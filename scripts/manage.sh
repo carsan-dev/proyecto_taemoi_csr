@@ -140,7 +140,7 @@ cmd_backup_db() {
 
     mkdir -p backups
     docker-compose -f $COMPOSE_FILE exec -T database \
-        mysqldump -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} > backups/$BACKUP_FILE
+        mysqldump -h localhost -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} > backups/$BACKUP_FILE
 
     log_info "Database backup created: backups/$BACKUP_FILE"
 }
@@ -196,7 +196,7 @@ cmd_restore_db() {
 
     log_info "Restoring database..."
     docker-compose -f $COMPOSE_FILE exec -T database \
-        mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < $1
+        mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < $1
 
     log_info "Database restored successfully!"
 }
@@ -247,7 +247,7 @@ cmd_shell_backend() {
 cmd_shell_db() {
     check_env
     log_info "Opening MySQL shell..."
-    docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE}
+    docker-compose -f $COMPOSE_FILE exec database mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE}
 }
 
 cmd_stats() {
