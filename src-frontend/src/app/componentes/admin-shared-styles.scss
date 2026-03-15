@@ -3303,6 +3303,8 @@ label {
     min-width: 0;
 
     .documento-name {
+      display: block;
+      max-width: 100%;
       font-weight: 600;
       font-size: 0.95rem;
       color: $text-dark;
@@ -3312,8 +3314,13 @@ label {
     }
 
     .documento-type {
+      display: block;
+      max-width: 100%;
       font-size: 0.85rem;
       color: $text-muted;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
   }
 
