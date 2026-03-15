@@ -340,6 +340,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		String base = sinExtension(fileName);
 		Matcher matcher = ORDEN_ARCHIVO_PATTERN.matcher(base);
 		String limpio = matcher.matches() ? matcher.group(2) : base;
+		limpio = limpio.replaceFirst("(?i)([_\\-\\s]+comp)$", "");
 		return limpio.replace('_', ' ').replace('-', ' ').trim();
 	}
 

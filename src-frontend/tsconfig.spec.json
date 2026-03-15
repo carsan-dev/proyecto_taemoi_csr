@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": [
+      "jasmine"
+    ]
+  },
+  "files": [
+    "src/app/app.routes.spec.ts",
+    "src/app/guards/role.guard.spec.ts",
+    "src/app/guards/admin-only.guard.spec.ts",
+    "src/app/servicios/endpoints/endpoints.service.spec.ts",
+    "src/app/componentes/vistas/layout/header/header.component.spec.ts",
+    "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.component.spec.ts"
+  ],
+  "include": [
+    "src/**/*.d.ts"
+  ]
+}

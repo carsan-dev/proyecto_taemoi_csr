@@ -6,6 +6,57 @@ import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-pr
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
 
+type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER';
+export type PortalContext = 'public' | 'admin' | 'user';
+
+const ROUTE_ROLE_SETS = {
+  management: ['ROLE_ADMIN', 'ROLE_MANAGER'] as const satisfies readonly RouteRole[],
+  adminOnly: ['ROLE_ADMIN'] as const satisfies readonly RouteRole[],
+  userPortal: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] as const satisfies readonly RouteRole[],
+};
+
+function privateRouteData(requiredRoles: readonly RouteRole[], portalContext: PortalContext = 'admin') {
+  return {
+    seo: SEO_ROUTES.noIndex,
+    requiredRoles,
+    portalContext,
+  };
+}
+
+type RouteDataWithPortalContext = {
+  portalContext?: PortalContext;
+};
+
+function normalizarRuta(url: string): string {
+  return (url || '').split('?')[0].split('#')[0];
+}
+
+function coincideRuta(routePath: string, url: string): boolean {
+  if (!routePath) {
+    return url === '' || url === '/';
+  }
+
+  if (routePath === '**') {
+    return true;
+  }
+
+  const routeSegments = routePath.split('/').filter(Boolean);
+  const urlSegments = url.split('/').filter(Boolean);
+
+  if (routeSegments.length !== urlSegments.length) {
+    return false;
+  }
+
+  return routeSegments.every((segment, index) => segment.startsWith(':') || segment === urlSegments[index]);
+}
+
+export function resolverPortalContexto(url: string): PortalContext {
+  const rutaNormalizada = normalizarRuta(url);
+  const matchingRoute = routes.find((route) => route.path && coincideRuta(route.path, rutaNormalizada));
+  const routeData = matchingRoute?.data as RouteDataWithPortalContext | undefined;
+  return routeData?.portalContext ?? 'public';
+}
+
 export const routes: Routes = [
   {
     path: '',
@@ -107,166 +158,166 @@ export const routes: Routes = [
   },
   {
     path: 'adminpage',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/vistas/vista-principal-admin/vista-principal-admin.component').then(m => m.VistaPrincipalAdminComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'userpage',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.userPortal, 'user'),
     loadComponent: () => import('./componentes/vistas/vista-principal-user/vista-principal-user.component').then(m => m.VistaPrincipalUserComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'userpage/turnos',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.userPortal, 'user'),
     loadComponent: () => import('./componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component').then(m => m.TurnosUsuarioComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosListar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-alumnos/listado-alumnos.component').then(m => m.ListadoAlumnosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosEditar/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosEditar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
     pathMatch: 'full',
   },
   {
     path: 'alumnos/:id/productos',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component').then(m => m.ProductosAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosCrear',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-alumno/crear-alumno.component').then(m => m.CrearAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosEliminar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/eliminar-alumno/eliminar-alumno.component').then(m => m.EliminarAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposListar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/listado-grupos.component').then(m => m.ListadoGruposComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposCrear',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposEditar/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-grupo/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gestionarAlumnos/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'seleccionarAlumnos/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component').then(m => m.SeleccionarAlumnosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'turnosCrear',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'turnosEditar/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-turno/editar-turno.component').then(m => m.EditarTurnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosListar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-eventos/listado-eventos.component').then(m => m.ListadoEventosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosCrear',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-evento/crear-evento.component').then(m => m.CrearEventoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosEditar/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-evento/editar-evento.component').then(m => m.EditarEventoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'productosListar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-productos/listado-productos.component').then(m => m.ListadoProductosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'productosCrear',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-producto/crear-producto.component').then(m => m.CrearProductoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'productosEditar/:id',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-producto/editar-producto.component').then(m => m.EditarProductoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'tesoreriaCobros',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'auditoriaSistema',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
   },
   {
     path: 'convocatoriasListar',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'configuracion-sistema',
-    data: { seo: SEO_ROUTES.noIndex },
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
-    canActivate: [roleGuard],
+    canActivate: [roleGuard, adminOnlyGuard],
   },
   {
     path: '**',

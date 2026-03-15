@@ -1,23 +1,66 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { HeaderComponent } from './header.component';
+import { NgZone } from '@angular/core';
+import { of, Subject } from 'rxjs';
 
 describe('HeaderComponent', () => {
-  let component: HeaderComponent;
-  let fixture: ComponentFixture<HeaderComponent>;
+  function createComponent(): HeaderComponent {
+    const authServiceMock = {
+      usuarioLogueadoCambio: new Subject<boolean>(),
+      usernameCambio: new Subject<string | null>(),
+      rolesCambio: new Subject<string[]>(),
+      comprobarLogueado: () => false,
+      getRoles: () => of([]),
+      marcarVistaPreferidaSegunRuta: jasmine.createSpy('marcarVistaPreferidaSegunRuta'),
+      tieneAccesoAdmin: (roles: string[]) => roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
+      tieneAccesoUser: (roles: string[]) => roles.includes('ROLE_USER'),
+      tieneAccesoDual: (roles: string[]) => roles.includes('ROLE_USER') && (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')),
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [HeaderComponent]
-    })
-    .compileComponents();
-    
-    fixture = TestBed.createComponent(HeaderComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    const routerMock = {
+      url: '/adminpage',
+      events: of(),
+    };
+
+    return new HeaderComponent(authServiceMock as any, routerMock as any, new NgZone({}));
+  }
+
+  let component: HeaderComponent;
+
+  beforeEach(() => {
+    component = createComponent();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('oculta accesos rapidos solo-admin para manager', () => {
+    component.isAdminOnly = false;
+
+    const routes = component.visibleAdminQuickLinks.map((item) => item.route);
+
+    expect(routes).not.toContain('/auditoriaSistema');
+    expect(routes).not.toContain('/configuracion-sistema');
+  });
+
+  it('muestra accesos rapidos solo-admin para admin', () => {
+    component.isAdminOnly = true;
+
+    const routes = component.visibleAdminQuickLinks.map((item) => item.route);
+
+    expect(routes).toContain('/auditoriaSistema');
+    expect(routes).toContain('/configuracion-sistema');
+  });
+
+  it('detecta el portal user usando metadata de rutas', () => {
+    (component as any).actualizarContextoRuta('/userpage/turnos');
+
+    expect(component.isUserRoute).toBeTrue();
+  });
+
+  it('detecta el portal admin usando metadata de rutas', () => {
+    (component as any).actualizarContextoRuta('/alumnosListar');
+
+    expect(component.isUserRoute).toBeFalse();
   });
 });

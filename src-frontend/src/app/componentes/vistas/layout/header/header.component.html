@@ -208,7 +208,7 @@
       </div>
     </a>
     <nav class="admin-quick-nav" aria-label="Accesos rápidos de administración">
-      @for (item of adminQuickLinks; track item.route) {
+      @for (item of visibleAdminQuickLinks; track item.route) {
         <a
           class="quick-link"
           [attr.data-priority]="item.priority ?? 99"
@@ -456,12 +456,14 @@
         <span>Tesorería y Cobros</span>
       </a>
     </li>
+    @if (isAdminOnly) {
     <li>
       <a class="menu-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active" (click)="closeAdminMenu()">
         <i class="bi bi-journal-text"></i>
         <span>Auditoría Sistema</span>
       </a>
     </li>
+    }
 
     <!-- Convocatorias Section -->
     <li class="menu-item-expandable">
@@ -482,6 +484,7 @@
     </li>
 
     <!-- Administración Section -->
+    @if (isAdminOnly) {
     <li class="menu-item-expandable">
       <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()"
         [class.expanded]="expandedSections['administracion']">
@@ -498,6 +501,7 @@
         </li>
       </ul>
     </li>
+    }
   </ul>
 </nav>
 }

@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import {
   getDocument,
   GlobalWorkerOptions,
@@ -63,7 +62,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   deporteSeleccionado: string | null = null;
   material: MaterialExamenDTO | null = null;
   videoSeleccionado: MaterialExamenVideoDTO | null = null;
-  videoSeleccionadoUrl: SafeUrl | null = null;
+  videoSeleccionadoUrl: string | null = null;
 
   documentoSeleccionado: MaterialExamenDocumentoDTO | null = null;
   mostrarDocumentoVisor: boolean = false;
@@ -120,10 +119,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     NEGRO_5_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 6\u00BA DAN',
   };
 
-  constructor(
-    private readonly endpointsService: EndpointsService,
-    private readonly sanitizer: DomSanitizer
-  ) {}
+  constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['alumnoId'] && !changes['deportes']) {
@@ -1072,14 +1068,17 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private cargarVideoSeleccionado(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionadoUrl = null;
 
-    if (!video?.streamUrl) {
+    if (!video?.id || !this.alumnoId || !this.deporteSeleccionado) {
       this.cargandoVideoSeleccionado = false;
       return;
     }
 
-    // Use direct stream URL so the browser can start playback with HTTP range requests.
     this.cargandoVideoSeleccionado = false;
-    this.videoSeleccionadoUrl = this.sanitizer.bypassSecurityTrustUrl(video.streamUrl);
+    this.videoSeleccionadoUrl = this.endpointsService.obtenerUrlVideoMaterialExamenAlumno(
+      this.alumnoId,
+      this.deporteSeleccionado,
+      video.id
+    );
   }
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {

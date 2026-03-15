@@ -68,6 +68,7 @@ class MaterialExamenServiceImplTest {
 		assertEquals("temario.pdf", material.getTemario().getFileName());
 		assertEquals(2, material.getVideos().size());
 		assertEquals("01_presentacion.mp4", material.getVideos().get(0).getId());
+		assertEquals("presentacion", material.getVideos().get(0).getTitle());
 		assertEquals(1, material.getVideos().get(0).getOrder());
 		assertEquals("02_tecnicas_base.mp4", material.getVideos().get(1).getId());
 		assertEquals(2, material.getVideos().get(1).getOrder());
@@ -75,6 +76,20 @@ class MaterialExamenServiceImplTest {
 		assertEquals(1, material.getDocumentos().size());
 		assertEquals("temario.pdf", material.getDocumentos().get(0).getFileName());
 		assertEquals(true, material.getDocumentos().get(0).isPreviewable());
+	}
+
+	@Test
+	void shouldStripCompSuffixFromGeneratedVideoTitles() throws Exception {
+		mockAlumnoConDeporte(14L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+
+		Path bloque = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(bloque.resolve("videos"));
+		Files.writeString(bloque.resolve("videos").resolve("01_SOGUIS_COMP.mp4"), "v1");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(14L, Deporte.TAEKWONDO);
+
+		assertEquals(1, material.getVideos().size());
+		assertEquals("SOGUIS", material.getVideos().get(0).getTitle());
 	}
 
 	@Test

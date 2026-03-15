@@ -89,7 +89,7 @@ docker inspect taemoi-backend-prod | grep -A 3 "documentos" || log_warn "Could n
 log_step "4. Checking document URLs in database..."
 
 echo "Getting sample document URLs from database..."
-docker exec taemoi-mysql-prod mysql -u root -p${MYSQL_ROOT_PASSWORD} -D taemoi_db -e "SELECT id, nombre, url FROM documento LIMIT 5;" 2>/dev/null || log_error "Could not query database"
+docker exec taemoi-mysql-prod mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -D taemoi_db -e "SELECT id, nombre, url FROM documento LIMIT 5;" 2>/dev/null || log_error "Could not query database"
 
 ###############################################################################
 # STEP 5: Test direct access to backend
@@ -163,7 +163,7 @@ docker logs taemoi-backend-prod --tail 20 2>&1 | grep -E "ERROR|WARN|documentos|
 log_step "8. Testing with actual URL from database..."
 
 # Get one URL from database
-DB_URL=$(docker exec taemoi-mysql-prod mysql -u root -p${MYSQL_ROOT_PASSWORD} -D taemoi_db -se "SELECT url FROM documento LIMIT 1;" 2>/dev/null | tr -d '\r')
+DB_URL=$(docker exec taemoi-mysql-prod mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -D taemoi_db -se "SELECT url FROM documento LIMIT 1;" 2>/dev/null | tr -d '\r')
 
 if [ -n "$DB_URL" ]; then
     log_info "Database URL: $DB_URL"

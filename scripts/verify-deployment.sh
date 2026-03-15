@@ -121,21 +121,34 @@ else
 fi
 
 echo ""
-echo "Step 3: Checking Docker Compose file..."
+echo "Step 3: Checking Docker Compose files..."
 echo "----------------------------------------"
 
 if [ -f docker-compose.yml ]; then
     success "docker-compose.yml exists"
 
     # Validate docker-compose file
-    if docker-compose config > /dev/null 2>&1; then
+    if docker-compose -f docker-compose.yml config > /dev/null 2>&1; then
         success "docker-compose.yml is valid"
     else
         error "docker-compose.yml has syntax errors"
-        docker-compose config
+        docker-compose -f docker-compose.yml config
     fi
 else
     error "docker-compose.yml not found"
+fi
+
+if [ -f docker-compose.production.yml ]; then
+    success "docker-compose.production.yml exists"
+
+    if docker-compose -f docker-compose.production.yml config > /dev/null 2>&1; then
+        success "docker-compose.production.yml is valid"
+    else
+        error "docker-compose.production.yml has syntax errors"
+        docker-compose -f docker-compose.production.yml config
+    fi
+else
+    error "docker-compose.production.yml not found"
 fi
 
 echo ""
@@ -172,6 +185,12 @@ if [ -f src-api/pom.xml ]; then
     success "Backend pom.xml exists"
 else
     error "Backend pom.xml not found"
+fi
+
+if [ -f src-api/src/main/resources/db/migration/V1__baseline_schema.sql ]; then
+    success "Flyway baseline migration exists"
+else
+    error "Flyway baseline migration not found"
 fi
 
 # Check if wait-for-it.sh exists

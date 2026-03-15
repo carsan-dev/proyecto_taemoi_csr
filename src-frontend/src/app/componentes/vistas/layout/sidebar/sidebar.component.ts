@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { SidebarService } from '../../../../servicios/generales/sidebar.service';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
-import { Subscription } from 'rxjs/internal/Subscription';
+import { Subscription } from 'rxjs';
 import { NavigationStart, Router, RouterModule } from '@angular/router';
 
 @Component({
@@ -28,6 +28,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private readonly subscription: Subscription = new Subscription();
   nombreUsuario: string | null = null;
   emailUsuario: string | null = null;
+  isAdminOnly: boolean = false;
 
   constructor(
     private readonly sidebarService: SidebarService,
@@ -49,6 +50,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.authService.emailCambio.subscribe((email) => {
         this.emailUsuario = email;
+      })
+    );
+    this.isAdminOnly = this.authService.tieneRolAdmin();
+    this.subscription.add(
+      this.authService.rolesCambio.subscribe((roles) => {
+        this.isAdminOnly = roles.includes('ROLE_ADMIN');
       })
     );
 

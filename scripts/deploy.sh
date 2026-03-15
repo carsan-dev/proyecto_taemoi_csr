@@ -71,21 +71,8 @@ if [ ! -f .env ]; then
     fail ".env file not found. Copy .env.production.template to .env and configure it."
 fi
 
-# Load environment variables to check database name
+# Load environment variables for health checks and follow-up commands
 source .env
-
-# Verify database name matches schema bootstrap
-if [ "$ENVIRONMENT" = "production" ]; then
-    if [ "$MYSQL_DATABASE" != "taemoi_db" ]; then
-        warn "MYSQL_DATABASE should be 'taemoi_db' for production (01_ddl_schema_server.sql expects this)"
-        warn "Current value: $MYSQL_DATABASE"
-        echo -e "${YELLOW}Continue anyway? (y/n)${NC}"
-        read -r response
-        if [ "$response" != "y" ]; then
-            fail "Deployment cancelled. Please update .env file."
-        fi
-    fi
-fi
 
 # Run verification script first
 step "Running pre-deployment verification..."
@@ -129,31 +116,6 @@ for i in {1..60}; do
     fi
 done
 
-# Check if schema bootstrap was executed
-if [ "$ENVIRONMENT" = "production" ]; then
-    step "Verifying database initialization..."
-
-    # Check if tables exist (DDL executed)
-    TABLE_CHECK=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SHOW TABLES;" 2>/dev/null | wc -l)
-    if [ "$TABLE_CHECK" -gt 1 ]; then
-        success "Schema created (01_ddl_schema_server.sql executed)"
-    else
-        warn "No tables found. DDL script may not have executed."
-        warn "Check: docker-compose -f $COMPOSE_FILE logs database"
-        warn "Init files should include mysql/init/01_ddl_schema_server.sql"
-    fi
-
-	# Check if data was restored (check alumno table row count)
-	    if [ "$TABLE_CHECK" -gt 1 ]; then
-	        ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e "SELECT COUNT(*) FROM alumno;" 2>/dev/null | tail -n 1)
-	        if [ "$ALUMNO_COUNT" -gt 0 ]; then
-	            success "Data available in alumno (${ALUMNO_COUNT} students found)"
-	        else
-	            warn "No student data found in alumno. Restore the private backup or use APP_BOOTSTRAP_ADMIN_* for first access."
-	        fi
-	    fi
-	fi
-
 # Wait for backend
 echo "Waiting for backend..."
 for i in {1..90}; do
@@ -169,6 +131,32 @@ for i in {1..90}; do
         break
     fi
 done
+
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo ""
+    step "Verifying Flyway migration state..."
+    FLYWAY_HISTORY=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
+        mysql -h localhost -Nse "SHOW TABLES LIKE 'flyway_schema_history';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+    if [ "$FLYWAY_HISTORY" = "flyway_schema_history" ]; then
+        MIGRATION_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
+            mysql -h localhost -Nse "SELECT COUNT(*) FROM flyway_schema_history;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+        success "Flyway activo (${MIGRATION_COUNT:-0} entradas en flyway_schema_history)"
+
+        ALUMNO_TABLE=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
+            mysql -h localhost -Nse "SHOW TABLES LIKE 'alumno';" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+        if [ "$ALUMNO_TABLE" = "alumno" ]; then
+            ALUMNO_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T database \
+                mysql -h localhost -Nse "SELECT COUNT(*) FROM alumno;" -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} 2>/dev/null || true)
+            if [ "${ALUMNO_COUNT:-0}" -gt 0 ]; then
+                success "Data available in alumno (${ALUMNO_COUNT} students found)"
+            else
+                warn "No student data found in alumno. Restore the private backup or use APP_BOOTSTRAP_ADMIN_* for first access."
+            fi
+        fi
+    else
+        warn "flyway_schema_history not found. Review backend logs: docker-compose -f $COMPOSE_FILE logs backend"
+    fi
+fi
 
 # Check frontend
 if [ "$ENVIRONMENT" = "production" ] || [ "$PORT_HTTP" = "80" ]; then
@@ -232,8 +220,8 @@ echo "  - Enter container:  docker-compose -f $COMPOSE_FILE exec <service> bash"
 echo ""
 if [ "$ENVIRONMENT" = "production" ]; then
     echo "Production-specific commands:"
-    echo "  - Check schema:      docker-compose -f $COMPOSE_FILE exec database mysql -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SHOW TABLES;'"
-    echo "  - Restore backup:    docker-compose -f $COMPOSE_FILE exec -T database mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /secure/path/private_backup.sql"
+    echo "  - Check schema:      docker-compose -f $COMPOSE_FILE exec database mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'SELECT * FROM flyway_schema_history;'"
+    echo "  - Restore backup:    docker-compose -f $COMPOSE_FILE exec -T database mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /secure/path/private_backup.sql"
     echo ""
 fi
 echo "Next steps:"

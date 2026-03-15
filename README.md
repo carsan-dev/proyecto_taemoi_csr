@@ -74,6 +74,7 @@ Tecnologías principales:
 - Spring Boot 3.5.x
 - Spring Security
 - Spring Data JPA
+- Flyway
 - MySQL 8
 - JWT (`jjwt`)
 - Caffeine
@@ -127,7 +128,8 @@ Rutas funcionales relevantes:
 ## Base de datos y almacenamiento
 
 - Base de datos principal: MySQL 8.
-- Scripts SQL y utilidades en `mysql/`.
+- Migraciones versionadas en `src-api/src/main/resources/db/migration`.
+- `mysql/` queda para utilidades del contenedor y helpers de arranque, no como fuente principal del esquema.
 - Imágenes y documentos persistentes en `static_resources/` en local o en volumen Docker en despliegue.
 
 ## Requisitos

@@ -21,17 +21,17 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if .env.production exists
-if [ ! -f ".env.production" ]; then
-    log_error ".env.production file not found!"
+# Check if .env exists
+if [ ! -f ".env" ]; then
+    log_error ".env file not found!"
     exit 1
 fi
 
 # Load environment variables
-source .env.production
+source .env
 
 if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
-    log_error "DOMAIN and EMAIL must be set in .env.production"
+    log_error "DOMAIN and EMAIL must be set in .env"
     exit 1
 fi
 
