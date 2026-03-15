@@ -112,7 +112,17 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers(
+								"/api/auth/signin",
+								"/api/auth/signup",
+								"/api/auth/password/forgot",
+								"/api/auth/password/reset",
+								"/api/auth/register/request",
+								"/api/auth/register/confirm",
+								"/api/auth/logout",
+								"/api/auth/auth-status",
+								"/api/auth/oauth2/google-login-url")
+						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
