@@ -20,6 +20,7 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.services.DocumentoService;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,10 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 	@Override
 	public Documento guardarDocumento(Alumno alumno, MultipartFile archivo) throws IOException {
+		if (archivo == null || archivo.isEmpty()) {
+			throw new IllegalArgumentException("No se ha enviado ningun documento.");
+		}
+
 		String os = System.getProperty("os.name").toLowerCase();
 		String directorioDocumentos;
 
@@ -84,6 +89,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		String nombreOriginalArchivo = archivo.getOriginalFilename();
 		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
+		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
 		String nombreArchivoFinal = nombreOriginalLimpio;
 
 		Path rutaArchivoFinal = rutaCarpetaAlumno.resolve(nombreArchivoFinal);
@@ -99,7 +105,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		Documento documento = new Documento();
 		documento.setNombre(nombreArchivoFinal);
-		documento.setTipo(archivo.getContentType());
+		documento.setTipo(mimeTypeSeguro);
 		documento.setUrl(urlAcceso);
 		documento.setRuta(rutaRelativa);  // Store relative path instead of absolute
 		documento.setAlumno(alumno);
@@ -109,6 +115,10 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 	@Override
 	public Documento guardarDocumentoEvento(Evento evento, MultipartFile archivo) throws IOException {
+		if (archivo == null || archivo.isEmpty()) {
+			throw new IllegalArgumentException("No se ha enviado ningun documento.");
+		}
+
 		String os = System.getProperty("os.name").toLowerCase();
 		String directorioDocumentos;
 
@@ -139,6 +149,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		String nombreOriginalArchivo = archivo.getOriginalFilename();
 		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
+		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
 
 		Path rutaArchivoFinal = rutaCarpetaEvento.resolve(nombreOriginalLimpio);
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
@@ -148,7 +159,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 		Documento documento = new Documento();
 		documento.setNombre(nombreOriginalLimpio);
-		documento.setTipo(archivo.getContentType());
+		documento.setTipo(mimeTypeSeguro);
 		documento.setUrl(urlAcceso);
 		documento.setRuta(rutaRelativa);
 		documento.setEvento(evento);
@@ -159,50 +170,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public void eliminarDocumento(Documento documento) {
 		if (documento != null && documento.getRuta() != null) {
-			String rutaDocumento = documento.getRuta();
-			Path rutaArchivo;
-
-			// Handle both relative and absolute paths
-			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
-				// Absolute path (old format)
-				// Check if this is an old path from /opt/taemoi/static_resources/documentos/
-				if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
-					// Extract the relative part and resolve against current base directory
-					String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
-					String os = System.getProperty("os.name").toLowerCase();
-					String directorioDocumentos;
-
-					if (os.contains("win")) {
-						String userProfile = System.getenv("USERPROFILE");
-						directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-					} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-						directorioDocumentos = directorioDocumentosLinux;
-					} else {
-						throw new IllegalStateException("Sistema operativo no soportado: " + os);
-					}
-
-					rutaArchivo = Path.of(directorioDocumentos).resolve(relativePart);
-					logger.info("Converted old absolute path for deletion: {} -> {}", rutaDocumento, rutaArchivo);
-				} else {
-					// Other absolute path - use as is
-					rutaArchivo = Path.of(rutaDocumento);
-				}
-			} else {
-				// Relative path (new format) - resolve against base directory
-				String os = System.getProperty("os.name").toLowerCase();
-				String directorioDocumentos;
-
-				if (os.contains("win")) {
-					String userProfile = System.getenv("USERPROFILE");
-					directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-				} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-					directorioDocumentos = directorioDocumentosLinux;
-				} else {
-					throw new IllegalStateException("Sistema operativo no soportado: " + os);
-				}
-
-				rutaArchivo = Path.of(directorioDocumentos).resolve(rutaDocumento);
-			}
+			Path rutaArchivo = resolveStoredPath(documento.getRuta());
 
 			try {
 				rutaArchivo = resolvePathCaseInsensitive(rutaArchivo);
@@ -259,55 +227,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public Resource obtenerRecursoDocumento(Documento documento) {
 		try {
-			String rutaDocumento = documento.getRuta();
-			Path rutaArchivo;
-
-			// Handle both relative and absolute paths for backward compatibility
-			if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
-				// Absolute path (old format)
-				logger.warn("Document {} uses absolute path (deprecated): {}", documento.getId(), rutaDocumento);
-
-				// Check if this is an old path from /opt/taemoi/static_resources/documentos/
-				// and convert it to the new location
-				if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
-					// Extract the relative part after /opt/taemoi/static_resources/documentos/
-					String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
-					String os = System.getProperty("os.name").toLowerCase();
-					String directorioDocumentos;
-
-					if (os.contains("win")) {
-						String userProfile = System.getenv("USERPROFILE");
-						directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-					} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-						directorioDocumentos = directorioDocumentosLinux;
-					} else {
-						throw new IllegalStateException("Sistema operativo no soportado: " + os);
-					}
-
-					rutaArchivo = Path.of(directorioDocumentos).resolve(relativePart);
-					logger.info("Converted old absolute path to new location: {} -> {}", rutaDocumento, rutaArchivo);
-				} else {
-					// Other absolute path - use as is
-					rutaArchivo = Path.of(rutaDocumento);
-				}
-			} else {
-				// Relative path (new format) - resolve against base directory
-				String os = System.getProperty("os.name").toLowerCase();
-				String directorioDocumentos;
-
-				if (os.contains("win")) {
-					String userProfile = System.getenv("USERPROFILE");
-					directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-				} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-					directorioDocumentos = directorioDocumentosLinux;
-				} else {
-					throw new IllegalStateException("Sistema operativo no soportado: " + os);
-				}
-
-				rutaArchivo = Path.of(directorioDocumentos).resolve(rutaDocumento);
-				logger.info("Resolved relative path {} to absolute: {}", rutaDocumento, rutaArchivo);
-			}
-
+			Path rutaArchivo = resolveStoredPath(documento.getRuta());
 			rutaArchivo = resolvePathCaseInsensitive(rutaArchivo);
 			if (!Files.exists(rutaArchivo)) {
 				throw new RuntimeException("El archivo no existe en el sistema de archivos: " + rutaArchivo);
@@ -316,6 +236,52 @@ public class DocumentoServiceImpl implements DocumentoService {
 		} catch (Exception e) {
 			throw new RuntimeException("No se pudo cargar el documento: " + documento.getNombre(), e);
 		}
+	}
+
+	private Path resolveStoredPath(String rutaDocumento) {
+		if (rutaDocumento == null || rutaDocumento.isBlank()) {
+			throw new IllegalArgumentException("La ruta del documento es obligatoria.");
+		}
+
+		Path rutaBaseDocumentos = obtenerRutaBaseDocumentos();
+		Path rutaNormalizada;
+
+		if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
+			logger.warn("Document path stored as absolute path (deprecated): {}", rutaDocumento);
+			if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
+				String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
+				rutaNormalizada = rutaBaseDocumentos.resolve(relativePart).normalize();
+			} else {
+				rutaNormalizada = Path.of(rutaDocumento).toAbsolutePath().normalize();
+			}
+		} else {
+			rutaNormalizada = rutaBaseDocumentos.resolve(rutaDocumento).normalize();
+		}
+
+		if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
+			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
+		}
+
+		return rutaNormalizada;
+	}
+
+	private Path obtenerRutaBaseDocumentos() {
+		String os = System.getProperty("os.name").toLowerCase();
+		String directorioDocumentos;
+
+		if (os.contains("win")) {
+			String userProfile = System.getenv("USERPROFILE");
+			if (userProfile == null || userProfile.isBlank()) {
+				userProfile = System.getProperty("user.home");
+			}
+			directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
+		} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+			directorioDocumentos = directorioDocumentosLinux;
+		} else {
+			throw new IllegalStateException("Sistema operativo no soportado: " + os);
+		}
+
+		return Path.of(directorioDocumentos).toAbsolutePath().normalize();
 	}
 
 	/**
