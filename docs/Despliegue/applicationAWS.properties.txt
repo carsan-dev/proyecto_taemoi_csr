@@ -1,9 +1,9 @@
 spring.application.name=spring-security
-spring.profiles.active=demo
+spring.profiles.active=production
 spring.main.allow-bean-definition-overriding=true
 spring.main.lazy-initialization=true
 
-jwt.secret=G5pE3i4e0A1vUN/z0MutEqgxlbLLXgX+QEV8HDlyH1E=
+jwt.secret=${JWT_SECRET}
 
 server.port=8080
 server.error.whitelabel.enabled=false

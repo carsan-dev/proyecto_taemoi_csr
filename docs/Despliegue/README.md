@@ -1,14 +1,14 @@
-# TaeMoi: Plataforma Integral para Escuelas de Taekwondo
+# Despliegue
 
-## Despliegue de la aplicación.
+Estos ficheros son ejemplos sanitizados de propiedades y no contienen secretos reales.
 
-En esta carpeta hay dos ficheros:
+- `applicationAWS.properties.txt`
+- `applicationDocker.properties.txt`
 
-- [applicationAWS.properties.txt](./applicationAWS.properties.txt)
-- [applicationDocker.properties.txt](./applicationDocker.properties.txt)
+Usalos solo como referencia para comparar con `src-api/src/main/resources/application.properties`.
 
-El primer fichero contiene las reglas que hay que copiar en el fichero application.properties en caso de realizar el despliegue en Amazon Web Services y en el segundo para desplegar en Docker. El siguiente enlace redirecciona al fichero mencionado:
+## Importante
 
-- [application.properties](../../src-api/src/main/resources/application.properties)
-
----
+- `JWT_SECRET` debe inyectarse por entorno, nunca hardcodeado.
+- Las credenciales reales de base de datos, correo y OAuth2 deben vivir fuera del repositorio.
+- Si despliegas sobre una base vacia, usa `APP_BOOTSTRAP_ADMIN_*` para crear el primer admin de forma segura.
