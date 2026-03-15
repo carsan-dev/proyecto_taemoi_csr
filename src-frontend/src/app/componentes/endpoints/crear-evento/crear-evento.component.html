@@ -1,37 +1,252 @@
-<div class="container mt-5">
-  <div class="card p-4 shadow-sm">
-    <h2 class="text-center mb-4">Crear Evento</h2>
-    <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" class="mt-4" method="post">
-      <div class="form-group form-floating mb-4">
-        <input type="text" class="form-control" id="titulo" name="titulo" formControlName="titulo" required
-          placeholder="Título">
-        <label for="titulo" class="form-label">Título</label>
-        <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no
-            puede contener más de 100 caracteres.</small>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-calendar-plus"></i>
+        Crear Nuevo Evento
+      </h2>
+      <p>Crea un evento para mostrar en la página web pública</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="admin-card admin-card-large">
+          <form (ngSubmit)="onSubmit()" [formGroup]="eventoForm" method="post">
+
+            <!-- Información del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-info-circle"></i>
+                <h4>Información del Evento</h4>
+              </div>
+
+              <div class="row g-3">
+                <!-- Título -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched" [class.is-valid]="eventoForm.get('titulo')?.valid && eventoForm.get('titulo')?.touched">
+                    <label for="titulo">
+                      <i class="bi bi-text-left"></i>
+                      Título del Evento
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="admin-form-control"
+                      id="titulo"
+                      name="titulo"
+                      formControlName="titulo"
+                      required
+                      placeholder="Ej: Campeonato Regional de Taekwondo"
+                      aria-label="Título del evento"
+                      aria-required="true">
+                    @if (eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @if (eventoForm.get('titulo')?.errors?.['required']) {
+                          <span>El título es obligatorio</span>
+                        }
+                        @if (eventoForm.get('titulo')?.errors?.['maxlength']) {
+                          <span>Máximo 100 caracteres</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Descripción -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched" [class.is-valid]="eventoForm.get('descripcion')?.valid && eventoForm.get('descripcion')?.touched">
+                    <label for="descripcion">
+                      <i class="bi bi-card-text"></i>
+                      Descripción del Evento
+                      <span class="required">*</span>
+                    </label>
+                    <textarea
+                      class="admin-form-control"
+                      id="descripcion"
+                      name="descripcion"
+                      formControlName="descripcion"
+                      rows="5"
+                      required
+                      (input)="adjustTextareaHeight($event)"
+                      placeholder="Describe el evento: fecha, lugar, participantes, etc."
+                      aria-label="Descripción del evento"
+                      aria-required="true"></textarea>
+                    @if (eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @if (eventoForm.get('descripcion')?.errors?.['required']) {
+                          <span>La descripción es obligatoria</span>
+                        }
+                        @if (eventoForm.get('descripcion')?.errors?.['maxlength']) {
+                          <span>Máximo 500 caracteres</span>
+                        }
+                      </div>
+                    }
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Proporciona detalles relevantes sobre el evento para los visitantes del sitio web</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fecha del evento (opcional) -->
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field">
+                    <label for="fechaEvento">
+                      <i class="bi bi-calendar3"></i>
+                      Fecha del Evento
+                      <span class="optional">(opcional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      class="admin-form-control"
+                      id="fechaEvento"
+                      name="fechaEvento"
+                      formControlName="fechaEvento"
+                      aria-label="Fecha opcional del evento">
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Si no indicas fecha, el evento se mostrará sin etiqueta temporal</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Visibilidad -->
+                <div class="col-12">
+                  <div class="admin-form-check" [class.checked]="eventoForm.get('visible')?.value">
+                    <input
+                      type="checkbox"
+                      id="visible"
+                      formControlName="visible"
+                      aria-label="Mostrar evento en la página pública">
+                    <label for="visible">
+                      <i class="bi bi-eye check-icon"></i>
+                      Mostrar evento en la página pública
+                    </label>
+                  </div>
+                  <div class="admin-form-help">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Si está desmarcado, el evento se guardará pero no será visible en la página web</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Imagen del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-image"></i>
+                <h4>Imagen del Evento</h4>
+              </div>
+
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="fotoEvento"
+                    name="fotoEvento"
+                    (change)="onFileChange($event)"
+                    accept="image/*"
+                    aria-label="Subir imagen del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra una imagen o haz clic para seleccionar</p>
+                  <p class="upload-hint">Formatos: JPG, PNG, GIF, WebP (máx. 50MB)</p>
+                </div>
+
+                <!-- Vista previa de la imagen -->
+                @if (imagen && imagePreview) {
+                  <div class="file-preview">
+                    <img [src]="imagePreview" alt="Vista previa del evento" loading="lazy">
+                    <div class="file-info">
+                      <p class="file-name">Imagen del evento seleccionada</p>
+                      <p class="file-size">Vista previa disponible</p>
+                    </div>
+                    <button type="button" class="file-remove" (click)="removeImage()">
+                      <i class="bi bi-trash"></i>
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Documentos del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <h4>Documentos del Evento</h4>
+              </div>
+
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="documentosEvento"
+                    name="documentosEvento"
+                    (change)="onDocumentosChange($event)"
+                    multiple
+                    accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx"
+                    aria-label="Subir documentos del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra archivos o haz clic para seleccionar</p>
+                  <p class="upload-hint">Puedes subir múltiples archivos (PDF, imágenes, documentos)</p>
+                </div>
+
+                <!-- Lista de documentos seleccionados -->
+                @if (documentos.length > 0) {
+                  <div class="documentos-list">
+                    @for (doc of documentos; track doc.name; let i = $index) {
+                      <div class="documento-item">
+                        <i class="bi" [ngClass]="getFileIcon(doc.type)"></i>
+                        <div class="documento-info">
+                          <p class="documento-name">{{ doc.name }}</p>
+                          <p class="documento-size">{{ formatFileSize(doc.size) }}</p>
+                        </div>
+                        <button type="button" class="documento-remove" (click)="removeDocumento(i)">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="admin-form-help">
+                <i class="bi bi-info-circle"></i>
+                <span>Los documentos estarán disponibles públicamente para descarga</span>
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="admin-form-button-group">
+              <button
+                type="button"
+                class="admin-btn admin-btn-outline"
+                routerLink="/eventosListar"
+                aria-label="Cancelar y volver al listado">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancelar</span>
+              </button>
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary"
+                [disabled]="eventoForm.invalid || guardandoEvento"
+                aria-label="Crear nuevo evento">
+                @if (guardandoEvento) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  <i class="bi bi-check-circle"></i>
+                  <span>Crear Evento</span>
+                }
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-      <div class="form-group form-floating mb-4">
-        <textarea type="text" class="form-control" id="descripcion" name="descripcion" formControlName="descripcion"
-          rows="3" required (input)="adjustTextareaHeight($event)" placeholder="Descripción"></textarea>
-        <label for="descripcion" class="form-label">Descripción</label>
-        <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no
-            puede contener más de 500 caracteres.</small>
-        </div>
-      </div>
-      <div class="form-group form-floating mb-4">
-        <input type="file" class="form-control" id="fotoEvento" name="fotoEvento" (change)="onFileChange($event)"
-          accept="image/*" placeholder="Imagen del evento">
-        <label for="fotoEvento" class="form-label">Imagen del evento</label>
-      </div>
-      <div class="text-center">
-        <button type="submit" class="btn btn-primary" [disabled]="eventoForm.invalid">Crear Evento</button>
-      </div>
-    </form>
+    </div>
   </div>
 </div>

@@ -1,56 +1,119 @@
-<header class="header-anonimo" *ngIf="!usuarioLogueado">
+﻿@if (isAuthChecked && !usuarioLogueado) {
+<header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
+      <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
+      </button>
+      <a class="navbar-brand d-lg-none" [routerLink]="['/']">
+        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
+          alt="Logo de la aplicación TaeMoi" width="137" height="137">
+      </a>
+      <div class="header-title-mobile d-lg-none">
+        <div class="title-main">MOI'S KIM DO</div>
+        <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
+      </div>
+      <div class="header-actions-mobile d-lg-none">
+        <div class="mobile-social-stack" aria-label="Redes sociales">
+          <a class="social-link social-link-compact" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
+            target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <i class="bi bi-facebook"></i>
+          </a>
+          <a class="social-link social-link-compact" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+            rel="noopener noreferrer" aria-label="Instagram">
+            <i class="bi bi-instagram"></i>
+          </a>
+        </div>
+        <a class="btn-login-mobile" [routerLink]="['/login']" aria-label="Iniciar sesión">
+          <i class="bi bi-box-arrow-in-right"></i>
+        </a>
+      </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon text-black"></span>
+        <span class="navbar-toggler-icon"></span>
       </button>
-      <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
-        <div class="navbar-izq">
-          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
-            <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
+      <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+        <div class="navbar-left d-flex align-items-center">
+          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
+            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
           </a>
-          <ul class="navbar-nav list-links">
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                (click)="irARuta('/inicio')">Inicio</a>
+          <ul class="navbar-nav ms-lg-4">
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}">
+                <i class="bi bi-house-door me-1"></i>Inicio
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/eltaekwondo']" routerLinkActive="active"
-                (click)="irARuta('/eltaekwondo')">El Taekwondo</a>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdown" [routerLinkActive]="['active']"
+                [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
+              </a>
+              <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdown">
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/taekwondo']" routerLinkActive="active-link">
+                    <i class="bi bi-lightning-fill me-2"></i>Taekwondo
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
+                    <i class="bi bi-gem me-2"></i>Kickboxing
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
+                    <i class="bi bi-heart-pulse me-2"></i>Pilates
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active-link">
+                    <i class="bi bi-shield-fill-check me-2"></i>Defensa Personal Femenina
+                  </a>
+                </li>
+              </ul>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/logros']" routerLinkActive="active"
-                (click)="irARuta('/logros')">Logros</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active">
+                <i class="bi bi-calendar-event me-1"></i>Eventos
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                (click)="irARuta('/horarios')">Horarios</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active">
+                <i class="bi bi-clock me-1"></i>Horarios
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                (click)="irARuta('/contacto')">Contacto</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/tarifas']" routerLinkActive="active">
+                <i class="bi bi-tag me-1"></i>Tarifas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">
+                <i class="bi bi-envelope me-1"></i>Contacto
+              </a>
             </li>
           </ul>
         </div>
-        <div class="navbar-der d-flex align-items-center justify-content-center">
-          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
-            <li class="nav-item me-4">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
+        <div class="navbar-right">
+          <ul class="navbar-nav d-flex flex-row align-items-center">
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
+                rel="noopener noreferrer" aria-label="Facebook">
+                <i class="bi bi-facebook"></i>
+              </a>
             </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"><i
-                  class="bi bi-facebook fs-4"></i></a>
-            </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"><i
-                  class="bi bi-instagram fs-4"></i></a>
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+                rel="noopener noreferrer" aria-label="Instagram">
+                <i class="bi bi-instagram"></i>
+              </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="irARuta('/login')"><i class="bi bi-person-fill fs-3"></i></a>
+              <a class="btn btn-login" [routerLink]="['/login']" aria-label="Iniciar sesión">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+              </a>
             </li>
           </ul>
         </div>
@@ -58,59 +121,553 @@
     </div>
   </nav>
 </header>
-<header class="header-admin-manager" *ngIf="usuarioLogueado && (isAdmin || isManager)">
+@if (isMobileMenuOpen) {
+<div class="mobile-header-overlay open" role="dialog" aria-modal="true"
+  aria-labelledby="mobile-header-title">
+  <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
+  <div class="mobile-header-panel" role="document" id="mobile-header-menu">
+    <div class="mobile-header-top">
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+      <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
+    </div>
+    <nav class="mobile-header-nav" aria-label="Navegación principal">
+      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
+        <i class="bi bi-house-door" aria-hidden="true"></i>
+        <span>Inicio</span>
+      </a>
+      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-lightning-fill" aria-hidden="true"></i>
+        <span>Taekwondo</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-gem" aria-hidden="true"></i>
+        <span>Kickboxing</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+        <span>Pilates</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
+        routerLinkActive="active" (click)="closeMobileMenu()">
+        <i class="bi bi-shield-fill-check" aria-hidden="true"></i>
+        <span>Defensa Personal Femenina</span>
+      </a>
+      <div class="mobile-header-section-title">Información</div>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+        <span>Eventos</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        <span>Horarios</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-tag" aria-hidden="true"></i>
+        <span>Tarifas</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-envelope" aria-hidden="true"></i>
+        <span>Contacto</span>
+      </a>
+      <div class="mobile-header-section-title">Cuenta</div>
+      <a class="mobile-header-link" [routerLink]="['/login']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+        <span>Iniciar Sesión</span>
+      </a>
+    </nav>
+  </div>
+</div>
+}
+}
+
+<!-- Header para administradores -->
+@if (mostrarHeaderAdmin) {
+<header class="admin-top-navbar">
+  <div class="navbar-container">
+    <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menú"
+      aria-controls="admin-sidebar" [attr.aria-expanded]="adminMenuVisible">
+      <i class="bi bi-list"></i>
+    </button>
+    <a class="navbar-brand" [routerLink]="['/adminpage']">
+      <img class="admin-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo">
+      <div class="brand-text">
+        <span class="brand-title">MOI'S KIM DO</span>
+        <span class="brand-subtitle">Panel de Administración</span>
+      </div>
+    </a>
+    <nav class="admin-quick-nav" aria-label="Accesos rápidos de administración">
+      @for (item of adminQuickLinks; track item.route) {
+        <a
+          class="quick-link"
+          [attr.data-priority]="item.priority ?? 99"
+          [routerLink]="[item.route]"
+          [class.active]="isAdminQuickRouteActive(item)"
+          [title]="item.label"
+          [attr.aria-label]="item.label">
+          <i class="bi {{ item.icon }}"></i>
+        </a>
+      }
+    </nav>
+    <div class="navbar-actions">
+      <div class="admin-account-menu">
+        <button type="button" class="admin-account-toggle" (click)="toggleAdminAccountMenu()"
+          [class.is-open]="isAdminAccountMenuOpen" [attr.aria-expanded]="isAdminAccountMenuOpen"
+          aria-haspopup="menu" aria-label="Opciones de cuenta">
+          <i class="bi bi-person-circle"></i>
+          <span class="username" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
+          <i class="bi admin-account-chevron"
+            [ngClass]="isAdminAccountMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </button>
+        @if (isAdminAccountMenuOpen) {
+        <div class="admin-account-menu-panel" role="menu" aria-label="Opciones de cuenta admin">
+          @if (tieneAccesoDual) {
+          <button class="admin-account-menu-item" type="button" (click)="cambiarVistaUsuario()">
+            <i class="bi bi-calendar2-check"></i>
+            <span>Cambiar a usuario</span>
+          </button>
+          }
+          <button class="admin-account-menu-item logout" type="button"
+            (click)="cerrarSesion(); closeAdminAccountMenu()">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="admin-sidebar" id="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
+  <div class="sidebar-header">
+    <button class="close-sidebar" (click)="closeAdminMenu()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+    <h3>Navegación</h3>
+  </div>
+
+  <ul class="sidebar-menu">
+    <li class="menu-section">
+      <span class="section-title">Principal</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/adminpage']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-speedometer2"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
+        <i class="bi bi-house-door"></i>
+        <span>Inicio</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/eventos']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-calendar-event"></i>
+        <span>Eventos</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-clock"></i>
+        <span>Horarios</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/tarifas']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-tag"></i>
+        <span>Tarifas</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/contacto']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-envelope"></i>
+        <span>Contacto</span>
+      </a>
+    </li>
+
+    <li class="menu-section">
+      <span class="section-title">Deportes</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/taekwondo']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-lightning-fill"></i>
+        <span>Taekwondo</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/kickboxing']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-gem"></i>
+        <span>Kickboxing</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/pilates']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-heart-pulse"></i>
+        <span>Pilates</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active"
+        (click)="closeAdminMenu()">
+        <i class="bi bi-shield-fill-check"></i>
+        <span>Defensa Personal</span>
+      </a>
+    </li>
+
+    <li class="menu-section">
+      <span class="section-title">Gestión</span>
+    </li>
+
+    <!-- Alumnos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('alumnos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['alumnos']">
+        <i class="bi bi-people"></i>
+        <span>Alumnos</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['alumnos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Listar Alumnos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-person-plus"></i>
+            <span>Crear Alumno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosEditar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-pencil-square"></i>
+            <span>Editar Alumno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-trash"></i>
+            <span>Eliminar Alumno</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Grupos y Turnos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['grupos']">
+        <i class="bi bi-collection"></i>
+        <span>Grupos y Turnos</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['grupos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Gestión de Grupos y Turnos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/turnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-calendar-plus"></i>
+            <span>Crear Turno</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/gruposCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-plus-square"></i>
+            <span>Crear Grupo</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Eventos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('eventos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['eventos']">
+        <i class="bi bi-calendar-check"></i>
+        <span>Eventos</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['eventos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/eventosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Eventos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/eventosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
+            <i class="bi bi-calendar-plus-fill"></i>
+            <span>Crear Evento</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Productos Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('productos'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['productos']">
+        <i class="bi bi-cart3"></i>
+        <span>Productos</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['productos']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/productosListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Productos</span>
+          </a>
+        </li>
+        <li>
+          <a class="submenu-link" [routerLink]="['/productosCrear']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-plus-square-fill"></i>
+            <span>Crear Producto</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Tesorería -->
+    <li>
+      <a class="menu-link" [routerLink]="['/tesoreriaCobros']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-cash-stack"></i>
+        <span>Tesorería y Cobros</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-journal-text"></i>
+        <span>Auditoría Sistema</span>
+      </a>
+    </li>
+
+    <!-- Convocatorias Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['convocatorias']">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Convocatorias</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['convocatorias']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/convocatoriasListar']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-list-ul"></i>
+            <span>Consultar Convocatorias</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Administración Section -->
+    <li class="menu-item-expandable">
+      <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()"
+        [class.expanded]="expandedSections['administracion']">
+        <i class="bi bi-gear-fill"></i>
+        <span>Administración</span>
+        </div>
+      <ul class="submenu" [class.show]="expandedSections['administracion']">
+        <li>
+          <a class="submenu-link" [routerLink]="['/configuracion-sistema']" routerLinkActive="active"
+            (click)="closeAdminMenu()">
+            <i class="bi bi-sliders"></i>
+            <span>Configuración</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+}
+
+@if (mostrarHeaderUser) {
+<header class="header-user fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon text-black"></span>
+      <button class="mobile-menu-toggle d-lg-none" type="button" (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="isMobileMenuOpen" aria-controls="mobile-header-menu"
+        [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
+        <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
       </button>
-      <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
-        <div class="navbar-izq">
-          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
-            <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
+      <a class="navbar-brand d-lg-none" [routerLink]="['/']">
+        <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
+          alt="Logo de la aplicación TaeMoi" width="137" height="137">
+      </a>
+      <div class="header-title-mobile d-lg-none">
+        <div class="title-main">MOI'S KIM DO</div>
+        <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
+      </div>
+      <div class="header-actions-mobile d-lg-none">
+        <div class="mobile-social-stack" aria-label="Redes sociales">
+          <a class="social-link social-link-compact" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
+            target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <i class="bi bi-facebook"></i>
           </a>
-          <ul class="navbar-nav list-links">
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                (click)="irARuta('/inicio')">Inicio</a>
+          <a class="social-link social-link-compact" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+            rel="noopener noreferrer" aria-label="Instagram">
+            <i class="bi bi-instagram"></i>
+          </a>
+        </div>
+        <div class="mobile-user-quick-menu" [class.open]="isMobileUserQuickMenuOpen">
+          <button class="btn-account-mobile" type="button" (click)="toggleMobileUserQuickMenu()"
+            [attr.aria-expanded]="isMobileUserQuickMenuOpen" aria-label="Opciones de cuenta">
+            <i class="bi bi-person-circle"></i>
+          </button>
+          @if (isMobileUserQuickMenuOpen) {
+          <div class="mobile-user-quick-menu-panel" role="menu" aria-label="Opciones de cuenta">
+            <a class="mobile-user-quick-menu-item" [routerLink]="['/userpage']" routerLinkActive="active"
+              (click)="closeMobileUserQuickMenu()">
+              <i class="bi bi-calendar2-check"></i>
+              <span>Mis Clases</span>
+            </a>
+            @if (tieneAccesoDual) {
+            <button class="mobile-user-quick-menu-item" type="button"
+              (click)="cambiarVistaAdmin(); closeMobileUserQuickMenu()">
+              <i class="bi bi-shield-lock"></i>
+              <span>Cambiar a admin</span>
+            </button>
+            }
+            <button class="mobile-user-quick-menu-item logout" type="button"
+              (click)="cerrarSesion(); closeMobileUserQuickMenu()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserNav"
+        aria-controls="navbarUserNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-between" id="navbarUserNav">
+        <div class="navbar-left d-flex align-items-center">
+          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
+            <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
+          </a>
+          <ul class="navbar-nav ms-lg-4">
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}">
+                <i class="bi bi-house-door me-1"></i>Inicio
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/eltaekwondo']" routerLinkActive="active"
-                (click)="irARuta('/eltaekwondo')">El Taekwondo</a>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" role="button" id="deportesDropdownUser"
+                [routerLinkActive]="['active']" [routerLinkActiveOptions]="{ exact: false }" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="bi bi-trophy me-1"></i>¿Qué hacemos?
+              </a>
+              <ul class="dropdown-menu dropdown-menu-desktop" aria-labelledby="deportesDropdownUser">
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/taekwondo']" routerLinkActive="active-link">
+                    <i class="bi bi-lightning-fill me-2"></i>Taekwondo
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/kickboxing']" routerLinkActive="active-link">
+                    <i class="bi bi-gem me-2"></i>Kickboxing
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/pilates']" routerLinkActive="active-link">
+                    <i class="bi bi-heart-pulse me-2"></i>Pilates
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active-link">
+                    <i class="bi bi-shield-fill-check me-2"></i>Defensa Personal Femenina
+                  </a>
+                </li>
+              </ul>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/logros']" routerLinkActive="active"
-                (click)="irARuta('/logros')">Logros</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/eventos']" routerLinkActive="active">
+                <i class="bi bi-calendar-event me-1"></i>Eventos
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                (click)="irARuta('/horarios')">Horarios</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/horarios']" routerLinkActive="active">
+                <i class="bi bi-clock me-1"></i>Horarios
+              </a>
             </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                (click)="irARuta('/contacto')">Contacto</a>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/tarifas']" routerLinkActive="active">
+                <i class="bi bi-tag me-1"></i>Tarifas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">
+                <i class="bi bi-envelope me-1"></i>Contacto
+              </a>
             </li>
           </ul>
         </div>
-        <div class="navbar-der d-flex align-items-center justify-content-center">
-          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
-            <li class="nav-item me-4">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
+        <div class="navbar-right">
+          <ul class="navbar-nav d-flex flex-row align-items-center">
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
+                rel="noopener noreferrer" aria-label="Facebook">
+                <i class="bi bi-facebook"></i>
+              </a>
             </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"><i
-                  class="bi bi-facebook fs-4"></i></a>
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
+                rel="noopener noreferrer" aria-label="Instagram">
+                <i class="bi bi-instagram"></i>
+              </a>
             </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"><i
-                  class="bi bi-instagram fs-4"></i></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
+            <li class="nav-item user-desktop-menu d-none d-lg-flex">
+              <button type="button" class="user-menu-toggle" (click)="toggleDesktopUserMenu()"
+                [class.is-open]="isDesktopUserMenuOpen" [attr.aria-expanded]="isDesktopUserMenuOpen"
+                aria-haspopup="menu" aria-label="Opciones de cuenta">
+                <i class="bi bi-person-circle"></i>
+                <span class="user-name" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
+                <i class="bi user-menu-chevron"
+                  [ngClass]="isDesktopUserMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
+              @if (isDesktopUserMenuOpen) {
+              <div class="user-desktop-menu-panel" role="menu" aria-label="Opciones de cuenta">
+                <a class="user-desktop-menu-item" [routerLink]="['/userpage']" (click)="closeDesktopUserMenu()">
+                  <i class="bi bi-calendar2-check"></i>
+                  <span>Mis Clases</span>
+                </a>
+                @if (tieneAccesoDual) {
+                <button class="user-desktop-menu-item" type="button"
+                  (click)="cambiarVistaAdmin(); closeDesktopUserMenu()">
+                  <i class="bi bi-shield-lock"></i>
+                  <span>Cambiar a admin</span>
+                </button>
+                }
+                <button class="user-desktop-menu-item logout" type="button"
+                  (click)="cerrarSesion(); closeDesktopUserMenu()">
+                  <i class="bi bi-box-arrow-right"></i>
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+              }
             </li>
           </ul>
         </div>
@@ -118,67 +675,83 @@
     </div>
   </nav>
 </header>
-<header class="header-user" *ngIf="usuarioLogueado && isUser">
-  <nav class="navbar navbar-expand-lg bg-white p-0">
-    <div class="container-fluid">
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon text-black"></span>
+@if (isMobileMenuOpen) {
+<div class="mobile-header-overlay open" role="dialog" aria-modal="true"
+  aria-labelledby="mobile-header-title-user">
+  <div class="mobile-header-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
+  <div class="mobile-header-panel" role="document" id="mobile-header-menu">
+    <div class="mobile-header-top">
+      <button class="mobile-header-close" type="button" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
-      <div class="collapse navbar-collapse justify-content-around" id="navbarNav">
-        <div class="navbar-izq">
-          <a class="mb-0 mx-5 text-center" (click)="irARuta('/inicio')">
-            <img class="py-2" src="../../../../assets/media/LogoTaemoi.svg" alt="Logo de la aplicación TaeMoi">
-          </a>
-          <ul class="navbar-nav list-links">
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/inicio']" routerLinkActive="active"
-                (click)="irARuta('/inicio')">Inicio</a>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/eltaekwondo']" routerLinkActive="active"
-                (click)="irARuta('/eltaekwondo')">El Taekwondo</a>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/logros']" routerLinkActive="active"
-                (click)="irARuta('/logros')">Logros</a>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/horarios']" routerLinkActive="active"
-                (click)="irARuta('/horarios')">Horarios</a>
-            </li>
-            <li class="nav-item me-3">
-              <a class="nav-link text-black fw-bold" [routerLink]="['/contacto']" routerLinkActive="active"
-                (click)="irARuta('/contacto')">Contacto</a>
-            </li>
-            <li class="nav-item mx-3">
-              <button type="button" class="btn btn-primary text-white fw-bold" [routerLink]="['/userpage']" routerLinkActive="active"
-                (click)="irARuta('/userpage')">Ver mis clases</button>
-            </li>
-          </ul>
-        </div>
-        <div class="navbar-der d-flex align-items-center justify-content-center">
-          <ul class="navbar-nav d-flex flex-row align-items-center justify-content-end">
-            <li class="nav-item me-4">
-              <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
-            </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"><i
-                  class="bi bi-facebook fs-4"></i></a>
-            </li>
-            <li class="nav-item me-4">
-              <a class="nav-link p-0 text-black" href="https://www.instagram.com/moiskimdo_/" target="_blank"><i
-                  class="bi bi-instagram fs-4"></i></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link p-0 text-black" (click)="cerrarSesion()"><i class="bi bi-person-circle fs-3"></i></a>
-            </li>
-          </ul>
-        </div>
-      </div>
+      <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
     </div>
-  </nav>
-</header>
+    <nav class="mobile-header-nav" aria-label="Navegación principal">
+      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
+        <i class="bi bi-house-door" aria-hidden="true"></i>
+        <span>Inicio</span>
+      </a>
+      <div class="mobile-header-section-title">¿Qué hacemos?</div>
+      <a class="mobile-header-link sub" [routerLink]="['/taekwondo']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-lightning-fill" aria-hidden="true"></i>
+        <span>Taekwondo</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/kickboxing']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-gem" aria-hidden="true"></i>
+        <span>Kickboxing</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/pilates']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+        <span>Pilates</span>
+      </a>
+      <a class="mobile-header-link sub" [routerLink]="['/defensa-personal-femenina']"
+        routerLinkActive="active" (click)="closeMobileMenu()">
+        <i class="bi bi-shield-fill-check" aria-hidden="true"></i>
+        <span>Defensa Personal Femenina</span>
+      </a>
+      <div class="mobile-header-section-title">Información</div>
+      <a class="mobile-header-link" [routerLink]="['/eventos']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+        <span>Eventos</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/horarios']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        <span>Horarios</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/tarifas']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-tag" aria-hidden="true"></i>
+        <span>Tarifas</span>
+      </a>
+      <a class="mobile-header-link" [routerLink]="['/contacto']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-envelope" aria-hidden="true"></i>
+        <span>Contacto</span>
+      </a>
+      <div class="mobile-header-section-title">Cuenta</div>
+      <a class="mobile-header-link" [routerLink]="['/userpage']" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }" (click)="closeMobileMenu()">
+        <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+        <span>Mis Clases</span>
+      </a>
+      @if (tieneAccesoDual) {
+      <button class="mobile-header-link" type="button" (click)="cambiarVistaAdmin(); closeMobileMenu()">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <span>Cambiar a admin</span>
+      </button>
+      }
+      <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+        <span>Cerrar Sesión</span>
+      </button>
+    </nav>
+  </div>
+</div>
+}
+}

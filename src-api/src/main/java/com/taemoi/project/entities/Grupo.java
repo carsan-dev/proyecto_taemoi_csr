@@ -1,0 +1,135 @@
+package com.taemoi.project.entities;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Entity
+public class Grupo {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@NotBlank(message = "El nombre no puede estar en blanco")
+	@Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
+	private String nombre;
+
+	private String tipo;
+
+	// NUEVO: Campo para identificar explícitamente el deporte del grupo
+	@Enumerated(EnumType.STRING)
+	@NotNull(message = "El deporte del grupo no puede ser nulo")
+	private Deporte deporte;
+
+	// Rango de edad personalizado (opcional)
+	@Column(name = "rango_edad_min")
+	private Integer rangoEdadMin;
+
+	@Column(name = "rango_edad_max")
+	private Integer rangoEdadMax;
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
+	@JsonBackReference
+	private List<Alumno> alumnos = new ArrayList<>();
+
+	@OneToMany(mappedBy = "grupo", fetch = FetchType.LAZY)
+	@JsonBackReference
+	private List<Turno> turnos;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public String getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(String tipo) {
+		this.tipo = tipo;
+	}
+
+	public Deporte getDeporte() {
+		return deporte;
+	}
+
+	public void setDeporte(Deporte deporte) {
+		this.deporte = deporte;
+	}
+
+	public Integer getRangoEdadMin() {
+		return rangoEdadMin;
+	}
+
+	public void setRangoEdadMin(Integer rangoEdadMin) {
+		this.rangoEdadMin = rangoEdadMin;
+	}
+
+	public Integer getRangoEdadMax() {
+		return rangoEdadMax;
+	}
+
+	public void setRangoEdadMax(Integer rangoEdadMax) {
+		this.rangoEdadMax = rangoEdadMax;
+	}
+
+	public List<Alumno> getAlumnos() {
+		return alumnos;
+	}
+
+	public void setAlumnos(List<Alumno> alumnos) {
+		this.alumnos = alumnos;
+	}
+
+	public List<Turno> getTurnos() {
+		return turnos;
+	}
+
+	public void setTurnos(List<Turno> turnos) {
+		this.turnos = turnos;
+	}
+
+	public void addAlumno(Alumno alumno) {
+		if (alumno != null) {
+			alumnos.add(alumno);
+			alumno.getGrupos().add(this);
+		}
+	}
+
+	public void removeAlumno(Alumno alumno) {
+		if (alumno != null) {
+			alumnos.remove(alumno);
+			alumno.getGrupos().remove(this);
+		}
+	}
+}

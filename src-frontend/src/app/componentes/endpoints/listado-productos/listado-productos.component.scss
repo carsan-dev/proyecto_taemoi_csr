@@ -1,0 +1,164 @@
+// Import shared admin styles
+@use '../../../componentes/admin-shared-styles.scss' as *;
+@use '../../../componentes/admin-mobile-forms.scss' as *;
+
+// ========================================
+// MOBILE TABLE IMPROVEMENTS
+// ========================================
+
+// Ensure table scrolls horizontally on mobile
+.admin-table {
+  table {
+    th.col-actions,
+    td.col-actions {
+      width: 200px;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 767px) {
+    // Enable smooth horizontal scrolling
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+    display: block;
+    width: 100%;
+
+    // Add scroll indicator shadow
+    background:
+      linear-gradient(to right, white 30%, rgba(255,255,255,0)),
+      linear-gradient(to right, rgba(255,255,255,0), white 70%) 0 100%,
+      radial-gradient(farthest-side at 0% 50%, rgba(0,0,0,.15), rgba(0,0,0,0)),
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.15), rgba(0,0,0,0)) 0 100%;
+    background-repeat: no-repeat;
+    background-color: white;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+    background-position: 0 0, 100%, 0 0, 100%;
+    background-attachment: local, local, scroll, scroll;
+
+    table {
+      min-width: 600px; // Ensure table is wide enough to scroll
+      width: 100%;
+
+      th.col-actions,
+      td.col-actions {
+        width: auto;
+        min-width: 180px;
+      }
+
+      thead th {
+        padding: 1rem 0.75rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background: linear-gradient(135deg, #1b2b2e, #284747);
+        z-index: 10;
+      }
+
+      tbody td {
+        padding: 1rem 0.75rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+
+        // Action buttons in mobile
+        &:last-child {
+          white-space: normal;
+          min-width: 200px;
+
+          .admin-btn {
+            margin-bottom: 0.5rem;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Extra small devices - stack buttons vertically
+  @media (max-width: 575px) {
+    table {
+      tbody td:last-child {
+        .admin-btn {
+          display: flex;
+          width: 100%;
+          margin-right: 0 !important;
+          margin-bottom: 0.5rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Optional: Mobile card view (add this class to admin-table if preferred)
+.admin-table.mobile-card-view {
+  @media (max-width: 575px) {
+    overflow-x: visible;
+    background: transparent;
+
+    table {
+      min-width: auto;
+
+      thead {
+        display: none;
+      }
+
+      tbody, tr {
+        display: block;
+        width: 100%;
+      }
+
+      tr {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+        &:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        white-space: normal;
+        min-width: auto !important;
+
+        &:last-child {
+          border-bottom: none;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding-top: 1rem;
+          margin-top: 0.5rem;
+          border-top: 2px solid #f0f0f0;
+        }
+
+        // Add labels before each cell
+        &:nth-child(1)::before { content: 'ID: '; font-weight: 600; }
+        &:nth-child(2)::before { content: 'Concepto: '; font-weight: 600; }
+        &:nth-child(3)::before { content: 'Precio: '; font-weight: 600; }
+        &:nth-child(4)::before { content: 'Acciones'; font-weight: 600; width: 100%; text-align: center; margin-bottom: 0.5rem; }
+      }
+    }
+  }
+}
+
+// Pagination mobile improvements
+app-paginacion {
+  @media (max-width: 575px) {
+    display: block;
+    margin-top: 1.5rem !important;
+  }
+}
+  

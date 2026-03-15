@@ -1,0 +1,41 @@
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
+  <div class="modal-dialog modal-dialog-scrollable" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Notas de {{ productoAlumno.concepto }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Mostrar notas en modo lectura si no estamos editando -->
+        @if (!modoEdicion) {
+          <div>
+            <p class="mb-0" [innerText]="productoAlumno.notas || 'Sin notas'"></p>
+          </div>
+        }
+
+        <!-- Textarea editable si estamos en modo edición -->
+        @if (modoEdicion) {
+          <div>
+            <textarea class="form-control" rows="5" [(ngModel)]="productoAlumno.notas"></textarea>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        @if (!modoEdicion) {
+          <button type="button" class="btn btn-light" (click)="habilitarEdicion()">
+            Editar
+          </button>
+        }
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+          {{ modoEdicion ? 'Cancelar' : 'Cerrar' }}
+        </button>
+        @if (modoEdicion) {
+          <button type="button" class="btn btn-primary" (click)="guardarNotas()">
+            Guardar
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalVisible" (click)="cerrarModal()"></div>

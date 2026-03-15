@@ -1,0 +1,765 @@
+// Import shared admin styles
+@use '../../../componentes/admin-shared-styles.scss' as *;
+@use '../../../componentes/admin-mobile-forms.scss' as *;
+@use 'sass:color';
+
+// ============================================================================
+// MODERN CONVOCATORIAS LAYOUT
+// ============================================================================
+
+// Sport Filter
+.sport-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  label {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+}
+
+// Convocatorias Grid
+.convocatorias-grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+// ============================================================================
+// CONVOCATORIA CARD
+// ============================================================================
+
+.convocatoria-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+
+  &.expanded {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Card Header
+.convocatoria-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  gap: 1rem;
+
+  &:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  }
+
+  &:focus-visible {
+    outline: 3px solid $primary-color;
+    outline-offset: -3px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+.convocatoria-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    gap: 1rem;
+  }
+}
+
+// Sport Badge
+.sport-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &.taekwondo {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  &.kickboxing {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+
+  i {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 576px) {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+// Date Display
+.date-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 576px) {
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+.date-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, $primary-color, color.scale($primary-color, $lightness: -20%));
+  border-radius: 10px;
+  color: white;
+
+  i {
+    font-size: 1.25rem;
+  }
+
+  @media (max-width: 576px) {
+    width: 32px;
+    height: 32px;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+}
+
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.date-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212529;
+
+  @media (max-width: 576px) {
+    font-size: 0.875rem;
+  }
+}
+
+// Expand Indicator
+.expand-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  margin-left: auto;
+
+  i {
+    font-size: 1.25rem;
+    color: $primary-color;
+    transition: transform 0.3s ease;
+  }
+}
+
+// Actions
+.convocatoria-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  i {
+    font-size: 1.125rem;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 576px) {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.delete-btn {
+  color: #dc3545;
+
+  &:hover {
+    background: #dc3545;
+    color: white;
+  }
+}
+
+.delete-btn-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+// ============================================================================
+// CARD BODY (EXPANDABLE CONTENT)
+// ============================================================================
+
+.convocatoria-card-body {
+  padding: 2rem;
+  background: white;
+  border-top: 2px solid #e9ecef;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+  }
+
+  @media (max-width: 576px) {
+    padding: 1rem;
+  }
+}
+
+// Summary Stats
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.75rem;
+  }
+
+  &.students {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  &.paid {
+    background: linear-gradient(135deg, #56ab2f, #a8e063);
+    color: white;
+  }
+
+  &.pending {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+  }
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #212529;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+// Action Section
+.action-section {
+  margin-bottom: 2rem;
+}
+
+// Section Title
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+// ============================================================================
+// STUDENTS TABLE
+// ============================================================================
+
+.students-section {
+  margin-bottom: 2rem;
+}
+
+.students-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: white;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+
+  thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+
+      &:first-child {
+        border-top-left-radius: 12px;
+      }
+
+      &:last-child {
+        border-top-right-radius: 12px;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #e9ecef;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: #f8f9fa;
+      }
+
+      &.paid {
+        background: rgba(86, 171, 47, 0.05);
+      }
+
+      &.unpaid {
+        background: rgba(245, 87, 108, 0.05);
+      }
+
+      td {
+        padding: 1rem;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  @media (max-width: 992px) {
+    min-width: 800px;
+  }
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.student-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $primary-color, color.scale($primary-color, $lightness: -20%));
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.student-name {
+  strong {
+    color: #212529;
+    font-size: 0.875rem;
+  }
+}
+
+.badge-grade {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+
+  &.current {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  &.next {
+    background: linear-gradient(135deg, #56ab2f, #a8e063);
+    color: white;
+  }
+}
+
+.cuantia-input {
+  width: 100px;
+  padding: 0.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
+  &.paid {
+    color: #56ab2f;
+    border-color: #56ab2f;
+  }
+
+  &.unpaid {
+    color: #f5576c;
+    border-color: #f5576c;
+  }
+}
+
+// Payment Status Toggle
+.payment-status-toggle {
+  display: inline-flex;
+}
+
+.payment-checkbox {
+  display: none;
+
+  &:checked + .payment-label {
+    .payment-icon {
+      background: linear-gradient(135deg, #56ab2f, #a8e063);
+      color: white;
+    }
+
+    .payment-text {
+      color: #56ab2f;
+    }
+  }
+}
+
+.payment-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: #f8f9fa;
+
+  &:hover {
+    background: #e9ecef;
+  }
+}
+
+.payment-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f5576c;
+  color: white;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.payment-text {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #f5576c;
+  transition: color 0.2s ease;
+}
+
+// ============================================================================
+// ADD STUDENT SECTION
+// ============================================================================
+
+.add-student-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+}
+
+.add-student-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: end;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #495057;
+  display: flex;
+  align-items: center;
+}
+
+.form-select-custom {
+  padding: 0.75rem 1rem;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
+  &:hover {
+    border-color: #adb5bd;
+  }
+}
+
+.load-more-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+
+  &:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// ============================================================================
+// EMPTY STATES
+// ============================================================================
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: #dee2e6;
+  margin-bottom: 1rem;
+}
+
+.empty-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.empty-subtext {
+  font-size: 0.875rem;
+  color: #adb5bd;
+}
+
+.empty-state-large {
+  padding: 4rem 2rem;
+
+  .empty-illustration {
+    font-size: 6rem;
+    color: #dee2e6;
+    margin-bottom: 2rem;
+  }
+
+  .empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+  }
+
+  .empty-description {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+// ============================================================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================================================
+
+@media (max-width: 768px) {
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .students-table {
+    font-size: 0.75rem;
+
+    thead th {
+      padding: 0.75rem 0.5rem;
+    }
+
+    tbody td {
+      padding: 0.75rem 0.5rem;
+    }
+  }
+
+  .student-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .cuantia-input {
+    width: 80px;
+    font-size: 0.75rem;
+  }
+
+  .payment-label {
+    padding: 0.375rem 0.75rem;
+  }
+
+  .payment-text {
+    font-size: 0.75rem;
+  }
+}
+
+// Action Section
+.action-section {
+  margin-bottom: 2rem;
+}

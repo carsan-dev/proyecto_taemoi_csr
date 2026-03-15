@@ -34,35 +34,56 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/favicon.svg",
+              "src/favicon-48x48.png",
+              "src/favicon-32x32.png",
+              "src/favicon-16x16.png",
+              "src/apple-touch-icon.png",
+              "src/robots.txt",
+              "src/sitemap.xml",
+              "src/assets",
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/build",
+                "output": "assets/pdfjs"
+              }
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/bootstrap/scss/bootstrap.scss",
               "node_modules/ngx-spinner/animations/ball-clip-rotate.css",
-              "node_modules/leaflet/dist/leaflet.css"
+              "node_modules/leaflet/dist/leaflet.css",
+              "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css",
+              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.css",
+              "node_modules/leaflet-minimap/dist/Control.MiniMap.min.css"
             ],
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ],
-            "server": "src/main.server.ts",
-            "prerender": true,
-            "ssr": {
-              "entry": "server.ts"
-            }
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "node_modules"
+              ]
+            },
+            "allowedCommonJsDependencies": [
+              "sweetalert2",
+              "leaflet",
+              "leaflet-routing-machine",
+              "leaflet-control-geocoder",
+              "leaflet-minimap"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "3mb"
+                  "maximumWarning": "1.5mb",
+                  "maximumError": "2mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "5kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "100kb",
+                  "maximumError": "150kb"
                 }
               ],
               "fileReplacements": [
@@ -71,12 +92,32 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true
+                },
+                "fonts": true
+              },
+              "sourceMap": false,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "allowedCommonJsDependencies": [
+                "sweetalert2",
+                "leaflet",
+                "leaflet-routing-machine",
+                "leaflet-minimap",
+                "leaflet-control-geocoder"
+              ]
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "namedChunks": true
             },
             "local": {
               "fileReplacements": [
@@ -85,7 +126,14 @@
                   "with": "src/environments/environment.local.ts"
                 }
               ],
-              "optimization": false,
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              },
               "sourceMap": true,
               "namedChunks": true,
               "aot": true,
@@ -96,6 +144,13 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "prebundle": {
+              "exclude": [
+                "pdfjs-dist"
+              ]
+            }
+          },
           "configurations": {
             "production": {
               "buildTarget": "Taemoi_Angular_Front:build:production"
@@ -126,6 +181,13 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
+              "src/favicon.svg",
+              "src/favicon-48x48.png",
+              "src/favicon-32x32.png",
+              "src/favicon-16x16.png",
+              "src/apple-touch-icon.png",
+              "src/robots.txt",
+              "src/sitemap.xml",
               "src/assets"
             ],
             "styles": [

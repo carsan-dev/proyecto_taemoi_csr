@@ -1,52 +1,62 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../../utils/toast.util';
 import { Turno } from '../../../../../interfaces/turno';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
+import { finalize } from 'rxjs/operators';
+import { SearchableSelectDirective } from '../../../../../directives/searchable-select.directive';
 
 @Component({
   selector: 'app-gestionar-turnos-alumno',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './gestionar-turnos-alumno.component.html',
-  styleUrl: './gestionar-turnos-alumno.component.scss'
+  styleUrl: './gestionar-turnos-alumno.component.scss',
 })
-export class GestionarTurnosAlumnoComponent implements OnInit {
+export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   alumnoId!: number;
   alumno: AlumnoDTO = {} as AlumnoDTO;
   turnos: Turno[] = [];
   turnosDisponibles: Turno[] = [];
   turnoSeleccionado!: number;
+  private readonly subscriptions: Subscription = new Subscription();
+  cargando: boolean = true;
 
   constructor(
-    private route: ActivatedRoute,
-    private endpointsService: EndpointsService,
-    private router: Router,
-    private location: Location
+    private readonly route: ActivatedRoute,
+    public readonly endpointsService: EndpointsService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
-    if (typeof localStorage !== 'undefined') {
-      this.route.params.subscribe(params => {
-        this.alumnoId = +params['alumnoId'];
-        this.cargarAlumno();
-        this.cargarTurnos();
-        this.cargarTurnosDisponibles();
-      });
-    }
+    this.route.params.subscribe((params) => {
+      this.alumnoId = +params['alumnoId'];
+      this.cargarAlumno();
+      this.cargarTurnos();
+      this.endpointsService.obtenerTurnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   cargarAlumno(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerAlumnoPorId(this.alumnoId, token).subscribe({
+    this.cargando = true;
+    this.endpointsService.obtenerAlumnoPorId(this.alumnoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
         next: (alumno: AlumnoDTO) => {
           this.alumno = alumno;
         },
         error: () => {
+          this.cargando = false;
           Swal.fire({
             title: 'Error en la petición',
             text: 'No hemos podido obtener los datos del alumno',
@@ -54,15 +64,14 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
           });
         },
       });
-    }
   }
 
   cargarTurnos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTurnosDelAlumno(this.alumnoId, token).subscribe({
+    // Suscribirse al Observable expuesto por el BehaviorSubject
+    const turnosSubscription = this.endpointsService.turnosDelAlumno$.subscribe(
+      {
         next: (turnos: Turno[]) => {
-          this.turnos = turnos;  // Asegúrate de que esta propiedad contiene solo los turnos del alumno
+          this.turnos = turnos;
         },
         error: () => {
           Swal.fire({
@@ -71,87 +80,60 @@ export class GestionarTurnosAlumnoComponent implements OnInit {
             icon: 'error',
           });
         },
-      });
-    }
-  }
+      }
+    );
 
-  cargarTurnosDisponibles(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerTurnos(token).subscribe({
-        next: (turnos: Turno[]) => {
-          this.turnosDisponibles = turnos;  // Esto debería ser solo para turnos disponibles, no afecta a `this.turnos`
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error en la petición',
-            text: 'No hemos podido obtener los turnos disponibles',
-            icon: 'error',
-          });
-        },
-      });
-    }
-  }
+    this.subscriptions.add(turnosSubscription);
 
+    // Llamar al método que inicia la carga de datos
+    this.endpointsService.obtenerTurnosDelAlumno(this.alumnoId);
+  }
 
   asignarTurno(): void {
-    const token = localStorage.getItem('token');
-    if (token && this.turnoSeleccionado) {
-      this.endpointsService.asignarAlumnoATurno(this.alumnoId, this.turnoSeleccionado, token).subscribe({
-        next: () => {
-          Swal.fire('Turno asignado', 'El turno ha sido asignado al alumno con éxito', 'success');
-          this.cargarTurnos();  // Recargar la lista de turnos
-        },
-        error: (err) => {
-          console.error('Error al asignar turno:', err);
-          let errorMessage = 'No hemos podido asignar el turno al alumno';
-          if (err.error && typeof err.error === 'object') {
-            errorMessage = err.error.message || errorMessage;
-          }
-          Swal.fire({
-            title: 'Error al asignar turno',
-            text: errorMessage,
-            icon: 'error',
-          });
-        },
-      });
+    if (this.turnoSeleccionado) {
+      this.endpointsService
+        .asignarAlumnoATurno(this.alumnoId, this.turnoSeleccionado)
+        .subscribe({
+          next: () => {
+            showSuccessToast('Turno asignado al alumno');
+            this.cargarTurnos();
+          },
+          error: (err) => {
+            console.error('Error al asignar turno:', err);
+            const errorMessage = err.error?.message || 'No hemos podido asignar el turno al alumno';
+            showErrorToast(errorMessage);
+          },
+        });
     }
   }
-
 
   removerTurno(turnoId: number): void {
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'El turno será removido del alumno. Esta acción no se puede deshacer.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, remover',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId, token).subscribe({
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'El turno será removido del alumno. Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, remover',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.endpointsService
+          .removerAlumnoDeTurno(this.alumnoId, turnoId)
+          .subscribe({
             next: (turnosActualizados: Turno[]) => {
-              this.turnos = turnosActualizados; // Actualizar la lista de turnos
-              Swal.fire('Turno removido', 'El turno ha sido removido del alumno con éxito', 'success');
+              this.turnos = turnosActualizados;
+              showSuccessToast('Turno removido del alumno');
+              this.cargarTurnos();
             },
             error: () => {
-              Swal.fire({
-                title: 'Error al remover turno',
-                text: 'No hemos podido remover el turno del alumno',
-                icon: 'error',
-              });
+              showErrorToast('No se pudo remover el turno');
             },
           });
-        }
-      });
-    }
+      }
+    });
   }
-
 
   volver() {
     this.location.back();

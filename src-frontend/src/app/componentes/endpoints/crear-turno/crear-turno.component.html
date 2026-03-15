@@ -1,70 +1,231 @@
-<div class="container mt-5">
-  <div class="card p-4 shadow-sm">
-    <h2 class="text-center mb-4">Crear Turno</h2>
-    <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" class="mt-4" method="post">
-      <div class="form-group form-floating mb-3">
-        <select formControlName="diaSemana" id="diaSemana" class="form-select form-control">
-          <option value="" disabled selected>Selecciona un día...</option>
-          <option value="Lunes">Lunes</option>
-          <option value="Martes">Martes</option>
-          <option value="Miércoles">Miércoles</option>
-          <option value="Jueves">Jueves</option>
-          <option value="Viernes">Viernes</option>
-          <option value="Sábado">Sábado</option>
-          <option value="Domingo">Domingo</option>
-        </select>
-        <label for="diaSemana" class="form-label">Día de la semana:</label>
-        <div
-          *ngIf="turnoForm.get('diaSemana')?.invalid && turnoForm.get('diaSemana')?.touched">
-          <small class="text-danger" *ngIf="turnoForm.get('diaSemana')?.errors?.['required']">El día de la semana no
-            puede estar en blanco</small>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-clock"></i>
+        Crear Nuevo Turno
+      </h2>
+      <p>Define un horario con día de la semana y horas para las clases</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="admin-card admin-card-large">
+          <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()" method="post">
+
+            <!-- Información del Horario -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-calendar-week"></i>
+                <h4>Información del Horario</h4>
+              </div>
+
+              <div class="row g-3">
+                <!-- Día de la semana -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched" [class.is-valid]="turnoForm.get('diaSemana')?.valid && turnoForm.get('diaSemana')?.touched">
+                    <label for="diaSemana">
+                      <i class="bi bi-calendar3"></i>
+                      Día de la Semana
+                      <span class="required">*</span>
+                    </label>
+                    <select appSearchableSelect
+                      formControlName="diaSemana"
+                      id="diaSemana"
+                      class="admin-form-control form-select"
+                      aria-required="true">
+                      <option value="" disabled selected>Selecciona un día...</option>
+                      <option value="Lunes">Lunes</option>
+                      <option value="Martes">Martes</option>
+                      <option value="Miércoles">Miércoles</option>
+                      <option value="Jueves">Jueves</option>
+                      <option value="Viernes">Viernes</option>
+                      <option value="Sábado">Sábado</option>
+                      <option value="Domingo">Domingo</option>
+                    </select>
+                    @if (turnoForm.get('diaSemana')?.errors && turnoForm.get('diaSemana')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El día de la semana es obligatorio
+                    </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Hora de inicio y hora de fin -->
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field" [class.is-invalid]="turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched" [class.is-valid]="turnoForm.get('horaInicio')?.valid && turnoForm.get('horaInicio')?.touched">
+                    <label for="horaInicio">
+                      <i class="bi bi-clock"></i>
+                      Hora de Inicio
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      formControlName="horaInicio"
+                      id="horaInicio"
+                      class="admin-form-control"
+                      aria-required="true">
+                    @if (turnoForm.get('horaInicio')?.errors && turnoForm.get('horaInicio')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      @if (turnoForm.get('horaInicio')?.errors?.['required']) {
+                      <span>La hora de inicio es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaInicio')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field" [class.is-invalid]="turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched" [class.is-valid]="turnoForm.get('horaFin')?.valid && turnoForm.get('horaFin')?.touched">
+                    <label for="horaFin">
+                      <i class="bi bi-clock-fill"></i>
+                      Hora de Fin
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      formControlName="horaFin"
+                      id="horaFin"
+                      class="admin-form-control"
+                      aria-required="true">
+                    @if (turnoForm.get('horaFin')?.errors && turnoForm.get('horaFin')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      @if (turnoForm.get('horaFin')?.errors?.['required']) {
+                      <span>La hora de fin es obligatoria</span>
+                      }
+                      @if (turnoForm.get('horaFin')?.errors?.['pattern']) {
+                      <span>Formato HH:mm requerido</span>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Error de validación de horas -->
+                @if (turnoForm.errors?.['horasInvalidas']) {
+                <div class="col-12">
+                  <div class="admin-alert admin-alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>La hora de inicio debe ser anterior a la hora de fin</span>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Asignación a Grupo -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-people"></i>
+                <h4>Asignación a Grupo (Opcional)</h4>
+              </div>
+
+              <div class="row g-3">
+                <!-- Switch para asignar a grupo -->
+                <div class="col-12">
+                  <div class="admin-form-switch" [class.checked]="turnoForm.get('asignarGrupo')?.value">
+                    <label for="asignarGrupo">
+                      <i class="bi bi-link-45deg"></i>
+                      Asignar a un grupo existente
+                    </label>
+                    <div class="switch">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="asignarGrupo"
+                        formControlName="asignarGrupo">
+                      <span class="slider"></span>
+                    </div>
+                  </div>
+                  <div class="admin-form-help">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Puedes asociar este turno a un grupo específico para mejor organización</span>
+                  </div>
+                </div>
+
+                <!-- Selector de grupo (si está activado) -->
+                @if (turnoForm.get('asignarGrupo')?.value) {
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field">
+                    <label for="grupo">
+                      <i class="bi bi-people-fill"></i>
+                      Grupo
+                    </label>
+                    <select appSearchableSelect
+                      formControlName="grupoId"
+                      id="grupo"
+                      class="admin-form-control form-select">
+                      <option value="" disabled selected>Selecciona un grupo...</option>
+                      @for (grupo of grupos; track grupo.id) {
+                      <option [value]="grupo.id">{{ grupo.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                }
+
+                @if (turnoForm.get('asignarGrupo')?.value) {
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field" [class.is-invalid]="turnoForm.get('tipoGrupo')?.errors && turnoForm.get('tipoGrupo')?.touched" [class.is-valid]="turnoForm.get('tipoGrupo')?.valid && turnoForm.get('tipoGrupo')?.touched">
+                    <label for="tipoGrupo">
+                      <i class="bi bi-tag-fill"></i>
+                      Tipo de Grupo
+                      <span class="required">*</span>
+                    </label>
+                    <select appSearchableSelect
+                      formControlName="tipoGrupo"
+                      id="tipoGrupo"
+                      class="admin-form-control form-select"
+                      aria-required="true">
+                      <option value="" disabled selected>Selecciona un tipo...</option>
+                      <option value="Taekwondo Infantil">Taekwondo Infantil</option>
+                      <option value="Taekwondo Joven">Taekwondo Joven</option>
+                      <option value="Taekwondo Adulto">Taekwondo Adulto</option>
+                      <option value="Kickboxing">Kickboxing</option>
+                      <option value="Pilates">Pilates</option>
+                      <option value="Defensa Personal Femenina">Defensa Personal Femenina</option>
+                      <option value="Competición">Competición</option>
+                    </select>
+                    @if (turnoForm.get('tipoGrupo')?.errors && turnoForm.get('tipoGrupo')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      El tipo de grupo es obligatorio
+                    </div>
+                    }
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="admin-form-button-group">
+              <button
+                type="button"
+                class="admin-btn admin-btn-outline"
+                routerLink="/gruposListar">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancelar</span>
+              </button>
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary"
+                [disabled]="turnoForm.invalid">
+                <i class="bi bi-check-circle"></i>
+                <span>Crear Turno</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-
-      <div class="form-group form-floating mb-3">
-        <input type="time" formControlName="horaInicio" id="horaInicio" class="form-control">
-        <label for="horaInicio" class="form-label">Hora de inicio:</label>
-        <div
-          *ngIf="turnoForm.get('horaInicio')?.invalid &&  turnoForm.get('horaInicio')?.touched">
-          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['required']">La hora de inicio no
-            puede estar en blanco</small>
-          <small class="text-danger" *ngIf="turnoForm.get('horaInicio')?.errors?.['pattern']">La hora de inicio debe
-            estar en formato HH:mm</small>
-        </div>
-      </div>
-
-      <div class="form-group form-floating">
-        <input type="time" formControlName="horaFin" id="horaFin" class="form-control">
-        <label for="horaFin" class="form-label">Hora de fin:</label>
-        <div
-          *ngIf="turnoForm.get('horaFin')?.invalid && turnoForm.get('horaFin')?.touched">
-          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['required']">La hora de fin no puede
-            estar en blanco</small>
-          <small class="text-danger" *ngIf="turnoForm.get('horaFin')?.errors?.['pattern']">La hora de fin debe estar en
-            formato HH:mm</small>
-        </div>
-      </div>
-
-      <div *ngIf="turnoForm.errors?.['horasInvalidas']" class="text-danger pb-3">
-        La hora de inicio no puede ser mayor o igual a la hora de fin.
-      </div>
-
-      <div class="form-check my-3">
-        <input type="checkbox" class="form-check-input" id="asignarGrupo" formControlName="asignarGrupo">
-        <label class="form-check-label" for="asignarGrupo">Asignar a un grupo</label>
-      </div>
-
-      <div class="form-group form-floating mb-3" *ngIf="turnoForm.get('asignarGrupo')?.value">
-        <select formControlName="grupoId" id="grupo" class="form-select form-control">
-          <option value="" disabled selected>Selecciona un grupo...</option>
-          <option *ngFor="let grupo of grupos" [value]="grupo.id">{{ grupo.nombre }}</option>
-        </select>
-        <label for="grupo" class="form-label">Grupo:</label>
-      </div>
-
-      <div class="text-center">
-        <button type="submit" class="btn btn-primary" [disabled]="turnoForm.invalid">Crear Turno</button>
-      </div>
-    </form>
+    </div>
   </div>
 </div>

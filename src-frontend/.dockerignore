@@ -1,0 +1,41 @@
+# Node modules (will be installed during build)
+node_modules
+npm-debug.log
+
+# Build output
+dist
+.angular
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Tests
+*.spec.ts
+karma.conf.js
+.editorconfig
+
+# Documentation
+README.md
+*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (use build args instead)
+.env
+.env.*
+
+# SSR files (not used - this is a static SPA served by nginx)
+*.unused
+server.ts.unused
+src/main.server.ts.unused
+src/app/app.config.server.ts.unused

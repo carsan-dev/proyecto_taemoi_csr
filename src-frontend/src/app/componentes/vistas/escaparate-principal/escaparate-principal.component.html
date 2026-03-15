@@ -1,70 +1,837 @@
-<div class="main-content row">
-  <div class="video-container vw-100 vh-100">
-    <video autoplay loop muted aria-label="Video de presentación" #videoPresentacion>
+﻿<div class="main-content">
+  <!-- Hero Section with Video -->
+  <div class="video-container vh-100">
+    <video #videoPresentacion autoplay loop muted playsinline webkit-playsinline disablepictureinpicture
+      preload="metadata" aria-hidden="true" poster="../../../../assets/media/video_portada.webp" fetchpriority="high">
+      <source src="../../../../assets/media/video_portada.webm" type="video/webm">
       <source src="../../../../assets/media/video_portada.mp4" type="video/mp4">
       Tu navegador no soporta la etiqueta de video.
     </video>
-    <div class="video-text text-white text-center d-flex flex-column">
-      <p class="m-0">MOIS KIM DO</p>
-      <p class="m-0">TAEKWONDO</p>
+
+    <div class="video-overlay"></div>
+    <div class="video-content">
+      <div class="hero-badge">
+        <i class="bi bi-award-fill"></i>
+        <span>Más de 15 años de experiencia</span>
+      </div>
+      <div class="video-text">
+        <h1 class="hero-title">MOI'S KIM DO</h1>
+        <h2 class="hero-subtitle">
+          <span class="desktop-only">Taekwondo, Kickboxing, Pilates y Defensa Personal en Umbrete, Sevilla</span>
+          <span class="mobile-only">Artes Marciales en Umbrete, Sevilla</span>
+        </h2>
+        <p class="hero-description">Transforma tu vida a través de las artes marciales</p>
+        <div class="hero-buttons">
+          @if (usuarioLogueado) {
+          <button class="hero-btn accent" routerLink="/userpage">
+            <i class="bi bi-collection-play-fill"></i>
+            <span>Mis clases</span>
+          </button>
+          }
+          <button class="hero-btn primary" routerLink="/horarios">
+            <i class="bi bi-calendar3"></i>
+            <span>Ver Horarios</span>
+          </button>
+          <button class="hero-btn secondary" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Contactar</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="video-image">
-      <img class="img-fluid w-100" src="../../../../assets/media/taekwondista.svg" alt="Taekwondista cinturón negro dibujado">
+    <div class="scroll-indicator">
+      <i class="bi bi-chevron-down"></i>
     </div>
   </div>
-  <section class="p-0 info-divs-section">
-    <div class="info-div mt-5 d-flex flex-column flex-md-row align-items-center">
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center fst-italic">QUIENES SOMOS</h1>
-        <p class="mt-5">Somos una pequeña escuela de Taekwondo ubicada en el corazón del Aljarafe Sevillano que lleva en
-          activo más de
-          15 años, con una gran pasión por el deporte que ejercemos y un carisma sin igual.</p>
-        <p class="mt-4">Únete a nuestra comunidad de taekwondo hoy mismo y descubre cómo el entrenamiento físico, la
-          disciplina mental
-          y la camaradería pueden transformar tu vida. ¡Te esperamos en Moiskimdo!</p>
-        <button type="button" class="btn btn-primary mt-5" (click)="irARuta('/horarios')">Consulta horarios</button>
-      </div>
-      <div class="img-content d-flex justify-content-md-end justify-content-center mb-md-0 mb-4">
-        <img src="../../../../assets/media/rafa_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
+  <!-- Info Sections -->
+  <section class="info-divs-section">
+    <!-- Who We Are Section -->
+    <div class="info-div">
+      <div class="info-card info-card--reveal" #infoCard>
+        <div class="card-content image-wide">
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-people-fill section-icon"></i>
+              <h2 class="section-title">QUIÉNES SOMOS</h2>
+            </div>
+            <p class="section-description">Somos una escuela de artes marciales en el Aljarafe sevillano con m&aacute;s
+              de 15 a&ntilde;os de experiencia y una comunidad cercana.</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Más de 15 años de experiencia</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Instructores certificados</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Comunidad familiar</span>
+              </div>
+            </div>
+            <button class="modern-btn taekwondo-btn" routerLink="/horarios">
+              <i class="bi bi-calendar3"></i>
+              <span>Consulta Horarios</span>
+            </button>
+          </div>
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img src="../../../../assets/media/rafa_competicion.webp"
+                alt="Competición de taekwondo en Umbrete - Club Moi's Kim Do Sevilla" loading="lazy">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="info-div info-div-reverse mb-5 d-flex flex-column flex-md-row align-items-center">
-      <div class="img-content d-flex justify-content-md-start justify-content-center mb-md-0 mb-4">
-        <img src="../../../../assets/media/pablo_competicion.webp" alt="Se muestran dos competidores en una competición oficial">
+    <!-- What We Do Section -->
+    <div class="info-div reverse">
+      <div class="info-card info-card--reveal" #infoCard>
+        <div class="card-content reverse image-wide">
+          <div class="img-content image-compact">
+            <div class="image-wrapper">
+              <img class="image-focus-center" src="../../../../assets/media/doble_puño_v2.webp"
+                alt="Entrenamiento de artes marciales en el Aljarafe sevillano" loading="lazy">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-lightning-charge-fill section-icon"></i>
+              <h2 class="section-title">QUÉ HACEMOS</h2>
+            </div>
+            <p class="section-description">Clases din&aacute;micas para ni&ntilde;os y adultos: taekwondo, kickboxing
+              light, pilates balance y defensa personal femenina. Primera clase gratuita bajo disponibilidad.</p>
+
+            <div class="disciplines-callout">
+              <span class="disciplines-label">Explora cada disciplina:</span>
+              <div class="discipline-links">
+                <a routerLink="/taekwondo" class="discipline-link taekwondo">
+                  <i class="bi bi-trophy-fill"></i>
+                  <span>Taekwondo</span>
+                </a>
+                <a routerLink="/kickboxing" class="discipline-link kickboxing">
+                  <i class="bi bi-fire"></i>
+                  <span>Kickboxing Light</span>
+                </a>
+                <a routerLink="/pilates" class="discipline-link pilates">
+                  <i class="bi bi-heart-pulse-fill"></i>
+                  <span>Pilates Balance</span>
+                </a>
+                <a routerLink="/defensa-personal-femenina" class="discipline-link defensa">
+                  <i class="bi bi-shield-fill-check"></i>
+                  <span>Defensa Personal Femenina</span>
+                </a>
+              </div>
+            </div>
+            <button class="modern-btn kickboxing-btn" routerLink="/contacto">
+              <i class="bi bi-envelope-fill"></i>
+              <span>Contáctanos</span>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="text-content d-flex flex-column justify-content-center mb-md-0 mb-4">
-        <h1 class="h2 text-center fst-italic">QUE HACEMOS</h1>
-        <p class="mt-5">Ofrecemos clases dinámicas y emocionantes para niños y adultos de todas las edades. Desde los
-          más
-          pequeños hasta los más experimentados, todos son bienvenidos a descubrir el arte del taekwondo en un ambiente
-          divertido y seguro.</p>
-        <p class="mt-4">¿Te gustaría probar una clase gratis? ¡Estamos encantados de ofrecerte la oportunidad de
-          experimentar la energía y la disciplina que caracterizan nuestras sesiones de entrenamiento!</p>
-        <p class="mt-4">Contáctanos para más información pulsando abajo:</p>
-        <button type="button" class="btn btn-danger mt-5" (click)="irARuta('/contacto')">Contáctanos</button>
+    </div>
+    <!-- Why Choose Us Section -->
+    <div class="info-div compact why-choose-us">
+      <div class="info-card info-card--reveal" #infoCard>
+        <div class="card-content compact with-media">
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-trophy-fill section-icon"></i>
+              <h2 class="section-title">POR QU&Eacute; ELEGIRNOS</h2>
+            </div>
+            <p class="section-description">Grupos por niveles, seguimiento cercano y un ambiente seguro para avanzar con
+              confianza.</p>
+            <div class="features-list compact">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Entrenamiento personalizado</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Ambiente familiar y seguro</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Resultados comprobados</span>
+              </div>
+            </div>
+            <button class="modern-btn schedule-btn" (click)="scrollToMap()">
+              <i class="bi bi-geo-alt-fill"></i>
+              <span>&iquest;D&oacute;nde estamos?</span>
+            </button>
+          </div>
+          <div class="img-content compact-media">
+            <div class="image-wrapper">
+              <img src="../../../../assets/media/pilates_suelo.webp"
+                alt="Clase de pilates en Umbrete - Escuela Moiskimdo Sevilla" loading="lazy">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Reviews Section -->
+    <section class="reviews-section">
+      <div class="reviews-container">
+        <div class="reviews-header">
+          <div class="google-badge">
+            <svg class="google-icon" viewBox="0 0 24 24" width="24" height="24">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            <span class="google-text">Reseñas de Google</span>
+          </div>
+          <div class="rating-display">
+            <div class="stars">
+              <i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <span class="rating-text">4.9 de 5 &middot; 50 rese&ntilde;as</span>
+          </div>
+          <h2 class="reviews-title">LO QUE DICEN NUESTROS ALUMNOS</h2>
+        </div>
+
+        <div class="reviews-carousel">
+          <button class="carousel-btn prev" (click)="prevReview()" aria-label="Reseña anterior">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+
+          <div class="reviews-wrapper">
+            <div class="reviews-track" [style.transform]="'translateX(' + translateX + '%)'">
+              <!-- Review 1 - K Leal -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">K</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">K Leal</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 3 años</span>
+                </div>
+                <p class="review-text">Mi hija de 11 finalmente ha encontrado un deporte que le apasiona. Yo también
+                  aprovecho y entreno con ella. Las clases son divertidas y con el nivel de exigencia indicado según la
+                  edad. Todo el equipo es profesional, amistoso y motiva adecuadamente al alumnado. El Club Moi's Kim Do
+                  ofrece la posibilidad de vivir el taekwondo de forma compatible con diferentes objetivos deportivos.
+                </p>
+              </div>
+
+              <!-- Review 2 - Cristina Franco -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">C</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Cristina FRANCO BOURRELLIER</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 4 dias</span>
+                </div>
+                <p class="review-text">Las clases de defensa personal son geniales, aprendemos tecnicas de defensa a la
+                  vez que hacemos ejercicios de fuerza. Muy contenta con el grupo y el profesor.</p>
+              </div>
+
+              <!-- Review 3 - Miguel Marín -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">M</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Miguel Marín Rodríguez</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 8 años</span>
+                </div>
+                <p class="review-text">El mejor dojan donde aprender taekwondo en Umbrete.</p>
+              </div>
+
+              <!-- Review 4 - F JAVIER Vargas -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">F</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">F. Javier Vargas</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 5 años</span>
+                </div>
+                <p class="review-text">Estupendas instalaciones y un gran profesor, que ama su deporte desde niño. Ideal
+                  para todas las edades pero especialmente para niños que son educados desde pequeños en valores
+                  importantísimos. Muy recomendable.</p>
+              </div>
+
+              <!-- Review 5 - F. Ortiz -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">F</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">F. Ortiz</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 4 años</span>
+                </div>
+                <p class="review-text">Escuela 100% recomendable, el Maestro Moisés y su equipo tienen un buen
+                  equilibrio entre el buen ambiente y la disciplina en sus clases. Recomendada para todas las edades.
+                </p>
+              </div>
+
+              <!-- Review 6 - J A Morales Martín -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">J</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">J. A. Morales Martín</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 8 años</span>
+                </div>
+                <p class="review-text">Gran centro deportivo de artes marciales. Muy adaptado a niños, jóvenes con
+                  intenciones de superarse y adultos con ganas de trabajar su físico y su técnica. Gran profesor.</p>
+              </div>
+
+              <!-- Review 7 - Jose M. Ramirez -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">J</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Jose M. Ramirez</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 3 años</span>
+                </div>
+                <p class="review-text">Espectacular y trato excelente. Buenos profesionales.</p>
+              </div>
+
+              <!-- Review 8 - Inma Rom -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">I</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Inma Rom</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 4 meses</span>
+                </div>
+                <p class="review-text">Buen ambiente y disciplina, ha aprendido mucho y sigue aprendiendo mi niño, está
+                  muy contento. ¡Muchas gracias! 👌💪</p>
+              </div>
+
+              <!-- Review 9 - Lupe De La Rosa -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">L</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Lupe De La Rosa</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace 5 años</span>
+                </div>
+                <p class="review-text">Mi niño lleva ya 4 años apuntado y está súper contento con la escuela, está súper
+                  preparada y muy bien organizada. ¡Gracias Moisés!</p>
+              </div>
+
+              <!-- Review 10 - Oscar Uzcategui -->
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-avatar">E</div>
+                  <div class="reviewer-info">
+                    <span class="reviewer-name">Eva Gonzalez</span>
+                    <span class="review-badge">Local Guide</span>
+                  </div>
+                  <svg class="google-icon-small" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                </div>
+                <div class="review-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="review-date">Hace una semana</span>
+                </div>
+                <p class="review-text">Excelente escuela. El Maestro Moises, muy profesional y una mano excelente con
+                  los
+                  ni&ntilde;os. Lola tambi&eacute;n encantadora. Seriedad en el deporte y disciplina. Mi hija
+                  est&aacute;
+                  disfrutando mucho de sus clases. 100% recomendable</p>
+              </div>
+            </div>
+          </div>
+
+          <button class="carousel-btn next" (click)="nextReview()" aria-label="Siguiente reseña">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+
+          @if (canAutoRotateReviews) {
+          <button class="carousel-btn carousel-autoplay-toggle icon-only" type="button"
+            (click)="toggleReviewAutoRotation()"
+            [attr.aria-label]="isReviewAutoPaused ? 'Reanudar carrusel de reseñas' : 'Pausar carrusel de reseñas'"
+            [attr.aria-pressed]="isReviewAutoPaused">
+            <i [class]="isReviewAutoPaused ? 'bi bi-play-fill' : 'bi bi-pause-fill'" aria-hidden="true"></i>
+          </button>
+          }
+        </div>
+
+        @if (canAutoRotateReviews) {
+        <div class="carousel-dots">
+          @for (i of [0,1,2,3,4,5,6,7,8,9]; track i) {
+          @if (i <= totalReviews - visibleCards) { <button class="dot" [class.active]="currentReview === i"
+            (click)="goToReview(i)" [attr.aria-label]="'Ir a página ' + (i + 1)">
+            </button>
+            }
+            }
+        </div>
+        }
+
+        <a href="https://www.google.com/maps/place/Club+Moi's+Kim+Do/@37.3687365,-6.1606214,17z/data=!4m8!3m7!1s0xd1211665f2d8fbb:0x8db196e36ecfe0ff!8m2!3d37.3682568!4d-6.1607791!9m1!1b1!16s%2Fg%2F11c1t14c5r"
+          target="_blank" rel="noopener noreferrer" class="google-reviews-link">
+          <span>Ver todas las reseñas en Google</span>
+          <i class="bi bi-box-arrow-up-right"></i>
+        </a>
+      </div>
+    </section>
+    <!-- Our Instructors Section -->
+    <section class="instructors-band">
+      <div class="instructors-inner">
+        <div class="instructors-media">
+          <div class="instructors-grid">
+            <div class="instructor-photo primary instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/instructores_2.webp"
+                alt="Instructores de taekwondo certificados en Umbrete (Sevilla)" loading="lazy">
+            </div>
+            <div class="instructor-photo instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/instructores.webp"
+                alt="Instructor de defensa personal femenina en Umbrete" loading="lazy">
+            </div>
+            <div class="instructor-photo instructor-photo--reveal" #instructorTile>
+              <img src="../../../../assets/media/instructores_3.webp"
+                alt="Instructora de pilates en el Aljarafe - Moiskimdo" loading="lazy">
+            </div>
+          </div>
+        </div>
+        <div class="instructors-text">
+          <div class="section-header compact">
+            <i class="bi bi-person-badge-fill section-icon"></i>
+            <h2 class="section-title">NUESTROS INSTRUCTORES</h2>
+          </div>
+          <p class="section-description">Equipo cercano y profesional que te acompa&ntilde;a en cada etapa, con
+            correcciones claras y motivaci&oacute;n constante.</p>
+          <div class="instructors-highlights">
+            <span class="highlight-pill"><i class="bi bi-check-circle-fill"></i>Certificados internacionales</span>
+            <span class="highlight-pill"><i class="bi bi-check-circle-fill"></i>Atenci&oacute;n personalizada</span>
+            <span class="highlight-pill"><i class="bi bi-check-circle-fill"></i>Pasi&oacute;n por ense&ntilde;ar</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Local SEO Section -->
+    <div class="info-div">
+      <div class="info-card info-card--reveal" #infoCard>
+        <div class="card-content image-wide">
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-stars section-icon"></i>
+              <h2 class="section-title">DEPORTE EN UMBRETE, ALJARAFE Y SEVILLA</h2>
+            </div>
+            <p class="section-description">Entrena cerca de casa con grupos por niveles, instructores certificados y
+              horarios de tarde. Si vienes desde Sevilla o alrededores, te ayudamos a encontrar tu grupo.</p>
+            <div class="features-list">
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Taekwondo para iniciaci&oacute;n y avanzado.</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Kickboxing light con t&eacute;cnica, cardio y seguridad.</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Pilates balance para postura, fuerza y movilidad.</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Defensa personal femenina con autodefensa pr&aacute;ctica.</span>
+              </div>
+            </div>
+            <button class="modern-btn taekwondo-btn" routerLink="/contacto">
+              <i class="bi bi-envelope-fill"></i>
+              <span>Contactar</span>
+            </button>
+          </div>
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img src="../../../../assets/media/fachada_escuela.webp"
+                alt="Fachada de la escuela de artes marciales Moiskimdo en Umbrete (Sevilla)" loading="lazy">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-div reverse">
+      <div class="info-card info-card--reveal" #infoCard>
+        <div class="card-content reverse image-wide">
+          <div class="img-content">
+            <div class="image-wrapper">
+              <img src="../../../../assets/media/interior_escuela.webp"
+                alt="Interior del gimnasio de taekwondo y kickboxing en Umbrete - Moiskimdo" loading="lazy">
+              <div class="image-overlay"></div>
+            </div>
+          </div>
+          <div class="text-content">
+            <div class="section-header">
+              <i class="bi bi-question-circle-fill section-icon"></i>
+              <h2 class="section-title">PREGUNTAS FRECUENTES</h2>
+            </div>
+            <div class="faq-list">
+              <details class="faq-item">
+                <summary class="faq-question">&iquest;D&oacute;nde estamos?</summary>
+                <div class="faq-answer">
+                  <p>Calle Parada de la Cig&uuml;e&ntilde;a 36, 41806 Umbrete, Sevilla.</p>
+                </div>
+              </details>
+              <details class="faq-item">
+                <summary class="faq-question">&iquest;Qu&eacute; clases ofrecemos?</summary>
+                <div class="faq-answer">
+                  <p>Taekwondo, kickboxing light, pilates balance y defensa personal femenina.</p>
+                </div>
+              </details>
+              <details class="faq-item">
+                <summary class="faq-question">&iquest;Hay grupos por edad?</summary>
+                <div class="faq-answer">
+                  <p>S&iacute;, para ni&ntilde;os, j&oacute;venes y adultos con niveles diferenciados.</p>
+                </div>
+              </details>
+              <details class="faq-item">
+                <summary class="faq-question">&iquest;Cu&aacute;l es el horario?</summary>
+                <div class="faq-answer">
+                  <ul class="schedule-list">
+                    <li><span class="schedule-day">Lunes</span><span class="schedule-time">17:00 - 21:05</span></li>
+                    <li><span class="schedule-day">Martes</span><span class="schedule-time">17:00 - 21:00</span></li>
+                    <li><span class="schedule-day">Mi&eacute;rcoles</span><span class="schedule-time">17:00 -
+                        21:05</span></li>
+                    <li><span class="schedule-day">Jueves</span><span class="schedule-time">17:00 - 21:30</span></li>
+                    <li><span class="schedule-day">Viernes</span><span class="schedule-time">18:30 - 19:30</span></li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+            <button class="modern-btn schedule-btn" routerLink="/horarios">
+              <i class="bi bi-calendar3"></i>
+              <span>Ver Plazas Disponibles</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
-  <section class="slider-section p-0">
-    <div class="background-container"></div>
-    <div class="container-slider">
-      <div class="container slider">
-        <app-slider-tocable [imagenesSlider]="imagenesSlider"></app-slider-tocable>
+
+  <!-- Events Slider Section -->
+  <section class="slider-section">
+    <div class="events-surface info-card--reveal" #infoCard>
+      <div class="events-head">
+        <div class="events-copy">
+          <div class="events-title-row">
+            <i class="bi bi-calendar-event events-icon" aria-hidden="true"></i>
+            <h2 class="events-title">PRÓXIMOS EVENTOS</h2>
+          </div>
+
+          <p class="events-subtitle">
+            Descubre nuestras competiciones y actividades especiales.
+          </p>
+
+          <div class="events-pills" aria-label="Tipos de eventos">
+            <span class="events-pill">
+              <i class="bi bi-trophy-fill" aria-hidden="true"></i>
+              Competiciones
+            </span>
+            <span class="events-pill">
+              <i class="bi bi-people-fill" aria-hidden="true"></i>
+              Exhibiciones
+            </span>
+            <span class="events-pill">
+              <i class="bi bi-award-fill" aria-hidden="true"></i>
+              Logros
+            </span>
+          </div>
+        </div>
+
+        <div class="events-actions">
+          <button class="modern-btn contact-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Quiero apuntarme</span>
+          </button>
+
+          <button class="modern-btn events-btn" routerLink="/eventos">
+            <i class="bi bi-arrow-right-circle-fill"></i>
+            <span>Ver calendario</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="events-body">
+        @defer (on viewport) {
+        <div class="events-frame">
+          <app-slider-tocable></app-slider-tocable>
+        </div>
+        } @placeholder {
+        <div class="events-frame" aria-hidden="true">
+          <div class="events-carousel-skeleton">
+            @for (i of [1,2,3]; track i) {
+            <div class="skeleton-card"></div>
+            }
+          </div>
+        </div>
+        } @loading {
+        <div class="events-frame" aria-hidden="true">
+          <div class="events-carousel-skeleton">
+            @for (i of [1,2,3]; track i) {
+            <div class="skeleton-card"></div>
+            }
+          </div>
+        </div>
+        }
       </div>
     </div>
   </section>
-  <section class="map-section mb-5 d-flex flex-column align-items-center justify-content-center">
-    <div class="card mt-4 img-content location-container">
-      <app-mapa class="card-img-top"></app-mapa>
-      <div class="card-body text-center">
-        <h2 class="h5 my-4 fw-bold">Calle Parada de la Cigüeña, 34a 41806 Umbrete, Sevilla</h2>
-        <p>Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles de habilidad, estamos comprometidos a ayudarte a alcanzar tus metas, ya sea que busques mejorar tu condición física, aumentar tu confianza o pasártelo bien aprendiendo.</p>
-        <p class="additional-info mt-4">
-          <i class="bi bi-phone-fill"></i> Teléfono: +34 625 753 952<br>
-          <i class="bi bi-envelope-at-fill"></i> Email: <a href="mailto:moiskimdotaekwondo@gmail.com" class="link-dark">moiskimdotaekwondo&#64;gmail.com</a><br>
-          <i class="fas fa-clock"></i> Horario: Lun - Jue: 17:00 - 20:30. Para ver el horario completo, pulse aquí: <a (click)="irARuta('/horarios')" class="link-info"><i class="bi bi-calendar-date-fill"></i></a>
-        </p>
-        <button type="button" class="btn btn-primary mt-4" (click)="irARuta('/contacto')">Más información</button>
+
+  <!-- Location Section -->
+  <section class="map-section">
+    <div class="location-card" id="map-section">
+      <div class="location-header">
+        <i class="bi bi-geo-alt-fill location-icon"></i>
+        <h2 class="location-title">NUESTRA UBICACIÓN</h2>
+        <p class="location-subtitle">Visítanos en el corazón del Aljarafe Sevillano</p>
+      </div>
+
+      <div class="map-wrapper">
+        @defer (on viewport) {
+        <app-mapa></app-mapa>
+        } @placeholder {
+        <div class="mapa-placeholder" aria-hidden="true"></div>
+        } @loading {
+        <div class="mapa-placeholder is-loading" aria-hidden="true"></div>
+        }
+      </div>
+
+      <div class="location-info">
+        <div class="address-section">
+          <i class="bi bi-pin-map-fill"></i>
+          <h3>Calle Parada de la Cig&uuml;e&ntilde;a 36, 41806 Umbrete, Sevilla.</h3>
+        </div>
+
+        <p class="location-description">Te esperamos con los brazos abiertos. Con clases para todas las edades y niveles
+          de habilidad, estamos
+          comprometidos a ayudarte a alcanzar tus metas, ya sea que busques mejorar tu condición física, aumentar tu
+          confianza o pasártelo bien aprendiendo.</p>
+
+        <div class="contact-grid">
+          <div class="contact-item">
+            <i class="bi bi-phone-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Teléfono:
+                <span class="contact-value">+34 625 752 354</span>
+                <span class="contact-value">+34 625 753 952</span>
+              </span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="bi bi-envelope-at-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Email: <span class="contact-value">moiskimdotaekwondo@gmail.com</span></span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="bi bi-calendar-date-fill"></i>
+            <div class="contact-text">
+              <span class="contact-label">Horario:
+                <span class="contact-value">Lun: 17:00 - 21:05<br>Mar: 17:00 - 21:00<br>Mie: 17:00 - 21:05<br>Jue: 17:00
+                  - 21:30<br>Vie:
+                  18:30 - 19:30</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="location-actions">
+          <button class="modern-btn contact-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Contáctanos</span>
+          </button>
+          <button class="modern-btn schedule-btn" routerLink="/horarios">
+            <i class="bi bi-calendar3"></i>
+            <span>Ver Horario Completo</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>

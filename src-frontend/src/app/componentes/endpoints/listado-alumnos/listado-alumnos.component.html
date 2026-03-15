@@ -1,69 +1,758 @@
-<div class="container-fluid py-5">
-  <div class="row">
-    <div class="col-md-12 mt-3 text-center">
-      <h2>Listado de Alumnos</h2>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-people-fill"></i>
+        Gestión de Alumnos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" routerLink="/alumnosCrear" aria-label="Crear nuevo alumno">
+          <i class="bi bi-person-plus-fill"></i>
+          <span>Nuevo Alumno</span>
+        </button>
+        <button class="admin-btn admin-btn-primary" (click)="abrirModalInforme()" aria-label="Generar informe de alumnos">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>Generar Informe</span>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div class="row my-3 d-flex justify-content-center">
-    <div class="col-md-6 col-lg-4">
-      <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
-        (ngModelChange)="filtrarPorNombre()" />
-    </div>
-    <div class="col-md-6 col-lg-4 text-end">
-      <button class="btn btn-secondary" (click)="alternarInactivos()">
-        {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
-      </button>
-    </div>
-  </div>
 
-  <div class="row">
-    <div class="col-md-12">
-      <div class="table-responsive">
-        <table class="table custom-table mt-4">
+    <!-- Unified Filters & Controls Bar -->
+    <div class="unified-controls-bar" role="search" aria-label="Filtros y controles de alumnos">
+      <!-- Left: Filters -->
+      <div class="controls-section filters-section">
+        <div class="filter-group">
+          <label for="nombreFilter" class="filter-label">
+            <i class="bi bi-search"></i>
+            Buscar:
+          </label>
+          <input
+            id="nombreFilter"
+            type="text"
+            class="admin-form-control filter-input"
+            placeholder="Nombre o apellidos..."
+            [(ngModel)]="nombreFiltro"
+            (ngModelChange)="filtrarPorNombre()"
+            aria-label="Filtrar alumnos por nombre o apellidos" />
+        </div>
+
+        <div class="filter-group">
+          <label for="deporteFilter" class="filter-label">
+            <i class="bi bi-trophy-fill"></i>
+            Deporte:
+          </label>
+          <select appSearchableSelect
+            id="deporteFilter"
+            class="admin-form-control filter-select"
+            [(ngModel)]="deporteFiltro"
+            (ngModelChange)="filtrarPorDeporte()"
+            aria-label="Filtrar alumnos por deporte">
+            <option value="TODOS">Todos los deportes</option>
+            <option value="TAEKWONDO">Taekwondo</option>
+            <option value="KICKBOXING">Kickboxing</option>
+            <option value="PILATES">Pilates</option>
+            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <button
+            class="filter-toggle-btn"
+            [class.active]="mostrarInactivos"
+            (click)="alternarInactivos()"
+            [attr.aria-pressed]="mostrarInactivos"
+            aria-label="Alternar mostrar alumnos inactivos">
+            <i class="bi" [class.bi-eye]="!mostrarInactivos" [class.bi-eye-slash]="mostrarInactivos"></i>
+            <span>{{ mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos' }}</span>
+          </button>
+        </div>
+
+        <div class="filter-group">
+          <button
+            class="filter-toggle-btn apto-filter"
+            [class.active]="aptoParaExamenFiltro"
+            (click)="toggleAptoParaExamenFiltro()"
+            [attr.aria-pressed]="aptoParaExamenFiltro"
+            aria-label="Filtrar por alumnos aptos para examen">
+            <i class="bi" [class.bi-award-fill]="aptoParaExamenFiltro" [class.bi-award]="!aptoParaExamenFiltro"></i>
+            <span>{{ aptoParaExamenFiltro ? 'Aptos para examen' : 'Solo aptos' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Center: Results Count -->
+      <div class="controls-section results-section">
+        <div class="results-count">
+          <i class="bi bi-people-fill"></i>
+          <span><strong>{{ alumnosFiltrados.length }}</strong> {{ alumnosFiltrados.length === 1 ? 'alumno' : 'alumnos' }}</span>
+        </div>
+      </div>
+
+      <!-- Right: View Toggle -->
+      <div class="controls-section view-section">
+        <fieldset class="view-toggle-buttons">
+          <legend class="visually-hidden">Cambiar vista</legend>
+          <button
+            class="view-toggle-btn"
+            [class.active]="vistaActual === 'cards'"
+            (click)="cambiarVista('cards')"
+            [attr.aria-pressed]="vistaActual === 'cards'"
+            aria-label="Vista de tarjetas">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>Tarjetas</span>
+          </button>
+          <button
+            class="view-toggle-btn"
+            [class.active]="vistaActual === 'table'"
+            (click)="cambiarVista('table')"
+            [attr.aria-pressed]="vistaActual === 'table'"
+            aria-label="Vista de tabla">
+            <i class="bi bi-table"></i>
+            <span>Tabla</span>
+          </button>
+        </fieldset>
+      </div>
+    </div>
+
+
+    <!-- Skeleton Loading -->
+    @if (cargando) {
+      <app-skeleton-card type="grid" [count]="tamanoPagina" [columns]="3"></app-skeleton-card>
+    }
+
+        <!-- Cards View -->
+    @if (!cargando && vistaActual === 'cards') {
+      <div class="admin-cards-grid mb-4">
+        @for (alumno of alumnosFiltrados; track alumno.id) {
+          <div class="admin-item-card">
+            <div class="item-header">
+              <a [routerLink]="['/alumnosEditar', alumno.id]">
+                <img class="item-image"
+                  [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=320&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
+                  [alt]="'Perfil de ' + alumno.nombre"
+                  loading="lazy"
+                  decoding="async"
+                  width="80"
+                  height="80" />
+              </a>
+              <div class="item-title">
+                <h4>{{ alumno.nombre }} {{ alumno.apellidos }}</h4>
+                <p>Nº Expediente: {{ alumno.numeroExpediente }}</p>
+              </div>
+            </div>
+
+            <div class="item-body">
+              <div class="item-field-full resumen-card">
+                <div class="resumen-header">
+                  <i class="bi bi-clipboard-check"></i>
+                  <strong>Resumen</strong>
+                </div>
+                @if (getResumenAlumno(alumno.id); as resumen) {
+                  <div class="resumen-grid">
+                    <div class="resumen-item">
+                      <span class="resumen-label">Nº deportes</span>
+                      <span class="resumen-value">{{ resumen.totalDeportes }}</span>
+                    </div>
+                    <div class="resumen-item">
+                      <span class="resumen-label">Edad</span>
+                      <span class="resumen-value">{{ calcularEdad(alumno.fechaNacimiento) }} años</span>
+                    </div>
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Tarifa principal</span>
+                      <span class="resumen-value">{{ resumen.tarifaPrincipal }}</span>
+                    </div>
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Antigüedad principal</span>
+                      <span class="resumen-value">{{ resumen.antiguedadPrincipal || '-' }}</span>
+                    </div>
+                    @if (alumnoRequiereLicencia(alumno.id)) {
+                    <div class="resumen-item resumen-item-full">
+                      <span class="resumen-label">Licencia</span>
+                      <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                    </div>
+                    }
+                  </div>
+                }
+              </div>
+              <div class="item-field-full">
+                <div class="deportes-header">
+                  <i class="bi bi-award"></i>
+                  <strong>Deportes:</strong>
+                </div>
+                <details class="deportes-collapsible">
+                  <summary class="deportes-summary">
+                    <span class="summary-closed">Ver detalles</span>
+                    <span class="summary-open">Ocultar detalles</span>
+                    <i class="bi bi-chevron-down"></i>
+                  </summary>
+                  <div class="deportes-detalles">
+                    @if (!tieneDeportesCargados(alumno.id)) {
+                      <span class="badge-loading">Cargando...</span>
+                    } @else if (getDeportesDetalle(alumno); as deportesDetalle) {
+                      @if (deportesDetalle.length === 0) {
+                        <span class="badge-empty">Sin deportes</span>
+                      }
+                      @for (deporteItem of deportesDetalle; track deporteItem.id; let i = $index) {
+                        <div class="deporte-detalle" [class]="deporteItem.deporte.toLowerCase()">
+                        <button type="button"
+                          class="deporte-principal-btn"
+                          [class.active]="i === 0"
+                          [disabled]="i === 0"
+                          (click)="marcarDeportePrincipal(alumno.id, deporteItem.deporte)"
+                          [attr.aria-label]="'Marcar ' + getDeporteLabel(deporteItem.deporte) + ' como principal'">
+                          <i class="bi" [class.bi-star-fill]="i === 0" [class.bi-star]="i !== 0"></i>
+                        </button>
+                        <div class="deporte-detalle-header">
+                          <span class="deporte-detalle-name">{{ getDeporteLabel(deporteItem.deporte) }}</span>
+                          @if (deporteRequiereGrado(deporteItem.deporte)) {
+                          @if (getGradoNombrePartes(deporteItem.grado, deporteItem.deporte); as gradoPartes) {
+                          <span class="deporte-detalle-grado">
+                            <span class="grado-line">
+                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '')">
+                                {{ gradoPartes.texto }}
+                              </span>
+                              @if (gradoPartes.sufijo) {
+                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '')">
+                                {{ gradoPartes.sufijo }}
+                              </span>
+                              }
+                              @if (deporteItem.fechaGrado) {
+                              <span class="grado-fecha">({{ getTiempoConGrado(deporteItem.fechaGrado) }})</span>
+                              }
+                            </span>
+                          </span>
+                          }
+                          }
+                        </div>
+                        <div class="deporte-detalle-grid">
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Tarifa</span>
+                            <span class="detalle-valor">{{ deporteItem.tipoTarifa || 'Sin tarifa' }}</span>
+                          </div>
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Alta</span>
+                            <span class="detalle-valor">
+                              {{ ((deporteItem.fechaAltaInicial || deporteItem.fechaAlta) | date: 'dd/MM/yyyy') || '-' }}
+                            </span>
+                          </div>
+                          <div class="deporte-detalle-item" [class.full-width]="!deporteRequiereGrado(deporteItem.deporte)">
+                            <span class="detalle-label">Antigüedad</span>
+                            <span class="detalle-valor">{{ getAntiguedadDeporte(deporteItem) || '-' }}</span>
+                          </div>
+                          @if (deporteRequiereGrado(deporteItem.deporte)) {
+                          <div class="deporte-detalle-item">
+                            <span class="detalle-label">Categoría</span>
+                            <span class="detalle-valor">{{ deporteItem.categoria || 'N/A' }}</span>
+                          </div>
+                          }
+                        </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                </details>
+              </div>
+              @if (mostrarInactivos && alumno.fechaBaja) {
+                <div class="item-field">
+                  <i class="bi bi-calendar-x"></i>
+                  <strong>Baja:</strong>
+                  <span>{{ alumno.fechaBaja | date: 'dd/MM/yyyy' }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="item-footer">
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]">
+                <i class="bi bi-pencil-square"></i>
+                <span>Editar</span>
+              </button>
+              <button
+                class="admin-btn admin-btn-info admin-btn-sm"
+                [routerLink]="['/userpage']"
+                [queryParams]="{ alumnoId: alumno.id }"
+              >
+                <i class="bi bi-person-badge"></i>
+                <span>Vista usuario</span>
+              </button>
+              @if (!isAlumnoActivo(alumno.id)) {
+                <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Dar de Alta</span>
+                </button>
+              }
+              @if (isAlumnoActivo(alumno.id)) {
+                <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)">
+                  <i class="bi bi-x-circle"></i>
+                  <span>Dar de Baja</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Table View -->
+    @if (!cargando && vistaActual === 'table') {
+      <div class="table-wrapper mb-4">
+        <table class="admin-table">
           <thead>
-            <tr class="text-center">
+            <tr>
               <th>Foto</th>
-              <th>Nombre Completo</th>
+              <th>Nombre</th>
+              <th>Nº Exp.</th>
               <th>Edad</th>
-              <th>Teléfono</th>
-              <th>Tarifa</th>
-              <th>Fecha de Alta</th>
-              <th>Categoría</th>
-              <th>Grado</th>
-              <th *ngIf="mostrarInactivos">Fecha de Baja</th>
-              <th>Acciones</th> <!-- Nuevo: Columna para acciones -->
+              <th>Deportes</th>
+              <th>Tarifa principal</th>
+              <th>Antigüedad principal</th>
+              <th class="table-licencia-header">Licencia</th>
+              @if (mostrarInactivos) {
+                <th>Baja</th>
+              }
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let alumno of alumnos" class="text-center">
-              <td>
-                <div class="imagen-perfil-container">
-                  <img class="imagen-perfil"
-                    [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp'"
-                    alt="Perfil del alumno">
-                </div>
-              </td>
-              <td>{{ alumno.nombre }} {{ alumno.apellidos }}</td>
-              <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
-              <td>{{ alumno.telefono }}</td>
-              <td>{{ alumno.tipoTarifa }}</td>
-              <td>{{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</td>
-              <td>{{ alumno.categoria }}</td>
-              <td>{{ alumno.grado }}</td>
-              <td *ngIf="mostrarInactivos">{{ alumno.fechaBaja ? (alumno.fechaBaja | date:'dd/MM/yyyy') : 'N/A' }}</td>
-              <td>
-                <button *ngIf="alumno.fechaBaja" class="btn btn-success btn-sm" (click)="darDeAlta(alumno.id)">Dar de Alta</button>
-                <button *ngIf="!alumno.fechaBaja" class="btn btn-danger btn-sm" (click)="darDeBaja(alumno.id)">Dar de Baja</button>
-              </td> <!-- Nuevo: Botones de acción -->
-            </tr>
+            @for (alumno of alumnosFiltrados; track alumno.id) {
+              @if (getResumenAlumno(alumno.id); as resumen) {
+                <tr [class.inactive-row]="alumno.activo === false">
+                  <td>
+                    <a [routerLink]="['/alumnosEditar', alumno.id]">
+                      <img class="table-avatar"
+                        [src]="alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp'"
+                        [alt]="'Perfil de ' + alumno.nombre"
+                        loading="lazy"
+                        decoding="async"
+                        width="40"
+                        height="40" />
+                    </a>
+                  </td>
+                  <td class="alumno-name">{{ alumno.nombre }} {{ alumno.apellidos }}</td>
+                  <td>{{ alumno.numeroExpediente }}</td>
+                  <td>{{ calcularEdad(alumno.fechaNacimiento) }}</td>
+                  <td>
+                    <div class="table-deportes">
+                      <span class="deporte-count" [title]="resumen.totalDeportes + ' deportes'">{{ resumen.totalDeportes }}</span>
+                      <div class="table-deportes-badges">
+                        @if (getDeportesDeAlumno(alumno.id).length === 0) {
+                          <span class="badge-loading-small">...</span>
+                        }
+                        @for (deporteItem of getDeportesDeAlumno(alumno.id); track deporteItem.id) {
+                          <span class="deporte-badge-mini" [class]="deporteItem.deporte.toLowerCase()" [title]="deporteRequiereGrado(deporteItem.deporte) ? getDeporteLabel(deporteItem.deporte) + ': ' + (getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado') : getDeporteLabel(deporteItem.deporte)">
+                            {{ getDeporteLabel(deporteItem.deporte).substring(0, 3) }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+                  <td class="table-tarifa">{{ resumen.tarifaPrincipal }}</td>
+                  <td class="table-antiguedad">{{ resumen.antiguedadPrincipal || '-' }}</td>
+                  <td class="table-licencia">
+                    @if (alumnoRequiereLicencia(alumno.id)) {
+                    <span class="resumen-badge" [class]="resumen.licenciaClase">{{ resumen.licenciaTexto }}</span>
+                    } @else {
+                    <span class="resumen-badge licencia-none">N/A</span>
+                    }
+                  </td>
+                  @if (mostrarInactivos) {
+                    <td [class.text-danger]="alumno.activo === false">
+                      {{ alumno.fechaBaja ? (alumno.fechaBaja | date: 'dd/MM/yy') : '-' }}
+                    </td>
+                  }
+                  <td>
+                    <div class="table-actions">
+                      <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/alumnosEditar', alumno.id]" title="Editar">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        class="admin-btn admin-btn-info admin-btn-sm"
+                        [routerLink]="['/userpage']"
+                        [queryParams]="{ alumnoId: alumno.id }"
+                        title="Abrir vista user"
+                      >
+                        <i class="bi bi-person-badge"></i>
+                      </button>
+                      @if (!isAlumnoActivo(alumno.id)) {
+                        <button class="admin-btn admin-btn-success admin-btn-sm" (click)="darDeAlta(alumno.id)" title="Dar de Alta">
+                          <i class="bi bi-check-circle"></i>
+                        </button>
+                      }
+                      @if (isAlumnoActivo(alumno.id)) {
+                        <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="darDeBaja(alumno.id)" title="Dar de Baja">
+                          <i class="bi bi-x-circle"></i>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
+    }
 
-  <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-    (pageChange)="cambiarPagina($event)">
-  </app-paginacion>
+    <!-- Pagination -->
+    <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando"
+      (pageChange)="cambiarPagina($event)" class="mt-4">
+    </app-paginacion>
+
+    <!-- Collapsible Gestión de Mensualidades Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-calendar-check"></i>
+        <span>Gestión de Mensualidades y Licencias</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="gestion-panel gestion-panel-mensualidades">
+              <div class="gestion-panel-header">
+                <div class="panel-title">
+                  <i class="bi bi-calendar-check"></i>
+                  <div class="panel-text">
+                    <h4>Gestión de Mensualidades</h4>
+                    <p>Aplica cobros generales o individuales.</p>
+                  </div>
+                </div>
+                <span class="panel-tag">Mensualidades</span>
+              </div>
+              <div class="mensualidades-tabs">
+              <div class="tabs-nav">
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'general'" (click)="cambiarMensualidadesTab('general')">
+                  <span>Mensualidades generales</span>
+                </button>
+                <button type="button" class="tab-item" [class.active]="mensualidadesTab === 'individual'" (click)="cambiarMensualidadesTab('individual')">
+                  <span>Mensualidades individuales</span>
+                </button>
+              </div>
+
+              <div class="tab-content">
+                @if (mensualidadesTab === 'general') {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="deporteSeleccionado" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select appSearchableSelect id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
+                        <option value="TODOS">Todos los Alumnos</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="mesAno" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                      </label>
+                      <input id="mesAno" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionado" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaMensualidadGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaMensualidadGeneral" type="date" class="admin-form-control form-select" [(ngModel)]="fechaMensualidadGeneral" />
+                    </div>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarMensualidadesGenerales()"
+                      [disabled]="procesandoMensualidadesGenerales">
+                      @if (procesandoMensualidadesGenerales) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Cargando...</span>
+                      } @else {
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Cargar Mensualidades</span>
+                      }
+                    </button>
+                  </div>
+                } @else {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="alumnoSeleccionado" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-person me-2"></i>Seleccionar Alumno:
+                      </label>
+                      <select appSearchableSelect id="alumnoSeleccionado" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                        @for (alumno of alumnosSeleccionables; track alumno.id) {
+                          <option [value]="alumno.id">
+                            {{ alumno.nombre }} {{ alumno.apellidos }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="deporteSeleccionadoIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select appSearchableSelect id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
+                        <option value="TODOS">Todos los Deportes</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="mesAnoIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                      </label>
+                      <input id="mesAnoIndividual" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoSeleccionadoIndividual" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaMensualidadIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaMensualidadIndividual" type="date" class="admin-form-control form-select" [(ngModel)]="fechaMensualidadIndividual" />
+                    </div>
+                    <button class="admin-btn admin-btn-primary w-100" (click)="cargarMensualidadIndividual()"
+                      [disabled]="procesandoMensualidadIndividual || !alumnoSeleccionado || !mesAnoSeleccionadoIndividual">
+                      @if (procesandoMensualidadIndividual) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Procesando...</span>
+                      } @else {
+                        <i class="bi bi-cash"></i>
+                        <span>Cargar Mensualidad</span>
+                      }
+                    </button>
+                  </div>
+                }
+              </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="gestion-panel gestion-panel-licencias">
+              <div class="gestion-panel-header">
+                <div class="panel-title">
+                  <i class="bi bi-shield-check"></i>
+                  <div class="panel-text">
+                    <h4>Gestión de Licencias Federativas</h4>
+                    <p>Registra licencias por año y deporte.</p>
+                  </div>
+                </div>
+                <span class="panel-tag">Licencias</span>
+              </div>
+              <div class="licencias-tabs">
+              <div class="tabs-nav">
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'general'" (click)="cambiarLicenciasTab('general')">
+                  <span>Licencias generales</span>
+                </button>
+                <button type="button" class="tab-item" [class.active]="licenciasTab === 'individual'" (click)="cambiarLicenciasTab('individual')">
+                  <span>Licencias individuales</span>
+                </button>
+              </div>
+
+              <div class="tab-content">
+                @if (licenciasTab === 'general') {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="deporteLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select appSearchableSelect id="deporteLicenciaGeneral" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionado">
+                        <option value="TODOS">Todos los Alumnos</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="anoLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Año:
+                      </label>
+                      <input id="anoLicenciaGeneral" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionado" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaLicenciaGeneral" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaLicenciaGeneral" type="date" class="admin-form-control form-select" [(ngModel)]="fechaLicenciaGeneral" />
+                    </div>
+                    <button class="admin-btn admin-btn-success w-100" (click)="cargarLicenciasGenerales()"
+                      [disabled]="procesandoLicenciasGenerales">
+                      @if (procesandoLicenciasGenerales) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Cargando...</span>
+                      } @else {
+                        <i class="bi bi-shield-check"></i>
+                        <span>Cargar Licencias</span>
+                      }
+                    </button>
+                  </div>
+                } @else {
+                  <div class="admin-card">
+                    <div class="mb-3">
+                      <label for="alumnoSeleccionadoLicencia" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-person me-2"></i>Seleccionar Alumno:
+                      </label>
+                      <select appSearchableSelect id="alumnoSeleccionadoLicencia" class="admin-form-control form-select" [(ngModel)]="alumnoSeleccionado">
+                        @for (alumno of alumnosSeleccionables; track alumno.id) {
+                          <option [value]="alumno.id">
+                            {{ alumno.nombre }} {{ alumno.apellidos }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="deporteLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-trophy me-2"></i>Deporte:
+                      </label>
+                      <select appSearchableSelect id="deporteLicenciaIndividual" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
+                        <option value="TODOS">Todos los Deportes</option>
+                        <option value="TAEKWONDO">Solo Taekwondo</option>
+                        <option value="KICKBOXING">Solo Kickboxing</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="anoLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar3 me-2"></i>Año:
+                      </label>
+                      <input id="anoLicenciaIndividual" type="number" class="admin-form-control form-select" min="2000" max="2100" [(ngModel)]="anoLicenciaSeleccionadoIndividual" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="fechaLicenciaIndividual" class="form-label fw-semibold mb-2">
+                        <i class="bi bi-calendar-date me-2"></i>Fecha de asignación (opcional):
+                      </label>
+                      <input id="fechaLicenciaIndividual" type="date" class="admin-form-control form-select" [(ngModel)]="fechaLicenciaIndividual" />
+                    </div>
+                    <button class="admin-btn admin-btn-primary w-100" (click)="cargarLicenciaIndividual()"
+                      [disabled]="procesandoLicenciaIndividual || !alumnoSeleccionado || !anoLicenciaSeleccionadoIndividual">
+                      @if (procesandoLicenciaIndividual) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Procesando...</span>
+                      } @else {
+                        <i class="bi bi-shield-check"></i>
+                        <span>Cargar Licencia</span>
+                      }
+                    </button>
+                  </div>
+                }
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+
+
+        <!-- Collapsible Listado de Asistencia Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Listado de Asistencia</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row mt-2">
+          <div class="col-12 col-lg-8 mx-auto">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-clipboard-check"></i>
+                <h4>Listado de Asistencia</h4>
+              </div>
+
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Descripción:</strong> Genera un informe en PDF por cada día seleccionado.
+                Incluye todos los turnos de cada día con espacio para marcar la asistencia de cada alumno.
+              </div>
+
+              <div class="row g-3 align-items-start">
+                <div class="col-12 col-md-6">
+                  <label for="mesAnoAsis" class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar3 me-2"></i>Mes y Año:
+                  </label>
+                  <input id="mesAnoAsis" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoAsistencia" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <fieldset class="dias-semana-fieldset">
+                    <legend class="form-label fw-semibold mb-2">
+                      <i class="bi bi-calendar-week me-2"></i>Días de la semana:
+                    </legend>
+                    <div class="dias-semana-grid">
+                      @for (g of grupos; track g) {
+                        <label class="dia-chip" [class.active]="gruposSeleccionados.includes(g)">
+                          <input type="checkbox" class="dia-checkbox" [checked]="gruposSeleccionados.includes(g)"
+                            (change)="toggleGrupoSeleccionado(g)" />
+                          <span>{{ g | titlecase }}</span>
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+
+              <button class="admin-btn admin-btn-primary w-100 mt-4"
+                [disabled]="generandoListadoAsistencia || !mesAnoAsistencia || gruposSeleccionados.length === 0"
+                (click)="generarListadoAsistencia()">
+                @if (generandoListadoAsistencia) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Generando...</span>
+                } @else {
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>Generar Informe de Asistencia</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Collapsible Listado Mensualidad Mensual Section -->
+    <details class="collapsible-section">
+      <summary class="section-summary">
+        <i class="bi bi-calendar2-month"></i>
+        <span>Listado de Mensualidades</span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </summary>
+      <div class="section-content">
+        <div class="row mt-2">
+          <div class="col-12 col-lg-8 mx-auto">
+            <div class="admin-card">
+              <div class="admin-section-header">
+                <i class="bi bi-calendar2-month"></i>
+                <h4>Listado de Mensualidades</h4>
+              </div>
+
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Descripción:</strong> Genera un informe en PDF con todas las mensualidades de un mes específico.
+                Incluye alumnos activos de <strong>Taekwondo y Kickboxing</strong> con información de: nombre, deporte, descuento, cuantía, grado y fecha de pago.
+              </div>
+
+              <div class="row g-3 align-items-end">
+                <div class="col-12">
+                  <label for="mesAnoMensualidad" class="form-label fw-semibold mb-2">
+                    <i class="bi bi-calendar3 me-2"></i>Selecciona el Mes y Año:
+                  </label>
+                  <input id="mesAnoMensualidad" type="month" class="admin-form-control form-select" [(ngModel)]="mesAnoMensualidad" />
+                </div>
+              </div>
+
+              <button class="admin-btn admin-btn-success w-100 mt-4"
+                [disabled]="generandoListadoMensualidades || !mesAnoMensualidad"
+                (click)="generarListadoMensualidadMensual()">
+                @if (generandoListadoMensualidades) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Generando...</span>
+                } @else {
+                  <i class="bi bi-file-earmark-text-fill"></i>
+                  <span>Generar Informe de Mensualidades</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Informe Modal -->
+    @if (mostrarModalInforme) {
+      <app-informe-modal [title]="modalTitle" [opcionesInforme]="opcionesInforme"
+        (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
+      </app-informe-modal>
+    }
+  </div>
 </div>

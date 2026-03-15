@@ -1,41 +1,166 @@
-<div class="container-fluid mt-5">
-  <div class="row">
-    <div class="col-12 mt-3">
-      <div class="card p-4">
-        <h3 class="text-center mb-4">Listado de Grupos</h3>
-        <div class="table-responsive">
-          <table class="table custom-table mt-4">
-            <thead>
-              <tr class="text-center">
-                <th>Nombre</th>
-                <th>Gestionar Turnos</th>
-                <th>Gestionar Alumnos</th>
-                <th>Editar</th>
-                <th>Eliminar</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let grupo of grupos" class="text-center">
-                <td class="align-middle">{{ grupo.nombre }}</td>
-                <td class="align-middle">
-                  <button class="btn btn-primary btn-sm" [routerLink]="['/turnosGrupo', grupo.id]">Gestionar
-                    turnos</button>
-                </td>
-                <td class="align-middle">
-                  <button class="btn btn-primary btn-sm ms-2" [routerLink]="['/gestionarAlumnos', grupo.id]">Gestionar
-                    Alumnos</button>
-                </td>
-                <td class="align-middle">
-                  <button class="btn btn-primary btn-sm ms-2" [routerLink]="['/gruposEditar', grupo.id]">Editar</button>
-                </td>
-                <td class="align-middle">
-                  <button class="btn btn-danger btn-sm ms-2" (click)="eliminarGrupo(grupo.id)">Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-people-fill"></i>
+        Grupos y Turnos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" routerLink="/turnosCrear">
+          <i class="bi bi-clock"></i>
+          <span>Nuevo Turno</span>
+        </button>
+        <button class="admin-btn admin-btn-success" routerLink="/gruposCrear">
+          <i class="bi bi-plus-circle"></i>
+          <span>Nuevo Grupo</span>
+        </button>
       </div>
     </div>
+
+    <!-- Stats Cards - Conteo de Alumnos -->
+    <div class="admin-stats-grid mb-4">
+      @for (tipo of gruposMostrar; track tipo) {
+        <div class="admin-stat-card" (click)="abrirModalAlumnos(tipo)" style="cursor: pointer;">
+          <div class="stat-icon stat-icon-primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          @if (cargandoConteo) {
+            <div class="stat-loading">
+              <div class="stat-value-skeleton"></div>
+              <div class="stat-total-skeleton"></div>
+            </div>
+          } @else {
+            <h3 class="stat-value">{{ obtenerConteoAlumnos(tipo).active }}</h3>
+          }
+          <p class="stat-label">{{ tipo }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Skeleton Loading -->
+    @if (cargando) {
+      <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+    }
+
+    <!-- Grupos Grid -->
+    @if (!cargando) {
+      <div class="admin-cards-grid">
+        @for (grupo of grupos; track grupo.id) {
+          <div class="admin-item-card">
+            <div class="item-header">
+              <div class="item-title">
+                <h4>{{ grupo.nombre }}</h4>
+                <p class="group-age-range">Rango edad: {{ formatearRangoEdad(grupo) }}</p>
+              </div>
+            </div>
+
+            <!-- Turnos Section -->
+            <div class="item-body">
+              <div class="turnos-section">
+                <h6 class="turnos-title">
+                  <i class="bi bi-clock"></i>
+                  Turnos ({{ getTurnosDelGrupo(grupo.id).length }})
+                </h6>
+
+                @if (getTurnosDelGrupo(grupo.id).length > 0) {
+                  <div class="turnos-list">
+                    @for (turno of getTurnosDelGrupo(grupo.id); track turno.id) {
+                      <div class="turno-badge">
+                        <span class="turno-info">
+                          {{ turno.diaSemana }} {{ turno.horaInicio }} - {{ turno.horaFin }}
+                        </span>
+                        <button class="btn-edit-turno"
+                                [routerLink]="['/turnosEditar', turno.id]"
+                                title="Editar turno"
+                                aria-label="Editar turno">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn-remove-turno"
+                                (click)="eliminarTurnoDelGrupo(grupo.id, turno.id)"
+                                title="Quitar del grupo"
+                                aria-label="Quitar turno del grupo">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="text-muted small mb-0">Sin turnos asignados</p>
+                }
+
+                <!-- Add turno dropdown -->
+                <div class="add-turno-actions">
+                  <select appSearchableSelect class="form-select form-select-sm"
+                          #turnoSelect
+                          (change)="asignarTurnoAGrupo(grupo.id, turnoSelect.value); turnoSelect.value = ''">
+                    <option value="" selected>+ Añadir turno...</option>
+                    @for (turno of turnosSinGrupo; track turno.id) {
+                      <option [value]="turno.id">
+                        {{ turno.diaSemana }} {{ turno.horaInicio }} - {{ turno.horaFin }}
+                      </option>
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="item-footer">
+              <button class="admin-btn admin-btn-outline admin-btn-sm" (click)="editarRangoEdad(grupo)">
+                <i class="bi bi-people"></i>
+                <span>Rango edad</span>
+              </button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/gestionarAlumnos', grupo.id]">
+                <i class="bi bi-person-lines-fill"></i>
+                <span>Alumnos</span>
+              </button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/gruposEditar', grupo.id]">
+                <i class="bi bi-pencil-square"></i>
+                <span>Editar</span>
+              </button>
+              <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarGrupo(grupo.id)">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Turnos sin grupo asignado -->
+      @if (turnosSinGrupo.length > 0) {
+        <div class="admin-card mt-4">
+          <div class="admin-section-header">
+            <i class="bi bi-clock-history"></i>
+            <h4>Turnos sin grupo asignado ({{ turnosSinGrupo.length }})</h4>
+          </div>
+          <div class="turnos-sin-grupo-list">
+            @for (turno of turnosSinGrupo; track turno.id) {
+              <div class="turno-sin-grupo-item">
+                <span class="turno-info">
+                  <i class="bi bi-clock"></i>
+                  {{ turno.diaSemana }} {{ turno.horaInicio }} - {{ turno.horaFin }}
+                </span>
+                <div class="turno-actions">
+                  <button class="admin-btn admin-btn-primary admin-btn-sm"
+                          [routerLink]="['/turnosEditar', turno.id]"
+                          title="Editar turno">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>Editar</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
   </div>
 </div>
+
+<!-- Modal de alumnos en un grupo -->
+@if (mostrarModalAlumnos) {
+  <app-grupo-alumnos-modal [grupoNombre]="grupoNombreModal" [alumnos]="alumnosGrupoModal"
+    [cargando]="cargandoAlumnosModal" (cerrar)="cerrarModalAlumnos()">
+  </app-grupo-alumnos-modal>
+}

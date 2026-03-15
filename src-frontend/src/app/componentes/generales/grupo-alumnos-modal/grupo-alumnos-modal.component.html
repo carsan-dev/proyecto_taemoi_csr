@@ -1,0 +1,151 @@
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="header-content">
+          <i class="bi bi-people-fill header-icon"></i>
+          <div>
+            <h5 class="modal-title">Alumnos del Grupo</h5>
+            <p class="group-name">{{ grupoNombre }}</p>
+          </div>
+        </div>
+        <button type="button" class="close-button" (click)="cerrarModal()" aria-label="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <!-- Skeleton Loading -->
+        @if (cargando) {
+          <div class="alumnos-grid">
+            @for (item of [1,2,3,4,5,6,7,8]; track $index) {
+              <div class="alumno-card skeleton-alumno-card">
+                <div class="alumno-link">
+                  <div class="alumno-avatar skeleton-avatar"></div>
+                  <div class="alumno-info">
+                    <div class="skeleton-line skeleton-nombre"></div>
+                    <div class="skeleton-line skeleton-expediente"></div>
+                    <div class="skeleton-line skeleton-grado"></div>
+                  </div>
+                  <div class="skeleton-arrow"></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="alumnos-info mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <span>
+              Mostrando: <strong>{{ alumnosFiltrados.length }}</strong>
+              @if (alumnosFiltrados.length !== alumnos.length) {
+                de <strong>{{ alumnos.length }}</strong>
+              }
+              alumnos
+            </span>
+          </div>
+
+          <!-- Active/Inactive Filter Switch -->
+          <div class="filter-switch-container mb-3">
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="activoFilterSwitch"
+                [(ngModel)]="mostrarSoloActivos"
+                (change)="onActivoFilterChange()">
+              <label class="form-check-label" for="activoFilterSwitch">
+                <i class="bi bi-funnel me-1"></i>
+                {{ mostrarSoloActivos ? 'Mostrando solo alumnos activos' : 'Mostrando todos los alumnos' }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Search Filter -->
+          <div class="search-container mb-3">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Buscar alumno por nombre..."
+                [(ngModel)]="nombreFiltro"
+                (ngModelChange)="onSearchChange()"
+                aria-label="Buscar alumno por nombre">
+            </div>
+          </div>
+
+          <!-- Alumnos Grid -->
+          @if (alumnosPaginados && alumnosPaginados.length > 0) {
+          <div class="alumnos-grid">
+            @for (alumno of alumnosPaginados; track alumno.id) {
+              <div class="alumno-card">
+                <a class="alumno-link" (click)="navegarAAlumno(alumno)" style="cursor: pointer;">
+                  <div class="alumno-avatar">
+                    @if (alumno.fotoAlumno?.url) {
+                      <img
+                        [src]="alumno.fotoAlumno.url + '?w=180&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')"
+                        [alt]="alumno.nombre + ' ' + alumno.apellidos"
+                        class="avatar-image" loading="lazy">
+                    } @else {
+                      <i class="bi bi-person-circle avatar-placeholder"></i>
+                    }
+                  </div>
+                  <div class="alumno-info">
+                    <h6 class="alumno-nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</h6>
+                    @if (alumno.numeroExpediente) {
+                      <span class="alumno-expediente">
+                        <i class="bi bi-card-text me-1"></i>
+                        Exp. {{ alumno.numeroExpediente }}
+                      </span>
+                    }
+                    @if (alumno.grado) {
+                      <span class="alumno-grado">
+                        <i class="bi bi-award me-1"></i>
+                        <span [style]="getGradoStyle(alumno.grado)">{{ alumno.grado }}</span>
+                      </span>
+                    }
+                  </div>
+                  <i class="bi bi-chevron-right arrow-icon"></i>
+                </a>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-alumnos">
+            <i class="bi bi-inbox no-alumnos-icon"></i>
+            <p class="no-alumnos-text">
+              {{ nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo' }}
+            </p>
+          </div>
+        }
+
+          <!-- Pagination -->
+          @if (totalPaginas > 1) {
+            <app-paginacion
+              [paginaActual]="paginaActual"
+              [totalPaginas]="totalPaginas"
+              [tamanoPagina]="tamanoPagina"
+              [deshabilitado]="cargando"
+              (pageChange)="cambiarPagina($event)"
+              class="mt-4">
+            </app-paginacion>
+          }
+        }
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-secondary" (click)="cerrarModal()">
+          <i class="bi bi-x-circle me-2"></i>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalVisible" (click)="cerrarModal()"></div>

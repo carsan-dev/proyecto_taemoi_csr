@@ -1,0 +1,331 @@
+@if (deportesConMaterial.length === 0) {
+<div class="materials-empty">
+  <i class="bi bi-camera-video-off"></i>
+  <p>No hay material de examen disponible para tus deportes activos.</p>
+</div>
+} @else {
+<div class="materials-shell">
+  @if (deportesConMaterial.length > 1) {
+  <div class="materials-sport-switcher">
+    @for (item of deportesConMaterial; track item.id) {
+    <button
+      type="button"
+      class="sport-switch-btn"
+      [class.is-active]="item.deporte === deporteSeleccionado"
+      (click)="onSeleccionarDeporte(item.deporte)"
+    >
+      {{ getDeporteLabel(item.deporte) }}
+    </button>
+    }
+  </div>
+  }
+
+  @if (cargando) {
+  <p class="materials-state">Cargando material...</p>
+  } @else if (errorCarga) {
+  <p class="materials-state is-error">{{ errorCarga }}</p>
+  } @else if (material) {
+  @if (!material.bloqueId) {
+  <p class="materials-state">Tu grado actual no tiene bloque de material asignado.</p>
+  } @else {
+  <div class="materials-meta">
+    <span class="materials-chip">
+      <i class="bi bi-award-fill"></i>
+      Grado actual: {{ material.gradoActual || 'Sin grado' }}
+    </span>
+    <span class="materials-chip">
+      <i class="bi bi-collection-play-fill"></i>
+      Bloque: {{ descripcionBloqueActual || material.bloqueId }}
+    </span>
+  </div>
+
+  <div class="materials-content-grid">
+    <ng-template #videoPlayerTemplate>
+      @if (videoSeleccionado && videoSeleccionadoUrl) {
+      <video
+        class="video-player"
+        [src]="videoSeleccionadoUrl"
+        controls
+        controlsList="nodownload noplaybackrate noremoteplayback"
+        disablePictureInPicture
+        disableRemotePlayback
+        preload="auto"
+        playsinline
+        webkit-playsinline
+        (contextmenu)="onBloquearDescargaContenido($event)"
+      ></video>
+      } @else if (cargandoVideoSeleccionado) {
+      <p class="materials-state">Cargando video...</p>
+      } @else {
+      <p class="materials-state">Selecciona un video para reproducirlo.</p>
+      }
+    </ng-template>
+
+    <div class="materials-videos-panel">
+      <h3>Videos</h3>
+      @if (material.videos.length > 0) {
+      <div class="video-list">
+        @for (video of material.videos; track video.id) {
+        <div class="video-item-wrap">
+          <button
+            type="button"
+            class="video-item-btn"
+            [class.is-active]="video.id === videoSeleccionado?.id"
+            (click)="onSeleccionarVideo(video)"
+          >
+            <span class="video-order">{{ video.order }}</span>
+            <span class="video-title">{{ video.title }}</span>
+          </button>
+
+          @if (esVideoActivoEnMovil(video)) {
+          <div class="video-mobile-player">
+            <ng-container [ngTemplateOutlet]="videoPlayerTemplate"></ng-container>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      } @else {
+      <p class="materials-state">No hay videos en este bloque.</p>
+      }
+    </div>
+
+    <div class="materials-player-panel">
+      <h3>Reproductor</h3>
+      <ng-container [ngTemplateOutlet]="videoPlayerTemplate"></ng-container>
+    </div>
+  </div>
+
+  <div class="materials-docs">
+    <h3>Documentaci&oacute;n</h3>
+    @if (material.documentos.length > 0) {
+    @let docsTemario = getDocumentosTemarioPrincipal();
+    @let docsComplementarios = getDocumentosComplementarios();
+    <ng-template #pdfCanvasViewerTemplate>
+      <div
+        class="pdf-canvas-viewer"
+        [class.is-expanded]="visorExpandido"
+        [style.--viewer-top-offset]="visorExpandidoTopOffsetPx + 'px'"
+        (contextmenu)="onBloquearDescargaContenido($event)"
+      >
+        <div class="pdf-canvas-toolbar">
+          <div class="pdf-toolbar-row">
+            <button
+              type="button"
+              class="pdf-toolbar-btn"
+              (click)="irAPaginaAnteriorPdf()"
+              [disabled]="paginaActualPdf <= 1 || cargandoPaginaPdf"
+            >
+              <i class="bi bi-chevron-left"></i>
+              Anterior
+            </button>
+            <span class="pdf-canvas-page">P&aacute;gina {{ paginaActualPdf }} / {{ totalPaginasPdf || 1 }}</span>
+            <button
+              type="button"
+              class="pdf-toolbar-btn"
+              (click)="irAPaginaSiguientePdf()"
+              [disabled]="!totalPaginasPdf || paginaActualPdf >= totalPaginasPdf || cargandoPaginaPdf"
+            >
+              Siguiente
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+
+          <div class="pdf-toolbar-row pdf-toolbar-row-secondary">
+            <button
+              type="button"
+              class="pdf-toolbar-btn is-icon"
+              (click)="reducirZoomPdf()"
+              [disabled]="zoomPdf <= 0.75 || cargandoPaginaPdf"
+              title="Reducir zoom"
+            >
+              <i class="bi bi-zoom-out"></i>
+            </button>
+            <span class="pdf-canvas-zoom">{{ getZoomPdfPorcentaje() }}%</span>
+            <button
+              type="button"
+              class="pdf-toolbar-btn is-icon"
+              (click)="aumentarZoomPdf()"
+              [disabled]="zoomPdf >= 2.2 || cargandoPaginaPdf"
+              title="Aumentar zoom"
+            >
+              <i class="bi bi-zoom-in"></i>
+            </button>
+            <button type="button" class="pdf-toolbar-btn pdf-toolbar-btn-full" (click)="toggleVisorExpandido()">
+              <i class="bi" [ngClass]="visorExpandido ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
+              <span>{{ visorExpandido ? 'Salir' : 'Expandir' }}</span>
+            </button>
+          </div>
+        </div>
+
+        @if (errorVisorPdf) {
+        <p class="materials-state is-error">{{ errorVisorPdf }}</p>
+        }
+
+        <div class="pdf-canvas-wrap">
+          <canvas #pdfCanvasRef class="pdf-canvas" (contextmenu)="onBloquearDescargaContenido($event)"></canvas>
+          @if (cargandoDocumentoSeleccionado || cargandoPaginaPdf) {
+          <div class="pdf-canvas-loading">
+            <span>Renderizando documento...</span>
+          </div>
+          }
+        </div>
+      </div>
+    </ng-template>
+    <div class="docs-grid" #docsGridRef [class.is-visor-open]="mostrarDocumentoVisor">
+      <div class="docs-list">
+        @if (docsTemario.length > 0) {
+        <section class="docs-section docs-section-primary">
+          <p class="docs-section-title is-primary">Temario principal</p>
+          @for (documento of docsTemario; track documento.id) {
+          <div class="doc-item-wrap">
+            <button
+              type="button"
+              class="doc-item-btn"
+              [class.is-active]="documento.id === documentoSeleccionado?.id"
+              [class.is-primary]="true"
+              (click)="onSeleccionarDocumento(documento)"
+            >
+              <span class="doc-order is-primary">{{ getDocumentoBadge(documento) }}</span>
+              <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+              @if (documento.previewable) {
+              <span class="doc-tag">PDF</span>
+              }
+            </button>
+
+            @if (esDocumentoActivoEnMovil(documento)) {
+            <div class="doc-mobile-actions">
+              @if (documento.openUrl) {
+              <button type="button" class="docs-link docs-link-primary" (click)="onAbrirDocumentoDesdeLista(documento)">
+                <i class="bi bi-box-arrow-up-right"></i>
+                Abrir
+              </button>
+              }
+
+              @if (documento.downloadUrl || documento.openUrl) {
+              <button type="button" class="docs-link docs-link-secondary" (click)="onDescargarDocumentoDesdeLista(documento)">
+                <i class="bi bi-download"></i>
+                Descargar
+              </button>
+              }
+
+              @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
+              <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
+                <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+                {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+              </button>
+              }
+
+              @if (esDocumentoPrincipal(documento)) {
+              <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
+              }
+
+              @if (mostrarDocumentoVisor && documento.previewable && esVisorCanvasComplementarioActivo()) {
+              <div class="doc-mobile-viewer">
+                <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
+              </div>
+              }
+            </div>
+            }
+          </div>
+          }
+        </section>
+        }
+
+        <section class="docs-section" [class.with-divider]="docsTemario.length > 0">
+          <p class="docs-section-title">Material complementario</p>
+          @if (docsComplementarios.length > 0) {
+          @for (documento of docsComplementarios; track documento.id) {
+          <div class="doc-item-wrap">
+            <button
+              type="button"
+              class="doc-item-btn"
+              [class.is-active]="documento.id === documentoSeleccionado?.id"
+              (click)="onSeleccionarDocumento(documento)"
+            >
+              <span class="doc-order">{{ getDocumentoBadge(documento) }}</span>
+              <span class="doc-title">{{ documento.title || documento.fileName }}</span>
+              @if (documento.previewable) {
+              <span class="doc-tag">PDF</span>
+              }
+            </button>
+
+            @if (esDocumentoActivoEnMovil(documento)) {
+            <div class="doc-mobile-actions">
+              @if (documento.previewable && esDocumentoSeleccionadoPrevisualizable()) {
+              <button type="button" class="docs-btn" (click)="onToggleVisorDesdeLista(documento)">
+                <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+                {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+              </button>
+              }
+
+              @if (mostrarDocumentoVisor && documento.previewable && esVisorCanvasComplementarioActivo()) {
+              <div class="doc-mobile-viewer">
+                <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
+              </div>
+              }
+            </div>
+            }
+          </div>
+          }
+          } @else {
+          <p class="docs-section-empty">No hay material complementario disponible.</p>
+          }
+        </section>
+      </div>
+
+      <div class="docs-detail">
+        @if (documentoSeleccionado) {
+        <div class="docs-actions" #docsActionsRef [style.margin-top.px]="docsActionsOffsetPx">
+          @if (esDocumentoPrincipal(documentoSeleccionado) && getDocumentoOpenUrl()) {
+          <button type="button" class="docs-link docs-link-primary" (click)="abrirDocumentoSeleccionado()">
+            <i class="bi bi-box-arrow-up-right"></i>
+            Abrir
+          </button>
+          }
+
+          @if (esDocumentoPrincipal(documentoSeleccionado) && getDocumentoDownloadUrl()) {
+          <button type="button" class="docs-link docs-link-secondary" (click)="descargarDocumentoSeleccionado()">
+            <i class="bi bi-download"></i>
+            Descargar
+          </button>
+          }
+
+          @if (esDocumentoSeleccionadoPrevisualizable()) {
+          <button type="button" class="docs-btn" (click)="toggleDocumentoVisor()">
+            <i class="bi" [ngClass]="mostrarDocumentoVisor ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+            {{ mostrarDocumentoVisor ? 'Ocultar visor' : 'Ver visor integrado' }}
+          </button>
+          }
+
+          @if (esDocumentoPrincipal(documentoSeleccionado)) {
+          <p class="doc-principal-label"><i class="bi bi-bookmark-check-fill"></i> Temario principal</p>
+          }
+        </div>
+
+        @if (!documentoSeleccionado.previewable) {
+        <p class="materials-state">Este formato no admite visor integrado en la web.</p>
+        }
+        @if (cargandoDocumentoSeleccionado && documentoSeleccionado.previewable) {
+        <p class="materials-state">Preparando visor del documento...</p>
+        }
+
+        @if (
+          mostrarDocumentoVisor &&
+          documentoSeleccionado.previewable &&
+          esVisorCanvasComplementarioActivo() &&
+          !esDocumentoActivoEnMovil(documentoSeleccionado)
+        ) {
+        <ng-container [ngTemplateOutlet]="pdfCanvasViewerTemplate"></ng-container>
+        }
+        }
+      </div>
+    </div>
+    } @else {
+    <p class="materials-state">No hay documentaci&oacute;n disponible para este bloque.</p>
+    }
+  </div>
+  }
+  }
+</div>
+}

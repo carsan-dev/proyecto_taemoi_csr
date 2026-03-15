@@ -1,39 +1,157 @@
-<div class="container-fluid py-5">
-  <div class="row">
-    <div class="col-md-12 mt-3">
-      <div class="card p-4">
-        <h2 class="text-center mb-4">Listado de Eventos</h2>
-        <div class="table-responsive">
-          <table class="table custom-table mt-4">
-            <thead>
-              <tr>
-                <th class="text-center">Foto</th>
-                <th class="text-center">Título</th>
-                <th class="text-center">Descripción</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let evento of eventos">
-                <td class="text-center">
-                  <div class="imagen-evento-container">
-                    <img class="imagen-evento"
-                      [src]="evento.fotoEvento ? 'data:' + evento.fotoEvento.tipo + ';base64,' + evento.fotoEvento.datos : '../../../../assets/media/default.webp'"
-                      alt="Eventos disponibles">
-                  </div>
-                </td>
-                <td class="text-center">{{ evento.titulo }}</td>
-                <td class="text-center">{{ evento.descripcion }}</td>
-                <td class="text-center">
-                  <button class="btn btn-primary btn-sm me-1"
-                    [routerLink]="['/eventosEditar', evento.id]">Editar</button>
-                  <button class="btn btn-danger btn-sm" (click)="eliminarEvento(evento.id)">Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+<div id="imageModal" class="modal" (click)="cerrarModal()">
+  <span class="close" (click)="cerrarModal()"><i class="bi bi-x-circle-fill"></i></span>
+  <img class="modal-content" id="imgAmpliada" [alt]="modalAlt" loading="lazy" />
+  <div id="caption"></div>
+</div>
+
+<div class="admin-page-container">
+  <div class="container">
+    <div class="eventos-layout">
+      <!-- Action Bar -->
+      <div class="admin-action-bar">
+        <h2>
+          <i class="bi bi-calendar-event"></i>
+          Gestión de Eventos
+        </h2>
+        <div class="action-buttons">
+          <button class="admin-btn admin-btn-primary" (click)="guardarCambios()"
+            [hidden]="!cambiosPendientes" [disabled]="guardandoCambios">
+            <i class="bi bi-check2-square"></i>
+            <span>{{ guardandoCambios ? 'Guardando...' : 'Guardar cambios' }}</span>
+          </button>
+          <button class="admin-btn admin-btn-info" type="button" (click)="togglePreview()"
+            [attr.aria-expanded]="previewVisible" aria-controls="eventosPreviewModal">
+            <i [class]="previewVisible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            <span>{{ previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa' }}</span>
+          </button>
+          <button class="admin-btn admin-btn-success" [routerLink]="['/eventosCrear']">
+            <i class="bi bi-plus-circle"></i>
+            <span>Crear Nuevo Evento</span>
+          </button>
         </div>
+      </div>
+
+      <div class="eventos-list">
+        <!-- Skeleton Loading -->
+        @if (cargando) {
+        <app-skeleton-card type="grid" [count]="6" [columns]="3"></app-skeleton-card>
+        }
+
+        <!-- Eventos Grid -->
+        @if (!cargando && eventos && eventos.length > 0) {
+        <div class="admin-cards-grid" cdkDropList [cdkDropListData]="eventos" [cdkDropListDisabled]="cargando"
+          cdkDropListOrientation="mixed" (cdkDropListDropped)="drop($event)">
+          @for (evento of eventos; track evento.id; let i = $index) {
+          <div class="admin-item-card" cdkDrag [cdkDragDisabled]="cargando" #eventoCard
+            [attr.data-evento-id]="evento.id"
+            [class.is-hidden]="!isEventoVisible(evento)" [class.is-moved]="evento.id === movedEventoId">
+            <div class="move-controls">
+              <button class="move-btn" type="button" (click)="moverEvento(i, -1)"
+                [disabled]="cargando || i === 0" aria-label="Mover evento arriba" title="Mover arriba">
+                <i class="bi bi-arrow-up"></i>
+              </button>
+              <button class="move-btn" type="button" (click)="moverEvento(i, 1)"
+                [disabled]="cargando || i === eventos.length - 1" aria-label="Mover evento abajo" title="Mover abajo">
+                <i class="bi bi-arrow-down"></i>
+              </button>
+            </div>
+            <div class="drag-handle" cdkDragHandle title="Arrastrar para ordenar">
+              <i class="bi bi-grip-vertical"></i>
+            </div>
+            <div class="item-header">
+              <img class="item-image"
+                [src]="getEventoImageUrl(evento)"
+                [alt]="evento.titulo" (click)="abrirModal(getEventoModalUrl(evento), evento.titulo)"
+                style="cursor: zoom-in;" loading="lazy" />
+              <div class="item-title">
+                <h4>
+                  {{ evento.titulo }}
+                  @if (getFechaEventoTexto(evento)) {
+                  <span class="date-badge"
+                    [ngClass]="getEstadoFechaEvento(evento)"
+                    [attr.title]="getFechaEventoTooltip(evento)">
+                    <i class="bi bi-calendar3"></i>
+                    {{ getEtiquetaFechaEvento(evento) }} · {{ getFechaEventoTexto(evento) }}
+                  </span>
+                  }
+                  @if (!isEventoVisible(evento)) {
+                  <span class="visibility-badge oculto" title="Evento oculto en la página pública">
+                    <i class="bi bi-eye-slash"></i>
+                    Oculto
+                  </span>
+                  } @else {
+                  <span class="visibility-badge visible" title="Evento visible en la página pública">
+                    <i class="bi bi-eye"></i>
+                    Visible
+                  </span>
+                  }
+                </h4>
+              </div>
+            </div>
+
+            <div class="item-body">
+              <div class="item-field" style="display: block;">
+                <span>{{ evento.descripcion }}</span>
+              </div>
+            </div>
+
+            <div class="item-footer">
+              <button class="admin-btn admin-btn-sm"
+                [ngClass]="isEventoVisible(evento) ? 'admin-btn-warning' : 'admin-btn-success'"
+                (click)="toggleVisibilidad(evento.id, evento.titulo)"
+                [title]="isEventoVisible(evento) ? 'Ocultar evento' : 'Mostrar evento'">
+                <i [class]="isEventoVisible(evento) ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                <span>{{ isEventoVisible(evento) ? 'Ocultar' : 'Mostrar' }}</span>
+              </button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" [routerLink]="['/eventosEditar', evento.id]">
+                <i class="bi bi-pencil-square"></i>
+                <span>Editar</span>
+              </button>
+              <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarEvento(evento.id)">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <!-- Plantilla para cuando no haya eventos -->
+        @if (!cargando) {
+        <div class="admin-card text-center">
+          <img src="../../../../assets/media/placeholder_roto.svg" alt="No eventos"
+            style="width: 150px; height: auto; margin-bottom: 1.5rem;" />
+          <h3 class="mb-3">¡No hay eventos disponibles!</h3>
+          <p class="text-muted mb-4">Parece que no hay eventos registrados. ¡Crea uno nuevo pulsando el botón de arriba!
+          </p>
+        </div>
+        }
+        }
       </div>
     </div>
   </div>
 </div>
+
+@if (previewVisible) {
+<div class="preview-modal" id="eventosPreviewModal" (click)="togglePreview()">
+  <dialog class="preview-modal-dialog" aria-labelledby="previewTitle" open (click)="$event.stopPropagation()">
+    <div class="preview-modal-header">
+      <div class="preview-heading">
+        <h3 class="preview-title" id="previewTitle">Vista previa</h3>
+        <p class="preview-subtitle">Orden actual de la página pública (solo eventos visibles).</p>
+      </div>
+      <button class="preview-close" type="button" (click)="togglePreview()" aria-label="Cerrar vista previa">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="preview-modal-body">
+      <div class="preview-viewport">
+        <div class="preview-scale">
+          <app-eventos-vista [eventos]="eventosPreview" [isLoading]="cargando"
+            [enableNavigation]="false"></app-eventos-vista>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</div>
+}

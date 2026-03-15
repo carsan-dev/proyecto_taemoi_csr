@@ -1,20 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { showSuccessToast, showErrorToast } from '../../../../../utils/toast.util';
 import { AlumnoDTO } from '../../../../../interfaces/alumno-dto';
 import { EndpointsService } from '../../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
 import { PaginacionComponent } from '../../../../generales/paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { SkeletonCardComponent } from '../../../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
   selector: 'app-seleccionar-alumnos',
   standalone: true,
-  imports: [CommonModule, PaginacionComponent, FormsModule],
+  imports: [CommonModule, PaginacionComponent, FormsModule, SkeletonCardComponent],
   templateUrl: './seleccionar-alumnos.component.html',
   styleUrl: './seleccionar-alumnos.component.scss',
 })
-export class SeleccionarAlumnosComponent implements OnInit {
+export class SeleccionarAlumnosComponent implements OnInit, OnDestroy {
   alumnos: AlumnoDTO[] = [];
   grupoId!: number;
   alumnosSeleccionados: number[] = [];
@@ -24,12 +28,14 @@ export class SeleccionarAlumnosComponent implements OnInit {
   alumnosEnGrupo: AlumnoDTO[] = [];
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
+  cargando: boolean = true;
+  private searchSubject = new Subject<string>();
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private endpointsService: EndpointsService,
-    private location: Location
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly endpointsService: EndpointsService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
@@ -37,15 +43,29 @@ export class SeleccionarAlumnosComponent implements OnInit {
       this.grupoId = +params['id'];
       this.cargarGrupoYAlumnos();
     });
+
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(500), // Wait 500ms after user stops typing
+      distinctUntilChanged() // Only trigger if value actually changed
+    ).subscribe(() => {
+      this.paginaActual = 1;
+      this.cargarAlumnos();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject.complete();
   }
 
   cargarGrupoYAlumnos(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.endpointsService.obtenerGrupoPorId(this.grupoId, token).subscribe({
+    this.cargando = true;
+    this.endpointsService.obtenerGrupoPorId(this.grupoId)
+      .pipe(finalize(() => (this.cargando = false)))
+      .subscribe({
         next: (grupo) => {
           this.alumnosEnGrupo = grupo.alumnos;
-          this.cargarAlumnos(token);
+          this.cargarAlumnos();
         },
         error: () => {
           Swal.fire({
@@ -55,18 +75,18 @@ export class SeleccionarAlumnosComponent implements OnInit {
           });
         },
       });
-    }
   }
 
-  cargarAlumnos(token: string): void {
+  cargarAlumnos(): void {
+    this.cargando = true;
     this.endpointsService
       .obtenerAlumnos(
-        token,
         this.paginaActual,
         this.tamanoPagina,
         this.nombreFiltro,
         this.mostrarInactivos
       )
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (response) => {
           const idsAlumnosEnGrupo = this.alumnosEnGrupo.map(
@@ -88,26 +108,16 @@ export class SeleccionarAlumnosComponent implements OnInit {
   }
 
   agregarAlumnos(): void {
-    const token = localStorage.getItem('token');
-    if (token && this.alumnosSeleccionados.length > 0) {
+    if (this.alumnosSeleccionados.length > 0) {
       this.endpointsService
-        .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados, token)
+        .agregarAlumnosAGrupo(this.grupoId, this.alumnosSeleccionados)
         .subscribe({
           next: () => {
-            Swal.fire({
-              title: 'Alumnos agregados',
-              text: 'Los alumnos han sido agregados al grupo exitosamente',
-              icon: 'success',
-            }).then(() => {
-              this.router.navigate(['/gestionarAlumnos', this.grupoId]);
-            });
+            showSuccessToast('Alumnos agregados al grupo');
+            this.router.navigate(['/gestionarAlumnos', this.grupoId]);
           },
-          error: (error) => {
-            Swal.fire({
-              title: 'Error al agregar alumnos',
-              text: 'No hemos podido agregar los alumnos',
-              icon: 'error',
-            });
+          error: () => {
+            showErrorToast('No se pudieron agregar los alumnos');
           },
         });
     }
@@ -123,19 +133,15 @@ export class SeleccionarAlumnosComponent implements OnInit {
   }
 
   cambiarPagina(pageNumber: number): void {
-    this.paginaActual = pageNumber;
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.cargarAlumnos(token);
+    if (this.cargando || pageNumber === this.paginaActual) {
+      return;
     }
+    this.paginaActual = pageNumber;
+    this.cargarAlumnos();
   }
 
   filtrarPorNombre(): void {
-    this.paginaActual = 1;
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.cargarAlumnos(token);
-    }
+    this.searchSubject.next(this.nombreFiltro);
   }
 
   volver() {

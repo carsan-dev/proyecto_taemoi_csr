@@ -1,6 +1,6 @@
 .scroll-to-top-btn {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   z-index: 1000;
   border-radius: 50%;
@@ -25,5 +25,20 @@
   &:active {
     transform: translateY(2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-to-top-btn {
+    right: 14px;
+    width: 54px;
+    height: 54px;
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .scroll-to-top-btn {
+    right: 12px;
   }
 }

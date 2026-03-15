@@ -1,6 +1,6 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
-@use '@angular/material'as mat;
+@use "@angular/material" as mat;
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
@@ -8,45 +8,377 @@
 // Be sure that you only ever include this mixin once!
 @include mat.core();
 
-// Define the palettes for your theme using the Material Design palettes available in palette.scss
-// (imported above). For each palette, you can optionally specify a default, lighter, and darker
-// hue. Available color palettes: https://material.io/design/color/
-$Taemoi_Angular_Front-primary: mat.define-palette(mat.$indigo-palette);
-$Taemoi_Angular_Front-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
-
-// The warn palette is optional (defaults to red).
-$Taemoi_Angular_Front-warn: mat.define-palette(mat.$red-palette);
-
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
-$Taemoi_Angular_Front-theme: mat.define-light-theme((color: (primary: $Taemoi_Angular_Front-primary,
-      accent: $Taemoi_Angular_Front-accent,
-      warn: $Taemoi_Angular_Front-warn,
-    ),
-    typography: mat.define-typography-config(),
-    density: 0));
+// Define the theme using M3 theming API for Angular Material 20
+$Taemoi_Angular_Front-theme: mat.define-theme();
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
 @include mat.all-component-themes($Taemoi_Angular_Front-theme);
 
-@import "../node_modules/bootstrap/scss/bootstrap.scss";
-@import "../node_modules/bootstrap-icons/font/bootstrap-icons.css/";
-@import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+// Import Bootstrap CSS (precompiled - no Sass deprecation warnings)
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+// Import CSS files (these remain as @import for CSS compatibility)
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+@import "leaflet-control-geocoder/dist/Control.Geocoder.css";
+@import "leaflet-minimap/dist/Control.MiniMap.min.css";
 
 * {
-  font-family: Verdana, sans-serif;
+  font-family: Montserrat, sans-serif;
   box-sizing: border-box;
 }
 
 html,
 body {
   height: 100%;
+  overflow-x: hidden; // Prevent horizontal scroll globally
 }
+
 
 body {
   margin: 0;
-  font-family: Verdana, sans-serif;
+  font-family: Montserrat, sans-serif;
+  background: #f8f9fa; // Clean, light background matching the main site
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
 }
 
+// Improve Leaflet touch targets on mobile.
+@media (max-width: 768px) {
+  a.leaflet-popup-close-button {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+    line-height: 48px !important;
+    font-size: 22px !important;
+    padding: 0 !important;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    top: 6px;
+    right: 6px;
+  }
+
+  .leaflet-control-geocoder {
+    margin: 10px 0 0 !important;
+  }
+
+  a.leaflet-control-geocoder-icon,
+  button.leaflet-control-geocoder-icon {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+    line-height: 48px !important;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-size: 22px 22px !important;
+    background-position: center !important;
+  }
+}
+
+// Add padding to main content when admin navbar is present
+body:has(.admin-top-navbar) #content {
+  padding-top: 70px !important;
+}
+
+// Prevent admin header layout shift - ensure fixed height from initial load
+.admin-top-navbar {
+  height: 70px !important;
+  min-height: 70px !important;
+}
+
+@media (max-width: 480px) {
+  .admin-top-navbar {
+    height: 60px !important;
+    min-height: 60px !important;
+  }
+
+  body:has(.admin-top-navbar) #content {
+    padding-top: 60px !important;
+  }
+}
+
+// Fix Bootstrap container overflow on mobile
+// Exclude navbar containers to allow dropdowns to overflow
+.container,
+.container-fluid {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+// Allow navbar dropdowns to overflow properly
+.navbar .container-fluid,
+.navbar .container {
+  overflow: visible;
+}
+
+// Ensure fixed headers allow dropdown overflow
+header.fixed-header,
+header.fixed-header .navbar,
+header.fixed-header .navbar-collapse,
+header.fixed-header .navbar-nav,
+header.fixed-header .nav-item.dropdown {
+  overflow: visible !important;
+}
+
+.row {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+// Prevent common elements from causing horizontal scroll
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+// Smooth page transition to prevent FOUC (Flash of Unstyled Content)
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#content {
+  animation: fadeInPage 0.2s ease-out;
+  min-height: calc(100vh - 200px); // Prevent footer from jumping to top
+}
+
+// Preload background for smoother transitions
+router-outlet + * {
+  animation: fadeInPage 0.15s ease-out;
+}
+
+// Sticky footer layout - ensures footer stays at bottom during load
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+app-skeleton {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 100vh;
+}
+
+// Ensure main content pushes footer down
+main#content {
+  flex: 1 0 auto;
+}
+
+// Ensure SweetAlert2 toasts are above fixed headers
+.swal2-container.swal2-top-end,
+.swal2-container.swal2-top-start,
+.swal2-container.swal2-top,
+.swal2-container.swal2-top-left,
+.swal2-container.swal2-top-right,
+.swal2-container.swal2-top-center {
+  z-index: 9999 !important;
+}
+
+.cookie-consent {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12000;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.cookie-consent[hidden] {
+  display: none !important;
+}
+
+.cookie-consent__card {
+  width: min(980px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.cookie-consent__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cookie-consent__text h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.cookie-consent__text p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.cookie-consent__notice {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+  background: #fff7ed;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+}
+
+.cookie-consent__links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.cookie-consent__links a {
+  color: #0d47a1;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cookie-consent__links a:hover {
+  text-decoration: underline;
+}
+
+.cookie-consent__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cookie-consent__actions button {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  padding: 0.5rem 1.1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#cookie-consent-reject {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.2);
+  color: #0f172a;
+}
+
+#cookie-consent-accept {
+  background: linear-gradient(135deg, #12383a, #1b4a4d);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(18, 56, 58, 0.35);
+}
+
+.cookie-consent__actions button:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .cookie-consent {
+    padding: 0.75rem;
+  }
+
+  .cookie-consent__card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .cookie-consent__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cookie-consent__actions button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.swal2-select-combobox {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.swal2-select-input {
+  cursor: text;
+  display: block;
+  width: 100%;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px 12px;
+  padding-right: 3rem;
+}
+
+.swal2-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 10000;
+  display: none;
+}
+
+.swal2-select-dropdown.is-open {
+  display: block;
+}
+
+.swal2-select-option {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.swal2-select-option:hover,
+.swal2-select-option.is-active {
+  background: rgba(0, 123, 255, 0.12);
+}
+
+.swal2-select-option.is-disabled {
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.swal2-select-empty {
+  padding: 0.5rem 0.75rem;
+  color: #6c757d;
+  font-style: italic;
+}

@@ -1,66 +1,224 @@
-# TaeMoi: Plataforma Integral para Escuelas de Taekwondo
+# TaeMoi
 
-¡Bienvenido a TaeMoi!
+Plataforma web integral para la escuela **Moi's Kim Do Taekwondo** de Umbrete (Sevilla). El proyecto combina un escaparate público orientado a captación con una zona privada de gestión para administradores, personal de gestión y alumnos.
 
-TaeMoi es una solución innovadora diseñada específicamente para la escuela de taekwondo **Moi's Kim Do Taekwondo** en Umbrete (Sevilla), con el objetivo de mejorar la gestión interna y la presencia en línea del negocio. Mi plataforma ofrece una combinación única de un escaparate web personalizado y una completa plataforma de gestión de alumnos, grupos, turnos, eventos y procesos internos.
+## Qué ofrece actualmente
 
----
+- Escaparate público con información de la escuela, disciplinas, horarios, eventos, tarifas, contacto y páginas legales.
+- Gestión interna de alumnos, grupos, turnos, productos, convocatorias y tesorería.
+- Portal de usuario para que cada alumno consulte su información y sus turnos.
+- Autenticación con JWT, control de acceso por roles y soporte OAuth2 con Google.
+- Gestión de documentos e imágenes con almacenamiento persistente.
+- Generación de PDF y flujos de comunicación por correo.
+- Auditoría del sistema, configuración interna y tareas programadas.
+- Soporte multideporte: taekwondo, kickboxing, pilates y defensa personal femenina.
 
-## Título del Proyecto
+## Roles del sistema
 
-### Curso Escolar 2023-2024
+- `ADMIN`: acceso total, incluyendo auditoría y configuración del sistema.
+- `MANAGER`: operaciones de gestión sobre alumnos, grupos, turnos, eventos, productos y convocatorias.
+- `USER`: acceso a su área privada para consultar información personal y horarios.
 
-#### Autor: Carlos Sánchez Román: [(Enlace a mi cuenta de gitHub)](https://github.com/csanrom1702)
+## Funcionalidades principales
 
-#### Tutor: Antonio Gabriel González Casado [(Enlace a su cuenta de gitHub)](https://github.com/prof-antonio-gabriel)
+### Área pública
 
-#### Fecha de Inicio: 06-03-2024
+- Página principal de escaparate.
+- Secciones específicas de `taekwondo`, `kickboxing`, `pilates` y `defensa-personal-femenina`.
+- Consulta de `horarios`, `eventos`, `tarifas` y `contacto`.
+- Detalle individual de eventos.
+- SEO y rutas legales (`política de privacidad`, `cookies`, `aviso legal`).
 
-#### Fecha de Finalización: 16-06-2024
+### Área privada de gestión
 
----
+- Alta, edición, listado y eliminación de alumnos.
+- Gestión de grupos y asignación de alumnos.
+- Gestión de turnos y relación con alumnos.
+- Gestión de eventos y productos.
+- Gestión de convocatorias.
+- Tesorería y seguimiento de cobros.
+- Auditoría del sistema.
+- Configuración interna del sistema.
+- Gestión de documentos e imágenes asociadas a alumnos.
 
-## Qué es TaeMoi?
+### Automatizaciones y reglas de negocio
 
-La aplicación TaeMoi es una plataforma diseñada para administrar y gestionar información relacionada con alumnos en la escuela de taekwondo **"MOI'S KIM DO TAEKWONDO"** en Umbrete. Desde el seguimiento de datos personales hasta el registro de información relevante, ofrece una solución completa y eficiente para simplificar la gestión de alumnos.
+- Seguridad basada en roles con Spring Security.
+- JWT para sesión autenticada y soporte de login con Google.
+- Recordatorios y jobs programados.
+- Caché en memoria con Caffeine para mejorar el rendimiento.
+- Generación de PDF para procesos internos.
+- Reglas de progresión de grado, categorías y lógica de negocio académica/deportiva.
 
-Además de su funcionalidad principal de gestión interna, TaeMoi también cuenta con un escaparate web accesible al público estándar. Este escaparate ofrece información relevante, como eventos, horarios de clases, y otras noticias relacionadas con la escuela de taekwondo. Así, cualquier persona interesada en la escuela puede acceder a esta información de forma fácil y rápida.
+## Arquitectura del repositorio
 
-Por otro lado, la plataforma incluye una parte de inicio de sesión reservada para los usuarios gestores del negocio. Desde esta área segura, los administradores pueden acceder a todas las funcionalidades avanzadas de la aplicación, como la gestión de alumnos, entre otros aspectos fundamentales para la administración eficiente del negocio.
+```text
+.
+|- src-api/           API REST en Spring Boot
+|- src-frontend/      Aplicación Angular
+|- mysql/             Docker y scripts SQL de base de datos
+|- nginx/             Configuración de Nginx para despliegue
+|- static_resources/  Recursos persistentes locales (imágenes/documentos)
+|- docs/              Documentación funcional, técnica y de despliegue
+|- scripts/           Scripts auxiliares de despliegue y diagnóstico
+`- docker-compose.yml Orquestación local/servidor
+```
 
-Y a su vez, los alumnos dados de alta podrán iniciar sesión en la aplicación para consultar sus grupos y horarios.
+## Backend
 
----
+Ruta principal: `src-api`
 
-## Definir el objetivo de la aplicación
+Tecnologías principales:
 
-En TaeMoi, nuestro objetivo es proporcionar una solución integral y especializada para la gestión eficiente de la escuela de taekwondo, así como para promover la visibilidad y accesibilidad de la misma en línea. Algunos aspectos clave que definirán el propósito y la misión de mi aplicación web son los siguientes:
+- Java 21
+- Spring Boot 3.5.x
+- Spring Security
+- Spring Data JPA
+- MySQL 8
+- JWT (`jjwt`)
+- Caffeine
+- Java Mail
+- OAuth2 Client
+- OpenHTML to PDF / PDFBox / Batik
 
-- **Funcionalidades Centrales:** TaeMoi ofrecerá una serie de características fundamentales, como el acceso a información pública sobre la escuela, la visualización de eventos y horarios, y la disponibilidad de datos de contacto para potenciales interesados. Esto garantizará que tanto los usuarios anónimos como los clientes potenciales puedan acceder fácilmente a la información relevante sobre esta escuela de taekwondo.
-- **Gestión Eficiente:** La aplicación se centrará en proporcionar herramientas robustas para la gestión interna de la escuela, permitiendo a los gestores y administradores realizar operaciones CRUD sobre los alumnos, grupos, turnos y eventos, así como filtrar, ordenar y paginar la información según sea necesario. Esto facilitará la administración de la escuela y mejorará la experiencia para el personal del negocio.
-- **Satisfacción del Cliente:** TaeMoi se esforzará por resolver el problema concreto de la falta de soluciones especializadas para la gestión de escuelas de taekwondo en el mercado actual. Al ofrecer una plataforma que aborde específicamente las necesidades de este sector, nuestra aplicación tiene como objetivo cubrir una importante brecha en el mercado y satisfacer las necesidades de Moi's Kim Do Taekwondo.
-- **Optimización de Procesos:** Al simplificar y automatizar tareas administrativas, TaeMoi permitirá a la escuela de taekwondo optimizar sus procesos internos, ahorrar tiempo y recursos, y mejorar la eficiencia general de la gestión del negocio. Esto se traducirá en una experiencia más fluida y satisfactoria tanto para el personal como para los clientes.
+Estructura destacada:
 
----
+- `src-api/src/main/java/com/taemoi/project/controllers`: controladores REST.
+- `src-api/src/main/java/com/taemoi/project/services`: lógica de negocio.
+- `src-api/src/main/java/com/taemoi/project/repositories`: acceso a datos.
+- `src-api/src/main/java/com/taemoi/project/entities`: modelo de dominio.
+- `src-api/src/main/java/com/taemoi/project/dtos`: contratos de entrada/salida.
+- `src-api/src/main/java/com/taemoi/project/config`: seguridad y configuración.
+- `src-api/src/main/resources`: perfiles, logging y recursos estáticos.
 
-## Estructura del Proyecto
+Dominios principales del backend:
 
-El repositorio del proyecto contiene un API Restful desarrollado en SpringBoot para la lógica de la aplicación y proveer los datos para utilizar de la base de datos, el frontend desarrollado en Angular17 para las vistas de la aplicación y consumir los servicios del API rest y una carpeta docs con toda la documentación relacionada al proyecto. Así se vería la estructura:
+- `Alumno`, `Grupo`, `Turno`, `Usuario`
+- `Producto`, `ProductoAlumno`, `Tesorería`
+- `Convocatoria`, `Grado`, `Categoría`, `AlumnoDeporte`
+- `Evento`, `Documento`, `Auditoría`
 
-- [docs](./docs)
-  - BBDD
-    - [Esquema-relacional-BBDD-TaeMoi.pdf](./docs/BBDD/Esquema-relacional-BBDD-TaeMoi.pdf)
-  - Despliegue
-    - [README.md](./docs/Despliegue/README.md)
-    - [applicationAWS.properties.txt](./docs/Despliegue/applicationAWS.properties.txt)
-    - [applicationDocker.properties.txt](./docs/Despliegue/applicationDocker.properties.txt)
-  - Diseño
-    - [README.md](./docs/Diseño/README.md)
-    - [Prototipo TaeMoi.jpg](./docs/Diseño/Prototipo-TaeMoi.jpg)
-  - [2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf](./docs/2023-2024-IES-ALIXAR-DAW2-Carlos-Sánchez-Román-Taemoi.pdf)
-- [src-api](./src-api/)
-- [src-frontend](./src-frontend/)
-- [mysql](./mysql/)
-- [env.txt](./env.txt)
-- [docker-compose.yml](./docker-compose.yml)
-- [README.md](./README.md)
+## Frontend
+
+Ruta principal: `src-frontend`
+
+Tecnologías principales:
+
+- Angular 20
+- TypeScript 5.9
+- Angular Material
+- Bootstrap 5
+- SweetAlert2
+- Leaflet
+
+Estructura destacada:
+
+- `src-frontend/src/app/componentes/vistas`: vistas públicas y paneles principales.
+- `src-frontend/src/app/componentes/endpoints`: pantallas CRUD y módulos internos.
+- `src-frontend/src/app/servicios`: acceso a API y servicios de aplicación.
+- `src-frontend/src/app/guards`: protección de rutas por autenticación/rol.
+- `src-frontend/src/app/core`, `constants`, `utilities`, `utils`: utilidades y configuración transversal.
+
+Rutas funcionales relevantes:
+
+- Públicas: `/`, `/taekwondo`, `/kickboxing`, `/pilates`, `/defensa-personal-femenina`, `/horarios`, `/eventos`, `/contacto`, `/tarifas`, legales.
+- Privadas: `/adminpage`, `/userpage`, `/alumnosListar`, `/gruposListar`, `/turnosCrear`, `/productosListar`, `/convocatoriasListar`, `/tesoreriaCobros`, `/auditoriaSistema`, `/configuracion-sistema`.
+
+## Base de datos y almacenamiento
+
+- Base de datos principal: MySQL 8.
+- Scripts SQL y utilidades en `mysql/`.
+- Imágenes y documentos persistentes en `static_resources/` en local o en volumen Docker en despliegue.
+
+## Requisitos
+
+- Java 21
+- Node.js 22
+- Maven 3.9+ o wrapper incluido
+- MySQL 8
+- Docker y Docker Compose (opcional, recomendado para despliegue integrado)
+
+## Variables de entorno
+
+El proyecto usa un archivo `.env` para centralizar configuración sensible y dependiente del entorno.
+
+Variables importantes:
+
+- Base de datos: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
+- Docker DB: `SPRING_DATASOURCE_URL_DOCKER`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`
+- Seguridad: `JWT_SECRET`
+- CORS / frontend: `CORS_ALLOWED_ORIGIN`, `APP_FRONTEND_BASE_URL`
+- Correo: `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`
+- OAuth2 Google: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
+- Almacenamiento: `APP_IMAGENES_PATH`, `APP_DOCUMENTOS_PATH`, `APP_IMAGENES_PATH_DOCKER`, `APP_DOCUMENTOS_PATH_DOCKER`
+
+## Puesta en marcha local
+
+### 1. Backend
+
+```bash
+cd src-api
+mvn clean install
+mvn spring-boot:run
+```
+
+Alternativa con wrapper en Windows:
+
+```bash
+cd src-api
+./mvnw spring-boot:run
+```
+
+### 2. Frontend
+
+```bash
+cd src-frontend
+npm install
+npm start
+```
+
+### 3. Accesos por defecto de desarrollo
+
+- Backend: `http://localhost:8080`
+- Frontend: `http://localhost:4200`
+
+## Docker Compose
+
+Desde la raíz del repositorio:
+
+```bash
+docker-compose up --build
+```
+
+Servicios levantados:
+
+- MySQL: puerto `3307`
+- Backend Spring Boot: puerto `8080`
+- Frontend con Nginx: puerto `80`
+
+## Comandos útiles
+
+### Backend
+
+```bash
+cd src-api
+mvn test
+mvn clean install
+```
+
+### Frontend
+
+```bash
+cd src-frontend
+npm test
+npm run build:local
+npm run build:production
+```
+
+## Documentación adicional
+
+- Documentación general del proyecto: `docs/`
+- Despliegue: `docs/Despliegue/README.md`
+- Diseño: `docs/Diseño/README.md`
+- Esquema de base de datos: `docs/BBDD/Esquema-relacional-BBDD-TaeMoi.pdf`
+- Colección Postman del backend: `src-api/API TAEMOI.postman_collection.json`

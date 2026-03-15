@@ -1,0 +1,608 @@
+// Shimmer animation keyframes
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+// Base skeleton styling with shimmer effect (Light Gray)
+@mixin skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f5f5f5 0%,
+    #e8e8e8 20%,
+    #f5f5f5 40%,
+    #f5f5f5 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+:host {
+  display: block;
+}
+
+.skeleton-image-only {
+  @include skeleton-shimmer;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+
+// Common skeleton elements
+.skeleton-line {
+  @include skeleton-shimmer;
+  height: 16px;
+  margin-bottom: 8px;
+
+  &.skeleton-title {
+    height: 24px;
+    width: 60%;
+  }
+
+  &.skeleton-subtitle {
+    height: 14px;
+    width: 40%;
+  }
+
+  &.skeleton-text {
+    width: 100%;
+
+    &.short {
+      width: 70%;
+    }
+  }
+}
+
+.skeleton-avatar {
+  @include skeleton-shimmer;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-button {
+  @include skeleton-shimmer;
+  height: 36px;
+  width: 80px;
+  border-radius: 4px;
+
+  &.full {
+    width: 100%;
+  }
+}
+
+.skeleton-image {
+  @include skeleton-shimmer;
+  width: 100%;
+  height: 200px;
+  border-radius: 8px 8px 0 0;
+}
+
+// List Layout
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.skeleton-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .skeleton-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    .skeleton-header-content {
+      flex: 1;
+    }
+  }
+
+  .skeleton-card-body {
+    margin-bottom: 16px;
+  }
+
+  .skeleton-card-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}
+
+// Grid Layout
+.skeleton-grid {
+  display: grid;
+  gap: 24px;
+  padding: 16px;
+
+  .skeleton-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .skeleton-card-body {
+      padding: 16px;
+    }
+
+    .skeleton-card-footer {
+      padding: 0 16px 16px;
+    }
+  }
+}
+
+// Table Layout
+.skeleton-table {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .skeleton-table-header {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 16px;
+
+    .skeleton-line {
+      height: 20px;
+      margin-bottom: 0;
+    }
+  }
+
+  .skeleton-table-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+
+    .skeleton-line {
+      height: 16px;
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Tesoreria layout skeleton
+.skeleton-tesoreria {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-tesoreria-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 8px 20px rgba(31, 77, 134, 0.08);
+}
+
+.skeleton-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skeleton-filter-label {
+  @include skeleton-shimmer;
+  height: 12px;
+  width: 55%;
+}
+
+.skeleton-filter-input {
+  @include skeleton-shimmer;
+  height: 38px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.skeleton-tesoreria-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.skeleton-summary-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 8px 18px rgba(44, 82, 130, 0.07);
+  padding: 0.9rem 1rem;
+}
+
+.skeleton-summary-title {
+  @include skeleton-shimmer;
+  height: 12px;
+  width: 45%;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-summary-value {
+  @include skeleton-shimmer;
+  height: 28px;
+  width: 62%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-summary-detail {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 70%;
+}
+
+.skeleton-table.skeleton-table-tesoreria {
+  margin: 0;
+  border-radius: 14px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 10px 22px rgba(45, 55, 72, 0.08);
+
+  .skeleton-table-header,
+  .skeleton-table-row {
+    grid-template-columns: repeat(8, minmax(80px, 1fr));
+  }
+}
+
+// Distribution Chart Skeleton
+.skeleton-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  .skeleton-distribution-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .skeleton-distribution-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .skeleton-icon {
+        @include skeleton-shimmer;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .skeleton-label {
+        @include skeleton-shimmer;
+        height: 16px;
+        flex: 1;
+        max-width: 120px;
+      }
+
+      .skeleton-count {
+        @include skeleton-shimmer;
+        width: 32px;
+        height: 20px;
+        border-radius: 4px;
+      }
+    }
+
+    .skeleton-bar-container {
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 5px;
+      overflow: hidden;
+
+      .skeleton-bar {
+        @include skeleton-shimmer;
+        height: 100%;
+        border-radius: 5px;
+      }
+    }
+
+    .skeleton-percentage {
+      @include skeleton-shimmer;
+      width: 40px;
+      height: 14px;
+      align-self: flex-end;
+    }
+  }
+
+  .skeleton-total {
+    @include skeleton-shimmer;
+    height: 18px;
+    width: 180px;
+    margin: 1rem auto 0;
+    border-radius: 4px;
+  }
+}
+
+// Events List Skeleton
+.skeleton-events {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .skeleton-event-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 12px;
+
+    .skeleton-event-date {
+      @include skeleton-shimmer;
+      min-width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+
+      .skeleton-day,
+      .skeleton-month {
+        display: none; // Hidden, the parent has the shimmer
+      }
+    }
+
+    .skeleton-event-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .skeleton-event-title {
+        @include skeleton-shimmer;
+        height: 18px;
+        width: 70%;
+      }
+
+      .skeleton-event-location {
+        @include skeleton-shimmer;
+        height: 14px;
+        width: 50%;
+      }
+    }
+  }
+}
+
+// Alerts Skeleton (for admin dashboard)
+.skeleton-alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.skeleton-alert-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.skeleton-alert-icon {
+  @include skeleton-shimmer;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.skeleton-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-alert-title {
+  @include skeleton-shimmer;
+  height: 18px;
+  width: 62%;
+  margin-bottom: 0.45rem;
+}
+
+.skeleton-alert-text {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 100%;
+  margin-bottom: 0.35rem;
+
+  &.short {
+    width: 78%;
+  }
+}
+
+.skeleton-alert-action {
+  @include skeleton-shimmer;
+  height: 14px;
+  width: 44%;
+  margin-top: 0.25rem;
+}
+
+// Masonry Events Skeleton (for eventos page)
+.skeleton-masonry {
+  column-count: 5;
+  column-width: 260px;
+  column-gap: 1rem;
+  width: 100%;
+  animation: fadeInUp 0.6s ease 0.3s backwards;
+
+  .skeleton-event-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    break-inside: avoid;
+    margin-bottom: 1rem;
+    display: inline-block;
+    width: 100%;
+
+    .skeleton-event-image {
+      @include skeleton-shimmer;
+      width: 100%;
+      height: 220px;
+      border-radius: 0;
+    }
+
+    .skeleton-event-content {
+      padding: 1rem;
+
+      .skeleton-event-title-line {
+        height: 20px;
+        width: 75%;
+        margin-bottom: 0.75rem;
+      }
+
+      .skeleton-event-desc-line {
+        height: 15px;
+        width: 100%;
+        margin-bottom: 0.5rem;
+
+        &.short {
+          width: 85%;
+        }
+
+        &.shorter {
+          width: 60%;
+          margin-bottom: 1rem;
+        }
+      }
+
+      .skeleton-event-divider {
+        height: 1px;
+        background: #e9ecef;
+        margin: 1rem 0;
+      }
+
+      .skeleton-event-action {
+        @include skeleton-shimmer;
+        height: 16px;
+        width: 120px;
+        border-radius: 4px;
+      }
+    }
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1400px) {
+  .skeleton-masonry {
+    column-count: 4;
+  }
+}
+
+@media (max-width: 1200px) {
+  .skeleton-masonry {
+    column-count: 3;
+    column-width: 240px;
+    column-gap: 0.875rem;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .skeleton-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .skeleton-table-header,
+  .skeleton-table-row {
+    grid-template-columns: repeat(2, 1fr);
+
+    .skeleton-line:nth-child(n+3) {
+      display: none;
+    }
+  }
+
+  .skeleton-masonry {
+    column-count: 2;
+    column-width: 200px;
+    column-gap: 0.625rem;
+
+    .skeleton-event-card {
+      margin-bottom: 0.625rem;
+      border-radius: 14px;
+
+      .skeleton-event-image {
+        height: 190px;
+      }
+
+      .skeleton-event-content {
+        padding: 0.875rem;
+      }
+    }
+  }
+
+  .skeleton-alerts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-tesoreria-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-tesoreria-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-table.skeleton-table-tesoreria {
+    .skeleton-table-header,
+    .skeleton-table-row {
+      grid-template-columns: repeat(3, 1fr);
+
+      .skeleton-line:nth-child(n+4) {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .skeleton-masonry {
+    column-count: 2;
+    column-width: 170px;
+    column-gap: 0.5rem;
+
+    .skeleton-event-card {
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+
+      .skeleton-event-content {
+        padding: 0.9rem;
+      }
+    }
+  }
+}
+
+// Dark mode support removed - app uses light theme only
+// If dark mode is added to the app in the future, uncomment and update these styles

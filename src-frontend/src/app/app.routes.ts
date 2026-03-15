@@ -1,136 +1,277 @@
-import { RouterModule, Routes } from '@angular/router';
-import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
-import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
-import { VistaPrincipalAdminComponent } from './componentes/vistas/vista-principal-admin/vista-principal-admin.component';
-import { EditarAlumnoComponent } from './componentes/endpoints/editar-alumno/editar-alumno.component';
-import { CrearAlumnoComponent } from './componentes/endpoints/crear-alumno/crear-alumno.component';
-import { EliminarAlumnoComponent } from './componentes/endpoints/eliminar-alumno/eliminar-alumno.component';
-import { EventosComponent } from './componentes/vistas/eventos/eventos.component';
-import { ContactoComponent } from './componentes/vistas/contacto/contacto.component';
-import { EltaekwondoComponent } from './componentes/vistas/eltaekwondo/eltaekwondo.component';
-import { HorariosComponent } from './componentes/vistas/horarios/horarios.component';
-import { ListadoAlumnosComponent } from './componentes/endpoints/listado-alumnos/listado-alumnos.component';
-import { ListadoGruposComponent } from './componentes/endpoints/listado-grupos/listado-grupos.component';
-import { TurnosGrupoComponent } from './componentes/endpoints/listado-grupos/turnos-grupo/turnos-grupo.component';
-import { VistaPrincipalUserComponent } from './componentes/vistas/vista-principal-user/vista-principal-user.component';
-import { CrearGrupoComponent } from './componentes/endpoints/crear-grupo/crear-grupo.component';
-import { EditarGrupoComponent } from './componentes/endpoints/editar-grupo/editar-grupo.component';
-import { GestionarAlumnosComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component';
-import { SeleccionarAlumnosComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component';
-import { ListadoTurnosComponent } from './componentes/endpoints/listado-turnos/listado-turnos.component';
-import { CrearTurnoComponent } from './componentes/endpoints/crear-turno/crear-turno.component';
-import { SeleccionarGrupoComponent } from './componentes/endpoints/listado-turnos/seleccionar-grupo/seleccionar-grupo.component';
-import { EditarTurnoComponent } from './componentes/endpoints/editar-turno/editar-turno.component';
-import { TurnosUsuarioComponent } from './componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component';
-import { roleGuard } from './guards/role.guard';
-import { ListadoEventosComponent } from './componentes/endpoints/listado-eventos/listado-eventos.component';
-import { CrearEventoComponent } from './componentes/endpoints/crear-evento/crear-evento.component';
-import { EditarEventoComponent } from './componentes/endpoints/editar-evento/editar-evento.component';
+﻿import { RouterModule, Routes } from '@angular/router';
 import { NgModule } from '@angular/core';
-import { GestionarTurnosAlumnoComponent } from './componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component';
+import { roleGuard } from './guards/role.guard';
+import { adminOnlyGuard } from './guards/admin-only.guard';
+import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
+import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
+import { SEO_ROUTES } from './core/constants/seo.constants';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/inicio', pathMatch: 'full' },
-  { path: 'inicio', component: EscaparatePrincipalComponent },
-  { path: 'eltaekwondo', component: EltaekwondoComponent },
-  { path: 'horarios', component: HorariosComponent },
-  { path: 'logros', component: EventosComponent },
-  { path: 'contacto', component: ContactoComponent },
-  { path: 'login', component: VistaLoginComponent },
+  {
+    path: '',
+    data: { seo: SEO_ROUTES.home },
+    component: EscaparatePrincipalComponent // Eager-load main page to prevent white screen
+  },
+  { path: 'inicio', redirectTo: '', pathMatch: 'full' },
+  {
+    path: 'eltaekwondo',
+    redirectTo: '/taekwondo',
+    pathMatch: 'full',
+  },
+  {
+    path: 'taekwondo',
+    data: { seo: SEO_ROUTES.taekwondo },
+    loadComponent: () => import('./componentes/vistas/taekwondo/taekwondo.component').then(m => m.TaekwondoComponent)
+  },
+  {
+    path: 'kickboxing',
+    data: { seo: SEO_ROUTES.kickboxing },
+    loadComponent: () => import('./componentes/vistas/kickboxing/kickboxing.component').then(m => m.KickboxingComponent)
+  },
+  {
+    path: 'pilates',
+    data: { seo: SEO_ROUTES.pilates },
+    loadComponent: () => import('./componentes/vistas/pilates/pilates.component').then(m => m.PilatesComponent)
+  },
+  {
+    path: 'defensapersonalfemenina',
+    redirectTo: '/defensa-personal-femenina',
+    pathMatch: 'full',
+  },
+  {
+    path: 'defensa-personal-femenina',
+    data: { seo: SEO_ROUTES.defensaPersonal },
+    loadComponent: () =>
+      import('./componentes/vistas/defensa-personal-femenina/defensa-personal-femenina.component').then(
+        (m) => m.DefensaPersonalFemeninaComponent
+      ),
+  },
+  {
+    path: 'horarios',
+    data: { seo: SEO_ROUTES.horarios },
+    loadComponent: () => import('./componentes/vistas/horarios/horarios.component').then(m => m.HorariosComponent)
+  },
+  {
+    path: 'eventos',
+    data: { seo: SEO_ROUTES.eventos },
+    loadComponent: () => import('./componentes/vistas/eventos/eventos.component').then(m => m.EventosComponent)
+  },
+  {
+    path: 'eventos/:eventoId',
+    loadComponent: () => import('./componentes/vistas/eventos/evento-detalle/evento-detalle.component').then(m => m.EventoDetalleComponent)
+  },
+  {
+    path: 'contacto',
+    data: { seo: SEO_ROUTES.contacto },
+    loadComponent: () => import('./componentes/vistas/contacto/contacto.component').then(m => m.ContactoComponent)
+  },
+  {
+    path: 'politica-privacidad',
+    data: { seo: SEO_ROUTES.privacidad },
+    loadComponent: () => import('./componentes/vistas/legal/politica-privacidad/politica-privacidad.component').then(m => m.PoliticaPrivacidadComponent)
+  },
+  {
+    path: 'politica-cookies',
+    data: { seo: SEO_ROUTES.cookies },
+    loadComponent: () => import('./componentes/vistas/legal/politica-cookies/politica-cookies.component').then(m => m.PoliticaCookiesComponent)
+  },
+  {
+    path: 'aviso-legal',
+    data: { seo: SEO_ROUTES.avisoLegal },
+    loadComponent: () => import('./componentes/vistas/legal/aviso-legal/aviso-legal.component').then(m => m.AvisoLegalComponent)
+  },
+  {
+    path: 'tarifas',
+    data: { seo: SEO_ROUTES.tarifas },
+    loadComponent: () => import('./componentes/vistas/tarifas/tarifas.component').then(m => m.TarifasComponent)
+  },
+  {
+    path: 'login',
+    data: { seo: SEO_ROUTES.noIndex },
+    component: VistaLoginComponent // Eager-load login page for better UX
+  },
+  {
+    path: 'recuperar-contrasena',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/recuperar-contrasena/recuperar-contrasena.component').then(m => m.RecuperarContrasenaComponent)
+  },
+  {
+    path: 'reset-password',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
+  },
+  {
+    path: 'registro-confirmar',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
+  },
   {
     path: 'adminpage',
-    component: VistaPrincipalAdminComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/vista-principal-admin/vista-principal-admin.component').then(m => m.VistaPrincipalAdminComponent),
     canActivate: [roleGuard],
   },
-  { path: 'userpage', component: VistaPrincipalUserComponent },
-  { path: 'userpage/:id/turnos', component: TurnosUsuarioComponent },
+  {
+    path: 'userpage',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/vista-principal-user/vista-principal-user.component').then(m => m.VistaPrincipalUserComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'userpage/turnos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component').then(m => m.TurnosUsuarioComponent),
+    canActivate: [roleGuard],
+  },
   {
     path: 'alumnosListar',
-    component: ListadoAlumnosComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-alumnos/listado-alumnos.component').then(m => m.ListadoAlumnosComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'alumnosEditar/:id',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosEditar',
-    component: EditarAlumnoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
+    canActivate: [roleGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'alumnos/:id/productos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component').then(m => m.ProductosAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosCrear',
-    component: CrearAlumnoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/crear-alumno/crear-alumno.component').then(m => m.CrearAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'alumnosEliminar',
-    component: EliminarAlumnoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/eliminar-alumno/eliminar-alumno.component').then(m => m.EliminarAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposListar',
-    component: ListadoGruposComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-grupos/listado-grupos.component').then(m => m.ListadoGruposComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposCrear',
-    component: CrearGrupoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gruposEditar/:id',
-    component: EditarGrupoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-grupo/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'gestionarAlumnos/:id',
-    component: GestionarAlumnosComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'seleccionarAlumnos/:id',
-    component: SeleccionarAlumnosComponent,
-    canActivate: [roleGuard],
-  },
-  { path: 'gestionarAlumnos/:id', component: GestionarAlumnosComponent },
-  { path: 'gestionarTurnosAlumno/:alumnoId', component: GestionarTurnosAlumnoComponent },
-  {
-    path: 'turnosGrupo/:id',
-    component: TurnosGrupoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component').then(m => m.SeleccionarAlumnosComponent),
     canActivate: [roleGuard],
   },
   {
-    path: 'turnosListar',
-    component: ListadoTurnosComponent,
+    path: 'gestionarTurnosAlumno/:alumnoId',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'turnosCrear',
-    component: CrearTurnoComponent,
-    canActivate: [roleGuard],
-  },
-  {
-    path: 'seleccionarGrupo/:turnoId',
-    component: SeleccionarGrupoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'turnosEditar/:id',
-    component: EditarTurnoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-turno/editar-turno.component').then(m => m.EditarTurnoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosListar',
-    component: ListadoEventosComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-eventos/listado-eventos.component').then(m => m.ListadoEventosComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosCrear',
-    component: CrearEventoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/crear-evento/crear-evento.component').then(m => m.CrearEventoComponent),
     canActivate: [roleGuard],
   },
   {
     path: 'eventosEditar/:id',
-    component: EditarEventoComponent,
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-evento/editar-evento.component').then(m => m.EditarEventoComponent),
     canActivate: [roleGuard],
   },
+  {
+    path: 'productosListar',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-productos/listado-productos.component').then(m => m.ListadoProductosComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'productosCrear',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/crear-producto/crear-producto.component').then(m => m.CrearProductoComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'productosEditar/:id',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/editar-producto/editar-producto.component').then(m => m.EditarProductoComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'tesoreriaCobros',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'auditoriaSistema',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
+  },
+  {
+    path: 'convocatoriasListar',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'configuracion-sistema',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: '**',
+    loadComponent: () => import('./componentes/vistas/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
+  }
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

@@ -3,4 +3,5 @@ export interface Turno {
   diaSemana: string;
   horaInicio: string;
   horaFin: string;
+  tipoGrupo: string;
 }

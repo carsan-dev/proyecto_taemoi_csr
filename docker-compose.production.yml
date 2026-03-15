@@ -1,0 +1,120 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: taemoi-mysql-prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - taemoi-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./src-api
+      dockerfile: Dockerfile
+      args:
+        SPRING_PROFILE: production
+    container_name: taemoi-backend-prod
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
+      APP_BASE_URL: ${APP_BASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
+      APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
+    volumes:
+      # Option 1: Named volumes (commented out - not used)
+      # - app_imagenes:/var/www/app/imagenes
+      # - app_documentos:/var/www/app/documentos
+
+      # Option 2: Bind mounts (ACTIVE - serves files directly from host)
+      # Using absolute paths to match migration SQL file locations
+      # Read-write to allow file uploads
+      - /opt/taemoi/static_resources/imagenes:/var/www/app/imagenes
+      - /opt/taemoi/static_resources/documentos:/var/www/app/documentos
+    networks:
+      - taemoi-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/eventos || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s  # Increased from 90s - backend needs more time on first start
+
+  frontend:
+    build:
+      context: ./src-frontend
+      dockerfile: Dockerfile.production
+      args:
+        ENVIRONMENT: production
+    container_name: taemoi-frontend-prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - taemoi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Certbot for Let's Encrypt SSL certificates
+  certbot:
+    image: certbot/certbot:latest
+    container_name: taemoi-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - taemoi-network
+
+networks:
+  taemoi-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
+  # app_imagenes and app_documentos not needed - using bind mounts instead
+  # app_imagenes:
+  #   driver: local
+  # app_documentos:
+  #   driver: local
+  nginx_cache:
+    driver: local

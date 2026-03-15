@@ -1,0 +1,227 @@
+// Import shared admin styles
+@use '../../admin-shared-styles.scss' as *;
+@use '../../admin-mobile-forms.scss' as *;
+
+.admin-container {
+  padding-bottom: 3.5rem;
+}
+
+.config-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+
+  .section-description {
+    color: #666;
+    margin: 0.25rem 0 0 0;
+    font-size: 0.95rem;
+  }
+
+  .config-content {
+    padding: 1.5rem 0;
+  }
+}
+
+.info-box {
+  background-color: #e7f3ff;
+  border-left: 4px solid #0d6efd;
+  padding: 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+
+  strong {
+    color: #0d6efd;
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+
+  .btn {
+    padding: 0.75rem 2rem;
+    font-weight: 500;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Skeleton loader styles
+.skeleton-container {
+  padding: 2rem;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-title {
+  height: 40px;
+  width: 60%;
+}
+
+.skeleton-text {
+  height: 20px;
+  width: 80%;
+}
+
+.skeleton-input {
+  height: 60px;
+  width: 100%;
+  max-width: 400px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// === Gestión de roles ===
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.user-name {
+  font-weight: 600;
+}
+
+.email-text {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.roles-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  padding: 0.35rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  &.badge-user {
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+  }
+
+  &.badge-manager {
+    background: rgba(255, 193, 7, 0.16);
+    color: #b58100;
+  }
+
+  &.badge-admin {
+    background: rgba(220, 53, 69, 0.12);
+    color: #c1121f;
+  }
+}
+
+.roles-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .role-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    label {
+      margin: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 500;
+    }
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  .admin-btn.is-disabled {
+    opacity: 0.65;
+  }
+}
+
+.roles-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 260px;
+
+  i {
+    color: #6c757d;
+    font-size: 1.1rem;
+  }
+
+  .form-control {
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    border: 1px solid #dee2e6;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    padding-bottom: 2.5rem;
+  }
+
+  .info-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .roles-search {
+    width: 100%;
+  }
+}

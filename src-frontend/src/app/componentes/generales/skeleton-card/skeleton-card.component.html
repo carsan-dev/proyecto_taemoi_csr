@@ -1,0 +1,181 @@
+<!-- List View Skeleton -->
+@if (type === 'list') {
+  <div class="skeleton-list">
+    @for (item of items; track $index) {
+      <div class="skeleton-card">
+        <div class="skeleton-card-header">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-header-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-subtitle"></div>
+          </div>
+        </div>
+        <div class="skeleton-card-body">
+          <div class="skeleton-line skeleton-text"></div>
+          <div class="skeleton-line skeleton-text short"></div>
+        </div>
+        <div class="skeleton-card-footer">
+          <div class="skeleton-button"></div>
+          <div class="skeleton-button"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Grid View Skeleton -->
+@if (type === 'grid') {
+  <div class="skeleton-grid" [style.grid-template-columns]="'repeat(' + (columns ?? 1) + ', 1fr)'">
+    @for (item of items; track $index) {
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-card-body">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-text"></div>
+          <div class="skeleton-line skeleton-text short"></div>
+        </div>
+        <div class="skeleton-card-footer">
+          <div class="skeleton-button full"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Table View Skeleton -->
+@if (type === 'table') {
+  <div class="skeleton-table">
+    <div class="skeleton-table-header">
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+    </div>
+    @for (item of items; track $index) {
+      <div class="skeleton-table-row">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Tesoreria Skeleton (filters + summary + table) -->
+@if (type === 'tesoreria') {
+  <div class="skeleton-tesoreria">
+    <div class="skeleton-tesoreria-filters">
+      @for (item of [1, 2, 3, 4, 5]; track $index) {
+        <div class="skeleton-filter-item">
+          <div class="skeleton-filter-label"></div>
+          <div class="skeleton-filter-input"></div>
+        </div>
+      }
+    </div>
+
+    <div class="skeleton-tesoreria-summary">
+      @for (item of [1, 2, 3, 4]; track $index) {
+        <div class="skeleton-summary-card">
+          <div class="skeleton-summary-title"></div>
+          <div class="skeleton-summary-value"></div>
+          <div class="skeleton-summary-detail"></div>
+        </div>
+      }
+    </div>
+
+    <div class="skeleton-table skeleton-table-tesoreria">
+      <div class="skeleton-table-header">
+        @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+          <div class="skeleton-line"></div>
+        }
+      </div>
+      @for (item of items; track $index) {
+        <div class="skeleton-table-row">
+          @for (col of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+            <div class="skeleton-line"></div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Distribution Chart Skeleton (for sport distribution bars) -->
+@if (type === 'distribution') {
+  <div class="skeleton-distribution">
+    @for (item of items; track $index) {
+      <div class="skeleton-distribution-item">
+        <div class="skeleton-distribution-header">
+          <div class="skeleton-icon"></div>
+          <div class="skeleton-label"></div>
+          <div class="skeleton-count"></div>
+        </div>
+        <div class="skeleton-bar-container">
+          <div class="skeleton-bar" [style.width.%]="getBarWidth($index)"></div>
+        </div>
+        <div class="skeleton-percentage"></div>
+      </div>
+    }
+    <div class="skeleton-total"></div>
+  </div>
+}
+
+<!-- Events List Skeleton (for upcoming events) -->
+@if (type === 'events') {
+  <div class="skeleton-events">
+    @for (item of items; track $index) {
+      <div class="skeleton-event-item">
+        <div class="skeleton-event-date">
+          <div class="skeleton-day"></div>
+          <div class="skeleton-month"></div>
+        </div>
+        <div class="skeleton-event-info">
+          <div class="skeleton-event-title"></div>
+          <div class="skeleton-event-location"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Alerts Skeleton (for admin operational alerts) -->
+@if (type === 'alerts') {
+  <div class="skeleton-alerts-grid">
+    @for (item of items; track $index) {
+      <div class="skeleton-alert-card">
+        <div class="skeleton-alert-icon"></div>
+        <div class="skeleton-alert-content">
+          <div class="skeleton-alert-title"></div>
+          <div class="skeleton-alert-text"></div>
+          <div class="skeleton-alert-text short"></div>
+          <div class="skeleton-alert-action"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Masonry Events Skeleton (for eventos page) -->
+@if (type === 'masonry') {
+  <div class="skeleton-masonry" [style.columns]="columns">
+    @for (item of items; track $index) {
+      <div class="skeleton-event-card">
+        <div class="skeleton-event-image"></div>
+        <div class="skeleton-event-content">
+          <div class="skeleton-line skeleton-event-title-line"></div>
+          <div class="skeleton-line skeleton-event-desc-line"></div>
+          <div class="skeleton-line skeleton-event-desc-line short"></div>
+          <div class="skeleton-line skeleton-event-desc-line shorter"></div>
+          <div class="skeleton-event-divider"></div>
+          <div class="skeleton-event-action"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Image Skeleton (for media placeholders) -->
+@if (type === 'image') {
+  <div class="skeleton-image-only"></div>
+}

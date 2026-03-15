@@ -1,0 +1,820 @@
+// ========================================
+// ADMIN MOBILE FORMS & MANAGEMENT
+// ========================================
+// This file contains mobile-specific improvements for all
+// admin management forms (crear, editar, listado, etc.)
+
+// Import admin shared styles
+@use './admin-shared-styles.scss' as *;
+
+// ========================================
+// MOBILE FORM IMPROVEMENTS
+// ========================================
+
+@media (max-width: 767px) {
+  // Form container improvements
+  .admin-form-container,
+  .form-container {
+    padding: 1rem 0.75rem;
+
+    .admin-card {
+      padding: 1.25rem;
+      border-radius: 12px;
+    }
+  }
+
+  // Form sections
+  .admin-form-section,
+  .form-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 10px;
+
+    h3, h4 {
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  // Form fields - better spacing
+  .admin-form-field,
+  .form-field,
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: block;
+
+      i {
+        margin-right: 0.375rem;
+        font-size: 1rem;
+      }
+    }
+
+    // Input fields
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      font-size: 16px; // Prevents iOS zoom
+      border-radius: 10px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.3s ease;
+      -webkit-appearance: none;
+      appearance: none;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+      }
+
+      &::placeholder {
+        color: #999;
+        font-size: 0.9375rem;
+      }
+    }
+
+    // Textarea specific
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    // Select specific
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      background-clip: padding-box;
+      background-origin: padding-box;
+    }
+
+    select.admin-form-control.form-select {
+      background-position: right 0.85rem center;
+      background-size: 14px 10px;
+      padding-right: 2.75rem;
+      min-height: 52px;
+      line-height: 1.2;
+    }
+
+    // Checkboxes and radios
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 24px;
+      height: 24px;
+      margin-right: 0.75rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    // Checkbox/Radio labels
+    &.checkbox-field,
+    &.radio-field {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+
+      label {
+        margin-bottom: 0;
+        cursor: pointer;
+        font-size: 0.9375rem;
+      }
+    }
+
+    // Helper text
+    .form-help,
+    .help-text,
+    small {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.8125rem;
+      color: $text-muted;
+      line-height: 1.4;
+    }
+
+    // Error messages
+    .form-error,
+    .error-message,
+    .invalid-feedback {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: #dc3545;
+      font-weight: 500;
+    }
+  }
+
+  // File upload improvements
+  .admin-file-upload,
+  .file-upload-area {
+    padding: 2rem 1rem;
+    border-radius: 12px;
+    min-height: 180px;
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-text {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+      font-size: 0.875rem;
+    }
+
+    input[type="file"] {
+      font-size: 0.9375rem;
+    }
+  }
+
+  // Image preview
+  .image-preview-container,
+  .file-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .preview-actions {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      button {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+  }
+
+  // Button groups
+  .admin-form-button-group,
+  .button-group,
+  .form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #f0f0f0;
+
+    .admin-btn,
+    button {
+      width: 100%;
+      min-height: 52px;
+      justify-content: center;
+      font-size: 1rem;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+
+      i {
+        font-size: 1.125rem;
+      }
+    }
+
+    // Primary action first
+    .admin-btn-primary,
+    .btn-primary {
+      order: -1;
+    }
+  }
+
+  // Multi-column forms become single column
+  .row {
+    .col-md-6,
+    .col-lg-6,
+    .col-md-4,
+    .col-lg-4 {
+      width: 100%;
+      margin-bottom: 0;
+    }
+  }
+
+  // Date/Time pickers
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  // Number inputs with +/- buttons
+  input[type="number"] {
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
+
+  // Tags/Chips input
+  .tags-container,
+  .chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    min-height: 52px;
+
+    .tag,
+    .chip {
+      padding: 0.5rem 0.875rem;
+      font-size: 0.875rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      button {
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        min-height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+}
+
+// ========================================
+// LISTADO (LIST VIEW) IMPROVEMENTS
+// ========================================
+
+@media (max-width: 767px) {
+  // Filter bar improvements
+  .admin-filter-bar {
+    padding: 1rem;
+    border-radius: 12px;
+
+    .filter-row {
+      flex-direction: column;
+      gap: 0.75rem;
+
+      .filter-item {
+        width: 100%;
+        min-width: 100%;
+
+        input,
+        select {
+          width: 100%;
+          font-size: 16px;
+          padding: 0.875rem 1rem;
+        }
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+
+        button {
+          flex: 1;
+          min-height: 44px;
+        }
+      }
+    }
+  }
+
+  // Search bar
+  .search-bar,
+  .admin-search {
+    margin-bottom: 1rem;
+
+    input {
+      width: 100%;
+      font-size: 16px;
+      padding: 1rem 1rem 1rem 3rem;
+      border-radius: 10px;
+    }
+
+    i {
+      font-size: 1.25rem;
+      left: 1rem;
+    }
+  }
+
+  // Action bar with filters
+  .admin-action-bar {
+    .action-buttons {
+      .admin-btn {
+        span {
+          display: none; // Hide text, show only icons on very small screens
+        }
+
+        i {
+          margin: 0;
+          font-size: 1.25rem;
+        }
+      }
+    }
+  }
+
+  // Item cards (for list items)
+  .admin-item-card {
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+
+    .item-header {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 1rem;
+
+      .item-image,
+      .item-icon {
+        margin-bottom: 0.75rem;
+      }
+
+      .item-title {
+        font-size: 1.125rem;
+      }
+    }
+
+    .item-body {
+      .item-field {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        strong {
+          font-size: 0.8125rem;
+          color: $text-muted;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 0.25rem;
+        }
+
+        span {
+          font-size: 1rem;
+          color: $text-dark;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+
+    .item-footer {
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 2px solid #f0f0f0;
+
+      .admin-btn {
+        width: 100%;
+        min-height: 48px;
+      }
+    }
+  }
+
+  // Pagination
+  .pagination-container,
+  app-paginacion {
+    margin-top: 1.5rem;
+
+    .pagination {
+      justify-content: center;
+      gap: 0.375rem;
+
+      .page-item {
+        .page-link {
+          min-width: 44px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          font-size: 0.9375rem;
+        }
+      }
+
+      // Hide some page numbers on small screens
+      .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
+        display: none;
+      }
+    }
+  }
+}
+
+// ========================================
+// DETAIL VIEW IMPROVEMENTS
+// ========================================
+
+@media (max-width: 767px) {
+  // Profile/Detail header
+  .profile-header,
+  .detail-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1rem;
+
+    .profile-image,
+    .detail-image {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 1rem;
+    }
+
+    .profile-info,
+    .detail-info {
+      width: 100%;
+
+      .profile-name,
+      .detail-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .profile-meta,
+      .detail-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .meta-item {
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+
+  // Info cards in detail view
+  .info-card {
+    margin-bottom: 1rem;
+    border-radius: 12px;
+
+    .info-card-header {
+      padding: 1rem 1.25rem;
+
+      .info-card-title {
+        font-size: 1rem;
+
+        i {
+          font-size: 1.125rem;
+        }
+      }
+    }
+
+    .info-card-body {
+      padding: 1.25rem;
+
+      .info-row,
+      .info-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.375rem;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-size: 0.8125rem;
+          color: $text-muted;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+
+          i {
+            margin-right: 0.375rem;
+          }
+        }
+
+        .info-value {
+          font-size: 1rem;
+          color: $text-dark;
+
+          &.info-value-highlight {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: $primary-color;
+          }
+        }
+      }
+    }
+  }
+
+  // Tabs in detail view
+  .admin-tabs,
+  .detail-tabs {
+    .nav-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 2px solid #e0e0e0;
+      gap: 0;
+
+      .nav-item {
+        .nav-link {
+          white-space: nowrap;
+          padding: 1rem 1.25rem;
+          font-size: 0.9375rem;
+          min-height: 48px;
+          border-radius: 0;
+
+          i {
+            margin-right: 0.5rem;
+          }
+        }
+      }
+    }
+
+    .tab-content {
+      padding: 1.25rem 0;
+    }
+  }
+
+  // Lists within detail view (grupos, turnos, etc.)
+  .related-items-list {
+    .list-item {
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border-radius: 10px;
+
+      .list-item-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+
+        .list-item-icon {
+          width: 48px;
+          height: 48px;
+
+          i {
+            font-size: 1.5rem;
+          }
+        }
+
+        .list-item-info {
+          width: 100%;
+
+          .list-item-title {
+            font-size: 1rem;
+            margin-bottom: 0.375rem;
+          }
+
+          .list-item-meta {
+            font-size: 0.875rem;
+          }
+        }
+
+        .list-item-actions {
+          width: 100%;
+          display: flex;
+          gap: 0.5rem;
+
+          button {
+            flex: 1;
+            min-height: 44px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// MODAL IMPROVEMENTS
+// ========================================
+
+@media (max-width: 767px) {
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+
+    &.modal-lg,
+    &.modal-xl {
+      max-width: calc(100% - 1rem);
+    }
+  }
+
+  .modal-content {
+    border-radius: 12px;
+
+    .modal-header {
+      padding: 1.25rem 1rem;
+      flex-wrap: wrap;
+
+      .modal-title {
+        font-size: 1.125rem;
+        width: calc(100% - 40px);
+
+        i {
+          font-size: 1.25rem;
+        }
+      }
+
+      .close,
+      .btn-close {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+      }
+    }
+
+    .modal-body {
+      padding: 1.25rem 1rem;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+
+      // Forms in modals
+      .admin-form-field {
+        margin-bottom: 1rem;
+      }
+    }
+
+    .modal-footer {
+      padding: 1rem;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      button {
+        width: 100%;
+        min-height: 48px;
+        margin: 0;
+      }
+
+      .btn-primary,
+      .admin-btn-primary {
+        order: -1;
+      }
+    }
+  }
+}
+
+// ========================================
+// EXTRA SMALL DEVICES
+// ========================================
+
+@media (max-width: 575px) {
+  .admin-form-container {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .admin-form-field {
+    input,
+    select,
+    textarea {
+      padding: 0.875rem 1rem;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    label {
+      font-size: 0.875rem;
+    }
+  }
+
+  .admin-form-button-group {
+    .admin-btn {
+      min-height: 48px;
+      padding: 0.875rem 1.25rem;
+      font-size: 0.9375rem;
+    }
+  }
+
+  .admin-action-bar {
+    padding: 0.875rem;
+
+    h2 {
+      font-size: 1.125rem;
+    }
+
+    .action-buttons {
+      .admin-btn {
+        padding: 0.75rem;
+        min-width: 44px;
+        min-height: 44px;
+      }
+    }
+  }
+
+  .admin-item-card {
+    padding: 1rem;
+
+    .item-header {
+      .item-title {
+        font-size: 1rem;
+      }
+    }
+
+    .item-body {
+      .item-field {
+        padding: 0.625rem 0;
+
+        strong {
+          font-size: 0.75rem;
+        }
+
+        span {
+          font-size: 0.9375rem;
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// LANDSCAPE ORIENTATION
+// ========================================
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .modal-dialog {
+    margin: 0.25rem;
+    max-height: 95vh;
+  }
+
+  .modal-body {
+    max-height: calc(95vh - 140px);
+    padding: 1rem;
+  }
+
+  .admin-form-field {
+    margin-bottom: 0.875rem;
+  }
+
+  .admin-form-button-group {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+}
+
+// ========================================
+// ACCESSIBILITY
+// ========================================
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

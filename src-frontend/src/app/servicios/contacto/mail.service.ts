@@ -6,9 +6,9 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class MailService {
-  private apiUrl = environment.apiUrl + '/mail/enviar';
+  private readonly apiUrl = environment.apiUrl + '/mail/enviar';
 
-  constructor(private http: HttpClient) { }
+  constructor(private readonly http: HttpClient) { }
 
   enviarMail(emailData: any) {
     return this.http.post(this.apiUrl, emailData);

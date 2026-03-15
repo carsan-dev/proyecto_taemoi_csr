@@ -1,14 +1,292 @@
-<div class="container-fluid p-0">
-  <div class="row">
-    <div class="admin-container d-flex flex-column justify-content-center align-items-center text-center">
-      <h1 class="text-white mb-4">¡BIENVENIDO, {{ nombreUsuario }}!</h1>
-      <p class="text-white lead mb-5">Estamos felices de tenerte de vuelta</p>
-      <div class="admin-actions d-flex justify-content-center flex-wrap">
-        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/alumnosListar']">Gestionar Alumnos</button>
-        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/gruposListar']">Gestionar Grupos</button>
-        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/turnosListar']">Gestionar Turnos</button>
-        <button class="btn btn-primary mx-2 mb-3" [routerLink]="['/eventosListar']">Gestionar Eventos</button>
+<div class="admin-dashboard">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div class="welcome-text">
+        <h1><i class="bi bi-speedometer2"></i> Panel de Administración</h1>
+        <p>Bienvenido de nuevo{{ nombreUsuario ? ', ' + nombreUsuario : '' }}. Aquí tienes un resumen de tu escuela.</p>
       </div>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="refresh-btn"
+          (click)="actualizarDashboardAhora()"
+          [disabled]="dashboardCargando"
+          aria-label="Actualizar estadisticas del dashboard">
+          <i class="bi bi-arrow-clockwise" [class.spin]="dashboardCargando"></i>
+          <span>{{ dashboardCargando ? 'Actualizando...' : 'Actualizar ahora' }}</span>
+        </button>
+        <div class="header-date">
+          <i class="bi bi-calendar3"></i>
+          <span>{{ formatDate(fechaActual) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #alertasOperativasTemplate>
+    <div class="alerts-section">
+      <div class="section-title">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <h2>Alertas Operativas</h2>
+      </div>
+
+      @if (cargandoEstadisticas || cargandoEventos) {
+        <app-skeleton-card [type]="'alerts'" [count]="3"></app-skeleton-card>
+      } @else {
+        <div class="alerts-grid">
+          @for (alerta of alertasOperativas; track alerta.id) {
+            <a
+              [routerLink]="[alerta.ruta]"
+              [queryParams]="alerta.queryParams"
+              class="alert-card"
+              [ngClass]="alerta.tipo">
+              <div class="alert-icon">
+                <i [class]="alerta.icono"></i>
+              </div>
+              <div class="alert-content">
+                <h4>{{ alerta.titulo }}</h4>
+                <p>{{ alerta.descripcion }}</p>
+                <span class="alert-action">
+                  {{ alerta.accionTexto }} <i class="bi bi-arrow-right"></i>
+                </span>
+              </div>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  </ng-template>
+
+  @if (mostrarAlertasPrimero()) {
+    <ng-container [ngTemplateOutlet]="alertasOperativasTemplate"></ng-container>
+  }
+
+  <!-- Stats Cards Section -->
+  <div class="stats-section">
+    <div class="section-title">
+      <i class="bi bi-graph-up"></i>
+      <h2>Estadísticas Generales</h2>
+    </div>
+
+    @if (cargandoEstadisticas) {
+      <app-skeleton-card [type]="'grid'" [count]="4" [columns]="4"></app-skeleton-card>
+    } @else {
+      <div class="stats-grid">
+        <!-- Total Alumnos -->
+        <a [routerLink]="['/alumnosListar']" class="stat-card primary clickable">
+          <div class="stat-icon">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalAlumnos }}</span>
+            <span class="stat-label">Total Alumnos</span>
+          </div>
+          <div class="stat-detail">
+            <span class="detail-active">
+              <i class="bi bi-check-circle"></i> {{ stats.alumnosActivos }} activos
+            </span>
+            <span class="detail-inactive">
+              <i class="bi bi-pause-circle"></i> {{ stats.alumnosInactivos }} inactivos
+            </span>
+          </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
+
+        <!-- Grupos -->
+        <a [routerLink]="['/gruposListar']" class="stat-card success clickable">
+          <div class="stat-icon">
+            <i class="bi bi-collection-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalGrupos }}</span>
+            <span class="stat-label">Grupos</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-clock"></i> {{ stats.totalTurnos }} turnos
+            </span>
+          </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
+
+        <!-- Eventos -->
+        <a [routerLink]="['/eventosListar']" class="stat-card warning clickable">
+          <div class="stat-icon">
+            <i class="bi bi-calendar-event-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalEventos }}</span>
+            <span class="stat-label">Eventos</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-eye"></i> {{ stats.eventosVisibles }} visibles
+            </span>
+          </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
+
+        <!-- Alumnos Aptos -->
+        <a [routerLink]="['/alumnosListar']" [queryParams]="{aptoParaExamen: 'true'}" class="stat-card danger clickable">
+          <div class="stat-icon">
+            <i class="bi bi-award-fill"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.alumnosAptos }}</span>
+            <span class="stat-label">Aptos para Examen</span>
+          </div>
+          <div class="stat-detail single">
+            <span>
+              <i class="bi bi-trophy"></i> Listos para promover
+            </span>
+          </div>
+          <div class="card-link-indicator">
+            <i class="bi bi-arrow-right-circle"></i>
+          </div>
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- Distribution & Events Row -->
+  <div class="dashboard-row">
+    <!-- Sports Distribution -->
+    <div class="dashboard-card distribution-card">
+      <div class="card-header">
+        <i class="bi bi-pie-chart-fill"></i>
+        <h3>Distribución por Deporte</h3>
+      </div>
+      <div class="card-body">
+        @if (cargandoDistribucion) {
+          <app-skeleton-card [type]="'distribution'" [count]="4"></app-skeleton-card>
+        } @else if (getObjectKeys(stats.alumnosPorDeporte).length > 0) {
+          <div class="distribution-chart">
+            @for (deporte of getObjectKeys(stats.alumnosPorDeporte); track deporte) {
+              <div class="distribution-item">
+                <div class="distribution-header">
+                  <span class="distribution-icon">{{ getDeporteIcon(deporte) }}</span>
+                  <span class="distribution-name">{{ getDeporteLabel(deporte) }}</span>
+                  <span class="distribution-count">{{ stats.alumnosPorDeporte[deporte] }}</span>
+                </div>
+                <div class="distribution-bar-container">
+                  <div class="distribution-bar"
+                       [style.width.%]="getDeportePercentage(stats.alumnosPorDeporte[deporte])"
+                       [style.background]="getDeporteColor(deporte)">
+                  </div>
+                </div>
+                <span class="distribution-percentage">
+                  {{ getDeportePercentage(stats.alumnosPorDeporte[deporte]) | number:'1.0-0' }}%
+                </span>
+              </div>
+            }
+          </div>
+          <div class="distribution-total">
+            <span>Total inscripciones: <strong>{{ getTotalDeportes() }}</strong></span>
+          </div>
+        } @else {
+          <div class="no-data">
+            <i class="bi bi-inbox"></i>
+            <span>No hay datos disponibles</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Upcoming Events -->
+    <div class="dashboard-card events-card">
+      <div class="card-header">
+        <i class="bi bi-calendar-week-fill"></i>
+        <h3>Eventos Activos</h3>
+        <a [routerLink]="['/eventosListar']" class="card-action">
+          Ver todos <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        @if (cargandoEventos) {
+          <app-skeleton-card [type]="'events'" [count]="3"></app-skeleton-card>
+        } @else if (stats.proximosEventos.length > 0) {
+          <div class="events-list">
+            @for (evento of stats.proximosEventos; track evento.id) {
+              <div class="event-item">
+                <img class="event-thumbnail"
+                     [src]="getEventoMiniaturaUrl(evento)"
+                     [alt]="evento.titulo" loading="lazy">
+                <div class="event-info">
+                  <span class="event-title">{{ evento.titulo }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-data">
+            <i class="bi bi-calendar-x"></i>
+            <span>No hay eventos activos</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (!mostrarAlertasPrimero()) {
+    <ng-container [ngTemplateOutlet]="alertasOperativasTemplate"></ng-container>
+  }
+
+  <!-- Priority Operations -->
+  <div class="operations-section">
+    <div class="section-title">
+      <i class="bi bi-lightning-charge-fill"></i>
+      <h2>Operaciones Prioritarias</h2>
+    </div>
+    <div class="operations-grid">
+      @for (operacion of operacionesPrioritarias; track operacion.titulo) {
+        <a
+          [routerLink]="[operacion.ruta]"
+          [queryParams]="operacion.queryParams"
+          class="operation-card"
+          [style.--op-color]="operacion.color">
+          <div class="operation-icon">
+            <i [class]="operacion.icono"></i>
+          </div>
+          <div class="operation-content">
+            <h4>{{ operacion.titulo }}</h4>
+            <p>{{ operacion.descripcion }}</p>
+          </div>
+          <div class="operation-arrow">
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </a>
+      }
+    </div>
+  </div>
+
+  <!-- Quick Access Section -->
+  <div class="quick-access-section">
+    <div class="section-title">
+      <i class="bi bi-lightning-fill"></i>
+      <h2>Acceso Rápido</h2>
+    </div>
+    <div class="quick-access-grid">
+      @for (seccion of seccionesAdmin; track seccion.ruta) {
+        <a [routerLink]="[seccion.ruta]" class="quick-access-card" [style.--card-color]="seccion.color">
+          <div class="quick-icon">
+            <i [class]="seccion.icono"></i>
+          </div>
+          <div class="quick-content">
+            <h4>{{ seccion.titulo }}</h4>
+            <p>{{ seccion.descripcion }}</p>
+          </div>
+          <div class="quick-arrow">
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </a>
+      }
     </div>
   </div>
 </div>

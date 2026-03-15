@@ -1,76 +1,1587 @@
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: #ffffff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+// Import shared admin styles
+@use '../../../componentes/admin-shared-styles.scss' as *;
+@use '../../../componentes/admin-mobile-forms.scss' as *;
 
-  thead {
-    tr {
-      background-color: #007bff;
-      color: white;
-      text-align: left;
+// Component-specific styles
+// All main styles inherited from admin-shared-styles.scss
 
-      th {
-        padding: 15px;
-        font-size: 1rem;
-        font-weight: 500;
+// Avoid stretching cards to the tallest item in the row.
+.admin-cards-grid {
+  align-items: start;
+}
+
+.admin-item-card {
+  align-self: start;
+}
+
+// ========================================
+// VIEW TOGGLE BAR
+// ========================================
+
+.view-toggle-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: $text-light;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+  gap: 1rem;
+
+  .view-toggle-buttons {
+    display: flex;
+    gap: 0.5rem;
+    background: $background-light;
+    padding: 0.375rem;
+    border-radius: 10px;
+    border: 0;
+    margin: 0;
+    min-inline-size: 0;
+    min-width: 0;
+
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: $text-muted;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: $transition;
+
+      i {
+        font-size: 1.1rem;
+      }
+
+      &:hover {
+        background: rgba($primary-color, 0.05);
+        color: $primary-color;
+      }
+
+      &.active {
+        background: $primary-color;
+        color: $text-light;
+        border-color: $primary-color;
+        box-shadow: $shadow-sm;
       }
     }
   }
 
-  tbody {
-    tr {
-      transition: background-color 0.3s ease;
+  .results-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: $text-dark;
+    font-size: 0.95rem;
 
-      &:hover {
-        background-color: #f5f5f5;
-      }
+    i {
+      color: $primary-color;
+      font-size: 1.1rem;
+    }
+  }
+}
 
-      td {
-        padding: 15px;
-        border-bottom: 1px solid #dee2e6;
-        vertical-align: middle;
+// ========================================
+// TABLE VIEW
+// ========================================
+
+.table-wrapper {
+  background: $text-light;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    thead {
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+
+      th {
+        padding: 1rem 0.75rem;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        color: #ffffff; // Pure white for better contrast
 
         &:first-child {
+          padding-left: 1.5rem;
+        }
+
+        &:last-child {
+          padding-right: 1.5rem;
           text-align: center;
         }
 
-        .imagen-perfil-container {
-          .imagen-perfil {
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #ccc;
+        &.table-licencia-header {
+          text-align: center;
+        }
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        transition: $transition;
+
+        &:hover {
+          background: rgba($primary-color, 0.02);
+        }
+
+        &.inactive-row {
+          opacity: 0.6;
+          background: rgba($danger-color, 0.02);
+
+          &:hover {
+            background: rgba($danger-color, 0.04);
+          }
+        }
+
+        td {
+          padding: 0.875rem 0.75rem;
+          vertical-align: middle;
+          font-size: 0.9rem;
+
+          &:first-child {
+            padding-left: 1.5rem;
+          }
+
+          &:last-child {
+            padding-right: 1.5rem;
+          }
+
+          &.alumno-name {
+            font-weight: 600;
+            color: $text-dark;
           }
         }
       }
     }
   }
+
+  .table-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: linear-gradient(135deg, rgba($primary-color, 0.16), rgba($primary-color, 0.06));
+    border: 2px solid $background-light;
+    transition: $transition;
+
+    &:hover {
+      transform: scale(1.1);
+      border-color: $primary-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  .table-deportes-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .table-deportes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .deporte-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: rgba($primary-color, 0.12);
+    color: $primary-color;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .table-tarifa,
+  .table-antiguedad {
+    min-width: 140px;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .table-licencia {
+    min-width: 110px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .resumen-badge {
+      white-space: nowrap;
+    }
+  }
+
+  .deporte-badge-mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1.5px solid;
+    transition: $transition;
+    cursor: help;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+
+    &.taekwondo {
+      background: rgba($taekwondo-color, 0.15);
+      color: $taekwondo-color;
+      border-color: $taekwondo-color;
+    }
+
+    &.kickboxing {
+      background: rgba($kickboxing-color, 0.15);
+      color: $kickboxing-color;
+      border-color: $kickboxing-color;
+    }
+
+    &.pilates {
+      background: rgba($pilates-color, 0.15);
+      color: $pilates-color;
+      border-color: $pilates-color;
+    }
+
+    &.defensa_personal_femenina {
+      background: rgba($defensa-color, 0.15);
+      color: $defensa-color;
+      border-color: $defensa-color;
+    }
+  }
+
+  .badge-loading-small {
+    font-size: 0.7rem;
+    color: $text-muted;
+    font-style: italic;
+  }
+
+  .table-actions {
+    display: flex;
+    gap: 0.375rem;
+    justify-content: center;
+
+    .admin-btn {
+      min-width: unset;
+      padding: 0.5rem 0.75rem;
+
+      span {
+        display: none; // Hide text in table view, only show icons
+      }
+    }
+  }
 }
 
-.table-responsive {
-  overflow-x: auto;
+// ========================================
+// MULTI-SPORT BADGES
+// ========================================
+
+// Full-width field for deportes (stacks vertically)
+.item-field-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, rgba($primary-color, 0.04), rgba($primary-color, 0.01));
+  border-radius: 12px;
+  border: 1px solid rgba($primary-color, 0.08);
+  max-width: 100%;
+  overflow: hidden;
+
+  .deportes-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+
+    i {
+      font-size: 1.1rem;
+      color: $primary-color;
+    }
+
+    strong {
+      font-weight: 600;
+      color: $text-dark;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+  }
 }
 
-h2 {
-  font-size: 2rem;
-  margin-bottom: 20px;
+.resumen-card {
+  background: linear-gradient(135deg, rgba($primary-color, 0.03), rgba($primary-color, 0.01));
+  border-color: rgba($primary-color, 0.08);
 }
 
-input[type="text"] {
-  border-radius: 30px;
-  padding: 10px 20px;
-  border: 1px solid #ced4da;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.3s ease;
+.resumen-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 
-  &:focus {
-    border-color: #007bff;
-    outline: none;
+  i {
+    font-size: 1.1rem;
+    color: $primary-color;
+  }
+
+  strong {
+    font-weight: 600;
+    color: $text-dark;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  background: rgba($text-light, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.resumen-item-full {
+  grid-column: 1 / -1;
+}
+
+.resumen-label {
+  font-weight: 600;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  font-size: 0.65rem;
+}
+
+.resumen-value {
+  font-weight: 700;
+  color: $text-dark;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.resumen-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+
+  &.licencia-ok {
+    background: rgba($success-color, 0.15);
+    color: $success-color;
+    border-color: rgba($success-color, 0.3);
+  }
+
+  &.licencia-off {
+    background: rgba($danger-color, 0.15);
+    color: $danger-color;
+    border-color: rgba($danger-color, 0.3);
+  }
+
+  &.licencia-expired {
+    background: rgba($warning-color, 0.15);
+    color: $warning-color;
+    border-color: rgba($warning-color, 0.3);
+  }
+
+  &.licencia-none {
+    background: rgba($text-muted, 0.12);
+    color: $text-muted;
+    border-color: rgba($text-muted, 0.2);
+  }
+}
+
+.deportes-detalles {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.deportes-collapsible {
+  border: 1px dashed rgba($primary-color, 0.2);
+  border-radius: 10px;
+  background: rgba($text-light, 0.6);
+  overflow: hidden;
+}
+
+.deportes-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: $primary-dark;
+  font-size: 0.75rem;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  i {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+  }
+}
+
+.deportes-collapsible[open] .deportes-summary {
+  border-bottom: 1px dashed rgba($primary-color, 0.2);
+
+  i {
+    transform: rotate(180deg);
+  }
+}
+
+.deportes-collapsible .summary-open {
+  display: none;
+}
+
+.deportes-collapsible[open] .summary-closed {
+  display: none;
+}
+
+.deportes-collapsible[open] .summary-open {
+  display: inline;
+}
+
+.deportes-collapsible .summary-closed {
+  display: inline;
+}
+
+.deportes-collapsible .deportes-detalles {
+  padding: 0.6rem 0.75rem 0.75rem;
+}
+
+.deporte-detalle {
+  position: relative;
+  --header-line-color: #{rgba($primary-color, 0.35)};
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.02));
+  border: 1px solid rgba($primary-color, 0.12);
+  border-left: 4px solid $primary-color;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+
+  &.taekwondo {
+    --header-line-color: #{rgba($taekwondo-color, 0.4)};
+    border-color: rgba($taekwondo-color, 0.2);
+    border-left-color: $taekwondo-color;
+    background: linear-gradient(135deg, rgba($taekwondo-color, 0.12), rgba($taekwondo-color, 0.02));
+  }
+
+  &.kickboxing {
+    --header-line-color: #{rgba($kickboxing-color, 0.4)};
+    border-color: rgba($kickboxing-color, 0.2);
+    border-left-color: $kickboxing-color;
+    background: linear-gradient(135deg, rgba($kickboxing-color, 0.12), rgba($kickboxing-color, 0.02));
+  }
+
+  &.pilates {
+    --header-line-color: #{rgba($pilates-color, 0.4)};
+    border-color: rgba($pilates-color, 0.2);
+    border-left-color: $pilates-color;
+    background: linear-gradient(135deg, rgba($pilates-color, 0.12), rgba($pilates-color, 0.02));
+  }
+
+  &.defensa_personal_femenina {
+    --header-line-color: #{rgba($defensa-color, 0.4)};
+    border-color: rgba($defensa-color, 0.2);
+    border-left-color: $defensa-color;
+    background: linear-gradient(135deg, rgba($defensa-color, 0.12), rgba($defensa-color, 0.02));
+  }
+}
+
+.deporte-detalle-header {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-right: 2.4rem;
+  min-width: 0;
+}
+
+.deporte-detalle-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: $text-dark;
+}
+
+.deporte-detalle-grado {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-top: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-top: 1px solid var(--header-line-color);
+}
+
+.deporte-detalle-grado .grado-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.deporte-detalle-grado .grado-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deporte-detalle-grado .grado-suffix {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.deporte-detalle-grado .grado-fecha {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+
+.deporte-principal-btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba($warning-color, 0.4);
+  background: $text-light;
+  color: $warning-color;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: $transition;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &.active,
+  &:disabled {
+    background: rgba($warning-color, 0.15);
+    color: $warning-color;
+    cursor: default;
+    transform: none;
+  }
+}
+
+.deporte-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.deporte-detalle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: rgba($text-light, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.detalle-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.7rem;
+}
+
+.detalle-valor {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  color: $text-dark;
+  text-align: right;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+// Loading state
+.badge-loading {
+  font-size: 0.85rem;
+  color: $text-muted;
+  font-style: italic;
+}
+
+.badge-empty {
+  font-size: 0.85rem;
+  color: $text-muted;
+  font-style: italic;
+}
+
+// ========================================
+// UNIFIED CONTROLS BAR
+// ========================================
+
+.unified-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  background: $text-light;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+  margin-bottom: 1.5rem;
+
+  .controls-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    &.filters-section {
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    &.results-section {
+      flex: 0 0 auto;
+    }
+
+    &.view-section {
+      flex: 0 0 auto;
+    }
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center; // This centers label and input vertically
+    gap: 0.625rem;
+
+    .filter-label {
+      display: inline-flex; // Use inline-flex instead of flex
+      align-items: center; // Center icon and text within label
+      gap: 0.375rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: $text-dark;
+      white-space: nowrap;
+      min-width: 90px; // Ensure consistent label width
+      line-height: 1; // Prevent extra line-height spacing
+
+      i {
+        color: $primary-color;
+        font-size: 1.05rem;
+        line-height: 1;
+      }
+    }
+
+    .filter-input,
+    .filter-select {
+      width: 220px; // Fixed width for better alignment
+      height: 44px; // Consistent height
+      padding: 0 0.875rem; // Vertical padding handled by height
+      border: 2px solid $background-light;
+      border-radius: 8px;
+      background: $text-light;
+      font-size: 0.9rem;
+      color: $text-dark;
+      font-family: inherit;
+      line-height: 44px; // Match height for vertical centering
+      transition: $transition;
+      cursor: pointer;
+      box-sizing: border-box; // Ensure height includes border
+      vertical-align: middle;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+
+      &:hover {
+        border-color: rgba($primary-color, 0.5);
+      }
+    }
+
+    .filter-select {
+      appearance: none; // Remove default arrow
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 14px 14px;
+      padding-right: 2.5rem; // Space for custom arrow
+
+      &:focus {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      }
+    }
+
+    .filter-input {
+      cursor: text;
+    }
+
+    .filter-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      height: 44px; // Match filter inputs height
+      padding: 0 1rem;
+      border: 2px solid $background-light;
+      border-radius: 8px;
+      background: $text-light;
+      color: $text-muted;
+      font-weight: 500;
+      font-size: 0.9rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: $transition;
+      white-space: nowrap;
+      box-sizing: border-box;
+
+      i {
+        font-size: 1.05rem;
+        line-height: 1;
+      }
+
+      &:hover {
+        background: rgba($primary-color, 0.05);
+        border-color: $primary-color;
+        color: $primary-color;
+      }
+
+      &.active {
+        background: rgba($danger-color, 0.1);
+        border-color: $danger-color;
+        color: $danger-color;
+
+        &:hover {
+          background: rgba($danger-color, 0.15);
+        }
+      }
+    }
+  }
+
+  .results-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: $text-dark;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+    background: rgba($primary-color, 0.05);
+    border-radius: 8px;
+
+    i {
+      color: $primary-color;
+      font-size: 1.1rem;
+    }
+
+    strong {
+      color: $primary-color;
+    }
+  }
+
+  .view-toggle-buttons {
+    display: flex;
+    gap: 0.5rem;
+    background: $background-light;
+    padding: 0.375rem;
+    border-radius: 10px;
+    border: 0;
+    margin: 0;
+    min-inline-size: 0;
+    min-width: 0;
+
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: $text-muted;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: $transition;
+
+      i {
+        font-size: 1.1rem;
+      }
+
+      &:hover {
+        background: rgba($primary-color, 0.05);
+        color: $primary-color;
+      }
+
+      &.active {
+        background: $primary-color;
+        color: $text-light;
+        border-color: $primary-color;
+        box-shadow: $shadow-sm;
+      }
+    }
+  }
+}
+
+// ========================================
+// GESTION PANELS
+// ========================================
+
+.gestion-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 2px solid rgba($text-muted, 0.12);
+  background: $text-light;
+  box-shadow: $shadow-sm;
+}
+
+.gestion-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba($primary-color, 0.1);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  i {
+    font-size: 1.6rem;
+    color: $primary-color;
+    background: rgba($primary-color, 0.12);
+    padding: 0.6rem;
+    border-radius: 12px;
+  }
+}
+
+.panel-text {
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: $text-muted;
+  }
+}
+
+.panel-tag {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba($primary-color, 0.12);
+  color: $primary-color;
+  border: 1px solid rgba($primary-color, 0.3);
+}
+
+.gestion-panel-mensualidades {
+  border-color: rgba($success-color, 0.35);
+  border-left: 4px solid $success-color;
+  background: linear-gradient(135deg, rgba($success-color, 0.08), rgba($success-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($success-color, 0.2);
+  }
+
+  .panel-title i {
+    color: $success-color;
+    background: rgba($success-color, 0.15);
+  }
+
+  .panel-tag {
+    background: rgba($success-color, 0.15);
+    color: $success-color;
+    border-color: rgba($success-color, 0.35);
+  }
+}
+
+.gestion-panel-licencias {
+  border-color: rgba($primary-color, 0.35);
+  border-left: 4px solid $primary-color;
+  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($primary-color, 0.2);
+  }
+}
+
+// ========================================
+// TABS (LICENCIAS + MENSUALIDADES)
+// ========================================
+
+.licencias-tabs,
+.mensualidades-tabs {
+  margin-top: 1rem;
+
+  .tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: $background-light;
+    border-radius: 12px;
+    box-shadow: $shadow-sm;
+  }
+
+  .tab-item {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.85rem 1.25rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: $text-light;
+    color: $text-dark;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: $transition;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+      background: rgba($primary-color, 0.05);
+      border-color: rgba($primary-color, 0.3);
+      color: $primary-color;
+    }
+
+    &.active {
+      background: $primary-color;
+      color: $text-light;
+      border-color: $primary-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  .tab-content {
+    margin-top: 1rem;
+  }
+}
+
+// ========================================
+// LISTADO ASISTENCIA
+// ========================================
+
+.dias-semana-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dias-semana-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+  min-width: 0;
+
+  legend {
+    padding: 0;
+  }
+}
+
+.mensualidades-tabs {
+  .tab-item {
+    &:hover {
+      background: rgba($success-color, 0.08);
+      border-color: rgba($success-color, 0.35);
+      color: $success-color;
+    }
+
+    &.active {
+      background: $success-color;
+      color: $text-light;
+      border-color: $success-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+.dia-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid $background-light;
+  background: $text-light;
+  color: $text-muted;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: $transition;
+  user-select: none;
+
+  &:hover {
+    border-color: rgba($primary-color, 0.6);
+    color: $primary-color;
+  }
+
+  &.active {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+    box-shadow: $shadow-sm;
+  }
+
+  &:focus-within {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+}
+
+.dia-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+@media (min-width: 1200px) {
+  .dias-semana-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+// ========================================
+// COLLAPSIBLE SECTIONS
+// ========================================
+
+.collapsible-section {
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  background: $text-light;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  border: 2px solid $background-light;
+  transition: $transition;
+
+  &[open] {
+    border-color: $primary-color;
+
+    .section-summary {
+      background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+      border-bottom: 2px solid rgba($primary-color, 0.2);
+
+      .chevron-icon {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .section-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: $text-dark;
+    background: rgba($background-light, 0.5);
+    transition: $transition;
+    user-select: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    i:first-child {
+      font-size: 1.3rem;
+      color: $primary-color;
+    }
+
+    span {
+      flex: 1;
+    }
+
+    .chevron-icon {
+      font-size: 1.2rem;
+      color: $text-muted;
+      transition: transform 0.3s ease;
+      margin-left: auto;
+    }
+
+    &:hover {
+      background: rgba($primary-color, 0.08);
+
+      .chevron-icon {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .section-content {
+    padding: 1.5rem;
+    animation: slideDown 0.3s ease;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ========================================
+// RESPONSIVE STYLES
+// ========================================
+@media (max-width: 992px) {
+  .unified-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+
+    .controls-section {
+      &.filters-section {
+        flex-direction: column;
+        align-items: stretch;
+
+        .filter-group {
+          flex-direction: column;
+          align-items: stretch;
+
+          .filter-label {
+            justify-content: flex-start;
+          }
+
+          .filter-input,
+          .filter-select {
+            width: 100%;
+          }
+        }
+      }
+
+      &.results-section,
+      &.view-section {
+        justify-content: center;
+      }
+    }
+  }
+
+  .collapsible-section {
+    .section-summary {
+      padding: 1rem 1.25rem;
+      font-size: 1rem;
+    }
+
+    .section-content {
+      padding: 1.25rem;
+    }
+  }
+
+  .view-toggle-bar {
+    flex-direction: column;
+    align-items: stretch;
+
+    .view-toggle-buttons {
+      justify-content: center;
+
+      .view-toggle-btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
+    .results-count {
+      justify-content: center;
+    }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    .admin-table {
+      min-width: 900px;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+
+  .gestion-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel-tag {
+    align-self: flex-start;
+  }
+
+  .licencias-tabs,
+  .mensualidades-tabs {
+    .tabs-nav {
+      flex-direction: column;
+    }
+
+    .tab-item {
+      width: 100%;
+    }
+  }
+
+  .unified-controls-bar {
+    padding: 1rem;
+
+    .filter-group {
+      .filter-label {
+        font-size: 0.85rem;
+        min-width: 80px;
+
+        i {
+          font-size: 0.95rem;
+        }
+      }
+
+      .filter-input,
+      .filter-select {
+        height: 40px; // Smaller height for mobile
+        line-height: 40px;
+        font-size: 0.85rem;
+        padding: 0 0.75rem;
+      }
+
+      .filter-select {
+        background-size: 12px 12px;
+        background-position: right 0.625rem center;
+        padding-right: 2.25rem;
+      }
+
+      .filter-toggle-btn {
+        height: 40px; // Match mobile height
+        padding: 0 0.875rem;
+        font-size: 0.85rem;
+
+        i {
+          font-size: 0.95rem;
+        }
+
+        span {
+          display: none; // Hide text on mobile, only show icons
+        }
+    }
+  }
+
+  .dias-semana-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dia-chip {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .results-count {
+    font-size: 0.85rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+    .view-toggle-buttons {
+      .view-toggle-btn {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.85rem;
+
+        span {
+          display: none; // Hide text on mobile, only show icons
+        }
+      }
+    }
+  }
+
+  .collapsible-section {
+    .section-summary {
+      padding: 0.875rem 1rem;
+      font-size: 0.95rem;
+
+      i:first-child {
+        font-size: 1.1rem;
+      }
+
+      .chevron-icon {
+        font-size: 1rem;
+      }
+    }
+
+    .section-content {
+      padding: 1rem;
+    }
+  }
+
+  .view-toggle-bar {
+    padding: 0.75rem;
+
+    .view-toggle-buttons {
+      .view-toggle-btn {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.85rem;
+
+        span {
+          display: none; // Hide text on mobile, only show icons
+        }
+      }
+    }
+
+    .results-count {
+      font-size: 0.85rem;
+    }
+  }
+
+  .table-wrapper {
+    .admin-table {
+      font-size: 0.8rem;
+
+      thead th,
+      tbody td {
+        padding: 0.625rem 0.5rem;
+      }
+
+      .table-avatar {
+        width: 32px;
+        height: 32px;
+      }
+    }
+  }
+
+  .admin-item-card {
+    padding: 0.875rem;
+    gap: 0.75rem;
+
+    .item-header {
+      flex-direction: row;
+      text-align: left;
+      gap: 0.75rem;
+      padding-bottom: 0.75rem;
+
+      .item-image {
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+      }
+
+      .item-title {
+        h4 {
+          font-size: 1rem;
+          margin-bottom: 0.125rem;
+        }
+
+        p {
+          font-size: 0.8125rem;
+          margin: 0;
+        }
+      }
+    }
+
+    .item-body {
+      gap: 0.5rem;
+
+      .item-field {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0;
+
+        i {
+          font-size: 0.875rem;
+          min-width: 16px;
+        }
+
+        strong {
+          min-width: auto;
+          font-size: 0.8125rem;
+          margin-right: 0.25rem;
+        }
+
+        span {
+          font-size: 0.8125rem;
+        }
+      }
+
+      // Mobile-responsive deportes badges
+      .item-field-full {
+        padding: 0.65rem;
+
+        .deportes-header {
+          strong {
+            font-size: 0.8125rem;
+          }
+
+          i {
+            font-size: 1rem;
+          }
+        }
+
+        .resumen-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .resumen-item {
+          font-size: 0.72rem;
+          padding: 0.35rem 0.45rem;
+        }
+
+        .resumen-label {
+          font-size: 0.6rem;
+        }
+
+        .resumen-badge {
+          font-size: 0.6rem;
+        }
+
+        .deportes-detalles {
+          gap: 0.6rem;
+
+          .deporte-detalle {
+            padding: 0.6rem;
+            gap: 0.4rem;
+          }
+
+          .deporte-detalle-name {
+            font-size: 0.75rem;
+          }
+
+          .deporte-detalle-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .deporte-detalle-item {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.5rem;
+          }
+        }
+
+        .deportes-summary {
+          font-size: 0.7rem;
+          padding: 0.45rem 0.6rem;
+        }
+      }
+    }
+
+    .item-footer {
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+
+      .admin-btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        min-height: 40px;
+
+        i {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+
+  // Compact grid for mobile
+  .admin-cards-grid {
+    gap: 0.75rem;
   }
 }

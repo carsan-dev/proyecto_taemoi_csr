@@ -1,0 +1,31 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Restablecer contraseña</h1>
+      <p>Introduce tu correo electrónico y te enviaremos un enlace para cambiarla.</p>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="enviarSolicitud()">
+      <label for="email">Correo electrónico</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        [(ngModel)]="email"
+        placeholder="tu@email.com"
+        required
+        autocomplete="username">
+      <button type="submit" [disabled]="enviando">
+        {{ enviando ? 'Enviando...' : 'Enviar enlace' }}
+      </button>
+    </form>
+
+    <div class="auth-hint">
+      Si tu cuenta usa Google, inicia sesión con el botón de Google.
+    </div>
+
+    <div class="auth-footer">
+      <button type="button" class="link-button" (click)="volverAlLogin()">Volver al login</button>
+    </div>
+  </div>
+</div>

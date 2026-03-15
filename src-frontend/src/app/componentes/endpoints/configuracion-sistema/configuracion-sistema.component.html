@@ -1,0 +1,228 @@
+<div class="container-fluid admin-container">
+  <div class="row">
+    <div class="col-12">
+      <div class="admin-header">
+        <h1 class="admin-title">Configuración del Sistema</h1>
+        <p class="admin-subtitle">Ajusta parámetros globales de la aplicación</p>
+      </div>
+      @if (!cargando) {
+      <div class="admin-card">
+        <div class="config-section">
+          <div class="section-header">
+            <i class="bi bi-sliders fs-3 text-primary me-3"></i>
+            <div>
+              <h3 class="section-title">Límite de Alumnos por Turno</h3>
+              <p class="section-description">Define el número máximo de alumnos permitidos en cada turno/horario</p>
+            </div>
+          </div>
+
+          <div class="config-content">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="limiteTurno" class="form-label">Límite de alumnos:</label>
+                  <input
+                    type="number"
+                    id="limiteTurno"
+                    class="form-control form-control-lg"
+                    [(ngModel)]="limiteTurno"
+                    min="1"
+                    max="100"
+                  />
+                  <small class="form-text text-muted">
+                    Este valor determina cuándo un turno se considera "lleno" o con "pocas plazas"
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-box">
+                  <i class="bi bi-info-circle-fill text-info fs-4 me-2"></i>
+                  <div>
+                    <strong>Valor actual:</strong> {{ limiteTurnoOriginal }} alumnos<br />
+                    <strong>Nuevo valor:</strong> {{ limiteTurno }} alumnos
+                    @if (hayCambios()) {
+                    <span class="badge bg-warning ms-2">Modificado</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="button-group mt-4">
+              <button
+                class="btn btn-primary btn-lg"
+                (click)="guardarConfiguracion()"
+                [disabled]="!hayCambios()"
+              >
+                <i class="bi bi-check-circle me-2"></i>
+                Guardar cambios
+              </button>
+              <button
+                class="btn btn-secondary btn-lg"
+                (click)="restaurarValor()"
+                [disabled]="!hayCambios()"
+              >
+                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                Restaurar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-4">
+          <i class="bi bi-lightbulb-fill me-2"></i>
+          <strong>Información:</strong> Los cambios en esta configuración afectarán inmediatamente a la visualización
+          de disponibilidad en la página de horarios públicos.
+        </div>
+      </div>
+      }
+      @if (cargando) {
+      <div class="skeleton-container">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-input"></div>
+      </div>
+      }
+
+      <!-- Gestión de Roles -->
+      <div class="admin-card admin-card-large mt-4">
+        <div class="info-card-header d-flex align-items-center justify-content-between">
+          <div>
+            <h5 class="info-card-title mb-0">
+              <i class="bi bi-shield-check"></i>
+              Gestión de Roles
+            </h5>
+            <p class="mb-0 text-muted">Administra los permisos y roles de los usuarios del sistema</p>
+          </div>
+          <div class="roles-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar por nombre o correo"
+              [(ngModel)]="filtroUsuarios"
+              (ngModelChange)="aplicarFiltroUsuarios()"
+              autocomplete="off" />
+          </div>
+        </div>
+        @if (cargandoRoles) {
+        <div class="p-3">
+          <div class="skeleton-line mb-2" style="height: 20px; width: 60%;"></div>
+          <div class="skeleton-line mb-2" style="height: 20px; width: 80%;"></div>
+          <div class="skeleton-line mb-2" style="height: 20px; width: 70%;"></div>
+        </div>
+        }
+        @else{
+        <div>
+          @if (usuarios.length === 0) {
+          <div class="empty-state">
+            <i class="bi bi-people"></i>
+            <p>No hay usuarios registrados en el sistema</p>
+          </div>
+          } @else {
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Roles actuales</th>
+                  <th class="text-center">Asignar roles</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (usuario of usuariosPaginados; track usuario.id) {
+                <tr>
+                  <td>
+                    <div class="user-info">
+                      <div class="user-avatar">
+                        {{ usuario.nombre.charAt(0) }}{{ usuario.apellidos.charAt(0) }}
+                      </div>
+                      <div class="user-details">
+                        <span class="user-name">{{ usuario.nombre }} {{ usuario.apellidos }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="email-text">{{ usuario.email }}</span>
+                  </td>
+                  <td>
+                    <div class="roles-badges">
+                      @for (role of getCurrentRoles(usuario); track role) {
+                      <span class="role-badge" [ngClass]="getRoleBadgeClass(role)">
+                        {{ getRoleDisplayName(role) }}
+                      </span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <div class="roles-checkboxes">
+                      <div class="role-checkbox-item">
+                        <input type="checkbox" [id]="'user-' + usuario.id"
+                          [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_USER"
+                          (ngModelChange)="onRoleChange(usuario.id, 'ROLE_USER')" />
+                        <label [for]="'user-' + usuario.id">
+                          <i class="bi bi-person"></i>
+                          Usuario
+                        </label>
+                      </div>
+                      <div class="role-checkbox-item">
+                        <input type="checkbox" [id]="'manager-' + usuario.id"
+                          [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_MANAGER"
+                          (ngModelChange)="onRoleChange(usuario.id, 'ROLE_MANAGER')" />
+                        <label [for]="'manager-' + usuario.id">
+                          <i class="bi bi-briefcase"></i>
+                          Manager
+                        </label>
+                      </div>
+                      <div class="role-checkbox-item">
+                        <input type="checkbox" [id]="'admin-' + usuario.id"
+                          [(ngModel)]="rolesSeleccionados.get(usuario.id)!.ROLE_ADMIN"
+                          (ngModelChange)="onRoleChange(usuario.id, 'ROLE_ADMIN')" />
+                        <label [for]="'admin-' + usuario.id">
+                          <i class="bi bi-shield-fill-check"></i>
+                          Admin
+                        </label>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="action-buttons">
+                      <button type="button" class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
+                        [disabled]="!hasChanges(usuario)">
+                        <i class="bi bi-save"></i>
+                        <span>Guardar</span>
+                      </button>
+                      <button type="button" class="admin-btn admin-btn-outline admin-btn-sm"
+                        [class.is-disabled]="esCuentaGoogle(usuario)"
+                        (click)="resetearContrasena(usuario)"
+                        [title]="esCuentaGoogle(usuario) ? 'Cuenta Google: no permite restablecer contraseña' : 'Restablecer contraseña'">
+                        <i class="bi bi-key"></i>
+                        <span>Restablecer</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (totalPaginasUsuarios > 1) {
+          <app-paginacion
+            [paginaActual]="paginaActualUsuarios"
+            [totalPaginas]="totalPaginasUsuarios"
+            [tamanoPagina]="tamanoPaginaUsuarios"
+            [deshabilitado]="cargandoRoles"
+            (pageChange)="cambiarPaginaUsuarios($event)"
+            class="mt-4">
+          </app-paginacion>
+          }
+          }
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

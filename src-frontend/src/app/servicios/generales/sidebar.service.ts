@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject } from 'rxjs/internal/Subject';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SidebarService {
-  private alternarSubject = new Subject<void>();
+  private readonly alternarSubject = new Subject<void>();
 
   alternarSidebar() {
     this.alternarSubject.next();

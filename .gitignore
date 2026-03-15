@@ -1,0 +1,79 @@
+# TaeMoi Project .gitignore
+
+# Environment files
+.env
+.env.local
+.env.production
+*.env
+
+# Sensitive data
+certbot/conf/
+certbot/www/
+backups/
+*.tar.gz
+*.mdb
+static_resources/documentos/Documentos_Alumnos_Moiskimdo/*
+static_resources/imagenes/alumnos/*
+static_resources/documentos/Materiales_Examen/**
+!static_resources/documentos/Materiales_Examen/
+!static_resources/documentos/Materiales_Examen/**/
+!static_resources/documentos/Materiales_Examen/README.md
+!static_resources/documentos/Materiales_Examen/**/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker volumes (local development)
+mysql/data/
+
+# Backend (Spring Boot)
+src-api/target/
+src-api/.mvn/
+src-api/mvnw
+src-api/mvnw.cmd
+src-api/.settings/
+src-api/.classpath
+src-api/.project
+src-api/.factorypath
+src-api/bin/
+
+# Frontend (Angular)
+src-frontend/node_modules/
+src-frontend/dist/
+src-frontend/.angular/
+src-frontend/.vscode/
+src-frontend/*.log
+
+# Build artifacts
+*.class
+*.jar
+!src-api/.mvn/wrapper/maven-wrapper.jar
+*.war
+*.ear
+*.zip
+*.nar
+
+# Test coverage
+coverage/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+
+# Local notes and lock files no longer tracked
+/Utils.txt
+/package-lock.json
+/src-frontend/package-lock.json

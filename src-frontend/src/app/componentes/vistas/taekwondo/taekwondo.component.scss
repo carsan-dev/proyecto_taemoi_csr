@@ -1,0 +1,1501 @@
+@use 'sass:color';
+
+// ========================================
+// VARIABLES
+// ========================================
+$taekwondo-color: #0D47A1;
+$taekwondo-hover: #1976D2;
+$text-light: #ffffff;
+$text-dark: #212529;
+$text-muted: #6c757d;
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$hero-offset: clamp(100px, 9vw, 140px);
+$cta-spacing: clamp(1rem, 3vw, 2rem);
+
+// ========================================
+// MAIN CONTENT
+// ========================================
+.main-content {
+  background: #f8f9fa;
+}
+
+// ========================================
+// HERO SECTION
+// ========================================
+.hero-container {
+  position: relative;
+  height: 500px;
+  margin-top: $hero-offset;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(120deg, rgba($taekwondo-color, 0.65), rgba(0, 0, 0, 0.2)),
+    url("../../../../assets/media/taekwondo_banner.webp");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply;
+
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba($taekwondo-color, 0.35), rgba(0, 0, 0, 0.6));
+    z-index: 1;
+  }
+
+  .hero-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2;
+    width: 90%;
+    max-width: 1000px;
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.75rem 1.5rem;
+      border-radius: 50px;
+      color: $text-light;
+      margin-bottom: 2rem;
+      animation: heroBadgePop 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 100ms;
+
+      i {
+        font-size: 1.3rem;
+        color: #FFD700;
+      }
+
+      span {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+    }
+
+    .hero-text {
+      .hero-title {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 700;
+        color: $text-light;
+        margin: 0;
+        text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
+        letter-spacing: 2px;
+        line-height: 1.1;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 200ms;
+      }
+
+      .hero-subtitle {
+        font-size: clamp(1.1rem, 3vw, 1.5rem);
+        font-weight: 700;
+        color: $text-light;
+        margin: 0.5rem 0 1.5rem;
+        text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
+        letter-spacing: 1px;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 300ms;
+      }
+
+      .hero-description {
+        font-size: 1rem;
+        color: rgba($text-light, 0.95);
+        margin: 0;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        font-weight: 400;
+        animation: heroTextReveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 400ms;
+      }
+    }
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0;
+    animation: scrollIndicatorReveal 600ms ease-out forwards, bounce 2s infinite;
+    animation-delay: 600ms, 1200ms;
+
+    i {
+      font-size: 2.5rem;
+      color: $text-light;
+      opacity: 0.7;
+    }
+  }
+}
+
+// ========================================
+// INFO SECTIONS
+// ========================================
+.info-divs-section {
+  padding: 5rem 0;
+  background: #f8f9fa;
+
+  .info-div {
+    margin-bottom: 5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-card {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+
+      // Scroll reveal animation
+      &.info-card--reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+          transform 650ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: transform, opacity;
+
+        &.is-visible {
+          opacity: 1;
+          transform: none;
+          will-change: auto;
+        }
+
+        &.no-animation {
+          transition: none;
+        }
+
+        &.is-visible .card-content::after {
+          animation: infoCardSheen 800ms 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+      }
+
+      .card-content {
+        position: relative;
+
+        // Sheen effect optimizado con transform (GPU accelerated)
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.35),
+            transparent
+          );
+          pointer-events: none;
+          z-index: 2;
+          border-radius: 25px;
+          transform: translateX(-150%);
+          will-change: transform;
+        }
+        background: $text-light;
+        border-radius: 25px;
+        overflow: hidden;
+        box-shadow: $shadow-lg;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        transition: $transition;
+        animation: fadeInUp 0.6s ease;
+
+        &:hover {
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+          transform: translateY(-5px);
+        }
+
+        &.reverse {
+          .text-content {
+            order: 2;
+          }
+
+          .img-content {
+            order: 1;
+          }
+        }
+
+        .text-content {
+          padding: 4rem 3rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+
+          .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+
+            .section-icon {
+              font-size: 3rem;
+              color: $taekwondo-color;
+              background: linear-gradient(135deg, rgba($taekwondo-color, 0.1), rgba($taekwondo-color, 0.05));
+              padding: 1rem;
+              border-radius: 15px;
+            }
+
+            .section-title {
+              font-size: 2rem;
+              font-weight: 700;
+              color: $text-dark;
+              margin: 0;
+              line-height: 1.2;
+            }
+          }
+
+          .section-description {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: $text-muted;
+            margin-bottom: 1.5rem;
+
+            &:last-of-type {
+              margin-bottom: 2rem;
+            }
+          }
+
+          .features-list {
+            margin-bottom: 0;
+
+            .feature-item {
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              padding: 0.75rem 0;
+
+              i {
+                font-size: 1.5rem;
+                color: #4caf50;
+                flex-shrink: 0;
+              }
+
+              span {
+                font-size: 1rem;
+                color: $text-dark;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+
+        .img-content {
+          position: relative;
+          overflow: hidden;
+
+          .image-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              display: block;
+              filter: grayscale(100%);
+              transition: all 0.8s ease;
+              opacity: 1;
+              transform: scale(1);
+
+              &.fade-in {
+                opacity: 1;
+                transform: scale(1);
+                animation: imageZoom 0.8s ease;
+              }
+            }
+
+            @keyframes imageZoom {
+              from {
+                opacity: 0;
+                transform: scale(1.1);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+
+            .image-overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(135deg, rgba($taekwondo-color, 0.2), rgba($taekwondo-color, 0.3));
+              opacity: 0.5;
+              transition: opacity 0.3s ease;
+            }
+
+            &:hover img {
+              filter: grayscale(0%);
+            }
+
+            &:hover .image-overlay {
+              opacity: 0.3;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// FAQ SECTION
+// ========================================
+.faq-section {
+  padding: 0 0 $cta-spacing;
+  background: #f8f9fa;
+
+  .faq-card {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .faq-panel {
+    background: $text-light;
+    border-radius: 25px;
+    box-shadow: $shadow-lg;
+    padding: 3rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    .section-icon {
+      font-size: 2.5rem;
+      color: $taekwondo-color;
+      background: linear-gradient(135deg, rgba($taekwondo-color, 0.1), rgba($taekwondo-color, 0.05));
+      padding: 1rem;
+      border-radius: 14px;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0;
+    }
+  }
+
+  .faq-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .faq-item {
+    border: 1px solid rgba($taekwondo-color, 0.2);
+    border-radius: 14px;
+    padding: 0.2rem 1rem;
+    background: #ffffff;
+
+    &[open] {
+      border-color: rgba($taekwondo-color, 0.35);
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  .faq-question {
+    list-style: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: $text-dark;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question::after {
+    content: '+';
+    color: $taekwondo-color;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .faq-item[open] .faq-question::after {
+    content: '-';
+  }
+
+  .faq-answer {
+    color: $text-muted;
+    line-height: 1.7;
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+    transform: translateY(-4px);
+    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .faq-item[open] .faq-answer {
+    max-height: 500px;
+    opacity: 1;
+    padding-bottom: 0.75rem;
+    transform: translateY(0);
+  }
+}
+
+// ========================================
+// RELATED SPORTS SECTION
+// ========================================
+.related-section {
+  padding: 3rem 2rem;
+  background: #ffffff;
+
+  .related-card {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+
+    .related-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0 0 0.5rem;
+    }
+
+    .related-description {
+      color: $text-muted;
+      margin-bottom: 2rem;
+    }
+
+    .related-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+
+      .related-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: $transition;
+        border: 2px solid;
+
+        i {
+          font-size: 1.1rem;
+        }
+
+        &.taekwondo {
+          color: $taekwondo-color;
+          border-color: $taekwondo-color;
+          &:hover {
+            background: $taekwondo-color;
+            color: $text-light;
+          }
+        }
+
+        &.kickboxing {
+          color: #CF4800;
+          border-color: #CF4800;
+          &:hover {
+            background: #CF4800;
+            color: $text-light;
+          }
+        }
+
+        &.pilates {
+          color: #3E7D83;
+          border-color: #3E7D83;
+          &:hover {
+            background: #3E7D83;
+            color: $text-light;
+          }
+        }
+
+        &.defensa {
+          color: #c2185b;
+          border-color: #c2185b;
+          &:hover {
+            background: #c2185b;
+            color: $text-light;
+          }
+        }
+
+        // Scroll reveal animation
+        &.related-link--reveal {
+          opacity: 0;
+          transform: translateY(20px);
+          transition:
+            opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform, opacity;
+
+          &.is-visible {
+            opacity: 1;
+            transform: none;
+            will-change: auto;
+          }
+
+          &.no-animation {
+            transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          // Staggered delays
+          &:nth-child(1) { transition-delay: 0ms, 0ms, 0s, 0s; }
+          &:nth-child(2) { transition-delay: 100ms, 100ms, 0s, 0s; }
+          &:nth-child(3) { transition-delay: 200ms, 200ms, 0s, 0s; }
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// CTA SECTION
+// ========================================
+.cta-section {
+  padding: 5rem 2rem;
+  background: linear-gradient(135deg, $taekwondo-color 0%, color.adjust($taekwondo-color, $lightness: -10%) 100%);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: $cta-spacing;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    animation: pulse 15s infinite;
+  }
+
+  .cta-card {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.6s ease;
+
+    .cta-header {
+      margin-bottom: 3rem;
+
+      .cta-icon {
+        font-size: 4rem;
+        color: $text-light;
+        margin-bottom: 1.5rem;
+        display: block;
+      }
+
+      .cta-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: $text-light;
+        margin: 0 0 1rem;
+        text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .cta-subtitle {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: rgba($text-light, 0.95);
+        margin: 0;
+      }
+    }
+  }
+}
+
+// ========================================
+// MODERN BUTTON
+// ========================================
+.modern-btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: $transition;
+  box-shadow: $shadow-sm;
+  position: relative;
+  overflow: hidden;
+
+  i {
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  span {
+    position: relative;
+    z-index: 1;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+  }
+
+  &:hover::before {
+    width: 400px;
+    height: 400px;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  &.taekwondo-btn {
+    background: $text-light;
+    color: $taekwondo-color;
+
+    &:hover {
+      background: #f8f9fa;
+    }
+  }
+
+  // Scroll reveal animation
+  &.cta-btn--reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    &.no-animation {
+      transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+}
+
+// ========================================
+// ANIMATIONS
+// ========================================
+@keyframes heroBadgePop {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes heroTextReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes scrollIndicatorReveal {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+  60% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes infoCardSheen {
+  0% {
+    transform: translateX(-150%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+// ========================================
+// RESPONSIVE DESIGN
+// ========================================
+@media (max-width: 992px) {
+  .hero-container {
+    height: 450px;
+
+    .hero-content {
+      .hero-badge {
+        margin-bottom: 1.5rem;
+        padding: 0.6rem 1.2rem;
+
+        span {
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  .info-divs-section {
+    padding: 3rem 0;
+
+    .info-div {
+      margin-bottom: 3rem;
+
+      .info-card {
+        .card-content {
+          grid-template-columns: 1fr;
+
+          &.reverse {
+            .text-content {
+              order: 1;
+            }
+
+            .img-content {
+              order: 2;
+            }
+          }
+
+          .text-content {
+            padding: 3rem 2rem;
+
+            .section-header {
+              flex-direction: column;
+              text-align: center;
+
+              .section-icon {
+                font-size: 2.5rem;
+              }
+
+              .section-title {
+                font-size: 1.75rem;
+              }
+            }
+
+            .section-description {
+              font-size: 1rem;
+            }
+          }
+
+          .img-content {
+            .image-wrapper {
+              height: 400px;
+
+              img {
+                object-fit: cover;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .cta-section {
+    padding: 4rem 1.5rem;
+
+    .cta-card {
+      .cta-header {
+        .cta-title {
+          font-size: 2.5rem;
+        }
+
+        .cta-subtitle {
+          font-size: 1.3rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container {
+    height: 400px;
+
+    .scroll-indicator {
+      bottom: 1rem;
+
+      i {
+        font-size: 2rem;
+      }
+    }
+  }
+
+  .info-divs-section {
+    .info-div {
+      .info-card {
+        padding: 0 1rem;
+
+        .card-content {
+          border-radius: 20px;
+
+          .text-content {
+            padding: 2.5rem 1.5rem;
+
+            .section-header {
+              margin-bottom: 1.5rem;
+
+              .section-icon {
+                font-size: 2rem;
+                padding: 0.75rem;
+              }
+
+              .section-title {
+                font-size: 1.5rem;
+              }
+            }
+
+            .features-list {
+              .feature-item {
+                i {
+                  font-size: 1.3rem;
+                }
+
+                span {
+                  font-size: 0.95rem;
+                }
+              }
+            }
+          }
+
+          .img-content {
+            .image-wrapper {
+              height: 350px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .faq-section {
+    .faq-panel {
+      padding: 2rem 1.5rem;
+    }
+
+    .section-header {
+      .section-icon {
+        font-size: 2rem;
+        padding: 0.75rem;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .cta-section {
+    padding: 3rem 1rem;
+
+    .cta-card {
+      .cta-header {
+        margin-bottom: 2rem;
+
+        .cta-icon {
+          font-size: 3rem;
+          margin-bottom: 1rem;
+        }
+
+        .cta-title {
+          font-size: 2rem;
+        }
+
+        .cta-subtitle {
+          font-size: 1.1rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-container {
+    height: 350px;
+
+    .hero-content {
+      width: 95%;
+
+      .hero-badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+
+        i {
+          font-size: 1.1rem;
+        }
+      }
+    }
+  }
+
+  .info-divs-section {
+    .info-div {
+      .info-card {
+        .card-content {
+          .text-content {
+            padding: 2rem 1.25rem;
+          }
+
+          .img-content {
+            .image-wrapper {
+              height: 300px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .faq-section {
+    .faq-panel {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+
+  .cta-section {
+    margin-bottom: clamp(0.75rem, 2vw, 1.75rem);
+    .cta-card {
+      .cta-header {
+        .cta-title {
+          font-size: 1.75rem;
+        }
+
+        .cta-subtitle {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .modern-btn {
+      padding: 0.85rem 1.25rem;
+      font-size: 0.9rem;
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// ========================================
+// MOBILE HARDENING OVERRIDES (SPORTS PAGES)
+// ========================================
+@media (max-width: 992px) {
+  .hero-container {
+    height: 400px;
+    margin-top: clamp(84px, 11vw, 108px);
+
+    .hero-content {
+      .hero-badge {
+        margin-bottom: 1.1rem;
+        padding: 0.52rem 1rem;
+
+        i {
+          font-size: 1.05rem;
+        }
+
+        span {
+          font-size: 0.8rem;
+        }
+      }
+
+      .hero-text {
+        .hero-title {
+          font-size: clamp(2rem, 6.2vw, 2.85rem);
+          letter-spacing: 1.1px;
+          line-height: 1.08;
+        }
+
+        .hero-subtitle {
+          font-size: clamp(0.95rem, 3.4vw, 1.2rem);
+          margin: 0.38rem 0 0.8rem;
+          letter-spacing: 0.6px;
+        }
+
+        .hero-description {
+          font-size: 0.88rem;
+        }
+      }
+    }
+  }
+
+  .info-divs-section {
+    padding: 2.75rem 0;
+
+    .info-div {
+      margin-bottom: 2.25rem;
+
+      .info-card {
+        padding: 0 1rem;
+
+        .card-content {
+          border-radius: 18px;
+
+          .text-content {
+            padding: 2.3rem 1.6rem;
+
+            .section-header {
+              margin-bottom: 1rem;
+              gap: 0.7rem;
+
+              .section-icon {
+                font-size: 1.9rem;
+                padding: 0.6rem;
+                border-radius: 12px;
+              }
+
+              .section-title {
+                font-size: 1.25rem;
+              }
+            }
+
+            .section-description {
+              font-size: 0.92rem;
+              line-height: 1.6;
+              margin-bottom: 0.9rem;
+
+              &:last-of-type {
+                margin-bottom: 1.15rem;
+              }
+            }
+
+            .features-list {
+              .feature-item {
+                padding: 0.5rem 0;
+                gap: 0.6rem;
+
+                i {
+                  font-size: 1.1rem;
+                }
+
+                span {
+                  font-size: 0.88rem;
+                }
+              }
+            }
+          }
+
+          .img-content {
+            .image-wrapper {
+              height: 260px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .faq-section {
+    padding: 0 0 clamp(1rem, 4vw, 1.8rem);
+
+    .faq-card {
+      padding: 0 1rem;
+    }
+
+    .faq-panel {
+      padding: 1.25rem 1rem;
+      border-radius: 16px;
+    }
+
+    .section-header {
+      margin-bottom: 0.8rem;
+
+      .section-icon {
+        font-size: 1.3rem;
+        padding: 0.45rem;
+      }
+
+      .section-title {
+        font-size: 1.15rem;
+      }
+    }
+
+    .faq-question {
+      font-size: 0.88rem;
+      padding: 0.55rem 0;
+    }
+
+    .faq-answer {
+      line-height: 1.5;
+    }
+  }
+
+  .related-section {
+    padding: 1.8rem 1rem;
+
+    .related-card {
+      .related-title {
+        font-size: 1.2rem;
+      }
+
+      .related-description {
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+      }
+
+      .related-links {
+        gap: 0.6rem;
+
+        .related-link {
+          padding: 0.45rem 0.85rem;
+          border-radius: 12px;
+          border-width: 1.5px;
+          font-size: 0.78rem;
+
+          i {
+            font-size: 0.9rem;
+          }
+        }
+      }
+    }
+  }
+
+  .cta-section {
+    margin-bottom: clamp(0.75rem, 3vw, 1.4rem);
+    padding: 2.4rem 1rem;
+
+    .cta-card {
+      .cta-header {
+        margin-bottom: 1.4rem;
+
+        .cta-icon {
+          font-size: 2.2rem;
+          margin-bottom: 0.65rem;
+        }
+
+        .cta-title {
+          font-size: 1.35rem;
+        }
+
+        .cta-subtitle {
+          font-size: 0.9rem;
+        }
+      }
+    }
+  }
+
+  .modern-btn {
+    width: 100%;
+    min-height: 40px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    gap: 0.45rem;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container {
+    height: 340px;
+
+    .scroll-indicator {
+      display: none;
+    }
+
+    .hero-content {
+      width: 94%;
+
+      .hero-badge {
+        padding: 0.4rem 0.7rem;
+        margin-bottom: 0.8rem;
+        gap: 0.35rem;
+
+        i {
+          font-size: 0.95rem;
+        }
+
+        span {
+          font-size: 0.7rem;
+        }
+      }
+
+      .hero-text {
+        .hero-title {
+          font-size: clamp(1.55rem, 7.4vw, 2rem);
+          line-height: 1.08;
+          letter-spacing: 0.8px;
+        }
+
+        .hero-subtitle {
+          font-size: clamp(0.86rem, 4vw, 1.02rem);
+          margin: 0.25rem 0 0.6rem;
+          letter-spacing: 0.35px;
+        }
+
+        .hero-description {
+          font-size: 0.8rem;
+          line-height: 1.35;
+        }
+      }
+    }
+  }
+
+  .info-divs-section {
+    padding: 2.1rem 0;
+
+    .info-div {
+      margin-bottom: 1.8rem;
+
+      .info-card {
+        padding: 0 0.7rem;
+
+        .card-content {
+          border-radius: 14px;
+
+          .text-content {
+            padding: 1.4rem 0.95rem;
+
+            .section-header {
+              margin-bottom: 0.72rem;
+              gap: 0.45rem;
+
+              .section-icon {
+                font-size: 1.25rem;
+                padding: 0.4rem;
+                border-radius: 10px;
+              }
+
+              .section-title {
+                font-size: 1rem;
+                line-height: 1.25;
+              }
+            }
+
+            .section-description {
+              font-size: 0.82rem;
+              line-height: 1.5;
+              margin-bottom: 0.7rem;
+
+              &:last-of-type {
+                margin-bottom: 0.95rem;
+              }
+            }
+
+            .features-list {
+              .feature-item {
+                gap: 0.45rem;
+                padding: 0.35rem 0;
+
+                i {
+                  font-size: 0.95rem;
+                }
+
+                span {
+                  font-size: 0.8rem;
+                }
+              }
+            }
+          }
+
+          .img-content {
+            .image-wrapper {
+              height: 210px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .faq-section {
+    .faq-card {
+      padding: 0 0.7rem;
+    }
+
+    .faq-panel {
+      padding: 0.95rem 0.78rem;
+      border-radius: 14px;
+    }
+
+    .section-header {
+      margin-bottom: 0.6rem;
+      gap: 0.45rem;
+
+      .section-icon {
+        font-size: 1.12rem;
+        padding: 0.34rem;
+        border-radius: 8px;
+      }
+
+      .section-title {
+        font-size: 1rem;
+      }
+    }
+
+    .faq-question {
+      font-size: 0.8rem;
+      gap: 0.5rem;
+      padding: 0.45rem 0;
+
+      &::after {
+        font-size: 0.95rem;
+      }
+    }
+
+    .faq-answer {
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+  }
+
+  .related-section {
+    padding: 1.45rem 0.72rem;
+
+    .related-card {
+      .related-title {
+        font-size: 1.02rem;
+      }
+
+      .related-description {
+        font-size: 0.79rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .related-links {
+        gap: 0.45rem;
+
+        .related-link {
+          width: 100%;
+          min-height: 36px;
+          border-radius: 10px;
+          justify-content: center;
+          padding: 0.4rem 0.56rem;
+          font-size: 0.74rem;
+        }
+      }
+    }
+  }
+
+  .cta-section {
+    padding: 1.8rem 0.72rem;
+
+    .cta-card {
+      .cta-header {
+        margin-bottom: 1rem;
+
+        .cta-icon {
+          font-size: 1.7rem;
+          margin-bottom: 0.45rem;
+        }
+
+        .cta-title {
+          font-size: 1.08rem;
+          margin-bottom: 0.45rem;
+        }
+
+        .cta-subtitle {
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  .modern-btn {
+    min-height: 38px;
+    padding: 0.5rem 0.64rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-container {
+    height: 300px;
+    margin-top: clamp(74px, 12vw, 92px);
+  }
+
+  .info-divs-section {
+    .info-div {
+      .info-card {
+        .card-content {
+          .img-content {
+            .image-wrapper {
+              height: 190px;
+            }
+          }
+
+          .text-content {
+            .section-title {
+              font-size: 0.95rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .cta-section {
+    margin-bottom: clamp(0.6rem, 2vw, 1rem);
+  }
+}
+

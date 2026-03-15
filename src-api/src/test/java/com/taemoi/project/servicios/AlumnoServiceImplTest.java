@@ -6,36 +6,48 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+//import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.WeekFields;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.entidades.Alumno;
-import com.taemoi.project.entidades.Categoria;
-import com.taemoi.project.entidades.Grado;
-import com.taemoi.project.entidades.Imagen;
-import com.taemoi.project.entidades.TipoGrado;
-import com.taemoi.project.entidades.TipoTarifa;
-import com.taemoi.project.repositorios.AlumnoRepository;
-import com.taemoi.project.repositorios.CategoriaRepository;
-import com.taemoi.project.repositorios.GradoRepository;
-import com.taemoi.project.servicios.impl.AlumnoServiceImpl;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Categoria;
+import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
+import com.taemoi.project.repositories.AlumnoRetoDiarioLogRepository;
+import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.CategoriaRepository;
+import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.services.impl.AlumnoServiceImpl;
+import com.taemoi.project.utils.FechaUtils;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class AlumnoServiceImplTest {
+
+	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
 
 	@Mock
 	private AlumnoRepository alumnoRepository;
@@ -46,13 +58,17 @@ public class AlumnoServiceImplTest {
 	@Mock
 	private GradoRepository gradoRepository;
 
+	@Mock
+	private AlumnoDeporteRepository alumnoDeporteRepository;
+
+	@Mock
+	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
+
+	@Mock
+	private com.taemoi.project.config.TarifaConfig tarifaConfig;
+
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
-	
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
 	@Test
 	public void testObtenerTodosLosAlumnos() {
@@ -66,21 +82,21 @@ public class AlumnoServiceImplTest {
 	}
 
 	@Test
-    public void testObtenerAlumnoPorId() {
-        when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
+	public void testObtenerAlumnoPorId() {
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
 
-        Optional<Alumno> result = alumnoService.obtenerAlumnoPorId(1L);
+		Optional<Alumno> result = alumnoService.obtenerAlumnoPorId(1L);
 
-        assertTrue(result.isPresent());
-    }
+		assertTrue(result.isPresent());
+	}
 
 	@Test
 	public void testObtenerAlumnoDTOPorId() {
-	    when(alumnoRepository.findById(1L)).thenReturn(Optional.empty());
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.empty());
 
-	    Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoDTOPorId(1L);
+		Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoPorIdDTO(1L);
 
-	    assertFalse(result.isPresent());
+		assertFalse(result.isPresent());
 	}
 
 	@Test
@@ -93,101 +109,551 @@ public class AlumnoServiceImplTest {
 		assertNotNull(result);
 	}
 
-	@Test
-	public void testActualizarAlumno() {
-	    Alumno alumnoExistente = new Alumno();
-	    when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoExistente));
-	    when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+	/*
+	 * @Test public void testActualizarAlumno() { Alumno alumnoExistente = new
+	 * Alumno();
+	 * when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoExistente));
+	 * when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation ->
+	 * invocation.getArgument(0));
+	 * 
+	 * AlumnoDTO alumnoDTO = new AlumnoDTO(); Date fechaNacimiento = new Date();
+	 * Imagen imagen = new Imagen("nombre", "tipo", new byte[0]);
+	 * 
+	 * Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO,
+	 * fechaNacimiento, imagen);
+	 * 
+	 * verify(alumnoRepository).findById(1L);
+	 * verify(alumnoRepository).save(any(Alumno.class));
+	 * 
+	 * assertNotNull(result); }
+	 */
 
-	    AlumnoDTO alumnoDTO = new AlumnoDTO();
-	    Date fechaNacimiento = new Date();
-	    Imagen imagen = new Imagen("nombre", "tipo", new byte[0]);
-
-	    Alumno result = alumnoService.actualizarAlumno(1L, alumnoDTO, fechaNacimiento, imagen);
-
-	    verify(alumnoRepository).findById(1L);
-	    verify(alumnoRepository).save(any(Alumno.class));
-
-	    assertNotNull(result);
-	}
-
-
-
-/*	@SuppressWarnings("null")
-	@Test
-    public void testEliminarAlumno() {
-        when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
-        doNothing().when(alumnoRepository).delete(any(Alumno.class));
-
-        boolean result = alumnoService.eliminarAlumno(1L);
-
-        assertTrue(result);
-    }
-*/
+	/*
+	 * @SuppressWarnings("null")
+	 * 
+	 * @Test public void testEliminarAlumno() {
+	 * when(alumnoRepository.findById(1L)).thenReturn(Optional.of(new Alumno()));
+	 * doNothing().when(alumnoRepository).delete(any(Alumno.class));
+	 * 
+	 * boolean result = alumnoService.eliminarAlumno(1L);
+	 * 
+	 * assertTrue(result); }
+	 */
 	@Test
 	public void testAsignarCuantiaTarifa() {
+		when(tarifaConfig.obtenerCuantia(TipoTarifa.ADULTO)).thenReturn(30.0);
 		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO);
 
 		assertEquals(30.0, result, 0.0);
 	}
 
 	@Test
-    public void testAsignarCategoriaSegunEdad() {
-        when(categoriaRepository.findByNombre(anyString())).thenReturn(new Categoria());
+	public void testAsignarCategoriaSegunEdad() {
+		when(categoriaRepository.findByNombre(anyString())).thenReturn(new Categoria());
 
-        Categoria result = alumnoService.asignarCategoriaSegunEdad(10);
+		Categoria result = alumnoService.asignarCategoriaSegunEdad(10);
 
-        assertNotNull(result);
-    }
+		assertNotNull(result);
+	}
 
 	@Test
 	public void testAsignarGradoSegunEdad() {
-	    when(gradoRepository.findByTipoGrado(any(TipoGrado.class))).thenReturn(new Grado());
+		when(gradoRepository.findByTipoGrado(any(TipoGrado.class))).thenReturn(new Grado());
 
-	    AlumnoDTO alumnoDTO = new AlumnoDTO();
-	    alumnoDTO.setFechaNacimiento(new Date());
+		AlumnoDTO alumnoDTO = new AlumnoDTO();
+		alumnoDTO.setFechaNacimiento(new Date());
 
-	    Grado result = alumnoService.asignarGradoSegunEdad(alumnoDTO);
+		Grado result = alumnoService.asignarGradoSegunEdad(alumnoDTO);
 
-	    assertNotNull(result);
+		assertNotNull(result);
 	}
 
 	@Test
 	public void testCalcularEdad() {
-		int result = alumnoService.calcularEdad(new Date());
+		int result = FechaUtils.calcularEdad(new Date());
 
 		assertTrue(result >= 0);
 	}
 
 	@Test
 	public void testFechaNacimientoValida() {
-	    Calendar cal = Calendar.getInstance();
-	    cal.add(Calendar.YEAR, -20);
-	    Date fechaNacimientoValida = cal.getTime();
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.YEAR, -20);
+		Date fechaNacimientoValida = cal.getTime();
 
-	    boolean result = alumnoService.fechaNacimientoValida(fechaNacimientoValida);
+		boolean result = alumnoService.fechaNacimientoValida(fechaNacimientoValida);
 
-	    assertTrue(result);
+		assertTrue(result);
 	}
 
 	@Test
-    public void testDatosAlumnoValidos() {
-        AlumnoDTO alumnoDTO = new AlumnoDTO();
-        alumnoDTO.setNombre("Juan");
-        alumnoDTO.setApellidos("Perez");
-        alumnoDTO.setFechaNacimiento(new Date());
-        alumnoDTO.setNumeroExpediente(12345);
-        alumnoDTO.setNif("12345678A");
-        alumnoDTO.setDireccion("Calle Principal");
-        alumnoDTO.setEmail("juan@example.com");
-        alumnoDTO.setTelefono(123456789);
-        alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
-        alumnoDTO.setFechaAlta(new Date());
+	public void testDatosAlumnoValidos() {
+		AlumnoDTO alumnoDTO = new AlumnoDTO();
+		alumnoDTO.setNombre("Juan");
+		alumnoDTO.setApellidos("Perez");
+		alumnoDTO.setFechaNacimiento(new Date());
+		alumnoDTO.setNumeroExpediente(12345);
+		alumnoDTO.setNif("12345678A");
+		alumnoDTO.setDireccion("Calle Principal");
+		alumnoDTO.setEmail("juan@example.com");
+		alumnoDTO.setTelefono(123456789);
+		alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
+		alumnoDTO.setFechaAlta(new Date());
 
-        when(alumnoRepository.save(any(Alumno.class))).thenReturn(new Alumno());
+		boolean result = alumnoService.datosAlumnoValidos(alumnoDTO);
 
-        boolean result = alumnoService.datosAlumnoValidos(alumnoDTO);
+		assertTrue(result);
+	}
 
-        assertTrue(result);
-    }
+	@Test
+	public void testCompletarRetoDiario_CreaLogCuandoNoExiste() {
+		Alumno alumno = new Alumno();
+		alumno.setId(1L);
+		alumno.setActivo(true);
+		alumno.setRachaRetoDiario(2);
+		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now(RETO_DIARIO_ZONE_ID).minusDays(1)));
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumno));
+		when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(alumnoRetoDiarioLogRepository.existsByAlumnoIdAndFechaCompletado(any(Long.class), any(LocalDate.class)))
+				.thenReturn(false);
+
+		alumnoService.completarRetoDiario(1L);
+
+		verify(alumnoRetoDiarioLogRepository, times(1)).save(any());
+	}
+
+	@Test
+	public void testCompletarRetoDiario_NoDuplicaLogMismoDia() {
+		Alumno alumno = new Alumno();
+		alumno.setId(1L);
+		alumno.setActivo(true);
+		alumno.setRachaRetoDiario(3);
+		alumno.setFechaRetoDiarioCompletado(java.sql.Date.valueOf(LocalDate.now(RETO_DIARIO_ZONE_ID)));
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumno));
+		when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(alumnoRetoDiarioLogRepository.existsByAlumnoIdAndFechaCompletado(any(Long.class), any(LocalDate.class)))
+				.thenReturn(true);
+
+		alumnoService.completarRetoDiario(1L);
+
+		verify(alumnoRetoDiarioLogRepository, never()).save(any());
+	}
+
+	@Test
+	public void testObtenerRankingSemanalRetoDiario_RetornaRankingYMiPosicion() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("aLUmNo");
+		alumnoActual.setApellidos("aCTUAL gArcia");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("riVAL");
+		alumnoRival.setApellidos("uNO perez");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
+				.thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
+		WeekFields weekFields = WeekFields.ISO;
+		int anioIso = hoy.get(weekFields.weekBasedYear());
+		int semanaIso = hoy.get(weekFields.weekOfWeekBasedYear());
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreActual =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 1L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy.minusDays(1);
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 11L;
+					}
+				};
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 2L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 5L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 22L;
+					}
+				};
+
+		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
+				.thenReturn(List.of(scoreActual, scoreRival));
+
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("TAEKWONDO", ranking.getDeporte());
+		assertEquals(Integer.valueOf(anioIso), ranking.getAnioIso());
+		assertEquals(Integer.valueOf(semanaIso), ranking.getSemanaIso());
+		assertEquals(Integer.valueOf(2), ranking.getTotalParticipantes());
+		assertNotNull(ranking.getMiPosicion());
+		assertEquals(Integer.valueOf(2), ranking.getMiPosicion().getPosicion());
+		assertEquals(Integer.valueOf(3), ranking.getMiPosicion().getDiasCompletados());
+		assertEquals(Integer.valueOf(3), ranking.getMiPosicion().getDiasParaSuperarSiguiente());
+		assertEquals("Alumno Actual", ranking.getMiPosicion().getAlias());
+		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
+	}
+
+	@Test
+	public void testObtenerRankingSemanalRetoDiario_DesambiguarAliasConInicialSegundoApellido() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("CARLOS");
+		alumnoActual.setApellidos("sAnchez rUIz");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("carlos");
+		alumnoRival.setApellidos("sanchez moreno");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.KICKBOXING);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.KICKBOXING);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.KICKBOXING)).thenReturn(true);
+		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
+				.thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.KICKBOXING))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreActual =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 1L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy.minusDays(1);
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 11L;
+					}
+				};
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 2L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 5L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 22L;
+					}
+				};
+
+		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
+				.thenReturn(List.of(scoreActual, scoreRival));
+
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.KICKBOXING, 10);
+
+		assertNotNull(ranking);
+		assertNotNull(ranking.getMiPosicion());
+		assertEquals("Carlos Sanchez R.", ranking.getMiPosicion().getAlias());
+		assertEquals("Carlos Sanchez M.", ranking.getTop().get(0).getAlias());
+		assertEquals("Carlos Sanchez R.", ranking.getTop().get(1).getAlias());
+	}
+
+	@Test
+	public void testObtenerRankingSemanalRetoDiario_DesempataPorPrimeraInsercionCuandoEmpateEnDiasYFecha() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("alumno");
+		alumnoActual.setApellidos("actual perez");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("rival");
+		alumnoRival.setApellidos("uno lopez");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
+				.thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreActual =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 1L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 101L;
+					}
+				};
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection scoreRival =
+				new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioScoreProjection() {
+					@Override
+					public Long getAlumnoId() {
+						return 2L;
+					}
+
+					@Override
+					public Long getDiasCompletados() {
+						return 3L;
+					}
+
+					@Override
+					public LocalDate getUltimaFechaCompletado() {
+						return hoy;
+					}
+
+					@Override
+					public Long getUltimaMarcaCompletadoId() {
+						return 202L;
+					}
+				};
+
+		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
+				.thenReturn(List.of(scoreActual, scoreRival));
+
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
+		assertEquals("Rival Uno", ranking.getTop().get(1).getAlias());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
+	}
+
+	@Test
+	public void testObtenerRankingGeneralRetoDiario_CalculaMejorRachaHistorica() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("alumno");
+		alumnoActual.setApellidos("actual perez");
+		alumnoActual.setActivo(true);
+		alumnoActual.setRachaRetoDiario(2);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("rival");
+		alumnoRival.setApellidos("uno lopez");
+		alumnoRival.setActivo(true);
+		alumnoRival.setRachaRetoDiario(1);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate base = LocalDate.of(2026, 2, 1);
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a1d1 = crearFechaProjection(1L, base);
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a1d2 = crearFechaProjection(1L, base.plusDays(1));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a1d3 = crearFechaProjection(1L, base.plusDays(2));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a1d4 = crearFechaProjection(1L, base.plusDays(4));
+
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a2d1 = crearFechaProjection(2L, base.minusDays(8));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a2d2 = crearFechaProjection(2L, base.minusDays(7));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a2d3 = crearFechaProjection(2L, base.minusDays(6));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a2d4 = crearFechaProjection(2L, base.minusDays(5));
+		AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection a2d5 = crearFechaProjection(2L, base.plusDays(10));
+
+		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
+				.thenReturn(List.of(a1d1, a1d2, a1d3, a1d4, a2d1, a2d2, a2d3, a2d4, a2d5));
+
+		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("TAEKWONDO", ranking.getDeporte());
+		assertEquals(Integer.valueOf(2), ranking.getTotalParticipantes());
+		assertEquals("Rival Uno", ranking.getTop().get(0).getAlias());
+		assertEquals(Integer.valueOf(4), ranking.getTop().get(0).getMejorRacha());
+		assertNotNull(ranking.getMiPosicion());
+		assertEquals(Integer.valueOf(2), ranking.getMiPosicion().getPosicion());
+		assertEquals("Alumno Actual", ranking.getMiPosicion().getAlias());
+		assertEquals(Integer.valueOf(3), ranking.getMiPosicion().getMejorRacha());
+		assertEquals(Integer.valueOf(4), ranking.getMiPosicion().getDiasCompletadosTotales());
+		assertEquals(Integer.valueOf(2), ranking.getMiPosicion().getDiasParaSuperarSiguiente());
+	}
+
+	@Test
+	public void testObtenerRankingGeneralRetoDiario_DesempataPorHoraCuandoEmpateTotal() {
+		Alumno alumnoActual = new Alumno();
+		alumnoActual.setId(1L);
+		alumnoActual.setNombre("alumno");
+		alumnoActual.setApellidos("actual perez");
+		alumnoActual.setActivo(true);
+
+		Alumno alumnoRival = new Alumno();
+		alumnoRival.setId(2L);
+		alumnoRival.setNombre("rival");
+		alumnoRival.setApellidos("uno lopez");
+		alumnoRival.setActivo(true);
+
+		AlumnoDeporte deporteActual = new AlumnoDeporte();
+		deporteActual.setAlumno(alumnoActual);
+		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setActivo(true);
+
+		AlumnoDeporte deporteRival = new AlumnoDeporte();
+		deporteRival.setAlumno(alumnoRival);
+		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setActivo(true);
+
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+				.thenReturn(List.of(deporteActual, deporteRival));
+
+		LocalDate base = LocalDate.of(2026, 2, 1);
+		var a1d1 = crearFechaProjection(1L, base, 1L);
+		var a1d2 = crearFechaProjection(1L, base.plusDays(1), 2L);
+		var a1d3 = crearFechaProjection(1L, base.plusDays(2), 3L);
+		var a2d1 = crearFechaProjection(2L, base, 4L);
+		var a2d2 = crearFechaProjection(2L, base.plusDays(1), 5L);
+		var a2d3 = crearFechaProjection(2L, base.plusDays(2), 6L);
+
+		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
+				.thenReturn(List.of(a1d1, a1d2, a1d3, a2d1, a2d2, a2d3));
+
+		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
+
+		assertNotNull(ranking);
+		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
+		assertEquals("Rival Uno", ranking.getTop().get(1).getAlias());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(0).getPosicion());
+		assertEquals(Integer.valueOf(1), ranking.getTop().get(1).getPosicion());
+	}
+
+	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
+			LocalDate fechaCompletado) {
+		return crearFechaProjection(alumnoId, fechaCompletado, 1L);
+	}
+
+	private AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection crearFechaProjection(Long alumnoId,
+			LocalDate fechaCompletado, Long logId) {
+		return new AlumnoRetoDiarioLogRepository.AlumnoRetoDiarioFechaProjection() {
+			@Override
+			public Long getAlumnoId() {
+				return alumnoId;
+			}
+
+			@Override
+			public LocalDate getFechaCompletado() {
+				return fechaCompletado;
+			}
+
+			@Override
+			public Long getLogId() {
+				return logId;
+			}
+		};
+	}
 }

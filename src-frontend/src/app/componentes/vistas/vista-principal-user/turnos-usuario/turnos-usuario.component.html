@@ -1,47 +1,204 @@
-<div class="container">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Turnos</h2>
-    <button class="btn btn-secondary btn-back" (click)="volver()">
-      <i class="bi bi-arrow-left-circle"></i> Volver
-    </button>
-  </div>
-  <div class="card shadow-lg">
-    <div class="card-header text-center bg-primary text-white">
-      <h1 class="card-title">Turnos</h1>
-    </div>
-    <div class="card-body">
-      <div *ngIf="diasSemana.length > 0; else noTurnosTemplate">
-        <table class="table custom-table table-striped mt-4">
-          <thead class="thead-dark">
-            <tr>
-              <th class="text-center">Día de la Semana</th>
-              <th class="text-center">Hora de Inicio</th>
-              <th class="text-center">Hora de Fin</th>
-            </tr>
-          </thead>
-          <tbody>
-            <ng-container *ngFor="let diaSemana of diasSemana">
-              <ng-container *ngIf="obtenerTurnosPorDia(diaSemana).length > 0">
-                <tr *ngFor="let turno of obtenerTurnosPorDia(diaSemana); let i = index">
-                  <td *ngIf="i === 0" [attr.rowspan]="obtenerTurnosPorDia(diaSemana).length"
-                    class="text-center align-middle font-weight-bold">{{ diaSemana }}</td>
-                  <td class="text-center align-middle">{{ turno.horaInicio }}</td>
-                  <td class="text-center align-middle">{{ turno.horaFin }}</td>
-                </tr>
-              </ng-container>
-              <tr *ngIf="obtenerTurnosPorDia(diaSemana).length === 0">
-                <td class="text-center align-middle font-weight-bold">{{ diaSemana }}</td>
-                <td colspan="2" class="text-center align-middle">No hay turnos</td>
-              </tr>
-            </ng-container>
-          </tbody>
-        </table>
+<div class="turnos-dashboard">
+  <div class="turnos-shell">
+    <section class="turnos-hero">
+      <div class="hero-pattern" aria-hidden="true"></div>
+
+      <div class="hero-top">
+        <button class="btn-back" (click)="volver()">
+          <i class="bi bi-arrow-left-circle-fill"></i>
+          <span>Volver</span>
+        </button>
+
+        <div class="hero-title-box">
+          <span class="hero-eyebrow">
+            <i class="bi bi-calendar3"></i>
+            Agenda semanal
+          </span>
+          <h1>Mis Horarios</h1>
+          <p>Consulta tus clases por d&iacute;a y franja horaria.</p>
+          @if (selectedAlumno) {
+            <p class="hero-student">
+              <i class="bi bi-person-circle"></i>
+              {{ selectedAlumno.nombre }} {{ selectedAlumno.apellidos }}
+            </p>
+          }
+        </div>
       </div>
-    </div>
+
+      @if (alumnos.length > 1) {
+        <div class="student-switcher" aria-label="Seleccion de alumno">
+          <div class="switcher-label">
+            <i class="bi bi-people-fill"></i>
+            <span>Seleccionar alumno</span>
+          </div>
+          @if (usarSelectorCompacto()) {
+            <div class="switcher-select-wrap">
+              <select
+                class="switcher-select"
+                [value]="getAlumnoSelectorValue()"
+                (change)="onSeleccionAlumnoDesdeSelect($event)"
+                aria-label="Seleccionar alumno"
+              >
+                <option value="" [disabled]="bloquearPlaceholderSelectorAlumno">Selecciona un alumno...</option>
+                @for (alumno of alumnos; track alumno.id) {
+                  <option [value]="alumno.id.toString()">{{ alumno.nombre }} {{ alumno.apellidos }}</option>
+                }
+              </select>
+              <span class="switcher-meta">{{ alumnos.length }} alumnos</span>
+            </div>
+          } @else {
+          <div class="switcher-track">
+            @for (alumno of alumnos; track alumno.id) {
+              <button
+                type="button"
+                class="switcher-pill"
+                [class.is-active]="selectedAlumno?.id === alumno.id"
+                (click)="seleccionarAlumno(alumno)">
+                <i class="bi bi-person-badge"></i>
+                <span>{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+              </button>
+            }
+          </div>
+          }
+        </div>
+      }
+
+      @if (!cargando && allTurnos.length > 0) {
+        <div class="hero-kpis">
+          <article class="kpi-card">
+            <span class="kpi-value">{{ allTurnos.length }}</span>
+            <span class="kpi-label">Clases semanales</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value">{{ timeSlots.length }}</span>
+            <span class="kpi-label">Franjas horarias</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value">{{ deportesUnicos.length }}</span>
+            <span class="kpi-label">Disciplinas</span>
+          </article>
+        </div>
+      }
+    </section>
+
+    <section class="schedule-panel">
+      @if (cargando) {
+        <app-skeleton-card [type]="'grid'" [count]="4" [columns]="2"></app-skeleton-card>
+      } @else if (!selectedAlumno) {
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-person-lines-fill"></i></div>
+          <h3>Selecciona un alumno</h3>
+          <p>Elige un alumno en el selector superior para ver su horario.</p>
+        </div>
+      } @else if (allTurnos.length > 0) {
+        @if (deportesUnicos.length > 0) {
+          <div class="sport-legend">
+            @for (deporte of deportesUnicos; track deporte.key) {
+              <div class="legend-item" [attr.data-sport]="deporte.key">
+                <span class="legend-icon" [style.color]="deporte.color">
+                  <i class="bi" [ngClass]="deporte.iconClass"></i>
+                </span>
+                <span class="legend-text">{{ deporte.nombre }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="table-wrap desktop-view">
+          <div class="schedule-table">
+            <div class="table-head">
+              <div class="time-head">
+                <i class="bi bi-clock"></i>
+                <span>Hora</span>
+              </div>
+              @for (dia of diasSemana; track $index) {
+                <div class="day-head">
+                  <span class="day-full">{{ dia }}</span>
+                  <span class="day-short">{{ diasCortos[$index] }}</span>
+                </div>
+              }
+            </div>
+
+            @for (slot of timeSlots; track slot.horaInicio) {
+              <div class="table-row">
+                <div class="time-cell">
+                  <span>{{ slot.horaInicio }}</span>
+                  <span class="sep">-</span>
+                  <span>{{ slot.horaFin }}</span>
+                </div>
+
+                @for (dia of diasSemana; track $index) {
+                  @let celdas = getTurnosEnCelda(slot, dia);
+                  <div class="day-cell" [class.has-class]="celdas.length > 0">
+                    @if (celdas.length > 0) {
+                      <div class="class-stack">
+                        @for (celda of celdas; track celda.turno.id) {
+                          <article class="class-pill" [attr.data-sport]="celda.sportKey">
+                            <div class="pill-main">
+                              <i class="bi" [ngClass]="celda.iconClass"></i>
+                              <span>{{ celda.displayName }}</span>
+                            </div>
+                            <span class="pill-time">{{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}</span>
+                          </article>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="mobile-view">
+          <div class="day-tabs">
+            @for (dia of diasCortos; track $index) {
+              <button class="day-tab" [class.active]="selectedDayIndex === $index" (click)="selectDay($index)">
+                <span>{{ dia }}</span>
+                <small>{{ getCantidadTurnosDia(diasSemana[$index]) }}</small>
+              </button>
+            }
+          </div>
+
+          <div class="day-classes">
+            @let turnosDelDia = getTurnosForDay(diasSemana[selectedDayIndex]);
+            @if (turnosDelDia.length > 0) {
+              @for (celda of turnosDelDia; track celda.turno.id) {
+                <article class="mobile-class-card" [attr.data-sport]="celda.sportKey">
+                  <div class="mobile-left" [style.color]="celda.color">
+                    <i class="bi" [ngClass]="celda.iconClass"></i>
+                  </div>
+
+                  <div class="mobile-content">
+                    <span class="mobile-name">{{ celda.displayName }}</span>
+                    <span class="mobile-time">
+                      <i class="bi bi-clock"></i>
+                      {{ celda.turno.horaInicio }} - {{ celda.turno.horaFin }}
+                    </span>
+                  </div>
+                </article>
+              }
+            } @else {
+              <div class="empty-mini-state">
+                <i class="bi bi-calendar-x"></i>
+                <span>No hay clases este dia.</span>
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (grupos.length > 0) {
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-calendar-x"></i></div>
+          <h3>No tienes horarios asignados</h3>
+          <p>Si crees que esto es un error, contacta con la escuela.</p>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+          <h3>No tienes grupos asignados</h3>
+          <p>Ponte en contacto con la escuela para unirte a un grupo y ver tus horarios.</p>
+        </div>
+      }
+    </section>
   </div>
-  <ng-template #noTurnosTemplate>
-    <div class="alert alert-warning text-center mt-4" role="alert">
-      No se encontraron turnos para este grupo.
-    </div>
-  </ng-template>
 </div>

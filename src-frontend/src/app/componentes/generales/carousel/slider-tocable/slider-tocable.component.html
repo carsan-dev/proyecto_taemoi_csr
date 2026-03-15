@@ -1,11 +1,85 @@
-<div class="slider-container">
-  <div class="slider-item" *ngFor="let slideritem of imagenesSlider; let i = index" [ngClass]="{'seleccionado': i === indexSeleccionado,
-  'anterior': i === indexSeleccionado - 1,
-  'siguiente': i === indexSeleccionado + 1,
-  'escondidoIzquierdo': i < indexSeleccionado - 1,
-  'escondidoDerecho': i > indexSeleccionado + 1}">
-    <img [src]="slideritem.imgSrc" [alt]="slideritem.imgAlt" class="slider-img" (panright)="mostrarAnterior(i)"
-      (panleft)="mostrarSiguiente(i)">
-    <p *ngIf="i === indexSeleccionado" class="mt-5 text-center fw-bold">{{ slideritem.captionTexto }}</p>
+@if (isLoading) {
+  <div class="events-carousel-skeleton">
+    @for (i of [1, 2, 3]; track i) {
+      <div class="skeleton-card"></div>
+    }
   </div>
-</div>
+} @else {
+  <div class="events-carousel">
+    @if (canAutoRotate) {
+      <button
+        class="carousel-btn prev"
+        (click)="prevSlide()"
+        aria-label="Evento anterior"
+      >
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    }
+
+    <div class="events-wrapper">
+      <div
+        class="events-track"
+        [style.transform]="'translateX(' + translateX + '%)'"
+      >
+        @for (evento of eventos; track evento.id || $index) {
+          <article class="event-card">
+            <div class="event-card-inner">
+              <div class="event-card-image">
+                <img
+                  [src]="getImageUrl(evento)"
+                  [alt]="evento.titulo"
+                  loading="lazy"
+                />
+                <div class="event-card-overlay"></div>
+              </div>
+              <div class="event-card-body">
+                <h3 class="event-card-title">{{ evento.titulo }}</h3>
+                <p class="event-card-desc">{{ evento.descripcion }}</p>
+                <a
+                  class="event-card-link"
+                  [routerLink]="['/eventos', evento.id]"
+                >
+                  <span>Ver detalles</span>
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+
+    @if (canAutoRotate) {
+      <button
+        class="carousel-btn next"
+        (click)="nextSlide()"
+        aria-label="Siguiente evento"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+      <button
+        class="carousel-btn carousel-autoplay-toggle icon-only"
+        type="button"
+        (click)="toggleAutoRotation()"
+        [attr.aria-label]="isAutoPaused ? 'Reanudar carrusel de eventos' : 'Pausar carrusel de eventos'"
+        [attr.aria-pressed]="isAutoPaused"
+      >
+        <i [class]="isAutoPaused ? 'bi bi-play-fill' : 'bi bi-pause-fill'" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+
+  @if (canAutoRotate) {
+    <div class="carousel-dots">
+      @for (i of getDotIndices(); track i) {
+        <button
+          class="dot"
+          [class.active]="currentIndex === i"
+          (click)="goToSlide(i)"
+          [attr.aria-label]="'Ir a pagina ' + (i + 1)"
+        ></button>
+      }
+    </div>
+  }
+}

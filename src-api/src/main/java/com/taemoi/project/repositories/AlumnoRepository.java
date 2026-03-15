@@ -1,0 +1,269 @@
+package com.taemoi.project.repositories;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Deporte;
+
+/**
+ * Repositorio para la entidad Alumno. Proporciona métodos para realizar
+ * operaciones de persistencia y consulta relacionadas con los alumnos en la
+ * base de datos.
+ */
+@Repository
+public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno> {
+
+	/**
+	 * Guarda un objeto AlumnoDTO en la base de datos.
+	 *
+	 * @param alumno El objeto AlumnoDTO a guardar.
+	 * @return El objeto AlumnoDTO guardado.
+	 */
+	AlumnoDTO save(AlumnoDTO alumno);
+
+	/**
+	 * Busca un alumno por su número de identificación fiscal (NIF).
+	 *
+	 * @param nif El NIF del alumno a buscar.
+	 * @return Un Optional que contiene el alumno encontrado, o vacío si no se
+	 *         encuentra ningún alumno con el NIF especificado.
+	 */
+	Optional<Alumno> findByNif(String nif);
+
+	boolean existsByNif(String nif);
+
+	boolean existsByNifAndIdNot(String nif, Long id);
+
+	/**
+	 * Busca una página de alumnos cuyo nombre contenga la cadena especificada,
+	 * ignorando mayúsculas y minúsculas.
+	 *
+	 * @param nombre   La cadena a buscar en el nombre de los alumnos.
+	 * @param pageable Objeto Pageable para la paginación de resultados.
+	 * @return Una página de objetos Alumno que cumplen con el criterio de búsqueda.
+	 */
+	Page<Alumno> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+
+	/**
+	 * Busca una lista de alumnos cuyo nombre contenga la cadena especificada,
+	 * ignorando mayúsculas y minúsculas.
+	 *
+	 * @param nombre La cadena a buscar en el nombre de los alumnos.
+	 * @return Una lista de objetos Alumno que cumplen con el criterio de búsqueda.
+	 */
+	List<Alumno> findByNombreContainingIgnoreCase(String nombre);
+
+	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
+	// /**
+	//  * Busca una página de alumnos por el ID de la categoría especificada.
+	//  *
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @param pageable    Objeto Pageable para la paginación de resultados.
+	//  * @return Una página de objetos Alumno que pertenecen a la categoría
+	//  *         especificada.
+	//  */
+	// Page<Alumno> findByCategoriaId(Long categoriaId, Pageable pageable);
+
+	// /**
+	//  * Busca una lista de alumnos por el ID de la categoría especificada.
+	//  *
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @return Una lista de objetos Alumno que pertenecen a la categoría
+	//  *         especificada.
+	//  */
+	// List<Alumno> findByCategoriaId(Long categoriaId);
+
+	/**
+	 * Busca una página de alumnos por el ID del grado especificado.
+	 *
+	 * @param gradoId  El ID del grado de los alumnos a buscar.
+	 * @param pageable Objeto Pageable para la paginación de resultados.
+	 * @return Una página de objetos Alumno que pertenecen al grado especificado.
+	 */
+	Page<Alumno> findByGradoId(Long gradoId, Pageable pageable);
+
+	/**
+	 * Busca una lista de alumnos por el ID del grado especificado.
+	 *
+	 * @param gradoId El ID del grado de los alumnos a buscar.
+	 * @return Una lista de objetos Alumno que pertenecen al grado especificado.
+	 */
+	List<Alumno> findByGradoId(Long gradoId);
+
+	/**
+	 * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
+	 * pertenezcan al grado con el ID especificado.
+	 *
+	 * @param nombre   La cadena a buscar en el nombre de los alumnos.
+	 * @param gradoId  El ID del grado de los alumnos a buscar.
+	 * @param pageable Objeto Pageable para la paginación de resultados.
+	 * @return Una página de objetos Alumno que cumplen con los criterios de
+	 *         búsqueda.
+	 */
+	Page<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId, Pageable pageable);
+
+	/**
+	 * Busca una lista de alumnos cuyo nombre contenga la cadena especificada y que
+	 * pertenezcan al grado con el ID especificado.
+	 *
+	 * @param nombre  La cadena a buscar en el nombre de los alumnos.
+	 * @param gradoId El ID del grado de los alumnos a buscar.
+	 * @return Una lista de objetos Alumno que cumplen con los criterios de
+	 *         búsqueda.
+	 */
+	List<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId);
+
+	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
+	// /**
+	//  * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
+	//  * pertenezcan a la categoría con el ID especificado.
+	//  *
+	//  * @param nombre      La cadena a buscar en el nombre de los alumnos.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @param pageable    Objeto Pageable para la paginación de resultados.
+	//  * @return Una página de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// Page<Alumno> findByNombreContainingIgnoreCaseAndCategoriaId(String nombre, Long categoriaId, Pageable pageable);
+
+	// /**
+	//  * Busca una lista de alumnos cuyo nombre contenga la cadena especificada y que
+	//  * pertenezcan a la categoría con el ID especificado.
+	//  *
+	//  * @param nombre      La cadena a buscar en el nombre de los alumnos.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @return Una lista de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// List<Alumno> findByNombreContainingIgnoreCaseAndCategoriaId(String nombre, Long categoriaId);
+
+	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
+	// /**
+	//  * Busca una página de alumnos que pertenecen tanto al grado con el ID
+	//  * especificado como a la categoría con el ID especificado.
+	//  *
+	//  * @param gradoId     El ID del grado de los alumnos a buscar.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @param pageable    Objeto Pageable para la paginación de resultados.
+	//  * @return Una página de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// Page<Alumno> findByGradoIdAndCategoriaId(Long gradoId, Long categoriaId, Pageable pageable);
+
+	// /**
+	//  * Busca una lista de alumnos que pertenecen tanto al grado con el ID
+	//  * especificado como a la categoría con el ID especificado.
+	//  *
+	//  * @param gradoId     El ID del grado de los alumnos a buscar.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @return Una lista de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// List<Alumno> findByGradoIdAndCategoriaId(Long gradoId, Long categoriaId);
+
+	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
+	// /**
+	//  * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
+	//  * pertenezcan tanto al grado con el ID especificado como a la categoría con el
+	//  * ID especificado.
+	//  *
+	//  * @param nombre      La cadena a buscar en el nombre de los alumnos.
+	//  * @param gradoId     El ID del grado de los alumnos a buscar.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @param pageable    Objeto Pageable para la paginación de resultados.
+	//  * @return Una página de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// Page<Alumno> findByNombreContainingIgnoreCaseAndGradoIdAndCategoriaId(String nombre, Long gradoId, Long categoriaId,
+	// 		Pageable pageable);
+
+	// /**
+	//  * Busca una lista de alumnos cuyo nombre contenga la cadena especificada y que
+	//  * pertenezcan tanto al grado con el ID especificado como a la categoría con el
+	//  * ID especificado.
+	//  *
+	//  * @param nombre      La cadena a buscar en el nombre de los alumnos.
+	//  * @param gradoId     El ID del grado de los alumnos a buscar.
+	//  * @param categoriaId El ID de la categoría de los alumnos a buscar.
+	//  * @return Una lista de objetos Alumno que cumplen con los criterios de
+	//  *         búsqueda.
+	//  */
+	// List<Alumno> findByNombreContainingIgnoreCaseAndGradoIdAndCategoriaId(String nombre, Long gradoId,
+	// 		Long categoriaId);
+
+	boolean existsByEmail(String email);
+
+	Optional<Alumno> findByEmail(String email);
+
+	boolean existsByEmailIgnoreCase(String email);
+
+	Optional<Alumno> findByEmailIgnoreCase(String email);
+
+	/**
+	 * Busca todos los alumnos con un email específico.
+	 * Útil para casos donde múltiples alumnos (ej. familia) comparten el mismo email.
+	 *
+	 * @param email El email a buscar.
+	 * @return Lista de alumnos con ese email.
+	 */
+	List<Alumno> findAllByEmail(String email);
+
+	List<Alumno> findAllByEmailIgnoreCase(String email);
+
+	boolean existsByIdAndEmailIgnoreCase(Long id, String email);
+
+	List<Alumno> findAllByEmailIgnoreCaseAndActivoTrue(String email);
+
+	boolean existsByEmailIgnoreCaseAndActivoTrue(String email);
+
+	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
+
+	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
+	List<Alumno> findAlumnosSinGrupo();
+
+	@Query("SELECT MAX(a.numeroExpediente) FROM Alumno a")
+	Integer findMaxNumeroExpediente();
+
+	@Query("SELECT COUNT(a) FROM Alumno a JOIN a.grupos g WHERE g.nombre = :nombreGrupo")
+	Long contarAlumnosPorGrupo(@Param("nombreGrupo") String nombreGrupo);
+
+	// Método para obtener todos los alumnos activos aptos para examen en al menos un deporte
+	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
+		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true")
+	List<Alumno> findAlumnosAptosParaExamen();
+
+	// Mゼtodo para obtener alumnos activos aptos para examen por deporte (multi-deporte)
+	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
+		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.deporte = :deporte")
+	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
+
+	// Método para obtener alumnos aptos para examen por un deporte específico,
+	// excluyendo competición para taekwondo
+	@Query("SELECT a FROM Alumno a JOIN a.grupos g WHERE a.aptoParaExamen = true AND g.nombre LIKE %:deporte% AND g.nombre NOT LIKE %:exclusion%")
+	List<Alumno> findAptosParaExamenPorDeporte(@Param("deporte") String deporte, @Param("exclusion") String exclusion);
+
+	// Método para obtener un alumno apto para examen por su ID
+	@Query("SELECT a FROM Alumno a WHERE a.aptoParaExamen = true AND a.id = :id")
+	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
+
+	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
+
+	// Obtener todos los alumnos por deporte
+	List<Alumno> findByDeporte(Deporte deporte);
+
+	// Obtener todos los alumnos activos por deportes
+	List<Alumno> findByActivoTrueAndDeporteIn(Collection<Deporte> deportes);
+
+	List<Alumno> findByActivoTrue();
+}

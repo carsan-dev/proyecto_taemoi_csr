@@ -1,42 +1,219 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { AfterViewInit, Component, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './mapa.component.html',
-  styleUrl: './mapa.component.scss',
+  styleUrls: ['./mapa.component.scss'],
 })
 export class MapaComponent implements AfterViewInit {
-  localizacionConcreta: [number, number] = [37.3683719731871, -6.160806131969828];
+  localizacionConcreta: [number, number] = [37.368258873076506, -6.160836430640318];
   map: any;
+  routingControl?: any;
+  pulsatingIcon: any;
+  L: any;
 
-  constructor() {}
+  constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
 
-  ngAfterViewInit() {
-    if (typeof window !== 'undefined') {
-      import('leaflet').then((L) => {
-        const leaflet = L.default;
-        this.map = leaflet.map('map').setView(this.localizacionConcreta, 13);
+  ngAfterViewInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeMap();
+    }
+  }
 
-        leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  private async initializeMap(): Promise<void> {
+    try {
+      // Import Leaflet
+      const leafletModule = await import('leaflet');
+      this.L = leafletModule.default || leafletModule;
+
+      // Import plugins
+      await Promise.all([
+        import('leaflet-routing-machine'),
+        import('leaflet-control-geocoder'),
+        import('leaflet-minimap'),
+      ]);
+
+      // Initialize map
+      this.map = this.L.map('map').setView(this.localizacionConcreta, 13);
+
+      const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+      const isMobile = screenWidth <= 768;
+
+      // Add base layers
+      const mapaLayer = this.L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
           maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(this.map);
+          attribution: '© OpenStreetMap contributors'
+        }
+      );
 
-        const customIcon = leaflet.icon({
-          iconUrl: '../../../../assets/media/custom-marker.png',
-          iconSize: [38, 38],
-          iconAnchor: [22, 94],
-          popupAnchor: [-3, -76],
-        });
+      const sateliteLayer = this.L.tileLayer(
+        'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        {
+          maxZoom: 17,
+          attribution: '© OpenTopoMap contributors'
+        }
+      );
 
-        const marker = leaflet.marker(this.localizacionConcreta, { icon: customIcon }).addTo(this.map);
-        marker.bindPopup('<b>Ubicación:</b><br>C. Parada de la Cigüeña, 34a, 41806 Umbrete, Sevilla').openPopup();
-      }).catch(error => {
-        console.error('Error loading Leaflet:', error);
+      const baseMaps = {
+        'Mapa': mapaLayer,
+        'Satélite': sateliteLayer
+      };
+
+      // Add default layer
+      mapaLayer.addTo(this.map);
+
+      // Add layer control
+      this.L.control.layers(baseMaps).addTo(this.map);
+
+      if (!isMobile) {
+        // Add geocoder with safe error handling
+        try {
+          const geocoder = (this.L.Control).geocoder({
+            defaultMarkGeocode: false,
+          });
+
+          geocoder.on('markgeocode', (e: any) => {
+            try {
+              if (e && e.geocode && e.geocode.bbox) {
+                const bbox = e.geocode.bbox;
+                const poly = this.L.polygon([
+                  bbox.getSouthEast(),
+                  bbox.getNorthEast(),
+                  bbox.getNorthWest(),
+                  bbox.getSouthWest(),
+                ]);
+                this.map.fitBounds(poly.getBounds());
+              }
+            } catch (err) {
+              console.error('Error handling geocode result:', err);
+            }
+          });
+
+          geocoder.addTo(this.map);
+        } catch (err) {
+          console.warn('Geocoder plugin not available:', err);
+        }
+      }
+
+      // Add minimap on larger screens
+      if (screenWidth > 576) {
+        try {
+          const miniMapLayer = this.L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          );
+          const miniMap = new (this.L.Control).MiniMap(miniMapLayer, {
+            toggleDisplay: true,
+            position: 'topleft',
+          });
+          miniMap.addTo(this.map);
+        } catch (err) {
+          console.warn('Minimap plugin not available:', err);
+        }
+      }
+
+      // Create custom pulsating icon
+      this.pulsatingIcon = this.L.divIcon({
+        className: 'pulsating-icon',
+        html: '<i class="bi-geo-alt-fill text-danger fs-1"></i>',
+        iconSize: [30, 30],
       });
+
+      const locationTitle = 'Ubicacion Moiskimdo en Umbrete';
+
+      // Add marker
+      const marker = this.L.marker(this.localizacionConcreta, {
+        icon: this.pulsatingIcon,
+        title: locationTitle,
+        alt: locationTitle,
+      }).addTo(this.map);
+
+      // Add popup
+      const lat = this.localizacionConcreta[0];
+      const lng = this.localizacionConcreta[1];
+
+      marker.bindPopup(`
+        <b>Ubicación:</b><br>
+        C. Parada de la Cigüeña 36, 41806 Umbrete, Sevilla<br>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">Abrir en Google Maps</a>
+      `, {
+        closeButton: !isMobile,
+      }).openPopup();
+
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  }
+
+  calculateRoute(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.map || !this.L) {
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert('La geolocalización no está soportada por este navegador.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        try {
+          const userLocation = [position.coords.latitude, position.coords.longitude];
+
+          // Remove existing routing control
+          if (this.routingControl) {
+            this.map.removeControl(this.routingControl);
+          }
+
+          // Create new routing control
+          this.routingControl = (this.L).Routing.control({
+            waypoints: [
+              this.L.latLng(userLocation[0], userLocation[1]),
+              this.L.latLng(this.localizacionConcreta[0], this.localizacionConcreta[1]),
+            ],
+            routeWhileDragging: true,
+            createMarker: (i: number, waypoint: any, n: number) => {
+              const markerTitle = i === 0 ? 'Tu ubicacion' : 'Destino Moiskimdo';
+              return this.L.marker(waypoint.latLng, {
+                icon: this.pulsatingIcon,
+                title: markerTitle,
+                alt: markerTitle,
+              });
+            },
+          }).addTo(this.map);
+        } catch (error) {
+          console.error('Error creating route:', error);
+          alert('Error al calcular la ruta. Por favor, inténtalo de nuevo.');
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('Error al obtener tu ubicación: ' + error.message);
+      }
+    );
+  }
+
+  downloadLocation(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      const data = `BEGIN:VCARD
+VERSION:3.0
+N:;Mi Ubicación;;;
+FN:Mi Ubicación
+ADR;TYPE=work:;;C. Parada de la Cigüeña 36;Umbrete;Sevilla;41806;España
+END:VCARD`;
+
+      const blob = new Blob([data], { type: 'text/vcard' });
+      const url = globalThis.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ubicacion.vcf';
+      a.click();
+      globalThis.URL.revokeObjectURL(url);
     }
   }
 }

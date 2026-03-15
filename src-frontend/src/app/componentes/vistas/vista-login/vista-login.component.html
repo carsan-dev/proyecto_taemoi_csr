@@ -1,24 +1,319 @@
-<div class="login-container row d-flex justify-content-center vh-100 align-items-center">
-  <div class="col-md-9 col-12">
-    <div class="card shadow row">
-      <div class="text-center d-flex flex-md-row flex-column justify-content-between align-items-center card-header p-5">
-        <h1 class="h2 fw-bold text-white m-0">INICIAR SESIÓN</h1>
-        <img src="../../../../assets/media/Logo_escuela.svg" alt="Club Moi's Kim Do Logo" class="logo img-fluid">
+﻿<div class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <!-- Left Section - Branding -->
+      <div class="login-left">
+        <div class="branding-content">
+          <div class="brand-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+          <h1 class="brand-title">BIENVENIDO</h1>
+          <p class="brand-subtitle">Inicia sesi&oacute;n en tu cuenta</p>
+          <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
+          <div class="brand-features">
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Acceso seguro</span>
+            </div>
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Gesti&oacute;n completa</span>
+            </div>
+            <div class="feature-item">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Actualizaciones en tiempo real</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <form (ngSubmit)="login()" class="p-5" method="post">
-        <div class="mb-5">
-          <input type="email" id="email" name="email" [(ngModel)]="credenciales.email" required class="form-control" placeholder="Email">
+
+      <!-- Right Section - Login & Register -->
+      <div class="login-right">
+        <a href="/" class="mobile-back-link" aria-label="Volver al inicio">
+          <i class="bi bi-arrow-left"></i>
+          <span>Inicio</span>
+        </a>
+        <div class="form-header">
+          <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesi&oacute;n' }}</h2>
+          @if (!mostrarRegistro) {
+            <p class="form-description">
+              Accede con tu correo y contrase&ntilde;a.
+            </p>
+          }
+          @if (mostrarRegistro) {
+            <p class="form-description">
+              Registra tu cuenta con el correo y fecha de nacimiento del alumno.
+            </p>
+          }
         </div>
-        <div class="mb-5 position-relative">
-          <input [type]="passwordFieldType" id="contrasena" name="contrasena" [(ngModel)]="credenciales.contrasena" required class="form-control" placeholder="Contraseña">
-          <span class="password-toggle position-absolute end-0 top-50 translate-middle-y me-3" (click)="togglePasswordVisibility()">
-            <i [ngClass]="passwordToggleIcon" aria-hidden="true"></i>
-          </span>
+
+        <div class="mode-switch" role="tablist" aria-label="Selector de acceso">
+          <button
+            type="button"
+            class="switch-tab"
+            id="login-tab"
+            role="tab"
+            aria-controls="login-panel"
+            [attr.aria-selected]="!mostrarRegistro"
+            [attr.tabindex]="!mostrarRegistro ? 0 : -1"
+            [class.active]="!mostrarRegistro"
+            (click)="mostrarRegistro = false">
+            Iniciar sesi&oacute;n
+          </button>
+          <button
+            type="button"
+            class="switch-tab"
+            id="register-tab"
+            role="tab"
+            aria-controls="register-panel"
+            [attr.aria-selected]="mostrarRegistro"
+            [attr.tabindex]="mostrarRegistro ? 0 : -1"
+            [class.active]="mostrarRegistro"
+            (click)="mostrarRegistro = true">
+            Crear cuenta
+          </button>
         </div>
-        <div class="button-container d-flex justify-content-center align-items-center">
-          <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+
+        <div class="form-panel" [class.show-register]="mostrarRegistro">
+          <form
+            (ngSubmit)="login()"
+            class="login-form form-view login-view"
+            id="login-panel"
+            role="tabpanel"
+            aria-labelledby="login-tab"
+            [attr.aria-hidden]="mostrarRegistro"
+            [attr.inert]="mostrarRegistro ? '' : null">
+            <!-- Email Field -->
+            <div class="form-group">
+              <label for="email" class="form-label">Correo electr&oacute;nico</label>
+              <div class="input-wrapper">
+                <i class="bi bi-envelope-fill input-icon"></i>
+                <input
+                  type="email"
+                  class="form-input"
+                  id="email"
+                  name="email"
+                  [(ngModel)]="credenciales.email"
+                  required
+                  autocomplete="username">
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+              <label for="contrasena" class="form-label">Contrase&ntilde;a</label>
+              <div class="input-wrapper">
+                <i class="bi bi-lock-fill input-icon"></i>
+                <input
+                  type="password"
+                  [type]="passwordFieldType"
+                  class="form-input"
+                  id="contrasena"
+                  name="contrasena"
+                  [(ngModel)]="credenciales.contrasena"
+                  required
+                  autocomplete="current-password">
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="togglePasswordVisibility()"
+                  aria-label="Toggle password visibility">
+                  <i [ngClass]="passwordToggleIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="form-group remember-group">
+              <label class="remember-label">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  [(ngModel)]="credenciales.rememberMe" />
+                <span>Recordarme 30 d&iacute;as</span>
+              </label>
+            </div>
+
+            <div class="forgot-link">
+              <a href="/recuperar-contrasena">&iquest;Has olvidado tu contrase&ntilde;a?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button type="submit" class="btn btn-login">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span>Iniciar sesi&oacute;n</span>
+              </button>
+            </div>
+
+            <!-- Divider -->
+            <div class="divider">
+              <span>O</span>
+            </div>
+
+            <!-- Google Login Button -->
+            <div class="form-actions">
+              <button type="button" class="btn btn-google" (click)="loginWithGoogle()">
+                <i class="bi bi-google"></i>
+                <span>Continuar con Google</span>
+              </button>
+            </div>
+
+            <!-- Info Message for Students -->
+            <div class="info-message">
+              <i class="bi bi-info-circle-fill"></i>
+              <p><strong>S&oacute;lo alumnos inscritos:</strong> inicia sesi&oacute;n con Google usando el correo registrado en tu ficha.</p>
+            </div>
+
+            <!-- Additional Links -->
+            <div class="form-footer">
+              <a href="/" class="footer-link">
+                <i class="bi bi-arrow-left-circle"></i>
+                Volver al inicio
+              </a>
+            </div>
+          </form>
+
+          <form
+            (ngSubmit)="solicitarRegistro()"
+            class="login-form form-view register-view"
+            id="register-panel"
+            role="tabpanel"
+            aria-labelledby="register-tab"
+            [attr.aria-hidden]="!mostrarRegistro"
+            [attr.inert]="mostrarRegistro ? null : ''"
+            novalidate>
+            <div class="register-row">
+              <!-- Email Field -->
+              <div class="form-group">
+                <label for="registroEmail" class="form-label">Correo electr&oacute;nico</label>
+                <div class="input-wrapper">
+                  <i class="bi bi-envelope-fill input-icon"></i>
+                  <input
+                    type="email"
+                    class="form-input"
+                    id="registroEmail"
+                    name="registroEmail"
+                    [(ngModel)]="registro.email"
+                    required
+                    autocomplete="username">
+                </div>
+              </div>
+
+              <!-- Birth Date Field -->
+              <div class="form-group">
+                <label for="registroNacimiento" class="form-label">Fecha de nacimiento</label>
+                <div class="input-wrapper">
+                  <i class="bi bi-calendar-event input-icon"></i>
+                  <input
+                    type="date"
+                    class="form-input"
+                    id="registroNacimiento"
+                    name="registroNacimiento"
+                    [(ngModel)]="registro.fechaNacimiento"
+                    required
+                    autocomplete="bday">
+                </div>
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+              <label for="registroContrasena" class="form-label">Contrase&ntilde;a</label>
+              <div class="input-wrapper">
+                <i class="bi bi-lock-fill input-icon"></i>
+                <input
+                  type="password"
+                  [type]="registroTipoContrasena"
+                  class="form-input"
+                  id="registroContrasena"
+                  name="registroContrasena"
+                  [(ngModel)]="registro.contrasena"
+                  required
+                  autocomplete="new-password">
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="toggleRegistroPasswordVisibility()"
+                  aria-label="Toggle password visibility">
+                  <i [ngClass]="registroPasswordToggleIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <details class="password-rules" [open]="registro.contrasena.length > 0 || registro.confirmarContrasena.length > 0">
+              <summary>Requisitos de contrase&ntilde;a</summary>
+              <ul>
+                <li [class.ok]="registroTieneMinimo" [class.bad]="!registroTieneMinimo">
+                  <i class="bi" [ngClass]="registroTieneMinimo ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  M&iacute;nimo 8 caracteres
+                </li>
+                <li [class.ok]="registroTieneMayuscula" [class.bad]="!registroTieneMayuscula">
+                  <i class="bi" [ngClass]="registroTieneMayuscula ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  Al menos 1 may&uacute;scula
+                </li>
+                <li [class.ok]="registroTieneMinuscula" [class.bad]="!registroTieneMinuscula">
+                  <i class="bi" [ngClass]="registroTieneMinuscula ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  Al menos 1 min&uacute;scula
+                </li>
+                <li [class.ok]="registroTieneNumero" [class.bad]="!registroTieneNumero">
+                  <i class="bi" [ngClass]="registroTieneNumero ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  Al menos 1 n&uacute;mero
+                </li>
+                <li [class.ok]="registroContrasenasCoinciden" [class.bad]="!registroContrasenasCoinciden && registro.confirmarContrasena.length">
+                  <i class="bi" [ngClass]="registroContrasenasCoinciden ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  Coinciden
+                </li>
+              </ul>
+            </details>
+
+            <!-- Confirm Password -->
+            <div class="form-group">
+              <label for="registroConfirmar" class="form-label">Confirmar contrase&ntilde;a</label>
+              <div class="input-wrapper">
+                <i class="bi bi-lock-fill input-icon"></i>
+                <input
+                  type="password"
+                  [type]="registroTipoContrasena"
+                  class="form-input"
+                  id="registroConfirmar"
+                  name="registroConfirmar"
+                  [(ngModel)]="registro.confirmarContrasena"
+                  required
+                  autocomplete="new-password">
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="toggleRegistroPasswordVisibility()"
+                  aria-label="Toggle password visibility">
+                  <i [ngClass]="registroPasswordToggleIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="info-message register-info">
+              <i class="bi bi-info-circle-fill"></i>
+              <p><strong>Solo alumnos:</strong> Usa el mismo correo y fecha de nacimiento registrados en tu ficha.</p>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-login" [disabled]="!registroPuedeEnviar">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>{{ registroEnviando ? 'Enviando...' : 'Solicitar registro' }}</span>
+              </button>
+            </div>
+
+            <div class="form-footer">
+              <a href="/" class="footer-link">
+                <i class="bi bi-arrow-left-circle"></i>
+                Volver al inicio
+              </a>
+            </div>
+          </form>
         </div>
-      </form>
+
+      </div>
     </div>
   </div>
 </div>
+

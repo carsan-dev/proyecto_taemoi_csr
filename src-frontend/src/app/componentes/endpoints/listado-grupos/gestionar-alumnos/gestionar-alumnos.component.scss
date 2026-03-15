@@ -1,73 +1,85 @@
-.container {
-  max-width: 800px;
-  margin: auto;
-}
+// Import shared admin styles
+@use '../../../../componentes/admin-shared-styles.scss' as *;
+@use '../../../../componentes/admin-mobile-forms.scss' as *;
 
-.card {
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  font-size: 1.75rem;
-  margin-bottom: 20px;
-}
-
+// Component-specific list group styles
 .list-group-item {
-  border: none;
-  border-bottom: 1px solid #dee2e6;
-  padding: 15px 20px;
-  transition: background-color 0.3s ease;
+  border-bottom: 1px solid $background-light;
+  padding: 1rem 1.25rem;
+  transition: $transition-fast;
 
   &:hover {
-    background-color: #f8f9fa;
+    background-color: rgba($primary-color, 0.03);
   }
 
-  span {
-    font-size: 1.1rem;
+  .alumno-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
-  button {
-    border-radius: 30px;
-    padding: 5px 10px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
+  .alumno-image-link {
+    text-decoration: none;
+    display: block;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: $transition-fast;
 
-    &.btn-danger {
-      background-color: #dc3545;
-      border-color: #dc3545;
-
-      &:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-      }
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
   }
-}
 
-button.btn-secondary {
-  border-radius: 30px;
-  padding: 5px 10px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+  .alumno-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    display: block;
+  }
 
-  &:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
+  .alumno-name-link {
+    text-decoration: none;
+    color: inherit;
+    transition: $transition-fast;
+
+    &:hover {
+      color: $primary-color;
+      text-decoration: underline;
+    }
+  }
+
+  .alumno-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .alumno-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
 }
 
-button.btn-primary {
-  border-radius: 30px;
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+// Responsive adjustments
+@media (max-width: 768px) {
+  .list-group-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
 
-  &:hover {
-    background-color: #0056b3;
-    border-color: #004085;
+    .alumno-info {
+      width: 100%;
+    }
+
+    .alumno-actions {
+      width: 100%;
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
   }
 }

@@ -1,0 +1,51 @@
+package com.taemoi.project.services;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.lang.NonNull;
+
+import com.taemoi.project.dtos.response.AlumnoCortoDTO;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.entities.Grupo;
+
+import jakarta.validation.Valid;
+
+public interface GrupoService {
+	List<GrupoConAlumnosDTO> obtenerTodosLosGrupos();
+
+	Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@NonNull Long id);
+
+	GrupoConAlumnosDTO crearGrupo(@Valid GrupoConAlumnosDTO grupoDTO);
+
+	GrupoConAlumnosDTO actualizarGrupo(@Valid @NonNull Long id, GrupoConAlumnosDTO grupoDTO);
+
+	void eliminarGrupo(@NonNull Long id);
+
+	void agregarAlumnoAGrupo(@NonNull Long grupoId, @NonNull Long alumnoId);
+
+	void eliminarAlumnoDeGrupo(@NonNull Long grupoId, @NonNull Long alumnoId);
+
+	void agregarTurnoAGrupo(@NonNull Long grupoId, @NonNull Long turnoId);
+
+	void eliminarTurnoDeGrupo(@NonNull Long grupoId, @NonNull Long turnoId);
+
+	List<TurnoCortoDTO> obtenerTurnosDelGrupo(@NonNull Long grupoId);
+
+	GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo);
+
+	Grupo convertirDTOAEntidad(GrupoConAlumnosDTO grupoDTO);
+
+	List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId);
+
+	void agregarAlumnosAGrupo(@NonNull Long grupoId, List<Long> alumnosIds);
+
+	List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo);
+
+	Map<String, Map<String, Long>> contarAlumnosPorGrupo();
+
+	List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);
+}

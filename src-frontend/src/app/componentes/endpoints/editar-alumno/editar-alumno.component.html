@@ -1,289 +1,2084 @@
-<div class="container-fluid pb-4">
-  <div class="row">
-    <div class="mt-3 d-flex flex-column flex-wrap justify-content-center align-items-center">
-      <div *ngIf="!mostrarFormulario" class="py-5 w-100">
-        <div class="row my-3 d-flex flex-row justify-content-between">
-          <div class="col-md-6 col-lg-4">
-            <input type="text" class="form-control" placeholder="Filtrar por nombre" [(ngModel)]="nombreFiltro"
-              (ngModelChange)="filtrarPorNombre()" />
-          </div>
-          <div class="col-md-6 col-lg-4 text-end">
-            <button class="btn btn-secondary" (click)="alternarInactivos()">
-              {{ mostrarInactivos ? 'Mostrar solo activos' : 'Mostrar todos' }}
-            </button>
-          </div>
-        </div>
-        <div class="card-container">
-          <div *ngFor="let alumno of alumnos" class="card shadow-sm mb-4">
-            <div class="card-body d-flex flex-row justify-content-center align-items-center flex-wrap">
-              <div class="profile-info d-flex align-items-center mb-3">
-                <img class="imagen-perfil me-3"
-                  [src]="alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp'"
-                  alt="Perfil del alumno">
-                <div>
-                  <h5 class="card-title mt-3">{{ alumno.nombre }} {{ alumno.apellidos }}</h5>
-                  <p class="card-text">Número de expediente: {{ alumno.numeroExpediente }}</p>
-                </div>
-              </div>
-              <button class="btn btn-primary" (click)="alternarFormulario(alumno)">
-                Mostrar menú de edición
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">Información Personal</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Nombre: {{ alumno.nombre }}</li>
-                  <li class="list-group-item">Apellidos: {{ alumno.apellidos }}</li>
-                  <li class="list-group-item">Dirección: {{ alumno.direccion }}</li>
-                  <li class="list-group-item">Fecha de Nacimiento: {{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">DNI del alumno: {{ alumno.nif }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+<div id="imageModal" class="modal" (click)="cerrarModal()">
+  <span class="close" (click)="cerrarModal()">
+    <i class="bi bi-x-circle-fill"></i>
+  </span>
+  <img class="modal-content" id="imgAmpliada" alt="Foto del Alumno" loading="lazy" />
+  <div id="caption"></div>
+</div>
 
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">Contacto</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Email: {{ alumno.email }}</li>
-                  <li class="list-group-item">Teléfono: {{ alumno.telefono }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">Pagos</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Cuantía de tarifa: {{ alumno.cuantiaTarifa }}</li>
-                  <li class="list-group-item">Tipo de tarifa: {{ alumno.tipoTarifa }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+<!-- Skeleton Loading -->
+@if (cargando) {
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header Skeleton -->
+    <div class="admin-page-header">
+      <div class="skeleton-line skeleton-title" style="width: 280px; height: 32px; margin-bottom: 8px;"></div>
+      <div class="skeleton-line skeleton-text" style="width: 380px; height: 18px;"></div>
+    </div>
 
-          <div class="col-lg-6 col-md-12">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">Información adicional</h5>
-                <ul class="list-group list-group-flush" *ngFor="let alumno of alumnos">
-                  <li class="list-group-item">Fecha de alta: {{ alumno.fechaAlta | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">Fecha de baja: {{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</li>
-                  <li class="list-group-item">Autorización Web: {{ alumno.autorizacionWeb ? 'Sí' : 'No' }}</li>
-                  <li class="list-group-item">Categoría: {{ alumno.categoria }}</li>
-                  <li class="list-group-item">Grado: {{ alumno.grado }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina"
-          (pageChange)="cambiarPagina($event)">
-        </app-paginacion>
+    <!-- Action Bar Skeleton (only left side buttons) -->
+    <div class="admin-action-bar mb-4">
+      <div class="action-bar-start">
+        <div class="skeleton-button" style="width: 100px; height: 38px;"></div>
+        <div class="skeleton-button" style="width: 140px; height: 38px;"></div>
+      </div>
+    </div>
+
+    <!-- Profile Card Skeleton -->
+    <div class="admin-card admin-card-large alumno-profile-card mb-4">
+      <!-- Deportes Banner Skeleton -->
+      <div class="deportes-banner-container" style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <div class="skeleton-badge" style="width: 120px; height: 32px; border-radius: 16px;"></div>
+        <div class="skeleton-badge" style="width: 100px; height: 32px; border-radius: 16px;"></div>
       </div>
 
-      <div *ngIf="mostrarFormulario" class="py-5 w-100">
-        <form [formGroup]="alumnoForm" (ngSubmit)="confirmarYActualizarAlumno(alumnoEditado.id, alumnoEditado)" method="post">
-          <div class="image-container d-flex align-items-center text-center flex-column" *ngFor="let alumno of alumnos">
-            <img class="imagen-perfil"
-              [src]="alumno.id === alumnoEditado.id ? imagenPreview : (alumno.fotoAlumno ? 'data:' + alumno.fotoAlumno.tipo + ';base64,' + alumno.fotoAlumno.datos : '../../../../assets/media/default.webp')"
-              alt="Perfil del alumno">
-            <div class="d-flex flex-row align-items-center mt-3">
-              <label for="inputFile" class="add-icon pe-2">
-                <i class="bi bi-plus-circle-fill text-black fs-2"></i>
-                <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
-              </label>
-              <div class="remove-icon ps-2" *ngIf="alumno.fotoAlumno" (click)="eliminarFoto(alumno.id)">
-                <i class="bi bi-dash-circle-fill text-black fs-2"></i>
-              </div>
-            </div>
+      <div class="profile-content">
+        <div class="skeleton-avatar" style="width: 140px; height: 140px; border-radius: 50%;"></div>
+        <div class="profile-header" style="flex: 1;">
+          <div class="skeleton-line skeleton-title" style="width: 280px; height: 28px; margin-bottom: 12px;"></div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div class="skeleton-line skeleton-text" style="width: 150px; height: 18px;"></div>
+            <div class="skeleton-badge" style="width: 80px; height: 24px; border-radius: 12px;"></div>
           </div>
-          <div class="row">
-            <div class="col-lg-6 col-md-12 mb-4">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title mb-4">Información Personal</h5>
-                  <div class="form-group form-floating mb-3">
-                    <input type="text" id="nombre" class="form-control" formControlName="nombre" required placeholder="Nombre">
-                    <label for="nombre">Nombre</label>
-                    <div
-                      *ngIf="alumnoForm.get('nombre')?.errors && (alumnoForm.get('nombre')?.dirty || alumnoForm.get('nombre')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('nombre')?.errors?.['required']">Nombre es requerido</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="text" id="apellidos" class="form-control" formControlName="apellidos" required placeholder="Apellidos">
-                    <label for="apellidos">Apellidos</label>
-                    <div
-                      *ngIf="alumnoForm.get('apellidos')?.errors && (alumnoForm.get('apellidos')?.dirty || alumnoForm.get('apellidos')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('apellidos')?.errors?.['required']">Apellidos son requeridos</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="text" id="direccion" class="form-control" formControlName="direccion" required placeholder="Dirección">
-                    <label for="direccion">Dirección</label>
-                    <div
-                      *ngIf="alumnoForm.get('direccion')?.errors && (alumnoForm.get('direccion')?.dirty || alumnoForm.get('direccion')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('direccion')?.errors?.['required']">Dirección es requerida</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaNacimiento" class="form-control" formControlName="fechaNacimiento" required placeholder="Fecha de nacimiento">
-                    <label for="fechaNacimiento">Fecha de nacimiento</label>
-                    <div
-                      *ngIf="alumnoForm.get('fechaNacimiento')?.errors && (alumnoForm.get('fechaNacimiento')?.dirty || alumnoForm.get('fechaNacimiento')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('fechaNacimiento')?.errors?.['required']">Fecha de nacimiento es
-                        requerida</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="text" id="nif" class="form-control" formControlName="nif" required placeholder="DNI del alumno">
-                    <label for="nif">DNI del alumno</label>
-                    <div
-                      *ngIf="alumnoForm.get('nif')?.errors && (alumnoForm.get('nif')?.dirty || alumnoForm.get('nif')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('nif')?.errors?.['required']">DNI del alumno es requerido</small>
-                      <small *ngIf="alumnoForm.get('nif')?.errors?.['pattern']">DNI debe ser un formato válido (8 números
-                        y una letra)</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-6 col-md-12 mb-4">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title mb-4">Contacto</h5>
-                  <div class="form-group form-floating mb-3">
-                    <input type="email" id="email" class="form-control" formControlName="email" required placeholder="Email">
-                    <label for="email">Email</label>
-                    <div
-                      *ngIf="alumnoForm.get('email')?.errors && (alumnoForm.get('email')?.dirty || alumnoForm.get('email')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('email')?.errors?.['required']">Email es requerido</small>
-                      <small *ngIf="alumnoForm.get('email')?.errors?.['email']">Debe ser un formato de email válido</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="tel" id="telefono" class="form-control" formControlName="telefono" required placeholder="Teléfono">
-                    <label for="telefono">Teléfono</label>
-                    <div
-                      *ngIf="alumnoForm.get('telefono')?.errors && (alumnoForm.get('telefono')?.dirty || alumnoForm.get('telefono')?.touched)"
-                      class="text-danger d-flex flex-column">
-                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['required']">Teléfono es requerido</small>
-                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['pattern']">Debe ser un número de teléfono válido
-                      </small>
-                      <small *ngIf="alumnoForm.get('telefono')?.errors?.['maxlength']">No debe tener más de 9 caracteres
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-lg-6 col-md-12 mb-4">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title mb-4">Pagos</h5>
-                  <div class="form-group form-floating mb-3">
-                    <select class="form-control form-select" id="tipoTarifa" formControlName="tipoTarifa" required placeholder="Tipo de tarifa">
-                      <option *ngFor="let tarifa of tiposTarifa" [value]="tarifa">{{ tarifa }}</option>
-                    </select>
-                    <label for="tipoTarifa">Tipo de tarifa:</label>
-                    <div
-                      *ngIf="alumnoForm.get('tipoTarifa')?.errors && (alumnoForm.get('tipoTarifa')?.dirty || alumnoForm.get('tipoTarifa')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('tipoTarifa')?.errors?.['required']">Tipo de tarifa es requerido</small>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="number" id="cuantiaTarifa" class="form-control" formControlName="cuantiaTarifa" required placeholder="Cuantía de Tarifa">
-                    <label for="cuantiaTarifa">Cuantía de Tarifa</label>
-                    <div
-                      *ngIf="alumnoForm.get('cuantiaTarifa')?.errors && (alumnoForm.get('cuantiaTarifa')?.dirty || alumnoForm.get('cuantiaTarifa')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('cuantiaTarifa')?.errors?.['required']">Cuantía de Tarifa es requerida</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-6 col-md-12">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title mb-4">Información adicional</h5>
-                  <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaAlta" class="form-control" formControlName="fechaAlta" required placeholder="Fecha de alta">
-                    <label for="fechaAlta">Fecha de alta</label>
-                    <div
-                      *ngIf="alumnoForm.get('fechaAlta')?.errors && (alumnoForm.get('fechaAlta')?.dirty || alumnoForm.get('fechaAlta')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.get('fechaAlta')?.errors?.['required']">Fecha de alta es requerida</small>
-                    </div>
-                    <small *ngIf="alumnoForm.errors?.['fechaAltaAnteriorAFechaNacimiento']" class="text-danger">
-                      Fecha de alta debe ser posterior a la fecha de nacimiento.
-                    </small>
-                  </div>
-                  <div class="form-group form-floating mb-3">
-                    <input type="date" id="fechaBaja" class="form-control" formControlName="fechaBaja" placeholder="Fecha de baja">
-                    <label for="fechaBaja">Fecha de baja</label>
-                    <div
-                      *ngIf="alumnoForm.get('fechaBaja')?.errors && (alumnoForm.get('fechaBaja')?.dirty || alumnoForm.get('fechaBaja')?.touched)"
-                      class="text-danger">
-                      <small *ngIf="alumnoForm.errors?.['fechaBajaAnteriorAFechaAlta']">Fecha de baja debe ser posterior a
-                        la fecha de alta</small>
-                    </div>
-                  </div>
-                  <div class="form-group mb-3 autorizacion-web">
-                    <label for="autorizacionWeb" class="text-black">Autorización Web</label>
-                    <div class="d-flex flex-column">
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebSi"
-                          [value]="true">
-                        <label class="form-check-label text-black" for="autorizacionWebSi">Sí</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" formControlName="autorizacionWeb" id="autorizacionWebNo"
-                          [value]="false">
-                        <label class="form-check-label text-black" for="autorizacionWebNo">No</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-group form-floating">
-                    <select class="form-control form-select" id="grado" formControlName="grado" required placeholder="Grado">
-                      <option *ngFor="let grado of tiposGrado" [value]="grado">{{ grado }}</option>
-                    </select>
-                    <label for="grado">Grado</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="d-flex justify-content-around flex-row align-items-end mt-5">
-            <button type="submit" class="btn btn-success mb-3 me-3" [disabled]="alumnoForm.invalid">
-              Confirmar cambios
-            </button>
-            <button type="button" class="btn btn-secondary mb-3 ms-3"
-              (click)="alternarFormulario(alumnoEditado)">Volver</button>
-          </div>
-        </form>
+        </div>
       </div>
 
+      <!-- Pagination Skeleton -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
+        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
+        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
+      </div>
+    </div>
+
+    <!-- Deportes Tabs Skeleton -->
+    <div class="admin-card mb-4">
+      <div class="info-card-header d-flex justify-content-between align-items-center">
+        <div class="skeleton-line skeleton-title" style="width: 200px; height: 24px;"></div>
+        <div class="skeleton-button" style="width: 140px; height: 32px;"></div>
+      </div>
+      <!-- Tabs Navigation Skeleton -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; padding: 16px;">
+        <div class="skeleton-button" style="width: 140px; height: 44px; border-radius: 8px;"></div>
+        <div class="skeleton-button" style="width: 120px; height: 44px; border-radius: 8px;"></div>
+      </div>
+      <!-- Tab Content Skeleton -->
+      <div class="row g-4" style="padding: 0 16px 16px;">
+        <div class="col-lg-6">
+          <div class="skeleton-line skeleton-text" style="width: 100%; height: 120px; border-radius: 8px;"></div>
+        </div>
+        <div class="col-lg-6">
+          <div class="skeleton-line skeleton-text" style="width: 100%; height: 120px; border-radius: 8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Cards Grid Skeleton -->
+    <div class="row">
+      @for (i of [1,2,3,4]; track i) {
+      <div class="col-lg-6 col-md-12 mb-4">
+        <div class="admin-card">
+          <div class="info-card-header">
+            <div class="skeleton-line skeleton-title" style="width: 180px; height: 22px;"></div>
+          </div>
+          <div class="info-card-body">
+            @for (j of [1,2,3]; track j) {
+            <div style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+              <div class="skeleton-line skeleton-text" style="width: 100px; height: 16px;"></div>
+              <div class="skeleton-line skeleton-text" style="width: 140px; height: 16px;"></div>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+      }
     </div>
   </div>
 </div>
+}
+@if (!cargando && alumno) {
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-person-badge"></i>
+        Perfil del Alumno
+      </h2>
+      <p>Visualiza y gestiona la información completa del alumno</p>
+    </div>
+
+    <div class="d-flex flex-column flex-wrap justify-content-center align-items-center">
+      <div class="py-3 w-100">
+        <!-- Action Bar -->
+        <div class="admin-action-bar mb-4">
+          <div class="action-bar-start">
+            <button class="admin-btn admin-btn-outline" (click)="volver()" aria-label="Volver al listado">
+              <i class="bi bi-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <button class="admin-btn admin-btn-outline" (click)="alternarInactivos()"
+              aria-label="Alternar vista de inactivos">
+              <i class="bi bi-funnel"></i>
+              <span>{{ mostrarInactivos ? 'Solo activos' : 'Mostrar todos' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card con la info principal del alumno -->
+        <div class="admin-card admin-card-large alumno-profile-card mb-4">
+          <!-- Multi-sport badges header (only active sports) -->
+          <div class="deportes-banner-container">
+            @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+            @if (deporteItem.activo !== false) {
+            <div class="deporte-banner-badge" [ngClass]="{
+                'taekwondo': deporteItem.deporte === 'TAEKWONDO',
+                'pilates': deporteItem.deporte === 'PILATES',
+                'kickboxing': deporteItem.deporte === 'KICKBOXING',
+                'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
+              }">
+              <i class="bi bi-trophy-fill"></i>
+              <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
+            </div>
+            }
+            }
+          </div>
+
+          <div class="profile-content">
+            <div class="profile-image-wrapper" (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)" style="cursor: pointer;">
+              <img class="profile-image"
+                [src]="imagenPreview || (alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=420&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp')"
+                [alt]="'Foto de perfil de ' + alumno.nombre + ' ' + alumno.apellidos"
+                loading="eager"
+                decoding="async"
+                width="150"
+                height="150" />
+              <div class="profile-image-overlay">
+                <i class="bi bi-zoom-in"></i>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="inputFile.click()"
+                aria-label="Editar imagen del alumno">
+                <i class="bi bi-pencil"></i>
+                <span>Editar Imagen</span>
+              </button>
+              <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarFoto(alumno.id)"
+                [disabled]="!alumno.fotoAlumno?.url" aria-label="Eliminar imagen del alumno">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar Imagen</span>
+              </button>
+              <input #inputFile type="file" id="inputFile" (change)="onFileSelected($event)" accept="image/*"
+                style="display: none;" aria-label="Seleccionar nueva imagen del alumno" />
+            </div>
+
+            <div class="profile-header">
+              <h3 class="profile-name">{{ alumno.nombre }} {{ alumno.apellidos }}</h3>
+              <div class="profile-meta">
+                <span class="meta-item">
+                  <i class="bi bi-hash"></i>
+                  Expediente: {{ alumno.numeroExpediente }}
+                </span>
+                @if (isAlumnoActivo()) {
+                <span class="meta-item">
+                  <span class="status-badge status-active">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Activo
+                  </span>
+                </span>
+                }
+                @if (!isAlumnoActivo()) {
+                <span class="meta-item">
+                  <span class="status-badge status-inactive">
+                    <i class="bi bi-x-circle-fill"></i>
+                    Inactivo
+                  </span>
+                </span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination Component -->
+          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [deshabilitado]="cargando"
+            (pageChange)="cambiarPagina($event)">
+          </app-paginacion>
+        </div>
+
+        <!-- Multi-Sport Tabs Section -->
+        @if (deportesDelAlumno.length > 0) {
+        <div class="admin-card mb-4">
+          <div class="info-card-header deportes-alumno-header">
+            <h5 class="info-card-title">
+              <i class="bi bi-trophy-fill"></i>
+              Deportes del Alumno
+            </h5>
+            <div class="deporte-actions">
+              @if (deportesDisponibles.length > 0) {
+              <button class="admin-btn admin-btn-primary admin-btn-sm" (click)="abrirModalAgregarDeporte()">
+                <i class="bi bi-plus-circle"></i>
+                <span>Agregar Deporte</span>
+              </button>
+              }
+              @if (isAlumnoActivo()) {
+              <button class="admin-btn admin-btn-danger admin-btn-sm"
+                (click)="eliminarODarDeBajaAlumno()"
+                title="Dar de baja o eliminar alumno">
+                <i class="bi bi-trash"></i>
+                <span>Eliminar/Dar de Baja</span>
+              </button>
+              }
+              @if (!isAlumnoActivo()) {
+              <button class="admin-btn admin-btn-success admin-btn-sm"
+                (click)="eliminarODarDeBajaAlumno()"
+                title="Dar de alta o eliminar alumno">
+                <i class="bi bi-check-circle"></i>
+                <span>Dar de Alta/Eliminar</span>
+              </button>
+              }
+            </div>
+          </div>
+
+          <!-- Tabs Navigation -->
+          <div class="deportes-tabs">
+            <div class="tabs-nav">
+              @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+              <button class="tab-item" [class.active]="deporteActivo === deporteItem.deporte"
+                [class.inactive-tab]="deporteItem.activo === false"
+                [style.opacity]="deporteItem.activo === false ? '0.6' : '1'" (click)="cambiarTab(deporteItem.deporte)">
+                <i class="bi bi-trophy"></i>
+                <span class="tab-label">
+                  {{ getDeporteLabel(deporteItem.deporte) }}
+                  @if (isDeportePrincipal(deporteItem.deporte)) {
+                  <span class="tab-principal" title="Principal">
+                    <i class="bi bi-star-fill"></i>
+                  </span>
+                  }
+                  @if (deporteItem.activo === false) {
+                  <small class="ms-1 text-muted">(Inactivo)</small>
+                  }
+                </span>
+                <span class="tab-badge">{{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado' }}</span>
+              </button>
+              }
+            </div>
+
+            <!-- Tab Content -->
+            @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+            @if (deporteActivo === deporteItem.deporte) {
+            <div class="tab-content">
+              <div class="tab-panel active">
+                <!-- Deporte Header with Action Buttons -->
+                <div class="deporte-header">
+                  <h4>
+                    <i class="bi bi-trophy-fill deporte-icon"></i>
+                    {{ getDeporteLabel(deporteItem.deporte) }}
+                    @if (deporteItem.activo === false) {
+                    <span class="badge bg-secondary ms-2">
+                      <i class="bi bi-pause-circle"></i> Inactivo
+                    </span>
+                    }
+                    @if (isDeportePrincipal(deporteItem.deporte)) {
+                    <span class="badge principal-badge ms-2">
+                      <i class="bi bi-star-fill"></i> Principal
+                    </span>
+                    }
+                  </h4>
+                  <div class="deporte-actions">
+                    @if (deporteItem.activo !== false && !isDeportePrincipal(deporteItem.deporte)) {
+                    <button class="admin-btn admin-btn-outline admin-btn-sm"
+                      (click)="marcarDeportePrincipal(deporteItem.deporte)">
+                      <i class="bi bi-star"></i>
+                      <span>Marcar principal</span>
+                    </button>
+                    }
+                    @if (deporteItem.activo === false) {
+                    <button class="admin-btn admin-btn-success admin-btn-sm"
+                      (click)="activarDeporte(deporteItem.deporte)">
+                      <i class="bi bi-check-circle"></i>
+                      <span>Activar Deporte</span>
+                    </button>
+                    }
+                    @if (getDeportesActivosCount() > 1 && deporteItem.activo !== false) {
+                    <button class="admin-btn admin-btn-warning admin-btn-sm"
+                      (click)="desactivarDeporte(deporteItem.deporte)">
+                      <i class="bi bi-x-circle"></i>
+                      <span>Desactivar Deporte</span>
+                    </button>
+                    }
+                    @if (deportesDelAlumno.length > 1) {
+                    <button class="admin-btn admin-btn-danger admin-btn-sm"
+                      (click)="removerDeporte(deporteItem.deporte)">
+                      <i class="bi bi-trash"></i>
+                      <span>Eliminar Deporte</span>
+                    </button>
+                    }
+                  </div>
+                </div>
+
+                @if (esDeporteSinGrado(deporteItem.deporte)) {
+                <div class="row g-4">
+                  <!-- Left Column: Sport Statistics -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Estadísticas del Deporte
+                      </h5>
+
+                      <!-- Fecha de Alta (Editable) -->
+                      <div class="admin-form-field">
+                        <label [for]="'fechaAlta-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-plus"></i>
+                          Fecha de Alta
+                        </label>
+                        <input type="date" [id]="'fechaAlta-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAlta(deporteItem.deporte)"
+                          (change)="onFechaAltaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha de inscripcion en el deporte
+                        </small>
+                      </div>
+
+                      <!-- Antigüedad -->
+                      @if (deporteItem.antiguedad) {
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-clock-history"></i>
+                          Antigüedad en este deporte
+                        </span>
+                        <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
+                      </div>
+                      }
+
+                      <!-- Estado -->
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-info-circle"></i>
+                          Estado
+                        </span>
+                        <span class="info-value">
+                          @if (deporteItem.activo) {
+                          <span class="status-badge status-active">
+                            <i class="bi bi-check-circle-fill"></i> Activo
+                          </span>
+                          }
+                          @if (!deporteItem.activo) {
+                          <span class="status-badge status-inactive">
+                            <i class="bi bi-x-circle-fill"></i> Inactivo
+                          </span>
+                          }
+                        </span>
+                      </div>
+
+                      <!-- Fecha de Baja (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaBajaDeporte-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-x"></i>
+                          Fecha de Baja
+                        </label>
+                        <input type="date" [id]="'fechaBajaDeporte-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaBaja(deporteItem.deporte)"
+                          (change)="onFechaBajaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de baja para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Dejar vacio si no hay baja registrada
+                        </small>
+                      </div>
+
+                      <!-- Fecha Alta Inicial (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaAltaInicial-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Alta Inicial
+                        </label>
+                        <input type="date" [id]="'fechaAltaInicial-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAltaInicial(deporteItem.deporte)"
+                          (change)="onFechaAltaInicialChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta inicial para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha para calcular la antigüedad en este deporte
+                        </small>
+                      </div>
+
+                      <!-- Apply/Cancel Buttons for Estadisticas -->
+                      @if (hasPendingEstadisticasChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Right Column: Tarifa Section -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-cash-coin"></i>
+                        Información de Tarifa
+                      </h5>
+
+                      <div class="admin-form-field">
+                        <label [for]="'tipoTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-tag"></i>
+                          Tipo de Tarifa
+                        </label>
+                        <select appSearchableSelect [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
+                          <option value="">Seleccionar tarifa</option>
+                          <option value="INFANTIL">Infantil</option>
+                          <option value="ADULTO">Adulto</option>
+                          <option value="ADULTO_GRUPO">Adulto Grupo</option>
+                          <option value="PADRES_HIJOS">Padres e Hijos</option>
+                          <option value="HERMANOS">Hermanos</option>
+                          <option value="PILATES">Pilates</option>
+                          <option value="KICKBOXING">Kickboxing</option>
+                          <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                        </select>
+                      </div>
+
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'cuantiaTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-currency-euro"></i>
+                          Cuantía de Tarifa (€)
+                        </label>
+                        <input type="number" step="0.01" [id]="'cuantiaTarifa-' + deporteItem.deporte"
+                          class="admin-form-control"
+                          [ngModel]="getDisplayedCuantiaTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
+                      </div>
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'rolFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Rol Familiar
+                        </label>
+                        <select appSearchableSelect [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
+                          <option value="NINGUNO">Ninguno</option>
+                          <option value="PADRE">Padre</option>
+                          <option value="MADRE">Madre</option>
+                          <option value="HIJO">Hijo</option>
+                          <option value="HIJA">Hija</option>
+                        </select>
+                      </div>
+                      }
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'HERMANOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'grupoFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Grupo Familiar
+                        </label>
+                        <input type="text" [id]="'grupoFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedGrupoFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onGrupoFamiliarModelChange(deporteItem.deporte, $event)"
+                          placeholder="Ej: Familia García" />
+                      </div>
+                      }
+
+                      <!-- Apply/Cancel Buttons for Tarifa -->
+                      @if (hasPendingTarifaChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+                } @else {
+                <div class="row g-4">
+                  <!-- Left Column: Grade Management -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-award-fill"></i>
+                        Información de Grado
+                      </h5>
+
+                      <!-- Grado Actual -->
+                      <div class="info-item-horizontal">
+                        <span class="info-label">
+                          <i class="bi bi-award"></i>
+                          Grado Actual
+                        </span>
+                        <span class="info-value info-value-highlight" [style]="getGradoStyle(deporteItem.grado || '')">
+                          {{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado asignado' }}
+                        </span>
+                      </div>
+
+                      <!-- Update Grade Button -->
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm w-100 mt-2"
+                        (click)="abrirModalActualizarGrado(deporteItem.deporte)">
+                        <i class="bi bi-arrow-up-circle"></i>
+                        <span>Actualizar Grado</span>
+                      </button>
+
+                      <!-- Fecha de Grado -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaGrado-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Grado
+                        </label>
+                        <input type="date" [id]="'fechaGrado-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaGrado(deporteItem.deporte)"
+                          (change)="onFechaGradoChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de grado para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha en que obtuvo este grado
+                        </small>
+                      </div>
+
+                      <!-- Apply/Cancel Buttons for Grado -->
+                      @if (hasPendingGradoChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyGradoChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelGradoChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+
+                      <!-- Apto para Examen Toggle -->
+                      <div class="admin-form-switch mt-3" [class.checked]="deporteItem.aptoParaExamen">
+                        <label [for]="'aptoExamen-' + deporteItem.deporte">
+                          <i class="bi bi-check-circle"></i>
+                          ¿Apto para examen?
+                        </label>
+                        <div class="switch">
+                          <input type="checkbox" class="form-check-input" [id]="'aptoExamen-' + deporteItem.deporte"
+                            [checked]="deporteItem.aptoParaExamen"
+                            (change)="actualizarAptoParaExamen(deporteItem.deporte, $event)"
+                            [attr.aria-label]="'Apto para examen en ' + getDeporteLabel(deporteItem.deporte)" />
+                          <span class="slider"></span>
+                        </div>
+                      </div>
+
+                      <!-- Convocatorias Section (Only for sports with grades and if apto) -->
+                      @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA' &&
+                      deporteItem.aptoParaExamen) {
+                      <div class="convocatorias-section mt-4">
+                        <h6 class="section-mini-title">
+                          <i class="bi bi-calendar-event"></i>
+                          Convocatorias
+                        </h6>
+                        @if (getProximaConvocatoriaPorDeporte(deporteItem.deporte); as convocatoriaAsignada) {
+                        <div class="convocatoria-status convocatoria-status-active">
+                          <span class="status-pill">
+                            <i class="bi bi-check-circle-fill"></i>
+                            Inscrito
+                          </span>
+                          <span class="convocatoria-status-text">
+                            Próxima: {{ convocatoriaAsignada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+                            @if (getCantidadConvocatoriasProximasPorDeporte(deporteItem.deporte) > 1) {
+                            <small class="ms-1">
+                              (+{{ getCantidadConvocatoriasProximasPorDeporte(deporteItem.deporte) - 1 }} más)
+                            </small>
+                            }
+                          </span>
+                        </div>
+                        } @else {
+                        <div class="convocatoria-status convocatoria-status-empty">
+                          <span class="status-pill status-pill-muted">
+                            <i class="bi bi-dash-circle"></i>
+                            Sin convocatoria próxima
+                          </span>
+                        </div>
+                        }
+                        <div class="button-group-vertical">
+                          <button class="admin-btn admin-btn-primary admin-btn-sm"
+                            (click)="abrirModalConvocatoriasPorDeporte(deporteItem.deporte)">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>Agregar a Convocatoria</span>
+                          </button>
+                          @if (deporteItem.deporte !== 'KICKBOXING') {
+                          <button class="admin-btn admin-btn-warning admin-btn-sm"
+                            (click)="pasarGradoPorRecompensa(deporteItem.deporte)">
+                            <i class="bi bi-award"></i>
+                            <span>Pasar de Grado por Recompensa</span>
+                          </button>
+                          }
+                          @if (deporteItem.deporte === 'KICKBOXING') {
+                          <button class="admin-btn admin-btn-warning admin-btn-sm"
+                            (click)="pasarGradoConDerechoExamen(deporteItem.deporte)">
+                            <i class="bi bi-journal-check"></i>
+                            <span>Añadir Derecho de Examen</span>
+                          </button>
+                          }
+                        </div>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Right Column: Sport Statistics -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Estadísticas del Deporte
+                      </h5>
+
+                      <!-- Fecha de Alta (Editable) -->
+                      <div class="admin-form-field">
+                        <label [for]="'fechaAlta-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-plus"></i>
+                          Fecha de Alta
+                        </label>
+                        <input type="date" [id]="'fechaAlta-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAlta(deporteItem.deporte)"
+                          (change)="onFechaAltaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha de inscripcion en el deporte
+                        </small>
+                      </div>
+
+                      <!-- Antigüedad -->
+                      @if (deporteItem.antiguedad) {
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-clock-history"></i>
+                          Antigüedad en este deporte
+                        </span>
+                        <span class="info-value info-value-highlight">{{ deporteItem.antiguedad }}</span>
+                      </div>
+                      }
+
+                      <!-- Estado -->
+                      <div class="info-item-horizontal mt-3">
+                        <span class="info-label">
+                          <i class="bi bi-info-circle"></i>
+                          Estado
+                        </span>
+                        <span class="info-value">
+                          @if (deporteItem.activo) {
+                          <span class="status-badge status-active">
+                            <i class="bi bi-check-circle-fill"></i> Activo
+                          </span>
+                          }
+                          @if (!deporteItem.activo) {
+                          <span class="status-badge status-inactive">
+                            <i class="bi bi-x-circle-fill"></i> Inactivo
+                          </span>
+                          }
+                        </span>
+                      </div>
+
+                      <!-- Fecha de Baja (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaBajaDeporte-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-x"></i>
+                          Fecha de Baja
+                        </label>
+                        <input type="date" [id]="'fechaBajaDeporte-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaBaja(deporteItem.deporte)"
+                          (change)="onFechaBajaChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de baja para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Dejar vacio si no hay baja registrada
+                        </small>
+                      </div>
+
+                      <!-- Fecha Alta Inicial (Editable) -->
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaAltaInicial-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Alta Inicial
+                        </label>
+                        <input type="date" [id]="'fechaAltaInicial-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaAltaInicial(deporteItem.deporte)"
+                          (change)="onFechaAltaInicialChange(deporteItem.deporte, $event)"
+                          [attr.aria-label]="'Fecha de alta inicial para ' + getDeporteLabel(deporteItem.deporte)" />
+                        <small class="form-text text-muted">
+                          <i class="bi bi-info-circle"></i>
+                          Fecha para calcular la antigüedad en este deporte
+                        </small>
+                      </div>
+
+                      <!-- Apply/Cancel Buttons for Estadisticas -->
+                      @if (hasPendingEstadisticasChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelEstadisticasChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Additional Per-Sport Sections -->
+                <div class="row g-4 mt-3">
+                  <!-- Tarifa Section -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-cash-coin"></i>
+                        Información de Tarifa
+                      </h5>
+
+                      <div class="admin-form-field">
+                        <label [for]="'tipoTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-tag"></i>
+                          Tipo de Tarifa
+                        </label>
+                        <select appSearchableSelect [id]="'tipoTarifa-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
+                          <option value="">Seleccionar tarifa</option>
+                          <option value="INFANTIL">Infantil</option>
+                          <option value="ADULTO">Adulto</option>
+                          <option value="ADULTO_GRUPO">Adulto Grupo</option>
+                          <option value="PADRES_HIJOS">Padres e Hijos</option>
+                          <option value="HERMANOS">Hermanos</option>
+                          <option value="PILATES">Pilates</option>
+                          <option value="KICKBOXING">Kickboxing</option>
+                          <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                        </select>
+                      </div>
+
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'cuantiaTarifa-' + deporteItem.deporte">
+                          <i class="bi bi-currency-euro"></i>
+                          Cuantía de Tarifa (€)
+                        </label>
+                        <input type="number" step="0.01" [id]="'cuantiaTarifa-' + deporteItem.deporte"
+                          class="admin-form-control"
+                          [ngModel]="getDisplayedCuantiaTarifa(deporteItem.deporte)"
+                          (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
+                      </div>
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'rolFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Rol Familiar
+                        </label>
+                        <select appSearchableSelect [id]="'rolFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedRolFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onRolFamiliarModelChange(deporteItem.deporte, $event)">
+                          <option value="NINGUNO">Ninguno</option>
+                          <option value="PADRE">Padre</option>
+                          <option value="MADRE">Madre</option>
+                          <option value="HIJO">Hijo</option>
+                          <option value="HIJA">Hija</option>
+                        </select>
+                      </div>
+                      }
+
+                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'HERMANOS') {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'grupoFamiliar-' + deporteItem.deporte">
+                          <i class="bi bi-people"></i>
+                          Grupo Familiar
+                        </label>
+                        <input type="text" [id]="'grupoFamiliar-' + deporteItem.deporte" class="admin-form-control"
+                          [ngModel]="getDisplayedGrupoFamiliar(deporteItem.deporte)"
+                          (ngModelChange)="onGrupoFamiliarModelChange(deporteItem.deporte, $event)"
+                          placeholder="Ej: Familia García" />
+                      </div>
+                      }
+
+                      <!-- Apply/Cancel Buttons for Tarifa -->
+                      @if (hasPendingTarifaChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelTarifaChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Licencia Section -->
+                  <div class="col-lg-6">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-card-checklist"></i>
+                        Información de Licencia Federativa
+                      </h5>
+
+                      <div class="admin-form-switch" [class.checked]="getDisplayedTieneLicencia(deporteItem.deporte)">
+                        <label [for]="'tieneLicencia-' + deporteItem.deporte">
+                          <i class="bi bi-check-circle"></i>
+                          ¿Tiene Licencia Federativa?
+                        </label>
+                        <div class="switch">
+                          <input type="checkbox" class="form-check-input" [id]="'tieneLicencia-' + deporteItem.deporte"
+                            [checked]="getDisplayedTieneLicencia(deporteItem.deporte)"
+                            (change)="onTieneLicenciaChange(deporteItem.deporte, $event)" />
+                          <span class="slider"></span>
+                        </div>
+                      </div>
+
+                      @if (getDisplayedTieneLicencia(deporteItem.deporte)) {
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'numeroLicencia-' + deporteItem.deporte">
+                          <i class="bi bi-hash"></i>
+                          Número de Licencia
+                        </label>
+                        <input type="number" [id]="'numeroLicencia-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedNumeroLicencia(deporteItem.deporte) ?? ''"
+                          (input)="onNumeroLicenciaChange(deporteItem.deporte, $event)" />
+                      </div>
+
+                      <div class="admin-form-field mt-3">
+                        <label [for]="'fechaLicencia-' + deporteItem.deporte">
+                          <i class="bi bi-calendar-check"></i>
+                          Fecha de Licencia
+                        </label>
+                        <input type="date" [id]="'fechaLicencia-' + deporteItem.deporte" class="admin-form-control"
+                          [value]="getDisplayedFechaLicencia(deporteItem.deporte)"
+                          (change)="onFechaLicenciaChange(deporteItem.deporte, $event)" />
+                      </div>
+                      }
+
+                      <!-- Apply/Cancel Buttons for Licencia -->
+                      @if (hasPendingLicenciaChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyLicenciaChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelLicenciaChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+                }
+                <!-- Competitor Section (Only for Taekwondo and Kickboxing) -->
+                @if (deporteItem.deporte === 'TAEKWONDO' || deporteItem.deporte === 'KICKBOXING') {
+                <div class="row g-4 mt-3">
+                  <div class="col-12">
+                    <div class="sport-info-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-trophy"></i>
+                        Información de Competidor
+                      </h5>
+
+                      <!-- Check if student has license before showing competitor option -->
+                      @if (pendingLicenciaChanges.get(deporteItem.deporte)?.tieneLicencia ?? deporteItem.tieneLicencia) {
+                      <div class="admin-form-switch" [class.checked]="pendingCompetidorChanges.get(deporteItem.deporte)?.competidor ?? deporteItem.competidor">
+                        <label [for]="'competidor-' + deporteItem.deporte">
+                          <i class="bi bi-check-circle"></i>
+                          ¿Es Competidor?
+                        </label>
+                        <div class="switch">
+                          <input type="checkbox" class="form-check-input" [id]="'competidor-' + deporteItem.deporte"
+                            [checked]="pendingCompetidorChanges.get(deporteItem.deporte)?.competidor ?? deporteItem.competidor"
+                            (change)="onCompetidorChange(deporteItem.deporte, $event)" />
+                          <span class="slider"></span>
+                        </div>
+                      </div>
+
+                      @if (pendingCompetidorChanges.get(deporteItem.deporte)?.competidor ?? deporteItem.competidor) {
+                      <!-- Competition dates -->
+                      <div class="row mt-3">
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'fechaAltaCompeticion-' + deporteItem.deporte">
+                              <i class="bi bi-calendar-plus"></i>
+                              Fecha Alta Competición
+                            </label>
+                            <input type="date" [id]="'fechaAltaCompeticion-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.fechaAltaCompeticion ?? (deporteItem.fechaAltaCompeticion ? (deporteItem.fechaAltaCompeticion | date: 'yyyy-MM-dd') : '')"
+                              (change)="onFechaAltaCompeticionChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'fechaAltaCompetidorInicial-' + deporteItem.deporte">
+                              <i class="bi bi-calendar-event"></i>
+                              Fecha Alta Competidor Inicial
+                            </label>
+                            <input type="date" [id]="'fechaAltaCompetidorInicial-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.fechaAltaCompetidorInicial ?? (deporteItem.fechaAltaCompetidorInicial ? (deporteItem.fechaAltaCompetidorInicial | date: 'yyyy-MM-dd') : '')"
+                              (change)="onFechaAltaCompetidorInicialChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Antiguedad display and Categoria selector -->
+                      <div class="row mt-3">
+                        @if (deporteItem.antiguedadCompetidor) {
+                        <div class="col-md-6">
+                          <div class="info-item">
+                            <span class="info-label">
+                              <i class="bi bi-hourglass-split"></i>
+                              Antigüedad como Competidor
+                            </span>
+                            <span class="info-value">{{ deporteItem.antiguedadCompetidor }}</span>
+                          </div>
+                        </div>
+                        }
+                        <div [class]="deporteItem.antiguedadCompetidor ? 'col-md-6' : 'col-12'">
+                          <div class="admin-form-field">
+                            <label [for]="'categoria-' + deporteItem.deporte">
+                              <i class="bi bi-award"></i>
+                              Categoría
+                            </label>
+                            <select appSearchableSelect [id]="'categoria-' + deporteItem.deporte" class="admin-form-control"
+                              [ngModel]="getCategoriaValue(deporteItem.deporte)"
+                              (ngModelChange)="onCategoriaModelChange(deporteItem.deporte, $event)">
+                              <option value="">-- Seleccionar Categoría --</option>
+                              @for (cat of categorias; track cat) {
+                                <option [value]="cat">{{ cat }}</option>
+                              }
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Weight fields -->
+                      <div class="row mt-3">
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'peso-' + deporteItem.deporte">
+                              <i class="bi bi-speedometer"></i>
+                              Peso (kg)
+                            </label>
+                            <input type="number" step="0.1" [id]="'peso-' + deporteItem.deporte"
+                              class="admin-form-control" [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.peso ?? deporteItem.peso ?? ''"
+                              (input)="onPesoChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="admin-form-field">
+                            <label [for]="'fechaPeso-' + deporteItem.deporte">
+                              <i class="bi bi-calendar-check"></i>
+                              Fecha de Peso
+                            </label>
+                            <input type="date" [id]="'fechaPeso-' + deporteItem.deporte" class="admin-form-control"
+                              [value]="pendingCompetidorChanges.get(deporteItem.deporte)?.fechaPeso ?? (deporteItem.fechaPeso ? (deporteItem.fechaPeso | date: 'yyyy-MM-dd') : '')"
+                              (change)="onFechaPesoChange(deporteItem.deporte, $event)" />
+                          </div>
+                        </div>
+                      </div>
+                      }
+                      } @else {
+                      <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        El alumno debe tener una licencia federativa activa para poder ser marcado como competidor.
+                      </div>
+                      }
+
+                      <!-- Apply/Cancel Buttons for Competidor -->
+                      @if (hasPendingCompetidorChanges(deporteItem.deporte)) {
+                      <div class="button-group mt-3">
+                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                          (click)="applyCompetidorChanges(deporteItem.deporte)">
+                          <i class="bi bi-check-circle"></i>
+                          <span>Aplicar Cambios</span>
+                        </button>
+                        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                          (click)="cancelCompetidorChanges(deporteItem.deporte)">
+                          <i class="bi bi-x-circle"></i>
+                          <span>Cancelar</span>
+                        </button>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+                }
+
+                <!-- Grupos y Turnos Section (Nested Cards) -->
+                <div class="row g-4 mt-3">
+                  <div class="col-12">
+                    <div class="grupos-turnos-section">
+                      <h5 class="section-subtitle">
+                        <i class="bi bi-people-fill"></i>
+                        Grupos y Turnos
+                      </h5>
+
+                      <!-- Empty state when no grupos -->
+                      @if (getGruposDelDeporte(deporteItem.deporte).length === 0) {
+                      <div class="empty-state">
+                        <i class="bi bi-collection"></i>
+                        <p>Sin grupos asignados</p>
+                        <small class="text-muted">Añade un grupo para comenzar a gestionar los turnos</small>
+                      </div>
+                      }
+
+                      <!-- Grupo Cards -->
+                      @for (grupo of getGruposDelDeporte(deporteItem.deporte); track grupo.id) {
+                      <div class="grupo-card">
+                        <div class="grupo-card-header">
+                          <span class="grupo-nombre">
+                            <i class="bi bi-collection-fill"></i>
+                            {{ grupo.nombre }}
+                          </span>
+                          <button type="button" class="btn-remove"
+                                  (click)="eliminarGrupoAlumno(grupo.id)"
+                                  title="Eliminar grupo"
+                                  aria-label="Eliminar grupo {{ grupo.nombre }}">
+                            <i class="bi bi-x-lg"></i>
+                          </button>
+                        </div>
+
+                        <div class="grupo-card-body">
+                          <!-- Turnos list -->
+                          <div class="turnos-list">
+                            @for (turno of getTurnosDelGrupo(grupo.id); track turno.id) {
+                            <div class="turno-item">
+                              <span class="turno-info">
+                                <i class="bi bi-clock"></i>
+                                {{ turno.diaSemana }} {{ turno.horaInicio }} - {{ turno.horaFin }}
+                              </span>
+                              <button type="button" class="btn-remove-sm"
+                                      (click)="eliminarTurnoAlumno(turno.id)"
+                                      title="Eliminar turno"
+                                      aria-label="Eliminar turno {{ turno.diaSemana }}">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
+                            }
+
+                            @if (getTurnosDelGrupo(grupo.id).length === 0) {
+                            <span class="text-muted fst-italic">Sin turnos asignados</span>
+                            }
+                          </div>
+
+                          <!-- Add turno select (only turnos from this grupo) -->
+                          @if (getTurnosDisponiblesDelGrupo(grupo.id).length > 0) {
+                          <div class="add-turno-action">
+                            <select appSearchableSelect class="form-select form-select-sm"
+                                    (change)="agregarTurnoAlumno(+$any($event.target).value); $any($event.target).value = ''">
+                              <option value="" selected disabled>+ Añadir turno...</option>
+                              @for (turno of getTurnosDisponiblesDelGrupo(grupo.id); track turno.id) {
+                              <option [value]="turno.id">
+                                {{ turno.diaSemana }} {{ turno.horaInicio }} - {{ turno.horaFin }}
+                              </option>
+                              }
+                            </select>
+                          </div>
+                          }
+                        </div>
+                      </div>
+                      }
+
+                      <!-- Add Grupo select -->
+                      @if (getGruposDisponiblesDelDeporte(deporteItem.deporte).length > 0) {
+                      <div class="add-grupo-action">
+                        <select appSearchableSelect class="form-select"
+                                (change)="agregarGrupoAlumno(+$any($event.target).value); $any($event.target).value = ''">
+                          <option value="" selected disabled>+ Añadir grupo...</option>
+                          @for (grupo of getGruposDisponiblesDelDeporte(deporteItem.deporte); track grupo.id) {
+                          <option [value]="grupo.id">{{ grupo.nombre }}</option>
+                          }
+                        </select>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            }
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Información del alumno: secciones personales, pagos, etc. -->
+        <div class="row">
+          <!-- Información Personal -->
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="admin-card">
+              <div class="info-card-header d-flex justify-content-between align-items-center">
+                <h5 class="info-card-title">
+                  <i class="bi bi-person-fill"></i>
+                  Información Personal
+                </h5>
+                <button class="admin-btn admin-btn-sm"
+                        [class.admin-btn-primary]="!editingBasicInfo"
+                        [class.admin-btn-outline]="editingBasicInfo"
+                        (click)="toggleEditBasicInfo()">
+                  <i class="bi" [class.bi-pencil]="!editingBasicInfo" [class.bi-x-lg]="editingBasicInfo"></i>
+                  <span>{{ editingBasicInfo ? 'Cancelar' : 'Editar' }}</span>
+                </button>
+              </div>
+              <div class="info-card-body">
+                <!-- Nombre -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('nombre')">
+                  <label for="nombre">
+                    <i class="bi bi-person"></i>
+                    Nombre
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="nombre" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('nombre')"
+                           [value]="getDisplayedBasicInfo('nombre')"
+                           (input)="onBasicInfoChange('nombre', $event)"
+                           placeholder="Nombre del alumno" />
+                    @if (hasBasicInfoError('nombre')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('nombre') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">{{ alumno.nombre }}</span>
+                  }
+                </div>
+
+                <!-- Apellidos -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('apellidos')">
+                  <label for="apellidos">
+                    <i class="bi bi-person"></i>
+                    Apellidos
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="apellidos" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('apellidos')"
+                           [value]="getDisplayedBasicInfo('apellidos')"
+                           (input)="onBasicInfoChange('apellidos', $event)"
+                           placeholder="Apellidos del alumno" />
+                    @if (hasBasicInfoError('apellidos')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('apellidos') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">{{ alumno.apellidos }}</span>
+                  }
+                </div>
+
+                <!-- Dirección -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('direccion')">
+                  <label for="direccion">
+                    <i class="bi bi-house"></i>
+                    Dirección
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="direccion" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('direccion')"
+                           [value]="getDisplayedBasicInfo('direccion')"
+                           (input)="onBasicInfoChange('direccion', $event)"
+                           placeholder="Dirección completa" />
+                    @if (hasBasicInfoError('direccion')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('direccion') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">{{ alumno.direccion }}</span>
+                  }
+                </div>
+
+                <!-- Fecha de Nacimiento -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('fechaNacimiento')">
+                  <label for="fechaNacimiento">
+                    <i class="bi bi-calendar"></i>
+                    Fecha de Nacimiento
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="date" id="fechaNacimiento" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('fechaNacimiento')"
+                           [value]="alumno.fechaNacimiento | date:'yyyy-MM-dd'"
+                           (change)="onBasicInfoChange('fechaNacimiento', $event)" />
+                    @if (hasBasicInfoError('fechaNacimiento')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('fechaNacimiento') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">{{ alumno.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+                  }
+                </div>
+
+                <!-- DNI -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('nif')">
+                  <label for="nif">
+                    <i class="bi bi-card-text"></i>
+                    DNI
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="nif" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('nif')"
+                           [value]="getDisplayedBasicInfo('nif')"
+                           (input)="onBasicInfoChange('nif', $event)"
+                           placeholder="12345678A (opcional)" />
+                    @if (hasBasicInfoError('nif')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('nif') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">{{ alumno.nif }}</span>
+                  }
+                </div>
+
+                <!-- Discapacidad -->
+                <div class="admin-form-field mb-3">
+                  <label>
+                    <i class="bi bi-universal-access"></i>
+                    Discapacidad
+                  </label>
+                  @if (editingBasicInfo) {
+                    <div class="admin-form-switch" [class.checked]="pendingBasicInfoChanges.tieneDiscapacidad ?? alumno.tieneDiscapacidad">
+                      <div class="switch">
+                        <input type="checkbox" class="form-check-input" id="tieneDiscapacidad"
+                               [checked]="pendingBasicInfoChanges.tieneDiscapacidad ?? alumno.tieneDiscapacidad"
+                               (change)="onBasicInfoChange('tieneDiscapacidad', $event)" />
+                        <span class="slider"></span>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="info-value">
+                      @if (alumno.tieneDiscapacidad) {
+                        <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                      } @else {
+                        <span class="badge-no"><i class="bi bi-x-circle"></i> No</span>
+                      }
+                    </span>
+                  }
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Productos y Pagos -->
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="admin-card">
+              <div class="info-card-header">
+                <h5 class="info-card-title">
+                  <i class="bi bi-cash-stack"></i>
+                  Productos y Pagos
+                </h5>
+              </div>
+              <div class="info-card-body">
+                <div class="subsection-header">
+                  <i class="bi bi-box-seam"></i>
+                  <span>Productos Asignados</span>
+                  @if (productosAlumno.length > 0) {
+                  <span class="badge bg-primary ms-2">{{ productosAlumno.length }}</span>
+                  }
+                </div>
+
+                <div class="productos-table-wrapper">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Concepto</th>
+                        <th>Fecha</th>
+                        <th>Cant.</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (producto of productosPaginados; track producto.id) {
+                      <tr>
+                        <td>{{ producto.concepto }}</td>
+                        <td>{{ producto.fechaAsignacion | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ producto.cantidad }}</td>
+                        <td [ngClass]="{'text-danger fw-bold': !producto.pagado}">
+                          {{ calcularTotal(producto.precio, producto.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
+                        </td>
+                        <td>
+                          <div class="producto-status">
+                          @if (producto.pagado) {
+                          <span class="status-badge status-paid">
+                            <i class="bi bi-check-circle-fill"></i> Pagado
+                          </span>
+                          }
+                          @if (!producto.pagado) {
+                          <span class="status-badge status-unpaid">
+                            <i class="bi bi-exclamation-circle-fill"></i> Pendiente
+                          </span>
+                          <button type="button" class="admin-btn admin-btn-success admin-btn-icon"
+                            (click)="pagarProducto(producto)" [disabled]="isPagandoProducto(producto.id)"
+                            [attr.title]="isPagandoProducto(producto.id) ? 'Marcando...' : 'Marcar pagado'"
+                            aria-label="Marcar producto como pagado">
+                            <i class="bi bi-cash-coin"></i>
+                          </button>
+                          }
+                          </div>
+                        </td>
+                      </tr>
+                      }
+                      @if (!productosPaginados || productosPaginados.length === 0) {
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-3">
+                          <i class="bi bi-inbox"></i> No hay productos asignados
+                        </td>
+                      </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Pagination for productos -->
+                @if (totalPaginasProductos > 1) {
+                <app-paginacion [paginaActual]="paginaActualProductos" [totalPaginas]="totalPaginasProductos"
+                  [tamanoPagina]="tamanoPaginaProductos" [deshabilitado]="cargando" (pageChange)="cambiarPaginaProductos($event)" class="mt-3">
+                </app-paginacion>
+                }
+
+                <div class="button-group mt-4">
+                  <button type="button" class="admin-btn admin-btn-primary"
+                    (click)="navegarAGestionProductos(alumno.id)">
+                    <i class="bi bi-gear"></i>
+                    <span>Gestionar Productos</span>
+                  </button>
+                  <button type="button" class="admin-btn admin-btn-success" (click)="reservarPlaza(alumno.id)">
+                    <i class="bi bi-bookmark-check"></i>
+                    <span>Reservar Plaza</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contacto -->
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="admin-card">
+              <div class="info-card-header">
+                <h5 class="info-card-title">
+                  <i class="bi bi-envelope"></i>
+                  Información de Contacto
+                </h5>
+              </div>
+              <div class="info-card-body">
+                <!-- Email -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('email')">
+                  <label for="email">
+                    <i class="bi bi-envelope-fill"></i>
+                    Email
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="email" id="email" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('email')"
+                           [value]="getDisplayedBasicInfo('email')"
+                           (input)="onBasicInfoChange('email', $event)"
+                           placeholder="correo@ejemplo.com" />
+                    @if (hasBasicInfoError('email')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('email') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">
+                      <a [href]="'mailto:' + alumno.email" class="contact-link">{{ alumno.email }}</a>
+                    </span>
+                  }
+                </div>
+
+                <!-- Teléfono Principal -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('telefono')">
+                  <label for="telefono">
+                    <i class="bi bi-telephone-fill"></i>
+                    Teléfono Principal
+                    @if (editingBasicInfo) {<span class="required">*</span>}
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="tel" id="telefono" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('telefono')"
+                           [value]="getDisplayedBasicInfo('telefono')"
+                           (input)="onBasicInfoChange('telefono', $event)"
+                           placeholder="123456789" />
+                    @if (hasBasicInfoError('telefono')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('telefono') }}
+                      </div>
+                    }
+                  } @else {
+                    <span class="info-value">
+                      <a [href]="'tel:' + alumno.telefono" class="contact-link">{{ alumno.telefono }}</a>
+                    </span>
+                  }
+                </div>
+
+                <!-- Teléfono Secundario -->
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('telefono2')">
+                  <label for="telefono2">
+                    <i class="bi bi-telephone"></i>
+                    Teléfono Secundario
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="tel" id="telefono2" class="admin-form-control"
+                           [class.is-invalid]="hasBasicInfoError('telefono2')"
+                           [value]="getDisplayedBasicInfo('telefono2')"
+                           (input)="onBasicInfoChange('telefono2', $event)"
+                           placeholder="123456789" />
+                    @if (hasBasicInfoError('telefono2')) {
+                      <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {{ getBasicInfoError('telefono2') }}
+                      </div>
+                    }
+                  } @else {
+                    @if (alumno.telefono2) {
+                      <span class="info-value">
+                        <a [href]="'tel:' + alumno.telefono2" class="contact-link">{{ alumno.telefono2 }}</a>
+                      </span>
+                    } @else {
+                      <span class="info-value text-muted">No establecido</span>
+                    }
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información Adicional -->
+          <div class="col-lg-6 col-md-12 mb-4">
+            <div class="admin-card">
+              <div class="info-card-header">
+                <h5 class="info-card-title">
+                  <i class="bi bi-info-circle"></i>
+                  Información Adicional
+                </h5>
+              </div>
+              <div class="info-card-body">
+                <!-- Deportes Activos (read only) -->
+                <div class="admin-form-field mb-3">
+                  <label>
+                    <i class="bi bi-flag"></i>
+                    Deportes Activos
+                  </label>
+                  <div class="deportes-badges-container">
+                    @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
+                      @if (deporteItem.activo !== false) {
+                        <span class="deporte-badge-inline" [ngClass]="{
+                          'taekwondo': deporteItem.deporte === 'TAEKWONDO',
+                          'pilates': deporteItem.deporte === 'PILATES',
+                          'kickboxing': deporteItem.deporte === 'KICKBOXING',
+                          'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
+                        }">
+                          <i class="bi bi-trophy-fill"></i>
+                          {{ getDeporteLabel(deporteItem.deporte) }}
+                        </span>
+                      }
+                    }
+                    @if (getDeportesActivosCount() === 0) {
+                      <span class="text-muted">Sin deportes activos</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Fecha de Baja -->
+                <div class="admin-form-field mb-3">
+                  <label for="fechaBaja">
+                    <i class="bi bi-calendar-x"></i>
+                    Fecha de Baja General
+                  </label>
+                  @if (editingBasicInfo) {
+                    <input type="date" id="fechaBaja" class="admin-form-control"
+                           [value]="alumno.fechaBaja ? (alumno.fechaBaja | date:'yyyy-MM-dd') : ''"
+                           (change)="onBasicInfoChange('fechaBaja', $event)" />
+                    <small class="form-text text-muted">
+                      <i class="bi bi-info-circle"></i>
+                      Fecha en que el alumno dejó completamente la escuela
+                    </small>
+                  } @else {
+                    @if (alumno.fechaBaja) {
+                      <span class="info-value">{{ alumno.fechaBaja | date:'dd/MM/yyyy' }}</span>
+                    } @else {
+                      <span class="info-value text-muted">No establecida</span>
+                    }
+                  }
+                </div>
+
+                <!-- Autorización Web -->
+                <div class="admin-form-field mb-3">
+                  <label>
+                    <i class="bi bi-camera"></i>
+                    Autorización Web
+                  </label>
+                  @if (editingBasicInfo) {
+                    <div class="admin-form-switch" [class.checked]="pendingBasicInfoChanges.autorizacionWeb ?? alumno.autorizacionWeb">
+                      <div class="switch">
+                        <input type="checkbox" class="form-check-input" id="autorizacionWeb"
+                               [checked]="pendingBasicInfoChanges.autorizacionWeb ?? alumno.autorizacionWeb"
+                               (change)="onBasicInfoChange('autorizacionWeb', $event)" />
+                        <span class="slider"></span>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="info-value">
+                      @if (alumno.autorizacionWeb) {
+                        <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                      } @else {
+                        <span class="badge-no"><i class="bi bi-x-circle"></i> No</span>
+                      }
+                    </span>
+                  }
+                </div>
+                <!-- Observaciones -->
+                <div class="admin-form-field mb-3">
+                  <label for="observaciones">
+                    <i class="bi bi-journal-text"></i>
+                    Observaciones
+                  </label>
+                  <textarea id="observaciones" class="admin-form-control observaciones-textarea" rows="4"
+                            [(ngModel)]="observacionesDraft"
+                            placeholder="Escribe aquí todas las observaciones que quieras."
+                            aria-label="Observaciones del alumno"></textarea>
+                  <div class="observaciones-actions">
+                    <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                            (click)="guardarObservaciones()"
+                            [disabled]="!hasObservacionesChanges() || guardandoObservaciones">
+                      <i class="bi bi-check-circle"></i>
+                      <span>{{ guardandoObservaciones ? 'Guardando...' : 'Guardar observaciones' }}</span>
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Puedes añadir todas las observaciones que necesites.
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documentos -->
+          <div class="col-12 mb-4" id="documentos-section">
+            <div class="admin-card">
+              <div class="info-card-header">
+                <h5 class="info-card-title">
+                  <i class="bi bi-file-earmark-text"></i>
+                  Documentos
+                </h5>
+              </div>
+              <div class="info-card-body">
+                @if (documentosAlumno && documentosAlumno.length > 0) {
+                <div class="documentos-grid" [class.expanded]="mostrarTodosDocumentos">
+                  @for (doc of documentosVisibles; track doc.id; let i = $index) {
+                  <div class="documento-item"
+                    [class.nuevo-item]="mostrarTodosDocumentos && i >= documentosVisiblesInicial"
+                    [style.animation-delay]="mostrarTodosDocumentos && i >= documentosVisiblesInicial ? ((i - documentosVisiblesInicial) * 0.05) + 's' : '0s'">
+                    <div class="documento-icon">
+                      <i class="bi bi-file-earmark-pdf-fill"></i>
+                    </div>
+                    <div class="documento-info">
+                      <span class="documento-name" [title]="doc.nombre">{{ doc.nombre }}</span>
+                      <span class="documento-type">{{ doc.tipo }}</span>
+                    </div>
+                    <div class="documento-actions">
+                      <button class="action-btn action-btn-primary" (click)="descargarDocumento(doc)"
+                        title="Descargar documento">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      @if (esDocumentoPrevisualizable(doc.tipo)) {
+                      <button class="action-btn action-btn-primary" (click)="abrirDocumento(doc)"
+                        title="Abrir documento">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      }
+                      <button class="action-btn action-btn-danger" (click)="eliminarDocumento(doc.id)"
+                        title="Eliminar documento">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  }
+                </div>
+                @if (documentosAlumno.length > documentosVisiblesInicial) {
+                <button type="button" class="btn-ver-mas mt-3" (click)="toggleMostrarDocumentos()">
+                  @if (mostrarTodosDocumentos) {
+                  <i class="bi bi-chevron-up"></i>
+                  <span>Ver menos</span>
+                  } @else {
+                  <i class="bi bi-chevron-down"></i>
+                  <span>Ver más ({{ documentosAlumno.length - documentosVisiblesInicial }} más)</span>
+                  }
+                </button>
+                }
+                }
+                @if (!documentosAlumno || documentosAlumno.length === 0) {
+                <div class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <p>No hay documentos disponibles</p>
+                </div>
+                }
+
+                <div class="mt-4 d-flex gap-2 flex-wrap">
+                  <button type="button" class="admin-btn admin-btn-success" (click)="docFileInput.click()"
+                    aria-label="Subir Documento">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Subir Documento</span>
+                  </button>
+                  <button type="button" class="admin-btn admin-btn-whatsapp" (click)="abrirWhatsApp()"
+                    aria-label="Abrir WhatsApp" [disabled]="!alumno?.telefono && !alumno?.telefono2">
+                    <i class="bi bi-whatsapp"></i>
+                    <span>WhatsApp</span>
+                  </button>
+                  <input #docFileInput type="file" id="docFile" (change)="onDocumentoSelected($event)"
+                    style="display: none;"
+                    accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx"
+                    aria-label="Seleccionar documento para subir" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Action Bar for Editing -->
+        @if (editingBasicInfo && hasPendingBasicInfoChanges()) {
+          <div class="floating-action-bar" [class.has-errors]="hasBasicInfoErrors()">
+            <div class="floating-action-content">
+              <span class="floating-action-text">
+                @if (hasBasicInfoErrors()) {
+                  <i class="bi bi-exclamation-triangle text-warning"></i>
+                  Corrige los errores antes de guardar
+                } @else {
+                  <i class="bi bi-pencil-square"></i>
+                  Tienes cambios sin guardar
+                }
+              </span>
+              <div class="floating-action-buttons">
+                <button type="button" class="admin-btn admin-btn-secondary"
+                        (click)="cancelBasicInfoChanges()">
+                  <i class="bi bi-x-circle"></i>
+                  <span>Cancelar</span>
+                </button>
+                <button type="button" class="admin-btn admin-btn-success"
+                        [disabled]="hasBasicInfoErrors()"
+                        (click)="applyBasicInfoChanges()">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Guardar Cambios</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de convocatoria (root level for proper overlay) -->
+  @if (alumno) {
+  <div id="convocatoriaModal" class="modal" [class.show]="mostrarModalConvocatorias"
+    (click)="cerrarModalConvocatorias()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-calendar-event me-2"></i>
+          Seleccionar Convocatoria - {{ getDeporteLabel(deporteParaConvocatoria) }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalConvocatorias()" aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Convocatorias disponibles para <strong>{{ getDeporteLabel(deporteParaConvocatoria) }}</strong>:
+        </p>
+
+        @if (convocatoriasFiltradasPorDeporte.length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-calendar-x fs-1"></i>
+          <p class="mt-3">No hay convocatorias disponibles para este deporte</p>
+        </div>
+        }
+
+        @if (convocatoriasFiltradasPorDeporte.length > 0) {
+        <div class="convocatoria-list">
+          @if (convocatoriaActual) {
+          <div (click)="agregarAConvocatoriaPorDeporte(convocatoriaActual)"
+            class="convocatoria-item convocatoria-item-current">
+            <div class="convocatoria-icon">
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">Convocatoria Actual</span>
+              <span class="convocatoria-date">
+                {{ convocatoriaActual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ convocatoriaActual.deporte }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+          }
+          @for (convocatoria of convocatoriasFiltradasPorDeporte; track convocatoria.id) {
+          <div (click)="agregarAConvocatoriaPorDeporte(convocatoria)" class="convocatoria-item">
+            <div class="convocatoria-icon">
+              <i class="bi bi-calendar-event"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
+              <span class="convocatoria-date">
+                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalConvocatorias()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal de eliminar de convocatoria (root level for proper overlay) -->
+  @if (alumno) {
+  <div id="eliminarConvocatoriaModal" class="modal" [class.show]="mostrarModalEliminarConvocatorias"
+    (click)="cerrarModalEliminarConvocatorias()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-trash me-2"></i>
+          Eliminar de Convocatoria
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEliminarConvocatorias()"
+          aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Elige la convocatoria de la que deseas eliminar al alumno:</p>
+        <div class="convocatoria-list">
+          @for (convocatoria of convocatoriasDelAlumno; track convocatoria.id) {
+          <div (click)="eliminarDeConvocatoriaSeleccionada(convocatoria)"
+            class="convocatoria-item convocatoria-item-delete">
+            <div class="convocatoria-icon">
+              <i class="bi bi-calendar-x"></i>
+            </div>
+            <div class="convocatoria-info">
+              <span class="convocatoria-title">{{ convocatoria.deporte }}</span>
+              <span class="convocatoria-date">
+                {{ convocatoria.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalEliminarConvocatorias()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal de WhatsApp -->
+  @if (alumno) {
+  <div id="whatsappModal" class="modal" [class.show]="mostrarModalWhatsapp"
+    (click)="cerrarModalWhatsapp()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-whatsapp me-2"></i>
+          Enviar WhatsApp
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalWhatsapp()" aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Escribe el mensaje y selecciona los documentos que quieras descargar.</p>
+
+        <div class="admin-form-field mb-3">
+          <label for="whatsappMensaje">
+            <i class="bi bi-chat-dots"></i>
+            Mensaje
+          </label>
+          <textarea id="whatsappMensaje" class="admin-form-control" rows="4"
+            [(ngModel)]="whatsappMensaje" placeholder="Escribe el mensaje"></textarea>
+        </div>
+
+        <div class="whatsapp-docs-section">
+          <h6 class="whatsapp-docs-title">
+            <i class="bi bi-paperclip"></i>
+            Documentos
+          </h6>
+          @if (documentosAlumno && documentosAlumno.length > 0) {
+          <div class="whatsapp-docs-list">
+            @for (doc of documentosAlumno; track doc.id) {
+            <label class="whatsapp-doc-item">
+              <input type="checkbox" class="form-check-input"
+                [checked]="isWhatsappDocumentoSeleccionado(doc.id)"
+                (change)="toggleWhatsappDocumento(doc.id, $event)"
+                [attr.aria-label]="'Seleccionar documento ' + doc.nombre" />
+              <span class="doc-name" [title]="doc.nombre">{{ doc.nombre }}</span>
+              <span class="doc-type">{{ doc.tipo }}</span>
+            </label>
+            }
+          </div>
+          } @else {
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No hay documentos disponibles</p>
+          </div>
+          }
+          <small class="form-text text-muted">
+            Los documentos seleccionados se descargaran al enviar para adjuntarlos manualmente en WhatsApp.
+          </small>
+        </div>
+
+        @if (whatsappTelefonoSeleccionado) {
+        <div class="whatsapp-telefono mt-3">
+          <i class="bi bi-telephone"></i>
+          Numero seleccionado: {{ whatsappTelefonoSeleccionado }}
+        </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalWhatsapp()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-whatsapp"
+          (click)="enviarWhatsappConDocumentos()" [disabled]="!whatsappTelefonoSeleccionado">
+          <i class="bi bi-whatsapp"></i>
+          <span>Enviar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal para agregar deporte -->
+  @if (alumno) {
+  <div id="agregarDeporteModal" class="modal" [class.show]="mostrarModalAgregarDeporte"
+    (click)="cerrarModalAgregarDeporte()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle me-2"></i>
+          Agregar Deporte al Alumno
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalAgregarDeporte()"
+          aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Selecciona el deporte que deseas agregar:</p>
+
+        <!-- Deporte Selection -->
+        <div class="admin-form-field mb-3">
+          <label for="nuevoDeporte">
+            <i class="bi bi-trophy"></i>
+            Deporte
+            <span class="required">*</span>
+          </label>
+          <select appSearchableSelect id="nuevoDeporte" class="admin-form-control form-select" [(ngModel)]="nuevoDeporte"
+            (ngModelChange)="onNuevoDeporteChange($event)">
+            @for (deporte of deportesDisponibles; track deporte) {
+            <option [value]="deporte">{{ getDeporteLabel(deporte) }}</option>
+            }
+          </select>
+        </div>
+
+        @if (!esDeporteSinGrado(nuevoDeporte)) {
+        <!-- Grado Inicial -->
+        <div class="admin-form-field mb-3">
+          <label for="gradoInicialDeporte">
+            <i class="bi bi-award"></i>
+            Grado Inicial
+            <span class="required">*</span>
+          </label>
+          <select appSearchableSelect id="gradoInicialDeporte" class="admin-form-control form-select" [(ngModel)]="gradoInicialDeporte">
+            @for (grado of todosLosGrados; track grado.tipoGrado) {
+            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            }
+          </select>
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Selecciona el grado con el que comenzará en este deporte
+          </small>
+        </div>
+        }
+
+        <!-- Fecha de Alta -->
+        <div class="admin-form-field mb-3">
+          <label for="fechaAltaDeporte">
+            <i class="bi bi-calendar-plus"></i>
+            Fecha de Alta
+            <span class="required">*</span>
+          </label>
+          <input type="date" id="fechaAltaDeporte" class="admin-form-control" [(ngModel)]="fechaAltaDeporte"
+            aria-label="Fecha de alta en el deporte" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Fecha en que el alumno se inscribe en este deporte
+          </small>
+        </div>
+
+        <!-- Fecha de Alta Inicial (Opcional) -->
+        <div class="admin-form-field mb-3">
+          <label for="fechaAltaInicialDeporte">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Alta Inicial (opcional)
+          </label>
+          <input type="date" id="fechaAltaInicialDeporte" class="admin-form-control"
+            [(ngModel)]="fechaAltaInicialDeporte" aria-label="Fecha de alta inicial en el deporte" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Si no se indica, se usará la fecha de alta
+          </small>
+        </div>
+
+        @if (!esDeporteSinGrado(nuevoDeporte)) {
+        <!-- Fecha de Grado -->
+        <div class="admin-form-field">
+          <label for="fechaGradoDeporte">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Grado
+            <span class="required">*</span>
+          </label>
+          <input type="date" id="fechaGradoDeporte" class="admin-form-control" [(ngModel)]="fechaGradoDeporte"
+            aria-label="Fecha de grado inicial" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Fecha en que obtuvo el grado inicial
+          </small>
+        </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalAgregarDeporte()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-primary" (click)="agregarDeporte()"
+          [disabled]="!nuevoDeporte || !fechaAltaDeporte || (requiereGradoNuevoDeporte() && (!gradoInicialDeporte || !fechaGradoDeporte))">
+          <i class="bi bi-check-circle"></i>
+          <span>Agregar Deporte</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal para actualizar grado -->
+  @if (alumno) {
+  <div id="actualizarGradoModal" class="modal" [class.show]="mostrarModalActualizarGrado"
+    (click)="cerrarModalActualizarGrado()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-arrow-up-circle me-2"></i>
+          Actualizar Grado - {{ getDeporteLabel(deporteParaActualizarGrado) }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalActualizarGrado()"
+          aria-label="Cerrar modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Selecciona el nuevo grado:</p>
+
+        <!-- Current Grade Display -->
+        <div class="alert alert-info mb-3" role="alert">
+          <i class="bi bi-info-circle"></i>
+          <strong>Grado Actual:</strong> {{ getGradoDelDeporte(deporteParaActualizarGrado) }}
+        </div>
+
+        <!-- New Grade Selection -->
+        <div class="admin-form-field">
+          <label for="nuevoGradoActualizar">
+            <i class="bi bi-award"></i>
+            Nuevo Grado
+            <span class="required">*</span>
+          </label>
+          <select appSearchableSelect id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
+            @for (grado of todosLosGrados; track grado.tipoGrado) {
+            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            }
+          </select>
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Selecciona el nuevo grado
+          </small>
+        </div>
+
+        <div class="admin-form-field mt-3">
+          <label for="fechaGradoActualizar">
+            <i class="bi bi-calendar-check"></i>
+            Fecha de Grado
+            <span class="required">*</span>
+          </label>
+          <input type="date" id="fechaGradoActualizar" class="admin-form-control"
+            [(ngModel)]="fechaGradoActualizar" aria-label="Fecha de grado" />
+          <small class="form-text text-muted mt-2">
+            <i class="bi bi-info-circle"></i>
+            Selecciona la fecha del grado
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="admin-btn admin-btn-outline" (click)="cerrarModalActualizarGrado()">
+          <i class="bi bi-x-circle"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="admin-btn admin-btn-success" (click)="actualizarGradoDeporte()"
+          [disabled]="!nuevoGradoActualizar || !fechaGradoActualizar">
+          <i class="bi bi-check-circle"></i>
+          <span>Actualizar Grado</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+</div>
+}

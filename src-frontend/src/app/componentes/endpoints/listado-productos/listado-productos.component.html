@@ -1,0 +1,126 @@
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-box-seam"></i>
+        Gestión de Productos
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-success" [routerLink]="['/productosCrear']">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear producto</span>
+        </button>
+        <button class="admin-btn admin-btn-danger" (click)="eliminarProductosSeleccionados()"
+          [disabled]="!hasSelectedProductos">
+          <i class="bi bi-trash"></i>
+          <span class="d-none d-md-inline">Eliminar Seleccionados</span>
+          <span class="d-md-none">Eliminar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="admin-filter-bar">
+      <div class="filter-row">
+        <div class="filter-item">
+          <input type="text" class="admin-form-control" placeholder="🔍 Filtrar por concepto..."
+            [(ngModel)]="conceptoFiltro" (ngModelChange)="filtrarPorConcepto()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton Loading -->
+    @if (cargando) {
+      <app-skeleton-card type="table" [count]="tamanoPagina"></app-skeleton-card>
+    }
+
+    <!-- Tabla de productos -->
+    @if (!cargando) {
+      <div class="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">
+                <div class="form-check d-flex justify-content-center">
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="allProductosSelected"
+                    (change)="toggleSelectAll($event)"
+                    title="Seleccionar todos">
+                </div>
+              </th>
+              <th (click)="ordenarPor('id')" style="cursor: pointer;">
+                ID
+                @if (orderBy === 'id') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th (click)="ordenarPor('concepto')" style="cursor: pointer;">
+                Concepto
+                @if (orderBy === 'concepto') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th (click)="ordenarPor('precio')" style="cursor: pointer;">
+                Precio
+                @if (orderBy === 'precio') {
+                  <span>
+                    <i class="bi" [ngClass]="{
+                          'bi-arrow-up-circle-fill': order === 'asc',
+                          'bi-arrow-down-circle-fill': order === 'desc'
+                        }"></i>
+                  </span>
+                }
+              </th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of productos; track producto.id) {
+              <tr>
+                <td>
+                  <div class="form-check d-flex justify-content-center">
+                    <input type="checkbox" class="form-check-input" [(ngModel)]="producto.selected">
+                  </div>
+                </td>
+                <td>{{ producto.id }}</td>
+                <td>{{ producto.concepto }}</td>
+                <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
+                <td class="col-actions">
+                  <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>Editar</span>
+                  </button>
+                  <button class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarProducto(producto.id)">
+                    <i class="bi bi-trash"></i>
+                    <span>Eliminar</span>
+                  </button>
+                </td>
+              </tr>
+            }
+            @if (!cargando && (!productos || productos.length === 0)) {
+              <tr>
+                <td colspan="5" class="text-center text-muted">No hay productos disponibles</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Paginación -->
+    <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando"
+      (pageChange)="cambiarPagina($event)" class="mt-4">
+    </app-paginacion>
+  </div>
+</div>

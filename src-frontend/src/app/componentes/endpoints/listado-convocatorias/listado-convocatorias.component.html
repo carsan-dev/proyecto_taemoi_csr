@@ -1,0 +1,313 @@
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Action Bar -->
+    <div class="admin-action-bar">
+      <h2>
+        <i class="bi bi-clipboard-check"></i>
+        Gestión de Convocatorias
+      </h2>
+      <div class="action-buttons">
+        <button class="admin-btn admin-btn-info"
+                (click)="generarReporte(convocatoriaSeleccionada)"
+                [disabled]="generandoReporte || !convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
+          @if (generandoReporte) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>Generando...</span>
+          } @else if (convocatoriaSeleccionada) {
+            <i class="bi bi-file-earmark-text"></i>
+            <span>
+              Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+            </span>
+          } @else {
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Generar Informe</span>
+          }
+        </button>
+
+        <button class="admin-btn admin-btn-success" (click)="crearConvocatoria()">
+          <i class="bi bi-plus-circle"></i>
+          <span>Crear Convocatoria</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar with Sport Selection -->
+    <div class="admin-filter-bar">
+      <div class="filter-row">
+        <div class="filter-item sport-filter">
+          <label for="deporte" class="form-label fw-semibold">
+            <i class="bi bi-funnel-fill me-2"></i>Filtrar por Deporte:
+          </label>
+          <select appSearchableSelect id="deporte" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado"
+            (change)="onDeporteChange()">
+            @for (deporte of deportes; track deporte) {
+              <option [value]="deporte">{{ deporte }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton Loading -->
+    @if (cargando) {
+      <app-skeleton-card type="list" [count]="tamanoPaginaConvocatorias"></app-skeleton-card>
+    }
+
+    <!-- Lista de convocatorias o mensaje de vacío -->
+    @if (!cargando && convocatorias && convocatorias.length > 0) {
+
+      <!-- Convocatorias Grid -->
+      <div class="convocatorias-grid">
+        @for (convocatoria of convocatoriasPaginadas; track convocatoria.id) {
+          <div class="convocatoria-card"
+               [class.expanded]="convocatoria.expanded">
+
+          <!-- Convocatoria Header (Clickable) -->
+          <div class="convocatoria-card-header" (click)="seleccionarConvocatoria(convocatoria)"
+               role="button" tabindex="0" [attr.aria-expanded]="convocatoria.expanded"
+               (keydown.enter)="seleccionarConvocatoria(convocatoria)"
+               (keydown.space)="seleccionarConvocatoria(convocatoria); $event.preventDefault()">
+
+            <div class="convocatoria-header-content">
+              <!-- Sport Badge -->
+              <div class="sport-badge" [class.taekwondo]="convocatoria.deporte === 'TAEKWONDO'"
+                   [class.kickboxing]="convocatoria.deporte === 'KICKBOXING'">
+                <i class="bi bi-trophy-fill"></i>
+                <span>{{ convocatoria.deporte }}</span>
+              </div>
+
+              <!-- Date Display -->
+              <div class="date-display">
+                <div class="date-icon">
+                  <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="date-info">
+                  <span class="date-label">Fecha de Examen</span>
+                  <span class="date-value">{{ convocatoria.fechaConvocatoria | capitalizeMonth }}</span>
+                </div>
+              </div>
+
+              <!-- Expand Indicator -->
+              <div class="expand-indicator">
+                <i class="bi" [class.bi-chevron-down]="!convocatoria.expanded"
+                   [class.bi-chevron-up]="convocatoria.expanded"></i>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="convocatoria-actions">
+              <button class="action-btn delete-btn" (click)="eliminarConvocatoria(convocatoria); $event.stopPropagation()"
+                      title="Eliminar convocatoria" aria-label="Eliminar convocatoria">
+                <i class="bi bi-trash3-fill"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Convocatoria Details (Expandable) -->
+          @if (convocatoria.expanded && convocatoriaSeleccionada?.id === convocatoria.id) {
+            <div class="convocatoria-card-body"
+                 [@slideDown]>
+
+              <!-- Summary Stats -->
+              <div class="summary-stats">
+              <div class="stat-card">
+                <div class="stat-icon students">
+                  <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ alumnosInscritos.length }}</span>
+                  <span class="stat-label">Alumnos Inscritos</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon paid">
+                  <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ (alumnosInscritos | filter: 'pagado': true).length }}</span>
+                  <span class="stat-label">Pagados</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon pending">
+                  <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ (alumnosInscritos | filter: 'pagado': false).length }}</span>
+                  <span class="stat-label">Pendientes</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Grades Button -->
+            <div class="action-section">
+              <button class="admin-btn admin-btn-primary admin-btn-lg"
+                      (click)="actualizarGrados(convocatoriaSeleccionada)"
+                      [disabled]="actualizandoGrados || !alumnosInscritos || alumnosInscritos.length === 0">
+                @if (actualizandoGrados) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Actualizando grados...</span>
+                } @else {
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span>Actualizar Grados de Todos los Alumnos</span>
+                }
+              </button>
+            </div>
+
+            <!-- Alumnos Table -->
+            @if (alumnosInscritos.length > 0) {
+              <div class="students-section">
+                <h5 class="section-title">
+                  <i class="bi bi-list-check me-2"></i>
+                  Detalle de Alumnos
+                </h5>
+
+                <div class="students-table-wrapper">
+                  <table class="students-table">
+                    <thead>
+                      <tr>
+                        <th>Alumno</th>
+                        <th>Grado Actual</th>
+                        <th>Grado Siguiente</th>
+                        <th class="text-center">Cuantía (€)</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (alumno of alumnosInscritos; track alumno.id) {
+                        <tr [class.paid]="alumno.pagado" [class.unpaid]="!alumno.pagado">
+                      <td class="student-info">
+                        <div class="student-avatar">
+                          {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }}
+                        </div>
+                        <div class="student-name">
+                          <strong>{{ alumno.nombre }} {{ alumno.apellidos }}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge badge-grade current" [style]="getGradoStyle(alumno.gradoActual)">{{ alumno.gradoActual }}</span>
+                      </td>
+                      <td>
+                        <span class="badge badge-grade next" [style]="getGradoStyle(alumno.gradoSiguiente)">{{ alumno.gradoSiguiente }}</span>
+                      </td>
+                      <td class="text-center">
+                        <input type="number" class="cuantia-input" step="0.01" min="0"
+                               [(ngModel)]="alumno.cuantiaExamen"
+                               (change)="actualizarAlumnoConvocatoria(alumno)"
+                               [class.paid]="alumno.pagado"
+                               [class.unpaid]="!alumno.pagado"
+                               aria-label="Cuantía del examen" />
+                      </td>
+                      <td class="text-center">
+                        <div class="payment-status-toggle">
+                          <input type="checkbox" class="payment-checkbox" [id]="'payment-' + alumno.id"
+                                 [(ngModel)]="alumno.pagado"
+                                 (change)="actualizarAlumnoConvocatoria(alumno)" />
+                          <label [for]="'payment-' + alumno.id" class="payment-label">
+                            <span class="payment-icon">
+                              <i class="bi" [class.bi-check-circle-fill]="alumno.pagado"
+                                 [class.bi-x-circle-fill]="!alumno.pagado"></i>
+                            </span>
+                            <span class="payment-text">{{ alumno.pagado ? 'Pagado' : 'Pendiente' }}</span>
+                          </label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <button class="action-btn delete-btn-small"
+                                (click)="eliminarAlumnoDeConvocatoria(alumno)"
+                                title="Eliminar alumno de la convocatoria"
+                                aria-label="Eliminar alumno">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <i class="bi bi-inbox"></i>
+                </div>
+                <p class="empty-text">No hay alumnos inscritos en esta convocatoria</p>
+                <p class="empty-subtext">Agrega alumnos usando el formulario de abajo</p>
+              </div>
+            }
+
+            <!-- Add Student Section -->
+            <div class="add-student-section">
+              <h5 class="section-title">
+                <i class="bi bi-person-plus-fill me-2"></i>
+                Agregar Alumno a la Convocatoria
+              </h5>
+
+              <div class="add-student-form">
+                <div class="form-group">
+                  <label for="alumnoSeleccionado" class="form-label">
+                    <i class="bi bi-search me-2"></i>Seleccionar Alumno
+                  </label>
+                  <select appSearchableSelect id="alumnoSeleccionado" class="form-select-custom"
+                          [(ngModel)]="alumnoSeleccionado">
+                    <option [value]="null" disabled>Seleccione un alumno apto para examen</option>
+                    @for (alumno of alumnosFiltrados; track alumno.id) {
+                      <option [value]="alumno.id">
+                        {{ alumno.nombre }} {{ alumno.apellidos }} - {{ alumno.grado }}
+                      </option>
+                    }
+                  </select>
+                </div>
+
+                <button class="admin-btn admin-btn-success"
+                        [disabled]="!alumnoSeleccionado"
+                        (click)="agregarAlumnoAConvocatoria()">
+                  <i class="bi bi-plus-circle-fill"></i>
+                  <span>Agregar Alumno</span>
+                </button>
+              </div>
+
+              @if (!alumnosCargadosCompletamente) {
+                <button class="load-more-btn"
+                        (click)="cargarAlumnosPaginados()">
+                  <i class="bi bi-arrow-clockwise me-2"></i>
+                  Cargar Más Alumnos
+                </button>
+              }
+            </div>
+            </div>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Pagination for Convocatorias -->
+      <app-paginacion
+        [paginaActual]="paginaActualConvocatorias"
+        [totalPaginas]="totalPaginasConvocatorias"
+        [tamanoPagina]="tamanoPaginaConvocatorias"
+        [deshabilitado]="cargando"
+        (pageChange)="cambiarPaginaConvocatorias($event)"
+        class="mt-4">
+      </app-paginacion>
+    } @else {
+      <!-- Plantilla para cuando no haya convocatorias -->
+      <div class="admin-card text-center empty-state-large">
+        <div class="empty-illustration">
+          <i class="bi bi-clipboard2-x"></i>
+        </div>
+        <h3 class="empty-title">No hay convocatorias disponibles</h3>
+        <p class="empty-description">
+          Parece que no hay convocatorias registradas para <strong>{{ deporteSeleccionado }}</strong>.
+        </p>
+        <button class="admin-btn admin-btn-primary admin-btn-lg" (click)="crearConvocatoria()">
+          <i class="bi bi-plus-circle-fill me-2"></i>
+          Crear Primera Convocatoria
+        </button>
+      </div>
+    }
+  </div>
+</div>

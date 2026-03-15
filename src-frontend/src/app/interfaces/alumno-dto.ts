@@ -1,4 +1,5 @@
 export interface AlumnoDTO {
+  grupos: any;
   id: number;
   nombre: string;
   apellidos: string;
@@ -8,4 +9,7 @@ export interface AlumnoDTO {
     tipo: string;
     datos: string;
   };
+  numeroExpediente?: number;
+  grado?: string;
+  activo?: boolean;
 }

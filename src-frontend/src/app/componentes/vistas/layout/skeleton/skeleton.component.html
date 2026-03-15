@@ -1,19 +1,44 @@
-<div class="container-fluid vh-100 p-0 d-flex flex-column">
+<!-- skeleton.component.html -->
+<div class="p-0 d-flex flex-column container-fluid">
   <div class="row flex-grow-1">
-    <div *ngIf="tieneRolAdminOManager" [ngClass]="{'col-2': !sidebarColapsado, 'col-auto': sidebarColapsado}" class="p-0 bg-black transition-col">
-      <app-sidebar (colapsoCambiado)="onColapsoCambiado($event)"></app-sidebar>
-    </div>
-    <div [ngClass]="{
-      'col-10': tieneRolAdminOManager && !sidebarColapsado,
-      'col-12': !tieneRolAdminOManager || (tieneRolAdminOManager && sidebarColapsado),
-      'sidebar-colapsado': sidebarColapsado
-    }" class="p-0 d-flex flex-column">
+    <div class="content-container p-0 d-flex flex-column w-100">
       <app-header class="row justify-content-center"></app-header>
-      <main class="row" id="content">
+      <main class="row g-0" id="content">
         <ng-content></ng-content>
       </main>
     </div>
   </div>
   <app-botonscroll></app-botonscroll>
   <app-footer class="row"></app-footer>
+</div>
+<div
+  *ngIf="showCookieBanner"
+  id="cookie-consent"
+  class="cookie-consent"
+  role="dialog"
+  aria-live="polite"
+  aria-label="Aviso de cookies"
+>
+  <div class="cookie-consent__card">
+    <div class="cookie-consent__text">
+      <h2>Cookies y privacidad</h2>
+      <p>
+        Usamos cookies de an&aacute;lisis para mejorar la experiencia.
+        Puedes aceptarlas o rechazarlas en cualquier momento.
+      </p>
+      <p class="cookie-consent__notice" [hidden]="!showAdblockNotice">
+        Si usas un bloqueador de anuncios, la anal&iacute;tica puede no funcionar aunque aceptes.
+        Para activarla, desactiva el adblock o permite esta web.
+      </p>
+      <div class="cookie-consent__links">
+        <a href="/politica-privacidad">Pol&iacute;tica de privacidad</a>
+        <span aria-hidden="true">&middot;</span>
+        <a href="/politica-cookies">Pol&iacute;tica de cookies</a>
+      </div>
+    </div>
+    <div class="cookie-consent__actions">
+      <button id="cookie-consent-reject" type="button" (click)="rejectCookies()">Rechazar</button>
+      <button id="cookie-consent-accept" type="button" (click)="acceptCookies()">Aceptar anal&iacute;ticas</button>
+    </div>
+  </div>
 </div>

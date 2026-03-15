@@ -1,48 +1,298 @@
-<div class="container mt-5">
-  <div class="card p-4 shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="text-center m-0">Editar Evento</h2>
-      <button class="btn btn-secondary btn-sm" (click)="volver()">Volver</button>
+<div class="admin-page-container">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h2>
+        <i class="bi bi-pencil-square"></i>
+        Editar Evento
+      </h2>
+      <p>Modifica la información del evento publicado en la web</p>
     </div>
-    <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()" method="post">
-      <div class="form-group form-floating mb-3">
-        <input id="titulo" type="text" formControlName="titulo" class="form-control" required placeholder="Título"/>
-        <label for="titulo" class="form-label">Título</label>
-        <div *ngIf="eventoForm.get('titulo')?.invalid && eventoForm.get('titulo')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['required']">El título no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('titulo')?.errors?.['maxlength']">El título no
-            puede contener más de 100 caracteres.</small>
-        </div>
-      </div>
 
-      <div class="form-group form-floating mb-3">
-        <input id="descripcion" formControlName="descripcion" type="text" class="form-control" required placeholder="Descripción" />
-        <label for="descripcion" class="form-label">Descripción</label>
-        <div *ngIf="eventoForm.get('descripcion')?.invalid && eventoForm.get('descripcion')?.touched">
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['required']">La descripción no
-            puede estar en blanco.</small>
-          <small class="text-danger" *ngIf="eventoForm.get('descripcion')?.errors?.['maxlength']">La descripción no
-            puede contener más de 500 caracteres.</small>
-        </div>
-      </div>
-
-      <div class="image-container d-flex align-items-center text-center flex-column mb-3">
-        <img class="imagen-perfil" [src]="imagenPreview" alt="Cartel del evento">
-        <div class="d-flex flex-row align-items-center">
-          <label for="inputFile" class="add-icon pe-2">
-            <i class="bi bi-plus-circle-fill text-black fs-2"></i>
-            <input id="inputFile" type="file" #inputFile (change)="onFileSelected($event)" accept="image/*">
-          </label>
-          <div class="remove-icon ps-2" *ngIf="evento?.fotoEvento" (click)="eliminarFoto()">
-            <i class="bi bi-dash-circle-fill text-black fs-2"></i>
+    <!-- Skeleton Loading -->
+    @if (cargando) {
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="admin-card admin-card-large">
+          <div class="admin-form-section">
+            <div class="section-title">
+              <div class="skeleton-line skeleton-title" style="width: 220px; height: 24px;"></div>
+            </div>
+            <div class="skeleton-avatar" style="width: 100%; height: 200px; border-radius: 8px; margin-bottom: 20px;"></div>
+            <div class="skeleton-line" style="width: 100%; height: 40px; margin-bottom: 16px;"></div>
+            <div class="skeleton-line" style="width: 100%; height: 80px; margin-bottom: 16px;"></div>
+          </div>
+          <div class="admin-form-button-group">
+            <div class="skeleton-button" style="width: 120px; height: 42px;"></div>
+            <div class="skeleton-button" style="width: 140px; height: 42px;"></div>
           </div>
         </div>
       </div>
+    </div>
+    }
 
-      <div class="text-center">
-        <button type="submit" class="btn btn-primary" [disabled]="eventoForm.invalid">Actualizar Evento</button>
+    <!-- Form Card -->
+    @if (!cargando) {
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="admin-card admin-card-large">
+          <form [formGroup]="eventoForm" (ngSubmit)="actualizarEvento()" method="post">
+
+            <!-- Información del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-info-circle"></i>
+                <h4>Información del Evento</h4>
+              </div>
+
+              <div class="row g-3">
+                <!-- Título -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched" [class.is-valid]="eventoForm.get('titulo')?.valid && eventoForm.get('titulo')?.touched">
+                    <label for="titulo">
+                      <i class="bi bi-text-left"></i>
+                      Título del Evento
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="titulo"
+                      formControlName="titulo"
+                      class="admin-form-control"
+                      required
+                      placeholder="Ej: Campeonato Regional de Taekwondo"
+                      aria-label="Título del evento"
+                      aria-required="true">
+                    @if (eventoForm.get('titulo')?.errors && eventoForm.get('titulo')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      @if (eventoForm.get('titulo')?.errors?.['required']) {
+                      <span>El título es obligatorio</span>
+                      }
+                      @if (eventoForm.get('titulo')?.errors?.['maxlength']) {
+                      <span>Máximo 100 caracteres</span>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Descripción -->
+                <div class="col-12">
+                  <div class="admin-form-field" [class.is-invalid]="eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched" [class.is-valid]="eventoForm.get('descripcion')?.valid && eventoForm.get('descripcion')?.touched">
+                    <label for="descripcion">
+                      <i class="bi bi-card-text"></i>
+                      Descripción del Evento
+                      <span class="required">*</span>
+                    </label>
+                    <textarea
+                      id="descripcion"
+                      formControlName="descripcion"
+                      class="admin-form-control"
+                      rows="5"
+                      required
+                      placeholder="Describe el evento: fecha, lugar, participantes, etc."
+                      aria-label="Descripción del evento"
+                      aria-required="true"></textarea>
+                    @if (eventoForm.get('descripcion')?.errors && eventoForm.get('descripcion')?.touched) {
+                    <div class="invalid-feedback">
+                      <i class="bi bi-exclamation-circle"></i>
+                      @if (eventoForm.get('descripcion')?.errors?.['required']) {
+                      <span>La descripción es obligatoria</span>
+                      }
+                      @if (eventoForm.get('descripcion')?.errors?.['maxlength']) {
+                      <span>Máximo 500 caracteres</span>
+                      }
+                    </div>
+                    }
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Proporciona detalles relevantes sobre el evento</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fecha del evento (opcional) -->
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field">
+                    <label for="fechaEvento">
+                      <i class="bi bi-calendar3"></i>
+                      Fecha del Evento
+                      <span class="optional">(opcional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      id="fechaEvento"
+                      formControlName="fechaEvento"
+                      class="admin-form-control"
+                      aria-label="Fecha opcional del evento">
+                    <div class="admin-form-help">
+                      <i class="bi bi-info-circle"></i>
+                      <span>Permite mostrar si el evento es próximo, de hoy o ya realizado</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Imagen del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-image"></i>
+                <h4>Imagen del Evento</h4>
+              </div>
+
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="inputFile"
+                    #inputFile
+                    (change)="onFileSelected($event)"
+                    accept="image/*"
+                    aria-label="Cambiar imagen del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra una imagen o haz clic para cambiar</p>
+                  <p class="upload-hint">Formatos: JPG, PNG, GIF, WebP (máx. 50MB)</p>
+                </div>
+
+                <!-- Vista previa de la imagen -->
+                @if (imagenPreview) {
+                <div class="file-preview">
+                  <img [src]="imagenPreview" alt="Vista previa del evento" loading="lazy">
+                  <div class="file-info">
+                    <p class="file-name">Imagen del evento</p>
+                    <p class="file-size">Vista previa disponible</p>
+                  </div>
+                  @if (evento?.fotoEvento) {
+                  <button type="button" class="file-remove" (click)="eliminarFoto()">
+                    <i class="bi bi-trash"></i>
+                    <span>Eliminar</span>
+                  </button>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Documentos del Evento -->
+            <div class="admin-form-section">
+              <div class="section-title">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <h4>Documentos del Evento</h4>
+              </div>
+
+              <!-- Documentos existentes -->
+              @if (documentosExistentes.length > 0) {
+              <div class="documentos-existentes">
+                <h5 class="documentos-subtitle">Documentos guardados</h5>
+                <div class="documentos-list">
+                  @for (doc of documentosExistentes; track doc.id) {
+                  <div class="documento-item documento-existente">
+                    <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
+                    <div class="documento-info">
+                      <p class="documento-name">{{ doc.nombre }}</p>
+                    </div>
+                    <div class="documento-actions">
+                      <button type="button" class="documento-download" (click)="descargarDocumento(doc)" title="Descargar">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button type="button" class="documento-remove" (click)="eliminarDocumentoExistente(doc)" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  }
+                </div>
+              </div>
+              }
+
+              <!-- Subir nuevos documentos -->
+              <div class="admin-file-upload">
+                <div class="file-upload-area">
+                  <input
+                    type="file"
+                    id="documentosEvento"
+                    name="documentosEvento"
+                    (change)="onDocumentosChange($event)"
+                    multiple
+                    accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx"
+                    aria-label="Subir documentos del evento">
+                  <i class="bi bi-cloud-upload upload-icon"></i>
+                  <p class="upload-text">Arrastra archivos o haz clic para seleccionar</p>
+                  <p class="upload-hint">Puedes subir múltiples archivos (PDF, imágenes, documentos)</p>
+                </div>
+
+                <!-- Lista de documentos nuevos por subir -->
+                @if (documentosNuevos.length > 0) {
+                <div class="documentos-nuevos">
+                  <h5 class="documentos-subtitle">Documentos por subir</h5>
+                  <div class="documentos-list">
+                    @for (doc of documentosNuevos; track doc.name; let i = $index) {
+                    <div class="documento-item documento-nuevo">
+                      <i class="bi" [ngClass]="getFileIcon(doc.type)"></i>
+                      <div class="documento-info">
+                        <p class="documento-name">{{ doc.name }}</p>
+                        <p class="documento-size">{{ formatFileSize(doc.size) }}</p>
+                      </div>
+                      <button type="button" class="documento-remove" (click)="removeDocumentoNuevo(i)">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="admin-btn admin-btn-secondary btn-subir-docs"
+                    (click)="subirDocumentosNuevos()"
+                    [disabled]="subiendoDocumento">
+                    @if (subiendoDocumento) {
+                    <i class="bi bi-arrow-repeat spin"></i>
+                    <span>Subiendo...</span>
+                    } @else {
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>Subir {{ documentosNuevos.length }} documento(s)</span>
+                    }
+                  </button>
+                </div>
+                }
+              </div>
+
+              <div class="admin-form-help">
+                <i class="bi bi-info-circle"></i>
+                <span>Los documentos estarán disponibles públicamente para descarga</span>
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="admin-form-button-group">
+              <button
+                type="button"
+                class="admin-btn admin-btn-outline"
+                (click)="volver()"
+                [disabled]="guardandoEvento"
+                aria-label="Cancelar y volver al listado">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancelar</span>
+              </button>
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary"
+                [disabled]="eventoForm.invalid || guardandoEvento"
+                aria-label="Actualizar evento">
+                @if (guardandoEvento) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  <i class="bi bi-check-circle"></i>
+                  <span>Actualizar Evento</span>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </form>
+    </div>
+    }
   </div>
 </div>

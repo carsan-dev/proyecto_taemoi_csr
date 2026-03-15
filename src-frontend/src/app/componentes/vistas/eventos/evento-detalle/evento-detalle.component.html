@@ -1,0 +1,157 @@
+@if (evento) {
+  <div class="evento-detalle-page">
+    <div class="hero-header">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-toolbar">
+          <button class="back-button" routerLink="/eventos">
+            <i class="bi bi-arrow-left"></i>
+            <span>Volver a eventos</span>
+          </button>
+          @if (evento.documentos && evento.documentos.length > 0) {
+            <span class="hero-chip">
+              <i class="bi bi-paperclip"></i>
+              {{ evento.documentos.length }} adjunto{{ evento.documentos.length > 1 ? 's' : '' }}
+            </span>
+          }
+          @if (getFechaEventoTextoCorto()) {
+            <span class="hero-chip hero-chip-date" [ngClass]="getFechaEventoEstado()">
+              <i class="bi bi-calendar3"></i>
+              {{ getEtiquetaFechaEvento() }} · {{ getFechaEventoTextoCorto() }}
+            </span>
+          }
+        </div>
+
+        <div class="hero-main">
+          <div class="hero-badge">
+            <i class="bi bi-calendar-event-fill"></i>
+          </div>
+          <div class="hero-title-section">
+            <h1>{{ evento.titulo }}</h1>
+            <p class="hero-subtitle">Informaci&oacute;n completa y documentos del evento</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="content-shell">
+        <div class="visual-panel">
+          <div class="image-container">
+            <img
+              [src]="getEventoImageUrl(1280)"
+              [alt]="evento.titulo"
+              class="event-detail-img"
+            />
+            <div class="image-overlay"></div>
+            <button class="zoom-button" (click)="abrirModalImagen()" title="Ver imagen ampliada">
+              <i class="bi bi-zoom-in"></i>
+              <span>Ampliar</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="info-panel">
+          <div class="description-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="bi bi-info-circle"></i>
+                <h2>Detalles del Evento</h2>
+              </div>
+              <p class="card-meta">Informaci&oacute;n destacada</p>
+            </div>
+
+            <div class="card-body">
+              @if (getFechaEventoTextoLargo()) {
+                <div class="evento-date-row">
+                  <span class="evento-date-label">Fecha del evento</span>
+                  <span class="evento-date-value">{{ getFechaEventoTextoLargo() }}</span>
+                </div>
+              }
+              <p class="description-text">{{ evento.descripcion }}</p>
+            </div>
+
+            @if (evento.documentos && evento.documentos.length > 0) {
+              <div class="attachments-section">
+                <div class="attachments-header">
+                  <i class="bi bi-paperclip"></i>
+                  <span>Documentos adjuntos</span>
+                </div>
+                <div class="attachments-list">
+                  @for (doc of evento.documentos; track doc.id) {
+                    <div class="attachment-item">
+                      <div class="attachment-icon">
+                        <i class="bi" [ngClass]="getFileIcon(doc.tipo)"></i>
+                      </div>
+                      <span class="attachment-name">{{ doc.nombre }}</span>
+                      <div class="attachment-actions">
+                        @if (esDocumentoPrevisualizable(doc.tipo)) {
+                        <button
+                          type="button"
+                          class="attachment-action attachment-action-preview"
+                          (click)="previsualizarDocumento(doc)"
+                          title="Previsualizar"
+                        >
+                          <i class="bi bi-eye"></i>
+                        </button>
+                        }
+                        <button
+                          type="button"
+                          class="attachment-action attachment-action-download"
+                          (click)="descargarDocumento(doc)"
+                          title="Descargar"
+                        >
+                          <i class="bi bi-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="card-footer">
+              <button class="action-button primary" routerLink="/eventos">
+                <i class="bi bi-arrow-left-circle"></i>
+                <span>Volver a eventos</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (modalImagenAbierto) {
+      <div class="image-modal" (click)="cerrarModalImagen()">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+          <button class="close-button" (click)="cerrarModalImagen()" title="Cerrar">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <div class="modal-image-wrapper">
+            <img
+              [src]="getEventoImageUrl(1800)"
+              [alt]="evento.titulo"
+              class="modal-img"
+              loading="lazy"
+              (click)="$event.stopPropagation()"
+            />
+          </div>
+          <div class="modal-caption">{{ evento.titulo }}</div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (!evento) {
+  <ngx-spinner
+    bdColor="rgba(0, 0, 0, 0.8)"
+    size="medium"
+    color="#fff"
+    type="ball-clip-rotate"
+    [fullScreen]="true"
+  >
+    <p style="color: white">Cargando evento...</p>
+  </ngx-spinner>
+}

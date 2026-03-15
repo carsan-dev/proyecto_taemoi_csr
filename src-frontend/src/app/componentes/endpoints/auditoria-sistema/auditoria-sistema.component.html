@@ -1,0 +1,207 @@
+<section class="auditoria-page">
+  <header class="page-header">
+    <div>
+      <h1><i class="bi bi-journal-text"></i> Auditoria del sistema</h1>
+      <p>Registro global de operaciones READ, CREATE, UPDATE y DELETE (exitosas y con error) ejecutadas en la API.</p>
+    </div>
+    <button
+      type="button"
+      class="btn-actualizar"
+      (click)="actualizarAhora()"
+      [disabled]="cargando || cargandoDetalle"
+      aria-label="Actualizar ahora auditoria">
+      <i class="bi bi-arrow-clockwise" [class.spin]="cargando || cargandoDetalle"></i>
+      <span>{{ (cargando || cargandoDetalle) ? 'Actualizando...' : 'Actualizar ahora' }}</span>
+    </button>
+  </header>
+
+  <nav class="resultado-tabs" aria-label="Pestanas de auditoria por resultado">
+    @for (resultado of resultados; track resultado.value) {
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="filtroResultado === resultado.value"
+        (click)="cambiarPestanaResultado(resultado.value)"
+        [disabled]="cargando">
+        {{ resultado.label }}
+      </button>
+    }
+  </nav>
+
+  <article class="filtros-card">
+    <div class="filtros-grid">
+      <div class="filtro">
+        <label for="filtroDesde">Desde</label>
+        <input id="filtroDesde" type="date" [(ngModel)]="filtroDesde" />
+      </div>
+
+      <div class="filtro">
+        <label for="filtroHasta">Hasta</label>
+        <input id="filtroHasta" type="date" [(ngModel)]="filtroHasta" />
+      </div>
+
+      <div class="filtro">
+        <label for="filtroAccion">Accion</label>
+        <select id="filtroAccion" [(ngModel)]="filtroAccion">
+          @for (accion of acciones; track accion.value) {
+            <option [value]="accion.value">{{ accion.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <label for="filtroModulo">Modulo</label>
+        <select id="filtroModulo" [(ngModel)]="filtroModulo">
+          <option value="TODOS">Todos los modulos</option>
+          @for (modulo of modulos; track modulo) {
+            <option [value]="modulo">{{ modulo }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <label for="filtroUsuario">Usuario</label>
+        <input id="filtroUsuario" type="text" placeholder="Email o nombre" [(ngModel)]="filtroUsuario" />
+      </div>
+
+      <div class="filtro">
+        <label for="filtroEndpoint">Endpoint</label>
+        <input id="filtroEndpoint" type="text" placeholder="/api/..." [(ngModel)]="filtroEndpoint" />
+      </div>
+
+      <div class="filtro filtro-texto">
+        <label for="filtroTexto">Texto libre</label>
+        <input id="filtroTexto" type="text" placeholder="Resumen o payload" [(ngModel)]="filtroTexto" />
+      </div>
+
+      <div class="filtro filtro-checkbox">
+        <label for="filtroIncluirRuido" class="checkbox-label">
+          <input
+            id="filtroIncluirRuido"
+            type="checkbox"
+            [(ngModel)]="incluirRuido"
+            (change)="alCambiarIncluirRuido()"/>
+          Mostrar ruido (scanner/bot)
+        </label>
+        <small class="filtro-help">Incluye intentos anónimos automáticos de escaneo de endpoints.</small>
+      </div>
+    </div>
+
+    <div class="filtros-acciones">
+      <button type="button" class="btn-principal" (click)="aplicarFiltros()" [disabled]="cargando">
+        <i class="bi bi-funnel-fill"></i> Aplicar filtros
+      </button>
+      <button type="button" class="btn-secundario" (click)="limpiarFiltros()" [disabled]="cargando">
+        <i class="bi bi-arrow-counterclockwise"></i> Restablecer
+      </button>
+    </div>
+  </article>
+
+  @if (cargando) {
+    <app-skeleton-card [type]="'table'" [count]="4"></app-skeleton-card>
+  } @else {
+    <article class="tabla-card">
+      <header class="tabla-header">
+        <div>
+          <h2>Eventos de auditoria</h2>
+          <p>{{ totalEventos }} eventos registrados</p>
+        </div>
+      </header>
+
+      @if (eventos.length > 0) {
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Usuario</th>
+                <th>Modulo</th>
+                <th>Accion</th>
+                <th>Endpoint</th>
+                <th>Estado</th>
+                <th>Resumen</th>
+                <th class="col-accion">Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (evento of eventos; track trackById($index, evento)) {
+                <tr>
+                  <td>{{ evento.fechaEvento | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                  <td>{{ evento.usuarioNombre || evento.usuarioEmail || '-' }}</td>
+                  <td>{{ evento.modulo || '-' }}</td>
+                  <td>
+                    <span [class]="obtenerClaseAccion(evento.accion)">{{ evento.accion }}</span>
+                  </td>
+                  <td class="endpoint-cell">{{ evento.endpoint }}</td>
+                  <td [class.estado-error]="evento.estadoHttp >= 400">{{ evento.estadoHttp }}</td>
+                  <td class="resumen-cell">
+                    <span>{{ evento.resumen || '-' }}</span>
+                    @if (evento.ruidoEscaner) {
+                      <span class="ruido-chip">scanner/bot</span>
+                    }
+                  </td>
+                  <td class="col-accion">
+                    <button type="button" class="btn-detalle" (click)="verDetalle(evento)" [disabled]="cargandoDetalle">
+                      <i class="bi bi-search"></i> Ver detalle
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="tabla-footer">
+          @if (totalPaginas > 1) {
+            <app-paginacion
+              [paginaActual]="paginaActual"
+              [totalPaginas]="totalPaginas"
+              [tamanoPagina]="tamanoPagina"
+              [deshabilitado]="cargando"
+              (pageChange)="cambiarPagina($event)">
+            </app-paginacion>
+          }
+        </div>
+      } @else {
+        <div class="sin-resultados">
+          <i class="bi bi-inbox"></i>
+          <p>No hay eventos para los filtros seleccionados.</p>
+        </div>
+      }
+    </article>
+  }
+
+  @if (detalleSeleccionado) {
+    <article class="detalle-card">
+      <header class="detalle-header">
+        <h3>Detalle evento #{{ detalleSeleccionado.id }}</h3>
+        <button type="button" class="btn-cerrar" (click)="cerrarDetalle()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="detalle-grid">
+        <p><strong>Fecha:</strong> {{ detalleSeleccionado.fechaEvento | date:'dd/MM/yyyy HH:mm:ss' }}</p>
+        <p><strong>Usuario:</strong> {{ detalleSeleccionado.usuarioNombre || detalleSeleccionado.usuarioEmail || '-' }}</p>
+        <p><strong>Accion:</strong> {{ detalleSeleccionado.accion }}</p>
+        <p><strong>Metodo:</strong> {{ detalleSeleccionado.metodoHttp }}</p>
+        <p><strong>Endpoint:</strong> {{ detalleSeleccionado.endpoint }}</p>
+        <p><strong>Modulo:</strong> {{ detalleSeleccionado.modulo || '-' }}</p>
+        <p><strong>Recurso ID:</strong> {{ detalleSeleccionado.recursoId ?? '-' }}</p>
+        <p><strong>Estado HTTP:</strong> {{ detalleSeleccionado.estadoHttp }}</p>
+        <p><strong>Clasificacion:</strong> {{ detalleSeleccionado.ruidoEscaner ? 'SCANNER_BOT' : 'NORMAL' }}</p>
+        <p><strong>IP:</strong> {{ detalleSeleccionado.ipCliente || '-' }}</p>
+        <p><strong>User-Agent:</strong> {{ detalleSeleccionado.userAgent || '-' }}</p>
+      </div>
+
+      <div class="json-block">
+        <h4>Query params</h4>
+        <pre>{{ formatearJson(detalleSeleccionado.queryParamsJson) }}</pre>
+      </div>
+
+      <div class="json-block">
+        <h4>Payload</h4>
+        <pre>{{ formatearJson(detalleSeleccionado.payloadJson) }}</pre>
+      </div>
+    </article>
+  }
+</section>
