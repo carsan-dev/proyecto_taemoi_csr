@@ -96,6 +96,25 @@ class DocumentoServiceImplTest {
 	}
 
 	@Test
+	void obtenerRecursoDocumento_debeResolverCarpetaLegacyPorPrefijoUnico() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("452_ANGELA_MORENO_LAAPEZ"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("AL452.pdf"));
+
+		Documento documento = crearDocumento(
+				"/opt/taemoi/static_resources/documentos/Documentos_Alumnos_Moiskimdo/452_ANGELA_MORENO_LOPEZ/AL452.pdf",
+				"AL452.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
 	void obtenerRecursoDocumento_debeResolverRutaRelativaConBackslashes() throws Exception {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());

@@ -266,6 +266,8 @@ public class DocumentoServiceImpl implements DocumentoService {
 			}
 		}
 
+		rutaNormalizada = resolveLegacyFolderByPrefix(rutaBaseDocumentos, rutaNormalizada);
+
 		if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
 			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
 		}
@@ -289,6 +291,73 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 
 		return null;
+	}
+
+	private Path resolveLegacyFolderByPrefix(Path rutaBaseDocumentos, Path rutaNormalizada) {
+		try {
+			if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
+				return rutaNormalizada;
+			}
+
+			Path carpetaEsperada = rutaNormalizada.getParent();
+			if (carpetaEsperada == null || Files.exists(carpetaEsperada)) {
+				return rutaNormalizada;
+			}
+
+			Path relativa = rutaBaseDocumentos.relativize(rutaNormalizada);
+			if (relativa.getNameCount() < 3) {
+				return rutaNormalizada;
+			}
+
+			Path directorioCategoria = rutaBaseDocumentos.resolve(relativa.getName(0).toString());
+			if (!Files.isDirectory(directorioCategoria)) {
+				return rutaNormalizada;
+			}
+
+			String carpetaLegacy = relativa.getName(1).toString();
+			String prefijo = extraerPrefijoCarpetaLegacy(carpetaLegacy);
+			if (prefijo == null) {
+				return rutaNormalizada;
+			}
+
+			List<Path> candidatas;
+			try (Stream<Path> hijos = Files.list(directorioCategoria)) {
+				candidatas = hijos
+						.filter(Files::isDirectory)
+						.filter(path -> path.getFileName().toString().startsWith(prefijo + "_"))
+						.toList();
+			}
+
+			if (candidatas.size() != 1) {
+				return rutaNormalizada;
+			}
+
+			Path relativaAjustada = Path.of(relativa.getName(0).toString())
+					.resolve(candidatas.get(0).getFileName().toString());
+			for (int i = 2; i < relativa.getNameCount(); i++) {
+				relativaAjustada = relativaAjustada.resolve(relativa.getName(i).toString());
+			}
+
+			Path rutaAjustada = rutaBaseDocumentos.resolve(relativaAjustada).normalize();
+			logger.warn("Resolved legacy folder by prefix fallback: {} -> {}", rutaNormalizada, rutaAjustada);
+			return rutaAjustada;
+		} catch (IOException e) {
+			logger.warn("Could not resolve legacy folder by prefix for {}: {}", rutaNormalizada, e.getMessage());
+			return rutaNormalizada;
+		}
+	}
+
+	private String extraerPrefijoCarpetaLegacy(String carpetaLegacy) {
+		if (carpetaLegacy == null || carpetaLegacy.isBlank()) {
+			return null;
+		}
+
+		int idx = carpetaLegacy.indexOf('_');
+		if (idx <= 0) {
+			return null;
+		}
+
+		return carpetaLegacy.substring(0, idx);
 	}
 
 	private Path obtenerRutaBaseDocumentos() {
@@ -414,4 +483,3 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 	}
 }
-
