@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -437,8 +439,35 @@ public class DocumentoServiceImpl implements DocumentoService {
 						+ "' en '" + directorio + "'");
 			}
 
-			return coincidencias.isEmpty() ? null : coincidencias.get(0);
+			if (!coincidencias.isEmpty()) {
+				return coincidencias.get(0);
+			}
 		}
+
+		String nombreEsperadoNormalizado = normalizarTokenPath(nombreEsperado);
+		try (Stream<Path> hijos = Files.list(directorio)) {
+			List<Path> coincidenciasNormalizadas = hijos
+					.filter(hijo -> normalizarTokenPath(hijo.getFileName().toString()).equals(nombreEsperadoNormalizado))
+					.toList();
+
+			if (coincidenciasNormalizadas.size() > 1) {
+				throw new IOException("Se encontraron varias coincidencias normalizadas para '" + nombreEsperado
+						+ "' en '" + directorio + "'");
+			}
+
+			return coincidenciasNormalizadas.isEmpty() ? null : coincidenciasNormalizadas.get(0);
+		}
+	}
+
+	private String normalizarTokenPath(String valor) {
+		if (valor == null) {
+			return "";
+		}
+
+		String normalizado = Normalizer.normalize(valor, Normalizer.Form.NFKD)
+				.replaceAll("\\p{M}+", "")
+				.toLowerCase(Locale.ROOT);
+		return normalizado;
 	}
 	/**
 	 * Busca una carpeta existente para el alumno basandose en el numero de expediente.
