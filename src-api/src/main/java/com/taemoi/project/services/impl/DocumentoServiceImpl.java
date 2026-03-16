@@ -244,18 +244,26 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 
 		Path rutaBaseDocumentos = obtenerRutaBaseDocumentos();
+		String rutaDocumentoNormalizada = normalizarSeparadores(rutaDocumento.trim());
+		String rutaRelativaLegacy = extraerRutaRelativaLegacy(rutaDocumentoNormalizada);
 		Path rutaNormalizada;
 
-		if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
-			logger.warn("Document path stored as absolute path (deprecated): {}", rutaDocumento);
-			if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
-				String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
-				rutaNormalizada = rutaBaseDocumentos.resolve(relativePart).normalize();
-			} else {
-				rutaNormalizada = Path.of(rutaDocumento).toAbsolutePath().normalize();
-			}
+		if (rutaRelativaLegacy != null) {
+			rutaNormalizada = rutaBaseDocumentos.resolve(rutaRelativaLegacy).normalize();
 		} else {
-			rutaNormalizada = rutaBaseDocumentos.resolve(rutaDocumento).normalize();
+			Path rutaDocumentoPath = Path.of(rutaDocumentoNormalizada);
+
+			if (rutaDocumentoPath.isAbsolute() || rutaDocumentoNormalizada.matches("^[A-Za-z]:.*")) {
+				logger.warn("Document path stored as absolute path (deprecated): {}", rutaDocumento);
+				if (rutaDocumentoNormalizada.startsWith("/opt/taemoi/static_resources/documentos/")) {
+					String relativePart = rutaDocumentoNormalizada.substring("/opt/taemoi/static_resources/documentos/".length());
+					rutaNormalizada = rutaBaseDocumentos.resolve(relativePart).normalize();
+				} else {
+					rutaNormalizada = rutaDocumentoPath.toAbsolutePath().normalize();
+				}
+			} else {
+				rutaNormalizada = rutaBaseDocumentos.resolve(rutaDocumentoPath).normalize();
+			}
 		}
 
 		if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
@@ -263,6 +271,24 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 
 		return rutaNormalizada;
+	}
+
+	private String normalizarSeparadores(String rutaDocumento) {
+		return rutaDocumento.replace('\\', '/');
+	}
+
+	private String extraerRutaRelativaLegacy(String rutaDocumentoNormalizada) {
+		String rutaLower = rutaDocumentoNormalizada.toLowerCase();
+		String[] marcadores = { "documentos_alumnos_moiskimdo/", "documentos_eventos/" };
+
+		for (String marcador : marcadores) {
+			int idx = rutaLower.indexOf(marcador);
+			if (idx >= 0) {
+				return rutaDocumentoNormalizada.substring(idx);
+			}
+		}
+
+		return null;
 	}
 
 	private Path obtenerRutaBaseDocumentos() {
@@ -388,5 +414,4 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 	}
 }
-
 

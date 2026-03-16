@@ -77,6 +77,44 @@ class DocumentoServiceImplTest {
 	}
 
 	@Test
+	void obtenerRecursoDocumento_debeResolverRutaWindowsLegacyHaciaDirectorioActual() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("733_MOISKIMDO_TAEKWONDO"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("dni-frontal.pdf"));
+
+		Documento documento = crearDocumento(
+				"C:\\Users\\Carlos\\Desktop\\Documentos_Alumnos_Moiskimdo\\733_MOISKIMDO_TAEKWONDO\\dni-frontal.pdf",
+				"dni-frontal.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
+	void obtenerRecursoDocumento_debeResolverRutaRelativaConBackslashes() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("733_MOISKIMDO_TAEKWONDO"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("dni-trasera.pdf"));
+
+		Documento documento = crearDocumento(
+				"Documentos_Alumnos_Moiskimdo\\733_MOISKIMDO_TAEKWONDO\\dni-trasera.pdf",
+				"dni-trasera.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
 	void obtenerRecursoDocumento_debeLanzarExcepcionSiArchivoNoExiste() {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
