@@ -358,7 +358,7 @@ export class SeoService {
           this.buildFaqSchema(
             [
               {
-                question: 'Donde esta la escuela de taekwondo Moiskimdo en Umbrete?',
+                question: "Donde esta la escuela de taekwondo Moi's Kim Do en Umbrete?",
                 answer:
                   'Estamos en Calle Parada de la Ciguena 36, 41806 Umbrete, Sevilla, en el Aljarafe sevillano. Facil acceso desde Sevilla y municipios cercanos.',
               },
@@ -672,7 +672,7 @@ export class SeoService {
       eventStatus: 'https://schema.org/EventScheduled',
       location: {
         '@type': 'Place',
-        name: "Club Moi's Kim Do",
+        name: "Moi's Kim Do",
         address: {
           '@type': 'PostalAddress',
           streetAddress: 'Calle Parada de la Ciguena, 36',
@@ -684,7 +684,7 @@ export class SeoService {
       },
       organizer: {
         '@type': 'Organization',
-        name: "Club Moi's Kim Do",
+        name: "Moi's Kim Do",
         url: 'https://moiskimdo.es',
       },
     };

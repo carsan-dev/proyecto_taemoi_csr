@@ -18,7 +18,7 @@ export class NoEncontrado implements OnInit {
 
   ngOnInit(): void {
     this.seoService.updateDynamicSeo({
-      title: 'Página no encontrada (404) | Moiskimdo',
+      title: "Página no encontrada (404) | Moi's Kim Do",
       description: 'La página que buscas no existe. Vuelve al inicio para explorar nuestras clases de Taekwondo, Kickboxing y Pilates en Umbrete.',
       canonical: 'https://moiskimdo.es/',
       breadcrumbs: [

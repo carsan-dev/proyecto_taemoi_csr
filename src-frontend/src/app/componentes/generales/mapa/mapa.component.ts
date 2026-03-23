@@ -123,7 +123,7 @@ export class MapaComponent implements AfterViewInit {
         iconSize: [30, 30],
       });
 
-      const locationTitle = 'Ubicacion Moiskimdo en Umbrete';
+      const locationTitle = "Ubicacion de Moi's Kim Do en Umbrete";
 
       // Add marker
       const marker = this.L.marker(this.localizacionConcreta, {
@@ -177,7 +177,7 @@ export class MapaComponent implements AfterViewInit {
             ],
             routeWhileDragging: true,
             createMarker: (i: number, waypoint: any, n: number) => {
-              const markerTitle = i === 0 ? 'Tu ubicacion' : 'Destino Moiskimdo';
+              const markerTitle = i === 0 ? 'Tu ubicacion' : "Destino Moi's Kim Do";
               return this.L.marker(waypoint.latLng, {
                 icon: this.pulsatingIcon,
                 title: markerTitle,

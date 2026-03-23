@@ -74,7 +74,7 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     );
 
     this.seoService.updateDynamicSeo({
-      title: `${evento.titulo} | Eventos Moiskimdo - Taekwondo en Umbrete`,
+      title: `${evento.titulo} | Eventos Moi's Kim Do - Taekwondo en Umbrete`,
       description: descripcionCorta,
       ogImage: imageUrl,
       canonical: `https://moiskimdo.es/eventos/${evento.id}`,
