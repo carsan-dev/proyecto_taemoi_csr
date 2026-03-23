@@ -3,7 +3,7 @@ import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { SEO_DEFAULTS, SeoMeta } from '../../core/constants/seo.constants';
+import { SEO_DEFAULTS, SEO_ROUTES, SeoMeta } from '../../core/constants/seo.constants';
 
 export interface BreadcrumbItem {
   name: string;
@@ -26,6 +26,14 @@ export class SeoService {
     '/taekwondo': [
       { name: 'Inicio', url: '/' },
       { name: 'Taekwondo', url: '/taekwondo' },
+    ],
+    '/aljarafe': [
+      { name: 'Inicio', url: '/' },
+      { name: 'Aljarafe', url: '/aljarafe' },
+    ],
+    '/sevilla': [
+      { name: 'Inicio', url: '/' },
+      { name: 'Sevilla', url: '/sevilla' },
     ],
     '/kickboxing': [
       { name: 'Inicio', url: '/' },
@@ -90,14 +98,13 @@ export class SeoService {
 
     const title = seo.title ?? SEO_DEFAULTS.title;
     const description = seo.description ?? SEO_DEFAULTS.description;
-    const keywords = seo.keywords ?? SEO_DEFAULTS.keywords;
     const ogImage = seo.ogImage ?? SEO_DEFAULTS.ogImage;
     const canonical = seo.canonical ?? this.buildCanonical(this.router.url);
     const robots = seo.noIndex ? 'noindex, nofollow' : this.defaultRobots;
 
     this.title.setTitle(title);
     this.updateMetaTag('name', 'description', description);
-    this.updateMetaTag('name', 'keywords', keywords);
+    this.removeMetaTag('name', 'keywords');
     this.updateMetaTag('name', 'robots', robots);
     this.updateMetaTag('name', 'googlebot', robots);
     this.updateMetaTag('property', 'og:title', title);
@@ -120,26 +127,27 @@ export class SeoService {
   updateDynamicSeo(config: {
     title: string;
     description: string;
-    keywords?: string;
     ogImage?: string;
     canonical?: string;
     breadcrumbs?: BreadcrumbItem[];
+    noIndex?: boolean;
+    ogType?: 'article' | 'website';
   }): void {
     const canonical = config.canonical ?? this.buildCanonical(this.router.url);
     const ogImage = config.ogImage ?? SEO_DEFAULTS.ogImage;
-    const keywords = config.keywords ?? SEO_DEFAULTS.keywords;
+    const robots = config.noIndex ? 'noindex, nofollow' : this.defaultRobots;
 
     this.title.setTitle(config.title);
     this.updateMetaTag('name', 'description', config.description);
-    this.updateMetaTag('name', 'keywords', keywords);
-    this.updateMetaTag('name', 'robots', this.defaultRobots);
-    this.updateMetaTag('name', 'googlebot', this.defaultRobots);
+    this.removeMetaTag('name', 'keywords');
+    this.updateMetaTag('name', 'robots', robots);
+    this.updateMetaTag('name', 'googlebot', robots);
     this.updateMetaTag('property', 'og:title', config.title);
     this.updateMetaTag('property', 'og:description', config.description);
     this.updateMetaTag('property', 'og:url', canonical);
     this.updateMetaTag('property', 'og:image', ogImage);
     this.updateMetaTag('property', 'og:image:alt', `Imagen de ${config.title}`);
-    this.updateMetaTag('property', 'og:type', 'article');
+    this.updateMetaTag('property', 'og:type', config.ogType ?? 'website');
     this.updateMetaTag('name', 'twitter:title', config.title);
     this.updateMetaTag('name', 'twitter:description', config.description);
     this.updateMetaTag('name', 'twitter:image', ogImage);
@@ -163,6 +171,10 @@ export class SeoService {
     content: string,
   ): void {
     this.meta.updateTag({ [attr]: key, content }, `${attr}='${key}'`);
+  }
+
+  private removeMetaTag(attr: 'name' | 'property', key: string): void {
+    this.meta.removeTag(`${attr}='${key}'`);
   }
 
   private setCanonical(url: string): void {
@@ -256,11 +268,93 @@ export class SeoService {
     this.setRouteSchemas(this.getRouteSchemas(path));
   }
 
+  private getSeoForPath(path: string): SeoMeta | null {
+    switch (path) {
+      case '/':
+      case '/inicio':
+        return SEO_ROUTES.home;
+      case '/aljarafe':
+        return SEO_ROUTES.aljarafe;
+      case '/sevilla':
+        return SEO_ROUTES.sevilla;
+      case '/taekwondo':
+        return SEO_ROUTES.taekwondo;
+      case '/kickboxing':
+        return SEO_ROUTES.kickboxing;
+      case '/pilates':
+        return SEO_ROUTES.pilates;
+      case '/defensa-personal-femenina':
+        return SEO_ROUTES.defensaPersonal;
+      case '/horarios':
+        return SEO_ROUTES.horarios;
+      case '/eventos':
+        return SEO_ROUTES.eventos;
+      case '/contacto':
+        return SEO_ROUTES.contacto;
+      case '/tarifas':
+        return SEO_ROUTES.tarifas;
+      case '/politica-privacidad':
+        return SEO_ROUTES.privacidad;
+      case '/politica-cookies':
+        return SEO_ROUTES.cookies;
+      case '/aviso-legal':
+        return SEO_ROUTES.avisoLegal;
+      default:
+        return null;
+    }
+  }
+
+  private buildPageSchema(
+    path: string,
+    config?: {
+      type?: string;
+      idSuffix?: string;
+      mainEntityId?: string;
+      about?: JsonLdSchema[];
+    },
+  ): JsonLdSchema {
+    const seo = this.getSeoForPath(path);
+    const canonical = seo?.canonical ?? this.buildCanonical(path);
+    const schema: JsonLdSchema = {
+      '@context': 'https://schema.org',
+      '@type': config?.type ?? 'WebPage',
+      '@id': `${canonical}#${config?.idSuffix ?? 'webpage'}`,
+      name: seo?.title ?? SEO_DEFAULTS.title,
+      description: seo?.description ?? SEO_DEFAULTS.description,
+      url: canonical,
+    };
+
+    if (config?.mainEntityId) {
+      schema['mainEntity'] = { '@id': config.mainEntityId };
+    } else {
+      schema['isPartOf'] = { '@id': `${this.baseUrl}/#club` };
+    }
+
+    if (config?.about?.length) {
+      schema['about'] = config.about;
+    }
+
+    return schema;
+  }
+
+  private buildLocationLandingSchema(path: string, areaName: string): JsonLdSchema {
+    return this.buildPageSchema(path, {
+      about: [
+        { '@type': 'Place', name: 'Umbrete' },
+        { '@type': 'AdministrativeArea', name: areaName },
+        { '@type': 'City', name: 'Sevilla' },
+      ],
+    });
+  }
+
   private getRouteSchemas(path: string): JsonLdSchema[] {
     switch (path) {
       case '/':
       case '/inicio':
         return [
+          this.buildPageSchema('/', {
+            mainEntityId: `${this.baseUrl}/#club`,
+          }),
           this.buildFaqSchema(
             [
               {
@@ -297,13 +391,18 @@ export class SeoService {
             '/',
           ),
         ];
+      case '/aljarafe':
+        return [this.buildLocationLandingSchema('/aljarafe', 'Aljarafe')];
+      case '/sevilla':
+        return [this.buildLocationLandingSchema('/sevilla', 'Sevilla')];
       case '/taekwondo':
         return [
+          this.buildPageSchema('/taekwondo'),
           this.buildSportsServiceSchema(
             '/taekwondo',
             'Taekwondo',
-            'Clases de Taekwondo en Umbrete, Aljarafe y Sevilla',
-            'Clases de taekwondo para ninos, jovenes y adultos con grupos por nivel.',
+            SEO_ROUTES.taekwondo.title ?? SEO_DEFAULTS.title,
+            SEO_ROUTES.taekwondo.description ?? SEO_DEFAULTS.description,
           ),
           this.buildFaqSchema([
             {
@@ -325,11 +424,12 @@ export class SeoService {
         ];
       case '/kickboxing':
         return [
+          this.buildPageSchema('/kickboxing'),
           this.buildSportsServiceSchema(
             '/kickboxing',
-            'Kickboxing Light',
-            'Clases de Kickboxing Light en Umbrete, Aljarafe y Sevilla',
-            'Entrenamientos de kickboxing light para mejorar tecnica, cardio y condicion fisica.',
+            'Kickboxing',
+            SEO_ROUTES.kickboxing.title ?? SEO_DEFAULTS.title,
+            SEO_ROUTES.kickboxing.description ?? SEO_DEFAULTS.description,
           ),
           this.buildFaqSchema([
             {
@@ -353,11 +453,12 @@ export class SeoService {
         ];
       case '/pilates':
         return [
+          this.buildPageSchema('/pilates'),
           this.buildSportsServiceSchema(
             '/pilates',
-            'Pilates Balance',
-            'Clases de Pilates en Umbrete, Aljarafe y Sevilla',
-            'Pilates orientado a movilidad, postura y fortalecimiento del core para todos los niveles.',
+            'Pilates',
+            SEO_ROUTES.pilates.title ?? SEO_DEFAULTS.title,
+            SEO_ROUTES.pilates.description ?? SEO_DEFAULTS.description,
           ),
           this.buildFaqSchema([
             {
@@ -380,11 +481,12 @@ export class SeoService {
         ];
       case '/defensa-personal-femenina':
         return [
+          this.buildPageSchema('/defensa-personal-femenina'),
           this.buildSportsServiceSchema(
             '/defensa-personal-femenina',
             'Defensa Personal Femenina',
-            'Defensa Personal Femenina en Umbrete, Aljarafe y Sevilla',
-            'Clases practicas de autodefensa para mujeres, con tecnicas aplicables a situaciones reales.',
+            SEO_ROUTES.defensaPersonal.title ?? SEO_DEFAULTS.title,
+            SEO_ROUTES.defensaPersonal.description ?? SEO_DEFAULTS.description,
           ),
           this.buildFaqSchema([
             {
@@ -407,54 +509,35 @@ export class SeoService {
         ];
       case '/horarios':
         return [
-          {
-            '@context': 'https://schema.org',
-            '@type': 'WebPage',
-            '@id': `${this.baseUrl}/horarios#webpage`,
-            name: 'Horarios de clases en Umbrete',
-            description:
-              'Horarios de taekwondo, kickboxing light, pilates balance y defensa personal femenina en Umbrete.',
-            url: `${this.baseUrl}/horarios`,
-            isPartOf: { '@id': `${this.baseUrl}/#club` },
+          this.buildPageSchema('/horarios', {
             about: [
               { '@type': 'Thing', name: 'Taekwondo' },
-              { '@type': 'Thing', name: 'Kickboxing Light' },
-              { '@type': 'Thing', name: 'Pilates Balance' },
+              { '@type': 'Thing', name: 'Kickboxing' },
+              { '@type': 'Thing', name: 'Pilates' },
               { '@type': 'Thing', name: 'Defensa Personal Femenina' },
             ],
-          },
+          }),
         ];
       case '/contacto':
         return [
-          {
-            '@context': 'https://schema.org',
-            '@type': 'ContactPage',
-            '@id': `${this.baseUrl}/contacto#contact`,
-            name: 'Contacto Moiskimdo',
-            description:
-              'Pagina de contacto para inscripcion y dudas sobre taekwondo, kickboxing, pilates y defensa personal femenina.',
-            url: `${this.baseUrl}/contacto`,
-            mainEntity: { '@id': `${this.baseUrl}/#club` },
-          },
+          this.buildPageSchema('/contacto', {
+            type: 'ContactPage',
+            idSuffix: 'contact',
+            mainEntityId: `${this.baseUrl}/#club`,
+          }),
         ];
       case '/eventos':
         return [
-          {
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            '@id': `${this.baseUrl}/eventos#collection`,
-            name: 'Eventos y competiciones de artes marciales en Umbrete y Sevilla',
-            description:
-              'Listado de eventos, actividades y competiciones de taekwondo y kickboxing del club.',
-            url: `${this.baseUrl}/eventos`,
-            isPartOf: { '@id': `${this.baseUrl}/#club` },
+          this.buildPageSchema('/eventos', {
+            type: 'CollectionPage',
+            idSuffix: 'collection',
             about: [
               { '@type': 'Thing', name: 'Taekwondo' },
-              { '@type': 'Thing', name: 'Kickboxing Light' },
+              { '@type': 'Thing', name: 'Kickboxing' },
               { '@type': 'Place', name: 'Umbrete' },
               { '@type': 'Place', name: 'Sevilla' },
             ],
-          },
+          }),
         ];
       default:
         return [];
@@ -661,9 +744,12 @@ export class SeoService {
 
     const schema: JsonLdSchema = {
       '@context': 'https://schema.org',
-      '@type': 'LocalBusiness',
-      '@id': 'https://moiskimdo.es/#club',
-      review: reviewSchemas,
+      '@graph': [
+        {
+          '@id': 'https://moiskimdo.es/#club',
+          review: reviewSchemas,
+        },
+      ],
     };
 
     const script = this.document.createElement('script');

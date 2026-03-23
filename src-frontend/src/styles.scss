@@ -27,6 +27,14 @@ $Taemoi_Angular_Front-theme: mat.define-theme();
 @import "leaflet-control-geocoder/dist/Control.Geocoder.css";
 @import "leaflet-minimap/dist/Control.MiniMap.min.css";
 
+@font-face {
+  font-family: "Osaka-Sans Serif";
+  src: url("./assets/fonts/osaka-re.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
 * {
   font-family: Montserrat, sans-serif;
   box-sizing: border-box;

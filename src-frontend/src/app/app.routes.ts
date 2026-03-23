@@ -65,6 +65,22 @@ export const routes: Routes = [
   },
   { path: 'inicio', redirectTo: '', pathMatch: 'full' },
   {
+    path: 'aljarafe',
+    data: { seo: SEO_ROUTES.aljarafe, landingKey: 'aljarafe' },
+    loadComponent: () =>
+      import('./componentes/vistas/localidad-landing/localidad-landing.component').then(
+        (m) => m.LocalidadLandingComponent
+      ),
+  },
+  {
+    path: 'sevilla',
+    data: { seo: SEO_ROUTES.sevilla, landingKey: 'sevilla' },
+    loadComponent: () =>
+      import('./componentes/vistas/localidad-landing/localidad-landing.component').then(
+        (m) => m.LocalidadLandingComponent
+      ),
+  },
+  {
     path: 'eltaekwondo',
     redirectTo: '/taekwondo',
     pathMatch: 'full',

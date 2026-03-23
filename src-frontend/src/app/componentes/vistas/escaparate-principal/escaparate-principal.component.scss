@@ -39,6 +39,18 @@ $defensa-hover: #d81b60;
   background: #f8f9fa;
 }
 
+.local-landing-copy {
+  a {
+    color: #0f6a72;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
 // ========================================
 // HERO VIDEO SECTION
 // ========================================
@@ -109,23 +121,37 @@ $defensa-hover: #d81b60;
     .video-text {
       animation: none;
 
-      .hero-title {
-        font-family: "Osaka-Sans Serif", sans-serif;
-        font-size: clamp(3rem, 8vw, 7rem);
+      .hero-display-title {
+        font-family: "Osaka-Sans Serif", sans-serif !important;
+        font-size: clamp(2.6rem, 6.4vw, 5.8rem);
         font-weight: 700;
         color: $text-light;
-        margin: 0;
+        margin: 0 auto;
+        max-width: 780px;
         text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
-        letter-spacing: 2px;
-        line-height: 1.05;
-        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        line-height: 1;
         position: relative;
-        display: inline-block;
-        overflow: hidden;
-        padding-inline: 0.12em;
+        display: block;
+        overflow: visible;
+        padding: 0.08em 0.12em 0.18em;
         box-decoration-break: clone;
+        text-transform: uppercase;
         animation: heroTitleReveal 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
         animation-delay: 140ms;
+
+        .brand-line,
+        .location-line {
+          display: block;
+          font-family: "Osaka-Sans Serif", sans-serif !important;
+        }
+
+        .location-line {
+          margin-top: 0.45rem;
+          font-size: clamp(1.2rem, 3vw, 2.5rem);
+          letter-spacing: 0.45em;
+          line-height: 1.08;
+        }
 
         &::after {
           content: "";
@@ -144,7 +170,7 @@ $defensa-hover: #d81b60;
       }
 
       .hero-subtitle {
-        font-family: "Osaka-Sans Serif", sans-serif;
+        font-family: "Osaka-Sans Serif", sans-serif !important;
         font-size: clamp(1.4rem, 3.2vw, 2.6rem);
         font-weight: 700;
         color: $text-light;
@@ -157,7 +183,7 @@ $defensa-hover: #d81b60;
 
         .desktop-only,
         .mobile-only {
-          font-family: inherit;
+          font-family: "Osaka-Sans Serif", sans-serif !important;
         }
 
         .desktop-only {
@@ -2961,8 +2987,12 @@ $defensa-hover: #d81b60;
       }
 
       .video-text {
-        .hero-title {
-          font-size: clamp(2rem, 6vw, 4rem);
+        .hero-display-title {
+          font-size: clamp(2rem, 5.2vw, 3.6rem);
+
+          .location-line {
+            font-size: clamp(1rem, 2.4vw, 1.8rem);
+          }
         }
 
         .hero-subtitle {
@@ -3083,7 +3113,7 @@ $defensa-hover: #d81b60;
   }
 
   .video-content .hero-badge,
-  .video-content .video-text .hero-title,
+  .video-content .video-text .hero-display-title,
   .video-content .video-text .hero-subtitle,
   .video-content .video-text .hero-description,
   .video-content .video-text .hero-buttons,
@@ -3094,7 +3124,7 @@ $defensa-hover: #d81b60;
     animation: none !important;
   }
 
-  .video-content .video-text .hero-title::after {
+  .video-content .video-text .hero-display-title::after {
     display: none !important;
   }
 }
@@ -3169,12 +3199,18 @@ $defensa-hover: #d81b60;
       }
     }
 
-    .video-text {
-      .hero-title {
-        font-size: clamp(2.2rem, 11vw, 3.4rem);
-        line-height: 1.06;
-        letter-spacing: 1px;
-      }
+      .video-text {
+        .hero-display-title {
+          font-size: clamp(2rem, 8.8vw, 3rem);
+          line-height: 1;
+          letter-spacing: 0.55px;
+
+          .location-line {
+            margin-top: 0.3rem;
+            font-size: clamp(0.95rem, 4vw, 1.5rem);
+            letter-spacing: 0.28em;
+          }
+        }
 
       .hero-subtitle {
         font-size: clamp(1rem, 4.2vw, 1.28rem);
@@ -3639,9 +3675,15 @@ $defensa-hover: #d81b60;
     }
 
     .video-text {
-      .hero-title {
-        font-size: clamp(1.85rem, 11vw, 2.6rem);
-        letter-spacing: 0.8px;
+      .hero-display-title {
+        font-size: clamp(2rem, 11vw, 2.9rem);
+        letter-spacing: 0.7px;
+
+        .location-line {
+          margin-top: 0.2rem;
+          font-size: clamp(0.9rem, 4.4vw, 1.25rem);
+          letter-spacing: 0.22em;
+        }
       }
 
       .hero-subtitle {

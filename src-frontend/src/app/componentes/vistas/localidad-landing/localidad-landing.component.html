@@ -1,0 +1,111 @@
+<div class="local-landing">
+  <section class="hero-header">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="bi bi-geo-alt-fill"></i>
+        <span>{{ landing.badge }}</span>
+      </div>
+      <div class="page-title-section">
+        <h1>{{ landing.title }}</h1>
+        <p class="hero-subtitle">{{ landing.description }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="content-grid">
+      <article class="content-card content-card--wide">
+        <div class="section-header">
+          <i class="bi bi-signpost-split-fill section-icon"></i>
+          <h2>{{ landing.introTitle }}</h2>
+        </div>
+        @for (paragraph of landing.introParagraphs; track paragraph) {
+          <p>{{ paragraph }}</p>
+        }
+      </article>
+
+      <aside class="content-card">
+        <div class="section-header">
+          <i class="bi bi-pin-map-fill section-icon"></i>
+          <h2>Ubicaci&oacute;n real</h2>
+        </div>
+        <ul class="info-list">
+          <li>
+            <strong>Direcci&oacute;n:</strong>
+            <span>Calle Parada de la Cig&uuml;e&ntilde;a 36, 41806 Umbrete, Sevilla</span>
+          </li>
+          <li>
+            <strong>Tel&eacute;fono:</strong>
+            <a href="tel:+34625752354">+34 625 752 354</a>
+          </li>
+          <li>
+            <strong>Tel&eacute;fono:</strong>
+            <a href="tel:+34625753952">+34 625 753 952</a>
+          </li>
+          <li>
+            <strong>Email:</strong>
+            <a href="mailto:moiskimdotaekwondo@gmail.com">moiskimdotaekwondo@gmail.com</a>
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <section class="content-section content-section--soft">
+    <div class="content-grid">
+      <article class="content-card">
+        <div class="section-header">
+          <i class="bi bi-check2-circle section-icon"></i>
+          <h2>{{ landing.reasonsTitle }}</h2>
+        </div>
+        <ul class="reason-list">
+          @for (reason of landing.reasons; track reason) {
+            <li>
+              <i class="bi bi-arrow-right-short"></i>
+              <span>{{ reason }}</span>
+            </li>
+          }
+        </ul>
+      </article>
+
+      <article class="content-card">
+        <div class="section-header">
+          <i class="bi bi-building-fill-check section-icon"></i>
+          <h2>{{ landing.routeTitle }}</h2>
+        </div>
+        <p>{{ landing.routeParagraph }}</p>
+        <div class="cta-row">
+          <a class="cta-link" routerLink="/horarios">
+            <i class="bi bi-calendar3"></i>
+            <span>Ver horarios</span>
+          </a>
+          <a class="cta-link cta-link--ghost" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Contactar</span>
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="services-section">
+    <div class="services-card">
+      <div class="section-header section-header--centered">
+        <i class="bi bi-compass-fill section-icon"></i>
+        <h2>Servicios de Moiskimdo en Umbrete</h2>
+      </div>
+      <p class="services-intro">
+        Descubre las p&aacute;ginas principales de taekwondo, kickboxing, pilates y defensa personal femenina.
+      </p>
+      <div class="services-grid">
+        @for (service of serviceLinks; track service.route) {
+          <a class="service-link" [routerLink]="service.route">
+            <i [class]="service.icon"></i>
+            <span>{{ service.label }}</span>
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+</div>
