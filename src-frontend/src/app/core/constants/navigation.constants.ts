@@ -290,5 +290,10 @@ export const SOCIAL_LINKS = [
     url: 'https://www.instagram.com/moiskimdo_/',
     icon: 'bi-instagram',
   },
+  {
+    label: 'TikTok',
+    url: 'https://www.tiktok.com/@clubmoiskimdo',
+    icon: 'bi-tiktok',
+  },
 ];
 

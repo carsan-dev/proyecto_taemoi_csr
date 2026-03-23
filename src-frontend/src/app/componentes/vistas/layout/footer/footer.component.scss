@@ -14,6 +14,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 // Social media brand colors
 $facebook-color: #1877f2;
 $instagram-color: #e4405f;
+$tiktok-color: #111111;
 $github-color: #333;
 
 // ========================================
@@ -280,6 +281,12 @@ $github-color: #333;
       background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
       border-color: $instagram-color;
       box-shadow: 0 8px 24px rgba($instagram-color, 0.4);
+    }
+
+    &.tiktok:hover {
+      background: linear-gradient(135deg, #111111 0%, #25f4ee 50%, #fe2c55 100%);
+      border-color: #25f4ee;
+      box-shadow: 0 8px 24px rgba($tiktok-color, 0.35);
     }
 
     &.github:hover {

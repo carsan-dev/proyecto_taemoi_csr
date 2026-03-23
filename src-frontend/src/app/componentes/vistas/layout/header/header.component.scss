@@ -583,6 +583,12 @@ header.fixed-header {
         border-color: #dc2743;
         color: $text-light;
       }
+
+      &[href*="tiktok"]:hover {
+        background: linear-gradient(135deg, #111111, #25f4ee, #fe2c55);
+        border-color: #25f4ee;
+        color: $text-light;
+      }
     }
 
     .header-actions-mobile {
@@ -723,6 +729,12 @@ header.fixed-header {
       &[href*="instagram"] {
         background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
         border-color: #dc2743;
+        color: $text-light;
+      }
+
+      &[href*="tiktok"] {
+        background: linear-gradient(135deg, #111111, #25f4ee, #fe2c55);
+        border-color: #25f4ee;
         color: $text-light;
       }
     }
