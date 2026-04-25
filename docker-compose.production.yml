@@ -21,11 +21,8 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./src-api
-      dockerfile: Dockerfile
-      args:
-        SPRING_PROFILE: production
+    image: ${TAEMOI_BACKEND_IMAGE:-ghcr.io/csanrom1702/taemoi-backend:latest}
+    pull_policy: always
     container_name: taemoi-backend-prod
     restart: unless-stopped
     depends_on:
@@ -61,11 +58,8 @@ services:
       start_period: 180s  # Increased from 90s - backend needs more time on first start
 
   frontend:
-    build:
-      context: ./src-frontend
-      dockerfile: Dockerfile.production
-      args:
-        ENVIRONMENT: production
+    image: ${TAEMOI_FRONTEND_IMAGE:-ghcr.io/csanrom1702/taemoi-frontend:latest}
+    pull_policy: always
     container_name: taemoi-frontend-prod
     restart: unless-stopped
     depends_on:
