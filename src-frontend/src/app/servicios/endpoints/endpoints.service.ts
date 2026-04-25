@@ -1343,7 +1343,7 @@ export class EndpointsService {
         tap((nuevoEvento) => {
           this.limpiarCacheEventosPublicos();
           const eventosActuales = this.eventosSubject.getValue();
-          this.eventosSubject.next([...eventosActuales, nuevoEvento]);
+          this.eventosSubject.next([nuevoEvento, ...eventosActuales]);
         }),
         catchError(this.manejarError)
       );
