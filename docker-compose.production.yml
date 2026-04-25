@@ -21,7 +21,7 @@ services:
       retries: 5
 
   backend:
-    image: ${TAEMOI_BACKEND_IMAGE:-ghcr.io/csanrom1702/taemoi-backend:latest}
+    image: ${TAEMOI_BACKEND_IMAGE:-ghcr.io/carsan-dev/taemoi-backend:latest}
     pull_policy: always
     container_name: taemoi-backend-prod
     restart: unless-stopped
@@ -58,7 +58,7 @@ services:
       start_period: 180s  # Increased from 90s - backend needs more time on first start
 
   frontend:
-    image: ${TAEMOI_FRONTEND_IMAGE:-ghcr.io/csanrom1702/taemoi-frontend:latest}
+    image: ${TAEMOI_FRONTEND_IMAGE:-ghcr.io/carsan-dev/taemoi-frontend:latest}
     pull_policy: always
     container_name: taemoi-frontend-prod
     restart: unless-stopped
