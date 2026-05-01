@@ -18,6 +18,7 @@ import {
   MaterialExamenVideoDTO,
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
+import { obtenerSiguienteGrado } from '../../../../utilities/grado-progresion';
 
 const baseHref = globalThis.document?.querySelector('base')?.getAttribute('href') ?? '/';
 const baseUrl = globalThis.location
@@ -38,6 +39,7 @@ GlobalWorkerOptions.workerSrc = new URL(
 export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   @Input() alumnoId: number | null = null;
   @Input() deportes: AlumnoDeporteDTO[] = [];
+  @Input() fechaNacimiento: string | Date | null = null;
   @ViewChild('docsGridRef')
   set docsGridRefSetter(ref: ElementRef<HTMLElement> | undefined) {
     this.docsGridRef = ref;
@@ -97,32 +99,42 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private pdfRenderTask: RenderTask | null = null;
   private readonly mobileViewportMediaQuery =
     '(max-width: 768px), (max-height: 540px) and (pointer: coarse)';
-  private readonly descripcionPreparacionPorGrado: Record<string, string> = {
-    BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
-    BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO-AMARILLO/AMARILLO',
-    AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO/NARANJA',
-    AMARILLO_NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO-NARANJA/NARANJA',
-    NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA/VERDE',
-    NARANJA_VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA-VERDE/VERDE',
-    VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE/AZUL',
-    VERDE_AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE-AZUL/AZUL',
-    AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL/ROJO',
-    AZUL_ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL-ROJO/ROJO',
-    ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 1\u00BA PUM / NEGRO 1\u00BA DAN',
-    ROJO_NEGRO_1_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 2\u00BA PUM',
-    ROJO_NEGRO_2_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
-    ROJO_NEGRO_3_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
-    NEGRO_1_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 2\u00BA DAN',
-    NEGRO_2_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 3\u00BA DAN',
-    NEGRO_3_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 4\u00BA DAN',
-    NEGRO_4_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 5\u00BA DAN',
-    NEGRO_5_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 6\u00BA DAN',
+  private readonly etiquetasSiguienteGrado: Record<string, string> = {
+    BLANCO_AMARILLO: 'BLANCO-AMARILLO',
+    AMARILLO: 'AMARILLO',
+    AMARILLO_NARANJA: 'AMARILLO-NARANJA',
+    NARANJA: 'NARANJA',
+    NARANJA_VERDE: 'NARANJA-VERDE',
+    VERDE: 'VERDE',
+    VERDE_AZUL: 'VERDE-AZUL',
+    AZUL: 'AZUL',
+    AZUL_ROJO: 'AZUL-ROJO',
+    ROJO: 'ROJO',
+    ROJO_NEGRO_1_PUM: 'NEGRO 1\u00BA PUM',
+    ROJO_NEGRO_2_PUM: 'NEGRO 2\u00BA PUM',
+    ROJO_NEGRO_3_PUM: 'NEGRO 3\u00BA PUM',
+    NEGRO_1_DAN: 'NEGRO 1\u00BA DAN',
+    NEGRO_2_DAN: 'NEGRO 2\u00BA DAN',
+    NEGRO_3_DAN: 'NEGRO 3\u00BA DAN',
+    NEGRO_4_DAN: 'NEGRO 4\u00BA DAN',
+    NEGRO_5_DAN: 'NEGRO 5\u00BA DAN',
   };
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['alumnoId'] && !changes['deportes']) {
+    if (!changes['alumnoId'] && !changes['deportes'] && !changes['fechaNacimiento']) {
+      return;
+    }
+
+    if (
+      changes['fechaNacimiento'] &&
+      !changes['alumnoId'] &&
+      !changes['deportes'] &&
+      this.material
+    ) {
+      this.material = this.normalizarMaterial(this.material);
+      this.descripcionBloqueActual = this.obtenerDescripcionBloque(this.material);
       return;
     }
 
@@ -741,26 +753,19 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (!etiquetaCinturon) {
       return 'Temario';
     }
-    return `Temario para cintur\u00F3n ${etiquetaCinturon}`;
+    return `Temario para cintur\u00F3n ${this.formatearEtiquetaCinturon(etiquetaCinturon)}`;
   }
 
   private obtenerEtiquetaCinturonObjetivo(gradoActual: string | null | undefined): string | null {
-    const gradoNormalizado = (gradoActual || '').toUpperCase().trim();
-    if (!gradoNormalizado) {
+    const siguiente = obtenerSiguienteGrado(
+      this.deporteSeleccionado,
+      gradoActual ?? null,
+      this.fechaNacimiento,
+    );
+    if (!siguiente) {
       return null;
     }
-
-    const descripcion = this.descripcionPreparacionPorGrado[gradoNormalizado];
-    if (!descripcion) {
-      return null;
-    }
-
-    const prefijo = 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ';
-    if (!descripcion.startsWith(prefijo)) {
-      return null;
-    }
-
-    return this.formatearEtiquetaCinturon(descripcion.substring(prefijo.length));
+    return this.etiquetasSiguienteGrado[siguiente] ?? null;
   }
 
   private formatearEtiquetaCinturon(etiquetaRaw: string): string {
@@ -808,12 +813,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
-    const gradoNormalizado = (material.gradoActual || '').toUpperCase().trim();
-    if (!gradoNormalizado) {
+    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.gradoActual);
+    if (!etiqueta) {
       return null;
     }
-
-    return this.descripcionPreparacionPorGrado[gradoNormalizado] ?? null;
+    return `PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ${etiqueta}`;
   }
 
   private obtenerDeportesConMaterial(): AlumnoDeporteDTO[] {
