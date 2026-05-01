@@ -6,6 +6,7 @@ import java.util.List;
 public class MaterialExamenDTO {
 	private String deporte;
 	private String gradoActual;
+	private String siguienteGrado;
 	private String bloqueId;
 	private MaterialExamenTemarioDTO temario;
 	private List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
@@ -28,6 +29,14 @@ public class MaterialExamenDTO {
 
 	public void setGradoActual(String gradoActual) {
 		this.gradoActual = gradoActual;
+	}
+
+	public String getSiguienteGrado() {
+		return siguienteGrado;
+	}
+
+	public void setSiguienteGrado(String siguienteGrado) {
+		this.siguienteGrado = siguienteGrado;
 	}
 
 	public String getBloqueId() {

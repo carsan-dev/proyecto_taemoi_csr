@@ -18,7 +18,6 @@ import {
   MaterialExamenVideoDTO,
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
-import { obtenerSiguienteGrado } from '../../../../utilities/grado-progresion';
 
 const baseHref = globalThis.document?.querySelector('base')?.getAttribute('href') ?? '/';
 const baseUrl = globalThis.location
@@ -39,7 +38,6 @@ GlobalWorkerOptions.workerSrc = new URL(
 export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   @Input() alumnoId: number | null = null;
   @Input() deportes: AlumnoDeporteDTO[] = [];
-  @Input() fechaNacimiento: string | Date | null = null;
   @ViewChild('docsGridRef')
   set docsGridRefSetter(ref: ElementRef<HTMLElement> | undefined) {
     this.docsGridRef = ref;
@@ -123,18 +121,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['alumnoId'] && !changes['deportes'] && !changes['fechaNacimiento']) {
-      return;
-    }
-
-    if (
-      changes['fechaNacimiento'] &&
-      !changes['alumnoId'] &&
-      !changes['deportes'] &&
-      this.material
-    ) {
-      this.material = this.normalizarMaterial(this.material);
-      this.descripcionBloqueActual = this.obtenerDescripcionBloque(this.material);
+    if (!changes['alumnoId'] && !changes['deportes']) {
       return;
     }
 
@@ -599,6 +586,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return {
       deporte: material?.deporte ?? this.deporteSeleccionado ?? '',
       gradoActual: material?.gradoActual ?? null,
+      siguienteGrado: material?.siguienteGrado ?? null,
       bloqueId: material?.bloqueId ?? null,
       temario: material?.temario ?? null,
       documentos: documentosCompat,
@@ -614,7 +602,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       : [];
 
     if (documentos.length > 0) {
-      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.gradoActual));
+      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.siguienteGrado));
     }
 
     if (!material?.temario?.downloadUrl) {
@@ -622,7 +610,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
 
     const fileName = this.construirNombreTemarioParaGrado(
-      material?.gradoActual,
+      material?.siguienteGrado,
       material.temario.fileName,
       'application/pdf'
     );
@@ -633,7 +621,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       {
         id: fileName,
         fileName,
-        title: this.construirTituloTemarioParaGrado(material?.gradoActual),
+        title: this.construirTituloTemarioParaGrado(material?.siguienteGrado),
         order: 0,
         mimeType: 'application/pdf',
         previewable: true,
@@ -711,14 +699,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private normalizarNombreTemarioDocumento(
     documento: MaterialExamenDocumentoDTO,
-    gradoActual: string | null | undefined
+    siguienteGrado: string | null | undefined
   ): MaterialExamenDocumentoDTO {
     if (!this.esDocumentoPrincipal(documento)) {
       return documento;
     }
 
     const fileName = this.construirNombreTemarioParaGrado(
-      gradoActual,
+      siguienteGrado,
       documento.fileName,
       documento.mimeType
     );
@@ -726,12 +714,12 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return {
       ...documento,
       fileName,
-      title: this.construirTituloTemarioParaGrado(gradoActual),
+      title: this.construirTituloTemarioParaGrado(siguienteGrado),
     };
   }
 
   private construirNombreTemarioParaGrado(
-    gradoActual: string | null | undefined,
+    siguienteGrado: string | null | undefined,
     fileNameOriginal: string | null | undefined,
     mimeType: string | null | undefined
   ): string {
@@ -739,7 +727,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       this.extraerExtensionDesdeNombre(fileNameOriginal) ||
       this.obtenerExtensionDesdeMime(mimeType) ||
       'pdf';
-    const titulo = this.construirTituloTemarioParaGrado(gradoActual);
+    const titulo = this.construirTituloTemarioParaGrado(siguienteGrado);
     const baseSanitizada = titulo
       .replace(/\s*\/\s*/g, '-')
       .replace(/[\\:*?"<>|]/g, '-')
@@ -748,24 +736,19 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return `${baseSanitizada}.${extension}`;
   }
 
-  private construirTituloTemarioParaGrado(gradoActual: string | null | undefined): string {
-    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(gradoActual);
+  private construirTituloTemarioParaGrado(siguienteGrado: string | null | undefined): string {
+    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(siguienteGrado);
     if (!etiquetaCinturon) {
       return 'Temario';
     }
     return `Temario para cintur\u00F3n ${this.formatearEtiquetaCinturon(etiquetaCinturon)}`;
   }
 
-  private obtenerEtiquetaCinturonObjetivo(gradoActual: string | null | undefined): string | null {
-    const siguiente = obtenerSiguienteGrado(
-      this.deporteSeleccionado,
-      gradoActual ?? null,
-      this.fechaNacimiento,
-    );
-    if (!siguiente) {
+  private obtenerEtiquetaCinturonObjetivo(siguienteGrado: string | null | undefined): string | null {
+    if (!siguienteGrado) {
       return null;
     }
-    return this.etiquetasSiguienteGrado[siguiente] ?? null;
+    return this.etiquetasSiguienteGrado[siguienteGrado] ?? null;
   }
 
   private formatearEtiquetaCinturon(etiquetaRaw: string): string {
@@ -813,7 +796,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
-    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.gradoActual);
+    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.siguienteGrado);
     if (!etiqueta) {
       return null;
     }

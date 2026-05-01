@@ -24,6 +24,7 @@ export interface MaterialExamenDocumentoDTO {
 export interface MaterialExamenDTO {
   deporte: string;
   gradoActual: string | null;
+  siguienteGrado: string | null;
   bloqueId: string | null;
   temario: MaterialExamenTemarioDTO | null;
   documentos: MaterialExamenDocumentoDTO[];

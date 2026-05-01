@@ -24,15 +24,18 @@ import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.ExamMaterialBlockConfig;
+import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.dtos.response.MaterialExamenTemarioDTO;
 import com.taemoi.project.dtos.response.MaterialExamenVideoDTO;
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.MaterialExamenService;
+import com.taemoi.project.utils.DeporteEdadUtils;
 
 @Service
 public class MaterialExamenServiceImpl implements MaterialExamenService {
@@ -54,6 +57,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private ExamMaterialBlockConfig examMaterialBlockConfig;
 
 	@Autowired
+	private GradeProgressionConfig gradeProgressionConfig;
+
+	@Autowired
 	private ObjectMapper objectMapper;
 
 	@Override
@@ -63,6 +69,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		MaterialExamenDTO response = new MaterialExamenDTO();
 		response.setDeporte(deporte != null ? deporte.name() : null);
 		response.setGradoActual(contexto.gradoActual());
+		response.setSiguienteGrado(contexto.siguienteGrado());
 		response.setBloqueId(contexto.bloqueId());
 
 		if (contexto.temario() != null) {
@@ -176,16 +183,25 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 				.orElse(null);
 
 		String gradoActual = null;
+		String siguienteGrado = null;
 		String bloqueId = null;
 		if (deporteSeleccionado != null && deporteSeleccionado.getGrado() != null
 				&& deporteSeleccionado.getGrado().getTipoGrado() != null) {
 			TipoGrado tipoGrado = deporteSeleccionado.getGrado().getTipoGrado();
 			gradoActual = tipoGrado.name();
 			bloqueId = examMaterialBlockConfig.obtenerBloque(deporte, tipoGrado);
+
+			Alumno alumno = deporteSeleccionado.getAlumno();
+			boolean esMenor = alumno != null
+					&& DeporteEdadUtils.esMenorParaDeporte(deporte, alumno.getFechaNacimiento());
+			TipoGrado siguiente = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, tipoGrado);
+			if (siguiente != null) {
+				siguienteGrado = siguiente.name();
+			}
 		}
 
 		if (bloqueId == null || bloqueId.isBlank()) {
-			return new MaterialContext(gradoActual, null, null, List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of());
 		}
 
 		Path carpetaBloque = obtenerRutaBaseDocumentos()
@@ -196,13 +212,13 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		if (!Files.isDirectory(carpetaBloque)) {
 			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
-			return new MaterialContext(gradoActual, bloqueId, null, List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of());
 		}
 
 		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
 		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
 		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
-		return new MaterialContext(gradoActual, bloqueId, temario, videos, documentos);
+		return new MaterialContext(gradoActual, siguienteGrado, bloqueId, temario, videos, documentos);
 	}
 
 	private Path resolverTemario(Path carpetaTemario) {
@@ -443,6 +459,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	private record MaterialContext(
 			String gradoActual,
+			String siguienteGrado,
 			String bloqueId,
 			Path temario,
 			List<VideoFileEntry> videos,
