@@ -123,6 +123,7 @@ describe('MaterialesExamenUserComponent', () => {
       of({
         deporte: 'TAEKWONDO',
         gradoActual: 'AMARILLO',
+        siguienteGrado: 'AMARILLO_NARANJA',
         bloqueId: 'b02_amarillo_a_naranja',
         temario: {
           fileName: 'temario.pdf',
@@ -136,7 +137,7 @@ describe('MaterialesExamenUserComponent', () => {
 
     expect(component.material?.documentos.length).toBe(1);
     expect(component.material?.documentos[0].fileName).toBe('Temario para cinturón Amarillo-Naranja.pdf');
-    expect(component.material?.documentos[0].title).toBe('Temario para cinturón Amarillo/Naranja');
+    expect(component.material?.documentos[0].title).toBe('Temario para cinturón Amarillo-Naranja');
     expect(component.material?.documentos[0].previewable).toBeTrue();
     expect(component.material?.documentos[0].downloadUrl).toContain('download=true');
   });

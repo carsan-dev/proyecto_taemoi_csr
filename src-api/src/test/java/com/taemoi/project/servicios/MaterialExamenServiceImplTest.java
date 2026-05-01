@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.ExamMaterialBlockConfig;
+import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
@@ -42,8 +43,11 @@ class MaterialExamenServiceImplTest {
 	@BeforeEach
 	void setUp() {
 		service = new MaterialExamenServiceImpl();
+		GradeProgressionConfig gradeProgressionConfig = new GradeProgressionConfig();
+		gradeProgressionConfig.init();
 		ReflectionTestUtils.setField(service, "alumnoDeporteService", alumnoDeporteService);
 		ReflectionTestUtils.setField(service, "examMaterialBlockConfig", new ExamMaterialBlockConfig());
+		ReflectionTestUtils.setField(service, "gradeProgressionConfig", gradeProgressionConfig);
 		ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
 		ReflectionTestUtils.setField(service, "directorioDocumentosWindows", tempDir.toString());
 		ReflectionTestUtils.setField(service, "directorioDocumentosLinux", tempDir.toString());
