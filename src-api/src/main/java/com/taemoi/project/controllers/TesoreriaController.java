@@ -9,17 +9,24 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.request.CertificadosCobrosRequest;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.services.TesoreriaService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/tesoreria")
+@Validated
 public class TesoreriaController {
 
 	@Autowired
@@ -112,6 +119,45 @@ public class TesoreriaController {
 					.header(HttpHeaders.CONTENT_DISPOSITION,
 							ContentDisposition.builder("inline").filename(filename).build().toString())
 					.body(pdfBytes);
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
+		}
+	}
+
+	@PostMapping("/certificados-cobros")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> generarCertificadosCobros(@Valid @RequestBody CertificadosCobrosRequest request) {
+		try {
+			List<Long> alumnoIds = request.getAlumnoIds().stream()
+					.filter(id -> id != null)
+					.distinct()
+					.toList();
+
+			if (alumnoIds.isEmpty()) {
+				return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", "Debes seleccionar al menos un alumno."));
+			}
+
+			if (alumnoIds.size() == 1) {
+				byte[] pdfBytes = tesoreriaService.generarCertificadoCobrosAlumno(alumnoIds.get(0), request.getAno());
+				return ResponseEntity.ok()
+						.contentType(MediaType.APPLICATION_PDF)
+						.header(HttpHeaders.CONTENT_DISPOSITION,
+								ContentDisposition.builder("attachment")
+										.filename("certificado_cobros_" + request.getAno() + ".pdf")
+										.build()
+										.toString())
+						.body(pdfBytes);
+			}
+
+			byte[] zipBytes = tesoreriaService.generarCertificadosCobrosZip(alumnoIds, request.getAno());
+			return ResponseEntity.ok()
+					.contentType(MediaType.parseMediaType("application/zip"))
+					.header(HttpHeaders.CONTENT_DISPOSITION,
+							ContentDisposition.builder("attachment")
+									.filename("certificados_cobros_" + request.getAno() + ".zip")
+									.build()
+									.toString())
+					.body(zipBytes);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
 		}
