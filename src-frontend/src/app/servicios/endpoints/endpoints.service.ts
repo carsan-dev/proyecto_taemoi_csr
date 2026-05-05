@@ -886,6 +886,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarCertificadosCobros(alumnoIds: number[], ano: number): Observable<Blob> {
+    return this.http
+      .post(`${this.urlBase}/tesoreria/certificados-cobros`, { alumnoIds, ano }, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   private construirParamsTesoreria(
     mes: number | null,
     ano: number | null,

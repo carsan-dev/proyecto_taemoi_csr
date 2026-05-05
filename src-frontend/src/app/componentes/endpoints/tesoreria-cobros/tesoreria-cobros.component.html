@@ -117,6 +117,18 @@
         <div class="tabla-actions">
           <button
             type="button"
+            class="btn-exportar btn-certificados"
+            [disabled]="generandoCertificados"
+            (click)="abrirModalCertificados()">
+            @if (generandoCertificados) {
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              Generando...
+            } @else {
+              <i class="bi bi-file-earmark-text"></i> Certificados
+            }
+          </button>
+          <button
+            type="button"
             class="btn-exportar btn-exportar-pdf"
             [disabled]="exportandoInforme"
             (click)="exportarInformeDeudasPDF()">
@@ -259,5 +271,96 @@
         </div>
       }
     </article>
+  }
+
+  @if (mostrarModalCertificados) {
+    <div class="modal-backdrop" (click)="cerrarModalCertificados()"></div>
+    <section class="certificados-modal" role="dialog" aria-modal="true" aria-labelledby="certificadosTitulo">
+      <header class="certificados-header">
+        <div>
+          <h2 id="certificadosTitulo">Certificados de cobros</h2>
+          <p>Genera PDF editable por alumno con el desglose anual.</p>
+        </div>
+        <button type="button" class="btn-cerrar-modal" (click)="cerrarModalCertificados()" [disabled]="generandoCertificados">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="certificados-controls">
+        <div class="filtro">
+          <label for="anoCertificado">A&ntilde;o</label>
+          <select id="anoCertificado" [(ngModel)]="anoCertificado" [disabled]="generandoCertificados">
+            @for (ano of anosDisponibles; track ano) {
+              <option [ngValue]="ano">{{ ano }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filtro filtro-texto">
+          <label for="buscarAlumnoCertificado">Alumno</label>
+          <input
+            id="buscarAlumnoCertificado"
+            type="text"
+            placeholder="Buscar alumno"
+            [(ngModel)]="filtroAlumnoCertificado"
+            [disabled]="generandoCertificados">
+        </div>
+      </div>
+
+      <div class="certificados-toolbar">
+        <span>{{ alumnosCertificadoSeleccionados.length }} seleccionados</span>
+        <div>
+          <button type="button" class="btn-mini" (click)="seleccionarTodosAlumnosCertificado()" [disabled]="generandoCertificados || cargandoAlumnosCertificado">
+            Seleccionar visibles
+          </button>
+          <button type="button" class="btn-mini" (click)="limpiarSeleccionAlumnosCertificado()" [disabled]="generandoCertificados || alumnosCertificadoSeleccionados.length === 0">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="alumnos-certificado-lista">
+        @if (cargandoAlumnosCertificado) {
+          <div class="modal-loading">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Cargando alumnos...
+          </div>
+        } @else {
+          @for (alumno of alumnosCertificadoFiltrados(); track alumno.id) {
+            <label class="alumno-certificado-item">
+              <input
+                type="checkbox"
+                [checked]="estaAlumnoCertificadoSeleccionado(alumno.id)"
+                [disabled]="generandoCertificados"
+                (change)="toggleAlumnoCertificado(alumno.id, $any($event.target).checked)">
+              <span>{{ obtenerNombreCompletoAlumno(alumno) }}</span>
+            </label>
+          } @empty {
+            <div class="sin-resultados-modal">
+              <i class="bi bi-search"></i>
+              <p>No hay alumnos con ese filtro.</p>
+            </div>
+          }
+        }
+      </div>
+
+      <footer class="certificados-footer">
+        <button type="button" class="btn-secundario" (click)="cerrarModalCertificados()" [disabled]="generandoCertificados">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-principal"
+          (click)="generarCertificadosCobros()"
+          [disabled]="generandoCertificados || alumnosCertificadoSeleccionados.length === 0 || !anoCertificado">
+          @if (generandoCertificados) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Generando...
+          } @else {
+            <i class="bi bi-download"></i> Generar
+          }
+        </button>
+      </footer>
+    </section>
   }
 </section>

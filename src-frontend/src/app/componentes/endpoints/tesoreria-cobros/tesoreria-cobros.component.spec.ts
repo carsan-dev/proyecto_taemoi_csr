@@ -22,6 +22,8 @@ describe('TesoreriaCobrosComponent', () => {
       'actualizarCobroTesoreria',
       'exportarTesoreriaPDF',
       'exportarTesoreriaCSV',
+      'obtenerTodosLosAlumnosSinPaginar',
+      'generarCertificadosCobros',
     ]);
     authSpy = jasmine.createSpyObj<AuthenticationService>('AuthenticationService', [
       'rolesEstanCargados',
@@ -72,6 +74,8 @@ describe('TesoreriaCobrosComponent', () => {
     endpointsSpy.actualizarCobroTesoreria.and.returnValue(of({} as any));
     endpointsSpy.exportarTesoreriaPDF.and.returnValue(of(new Blob()));
     endpointsSpy.exportarTesoreriaCSV.and.returnValue(of(new Blob()));
+    endpointsSpy.obtenerTodosLosAlumnosSinPaginar.and.returnValue(of([{ id: 1, nombre: 'Alumno', apellidos: 'Test' }] as any));
+    endpointsSpy.generarCertificadosCobros.and.returnValue(of(new Blob()));
 
     authSpy.rolesEstanCargados.and.returnValue(true);
     authSpy.tieneRolAdmin.and.returnValue(false);
@@ -123,5 +127,11 @@ describe('TesoreriaCobrosComponent', () => {
     fixture.detectChanges();
     const botonesRevertir = fixture.nativeElement.querySelectorAll('.btn-revertir');
     expect(botonesRevertir.length).toBe(1);
+  });
+
+  it('abre modal de certificados y carga alumnos', () => {
+    component.abrirModalCertificados();
+    expect(component.mostrarModalCertificados).toBeTrue();
+    expect(endpointsSpy.obtenerTodosLosAlumnosSinPaginar).toHaveBeenCalledWith(false);
   });
 });
