@@ -30,6 +30,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private static final DateTimeFormatter FECHA_CERTIFICADO_FORMATTER =
 			DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
 	private static final Pattern ANO_PATTERN = Pattern.compile("\\b(20\\d{2})\\b");
-	private static final String RESPONSABLE_NOMBRE = "D. DOLORES MARIA ROMAN RUIZ";
+	private static final String RESPONSABLE_NOMBRE = "DÑA. DOLORES MARIA ROMAN RUIZ";
 	private static final String RESPONSABLE_DNI = "28756368C";
 	private static final String CLUB_NOMBRE_LEGAL = "Club Deportivo Moi's Kim do Taekwondo";
 	private static final String CLUB_CIF = "G90341173";
@@ -460,39 +461,68 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		String alumnoNombre = obtenerNombreCompletoAlumno(certificado.alumno);
 		String fechaGeneracion = "En Umbrete, a " + FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now()) + ".";
 
-		escribirTexto(content, 72, 635, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
-				+ ", en calidad de Presidenta del", 10, false);
-		escribirTexto(content, 72, 614, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
-				+ ", hago constar que ha recibido de", 10, false);
-		escribirTexto(content, 72, 593, "D/Dña.", 10, false);
-		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 587, 235, 17);
-		escribirTexto(content, 350, 593, "la cantidad de", 10, false);
-		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 587, 62, 17);
-		escribirTexto(content, 72, 572, "durante el ejercicio " + certificado.ano
-				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor", 10, false);
-		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 545, 325, 17);
-		escribirTexto(content, 402, 551, ".", 10, false);
+		content.setNonStrokingColor(245, 248, 252);
+		content.addRect(52, 700, 492, 42);
+		content.fill();
+		content.setNonStrokingColor(31, 77, 134);
+		content.addRect(52, 696, 492, 4);
+		content.fill();
+		content.setNonStrokingColor(0, 0, 0);
+		escribirTexto(content, 72, 722, "CERTIFICADO DE COBROS", 13, true);
+		escribirTexto(content, 72, 706, "Ejercicio " + certificado.ano + " - " + CLUB_NOMBRE_LEGAL, 9, false);
 
-		escribirTexto(content, 72, 508, "Se desglosa el importe total del ejercicio " + certificado.ano
+		escribirTexto(content, 72, 650, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
+				+ ", en calidad de Presidenta del", 10, false);
+		escribirTexto(content, 72, 629, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
+				+ ", hago constar que ha recibido de", 10, false);
+		escribirTexto(content, 72, 608, "D/Dña.", 10, false);
+		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 602, 235, 17);
+		escribirTexto(content, 350, 608, "la cantidad de", 10, false);
+		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 602, 72, 17);
+		escribirTexto(content, 72, 587, "durante el ejercicio " + certificado.ano
+				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor", 10, false);
+		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 560, 325, 17);
+		escribirTexto(content, 402, 566, ".", 10, false);
+
+		escribirTexto(content, 72, 523, "Se desglosa el importe total del ejercicio " + certificado.ano
 				+ " en los siguientes importes:", 10, false);
 
+		dibujarTablaMeses(content);
 		for (int i = 0; i < 6; i++) {
-			float y = 482 - (i * 21);
-			escribirTexto(content, 95, y, "- " + MESES_ES[i], 10, false);
-			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 178, y - 6, 65, 16);
+			float y = 491 - (i * 28);
+			escribirTexto(content, 80, y, MESES_ES[i], 9, true);
+			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 177, y - 7, 75, 17);
 		}
 		for (int i = 6; i < 12; i++) {
-			float y = 482 - ((i - 6) * 21);
-			escribirTexto(content, 318, y, MESES_ES[i], 10, false);
-			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 402, y - 6, 65, 16);
+			float y = 491 - ((i - 6) * 28);
+			escribirTexto(content, 310, y, MESES_ES[i], 9, true);
+			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 408, y - 7, 75, 17);
 		}
 
-		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 225, 250, 17);
+		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 245, 250, 17);
 		escribirTexto(content, 72, 190, "Firmado:", 10, true);
 		escribirTexto(content, 72, 169, RESPONSABLE_NOMBRE, 10, false);
 		escribirTexto(content, 72, 94, "PRESIDENTA", 10, false);
 		escribirTexto(content, 72, 73, "C.D. MOI'S KIMDO TAEKWONDO", 10, false);
 		escribirTexto(content, 72, 52, "C.I.F.: " + CLUB_CIF, 10, false);
+	}
+
+	private void dibujarTablaMeses(PDPageContentStream content) throws IOException {
+		content.setStrokingColor(210, 221, 234);
+		content.setLineWidth(0.6f);
+		for (int row = 0; row <= 6; row++) {
+			float y = 505 - (row * 28);
+			content.moveTo(72, y);
+			content.lineTo(257, y);
+			content.moveTo(302, y);
+			content.lineTo(487, y);
+		}
+		for (float x : new float[] { 72, 168, 257, 302, 398, 487 }) {
+			content.moveTo(x, 505);
+			content.lineTo(x, 337);
+		}
+		content.stroke();
+		content.setStrokingColor(0, 0, 0);
 	}
 
 	private void escribirTexto(PDPageContentStream content, float x, float y, String texto, int size, boolean bold)
@@ -521,31 +551,22 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		PDAnnotationWidget widget = field.getWidgets().get(0);
 		widget.setRectangle(new PDRectangle(x, y, width, height));
 		widget.setPage(page);
+		PDBorderStyleDictionary borderStyle = new PDBorderStyleDictionary();
+		borderStyle.setWidth(0.4f);
+		widget.setBorderStyle(borderStyle);
 		page.getAnnotations().add(widget);
 		acroForm.getFields().add(field);
 	}
 
 	private String formatearEuros(double importe) {
-		return String.format(Locale.forLanguageTag("es-ES"), "%.2f euros", importe);
+		return String.format(Locale.forLanguageTag("es-ES"), "%.2f €", importe);
 	}
 
 	private String sanitizarPdfText(String value) {
 		if (value == null) {
 			return "";
 		}
-		return value
-				.replace("á", "a")
-				.replace("é", "e")
-				.replace("í", "i")
-				.replace("ó", "o")
-				.replace("ú", "u")
-				.replace("Á", "A")
-				.replace("É", "E")
-				.replace("Í", "I")
-				.replace("Ó", "O")
-				.replace("Ú", "U")
-				.replace("ñ", "n")
-				.replace("Ñ", "N");
+		return value;
 	}
 
 	private String construirNombreSeguroCertificado(Alumno alumno, Integer ano) {
