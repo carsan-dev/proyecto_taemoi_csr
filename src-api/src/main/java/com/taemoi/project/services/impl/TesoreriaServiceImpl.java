@@ -462,64 +462,64 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		String fechaGeneracion = "En Umbrete, a " + FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now()) + ".";
 
 		content.setNonStrokingColor(245, 248, 252);
-		content.addRect(52, 704, 380, 42);
+		content.addRect(52, 729, 380, 42);
 		content.fill();
 		content.setNonStrokingColor(31, 77, 134);
-		content.addRect(52, 700, 380, 4);
+		content.addRect(52, 725, 380, 4);
 		content.fill();
 		content.setNonStrokingColor(0, 0, 0);
-		escribirTexto(content, 72, 726, "CERTIFICADO DE COBROS", 13, true);
-		escribirTexto(content, 72, 710, "Ejercicio " + certificado.ano + " - " + CLUB_NOMBRE_LEGAL, 9, false);
+		escribirTexto(content, 72, 751, "CERTIFICADO DE COBROS", 13, true);
+		escribirTexto(content, 72, 735, "Ejercicio " + certificado.ano + " - " + CLUB_NOMBRE_LEGAL, 9, false);
 
-		escribirTexto(content, 72, 625, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
+		escribirTexto(content, 72, 655, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
 				+ ", en calidad de Presidenta del", 10, false);
-		escribirTexto(content, 72, 604, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
+		escribirTexto(content, 72, 634, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
 				+ ", hago constar que ha recibido de", 10, false);
-		escribirTexto(content, 72, 583, "D/Dña.", 10, false);
-		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 577, 235, 17);
-		escribirTexto(content, 350, 583, "la cantidad de", 10, false);
-		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 577, 72, 17);
-		escribirTexto(content, 72, 562, "durante el ejercicio " + certificado.ano
+		escribirTexto(content, 72, 613, "D/Dña.", 10, false);
+		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 607, 235, 17);
+		escribirTexto(content, 350, 613, "la cantidad de", 10, false);
+		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 607, 72, 17);
+		escribirTexto(content, 72, 592, "durante el ejercicio " + certificado.ano
 				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor", 10, false);
-		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 535, 325, 17);
-		escribirTexto(content, 402, 541, ".", 10, false);
+		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 565, 325, 17);
+		escribirTexto(content, 402, 571, ".", 10, false);
 
-		escribirTexto(content, 72, 498, "Se desglosa el importe total del ejercicio " + certificado.ano
+		escribirTexto(content, 72, 528, "Se desglosa el importe total del ejercicio " + certificado.ano
 				+ " en los siguientes importes:", 10, false);
 
 		dibujarTablaMeses(content);
 		for (int i = 0; i < 6; i++) {
-			float y = 466 - (i * 28);
+			float y = 496 - (i * 28);
 			escribirTexto(content, 80, y, MESES_ES[i], 9, true);
 			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 177, y - 7, 75, 17);
 		}
 		for (int i = 6; i < 12; i++) {
-			float y = 466 - ((i - 6) * 28);
+			float y = 496 - ((i - 6) * 28);
 			escribirTexto(content, 310, y, MESES_ES[i], 9, true);
 			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 408, y - 7, 75, 17);
 		}
 
-		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 210, 250, 17);
-		escribirTexto(content, 72, 155, "Firmado:", 10, true);
-		escribirTexto(content, 72, 134, RESPONSABLE_NOMBRE, 10, false);
-		escribirTexto(content, 72, 79, "PRESIDENTA", 10, false);
-		escribirTexto(content, 72, 58, "C.D. MOI'S KIMDO TAEKWONDO", 10, false);
-		escribirTexto(content, 72, 37, "C.I.F.: " + CLUB_CIF, 10, false);
+		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 240, 250, 17);
+		escribirTexto(content, 72, 185, "Firmado:", 10, true);
+		escribirTexto(content, 72, 164, RESPONSABLE_NOMBRE, 10, false);
+		escribirTexto(content, 72, 109, "PRESIDENTA", 10, false);
+		escribirTexto(content, 72, 88, "C.D. MOI'S KIMDO TAEKWONDO", 10, false);
+		escribirTexto(content, 72, 67, "C.I.F.: " + CLUB_CIF, 10, false);
 	}
 
 	private void dibujarTablaMeses(PDPageContentStream content) throws IOException {
 		content.setStrokingColor(210, 221, 234);
 		content.setLineWidth(0.6f);
 		for (int row = 0; row <= 6; row++) {
-			float y = 480 - (row * 28);
+			float y = 510 - (row * 28);
 			content.moveTo(72, y);
 			content.lineTo(257, y);
 			content.moveTo(302, y);
 			content.lineTo(487, y);
 		}
 		for (float x : new float[] { 72, 168, 257, 302, 398, 487 }) {
-			content.moveTo(x, 480);
-			content.lineTo(x, 312);
+			content.moveTo(x, 510);
+			content.lineTo(x, 342);
 		}
 		content.stroke();
 		content.setStrokingColor(0, 0, 0);
