@@ -425,7 +425,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			resources.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA);
 			acroForm.setDefaultResources(resources);
 			acroForm.setDefaultAppearance("/Helv 10 Tf 0 g");
-			acroForm.setNeedAppearances(true);
+			acroForm.setNeedAppearances(false);
 			document.getDocumentCatalog().setAcroForm(acroForm);
 
 			try (PDPageContentStream content = new PDPageContentStream(document, page)) {
@@ -433,6 +433,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				dibujarTextoCertificado(content, acroForm, page, certificado);
 			}
 
+			acroForm.refreshAppearances();
 			document.save(outputStream);
 			return outputStream.toByteArray();
 		} catch (IOException ex) {
@@ -546,7 +547,6 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		PDTextField field = new PDTextField(acroForm);
 		field.setPartialName(nombre);
 		field.setDefaultAppearance("/Helv 10 Tf 0 g");
-		field.setValue(sanitizarPdfText(valor));
 
 		PDAnnotationWidget widget = field.getWidgets().get(0);
 		widget.setRectangle(new PDRectangle(x, y, width, height));
@@ -556,6 +556,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		widget.setBorderStyle(borderStyle);
 		page.getAnnotations().add(widget);
 		acroForm.getFields().add(field);
+		field.setValue(sanitizarPdfText(valor));
 	}
 
 	private String formatearEuros(double importe) {

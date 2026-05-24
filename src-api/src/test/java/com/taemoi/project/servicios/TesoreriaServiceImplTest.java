@@ -1,6 +1,8 @@
 package com.taemoi.project.servicios;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -16,6 +18,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -204,7 +209,7 @@ class TesoreriaServiceImplTest {
 	}
 
 	@Test
-	void generarCertificadoCobrosAlumno_generaPdfConCobrosPagadosCertificables() {
+	void generarCertificadoCobrosAlumno_generaPdfConCobrosPagadosCertificables() throws Exception {
 		Alumno alumno = new Alumno();
 		alumno.setId(20L);
 		alumno.setNombre("Adrian");
@@ -241,6 +246,15 @@ class TesoreriaServiceImplTest {
 		byte[] pdf = tesoreriaService.generarCertificadoCobrosAlumno(20L, 2026);
 
 		assertTrue(pdf.length > 1000);
+		try (PDDocument document = PDDocument.load(pdf)) {
+			PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+			assertNotNull(acroForm);
+			assertFalse(acroForm.getNeedAppearances());
+			for (PDField field : acroForm.getFieldTree()) {
+				assertFalse(field.getWidgets().isEmpty());
+				assertNotNull(field.getWidgets().get(0).getNormalAppearanceStream());
+			}
+		}
 		verify(productoAlumnoRepository).findMovimientosTesoreriaFiltrados(
 				any(),
 				any(),
