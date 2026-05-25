@@ -252,6 +252,7 @@ class TesoreriaServiceImplTest {
 			assertFalse(acroForm.getNeedAppearances());
 			for (PDField field : acroForm.getFieldTree()) {
 				assertFalse(field.getWidgets().isEmpty());
+				assertTrue(field.getWidgets().get(0).isPrinted());
 				assertNotNull(field.getWidgets().get(0).getNormalAppearanceStream());
 			}
 		}

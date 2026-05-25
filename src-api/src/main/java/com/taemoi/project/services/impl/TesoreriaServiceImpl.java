@@ -551,6 +551,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		PDAnnotationWidget widget = field.getWidgets().get(0);
 		widget.setRectangle(new PDRectangle(x, y, width, height));
 		widget.setPage(page);
+		widget.setPrinted(true);
 		PDBorderStyleDictionary borderStyle = new PDBorderStyleDictionary();
 		borderStyle.setWidth(0.4f);
 		widget.setBorderStyle(borderStyle);
