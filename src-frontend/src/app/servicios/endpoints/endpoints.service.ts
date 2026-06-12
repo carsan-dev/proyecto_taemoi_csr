@@ -1678,12 +1678,17 @@ export class EndpointsService {
     if (!Array.isArray(material.videos)) {
       material.videos = [];
     } else {
-      material.videos = material.videos.map((video) => ({
-        ...video,
-        streamUrl: video?.id
-          ? this.obtenerUrlVideoMaterialExamenAlumno(alumnoId, deporte, video.id)
-          : '',
-      }));
+      material.videos = material.videos.map((video) =>
+        this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte)
+      );
+    }
+
+    if (!Array.isArray(material.videosAnteriores)) {
+      material.videosAnteriores = [];
+    } else {
+      material.videosAnteriores = material.videosAnteriores.map((video) =>
+        this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte)
+      );
     }
 
     if (!Array.isArray(material.documentos)) {
@@ -1714,6 +1719,19 @@ export class EndpointsService {
     }
 
     return documento.order === 0 && documento.fileName === temarioFileName;
+  }
+
+  private normalizarUrlVideoMaterialExamen(
+    video: MaterialExamenDTO['videos'][number] | null | undefined,
+    alumnoId: number,
+    deporte: string
+  ): MaterialExamenDTO['videos'][number] {
+    return {
+      ...video!,
+      streamUrl: video?.id
+        ? this.obtenerUrlVideoMaterialExamenAlumno(alumnoId, deporte, video.id)
+        : '',
+    };
   }
 
   generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {

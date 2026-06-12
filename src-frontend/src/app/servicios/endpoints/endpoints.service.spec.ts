@@ -27,6 +27,14 @@ describe('EndpointsService', () => {
             streamUrl: 'https://malicioso.example/video.mp4',
           },
         ],
+        videosAnteriores: [
+          {
+            id: 'anterior__b01_inicio_a_amarillo__01_taeguk.mp4',
+            title: 'Taeguk anterior',
+            order: 1,
+            streamUrl: 'https://malicioso.example/video-anterior.mp4',
+          },
+        ],
         documentos: [
           {
             id: '02_reglamento.pdf',
@@ -47,6 +55,7 @@ describe('EndpointsService', () => {
       expect(getSpy).toHaveBeenCalled();
       expect(material.temario?.downloadUrl).toContain('/api/alumnos/10/deportes/TAEKWONDO/material-examen/temario?download=true');
       expect(material.videos[0].streamUrl).toContain('/api/alumnos/10/deportes/TAEKWONDO/material-examen/videos/01_patada.mp4');
+      expect(material.videosAnteriores[0].streamUrl).toContain('/api/alumnos/10/deportes/TAEKWONDO/material-examen/videos/anterior__b01_inicio_a_amarillo__01_taeguk.mp4');
       expect(material.documentos[0].openUrl).toContain('/api/alumnos/10/deportes/TAEKWONDO/material-examen/documentacion/02_reglamento.pdf');
       expect(material.documentos[0].downloadUrl).toContain('download=true');
       done();

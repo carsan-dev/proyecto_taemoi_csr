@@ -63,6 +63,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   material: MaterialExamenDTO | null = null;
   videoSeleccionado: MaterialExamenVideoDTO | null = null;
   videoSeleccionadoUrl: string | null = null;
+  videosAnterioresExpandido: boolean = false;
 
   documentoSeleccionado: MaterialExamenDocumentoDTO | null = null;
   mostrarDocumentoVisor: boolean = false;
@@ -173,6 +174,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   onSeleccionarVideo(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionado = video;
     this.cargarVideoSeleccionado(video);
+  }
+
+  toggleVideosAnteriores(): void {
+    this.videosAnterioresExpandido = !this.videosAnterioresExpandido;
   }
 
   onBloquearDescargaContenido(event: Event): void {
@@ -543,6 +548,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.limpiarEstadoPdfViewer();
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
+    this.videosAnterioresExpandido = false;
     this.documentoSeleccionado = null;
     this.mostrarDocumentoVisor = false;
     this.docsActionsOffsetPx = 0;
@@ -591,6 +597,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       temario: material?.temario ?? null,
       documentos: documentosCompat,
       videos: Array.isArray(material?.videos) ? material!.videos : [],
+      videosAnteriores: Array.isArray(material?.videosAnteriores) ? material!.videosAnteriores : [],
     };
   }
 
@@ -835,6 +842,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.material = null;
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
+    this.videosAnterioresExpandido = false;
     this.documentoSeleccionado = null;
     this.errorCarga = null;
     this.cargando = false;
@@ -1061,11 +1069,13 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
 
     this.cargandoVideoSeleccionado = false;
-    this.videoSeleccionadoUrl = this.endpointsService.obtenerUrlVideoMaterialExamenAlumno(
-      this.alumnoId,
-      this.deporteSeleccionado,
-      video.id
-    );
+    this.videoSeleccionadoUrl =
+      video.streamUrl ||
+      this.endpointsService.obtenerUrlVideoMaterialExamenAlumno(
+        this.alumnoId,
+        this.deporteSeleccionado,
+        video.id
+      );
   }
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {

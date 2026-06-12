@@ -29,4 +29,5 @@ export interface MaterialExamenDTO {
   temario: MaterialExamenTemarioDTO | null;
   documentos: MaterialExamenDocumentoDTO[];
   videos: MaterialExamenVideoDTO[];
+  videosAnteriores: MaterialExamenVideoDTO[];
 }
