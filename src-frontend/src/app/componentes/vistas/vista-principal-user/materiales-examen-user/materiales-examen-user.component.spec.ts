@@ -265,6 +265,21 @@ describe('MaterialesExamenUserComponent', () => {
             streamUrl: '/api/video-anterior',
           },
         ],
+        gruposVideosAnteriores: [
+          {
+            grado: 'AMARILLO',
+            titulo: 'Taeguks/Pumses de AMARILLO',
+            bloqueId: 'b02_amarillo_a_naranja',
+            videos: [
+              {
+                id: 'anterior__b02_amarillo_a_naranja__01_taeguk.mp4',
+                title: 'Taeguk amarillo',
+                order: 1,
+                streamUrl: '/api/video-anterior',
+              },
+            ],
+          },
+        ],
         documentos: [],
       } as any)
     );
@@ -272,11 +287,13 @@ describe('MaterialesExamenUserComponent', () => {
     triggerInputs();
 
     expect(fixture.nativeElement.textContent).toContain('Taeguks/Pumses anteriores');
+    expect(fixture.nativeElement.textContent).not.toContain('Taeguks/Pumses de AMARILLO');
     expect(fixture.nativeElement.querySelectorAll('.previous-video-list .video-item-btn').length).toBe(0);
 
     component.toggleVideosAnteriores();
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Taeguks/Pumses de AMARILLO');
     const anterior = fixture.nativeElement.querySelector('.previous-video-list .video-item-btn') as HTMLButtonElement;
     anterior.click();
     fixture.detectChanges();

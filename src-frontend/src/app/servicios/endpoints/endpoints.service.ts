@@ -1691,6 +1691,17 @@ export class EndpointsService {
       );
     }
 
+    if (!Array.isArray(material.gruposVideosAnteriores)) {
+      material.gruposVideosAnteriores = [];
+    } else {
+      material.gruposVideosAnteriores = material.gruposVideosAnteriores.map((grupo) => ({
+        ...grupo,
+        videos: Array.isArray(grupo?.videos)
+          ? grupo.videos.map((video) => this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte))
+          : [],
+      }));
+    }
+
     if (!Array.isArray(material.documentos)) {
       material.documentos = [];
     } else {

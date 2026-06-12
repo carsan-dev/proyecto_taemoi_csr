@@ -598,6 +598,9 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       documentos: documentosCompat,
       videos: Array.isArray(material?.videos) ? material!.videos : [],
       videosAnteriores: Array.isArray(material?.videosAnteriores) ? material!.videosAnteriores : [],
+      gruposVideosAnteriores: Array.isArray(material?.gruposVideosAnteriores)
+        ? material!.gruposVideosAnteriores.filter((grupo) => Array.isArray(grupo?.videos) && grupo.videos.length > 0)
+        : [],
     };
   }
 
