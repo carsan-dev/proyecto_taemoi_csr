@@ -38,6 +38,10 @@ public interface PDFService {
 
 	byte[] generarInformeMensualidadesKickboxing(boolean soloActivos);
 
+	List<String> obtenerTemporadasReservasPlaza();
+
+	byte[] generarInformeReservasPlaza(String temporada, boolean soloActivos);
+
 	byte[] generarListadoMensualidadMensual(String mesAno, boolean soloActivos);
 
 	byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException;

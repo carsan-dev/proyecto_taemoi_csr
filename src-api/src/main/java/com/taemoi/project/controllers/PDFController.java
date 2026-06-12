@@ -226,6 +226,25 @@ public class PDFController {
 		return ResponseEntity.ok().headers(headers).body(pdfBytes);
 	}
 
+	@GetMapping("/reservas-plaza/temporadas")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<String>> obtenerTemporadasReservasPlaza() {
+		return ResponseEntity.ok(pdfService.obtenerTemporadasReservasPlaza());
+	}
+
+	@GetMapping("/reservas-plaza")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeReservasPlaza(
+			@RequestParam String temporada,
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeReservasPlaza(temporada, soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_reservas_plaza_" + temporada.replace("/", "_") + ".pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/listado-mensualidad-mensual")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<byte[]> generarListadoMensualidadMensual(

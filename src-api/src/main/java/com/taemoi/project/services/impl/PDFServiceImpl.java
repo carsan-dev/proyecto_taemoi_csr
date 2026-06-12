@@ -21,7 +21,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
@@ -48,6 +51,7 @@ import com.taemoi.project.utils.GradoUtils;
 
 @Service
 public class PDFServiceImpl implements PDFService {
+	private static final Pattern TEMPORADA_PATTERN = Pattern.compile("\\b(20\\d{2})/(20\\d{2})\\b");
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
@@ -1954,6 +1958,211 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarInformeMensualidadesKickboxing(boolean soloActivos) {
 		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING, soloActivos);
+	}
+
+	@Override
+	public List<String> obtenerTemporadasReservasPlaza() {
+		TreeSet<String> temporadas = new TreeSet<>(Comparator.reverseOrder());
+		for (String concepto : productoAlumnoRepository.findConceptosReservaPlaza()) {
+			if (concepto == null) {
+				continue;
+			}
+			Matcher matcher = TEMPORADA_PATTERN.matcher(concepto);
+			while (matcher.find()) {
+				temporadas.add(matcher.group());
+			}
+		}
+		return new ArrayList<>(temporadas);
+	}
+
+	@Override
+	public byte[] generarInformeReservasPlaza(String temporada, boolean soloActivos) {
+		if (temporada == null || !TEMPORADA_PATTERN.matcher(temporada).matches()) {
+			throw new IllegalArgumentException("Temporada no valida");
+		}
+
+		List<com.taemoi.project.entities.ProductoAlumno> reservas = productoAlumnoRepository
+				.findReservasPlazaByTemporada(temporada, soloActivos);
+
+		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
+
+		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte = new java.util.LinkedHashMap<>();
+		for (com.taemoi.project.entities.ProductoAlumno reserva : reservas) {
+			Deporte deporte = obtenerDeporteReserva(reserva);
+			String key = deporte != null ? deporte.name() : "SIN_DEPORTE";
+			reservasPorDeporte.computeIfAbsent(key, ignored -> new ArrayList<>()).add(reserva);
+		}
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Informe de Reservas de Plaza", fechaGeneracion));
+		html.append(".status-badge { display: inline-block; padding: 1mm 3mm; border-radius: 2mm; font-weight: 600; font-size: 9pt; }");
+		html.append(".status-pagado { background: #d4edda; color: #155724; }");
+		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
+		html.append(".resumen-general { margin-top: 8mm; padding: 4mm; background: #f8f9fa; border: 2px solid #007bff; border-radius: 2mm; text-align: center; }");
+		html.append(".sport-section { page-break-inside: avoid; margin-bottom: 8mm; }");
+		html.append(".sport-section tr { page-break-inside: avoid; page-break-after: auto; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+		html.append(generarCabeceraConLogo("Informe de Reservas de Plaza - " + temporada, "#007bff"));
+
+		if (reservasPorDeporte.isEmpty()) {
+			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("No hay reservas de plaza registradas para la temporada ").append(temporada);
+			html.append("</div>");
+		} else {
+			int totalReservas = 0;
+			int totalPagadas = 0;
+			int totalPendientes = 0;
+
+			for (Map.Entry<String, List<com.taemoi.project.entities.ProductoAlumno>> entry : ordenarReservasPorDeporte(reservasPorDeporte).entrySet()) {
+				List<com.taemoi.project.entities.ProductoAlumno> reservasDeporte = entry.getValue();
+				Deporte deporte = obtenerDeporteReserva(reservasDeporte.get(0));
+				String deporteNombre = deporte != null ? getDeporteNombre(deporte) : "Sin deporte";
+				String color = getColorDeporte(deporte);
+
+				html.append("<div class='sport-section'>");
+				html.append("<div class='section-header' style='background-color: ").append(color).append(";'>");
+				html.append(deporteNombre).append(" (").append(reservasDeporte.size()).append(" reservas)");
+				html.append("</div>");
+				html.append("<table>");
+				html.append("<thead><tr>");
+				html.append("<th>Alumno</th>");
+				html.append("<th>Concepto</th>");
+				html.append("<th>Fecha AsignaciÃ³n</th>");
+				html.append("<th>Precio</th>");
+				html.append("<th>Estado</th>");
+				html.append("</tr></thead>");
+				html.append("<tbody>");
+
+				for (com.taemoi.project.entities.ProductoAlumno reserva : reservasDeporte) {
+					Alumno alumno = obtenerAlumnoReserva(reserva);
+					boolean pagado = Boolean.TRUE.equals(reserva.getPagado());
+					totalReservas++;
+					if (pagado) {
+						totalPagadas++;
+					} else {
+						totalPendientes++;
+					}
+
+					html.append("<tr>");
+					html.append("<td>").append(formatearNombreAlumno(alumno)).append("</td>");
+					html.append("<td>").append(reserva.getConcepto() != null ? reserva.getConcepto() : "N/A").append("</td>");
+					html.append("<td>").append(formatearFecha(reserva.getFechaAsignacion())).append("</td>");
+					html.append("<td>").append(String.format("%.2f", reserva.getPrecio() != null ? reserva.getPrecio() : 0.0)).append(" â‚¬</td>");
+					html.append("<td><span class='status-badge ").append(pagado ? "status-pagado" : "status-pendiente")
+							.append("'>").append(pagado ? "Pagado" : "Sin Pagar").append("</span></td>");
+					html.append("</tr>");
+				}
+
+				html.append("</tbody>");
+				html.append("</table>");
+				html.append("</div>");
+			}
+
+			html.append("<div class='resumen-general'>");
+			html.append("<h3>RESUMEN GENERAL</h3>");
+			html.append("<p><strong>Temporada:</strong> ").append(temporada).append("</p>");
+			html.append("<p><strong>Total reservas:</strong> ").append(totalReservas).append("</p>");
+			html.append("<p style='color: #28a745;'><strong>Pagadas:</strong> ").append(totalPagadas).append("</p>");
+			html.append("<p style='color: #dc3545;'><strong>Sin pagar:</strong> ").append(totalPendientes).append("</p>");
+			html.append("</div>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de reservas de plaza: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe PDF de reservas de plaza", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	private Map<String, List<com.taemoi.project.entities.ProductoAlumno>> ordenarReservasPorDeporte(
+			Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte) {
+		return reservasPorDeporte.entrySet().stream()
+				.sorted((e1, e2) -> {
+					int prioridad1 = prioridadDeporte(obtenerDeporteReserva(e1.getValue().get(0)));
+					int prioridad2 = prioridadDeporte(obtenerDeporteReserva(e2.getValue().get(0)));
+					if (prioridad1 != prioridad2) {
+						return Integer.compare(prioridad1, prioridad2);
+					}
+					return e1.getKey().compareTo(e2.getKey());
+				})
+				.collect(Collectors.toMap(
+						Map.Entry::getKey,
+						entry -> entry.getValue().stream()
+								.sorted(Comparator.comparing(pa -> formatearNombreAlumno(obtenerAlumnoReserva(pa))))
+								.collect(Collectors.toList()),
+						(a, b) -> a,
+						java.util.LinkedHashMap::new));
+	}
+
+	private int prioridadDeporte(Deporte deporte) {
+		if (deporte == Deporte.TAEKWONDO) {
+			return 0;
+		}
+		if (deporte == Deporte.KICKBOXING) {
+			return 1;
+		}
+		return 2;
+	}
+
+	private String getColorDeporte(Deporte deporte) {
+		if (deporte == Deporte.TAEKWONDO) {
+			return "#0D47A1";
+		}
+		if (deporte == Deporte.KICKBOXING) {
+			return "#ff4500";
+		}
+		return "#007bff";
+	}
+
+	private Alumno obtenerAlumnoReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
+		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getAlumno() != null) {
+			return reserva.getAlumnoDeporte().getAlumno();
+		}
+		return reserva.getAlumno();
+	}
+
+	private Deporte obtenerDeporteReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
+		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getDeporte() != null) {
+			return reserva.getAlumnoDeporte().getDeporte();
+		}
+		if (reserva.getAlumno() != null && reserva.getAlumno().getDeporte() != null) {
+			return reserva.getAlumno().getDeporte();
+		}
+		return inferDeporteFromConcepto(reserva.getConcepto());
+	}
+
+	private String formatearNombreAlumno(Alumno alumno) {
+		if (alumno == null) {
+			return "N/A";
+		}
+		return alumno.getNombre() + " " + alumno.getApellidos();
+	}
+
+	private String formatearFecha(Date fecha) {
+		if (fecha == null) {
+			return "N/A";
+		}
+		LocalDate localDate = Instant.ofEpochMilli(fecha.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+		return localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 	}
 
 	/**

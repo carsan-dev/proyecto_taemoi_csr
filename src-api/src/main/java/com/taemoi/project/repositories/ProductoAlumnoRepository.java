@@ -41,6 +41,25 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	       "ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion DESC")
 	List<ProductoAlumno> findAllMensualidadesYTarifasCompetidorWithAlumno();
 
+	@Query("SELECT pa FROM ProductoAlumno pa " +
+			"LEFT JOIN FETCH pa.alumnoDeporte ad " +
+			"LEFT JOIN FETCH ad.alumno adAlumno " +
+			"LEFT JOIN FETCH pa.alumno a " +
+			"WHERE UPPER(pa.concepto) LIKE '%RESERVA DE PLAZA%' " +
+			"AND pa.concepto LIKE CONCAT('%', :temporada, '%') " +
+			"AND (:soloActivos = false OR (" +
+			"COALESCE(COALESCE(adAlumno.activo, a.activo), false) = true " +
+			"AND (ad IS NULL OR COALESCE(ad.activo, false) = true))) " +
+			"ORDER BY COALESCE(adAlumno.nombre, a.nombre), COALESCE(adAlumno.apellidos, a.apellidos), pa.concepto")
+	List<ProductoAlumno> findReservasPlazaByTemporada(
+			@Param("temporada") String temporada,
+			@Param("soloActivos") boolean soloActivos);
+
+	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
+			"WHERE pa.concepto IS NOT NULL " +
+			"AND UPPER(pa.concepto) LIKE '%RESERVA DE PLAZA%'")
+	List<String> findConceptosReservaPlaza();
+
 	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumnoDeporte ad JOIN FETCH ad.alumno a " +
 	       "WHERE pa.concepto LIKE 'MENSUALIDAD%' AND ad.deporte = :deporte " +
 	       "ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion DESC")
