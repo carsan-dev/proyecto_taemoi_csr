@@ -12,6 +12,7 @@ public class MaterialExamenDTO {
 	private List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 	private List<MaterialExamenVideoDTO> videos = new ArrayList<>();
 	private List<MaterialExamenVideoDTO> videosAnteriores = new ArrayList<>();
+	private List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores = new ArrayList<>();
 
 	public MaterialExamenDTO() {
 	}
@@ -70,6 +71,14 @@ public class MaterialExamenDTO {
 
 	public void setVideosAnteriores(List<MaterialExamenVideoDTO> videosAnteriores) {
 		this.videosAnteriores = videosAnteriores;
+	}
+
+	public List<MaterialExamenVideoGrupoDTO> getGruposVideosAnteriores() {
+		return gruposVideosAnteriores;
+	}
+
+	public void setGruposVideosAnteriores(List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores) {
+		this.gruposVideosAnteriores = gruposVideosAnteriores;
 	}
 
 	public List<MaterialExamenDocumentoDTO> getDocumentos() {

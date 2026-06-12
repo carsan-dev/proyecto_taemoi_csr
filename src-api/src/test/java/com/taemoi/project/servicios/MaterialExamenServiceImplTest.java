@@ -134,7 +134,8 @@ class MaterialExamenServiceImplTest {
 
 		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
 		Files.createDirectories(bloqueBlanco.resolve("videos"));
-		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_taeguk_blanco.mp4"), "v1");
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("02_sogui_kisul.mp4"), "tecnica");
 
 		Path bloqueAmarillo = crearBloque("taekwondo", "b02_amarillo_a_naranja");
 		Files.createDirectories(bloqueAmarillo.resolve("videos"));
@@ -157,7 +158,9 @@ class MaterialExamenServiceImplTest {
 
 		assertEquals(1, material.getVideos().size());
 		assertEquals(2, material.getVideosAnteriores().size());
-		assertEquals("anterior__b01_inicio_a_amarillo__01_blanco.mp4", material.getVideosAnteriores().get(0).getId());
+		assertEquals(2, material.getGruposVideosAnteriores().size());
+		assertEquals("Taeguks/Pumses de BLANCO", material.getGruposVideosAnteriores().get(0).getTitulo());
+		assertEquals("anterior__b01_inicio_a_amarillo__01_taeguk_blanco.mp4", material.getVideosAnteriores().get(0).getId());
 		assertEquals("anterior__b02_amarillo_a_naranja__01_amarillo.mp4", material.getVideosAnteriores().get(1).getId());
 		assertEquals("Taeguk amarillo", material.getVideosAnteriores().get(1).getTitle());
 	}
@@ -168,7 +171,7 @@ class MaterialExamenServiceImplTest {
 
 		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
 		Files.createDirectories(bloqueBlanco.resolve("videos"));
-		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_pumse_blanco.mp4"), "v1");
 
 		Path bloqueActualCompartido = crearBloque("taekwondo", "b02_amarillo_a_naranja");
 		Files.createDirectories(bloqueActualCompartido.resolve("videos"));
@@ -178,7 +181,8 @@ class MaterialExamenServiceImplTest {
 
 		assertEquals("b02_amarillo_a_naranja", material.getBloqueId());
 		assertEquals(1, material.getVideosAnteriores().size());
-		assertEquals("anterior__b01_inicio_a_amarillo__01_blanco.mp4", material.getVideosAnteriores().get(0).getId());
+		assertEquals(1, material.getGruposVideosAnteriores().size());
+		assertEquals("anterior__b01_inicio_a_amarillo__01_pumse_blanco.mp4", material.getVideosAnteriores().get(0).getId());
 	}
 
 	@Test
@@ -202,16 +206,16 @@ class MaterialExamenServiceImplTest {
 
 		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
 		Files.createDirectories(bloqueBlanco.resolve("videos"));
-		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_taeguk_blanco.mp4"), "v1");
 
 		crearBloque("taekwondo", "b03_naranja_a_verde");
 
 		var archivo = service.obtenerVideo(
 				18L,
 				Deporte.TAEKWONDO,
-				"anterior__b01_inicio_a_amarillo__01_blanco.mp4");
+				"anterior__b01_inicio_a_amarillo__01_taeguk_blanco.mp4");
 
-		assertEquals("01_blanco.mp4", archivo.getFileName());
+		assertEquals("01_taeguk_blanco.mp4", archivo.getFileName());
 	}
 
 	@Test

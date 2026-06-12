@@ -29,6 +29,7 @@ import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.dtos.response.MaterialExamenTemarioDTO;
 import com.taemoi.project.dtos.response.MaterialExamenVideoDTO;
+import com.taemoi.project.dtos.response.MaterialExamenVideoGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
@@ -91,18 +92,20 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		response.setVideos(videos);
 
 		List<MaterialExamenVideoDTO> videosAnteriores = contexto.videosAnteriores().stream()
-				.map(video -> {
-					String videoId = crearIdVideoAnterior(video.bloqueId(), video.fileName());
-					return new MaterialExamenVideoDTO(
-							videoId,
-							video.title(),
-							video.order(),
-							"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
-									+ "/material-examen/videos/"
-									+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
-				})
+				.map(video -> crearVideoDto(alumnoId, deporte, video))
 				.toList();
 		response.setVideosAnteriores(videosAnteriores);
+
+		List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores = contexto.gruposVideosAnteriores().stream()
+				.map(grupo -> new MaterialExamenVideoGrupoDTO(
+						grupo.grado().name(),
+						"Taeguks/Pumses de " + formatearGrado(grupo.grado()),
+						grupo.bloqueId(),
+						grupo.videos().stream()
+								.map(video -> crearVideoDto(alumnoId, deporte, video))
+								.toList()))
+				.toList();
+		response.setGruposVideosAnteriores(gruposVideosAnteriores);
 
 		List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 		if (contexto.temario() != null) {
@@ -234,24 +237,35 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		}
 
 		if (bloqueId == null || bloqueId.isBlank()) {
-			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of(), List.of(), List.of());
 		}
 
 		Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueId);
 
 		if (!Files.isDirectory(carpetaBloque)) {
 			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
-			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of(), List.of(), List.of());
 		}
 
 		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
 		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
 		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
-		List<VideoFileEntry> videosAnteriores = resolverVideosAnteriores(deporte, esMenor, tipoGradoActual, bloqueId);
-		return new MaterialContext(gradoActual, siguienteGrado, bloqueId, temario, videos, documentos, videosAnteriores);
+		List<VideoGroupEntry> gruposVideosAnteriores = resolverGruposVideosAnteriores(deporte, esMenor, tipoGradoActual, bloqueId);
+		List<VideoFileEntry> videosAnteriores = gruposVideosAnteriores.stream()
+				.flatMap(grupo -> grupo.videos().stream())
+				.toList();
+		return new MaterialContext(
+				gradoActual,
+				siguienteGrado,
+				bloqueId,
+				temario,
+				videos,
+				documentos,
+				videosAnteriores,
+				gruposVideosAnteriores);
 	}
 
-	private List<VideoFileEntry> resolverVideosAnteriores(
+	private List<VideoGroupEntry> resolverGruposVideosAnteriores(
 			Deporte deporte,
 			boolean esMenor,
 			TipoGrado tipoGradoActual,
@@ -261,7 +275,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		}
 
 		List<TipoGrado> gradosAnteriores = gradeProgressionConfig.obtenerGradosAnteriores(deporte, esMenor, tipoGradoActual);
-		List<VideoFileEntry> videosAnteriores = new ArrayList<>();
+		List<VideoGroupEntry> grupos = new ArrayList<>();
 		List<String> bloquesVisitados = new ArrayList<>();
 
 		for (TipoGrado gradoAnterior : gradosAnteriores) {
@@ -278,17 +292,44 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 				continue;
 			}
 
-			resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
+			List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
+					.filter(this::esVideoTaegukOPumse)
 					.map(video -> new VideoFileEntry(
 							video.fileName(),
 							video.title(),
 							video.order(),
 							video.path(),
 							bloqueAnterior))
-					.forEach(videosAnteriores::add);
+					.toList();
+
+			if (!videos.isEmpty()) {
+				grupos.add(new VideoGroupEntry(gradoAnterior, bloqueAnterior, videos));
+			}
 		}
 
-		return videosAnteriores;
+		return grupos;
+	}
+
+	private MaterialExamenVideoDTO crearVideoDto(Long alumnoId, Deporte deporte, VideoFileEntry video) {
+		String videoId = crearIdVideoAnterior(video.bloqueId(), video.fileName());
+		return new MaterialExamenVideoDTO(
+				videoId,
+				video.title(),
+				video.order(),
+				"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+						+ "/material-examen/videos/"
+						+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
+	}
+
+	private boolean esVideoTaegukOPumse(VideoFileEntry video) {
+		String fileName = video.fileName() != null ? video.fileName() : "";
+		String title = video.title() != null ? video.title() : "";
+		String nombre = (fileName + " " + title).toUpperCase(Locale.ROOT);
+		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
+	}
+
+	private String formatearGrado(TipoGrado grado) {
+		return grado.name().replace('_', '-');
 	}
 
 	private Path obtenerCarpetaBloque(Deporte deporte, String bloqueId) {
@@ -566,10 +607,14 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			Path temario,
 			List<VideoFileEntry> videos,
 			List<DocumentoFileEntry> documentos,
-			List<VideoFileEntry> videosAnteriores) {
+			List<VideoFileEntry> videosAnteriores,
+			List<VideoGroupEntry> gruposVideosAnteriores) {
 	}
 
 	private record VideoFileEntry(String fileName, String title, Integer order, Path path, String bloqueId) {
+	}
+
+	private record VideoGroupEntry(TipoGrado grado, String bloqueId, List<VideoFileEntry> videos) {
 	}
 
 	private record DocumentoFileEntry(
