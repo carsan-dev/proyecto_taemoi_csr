@@ -2126,6 +2126,12 @@ public class PDFServiceImpl implements PDFService {
 		if (deporte == Deporte.KICKBOXING) {
 			return "#ff4500";
 		}
+		if (deporte == Deporte.PILATES) {
+			return "#57A2A8";
+		}
+		if (deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+			return "#c2185b";
+		}
 		return "#007bff";
 	}
 
