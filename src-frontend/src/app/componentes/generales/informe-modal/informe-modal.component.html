@@ -52,6 +52,7 @@
                         [id]="opcion.value"
                         [value]="opcion.value"
                         [(ngModel)]="selectedInforme"
+                        (change)="seleccionarInforme(opcion.value)"
                         (click)="$event.stopPropagation()">
                       <span class="radio-custom"></span>
                     </div>
@@ -69,27 +70,6 @@
           </div>
         }
 
-        @if (esInformeReservasPlaza()) {
-          <div class="informe-category">
-            <div class="category-header" style="border-left-color: #f59e0b;">
-              <i class="bi bi-calendar-range" style="color: #f59e0b;"></i>
-              <h5 class="category-title">Temporada</h5>
-            </div>
-
-            @if (opcionesTemporadaReservas.length > 0) {
-              <select class="form-select" [(ngModel)]="temporadaSeleccionada" aria-label="Temporada de reservas de plaza">
-                @for (temporada of opcionesTemporadaReservas; track temporada.value) {
-                  <option [value]="temporada.value">{{ temporada.label }}</option>
-                }
-              </select>
-            } @else {
-              <div class="no-informes">
-                <i class="bi bi-exclamation-circle"></i>
-                <p>No hay temporadas con reservas de plaza disponibles</p>
-              </div>
-            }
-          </div>
-        }
       </div>
 
       <!-- Footer -->

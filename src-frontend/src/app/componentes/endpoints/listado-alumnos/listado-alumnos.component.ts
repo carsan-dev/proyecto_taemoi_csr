@@ -75,6 +75,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
   temporadasReservasPlaza: string[] = [];
+  cargandoTemporadasReservasPlaza: boolean = false;
   mesAnoAsistencia!: string;
   mesAnoMensualidad!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
@@ -307,6 +308,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         label: 'Informe de Competidores',
       },
     ];
+    this.temporadasReservasPlaza = [];
+    this.cargandoTemporadasReservasPlaza = true;
     this.mostrarModalInforme = true;
     this.cargarTemporadasReservasPlaza();
   }
@@ -315,9 +318,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerTemporadasReservasPlaza().subscribe({
       next: temporadas => {
         this.temporadasReservasPlaza = temporadas;
+        this.cargandoTemporadasReservasPlaza = false;
       },
       error: () => {
         this.temporadasReservasPlaza = [];
+        this.cargandoTemporadasReservasPlaza = false;
         showErrorToast('No se pudieron cargar las temporadas de reservas');
       },
     });
@@ -981,15 +986,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         );
         break;
       case 'reservas-plaza':
-        if (!temporada) {
-          Swal.fire('Error', 'Debes seleccionar una temporada para generar el informe de reservas de plaza', 'error');
-          return;
-        }
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeReservasPlaza(temporada, soloActivos),
-          'No se pudo generar el informe de reservas de plaza',
-          `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`
-        );
+        this.solicitarTemporadaReservasPlaza(soloActivos, temporada);
         break;
       case 'productos':
         this.generarPdfConLoading(
@@ -1004,6 +1001,49 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         );
         break;
     }
+  }
+
+  private solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string): void {
+    if (this.cargandoTemporadasReservasPlaza) {
+      Swal.fire('Cargando temporadas', 'Espera unos segundos y vuelve a generar el informe.', 'info');
+      return;
+    }
+
+    if (this.temporadasReservasPlaza.length === 0) {
+      Swal.fire('Sin temporadas', 'No hay temporadas con reservas de plaza disponibles.', 'warning');
+      return;
+    }
+
+    const anoActual = new Date().getFullYear();
+    const temporadaActual = `${anoActual}/${anoActual + 1}`;
+    const temporadaInicial = temporadaPreseleccionada
+      || (this.temporadasReservasPlaza.includes(temporadaActual) ? temporadaActual : this.temporadasReservasPlaza[0]);
+    const inputOptions = this.temporadasReservasPlaza.reduce((options, temporada) => {
+      options[temporada] = temporada === temporadaActual ? `Actual (${temporada})` : temporada;
+      return options;
+    }, {} as Record<string, string>);
+
+    Swal.fire({
+      title: 'Seleccionar temporada',
+      input: 'select',
+      inputOptions,
+      inputValue: temporadaInicial,
+      showCancelButton: true,
+      confirmButtonText: 'Generar informe',
+      cancelButtonText: 'Cancelar',
+      inputValidator: value => value ? null : 'Debes seleccionar una temporada',
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) {
+        return;
+      }
+      const temporada = result.value;
+      this.cerrarModalInforme();
+      this.generarPdfConLoading(
+        this.endpointsService.generarInformeReservasPlaza(temporada, soloActivos),
+        'No se pudo generar el informe de reservas de plaza',
+        `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`
+      );
+    });
   }
 
   /**

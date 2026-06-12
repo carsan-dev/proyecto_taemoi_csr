@@ -164,7 +164,7 @@ export class InformeModalComponent implements OnInit, OnChanges {
   }
 
   generarInforme(): void {
-    if (this.esInformeReservasPlaza() && !this.temporadaSeleccionada) {
+    if (!this.selectedInforme) {
       return;
     }
     this.informeSeleccionado.emit({
@@ -172,6 +172,9 @@ export class InformeModalComponent implements OnInit, OnChanges {
       soloActivos: this.soloActivos,
       temporada: this.esInformeReservasPlaza() ? this.temporadaSeleccionada : undefined,
     });
+    if (this.esInformeReservasPlaza()) {
+      return;
+    }
     this.cerrarModal();
   }
 
@@ -187,6 +190,6 @@ export class InformeModalComponent implements OnInit, OnChanges {
   }
 
   puedeGenerarInforme(): boolean {
-    return !!this.selectedInforme && (!this.esInformeReservasPlaza() || !!this.temporadaSeleccionada);
+    return !!this.selectedInforme;
   }
 }

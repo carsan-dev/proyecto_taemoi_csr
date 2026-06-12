@@ -750,7 +750,8 @@
 
     <!-- Informe Modal -->
     @if (mostrarModalInforme) {
-      <app-informe-modal [title]="modalTitle" [opcionesInforme]="opcionesInforme" [temporadasReservasPlaza]="temporadasReservasPlaza"
+      <app-informe-modal [title]="modalTitle" [opcionesInforme]="opcionesInforme"
+        [temporadasReservasPlaza]="temporadasReservasPlaza"
         (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
       </app-informe-modal>
     }
