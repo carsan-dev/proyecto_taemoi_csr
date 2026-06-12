@@ -1,7 +1,9 @@
 package com.taemoi.project.config;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -76,6 +78,31 @@ public class GradeProgressionConfig {
 		}
 
 		return gradosMap.get(gradoActual);
+	}
+
+	public List<TipoGrado> obtenerGradosAnteriores(Deporte deporte, boolean esMenor, TipoGrado gradoActual) {
+		if (deporte == null || gradoActual == null) {
+			return List.of();
+		}
+
+		Map<Boolean, Map<TipoGrado, TipoGrado>> deporteMaps = progressionMaps.get(deporte);
+		if (deporteMaps == null) {
+			throw new IllegalArgumentException("Deporte no soportado para progresiÃ³n de grados: " + deporte);
+		}
+
+		Map<TipoGrado, TipoGrado> gradosMap = deporteMaps.get(esMenor);
+		if (gradosMap == null) {
+			return List.of();
+		}
+
+		List<TipoGrado> anteriores = new ArrayList<>();
+		for (TipoGrado candidato : gradosMap.keySet()) {
+			if (candidato == gradoActual) {
+				break;
+			}
+			anteriores.add(candidato);
+		}
+		return anteriores;
 	}
 
 	/**

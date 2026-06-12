@@ -43,6 +43,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private static final Logger logger = LoggerFactory.getLogger(MaterialExamenServiceImpl.class);
 	private static final Pattern ORDEN_ARCHIVO_PATTERN = Pattern.compile("^(\\d{1,3})[_\\-.\\s]+(.+)$");
 	private static final int ORDEN_POR_DEFECTO = 10_000;
+	private static final String VIDEO_ANTERIOR_PREFIX = "anterior__";
 
 	@Value("${app.documentos.directorio.linux}")
 	private String directorioDocumentosLinux;
@@ -88,6 +89,20 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 								+ UriUtils.encodePathSegment(video.fileName(), StandardCharsets.UTF_8)))
 				.toList();
 		response.setVideos(videos);
+
+		List<MaterialExamenVideoDTO> videosAnteriores = contexto.videosAnteriores().stream()
+				.map(video -> {
+					String videoId = crearIdVideoAnterior(video.bloqueId(), video.fileName());
+					return new MaterialExamenVideoDTO(
+							videoId,
+							video.title(),
+							video.order(),
+							"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+									+ "/material-examen/videos/"
+									+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
+				})
+				.toList();
+		response.setVideosAnteriores(videosAnteriores);
 
 		List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 		if (contexto.temario() != null) {
@@ -141,6 +156,21 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		String nombreVideo = sanitizarNombreArchivo(videoFile, "video");
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 
+		Optional<VideoAnteriorRequest> anteriorRequest = parsearVideoAnteriorRequest(nombreVideo);
+		if (anteriorRequest.isPresent()) {
+			VideoAnteriorRequest request = anteriorRequest.get();
+			Optional<VideoFileEntry> matchAnterior = contexto.videosAnteriores().stream()
+					.filter(video -> video.bloqueId().equals(request.bloqueId()))
+					.filter(video -> video.fileName().equalsIgnoreCase(request.fileName()))
+					.findFirst();
+
+			if (matchAnterior.isEmpty()) {
+				throw new NoSuchElementException("No se encontro el video solicitado en los bloques anteriores");
+			}
+
+			return crearArchivo(matchAnterior.get().path(), null);
+		}
+
 		Optional<VideoFileEntry> match = contexto.videos().stream()
 				.filter(video -> video.fileName().equalsIgnoreCase(nombreVideo))
 				.findFirst();
@@ -185,40 +215,88 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		String gradoActual = null;
 		String siguienteGrado = null;
 		String bloqueId = null;
+		TipoGrado tipoGradoActual = null;
+		Alumno alumno = null;
+		boolean esMenor = false;
 		if (deporteSeleccionado != null && deporteSeleccionado.getGrado() != null
 				&& deporteSeleccionado.getGrado().getTipoGrado() != null) {
-			TipoGrado tipoGrado = deporteSeleccionado.getGrado().getTipoGrado();
-			gradoActual = tipoGrado.name();
-			bloqueId = examMaterialBlockConfig.obtenerBloque(deporte, tipoGrado);
+			tipoGradoActual = deporteSeleccionado.getGrado().getTipoGrado();
+			gradoActual = tipoGradoActual.name();
+			bloqueId = examMaterialBlockConfig.obtenerBloque(deporte, tipoGradoActual);
 
-			Alumno alumno = deporteSeleccionado.getAlumno();
-			boolean esMenor = alumno != null
+			alumno = deporteSeleccionado.getAlumno();
+			esMenor = alumno != null
 					&& DeporteEdadUtils.esMenorParaDeporte(deporte, alumno.getFechaNacimiento());
-			TipoGrado siguiente = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, tipoGrado);
+			TipoGrado siguiente = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, tipoGradoActual);
 			if (siguiente != null) {
 				siguienteGrado = siguiente.name();
 			}
 		}
 
 		if (bloqueId == null || bloqueId.isBlank()) {
-			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of(), List.of());
 		}
 
-		Path carpetaBloque = obtenerRutaBaseDocumentos()
-				.resolve("Materiales_Examen")
-				.resolve(deporte.name().toLowerCase(Locale.ROOT))
-				.resolve(bloqueId)
-				.normalize();
+		Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueId);
 
 		if (!Files.isDirectory(carpetaBloque)) {
 			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
-			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of());
+			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of(), List.of());
 		}
 
 		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
 		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
 		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
-		return new MaterialContext(gradoActual, siguienteGrado, bloqueId, temario, videos, documentos);
+		List<VideoFileEntry> videosAnteriores = resolverVideosAnteriores(deporte, esMenor, tipoGradoActual, bloqueId);
+		return new MaterialContext(gradoActual, siguienteGrado, bloqueId, temario, videos, documentos, videosAnteriores);
+	}
+
+	private List<VideoFileEntry> resolverVideosAnteriores(
+			Deporte deporte,
+			boolean esMenor,
+			TipoGrado tipoGradoActual,
+			String bloqueActual) {
+		if (deporte != Deporte.TAEKWONDO || tipoGradoActual == null) {
+			return List.of();
+		}
+
+		List<TipoGrado> gradosAnteriores = gradeProgressionConfig.obtenerGradosAnteriores(deporte, esMenor, tipoGradoActual);
+		List<VideoFileEntry> videosAnteriores = new ArrayList<>();
+		List<String> bloquesVisitados = new ArrayList<>();
+
+		for (TipoGrado gradoAnterior : gradosAnteriores) {
+			String bloqueAnterior = examMaterialBlockConfig.obtenerBloque(deporte, gradoAnterior);
+			if (bloqueAnterior == null || bloqueAnterior.isBlank()
+					|| bloqueAnterior.equals(bloqueActual)
+					|| bloquesVisitados.contains(bloqueAnterior)) {
+				continue;
+			}
+			bloquesVisitados.add(bloqueAnterior);
+
+			Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueAnterior);
+			if (!Files.isDirectory(carpetaBloque)) {
+				continue;
+			}
+
+			resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
+					.map(video -> new VideoFileEntry(
+							video.fileName(),
+							video.title(),
+							video.order(),
+							video.path(),
+							bloqueAnterior))
+					.forEach(videosAnteriores::add);
+		}
+
+		return videosAnteriores;
+	}
+
+	private Path obtenerCarpetaBloque(Deporte deporte, String bloqueId) {
+		return obtenerRutaBaseDocumentos()
+				.resolve("Materiales_Examen")
+				.resolve(deporte.name().toLowerCase(Locale.ROOT))
+				.resolve(bloqueId)
+				.normalize();
 	}
 
 	private Path resolverTemario(Path carpetaTemario) {
@@ -267,7 +345,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 								? metadata.title().trim()
 								: generarTituloDesdeArchivo(fileName);
 
-						videos.add(new VideoFileEntry(fileName, title, order, path));
+						videos.add(new VideoFileEntry(fileName, title, order, path, null));
 					});
 		} catch (IOException e) {
 			logger.error("Error al listar videos en {}", carpetaVideos, e);
@@ -373,6 +451,30 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return cleaned;
 	}
 
+	private String crearIdVideoAnterior(String bloqueId, String fileName) {
+		return VIDEO_ANTERIOR_PREFIX + bloqueId + "__" + fileName;
+	}
+
+	private Optional<VideoAnteriorRequest> parsearVideoAnteriorRequest(String videoFile) {
+		if (!videoFile.startsWith(VIDEO_ANTERIOR_PREFIX)) {
+			return Optional.empty();
+		}
+
+		String payload = videoFile.substring(VIDEO_ANTERIOR_PREFIX.length());
+		int separatorIndex = payload.indexOf("__");
+		if (separatorIndex <= 0 || separatorIndex >= payload.length() - 2) {
+			throw new IllegalArgumentException("Nombre de video anterior invalido");
+		}
+
+		String bloqueId = payload.substring(0, separatorIndex);
+		String fileName = payload.substring(separatorIndex + 2);
+		if (bloqueId.contains("..") || bloqueId.contains("/") || bloqueId.contains("\\")
+				|| fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+			throw new IllegalArgumentException("Nombre de video anterior invalido");
+		}
+		return Optional.of(new VideoAnteriorRequest(bloqueId, fileName));
+	}
+
 	private boolean esArchivoDocumentacionVisible(Path path) {
 		String fileName = path.getFileName().toString();
 		if (fileName == null || fileName.isBlank()) {
@@ -463,10 +565,11 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			String bloqueId,
 			Path temario,
 			List<VideoFileEntry> videos,
-			List<DocumentoFileEntry> documentos) {
+			List<DocumentoFileEntry> documentos,
+			List<VideoFileEntry> videosAnteriores) {
 	}
 
-	private record VideoFileEntry(String fileName, String title, Integer order, Path path) {
+	private record VideoFileEntry(String fileName, String title, Integer order, Path path, String bloqueId) {
 	}
 
 	private record DocumentoFileEntry(
@@ -479,6 +582,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	}
 
 	private record IndexVideoEntry(String title, Integer order) {
+	}
+
+	private record VideoAnteriorRequest(String bloqueId, String fileName) {
 	}
 
 	public static class IndexFileDto {

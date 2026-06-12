@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.ExamMaterialBlockConfig;
 import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
@@ -127,6 +129,92 @@ class MaterialExamenServiceImplTest {
 	}
 
 	@Test
+	void shouldReturnPreviousTaekwondoVideosForAdultGradeWithoutDuplicatedBlocks() throws Exception {
+		mockAlumnoConDeporte(15L, Deporte.TAEKWONDO, TipoGrado.NARANJA);
+
+		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(bloqueBlanco.resolve("videos"));
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+
+		Path bloqueAmarillo = crearBloque("taekwondo", "b02_amarillo_a_naranja");
+		Files.createDirectories(bloqueAmarillo.resolve("videos"));
+		Files.writeString(bloqueAmarillo.resolve("videos").resolve("01_amarillo.mp4"), "v2");
+		Files.writeString(
+				bloqueAmarillo.resolve("index.json"),
+				"""
+				{
+				  "videos": [
+				    { "file": "01_amarillo.mp4", "title": "Taeguk amarillo", "order": 1 }
+				  ]
+				}
+				""");
+
+		Path bloqueActual = crearBloque("taekwondo", "b03_naranja_a_verde");
+		Files.createDirectories(bloqueActual.resolve("videos"));
+		Files.writeString(bloqueActual.resolve("videos").resolve("01_naranja.mp4"), "v3");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(15L, Deporte.TAEKWONDO);
+
+		assertEquals(1, material.getVideos().size());
+		assertEquals(2, material.getVideosAnteriores().size());
+		assertEquals("anterior__b01_inicio_a_amarillo__01_blanco.mp4", material.getVideosAnteriores().get(0).getId());
+		assertEquals("anterior__b02_amarillo_a_naranja__01_amarillo.mp4", material.getVideosAnteriores().get(1).getId());
+		assertEquals("Taeguk amarillo", material.getVideosAnteriores().get(1).getTitle());
+	}
+
+	@Test
+	void shouldSkipCurrentSharedBlockForMinorIntermediateGrade() throws Exception {
+		mockAlumnoConDeporteMenorTaekwondo(16L, TipoGrado.AMARILLO_NARANJA);
+
+		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(bloqueBlanco.resolve("videos"));
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+
+		Path bloqueActualCompartido = crearBloque("taekwondo", "b02_amarillo_a_naranja");
+		Files.createDirectories(bloqueActualCompartido.resolve("videos"));
+		Files.writeString(bloqueActualCompartido.resolve("videos").resolve("01_amarillo.mp4"), "v2");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(16L, Deporte.TAEKWONDO);
+
+		assertEquals("b02_amarillo_a_naranja", material.getBloqueId());
+		assertEquals(1, material.getVideosAnteriores().size());
+		assertEquals("anterior__b01_inicio_a_amarillo__01_blanco.mp4", material.getVideosAnteriores().get(0).getId());
+	}
+
+	@Test
+	void shouldReturnNoPreviousVideosForKickboxing() throws Exception {
+		mockAlumnoConDeporte(17L, Deporte.KICKBOXING, TipoGrado.NARANJA);
+
+		Path bloqueBlanco = crearBloque("kickboxing", "b01_inicio_a_amarillo");
+		Files.createDirectories(bloqueBlanco.resolve("videos"));
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+
+		crearBloque("kickboxing", "b03_naranja_a_verde");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(17L, Deporte.KICKBOXING);
+
+		assertEquals(0, material.getVideosAnteriores().size());
+	}
+
+	@Test
+	void shouldStreamAllowedPreviousVideoBySyntheticId() throws Exception {
+		mockAlumnoConDeporte(18L, Deporte.TAEKWONDO, TipoGrado.NARANJA);
+
+		Path bloqueBlanco = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(bloqueBlanco.resolve("videos"));
+		Files.writeString(bloqueBlanco.resolve("videos").resolve("01_blanco.mp4"), "v1");
+
+		crearBloque("taekwondo", "b03_naranja_a_verde");
+
+		var archivo = service.obtenerVideo(
+				18L,
+				Deporte.TAEKWONDO,
+				"anterior__b01_inicio_a_amarillo__01_blanco.mp4");
+
+		assertEquals("01_blanco.mp4", archivo.getFileName());
+	}
+
+	@Test
 	void shouldReturnEmptyMaterialWhenBlockExistsWithoutFiles() throws Exception {
 		mockAlumnoConDeporte(12L, Deporte.TAEKWONDO, TipoGrado.BLANCO);
 		crearBloque("taekwondo", "b01_inicio_a_amarillo");
@@ -185,6 +273,21 @@ class MaterialExamenServiceImplTest {
 		Grado entidadGrado = new Grado();
 		entidadGrado.setTipoGrado(grado);
 		alumnoDeporte.setGrado(entidadGrado);
+
+		when(alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId)).thenReturn(List.of(alumnoDeporte));
+	}
+
+	private void mockAlumnoConDeporteMenorTaekwondo(Long alumnoId, TipoGrado grado) {
+		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
+		alumnoDeporte.setDeporte(Deporte.TAEKWONDO);
+
+		Grado entidadGrado = new Grado();
+		entidadGrado.setTipoGrado(grado);
+		alumnoDeporte.setGrado(entidadGrado);
+
+		Alumno alumno = new Alumno();
+		alumno.setFechaNacimiento(java.sql.Date.valueOf(LocalDate.now().minusYears(8)));
+		alumnoDeporte.setAlumno(alumno);
 
 		when(alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId)).thenReturn(List.of(alumnoDeporte));
 	}
