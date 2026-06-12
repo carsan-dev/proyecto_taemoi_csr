@@ -1971,6 +1971,27 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  obtenerTemporadasReservasPlaza(): Observable<string[]> {
+    return this.http
+      .get<string[]>(`${this.urlBase}/informes/reservas-plaza/temporadas`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeReservasPlaza(temporada: string, soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams()
+      .set('temporada', temporada)
+      .set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/reservas-plaza`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   generarListadoMensualidadMensual(mesAno: string, soloActivos: boolean = true): Observable<Blob> {
     const params = new HttpParams()
       .set('mesAno', mesAno)

@@ -74,6 +74,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   mostrarModalInforme: boolean = false;
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
+  temporadasReservasPlaza: string[] = [];
   mesAnoAsistencia!: string;
   mesAnoMensualidad!: string;
   grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
@@ -294,6 +295,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         label: 'Informe de Mensualidades de Kickboxing',
       },
       {
+        value: 'reservas-plaza',
+        label: 'Informe de Reservas de Plaza',
+      },
+      {
         value: 'productos',
         label: 'Informe de Productos',
       },
@@ -303,6 +308,19 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       },
     ];
     this.mostrarModalInforme = true;
+    this.cargarTemporadasReservasPlaza();
+  }
+
+  private cargarTemporadasReservasPlaza(): void {
+    this.endpointsService.obtenerTemporadasReservasPlaza().subscribe({
+      next: temporadas => {
+        this.temporadasReservasPlaza = temporadas;
+      },
+      error: () => {
+        this.temporadasReservasPlaza = [];
+        showErrorToast('No se pudieron cargar las temporadas de reservas');
+      },
+    });
   }
 
   cerrarModalInforme(): void {
@@ -876,8 +894,9 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   generarInformeSeleccionado(event: {
     tipo: string;
     soloActivos: boolean;
+    temporada?: string;
   }): void {
-    const { tipo, soloActivos } = event;
+    const { tipo, soloActivos, temporada } = event;
 
     switch (tipo) {
       case 'general':
@@ -959,6 +978,17 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.generarPdfConLoading(
           this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos),
           'No se pudo generar el informe de mensualidades de Kickboxing'
+        );
+        break;
+      case 'reservas-plaza':
+        if (!temporada) {
+          Swal.fire('Error', 'Debes seleccionar una temporada para generar el informe de reservas de plaza', 'error');
+          return;
+        }
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeReservasPlaza(temporada, soloActivos),
+          'No se pudo generar el informe de reservas de plaza',
+          `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`
         );
         break;
       case 'productos':
