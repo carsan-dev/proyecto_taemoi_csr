@@ -2036,8 +2036,6 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<thead><tr>");
 				html.append("<th>Alumno</th>");
 				html.append("<th>Concepto</th>");
-				html.append("<th>Fecha AsignaciÃ³n</th>");
-				html.append("<th>Precio</th>");
 				html.append("<th>Estado</th>");
 				html.append("</tr></thead>");
 				html.append("<tbody>");
@@ -2055,8 +2053,6 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<tr>");
 					html.append("<td>").append(formatearNombreAlumno(alumno)).append("</td>");
 					html.append("<td>").append(reserva.getConcepto() != null ? reserva.getConcepto() : "N/A").append("</td>");
-					html.append("<td>").append(formatearFecha(reserva.getFechaAsignacion())).append("</td>");
-					html.append("<td>").append(String.format("%.2f", reserva.getPrecio() != null ? reserva.getPrecio() : 0.0)).append(" â‚¬</td>");
 					html.append("<td><span class='status-badge ").append(pagado ? "status-pagado" : "status-pendiente")
 							.append("'>").append(pagado ? "Pagado" : "Sin Pagar").append("</span></td>");
 					html.append("</tr>");
