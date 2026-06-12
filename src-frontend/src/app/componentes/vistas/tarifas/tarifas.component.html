@@ -20,11 +20,12 @@
     </div>
 
     <div class="pricing-grid">
-      <!-- Tarifa Infantil -->
-      <div class="pricing-card card--reveal" #revealCard>
+      <!-- Tarifa Taekwondo Infantil -->
+      <div class="pricing-card featured taekwondo-featured card--reveal" #revealCard>
+        <div class="card-badge">M&aacute;s popular</div>
         <div class="card-header taekwondo">
           <i class="bi bi-person-fill"></i>
-          <h3>Infantil</h3>
+          <h3>Taekwondo infantil</h3>
           <p class="age-range">4 - 12 a&ntilde;os</p>
         </div>
         <div class="card-body">
@@ -32,8 +33,8 @@
             <span class="amount">Desde 28&euro;/mes</span>
           </div>
           <ul class="features">
-            <li><i class="bi bi-check-circle-fill"></i> Taekwondo o Kickboxing</li>
-            <li><i class="bi bi-check-circle-fill"></i> 2-3 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Taekwondo infantil</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
             <li><i class="bi bi-check-circle-fill"></i> Grupos reducidos</li>
             <li><i class="bi bi-check-circle-fill"></i> Instructores certificados</li>
           </ul>
@@ -44,12 +45,11 @@
         </div>
       </div>
 
-      <!-- Tarifa Adulto -->
-      <div class="pricing-card featured card--reveal" #revealCard>
-        <div class="card-badge">M&aacute;s popular</div>
-        <div class="card-header kickboxing">
+      <!-- Tarifa Taekwondo Adulto -->
+      <div class="pricing-card card--reveal" #revealCard>
+        <div class="card-header taekwondo">
           <i class="bi bi-person-fill"></i>
-          <h3>Adulto</h3>
+          <h3>Taekwondo adulto</h3>
           <p class="age-range">+13 a&ntilde;os</p>
         </div>
         <div class="card-body">
@@ -57,8 +57,56 @@
             <span class="amount">Desde 30&euro;/mes</span>
           </div>
           <ul class="features">
-            <li><i class="bi bi-check-circle-fill"></i> Taekwondo, Kickboxing, Pilates o Defensa Personal Femenina</li>
-            <li><i class="bi bi-check-circle-fill"></i> 2-3 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Taekwondo adulto</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Flexibilidad de horarios</li>
+            <li><i class="bi bi-check-circle-fill"></i> Instructores certificados</li>
+          </ul>
+          <button class="pricing-btn taekwondo-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Pedir informaci&oacute;n</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarifa Kickboxing Infantil -->
+      <div class="pricing-card card--reveal" #revealCard>
+        <div class="card-header kickboxing">
+          <i class="bi bi-person-fill"></i>
+          <h3>Kickboxing infantil</h3>
+          <p class="age-range">4 - 12 a&ntilde;os</p>
+        </div>
+        <div class="card-body">
+          <div class="price">
+            <span class="amount">30&euro;/mes</span>
+          </div>
+          <ul class="features">
+            <li><i class="bi bi-check-circle-fill"></i> Kickboxing infantil</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Grupos reducidos</li>
+            <li><i class="bi bi-check-circle-fill"></i> Instructores certificados</li>
+          </ul>
+          <button class="pricing-btn kickboxing-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Pedir informaci&oacute;n</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarifa Kickboxing Adulto -->
+      <div class="pricing-card card--reveal" #revealCard>
+        <div class="card-header kickboxing">
+          <i class="bi bi-person-fill"></i>
+          <h3>Kickboxing adulto</h3>
+          <p class="age-range">+13 a&ntilde;os</p>
+        </div>
+        <div class="card-body">
+          <div class="price">
+            <span class="amount">30&euro;/mes</span>
+          </div>
+          <ul class="features">
+            <li><i class="bi bi-check-circle-fill"></i> Kickboxing adulto</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
             <li><i class="bi bi-check-circle-fill"></i> Flexibilidad de horarios</li>
             <li><i class="bi bi-check-circle-fill"></i> Entrenamiento personalizado</li>
           </ul>
@@ -69,8 +117,56 @@
         </div>
       </div>
 
-      <!-- Tarifa Familiar -->
+      <!-- Tarifa Defensa Personal Femenina -->
       <div class="pricing-card card--reveal" #revealCard>
+        <div class="card-header defensa">
+          <i class="bi bi-shield-fill-check"></i>
+          <h3>Defensa Personal Femenina</h3>
+          <p class="age-range">Adultas</p>
+        </div>
+        <div class="card-body">
+          <div class="price">
+            <span class="amount">25&euro;/mes</span>
+          </div>
+          <ul class="features">
+            <li><i class="bi bi-check-circle-fill"></i> Defensa personal femenina</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Flexibilidad de horarios</li>
+            <li><i class="bi bi-check-circle-fill"></i> Entrenamiento personalizado</li>
+          </ul>
+          <button class="pricing-btn defensa-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Pedir informaci&oacute;n</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarifa Pilates Adulto -->
+      <div class="pricing-card card--reveal" #revealCard>
+        <div class="card-header pilates">
+          <i class="bi bi-universal-access"></i>
+          <h3>Pilates</h3>
+          <p class="age-range">Adultos</p>
+        </div>
+        <div class="card-body">
+          <div class="price">
+            <span class="amount">Desde 30&euro;/mes</span>
+          </div>
+          <ul class="features">
+            <li><i class="bi bi-check-circle-fill"></i> Pilates para adultos</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 clases semanales</li>
+            <li><i class="bi bi-check-circle-fill"></i> Flexibilidad de horarios</li>
+            <li><i class="bi bi-check-circle-fill"></i> Entrenamiento personalizado</li>
+          </ul>
+          <button class="pricing-btn pilates-btn" routerLink="/contacto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Pedir informaci&oacute;n</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarifa Familiar -->
+      <div class="pricing-card family-card card--reveal" #revealCard>
         <div class="card-header taekwondo">
           <i class="bi bi-people-fill"></i>
           <h3>Familiar</h3>
@@ -133,7 +229,7 @@
           <details class="faq-item">
             <summary class="faq-question">&iquest;Cu&aacute;nto cuesta apuntarse a taekwondo en Umbrete?</summary>
             <div class="faq-answer">
-              <p>Las tarifas var&iacute;an seg&uacute;n la edad y el n&uacute;mero de clases semanales. Ofrecemos matr&iacute;cula reducida en determinadas &eacute;pocas del a&ntilde;o. Cont&aacute;ctanos y te enviamos la informaci&oacute;n detallada sin compromiso.</p>
+              <p>Las tarifas var&iacute;an seg&uacute;n la edad y la disciplina. Las clases son 2 d&iacute;as semanales. Ofrecemos matr&iacute;cula reducida en determinadas &eacute;pocas del a&ntilde;o. Cont&aacute;ctanos y te enviamos la informaci&oacute;n detallada sin compromiso.</p>
             </div>
           </details>
           <details class="faq-item">
