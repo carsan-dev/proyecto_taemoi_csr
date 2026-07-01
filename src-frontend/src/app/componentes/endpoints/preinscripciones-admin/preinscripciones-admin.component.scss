@@ -40,11 +40,29 @@ td span[data-state=CANCELADA] { color: #9b2429; }
 .danger { color: #a52229; }
 .delete { margin-top: 1.5rem !important; border-color: #a52229; }
 .message { margin-top: 1rem; }
+.tabs { display: flex; gap: .25rem; margin-bottom: 1.5rem; border-bottom: 1px solid #cfd4d5; }
+.tabs button { border: 0; border-bottom: 3px solid transparent; background: transparent; }
+.tabs .active { border-bottom-color: #a52229; font-weight: 800; }
+.template-toolbar { display: flex; align-items: end; gap: .7rem; margin-bottom: 1rem; }
+.template-toolbar label, .template-form label { display: grid; gap: .35rem; color: #59666b; font-size: .78rem; font-weight: 700; }
+.template-toolbar select, .template-form input, .template-form textarea { padding: .7rem; border: 1px solid #bbc0c2; background: #fff; color: #172126; }
+.template-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 1rem; align-items: start; }
+.template-form, .history { display: grid; gap: 1rem; padding: 1.25rem; background: #fff; border-top: 3px solid #172126; }
+.template-form textarea { min-height: 88px; resize: vertical; }
+.template-form fieldset { display: grid; gap: .55rem; padding: 1rem; border: 1px solid #d7dbdc; }
+.rule { display: grid; grid-template-columns: 24px minmax(0,1fr) auto auto auto; gap: .35rem; align-items: start; }
+.rule textarea { min-height: 64px; }
+.version { margin: 0; color: #a52229; font-weight: 800; }
+.history h2 { margin: 0; }
+.history article { display: grid; gap: .25rem; padding-bottom: .8rem; border-bottom: 1px solid #e0e3e4; }
+.history small { color: #687175; }
+.loader { padding: 3rem; text-align: center; background: #fff; }
 
 @media (max-width: 900px) {
   .admin-pre { padding: 6rem 1rem 2rem; }
   .filters { grid-template-columns: 1fr 1fr; }
   .detail-panel { top: 5rem; width: min(420px, 100vw); }
+  .template-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {

@@ -1,4 +1,9 @@
 <main class="admin-pre">
+  <nav class="tabs" aria-label="Secciones de preinscripciones">
+    <button [class.active]="tab === 'solicitudes'" (click)="cambiarTab('solicitudes')">Solicitudes</button>
+    <button [class.active]="tab === 'plantillas'" (click)="cambiarTab('plantillas')">Plantillas PDF</button>
+  </nav>
+  @if (tab === 'solicitudes') {
   <header>
     <div><p>Admisiones</p><h1>Preinscripciones</h1></div>
     <button (click)="buscar()">Actualizar</button>
@@ -30,9 +35,35 @@
     <p class="pagination-summary">{{primerResultado}}–{{ultimoResultado}} de {{totalElementos}} preinscripciones</p>
     <app-paginacion [paginaActual]="pagina + 1" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando" (pageChange)="cambiarPagina($event)"></app-paginacion>
   </div>
+  } @else {
+    <header><div><p>Documentos</p><h1>Plantillas PDF</h1></div><span>Layout y estilos bloqueados</span></header>
+    <section class="template-toolbar">
+      <label>Deporte<select [ngModel]="deportePlantilla" (ngModelChange)="cambiarDeporte($event)">@for (d of deportes; track d) { <option [value]="d">{{d}}</option> }</select></label>
+      <button type="button" (click)="preview()" [disabled]="cargandoPlantilla || procesandoPlantilla">Previsualizar PDF</button>
+      @if (auth.tieneRolAdmin()) { <button class="primary" type="button" (click)="publicar()" [disabled]="!dirty || !valida() || procesandoPlantilla">Publicar nueva versión</button> }
+    </section>
+    @if (cargandoPlantilla) { <p class="loader">Cargando plantilla…</p> } @else {
+      <div class="template-grid">
+        <form class="template-form" (input)="marcarCambios()">
+          <p class="version">Versión activa {{plantilla.version}}</p>
+          <label>Cabecera<input [(ngModel)]="plantilla.cabecera" name="cabecera" maxlength="120" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Contacto<input [(ngModel)]="plantilla.contacto" name="contacto" maxlength="180" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Título<input [(ngModel)]="plantilla.titulo" name="titulo" maxlength="180" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Consentimiento fotográfico<textarea [(ngModel)]="plantilla.consentimiento" name="consentimiento" maxlength="1500" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+          <fieldset><legend>Normas</legend>
+            @for (norma of plantilla.normas; track $index; let i=$index) { <div class="rule"><span>{{i+1}}</span><textarea [(ngModel)]="plantilla.normas[i]" [name]="'norma'+i" maxlength="2000" required [disabled]="!auth.tieneRolAdmin()"></textarea>@if(auth.tieneRolAdmin()){<button type="button" (click)="moverNorma(i,-1)" [disabled]="i===0">↑</button><button type="button" (click)="moverNorma(i,1)" [disabled]="i===plantilla.normas.length-1">↓</button><button type="button" (click)="eliminarNorma(i)">×</button>}</div> }
+            @if(auth.tieneRolAdmin()){<button type="button" (click)="agregarNorma()">Añadir norma</button>}
+          </fieldset>
+          <label>Importes o información de pago<textarea [(ngModel)]="plantilla.importes" name="importes" maxlength="3000" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+          <label>Instrucciones posteriores<textarea [(ngModel)]="plantilla.instrucciones" name="instrucciones" maxlength="3000" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+        </form>
+        <aside class="history"><h2>Historial</h2>@for(v of historial;track v.id){<article><strong>Versión {{v.version}}</strong><small>{{v.creadaEn | date:'medium'}} {{v.activa ? '· Activa' : ''}}</small>@if(auth.tieneRolAdmin() && !v.activa){<button type="button" (click)="restaurar(v.version)" [disabled]="procesandoPlantilla">Restaurar</button>}</article>}</aside>
+      </div>
+    }
+  }
 </main>
 
-@if (seleccion) {
+@if (tab === 'solicitudes' && seleccion) {
   <aside class="detail-panel" aria-label="Detalle de la preinscripción">
     <button class="close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
     <p class="kicker">{{seleccion.referencia}}</p>

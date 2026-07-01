@@ -18,4 +18,8 @@ export class PreinscripcionService {
  finalizar(ref:string,alumnoId:number){return this.http.post<void>(`${this.base}/${ref}/finalizar`,{alumnoId,actualizarDatos:true,reactivar:true});}
  firma(ref:string){return this.http.get(`${this.base}/${ref}/firma`,{responseType:'blob'});}
  documentoFirmado(ref:string){return this.http.get(`${this.base}/${ref}/documento-firmado`,{responseType:'blob'});}
+ plantillas(deporte:string){return this.http.get<any>(`${this.base}/plantillas/${deporte}`);}
+ publicarPlantilla(deporte:string,data:any){return this.http.post<any>(`${this.base}/plantillas/${deporte}`,data);}
+ previewPlantilla(deporte:string,data:any){return this.http.post(`${this.base}/plantillas/${deporte}/preview`,data,{responseType:'blob'});}
+ restaurarPlantilla(deporte:string,version:number){return this.http.post<any>(`${this.base}/plantillas/${deporte}/${version}/restaurar`,{});}
 }
