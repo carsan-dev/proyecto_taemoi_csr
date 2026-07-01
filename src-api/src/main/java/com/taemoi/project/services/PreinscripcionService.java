@@ -1,6 +1,6 @@
 package com.taemoi.project.services;
 
-import java.awt.*; import java.awt.image.BufferedImage; import java.io.*; import java.security.*; import java.time.*; import java.util.*; import javax.imageio.ImageIO;
+import java.awt.Color; import java.awt.Graphics2D; import java.awt.image.BufferedImage; import java.io.*; import java.security.*; import java.time.*; import java.util.*; import javax.imageio.ImageIO;
 import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper; import com.taemoi.project.dtos.request.*; import com.taemoi.project.entities.*; import com.taemoi.project.repositories.*;
 
