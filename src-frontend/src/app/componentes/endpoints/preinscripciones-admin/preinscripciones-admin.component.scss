@@ -51,6 +51,7 @@ td span[data-state=CANCELADA] { color: #9b2429; }
 .template-form textarea { min-height: 88px; resize: vertical; }
 .template-form fieldset { display: grid; gap: .55rem; padding: 1rem; border: 1px solid #d7dbdc; }
 .rule { display: grid; grid-template-columns: 24px minmax(0,1fr) auto auto auto; gap: .35rem; align-items: start; }
+.rule > span { display: block; padding-top: .7rem; line-height: 1.2; text-align: center; }
 .rule textarea { min-height: 64px; }
 .version { margin: 0; color: #a52229; font-weight: 800; }
 .history h2 { margin: 0; }
