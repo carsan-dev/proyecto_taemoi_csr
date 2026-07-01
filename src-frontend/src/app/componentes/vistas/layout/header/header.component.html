@@ -93,6 +93,7 @@
                 <i class="bi bi-tag me-1"></i>Tarifas
               </a>
             </li>
+            <li class="nav-item"><a class="nav-link" [routerLink]="['/preinscripcion']" routerLinkActive="active"><i class="bi bi-pencil-square me-1"></i>Preinscripción</a></li>
             <li class="nav-item">
               <a class="nav-link" [routerLink]="['/contacto']" routerLinkActive="active">
                 <i class="bi bi-envelope me-1"></i>Contacto
@@ -342,6 +343,7 @@
     <li class="menu-section">
       <span class="section-title">Gestión</span>
     </li>
+    <li><a class="menu-link" [routerLink]="['/preinscripciones']" routerLinkActive="active" (click)="closeAdminMenu()"><i class="bi bi-clipboard2-check"></i><span>Preinscripciones</span></a></li>
 
     <!-- Alumnos Section -->
     <li class="menu-item-expandable">
