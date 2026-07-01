@@ -23,6 +23,9 @@ import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,7 +75,7 @@ public class PreinscripcionService {
  public List<Map<String,Object>> grupos(Deporte deporte){return grupos.findAll().stream().filter(g->g.getDeporte()==deporte).filter(this::visibleEnPreinscripcion).sorted(comparadorGrupos()).map(g->Map.<String,Object>of("id",g.getId(),"deporte",deporte,"nombre",nombrePublico(g),"rangoEdadMin",Optional.ofNullable(g.getRangoEdadMin()).orElse(0),"rangoEdadMax",Optional.ofNullable(g.getRangoEdadMax()).orElse(99),"turnos",turnos.findByGrupo(g).stream().sorted(comparadorTurnos()).map(this::turnoPublico).toList())).toList();}
  public List<Map<String,Object>> turnos(Deporte deporte){return turnos.findAllWithAlumnos().stream().filter(t->t.getGrupo()!=null&&t.getGrupo().getDeporte()==deporte).map(t->Map.<String,Object>of("id",t.getId(),"deporte",deporte,"grupo",t.getGrupo().getNombre(),"grupoId",t.getGrupo().getId(),"rangoEdadMin",Optional.ofNullable(t.getGrupo().getRangoEdadMin()).orElse(0),"rangoEdadMax",Optional.ofNullable(t.getGrupo().getRangoEdadMax()).orElse(99),"diaSemana",t.getDiaSemana(),"horaInicio",t.getHoraInicio(),"horaFin",t.getHoraFin())).toList();}
  public byte[] documento(String referencia,String token){Preinscripcion p=buscar(referencia); if(!MessageDigest.isEqual(hash(token).getBytes(),p.getTokenDocumentoHash().getBytes()))throw new SecurityException("Token de documento inválido."); return p.getPdfFirmado();}
- public List<Preinscripcion> listar(){return repo.findAll();} public Preinscripcion buscar(String ref){return repo.findByReferencia(ref).orElseThrow(()->new NoSuchElementException("Preinscripción no encontrada."));}
+ public Page<Preinscripcion> listar(String temporada,Deporte deporte,EstadoPreinscripcion estado,String query,Pageable pageable){Specification<Preinscripcion> spec=Specification.where(null);if(temporada!=null&&!temporada.isBlank())spec=spec.and((root,q,cb)->cb.equal(root.get("temporada"),temporada));if(deporte!=null)spec=spec.and((root,q,cb)->cb.equal(root.get("deporte"),deporte));if(estado!=null)spec=spec.and((root,q,cb)->cb.equal(root.get("estado"),estado));if(query!=null&&!query.isBlank()){String patron="%"+query.trim().toUpperCase(Locale.ROOT)+"%";spec=spec.and((root,q,cb)->cb.or(cb.like(cb.upper(root.get("dni")),patron),cb.like(cb.upper(root.get("referencia")),patron)));}return repo.findAll(spec,pageable);} public Preinscripcion buscar(String ref){return repo.findByReferencia(ref).orElseThrow(()->new NoSuchElementException("Preinscripción no encontrada."));}
  public Map<String,Object> alumnoCoincidente(String dni){return alumnos.findByNif(dni).map(a->Map.<String,Object>of("id",a.getId(),"nombre",a.getNombre(),"apellidos",a.getApellidos(),"activo",Boolean.TRUE.equals(a.getActivo()))).orElse(null);}
  @Transactional public void cancelar(String ref){Preinscripcion p=buscar(ref); if(p.getEstado()!=EstadoPreinscripcion.PENDIENTE)throw new IllegalStateException("Solo se puede cancelar una solicitud pendiente."); p.setEstado(EstadoPreinscripcion.CANCELADA);p.setCanceladaEn(Instant.now());}
  @Transactional public void reenviar(String ref){enviar(buscar(ref));}
