@@ -3,4 +3,5 @@ import java.util.*; import org.springframework.data.jpa.repository.JpaRepository
 public interface PlantillaPreinscripcionRepository extends JpaRepository<PlantillaPreinscripcion,Long>{
  Optional<PlantillaPreinscripcion> findFirstByDeporteAndActivaTrueOrderByVersionDesc(Deporte deporte);
  List<PlantillaPreinscripcion> findByDeporteOrderByVersionDesc(Deporte deporte);
+ Optional<PlantillaPreinscripcion> findByDeporteAndVersion(Deporte deporte,Integer version);
 }

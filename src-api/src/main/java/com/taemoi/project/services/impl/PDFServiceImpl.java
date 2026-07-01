@@ -40,6 +40,7 @@ import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.Preinscripcion;
+import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -81,22 +82,34 @@ public class PDFServiceImpl implements PDFService {
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
 
+	@Override public byte[] generarPreviewPreinscripcion(Deporte deporte,String contenido,String instrucciones){
+		PlantillaPreinscripcion plantilla=new PlantillaPreinscripcion();plantilla.setDeporte(deporte);plantilla.setVersion(0);plantilla.setContenido(contenido);plantilla.setInstrucciones(instrucciones);
+		Preinscripcion p=new Preinscripcion();p.setDeporte(deporte);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setEmail("maria@example.org");p.setDireccion("Calle Ejemplo, 1, Umbrete");p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
+	}
+	private byte[] firmaPreview(){try{java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(360,90,java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();g.setColor(java.awt.Color.WHITE);g.fillRect(0,0,360,90);g.setColor(java.awt.Color.DARK_GRAY);g.drawString("Firma de previsualización",80,48);g.dispose();ByteArrayOutputStream out=new ByteArrayOutputStream();javax.imageio.ImageIO.write(image,"png",out);return out.toByteArray();}catch(Exception e){throw new IllegalStateException(e);}}
+
 	@Override
 	public byte[] generarPreinscripcionFirmada(Preinscripcion p) {
 		String firma = "data:image/png;base64," + Base64.getEncoder().encodeToString(p.getFirma());
 		String nombreDeporte = p.getDeporte().name().replace('_', ' ');
-		boolean conNormas = p.getDeporte() == Deporte.TAEKWONDO || p.getDeporte() == Deporte.KICKBOXING;
+		boolean conNormas = true;
+		String cabecera=campoPlantilla(p.getPlantilla().getContenido(),"cabecera","Escuela Moi Kim Do");
+		String contacto=campoPlantilla(p.getPlantilla().getContenido(),"contacto","");
+		String titulo=campoPlantilla(p.getPlantilla().getContenido(),"titulo","Solicitud de preinscripción");
+		String consentimiento=campoPlantilla(p.getPlantilla().getContenido(),"consentimiento","");
+		String importes=campoPlantilla(p.getPlantilla().getContenido(),"importes","");
 		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
 				+ "@page{size:A4;margin:10mm 12mm 11mm}body{font-family:Arial,sans-serif;color:#172126;font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
 				+ ".head{border-bottom:2px solid #b7272d;padding-bottom:6px;margin-bottom:9px}.head-table{width:100%;border-collapse:collapse}.head-table td{padding:0;vertical-align:middle}.logo-cell{width:24mm}.head img{display:block;width:19mm}.title-cell{padding:0 4mm!important}h1{font-size:15pt;margin:0 0 2px;text-transform:uppercase;line-height:1.08}h2{font-size:10pt;color:#b7272d;margin:0}.ref-cell{width:34mm;text-align:right;font-weight:bold;white-space:nowrap}.section{margin:9px 0}.keep{page-break-inside:avoid}.section h3{font-size:10pt;margin:7px 0 4px;border-bottom:1px solid #aeb6b9;padding-bottom:3px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:4px;text-align:left}.label{font-size:7pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:3px solid #b7272d;padding:6px}.signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:#59666b;margin-top:6px}"
 				+ "</style></head><body><div class='head'><table class='head-table'><tr><td class='logo-cell'>" + (!getLogoPngBase64().isEmpty()?"<img src='"+getLogoPngBase64()+"'/>":"")
-				+ "</td><td class='title-cell'><h1>Solicitud de preinscripción</h1><h2>"+esc(nombreDeporte)+" · Temporada "+esc(p.getTemporada())+"</h2></td><td class='ref-cell'>"+esc(p.getReferencia())+"</td></tr></table></div>"
+				+ "</td><td class='title-cell'><h1>"+esc(titulo)+"</h1><h2>"+esc(cabecera)+" · "+esc(contacto)+" · Temporada "+esc(p.getTemporada())+"</h2></td><td class='ref-cell'>"+esc(p.getReferencia())+"</td></tr></table></div>"
 				+ "<div class='notice'><strong>Preinscripción recibida.</strong> Este documento no equivale a inscripción ni reserva de plaza. La inscripción se completa presencialmente tras comprobar disponibilidad y realizar el pago.</div>"
 				+ "<div class='section'><h3>Datos de la persona solicitante</h3><table class='grid'><tr><td><span class='label'>Nombre y apellidos</span><br/>"+esc(p.getNombre()+" "+p.getApellidos())+"</td><td><span class='label'>DNI/NIE</span><br/>"+esc(p.getDni())+"</td></tr>"
 				+ "<tr><td><span class='label'>Fecha de nacimiento</span><br/>"+p.getFechaNacimiento()+"</td><td><span class='label'>Teléfono / email</span><br/>"+esc(p.getTelefono())+" · "+esc(p.getEmail())+"</td></tr><tr><td colspan='2'><span class='label'>Dirección</span><br/>"+esc(p.getDireccion())+"</td></tr></table></div>"
 				+ (p.getTutorNombre()!=null&&!p.getTutorNombre().isBlank()?"<div class='section'><h3>Responsable legal</h3>"+esc(p.getTutorNombre())+" · "+esc(p.getTutorDni())+"</div>":"")
 				+ "<div class='section'><h3>Grupo solicitado</h3>"+esc(p.getGrupoSnapshot()!=null?p.getGrupoSnapshot():p.getTurnoSnapshot())+"</div>"
-				+ (conNormas ? "<div class='section keep'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"[X] Autorizado":"[ ] No autorizado")+" para la difusión y promoción de la actividad en medios propios del club y medios asociados.</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(p.getPlantilla().getContenido())+"<p><strong>[X] Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
+				+ (conNormas ? "<div class='section keep'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"[X] Autorizado. ":"[ ] No autorizado. ")+esc(consentimiento)+"</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(p.getPlantilla().getContenido())+"<p><strong>[X] Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
+				+ "<div class='section keep'><h3>Importes y pago</h3><p>"+esc(importes)+"</p></div>"
 				+ "<div class='section keep'><h3>Firma</h3><img class='signature' src='"+firma+"'/><p>Firmado por "+esc(p.getFirmanteNombre())+" el "+LocalDate.now(ZoneId.of("Europe/Madrid"))+".</p></div>"
 				+ "<div class='foot'>Documento generado electrónicamente. Referencia "+esc(p.getReferencia())+". Versión documental preservada con la solicitud.</div></body></html>";
 		try { ByteArrayOutputStream out=new ByteArrayOutputStream(); PdfRendererBuilder builder=new PdfRendererBuilder(); builder.withHtmlContent(html,null); builder.toStream(out); builder.run(); return out.toByteArray(); }
@@ -104,6 +117,7 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
+	private String campoPlantilla(String contenido,String campo,String fallback){Matcher m=Pattern.compile("\\\""+Pattern.quote(campo)+"\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\"").matcher(contenido);return m.find()?m.group(1).replace("\\\\\"","\"").replace("\\\\n"," "):fallback;}
 	private String normasHtml(String contenido){Matcher bloque=Pattern.compile("\\\"normas\\\"\\s*:\\s*\\[(.*?)]").matcher(contenido);if(!bloque.find())return "";Matcher item=Pattern.compile("\\\"((?:\\\\.|[^\\\"])*)\\\"").matcher(bloque.group(1));StringBuilder out=new StringBuilder("<ol>");while(item.find())out.append("<li>").append(esc(item.group(1).replace("\\\\\"","\"").replace("\\\\n"," "))).append("</li>");return out.append("</ol>").toString();}
 
 	/**
