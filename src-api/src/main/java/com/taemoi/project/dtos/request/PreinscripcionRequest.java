@@ -6,7 +6,8 @@ import jakarta.validation.constraints.*;
 
 public record PreinscripcionRequest(
  @NotNull Deporte deporte,
- @NotNull Long turnoId,
+ Long grupoId,
+ Long turnoId,
  @NotBlank @Size(max=100) String nombre,
  @NotBlank @Size(max=160) String apellidos,
  @NotBlank @Pattern(regexp="(?i)^[0-9XYZ][0-9]{7}[A-Z]$") String dni,
@@ -20,4 +21,7 @@ public record PreinscripcionRequest(
  @AssertTrue(message="Es necesario aceptar las normas") boolean aceptacionNormas,
  @NotBlank @Size(max=180) String firmanteNombre,
  @NotBlank @Size(max=700000) String firmaBase64
-) {}
+) {
+ @AssertTrue(message="Es necesario seleccionar un grupo")
+ public boolean hasGrupoOTurno(){return grupoId!=null||turnoId!=null;}
+}
