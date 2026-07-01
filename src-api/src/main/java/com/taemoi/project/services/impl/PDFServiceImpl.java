@@ -39,6 +39,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -79,6 +80,31 @@ public class PDFServiceImpl implements PDFService {
 
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
+
+	@Override
+	public byte[] generarPreinscripcionFirmada(Preinscripcion p) {
+		String firma = "data:image/png;base64," + Base64.getEncoder().encodeToString(p.getFirma());
+		String nombreDeporte = p.getDeporte().name().replace('_', ' ');
+		boolean conNormas = p.getDeporte() == Deporte.TAEKWONDO || p.getDeporte() == Deporte.KICKBOXING;
+		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
+				+ "@page{size:A4;margin:14mm 15mm 17mm}body{font-family:Arial,sans-serif;color:#172126;font-size:10pt;line-height:1.38}"
+				+ ".head{border-bottom:3px solid #b7272d;padding-bottom:8px;margin-bottom:14px}.head img{width:22mm;float:left;margin-right:8mm}h1{font-size:17pt;margin:2px 0;text-transform:uppercase}h2{font-size:11pt;color:#b7272d;margin:3px 0}.ref{float:right;font-weight:bold}.section{margin:12px 0;page-break-inside:avoid}.section h3{font-size:11pt;border-bottom:1px solid #aeb6b9;padding-bottom:4px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:6px;text-align:left}.label{font-size:8pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:4px solid #b7272d;padding:9px}.signature{height:27mm;max-width:70mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:8pt;color:#59666b;margin-top:12px}"
+				+ "</style></head><body><div class='head'>" + (!getLogoPngBase64().isEmpty()?"<img src='"+getLogoPngBase64()+"'/>":"")
+				+ "<span class='ref'>"+esc(p.getReferencia())+"</span><h1>Solicitud de preinscripción</h1><h2>"+esc(nombreDeporte)+" · Temporada "+esc(p.getTemporada())+"</h2><div style='clear:both'></div></div>"
+				+ "<div class='notice'><strong>Preinscripción recibida.</strong> Este documento no equivale a inscripción ni reserva de plaza. La inscripción se completa presencialmente tras comprobar disponibilidad y realizar el pago.</div>"
+				+ "<div class='section'><h3>Datos de la persona solicitante</h3><table class='grid'><tr><td><span class='label'>Nombre y apellidos</span><br/>"+esc(p.getNombre()+" "+p.getApellidos())+"</td><td><span class='label'>DNI/NIE</span><br/>"+esc(p.getDni())+"</td></tr>"
+				+ "<tr><td><span class='label'>Fecha de nacimiento</span><br/>"+p.getFechaNacimiento()+"</td><td><span class='label'>Teléfono / email</span><br/>"+esc(p.getTelefono())+" · "+esc(p.getEmail())+"</td></tr><tr><td colspan='2'><span class='label'>Dirección</span><br/>"+esc(p.getDireccion())+"</td></tr></table></div>"
+				+ (p.getTutorNombre()!=null&&!p.getTutorNombre().isBlank()?"<div class='section'><h3>Responsable legal</h3>"+esc(p.getTutorNombre())+" · "+esc(p.getTutorDni())+"</div>":"")
+				+ "<div class='section'><h3>Turno solicitado</h3>"+esc(p.getTurnoSnapshot())+"</div>"
+				+ (conNormas ? "<div class='section'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"☒ Autorizado":"☐ No autorizado")+" para la difusión y promoción de la actividad en medios propios del club y medios asociados.</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(p.getPlantilla().getContenido())+"<p><strong>☒ Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
+				+ "<div class='section'><h3>Firma</h3><img class='signature' src='"+firma+"'/><p>Firmado por "+esc(p.getFirmanteNombre())+" el "+LocalDate.now(ZoneId.of("Europe/Madrid"))+".</p></div>"
+				+ "<div class='foot'>Documento generado electrónicamente. Referencia "+esc(p.getReferencia())+". Versión documental preservada con la solicitud.</div></body></html>";
+		try { ByteArrayOutputStream out=new ByteArrayOutputStream(); PdfRendererBuilder builder=new PdfRendererBuilder(); builder.withHtmlContent(html,null); builder.toStream(out); builder.run(); return out.toByteArray(); }
+		catch(Exception e){throw new IllegalStateException("No se pudo generar la solicitud PDF",e);}
+	}
+
+	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
+	private String normasHtml(String contenido){Matcher bloque=Pattern.compile("\\\"normas\\\"\\s*:\\s*\\[(.*?)]").matcher(contenido);if(!bloque.find())return "";Matcher item=Pattern.compile("\\\"((?:\\\\.|[^\\\"])*)\\\"").matcher(bloque.group(1));StringBuilder out=new StringBuilder("<ol>");while(item.find())out.append("<li>").append(esc(item.group(1).replace("\\\\\"","\"").replace("\\\\n"," "))).append("</li>");return out.append("</ol>").toString();}
 
 	/**
 	 * Converts the school logo SVG to PNG and returns it as a base64 data URI. This

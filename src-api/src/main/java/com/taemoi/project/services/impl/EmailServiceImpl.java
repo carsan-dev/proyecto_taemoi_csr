@@ -11,6 +11,7 @@ import com.taemoi.project.services.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.core.io.ByteArrayResource;
 import java.io.UnsupportedEncodingException;
 
 import org.slf4j.Logger;
@@ -46,5 +47,19 @@ public class EmailServiceImpl implements EmailService {
 		} catch (MessagingException e) {
 			logger.error("Error al enviar el correo electrónico a {}: {}", to, e.getMessage());
 		}
+	}
+
+	@Override
+	public void sendEmailConAdjunto(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
+			@NonNull String nombreAdjunto, @NonNull byte[] adjunto) {
+		MimeMessage message=javaMailSender.createMimeMessage();
+		try {
+			MimeMessageHelper helper=new MimeMessageHelper(message,true,"UTF-8");
+			helper.setTo(to); helper.setSubject(subject); helper.setText(htmlContent,true);
+			helper.setFrom("noreplymoiskimdo@gmail.com","Escuela Moi Kim Do");
+			helper.setReplyTo("noreplymoiskimdo@gmail.com");
+			helper.addAttachment(nombreAdjunto,new ByteArrayResource(adjunto));
+			javaMailSender.send(message);
+		} catch(Exception e){ throw new IllegalStateException("No se pudo enviar el correo",e); }
 	}
 }

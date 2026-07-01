@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Preinscripcion;
 
 public interface PDFService {
 	byte[] generarInformeAlumnosPorGrado(boolean soloActivos);
@@ -51,4 +52,6 @@ public interface PDFService {
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 
 	byte[] generarInformeCompetidores();
+
+	byte[] generarPreinscripcionFirmada(Preinscripcion preinscripcion);
 }
