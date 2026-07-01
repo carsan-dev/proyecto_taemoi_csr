@@ -396,6 +396,11 @@ header.fixed-header {
             box-shadow: 0 8px 22px rgba($primary-color, 0.28);
             font-weight: 700;
 
+            i {
+              color: $text-light;
+              transform: none;
+            }
+
             &::after {
               display: none;
             }
@@ -404,6 +409,11 @@ header.fixed-header {
             &.active {
               background: linear-gradient(135deg, color.adjust($primary-color, $lightness: 6%), $primary-hover);
               transform: translateY(-2px);
+
+              i {
+                color: $text-light;
+                transform: none;
+              }
             }
           }
         }
