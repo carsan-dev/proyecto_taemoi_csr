@@ -235,6 +235,72 @@ canvas:focus {
   }
 }
 
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-radio,
+.skeleton-line,
+.skeleton-chips span {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: #eef1f3;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+    animation: skeletonShimmer 1.15s infinite;
+  }
+}
+
+.skeleton-radio {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.25rem;
+  border-radius: 50%;
+}
+
+.skeleton-line {
+  height: 0.9rem;
+  border-radius: 50px;
+
+  &.title {
+    width: 64%;
+    height: 1.1rem;
+    margin-bottom: 0.65rem;
+  }
+
+  &.short {
+    width: 38%;
+    margin-bottom: 0.85rem;
+  }
+}
+
+.skeleton-chips {
+  display: flex;
+  gap: 0.45rem;
+
+  span {
+    width: 120px;
+    height: 1.6rem;
+    border-radius: 50px;
+
+    &:last-child {
+      width: 96px;
+    }
+  }
+}
+
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .empty {
   grid-column: 1 / -1;
   margin: 0;

@@ -30,21 +30,36 @@
           </select>
         </label>
         @if(form.controls.deporte.value){
-          <div class="groups">
-            @for(g of grupos;track g.id){
-              <label class="group-card">
-                <input type="radio" formControlName="grupoId" [value]="g.id">
-                <span>
-                  <strong>{{g.nombre}}</strong>
-                  <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
-                  <em>
-                    @for(t of g.turnos;track t.id){<span>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</span>}
-                  </em>
-                </span>
-              </label>
-            }
-            @empty{<p class="empty">No hay grupos publicados para esta actividad.</p>}
-          </div>
+          @if(cargandoGrupos){
+            <div class="groups" aria-busy="true" aria-label="Cargando grupos">
+              @for(i of [1,2,3,4];track i){
+                <div class="group-card skeleton-card">
+                  <span class="skeleton-radio"></span>
+                  <span>
+                    <span class="skeleton-line title"></span>
+                    <span class="skeleton-line short"></span>
+                    <span class="skeleton-chips"><span></span><span></span></span>
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="groups">
+              @for(g of grupos;track g.id){
+                <label class="group-card">
+                  <input type="radio" formControlName="grupoId" [value]="g.id">
+                  <span>
+                    <strong>{{g.nombre}}</strong>
+                    <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
+                    <em>
+                      @for(t of g.turnos;track t.id){<span>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</span>}
+                    </em>
+                  </span>
+                </label>
+              }
+              @empty{<p class="empty">No hay grupos publicados para esta actividad.</p>}
+            </div>
+          }
         }
       </section>
 
