@@ -12,6 +12,7 @@ import com.taemoi.project.services.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.beans.factory.annotation.Value;
 import java.io.UnsupportedEncodingException;
 
 import org.slf4j.Logger;
@@ -22,6 +23,10 @@ public class EmailServiceImpl implements EmailService {
 
 	@Autowired
 	private JavaMailSender javaMailSender;
+	@Value("${spring.mail.from:${spring.mail.username}}")
+	private String fromAddress;
+	@Value("${app.mail.from-name:Moi's Kim Do}")
+	private String fromName;
 
 	private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
@@ -37,11 +42,11 @@ public class EmailServiceImpl implements EmailService {
 			helper.setText(htmlContent, true);
 
 			try {
-				helper.setFrom("noreplymoiskimdo@gmail.com", "Club Moiskimdo Taekwondo");
+				helper.setFrom(fromAddress, fromName);
 			} catch (UnsupportedEncodingException e) {
 				logger.error("Error al establecer el emisor del correo: {}", e.getMessage());
 			}
-			helper.setReplyTo("noreplymoiskimdo@gmail.com");
+			helper.setReplyTo(fromAddress);
 
 			javaMailSender.send(mimeMessage);
 		} catch (MessagingException e) {
@@ -56,8 +61,8 @@ public class EmailServiceImpl implements EmailService {
 		try {
 			MimeMessageHelper helper=new MimeMessageHelper(message,true,"UTF-8");
 			helper.setTo(to); helper.setSubject(subject); helper.setText(htmlContent,true);
-			helper.setFrom("noreplymoiskimdo@gmail.com","Escuela Moi Kim Do");
-			helper.setReplyTo("noreplymoiskimdo@gmail.com");
+			helper.setFrom(fromAddress,fromName);
+			helper.setReplyTo(fromAddress);
 			helper.addAttachment(nombreAdjunto,new ByteArrayResource(adjunto));
 			javaMailSender.send(message);
 		} catch(Exception e){ throw new IllegalStateException("No se pudo enviar el correo",e); }
