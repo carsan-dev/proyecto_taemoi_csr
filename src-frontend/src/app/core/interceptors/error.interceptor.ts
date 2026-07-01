@@ -97,7 +97,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
           default:
             // Generic error
-            errorMessage = error.error?.message || error.message || 'Ha ocurrido un error inesperado';
+            errorMessage = obtenerMensajeBackend(error) || 'Ha ocurrido un error inesperado';
             console.error(`HTTP Error ${error.status}:`, error.message);
         }
       }
@@ -117,6 +117,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     })
   );
 };
+
+function obtenerMensajeBackend(error: HttpErrorResponse): string | undefined {
+  if (typeof error.error === 'string' && error.error.trim()) {
+    return error.error;
+  }
+  return error.error?.mensaje || error.error?.message;
+}
 
 /**
  * Obtiene el AuthenticationService de forma lazy para evitar dependencia circular.
