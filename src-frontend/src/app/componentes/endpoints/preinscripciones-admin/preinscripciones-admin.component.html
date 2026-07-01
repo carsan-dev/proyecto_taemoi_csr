@@ -1,1 +1,62 @@
-<main class="admin-pre"><header><div><p>Admisiones</p><h1>Preinscripciones</h1></div><button (click)="buscar()">Actualizar</button></header><div class="filters"><input [(ngModel)]="filtros.temporada" placeholder="Temporada"><select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select><select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>FINALIZADA</option><option>CANCELADA</option></select><input [(ngModel)]="filtros.q" placeholder="DNI o referencia"><button (click)="buscar()">Filtrar</button></div><div class="workspace"><div class="table-wrap"><table><thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email</th></tr></thead><tbody>@for(x of items;track x.referencia){<tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia===x.referencia"><td><strong>{{x.referencia}}</strong><small>{{x.dni}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado}}</span></td><td>{{x.emailEnviado?'Enviado':'Pendiente'}} ({{x.emailIntentos}})</td></tr>}@empty{<tr><td colspan="6">{{cargando?'Cargando…':'No hay solicitudes con estos filtros.'}}</td></tr>}</tbody></table></div>@if(seleccion){<aside><button class="close" (click)="seleccion=undefined">×</button><p class="kicker">{{seleccion.referencia}}</p><h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2><dl><dt>DNI</dt><dd>{{seleccion.dni}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd></dl>@if(seleccion.estado==='PENDIENTE'){<label>ID de alumno revisado<input type="number" [(ngModel)]="alumnoId"></label><button class="primary" [disabled]="!alumnoId" (click)="finalizar()">Finalizar y asignar grupo</button><button (click)="reenviar()">Reenviar correo</button><button class="danger" (click)="cancelar()">Cancelar solicitud</button>}@if(mensaje){<p>{{mensaje}}</p>}</aside>}</div></main>
+<main class="admin-pre">
+  <header>
+    <div><p>Admisiones</p><h1>Preinscripciones</h1></div>
+    <button (click)="buscar()">Actualizar</button>
+  </header>
+
+  <div class="filters">
+    <input [(ngModel)]="filtros.temporada" placeholder="Temporada">
+    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select>
+    <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>FINALIZADA</option><option>CANCELADA</option></select>
+    <input [(ngModel)]="filtros.q" placeholder="DNI o referencia">
+    <button (click)="buscar()">Filtrar</button>
+  </div>
+
+  <div class="workspace">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email</th></tr></thead>
+        <tbody>
+          @for (x of items; track x.referencia) {
+            <tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia === x.referencia">
+              <td><strong>{{x.referencia}}</strong><small>{{x.dni}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6">{{cargando ? 'Cargando…' : 'No hay solicitudes con estos filtros.'}}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+@if (seleccion) {
+  <aside class="detail-panel" aria-label="Detalle de la preinscripción">
+    <button class="close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
+    <p class="kicker">{{seleccion.referencia}}</p>
+    <h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2>
+    <dl><dt>DNI</dt><dd>{{seleccion.dni}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd></dl>
+
+    <section class="signature-preview">
+      <h3>Firma presentada</h3>
+      @if (firmaUrl) { <img [src]="firmaUrl" alt="Firma trazada por {{seleccion.nombre}} {{seleccion.apellidos}}"> }
+      @else { <div class="signature-loading">Cargando firma…</div> }
+      <button type="button" (click)="descargarDocumento()">Descargar PDF firmado</button>
+    </section>
+
+    @if (seleccion.estado === 'PENDIENTE') {
+      <section class="student-match">
+        <h3>Ficha de alumno</h3>
+        @if (seleccion.alumnoCoincidente; as alumno) {
+          <p><strong>{{alumno.nombre}} {{alumno.apellidos}}</strong><span>{{alumno.activo ? 'Alumno activo' : 'Alumno inactivo · se reactivará al finalizar'}}</span></p>
+        } @else {
+          <p class="no-match"><strong>No existe una ficha con este DNI.</strong><span>Crea primero el alumno y vuelve a actualizar esta pantalla.</span></p>
+        }
+      </section>
+      <button class="primary" [disabled]="!alumnoId" (click)="finalizar()">Finalizar y asignar grupo</button>
+      <button (click)="reenviar()">Reenviar correo</button>
+      <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
+    }
+    @if (mensaje) { <p class="message">{{mensaje}}</p> }
+  </aside>
+}

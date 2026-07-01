@@ -15,4 +15,6 @@ export class PreinscripcionService {
  cancelar(ref:string){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{});}
  reenviar(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar`,{});}
  finalizar(ref:string,alumnoId:number){return this.http.post<void>(`${this.base}/${ref}/finalizar`,{alumnoId,actualizarDatos:true,reactivar:true});}
+ firma(ref:string){return this.http.get(`${this.base}/${ref}/firma`,{responseType:'blob'});}
+ documentoFirmado(ref:string){return this.http.get(`${this.base}/${ref}/documento-firmado`,{responseType:'blob'});}
 }
