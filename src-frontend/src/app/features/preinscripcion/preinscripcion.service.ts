@@ -8,6 +8,7 @@ export class PreinscripcionService {
  constructor(private readonly http:HttpClient){}
  temporada(){return this.http.get<{temporada:string}>(`${this.base}/public/temporada`);}
  configuracion(deporte:string){return this.http.get<any>(`${this.base}/public/configuracion/${deporte}`);}
+ grupos(deporte:string){return this.http.get<any[]>(`${this.base}/public/grupos/${deporte}`);}
  turnos(deporte:string){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`);}
  crear(data:any){return this.http.post<any>(this.base,data);}
  listar(filtros:Record<string,string>={}){let params=new HttpParams();Object.entries(filtros).filter(([,v])=>v).forEach(([k,v])=>params=params.set(k,v));return this.http.get<any[]>(this.base,{params});}
