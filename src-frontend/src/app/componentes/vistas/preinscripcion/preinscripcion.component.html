@@ -16,7 +16,16 @@
     </section>
   }
   @else {
-    <form [formGroup]="form" (ngSubmit)="enviar()">
+    <form [formGroup]="form" (ngSubmit)="enviar()" [class.is-submitting]="enviando">
+      @if(enviando){
+        <div class="submit-overlay" role="status" aria-live="assertive" aria-busy="true">
+          <div class="submit-progress">
+            <span class="spinner" aria-hidden="true"></span>
+            <strong>Generando y enviando solicitud…</strong>
+            <p>Estamos preparando el PDF firmado y enviando la confirmación por correo.</p>
+          </div>
+        </div>
+      }
       <nav class="steps" aria-label="Pasos">
         <span>1 · Grupo</span><span>2 · Datos</span><span>3 · Consentimientos</span><span>4 · Firma</span>
       </nav>
@@ -105,7 +114,7 @@
         <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
         <div class="notice"><strong>Antes de enviar:</strong> esta solicitud no modifica el aforo ni reserva plaza. El club confirmará disponibilidad para completar presencialmente la inscripción y el pago.</div>
         @if(error){<p class="error" role="alert">{{error}}</p>}
-        <button class="submit" type="submit" [disabled]="enviando">{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
+        <button class="submit" type="submit" [disabled]="enviando">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
       </section>
     </form>
   }
