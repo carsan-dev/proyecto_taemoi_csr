@@ -59,7 +59,7 @@ public class PreinscripcionService {
 
  @Transactional public Map<String,Object> crear(PreinscripcionRequest d){
   String dni=d.dni().trim().toUpperCase(Locale.ROOT), temporada=temporadas.actual();
-  if(repo.existsByDniAndDeporteAndTemporada(dni,d.deporte(),temporada)) throw new IllegalArgumentException("Ya existe una preinscripción para ese DNI, deporte y temporada.");
+  if(repo.existsByDniAndDeporteAndTemporadaAndEstadoNot(dni,d.deporte(),temporada,EstadoPreinscripcion.CANCELADA)) throw new IllegalArgumentException("Ya existe una preinscripción activa para ese DNI, deporte y temporada.");
   Grupo grupo=resolverGrupo(d);
   if(grupo.getDeporte()!=d.deporte()) throw new IllegalArgumentException("El grupo no pertenece al deporte seleccionado.");
   List<Turno> horarios=turnos.findByGrupo(grupo).stream().sorted(comparadorTurnos()).toList();
