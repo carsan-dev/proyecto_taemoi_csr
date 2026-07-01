@@ -38,6 +38,7 @@ td span[data-state=CANCELADA] { color: #9b2429; }
 .detail-panel > button:not(.close) { display: block; width: 100%; margin: .5rem 0; }
 .primary { border-color: #172126; background: #172126; color: #fff; }
 .danger { color: #a52229; }
+.delete { margin-top: 1.5rem !important; border-color: #a52229; }
 .message { margin-top: 1rem; }
 
 @media (max-width: 900px) {

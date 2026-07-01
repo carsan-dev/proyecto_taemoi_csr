@@ -13,6 +13,7 @@ export class PreinscripcionService {
  crear(data:any){return this.http.post<any>(this.base,data);}
  listar(filtros:Record<string,string>={},page=0,size=25){let params=new HttpParams().set('page',page).set('size',size);Object.entries(filtros).filter(([,v])=>v).forEach(([k,v])=>params=params.set(k,v));return this.http.get<{content:any[];page:number;size:number;totalElements:number;totalPages:number;first:boolean;last:boolean}>(this.base,{params});}
  cancelar(ref:string){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{});}
+ eliminar(ref:string){return this.http.delete<void>(`${this.base}/${ref}`);}
  reenviar(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar`,{});}
  finalizar(ref:string,alumnoId:number){return this.http.post<void>(`${this.base}/${ref}/finalizar`,{alumnoId,actualizarDatos:true,reactivar:true});}
  firma(ref:string){return this.http.get(`${this.base}/${ref}/firma`,{responseType:'blob'});}

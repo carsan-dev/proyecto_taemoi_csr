@@ -59,5 +59,8 @@
       <button (click)="reenviar()">Reenviar correo</button>
       <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
     }
+    @if (puedeEliminar) {
+      <button class="danger delete" (click)="eliminar()">Eliminar definitivamente</button>
+    }
   </aside>
 }
