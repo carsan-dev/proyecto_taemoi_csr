@@ -2,15 +2,15 @@
   <section class="hero">
     <p class="eyebrow">Temporada {{temporada}}</p>
     <h1>Preinscripción online</h1>
-    <p>Solicita plaza para cualquiera de nuestras actividades. No se realiza ningún pago en este trámite.</p>
+    <p>Solicita plaza para cualquiera de nuestras actividades. Si el grupo está completo, entrarás en lista de espera.</p>
   </section>
 
   @if(resultado){
     <section class="success">
       <span class="check">✓</span>
-      <h2>Preinscripción recibida</h2>
+      <h2>{{resultado.plazaAsignada ? 'Plaza asignada' : 'Lista de espera'}}</h2>
       <p class="reference">{{resultado.referencia}}</p>
-      <p><strong>No equivale a inscripción ni reserva de plaza.</strong> Te enviaremos el documento y las instrucciones por correo. La inscripción y el pago se completan presencialmente al inicio de la temporada.</p>
+      @if(resultado.plazaAsignada){<p><strong>Tu preinscripción ya cuenta en el aforo.</strong> Recibirás documento e instrucciones por correo.</p>}@else{<p><strong>Grupo completo.</strong> Estás en posición {{resultado.posicionListaEspera}}. Te avisaremos automáticamente cuando obtengas plaza.</p>}
       <button type="button" (click)="descargar()">Descargar solicitud firmada</button>
       <a routerLink="/">Volver al inicio</a>
     </section>
@@ -59,6 +59,7 @@
                   <input type="radio" formControlName="grupoId" [value]="g.id">
                   <span>
                     <strong>{{g.nombre}}</strong>
+                    @if(g.completo){<small class="wait-badge">Completo · lista de espera</small>}
                     <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
                     <em>
                       @for(t of g.turnos;track t.id){<span>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</span>}
@@ -112,7 +113,7 @@
         <p class="hint">Firma dentro del recuadro con el dedo, ratón o lápiz.</p>
         <canvas #firma (pointerdown)="iniciar($event)" (pointermove)="mover($event)" (pointerup)="terminar()" (pointercancel)="terminar()"></canvas>
         <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
-        <div class="notice"><strong>Antes de enviar:</strong> esta solicitud no modifica el aforo ni reserva plaza. El club confirmará disponibilidad para completar presencialmente la inscripción y el pago.</div>
+        <div class="notice"><strong>Antes de enviar:</strong> si existe aforo, la preinscripción asignará plaza inmediatamente. Si está completo, entrarás en lista de espera por orden de solicitud.</div>
         @if(error){<p class="error" role="alert">{{error}}</p>}
         <button class="submit" type="submit" [disabled]="enviando">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
       </section>

@@ -19,6 +19,7 @@ td span { font-size: .7rem; font-weight: 800; }
 td span[data-state=PENDIENTE] { color: #9a6816; }
 td span[data-state=FINALIZADA] { color: #1c7154; }
 td span[data-state=CANCELADA] { color: #9b2429; }
+td span[data-state=EN_LISTA_ESPERA] { color: #9a6816; }
 .pagination-summary { margin: .85rem .85rem 0; color: #687175; font-size: .82rem; text-align: center; }
 
 .detail-panel { position: fixed; z-index: 30; top: 6rem; right: 0; bottom: 0; width: min(390px, 100vw); overflow-y: auto; padding: 3.5rem 1.5rem 1.5rem; border-left: 1px solid #d9ddde; background: #fff; box-shadow: -12px 0 32px rgb(23 33 38 / 14%); color: #172126; }

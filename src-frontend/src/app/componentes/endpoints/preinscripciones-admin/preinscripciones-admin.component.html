@@ -12,7 +12,7 @@
   <div class="filters">
     <input [(ngModel)]="filtros.temporada" placeholder="Temporada">
     <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select>
-    <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>FINALIZADA</option><option>CANCELADA</option></select>
+    <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_LISTA_ESPERA</option><option>FINALIZADA</option><option>CANCELADA</option></select>
     <input [(ngModel)]="filtros.q" placeholder="DNI o referencia">
     <button (click)="buscar(true)">Filtrar</button>
   </div>
@@ -24,7 +24,7 @@
         <tbody>
           @for (x of items; track x.referencia) {
             <tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia === x.referencia">
-              <td><strong>{{x.referencia}}</strong><small>{{x.dni}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td>
+              <td><strong>{{x.referencia}}</strong><small>{{x.dni}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td>
             </tr>
           } @empty {
             <tr><td colspan="6">{{cargando ? 'Cargando…' : 'No hay solicitudes con estos filtros.'}}</td></tr>
@@ -69,6 +69,7 @@
     <p class="kicker">{{seleccion.referencia}}</p>
     <h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2>
     <dl><dt>DNI</dt><dd>{{seleccion.dni}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd></dl>
+    @if(seleccion.estado === 'EN_LISTA_ESPERA'){<p><strong>Posición en cola:</strong> {{seleccion.posicionListaEspera}}</p>}
 
     <section class="signature-preview">
       <h3>Firma presentada</h3>
@@ -90,6 +91,7 @@
       <button (click)="reenviar()">Reenviar correo</button>
       <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
     }
+    @if (seleccion.estado === 'EN_LISTA_ESPERA') { <button class="danger" (click)="cancelar()">Cancelar lista de espera</button> }
     @if (puedeEliminar) {
       <button class="danger delete" (click)="eliminar()">Eliminar definitivamente</button>
     }
