@@ -35,6 +35,7 @@ import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.PreinscripcionService;
 
 import jakarta.validation.Valid;
 
@@ -66,6 +67,7 @@ public class AdminController {
 	 */
 	@Autowired
 	private ConfiguracionSistemaService configuracionSistemaService;
+	@Autowired private PreinscripcionService preinscripcionService;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o no paginada según los parámetros
@@ -200,6 +202,7 @@ public class AdminController {
 	public ResponseEntity<Integer> actualizarLimiteTurno(@RequestBody Integer nuevoLimite) {
 		logger.info("## AdminController :: actualizarLimiteTurno - nuevoLimite: {}", nuevoLimite);
 		configuracionSistemaService.actualizarLimiteTurno(nuevoLimite);
+		preinscripcionService.promocionarTodas();
 		return ResponseEntity.ok(nuevoLimite);
 	}
 }

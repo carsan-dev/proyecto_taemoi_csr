@@ -1,3 +1,3 @@
 package com.taemoi.project.entities;
 
-public enum EstadoPreinscripcion { PENDIENTE, FINALIZADA, CANCELADA }
+public enum EstadoPreinscripcion { PENDIENTE, EN_LISTA_ESPERA, FINALIZADA, CANCELADA }

@@ -31,6 +31,7 @@ public class Preinscripcion {
  @Column(name="email_ultimo_error",length=500) private String emailUltimoError;
  @Column(name="creada_en",nullable=false) private Instant creadaEn; @Column(name="actualizada_en",nullable=false) private Instant actualizadaEn;
  @Column(name="finalizada_en") private Instant finalizadaEn; @Column(name="cancelada_en") private Instant canceladaEn;
+ @Column(name="promocionada_en") private Instant promocionadaEn;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="alumno_id") private Alumno alumno;
  @PrePersist void create(){creadaEn=actualizadaEn=Instant.now();} @PreUpdate void update(){actualizadaEn=Instant.now();}
  public Long getId(){return id;} public String getReferencia(){return referencia;} public void setReferencia(String v){referencia=v;} public String getTemporada(){return temporada;} public void setTemporada(String v){temporada=v;}
@@ -43,4 +44,5 @@ public class Preinscripcion {
  public byte[] getPdfFirmado(){return pdfFirmado;} public void setPdfFirmado(byte[] v){pdfFirmado=v;} public String getTokenDocumentoHash(){return tokenDocumentoHash;} public void setTokenDocumentoHash(String v){tokenDocumentoHash=v;}
  public Boolean getEmailEnviado(){return emailEnviado;} public void setEmailEnviado(Boolean v){emailEnviado=v;} public Integer getEmailIntentos(){return emailIntentos;} public void setEmailIntentos(Integer v){emailIntentos=v;} public String getEmailUltimoError(){return emailUltimoError;} public void setEmailUltimoError(String v){emailUltimoError=v;}
  public Instant getCreadaEn(){return creadaEn;} public Instant getFinalizadaEn(){return finalizadaEn;} public void setFinalizadaEn(Instant v){finalizadaEn=v;} public Instant getCanceladaEn(){return canceladaEn;} public void setCanceladaEn(Instant v){canceladaEn=v;} public Alumno getAlumno(){return alumno;} public void setAlumno(Alumno v){alumno=v;}
+ public Instant getPromocionadaEn(){return promocionadaEn;} public void setPromocionadaEn(Instant v){promocionadaEn=v;}
 }

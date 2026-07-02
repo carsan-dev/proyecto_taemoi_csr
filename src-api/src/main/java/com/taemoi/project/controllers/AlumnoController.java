@@ -160,6 +160,7 @@ public class AlumnoController {
 
 	@Autowired
 	private AlumnoAccessControlService alumnoAccessControlService;
+	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	@PersistenceContext
 	private EntityManager entityManager;
@@ -527,6 +528,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
 		alumnoService.darDeBajaAlumno(id);
+		preinscripcionService.promocionarTodas();
 		return ResponseEntity.ok().build();
 	}
 
@@ -1090,6 +1092,7 @@ public class AlumnoController {
 		try {
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
 			alumnoDeporteService.desactivarDeporteDeAlumno(id, deporteEnum);
+			preinscripcionService.promocionarTodas();
 			return ResponseEntity.ok().body("Deporte desactivado correctamente");
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
@@ -1148,6 +1151,7 @@ public class AlumnoController {
 		try {
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
 			alumnoService.removerDeporteDeAlumno(id, deporteEnum);
+			preinscripcionService.promocionarTodas();
 			return ResponseEntity.noContent().build();
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
