@@ -200,9 +200,9 @@
         <h2 class="cta-title">PRIMERA CLASE GRATUITA</h2>
         <p class="cta-subtitle">Prueba una clase de kickboxing light en Umbrete. Primera clase gratuita.</p>
       </div>
-      <button class="modern-btn kickboxing-btn cta-btn--reveal" routerLink="/contacto" #ctaButton>
-        <i class="bi bi-envelope-fill"></i>
-        <span>Más información</span>
+      <button class="modern-btn kickboxing-btn cta-btn--reveal" routerLink="/preinscripcion" [queryParams]="{deporte: 'KICKBOXING'}" #ctaButton>
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Inscríbete ahora</span>
       </button>
     </div>
   </section>

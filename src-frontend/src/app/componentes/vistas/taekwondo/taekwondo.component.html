@@ -200,11 +200,10 @@
         <h2 class="cta-title">PRIMERA CLASE GRATUITA</h2>
         <p class="cta-subtitle">&iquest;Quieres probar taekwondo en Umbrete? Reserva tu clase gratuita.</p>
       </div>
-      <button class="modern-btn taekwondo-btn cta-btn--reveal" routerLink="/contacto" #ctaButton>
-        <i class="bi bi-envelope-fill"></i>
-        <span>Más información</span>
+      <button class="modern-btn taekwondo-btn cta-btn--reveal" routerLink="/preinscripcion" [queryParams]="{deporte: 'TAEKWONDO'}" #ctaButton>
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Inscríbete ahora</span>
       </button>
     </div>
   </section>
 </div>
-
