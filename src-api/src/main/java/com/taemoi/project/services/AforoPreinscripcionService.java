@@ -18,6 +18,10 @@ public class AforoPreinscripcionService {
   int minimo=horarios.stream().mapToInt(t->limite-alumnosActivos(t,grupo.getDeporte())-(int)pendientes).min().orElse(0);return Math.max(0,minimo);
  }
  public boolean completo(Grupo grupo,String temporada){return plazasDisponibles(grupo,temporada)<=0;}
+ public int ocupacionEfectiva(Turno turno,Grupo grupo,String temporada){
+  long pendientes=preinscripciones.countByGrupoAndTemporadaAndEstado(grupo,temporada,EstadoPreinscripcion.PENDIENTE);
+  return alumnosActivos(turno,grupo.getDeporte())+(int)pendientes;
+ }
  public List<Preinscripcion> cola(Grupo grupo,String temporada){return preinscripciones.findByGrupoAndTemporadaAndEstadoOrderByCreadaEnAscIdAsc(grupo,temporada,EstadoPreinscripcion.EN_LISTA_ESPERA);}
  public long posicion(Preinscripcion p){return 1+preinscripciones.countByGrupoAndTemporadaAndEstadoAndCreadaEnLessThan(p.getGrupo(),p.getTemporada(),EstadoPreinscripcion.EN_LISTA_ESPERA,p.getCreadaEn())+preinscripciones.countByGrupoAndTemporadaAndEstadoAndCreadaEnAndIdLessThan(p.getGrupo(),p.getTemporada(),EstadoPreinscripcion.EN_LISTA_ESPERA,p.getCreadaEn(),p.getId());}
  private int alumnosActivos(Turno turno,Deporte deporte){return (int)turno.getAlumnos().stream().filter(a->Boolean.TRUE.equals(a.getActivo())).filter(a->alumnoDeportes.existsByAlumnoIdAndDeporteAndActivoTrue(a.getId(),deporte)).map(Alumno::getId).distinct().count();}

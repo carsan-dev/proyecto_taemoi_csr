@@ -16,6 +16,8 @@ import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.TurnoService;
+import com.taemoi.project.services.AforoPreinscripcionService;
+import com.taemoi.project.services.TemporadaService;
 
 /**
  * Implementación del servicio de turno que proporciona operaciones relacionadas
@@ -35,6 +37,8 @@ public class TurnoServiceImpl implements TurnoService {
 	 */
 	@Autowired
 	private GrupoRepository grupoRepository;
+	@Autowired private AforoPreinscripcionService aforoPreinscripcionService;
+	@Autowired private TemporadaService temporadaService;
 
 	/**
 	 * Obtiene una lista de todos los turnos disponibles.
@@ -68,7 +72,15 @@ public class TurnoServiceImpl implements TurnoService {
 	@Override
 	public List<TurnoCortoDTO> listarTurnosDTO() {
 		List<Turno> turnos = turnoRepository.findAllWithAlumnos();
-		return turnos.stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
+		String temporada = temporadaService.actual();
+		return turnos.stream().map(turno -> {
+			TurnoCortoDTO dto = TurnoCortoDTO.deTurno(turno);
+			if (turno.getGrupo() != null) {
+				dto.setOcupacionEfectiva(aforoPreinscripcionService.ocupacionEfectiva(turno, turno.getGrupo(), temporada));
+				dto.setCompleto(aforoPreinscripcionService.completo(turno.getGrupo(), temporada));
+			}
+			return dto;
+		}).collect(Collectors.toList());
 	}
 
 	@Override

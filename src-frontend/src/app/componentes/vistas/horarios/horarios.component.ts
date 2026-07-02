@@ -268,7 +268,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   obtenerNumeroAlumnos(turno: any): number {
-    return turno.alumnos ? turno.alumnos.length : 0;
+    return turno.ocupacionEfectiva ?? 0;
   }
 
   quedanPocasPlazas(turno: any): boolean {
@@ -278,22 +278,25 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   estaLleno(turno: any): boolean {
-    return this.obtenerNumeroAlumnos(turno) >= this.limiteTurno;
+    return turno.completo === true;
   }
 
-  navegarAContacto(): void {
+  navegarAPreinscripcion(turno: any): void {
+    const deporte = this.obtenerDeporteQuery(turno);
     this.closeModal();
-    this.router.navigate(['/contacto']);
+    this.router.navigate(['/preinscripcion'], { queryParams: { deporte, grupoId: turno.grupoId } });
   }
 
   obtenerTextoBoton(turno: any): string {
     if (this.estaLleno(turno)) {
-      return 'Escríbenos ahora';
-    } else if (this.quedanPocasPlazas(turno)) {
-      return 'Inscríbete ahora';
-    } else {
-      return 'Inscríbete aquí';
+      return 'Apúntate a la lista de espera';
     }
+    return 'Inscríbete ahora';
+  }
+
+  private obtenerDeporteQuery(turno: any): string {
+    const deportes: Record<string, string> = { taekwondo: 'TAEKWONDO', kickboxing: 'KICKBOXING', pilates: 'PILATES', defensa: 'DEFENSA_PERSONAL_FEMENINA' };
+    return deportes[this.obtenerEtiquetaColor(turno)] ?? 'TAEKWONDO';
   }
 
   getAvailabilityClass(turno: any): string {
