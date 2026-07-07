@@ -97,17 +97,25 @@
 
       <section>
         <h2>Normas y consentimientos</h2>
-        @if(cargandoNormas){
-          <div class="rules rules-status" role="status">Cargando normas…</div>
+        @if(!form.controls.deporte.value){
+          <div class="rules rules-status" role="status">Selecciona una actividad para consultar sus normas.</div>
+        } @else if(cargandoNormas){
+          <div class="rules rules-skeleton" role="status" aria-label="Cargando normas">
+            <span class="skeleton-line rules-skeleton-title" aria-hidden="true"></span>
+            @for(i of [1,2,3,4,5];track i){
+              <span class="skeleton-line rules-skeleton-rule" aria-hidden="true"></span>
+            }
+          </div>
         } @else if(errorNormas){
           <div class="rules rules-error" role="alert">{{errorNormas}}</div>
         } @else if(configuracion){
-          <div class="rules">
+          <div class="rules rules-content" tabindex="0" (scroll)="comprobarLecturaNormas($any($event.target))">
             <p>{{configuracion.contenido.importes}}</p>
             <ul>@for(n of configuracion.contenido.normas;track n){<li>{{n}}</li>}</ul>
           </div>
+          @if(form.controls.aceptacionNormas.disabled){<p class="rules-hint">Lee detenidamente todas las normas. Al completar la lectura podrás confirmar su aceptación.</p>}
         }
-        <label class="checkline"><input type="checkbox" formControlName="aceptacionNormas"> He leído y acepto las normas de la actividad <strong>(obligatorio)</strong></label>
+        <label class="checkline" [class.is-disabled]="form.controls.aceptacionNormas.disabled"><input type="checkbox" formControlName="aceptacionNormas"> He leído y acepto las normas de la actividad <strong>(obligatorio)</strong></label>
         <label class="checkline"><input type="checkbox" formControlName="consentimientoFotografico"> Autorizo el uso de imágenes en actividades del club <span>(opcional)</span></label>
       </section>
 
