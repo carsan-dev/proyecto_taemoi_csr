@@ -97,10 +97,14 @@
 
       <section>
         <h2>Normas y consentimientos</h2>
-        @if(configuracion){
+        @if(cargandoNormas){
+          <div class="rules rules-status" role="status">Cargando normas…</div>
+        } @else if(errorNormas){
+          <div class="rules rules-error" role="alert">{{errorNormas}}</div>
+        } @else if(configuracion){
           <div class="rules">
-            <p>{{configuracion.contenido?.importes}}</p>
-            <ul>@for(n of configuracion.contenido?.normas;track n){<li>{{n}}</li>}</ul>
+            <p>{{configuracion.contenido.importes}}</p>
+            <ul>@for(n of configuracion.contenido.normas;track n){<li>{{n}}</li>}</ul>
           </div>
         }
         <label class="checkline"><input type="checkbox" formControlName="aceptacionNormas"> He leído y acepto las normas de la actividad <strong>(obligatorio)</strong></label>
@@ -115,7 +119,7 @@
         <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
         <div class="notice"><strong>Antes de enviar:</strong> si existe aforo, la preinscripción asignará plaza inmediatamente. Si está completo, entrarás en lista de espera por orden de solicitud.</div>
         @if(error){<p class="error" role="alert">{{error}}</p>}
-        <button class="submit" type="submit" [disabled]="enviando">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
+        <button class="submit" type="submit" [disabled]="enviando || !normasDisponibles">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
       </section>
     </form>
   }

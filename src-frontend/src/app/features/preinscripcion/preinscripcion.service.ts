@@ -2,12 +2,23 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
+export interface ContenidoPreinscripcion {
+ cabecera?:string; contacto?:string; titulo?:string; consentimiento?:string;
+ normas:string[]; importes?:string;
+}
+
+export interface ConfiguracionPreinscripcion {
+ deporte:string; version:number;
+ contenido:ContenidoPreinscripcion|string;
+ instrucciones?:string;
+}
+
 @Injectable({providedIn:'root'})
 export class PreinscripcionService {
  private readonly base=`${environment.apiUrl}/preinscripciones`;
  constructor(private readonly http:HttpClient){}
  temporada(){return this.http.get<{temporada:string}>(`${this.base}/public/temporada`);}
- configuracion(deporte:string){return this.http.get<any>(`${this.base}/public/configuracion/${deporte}`);}
+ configuracion(deporte:string){return this.http.get<ConfiguracionPreinscripcion>(`${this.base}/public/configuracion/${deporte}`);}
  grupos(deporte:string){return this.http.get<any[]>(`${this.base}/public/grupos/${deporte}`);}
  turnos(deporte:string){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`);}
  crear(data:any){return this.http.post<any>(this.base,data);}

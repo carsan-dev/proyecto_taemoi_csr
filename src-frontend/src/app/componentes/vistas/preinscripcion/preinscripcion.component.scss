@@ -370,6 +370,14 @@ canvas:focus {
   }
 }
 
+.rules-status { color: $text-muted; }
+
+.rules-error {
+  border-left-color: #dc3545;
+  color: #a71d2a;
+  font-weight: 700;
+}
+
 .checkline {
   flex-direction: row;
   align-items: flex-start;
