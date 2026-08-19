@@ -50,4 +50,35 @@ describe('PreinscripcionComponent normas', () => {
     expect(component.form.controls.aceptacionNormas.disabled).toBeTrue();
     expect(component.normasDisponibles).toBeFalse();
   });
+
+  it('permite DNI vacío al menor y exige responsable legal', () => {
+    const component = crear({ deporte: 'PILATES', version: 1, contenido: { normas: ['Norma uno'] } });
+    component.ngOnInit();
+    component.form.controls.fechaNacimiento.setValue('2015-01-01');
+    component.form.controls.dni.setValue('');
+
+    expect(component.form.controls.dni.valid).toBeTrue();
+    expect(component.form.controls.tutorNombre.invalid).toBeTrue();
+    expect(component.form.controls.tutorDni.invalid).toBeTrue();
+
+    component.form.controls.tutorNombre.setValue('María García');
+    component.form.controls.tutorDni.setValue('12345678Z');
+    expect(component.form.controls.tutorNombre.valid).toBeTrue();
+    expect(component.form.controls.tutorDni.valid).toBeTrue();
+  });
+
+  it('exige DNI y respuesta de discapacidad a una persona adulta', () => {
+    const component = crear({ deporte: 'PILATES', version: 1, contenido: { normas: ['Norma uno'] } });
+    component.ngOnInit();
+    component.form.controls.fechaNacimiento.setValue('1990-01-01');
+    component.form.controls.dni.setValue('');
+
+    expect(component.form.controls.dni.invalid).toBeTrue();
+    expect(component.form.controls.tieneDiscapacidad.invalid).toBeTrue();
+
+    component.form.controls.dni.setValue('12345678Z');
+    component.form.controls.tieneDiscapacidad.setValue(false);
+    expect(component.form.controls.dni.valid).toBeTrue();
+    expect(component.form.controls.tieneDiscapacidad.valid).toBeTrue();
+  });
 });
