@@ -26,7 +26,7 @@ export class PreinscripcionService {
  cancelar(ref:string){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{});}
  eliminar(ref:string){return this.http.delete<void>(`${this.base}/${ref}`);}
  reenviar(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar`,{});}
- finalizar(ref:string,alumnoId:number){return this.http.post<void>(`${this.base}/${ref}/finalizar`,{alumnoId,actualizarDatos:true,reactivar:true});}
+ finalizar(ref:string,data:{accionAlumno:string;alumnoId?:number;camposActualizar:string[];discapacidadHistorica:boolean|null;datosDeporte:any|null}){return this.http.post<void>(`${this.base}/${ref}/finalizar`,data);}
  firma(ref:string){return this.http.get(`${this.base}/${ref}/firma`,{responseType:'blob'});}
  documentoFirmado(ref:string){return this.http.get(`${this.base}/${ref}/documento-firmado`,{responseType:'blob'});}
  plantillas(deporte:string){return this.http.get<any>(`${this.base}/plantillas/${deporte}`);}
