@@ -108,6 +108,8 @@ export class CrearAlumnoComponent implements OnInit {
         ],
       ],
       email: ['', [Validators.required, Validators.email]],
+      responsableLegalNombre: ['', Validators.maxLength(180)],
+      responsableLegalNif: ['', Validators.pattern('^[0-9XYZxyz][0-9]{7}[A-Za-z]$')],
       autorizacionWeb: [true, Validators.required],
       rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
       grupoFamiliar: [{ value: '', disabled: true }],
@@ -523,6 +525,8 @@ export class CrearAlumnoComponent implements OnInit {
     const nifNormalizado =
       typeof alumnoData.nif === 'string' ? alumnoData.nif.trim().toUpperCase() : '';
     alumnoData.nif = nifNormalizado === '' ? null : nifNormalizado;
+    const responsableNif = typeof alumnoData.responsableLegalNif === 'string' ? alumnoData.responsableLegalNif.trim().toUpperCase() : '';
+    alumnoData.responsableLegalNif = responsableNif === '' ? null : responsableNif;
 
     // For each sport, set fechaAltaInicial to fechaAlta if not provided
     if (alumnoData.deportesInicial) {

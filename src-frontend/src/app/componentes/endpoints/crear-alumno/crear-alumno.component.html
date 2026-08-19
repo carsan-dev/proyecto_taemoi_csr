@@ -210,6 +210,19 @@
                     }
                   </div>
                 </div>
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field">
+                    <label for="responsableLegalNombre"><i class="bi bi-person-badge"></i> Responsable legal</label>
+                    <input type="text" class="admin-form-control" id="responsableLegalNombre" formControlName="responsableLegalNombre" maxlength="180" placeholder="Nombre y apellidos" />
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="admin-form-field" [class.is-invalid]="alumnoData.get('responsableLegalNif')?.invalid && alumnoData.get('responsableLegalNif')?.touched">
+                    <label for="responsableLegalNif"><i class="bi bi-card-text"></i> DNI/NIE del responsable</label>
+                    <input type="text" class="admin-form-control" id="responsableLegalNif" formControlName="responsableLegalNif" maxlength="9" placeholder="12345678Z" />
+                    @if (alumnoData.get('responsableLegalNif')?.invalid && alumnoData.get('responsableLegalNif')?.touched) { <div class="invalid-feedback">Introduce un DNI/NIE válido.</div> }
+                  </div>
+                </div>
               </div>
             </div>
 

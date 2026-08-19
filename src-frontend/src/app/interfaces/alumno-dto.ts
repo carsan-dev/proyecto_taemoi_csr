@@ -12,4 +12,6 @@ export interface AlumnoDTO {
   numeroExpediente?: number;
   grado?: string;
   activo?: boolean;
+  responsableLegalNombre?: string | null;
+  responsableLegalNif?: string | null;
 }

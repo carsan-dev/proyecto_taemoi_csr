@@ -1485,6 +1485,30 @@
                     }
                   }
                 </div>
+
+                <div class="admin-form-field mb-3">
+                  <label for="responsableLegalNombre"><i class="bi bi-person-badge"></i> Responsable legal</label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="responsableLegalNombre" class="admin-form-control" maxlength="180"
+                           [value]="getDisplayedBasicInfo('responsableLegalNombre')"
+                           (input)="onBasicInfoChange('responsableLegalNombre', $event)" placeholder="Nombre y apellidos" />
+                  } @else {
+                    <span class="info-value" [class.text-muted]="!alumno.responsableLegalNombre">{{alumno.responsableLegalNombre || 'No establecido'}}</span>
+                  }
+                </div>
+
+                <div class="admin-form-field mb-3" [class.is-invalid]="hasBasicInfoError('responsableLegalNif')">
+                  <label for="responsableLegalNif"><i class="bi bi-card-text"></i> DNI/NIE del responsable</label>
+                  @if (editingBasicInfo) {
+                    <input type="text" id="responsableLegalNif" class="admin-form-control" maxlength="9"
+                           [class.is-invalid]="hasBasicInfoError('responsableLegalNif')"
+                           [value]="getDisplayedBasicInfo('responsableLegalNif')"
+                           (input)="onBasicInfoChange('responsableLegalNif', $event)" placeholder="12345678Z" />
+                    @if (hasBasicInfoError('responsableLegalNif')) { <div class="invalid-feedback">{{getBasicInfoError('responsableLegalNif')}}</div> }
+                  } @else {
+                    <span class="info-value" [class.text-muted]="!alumno.responsableLegalNif">{{alumno.responsableLegalNif || 'No establecido'}}</span>
+                  }
+                </div>
               </div>
             </div>
           </div>

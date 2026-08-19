@@ -346,6 +346,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setEmail(normalizedEmail);
 		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
 		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
+		nuevoAlumno.setResponsableLegalNombre(nuevoAlumnoDTO.getResponsableLegalNombre());
+		nuevoAlumno.setResponsableLegalNif(NifUtils.normalizeForStorage(nuevoAlumnoDTO.getResponsableLegalNif()));
 		nuevoAlumno.setObservaciones(nuevoAlumnoDTO.getObservaciones());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
@@ -590,6 +592,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setEmail(normalizedEmail);
 			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
 			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
+			alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
+			alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
 			if (alumnoActualizado.getObservaciones() != null) {
 				alumnoExistente.setObservaciones(alumnoActualizado.getObservaciones());
 			}
