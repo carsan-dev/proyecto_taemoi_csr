@@ -72,6 +72,12 @@ public class Alumno {
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
 
+	@Column(name = "responsable_legal_nombre", length = 180)
+	private String responsableLegalNombre;
+
+	@Column(name = "responsable_legal_nif", length = 16)
+	private String responsableLegalNif;
+
 	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
 	// Only required for legacy single-sport mode
 	@Enumerated(EnumType.STRING)
@@ -324,6 +330,22 @@ public class Alumno {
 
 	public void setEmail(String email) {
 		this.email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+	}
+
+	public String getResponsableLegalNombre() {
+		return responsableLegalNombre;
+	}
+
+	public void setResponsableLegalNombre(String responsableLegalNombre) {
+		this.responsableLegalNombre = responsableLegalNombre;
+	}
+
+	public String getResponsableLegalNif() {
+		return responsableLegalNif;
+	}
+
+	public void setResponsableLegalNif(String responsableLegalNif) {
+		this.responsableLegalNif = responsableLegalNif;
 	}
 
 	// DEPRECATED: Categoria moved to AlumnoDeporte

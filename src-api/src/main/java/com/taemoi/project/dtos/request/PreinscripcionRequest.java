@@ -10,13 +10,15 @@ public record PreinscripcionRequest(
  Long turnoId,
  @NotBlank @Size(max=100) String nombre,
  @NotBlank @Size(max=160) String apellidos,
- @NotBlank @Pattern(regexp="(?i)^[0-9XYZ][0-9]{7}[A-Z]$") String dni,
+ @Size(max=16) @Pattern(regexp="(?i)^(?:|[0-9XYZ][0-9]{7}[A-Z])$",message="El DNI/NIE no tiene un formato válido") String dni,
  @NotNull @Past LocalDate fechaNacimiento,
  @NotBlank @Size(max=255) String direccion,
- @NotBlank @Pattern(regexp="^[0-9+ ]{9,16}$") String telefono,
+ @NotBlank @Pattern(regexp="^(?:(?:\\+|00)34[ ]*)?[6789](?:[ ]*\\d){8}$",message="El teléfono debe tener nueve dígitos y prefijo +34 opcional") String telefono,
+ @Pattern(regexp="^(?:|(?:(?:\\+|00)34[ ]*)?[6789](?:[ ]*\\d){8})$",message="El teléfono secundario debe tener nueve dígitos y prefijo +34 opcional") String telefono2,
  @NotBlank @Email @Size(max=180) String email,
  @Size(max=180) String tutorNombre,
- @Size(max=16) String tutorDni,
+ @Size(max=16) @Pattern(regexp="(?i)^(?:|[0-9XYZ][0-9]{7}[A-Z])$",message="El DNI/NIE del responsable no tiene un formato válido") String tutorDni,
+ @NotNull Boolean tieneDiscapacidad,
  boolean consentimientoFotografico,
  @AssertTrue(message="Es necesario aceptar las normas") boolean aceptacionNormas,
  @NotBlank @Size(max=180) String firmanteNombre,
@@ -24,4 +26,10 @@ public record PreinscripcionRequest(
 ) {
  @AssertTrue(message="Es necesario seleccionar un grupo")
  public boolean hasGrupoOTurno(){return grupoId!=null||turnoId!=null;}
+ @AssertTrue(message="El DNI/NIE es obligatorio para las personas adultas")
+ public boolean isDniCompatibleConEdad(){return fechaNacimiento==null||esMenor()||!blank(dni);}
+ @AssertTrue(message="Los menores deben indicar responsable legal y su DNI/NIE")
+ public boolean hasResponsableLegalSiEsMenor(){return fechaNacimiento==null||!esMenor()||(!blank(tutorNombre)&&!blank(tutorDni));}
+ private boolean esMenor(){return java.time.Period.between(fechaNacimiento,LocalDate.now()).getYears()<18;}
+ private boolean blank(String value){return value==null||value.isBlank();}
 }

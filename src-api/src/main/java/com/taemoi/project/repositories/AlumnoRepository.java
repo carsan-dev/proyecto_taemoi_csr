@@ -41,6 +41,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	 */
 	Optional<Alumno> findByNif(String nif);
 
+	List<Alumno> findByFechaNacimiento(java.util.Date fechaNacimiento);
+
 	boolean existsByNif(String nif);
 
 	boolean existsByNifAndIdNot(String nif, Long id);
