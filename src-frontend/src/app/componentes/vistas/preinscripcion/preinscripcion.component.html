@@ -82,9 +82,9 @@
           <label>Fecha de nacimiento<input type="date" formControlName="fechaNacimiento"></label>
           <label class="wide">Dirección<input formControlName="direccion" autocomplete="street-address"></label>
           <label>Teléfono<input formControlName="telefono" inputmode="tel" placeholder="612 345 678 o +34 612 345 678">@if(form.controls.telefono.touched && form.controls.telefono.invalid){<small>Introduce nueve dígitos; puedes añadir el prefijo +34.</small>}</label>
-          <label>Teléfono secundario <span>(opcional)</span><input formControlName="telefono2" inputmode="tel" placeholder="611 234 567">@if(form.controls.telefono2.touched && form.controls.telefono2.invalid){<small>Introduce nueve dígitos; puedes añadir el prefijo +34.</small>}</label>
+          <label><span class="field-label">Teléfono secundario <span class="optional">(opcional)</span></span><input formControlName="telefono2" inputmode="tel" placeholder="611 234 567">@if(form.controls.telefono2.touched && form.controls.telefono2.invalid){<small>Introduce nueve dígitos; puedes añadir el prefijo +34.</small>}</label>
           <label>Email<input type="email" formControlName="email" autocomplete="email"></label>
-          <fieldset><legend>¿Tiene discapacidad?</legend><label class="checkline"><input type="radio" formControlName="tieneDiscapacidad" [value]="true"> Sí</label><label class="checkline"><input type="radio" formControlName="tieneDiscapacidad" [value]="false"> No</label>@if(form.controls.tieneDiscapacidad.touched && form.controls.tieneDiscapacidad.invalid){<small>Selecciona una opción.</small>}</fieldset>
+          <fieldset class="binary-field"><legend>¿Tiene discapacidad?</legend><div class="binary-options"><label class="binary-option"><input type="radio" formControlName="tieneDiscapacidad" [value]="true"><span>Sí</span></label><label class="binary-option"><input type="radio" formControlName="tieneDiscapacidad" [value]="false"><span>No</span></label></div>@if(form.controls.tieneDiscapacidad.touched && form.controls.tieneDiscapacidad.invalid){<small>Selecciona una opción.</small>}</fieldset>
         </div>
         @if(esMenor()){
           <div class="tutor">
