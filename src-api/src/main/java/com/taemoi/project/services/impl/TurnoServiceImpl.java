@@ -1,7 +1,9 @@
 package com.taemoi.project.services.impl;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,13 +13,17 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Grupo;
+import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositories.GrupoRepository;
+import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.TurnoService;
 import com.taemoi.project.services.AforoPreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
+
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del servicio de turno que proporciona operaciones relacionadas
@@ -39,6 +45,9 @@ public class TurnoServiceImpl implements TurnoService {
 	private GrupoRepository grupoRepository;
 	@Autowired private AforoPreinscripcionService aforoPreinscripcionService;
 	@Autowired private TemporadaService temporadaService;
+	@Autowired private PreinscripcionRepository preinscripcionRepository;
+	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
+			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
 	/**
 	 * Obtiene una lista de todos los turnos disponibles.
@@ -77,7 +86,7 @@ public class TurnoServiceImpl implements TurnoService {
 			TurnoCortoDTO dto = TurnoCortoDTO.deTurno(turno);
 			if (turno.getGrupo() != null) {
 				dto.setOcupacionEfectiva(aforoPreinscripcionService.ocupacionEfectiva(turno, turno.getGrupo(), temporada));
-				dto.setCompleto(aforoPreinscripcionService.completo(turno.getGrupo(), temporada));
+				dto.setCompleto(aforoPreinscripcionService.completo(turno, temporada));
 			}
 			return dto;
 		}).collect(Collectors.toList());
@@ -143,8 +152,9 @@ public class TurnoServiceImpl implements TurnoService {
 	 *                                    especificado.
 	 */
 	@Override
+	@Transactional
 	public TurnoDTO actualizarTurno(@NonNull Long turnoId, TurnoDTO turnoDTO) {
-		Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
+		Optional<Turno> turnoOptional = turnoRepository.findByIdForUpdate(turnoId);
 		if (turnoOptional.isPresent()) {
 			Turno turno = turnoOptional.get();
 
@@ -162,7 +172,10 @@ public class TurnoServiceImpl implements TurnoService {
 						throw new IllegalArgumentException("Día de la semana no válido: " + turnoDTO.getDiaSemana());
 					}
 
-					turno.setGrupo(nuevoGrupoAsignado);
+					if (!Objects.equals(turno.getGrupo().getId(), nuevoGrupoAsignado.getId())) {
+						validarSinPreinscripcionesActivas(turno);
+						turno.setGrupo(nuevoGrupoAsignado);
+					}
 				}
 			}
 
@@ -185,13 +198,22 @@ public class TurnoServiceImpl implements TurnoService {
 	 *                                    especificado.
 	 */
 	@Override
+	@Transactional
 	public boolean eliminarTurno(@NonNull Long turnoId) {
-		Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
+		Optional<Turno> turnoOptional = turnoRepository.findByIdForUpdate(turnoId);
 		if (turnoOptional.isPresent()) {
+			validarSinPreinscripcionesActivas(turnoOptional.get());
 			turnoRepository.deleteById(turnoId);
 			return true;
 		} else {
 			return false;
+		}
+	}
+
+	private void validarSinPreinscripcionesActivas(Turno turno) {
+		if (preinscripcionRepository.countActivasByTurnoId(turno.getId(), ESTADOS_PREINSCRIPCION_ACTIVA) > 0) {
+			throw new IllegalStateException(
+					"No se puede modificar el turno porque existen preinscripciones activas asociadas.");
 		}
 	}
 

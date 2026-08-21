@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoEnGrupoException;
@@ -29,6 +31,7 @@ import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
+import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.GrupoService;
 
@@ -61,6 +64,12 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Autowired
 	private TurnoRepository turnoRepository;
+
+	@Autowired
+	private PreinscripcionRepository preinscripcionRepository;
+
+	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
+			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
 	/**
 	 * Obtiene todos los grupos.
@@ -136,7 +145,12 @@ public class GrupoServiceImpl implements GrupoService {
 	@Transactional
 	public void eliminarGrupo(@NonNull Long id) {
 		grupoRepository.findById(id).ifPresent(grupo -> {
-			for (Turno turno : grupo.getTurnos()) {
+			List<Long> turnoIds = grupo.getTurnos().stream().map(Turno::getId).sorted().toList();
+			List<Turno> turnosBloqueados = turnoIds.isEmpty()
+					? List.of()
+					: turnoRepository.findAllByIdForUpdate(turnoIds);
+			turnosBloqueados.forEach(this::validarSinPreinscripcionesActivas);
+			for (Turno turno : turnosBloqueados) {
 				turno.setGrupo(null);
 				turnoRepository.delete(turno);
 			}
@@ -344,11 +358,14 @@ public class GrupoServiceImpl implements GrupoService {
 	@Transactional
 	public void agregarTurnoAGrupo(@NonNull Long grupoId, @NonNull Long turnoId) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
-		Optional<Turno> turnoOptional = turnoRepository.findById(turnoId);
+		Optional<Turno> turnoOptional = turnoRepository.findByIdForUpdate(turnoId);
 
 		if (grupoOptional.isPresent() && turnoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
 			Turno turno = turnoOptional.get();
+			if (turno.getGrupo() != null && !Objects.equals(turno.getGrupo().getId(), grupoId)) {
+				validarSinPreinscripcionesActivas(turno);
+			}
 			grupo.getTurnos().add(turno);
 			turno.setGrupo(grupo);
 			grupoRepository.save(grupo);
@@ -373,11 +390,12 @@ public class GrupoServiceImpl implements GrupoService {
 
 		if (grupoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
-			Optional<Turno> turnoOptional = grupo.getTurnos().stream().filter(turno -> turno.getId().equals(turnoId))
-					.findFirst();
+			Optional<Turno> turnoOptional = turnoRepository.findByIdForUpdate(turnoId)
+					.filter(turno -> turno.getGrupo() != null && Objects.equals(turno.getGrupo().getId(), grupoId));
 
 			if (turnoOptional.isPresent()) {
 				Turno turno = turnoOptional.get();
+				validarSinPreinscripcionesActivas(turno);
 				grupo.getTurnos().remove(turno);
 				turno.setGrupo(null);
 				grupoRepository.save(grupo);
@@ -533,5 +551,12 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
 		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
 		return grupoDTO;
+	}
+
+	private void validarSinPreinscripcionesActivas(Turno turno) {
+		if (preinscripcionRepository.countActivasByTurnoId(turno.getId(), ESTADOS_PREINSCRIPCION_ACTIVA) > 0) {
+			throw new IllegalStateException(
+					"No se puede modificar el turno porque existen preinscripciones activas asociadas.");
+		}
 	}
 }
