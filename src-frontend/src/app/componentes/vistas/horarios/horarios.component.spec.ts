@@ -1,23 +1,25 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { of } from 'rxjs';
 import { HorariosComponent } from './horarios.component';
 
 describe('HorariosComponent', () => {
   let component: HorariosComponent;
-  let fixture: ComponentFixture<HorariosComponent>;
+  let router: {navigate: jasmine.Spy};
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [HorariosComponent]
-    })
-    .compileComponents();
-    
-    fixture = TestBed.createComponent(HorariosComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  beforeEach(() => {
+    const endpoints = {obtenerLimiteTurno:()=>of(36),obtenerTurnosDTO:()=>of([])};
+    router = {navigate:jasmine.createSpy('navigate')};
+    component = new HorariosComponent(endpoints as any,router as any);
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('navega con el deporte y únicamente el ID del turno pulsado', () => {
+    component.navegarAPreinscripcion({id:17,grupoId:4,tipoGrupo:'Pilates'});
+
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/preinscripcion'],{
+      queryParams:{deporte:'PILATES',turnoId:17}
+    });
   });
 });

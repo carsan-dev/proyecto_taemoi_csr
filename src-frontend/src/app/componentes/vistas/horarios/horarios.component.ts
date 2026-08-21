@@ -284,7 +284,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   navegarAPreinscripcion(turno: any): void {
     const deporte = this.obtenerDeporteQuery(turno);
     this.closeModal();
-    this.router.navigate(['/preinscripcion'], { queryParams: { deporte, grupoId: turno.grupoId } });
+    this.router.navigate(['/preinscripcion'], { queryParams: { deporte, turnoId: turno.id } });
   }
 
   obtenerTextoBoton(turno: any): string {
