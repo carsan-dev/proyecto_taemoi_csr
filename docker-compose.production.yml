@@ -71,9 +71,12 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf:ro
+      - ./src-frontend/nginx-cert-reloader.sh:/usr/local/bin/nginx-cert-reloader:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx
+    entrypoint: ["/bin/sh", "/usr/local/bin/nginx-cert-reloader"]
+    command: ["-g", "daemon off;"]
     networks:
       - taemoi-network
     healthcheck:
@@ -86,13 +89,14 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: taemoi-certbot
+    restart: unless-stopped
     depends_on:
-      - frontend
-    pid: "service:frontend"
+      frontend:
+        condition: service_healthy
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --deploy-hook \"kill -HUP 1\"; sleep 12h & wait $${!}; done;'"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --non-interactive; sleep 12h & wait $${!}; done;'"
     networks:
       - taemoi-network
 
