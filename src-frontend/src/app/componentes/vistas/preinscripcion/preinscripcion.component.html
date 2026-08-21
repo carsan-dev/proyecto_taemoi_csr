@@ -2,7 +2,7 @@
   <section class="hero">
     <p class="eyebrow">Temporada {{temporada}}</p>
     <h1>Preinscripción online</h1>
-    <p>Solicita plaza para cualquiera de nuestras actividades. Si el grupo está completo, entrarás en lista de espera.</p>
+    <p>Solicita plaza y combina los días compatibles que necesites. Si todos están completos, entrarás en lista de espera.</p>
   </section>
 
   @if(resultado){
@@ -10,7 +10,7 @@
       <span class="check">✓</span>
       <h2>{{resultado.plazaAsignada ? 'Plaza asignada' : 'Lista de espera'}}</h2>
       <p class="reference">{{resultado.referencia}}</p>
-      @if(resultado.plazaAsignada){<p><strong>Tu preinscripción ya cuenta en el aforo.</strong> Recibirás documento e instrucciones por correo.</p>}@else{<p><strong>Grupo completo.</strong> Estás en posición {{resultado.posicionListaEspera}}. Te avisaremos automáticamente cuando obtengas plaza.</p>}
+      @if(resultado.plazaAsignada){<p><strong>Tu preinscripción ya cuenta en el aforo de todos los turnos elegidos.</strong> Recibirás documento e instrucciones por correo.</p>}@else{<p><strong>Todos los horarios elegidos están completos.</strong> Estás en posición {{resultado.posicionListaEspera}}. Te avisaremos automáticamente cuando uno tenga plaza.</p>}
       <button type="button" (click)="descargar()">Descargar solicitud firmada</button>
       <a routerLink="/">Volver al inicio</a>
     </section>
@@ -27,51 +27,8 @@
         </div>
       }
       <nav class="steps" aria-label="Pasos">
-        <span>1 · Grupo</span><span>2 · Datos</span><span>3 · Consentimientos</span><span>4 · Firma</span>
+        <span>1 · Datos</span><span>2 · Horarios</span><span>3 · Consentimientos</span><span>4 · Firma</span>
       </nav>
-
-      <section>
-        <h2>Actividad y grupo</h2>
-        <label>Deporte
-          <select formControlName="deporte" (change)="cambiarDeporte()">
-            <option value="">Selecciona una actividad</option>
-            @for(d of deportes;track d[0]){<option [value]="d[0]">{{d[1]}}</option>}
-          </select>
-        </label>
-        @if(form.controls.deporte.value){
-          @if(cargandoGrupos){
-            <div class="groups" aria-busy="true" aria-label="Cargando grupos">
-              @for(i of [1,2,3,4];track i){
-                <div class="group-card skeleton-card">
-                  <span class="skeleton-radio"></span>
-                  <span>
-                    <span class="skeleton-line title"></span>
-                    <span class="skeleton-line short"></span>
-                    <span class="skeleton-chips"><span></span><span></span></span>
-                  </span>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="groups">
-              @for(g of grupos;track g.id){
-                <label class="group-card">
-                  <input type="radio" formControlName="grupoId" [value]="g.id">
-                  <span>
-                    <strong>{{g.nombre}}</strong>
-                    @if(g.completo){<small class="wait-badge">Completo · lista de espera</small>}
-                    <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
-                    <em>
-                      @for(t of g.turnos;track t.id){<span>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</span>}
-                    </em>
-                  </span>
-                </label>
-              }
-              @empty{<p class="empty">No hay grupos publicados para esta actividad.</p>}
-            </div>
-          }
-        }
-      </section>
 
       <section>
         <h2>Datos de la persona solicitante</h2>
@@ -94,6 +51,49 @@
               <label>DNI/NIE<input formControlName="tutorDni" maxlength="9">@if(form.controls.tutorDni.touched && form.controls.tutorDni.invalid){<small>Introduce un DNI/NIE válido.</small>}</label>
             </div>
           </div>
+        }
+      </section>
+
+      <section>
+        <h2>Actividad y horarios</h2>
+        <label>Deporte
+          <select formControlName="deporte" (change)="cambiarDeporte()">
+            <option value="">Selecciona una actividad</option>
+            @for(d of deportes;track d[0]){<option [value]="d[0]">{{d[1]}}</option>}
+          </select>
+        </label>
+        @if(form.controls.deporte.value){
+          @if(!form.controls.fechaNacimiento.value){
+            <p class="notice">Indica primero fecha de nacimiento para mostrar horarios compatibles.</p>
+          } @else if(cargandoGrupos){
+            <div class="groups" aria-busy="true" aria-label="Cargando horarios">
+              @for(i of [1,2,3,4];track i){
+                <div class="group-card skeleton-card"><span class="skeleton-radio"></span><span><span class="skeleton-line title"></span><span class="skeleton-line short"></span><span class="skeleton-chips"><span></span><span></span></span></span></div>
+              }
+            </div>
+          } @else {
+            <p class="hint">Elige uno o varios días. Solo puede seleccionarse un turno por día.</p>
+            <div class="groups">
+              @for(g of gruposCompatibles;track g.id){
+                @for(t of g.turnos;track t.id){
+                  <label class="group-card" [class.is-selected]="turnoSeleccionado(t.id)">
+                    <input type="checkbox" [checked]="turnoSeleccionado(t.id)" (change)="alternarTurno(t,$any($event.target).checked)">
+                    <span>
+                      <strong>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</strong>
+                      @if(t.completo){<small class="wait-badge">Completo</small>}@else{<small class="available-badge">Con plaza</small>}
+                      <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
+                    </span>
+                  </label>
+                }
+              }
+              @empty{<p class="empty">No hay horarios compatibles con edad indicada.</p>}
+            </div>
+            @if(form.controls.turnoIds.touched && form.controls.turnoIds.invalid){<p class="error">Selecciona al menos un horario.</p>}
+            @if(errorHorarios){<p class="error" role="alert">{{errorHorarios}}</p>}
+            @if(turnosSeleccionados.length){
+              <div class="selection-summary"><strong>{{turnosSeleccionados.length}} {{turnosSeleccionados.length===1?'turno seleccionado':'turnos seleccionados'}}</strong><span>Si al menos uno tiene plaza, se concederá selección completa.</span></div>
+            }
+          }
         }
       </section>
 
@@ -127,7 +127,7 @@
         <p class="hint">Firma dentro del recuadro con el dedo, ratón o lápiz.</p>
         <canvas #firma (pointerdown)="iniciar($event)" (pointermove)="mover($event)" (pointerup)="terminar()" (pointercancel)="terminar()"></canvas>
         <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
-        <div class="notice"><strong>Antes de enviar:</strong> si existe aforo, la preinscripción asignará plaza inmediatamente. Si está completo, entrarás en lista de espera por orden de solicitud.</div>
+        <div class="notice"><strong>Antes de enviar:</strong> si al menos un horario tiene hueco, se concederán todos los elegidos. Solo entrarás en lista de espera cuando todos estén completos.</div>
         @if(error){<p class="error" role="alert">{{error}}</p>}
         <button class="submit" type="submit" [disabled]="enviando || !normasDisponibles">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
       </section>

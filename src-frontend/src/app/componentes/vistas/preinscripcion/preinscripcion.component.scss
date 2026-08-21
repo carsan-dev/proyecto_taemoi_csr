@@ -325,6 +325,12 @@ canvas:focus {
     transform: translateY(-4px);
   }
 
+  &.is-selected {
+    border-color: $primary-color;
+    background: #f2f8f8;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
   input {
     margin-top: 0.2rem;
     accent-color: $accent-color;
@@ -358,6 +364,19 @@ canvas:focus {
       font-weight: 700;
     }
   }
+}
+
+.selection-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  background: #edf8f3;
+  color: #175c43;
+
+  span { color: #315f51; }
 }
 
 .skeleton-card {
@@ -604,3 +623,8 @@ canvas {
   }
 }
 .wait-badge { color: #986515 !important; font-weight: 800; }
+.available-badge { color: #237a57 !important; font-weight: 800; }
+
+@media (max-width: 700px) {
+  .selection-summary { flex-direction: column; }
+}

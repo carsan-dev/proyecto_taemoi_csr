@@ -2,10 +2,10 @@ import { of, throwError } from 'rxjs';
 import { PreinscripcionComponent } from './preinscripcion.component';
 
 describe('PreinscripcionComponent normas', () => {
-  function crear(configuracion: unknown) {
+  function crear(configuracion: unknown, grupos: any[] = []) {
     const api = {
       temporada: () => of({ temporada: '2026/2027' }),
-      grupos: () => of([]),
+      grupos: () => of(grupos),
       configuracion: () => configuracion instanceof Error ? throwError(() => configuracion) : of(configuracion)
     };
     const route = { snapshot: { queryParamMap: { get: () => null } } };
@@ -80,5 +80,36 @@ describe('PreinscripcionComponent normas', () => {
     component.form.controls.tieneDiscapacidad.setValue(false);
     expect(component.form.controls.dni.valid).toBeTrue();
     expect(component.form.controls.tieneDiscapacidad.valid).toBeTrue();
+  });
+
+  it('muestra solo grupos compatibles con la edad', () => {
+    const component = crear({ deporte: 'TAEKWONDO', version: 1, contenido: { normas: ['Norma'] } }, [
+      {id: 1, rangoEdadMin: 5, rangoEdadMax: 12, turnos: [{id: 11, diaSemana: 'Lunes'}]},
+      {id: 2, rangoEdadMin: 13, rangoEdadMax: 17, turnos: [{id: 12, diaSemana: 'Martes'}]},
+    ]);
+    component.ngOnInit();
+    component.form.controls.fechaNacimiento.setValue(`${new Date().getFullYear()-10}-01-01`);
+    component.form.controls.deporte.setValue('TAEKWONDO');
+    component.cambiarDeporte();
+
+    expect(component.gruposCompatibles.map(g => g.id)).toEqual([1]);
+  });
+
+  it('permite turnos de grupos distintos y reemplaza selección del mismo día', () => {
+    const grupos = [
+      {id: 1, rangoEdadMin: 0, rangoEdadMax: 99, turnos: [{id: 11, diaSemana: 'Lunes'}]},
+      {id: 2, rangoEdadMin: 0, rangoEdadMax: 99, turnos: [{id: 12, diaSemana: 'Jueves'}, {id: 13, diaSemana: 'Lunes'}]},
+    ];
+    const component = crear({ deporte: 'TAEKWONDO', version: 1, contenido: { normas: ['Norma'] } }, grupos);
+    component.ngOnInit();
+    component.form.controls.fechaNacimiento.setValue('1990-01-01');
+    component.form.controls.deporte.setValue('TAEKWONDO');
+    component.cambiarDeporte();
+    component.alternarTurno(grupos[0].turnos[0], true);
+    component.alternarTurno(grupos[1].turnos[0], true);
+    expect(component.form.controls.turnoIds.value).toEqual([11, 12]);
+
+    component.alternarTurno(grupos[1].turnos[1], true);
+    expect(component.form.controls.turnoIds.value).toEqual([12, 13]);
   });
 });
