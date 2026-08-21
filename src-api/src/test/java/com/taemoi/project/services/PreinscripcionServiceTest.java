@@ -27,6 +27,7 @@ import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
+import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoTarifa;
@@ -71,8 +72,8 @@ class PreinscripcionServiceTest {
 		lunes = turno(11L, "Lunes");
 		miercoles = turno(12L, "Miércoles");
 		preinscripcion = solicitudPendiente();
-		when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
-		when(aforo.bloquearTurnos(anyCollection())).thenAnswer(inv -> {
+		lenient().when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
+		lenient().when(aforo.bloquearTurnos(anyCollection())).thenAnswer(inv -> {
 			Collection<Long> ids = inv.getArgument(0);
 			return List.of(lunes, miercoles).stream().filter(t -> ids.contains(t.getId())).toList();
 		});
@@ -320,6 +321,82 @@ class PreinscripcionServiceTest {
 		assertFalse(preinscripcion.getAlumno().getTieneDiscapacidad());
 		assertEquals(List.of(lunes),preinscripcion.getAlumno().getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
+	}
+
+	@Test
+	void promocionaColaCronologicaYReservaTodosLosTurnosAntesDeEvaluarLaSiguiente() {
+		Alumno alumnoActivo = new Alumno();
+		alumnoActivo.setId(50L);
+		alumnoActivo.setActivo(true);
+		lunes.setAlumnos(List.of(alumnoActivo));
+		miercoles.setAlumnos(List.of());
+		Preinscripcion primera = solicitudEnEspera("PRE-PRIMERA", "primera@example.com", List.of(lunes, miercoles));
+		Preinscripcion segunda = solicitudEnEspera("PRE-SEGUNDA", "segunda@example.com", List.of(miercoles));
+		List<Preinscripcion> cola = List.of(primera, segunda);
+		when(temporadas.actual()).thenReturn("2026/2027");
+		when(configuracion.obtenerLimiteTurno()).thenReturn(1);
+		when(alumnoDeportes.existsByAlumnoIdAndDeporteAndActivoTrue(50L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(preinscripciones.findByTemporadaAndEstadoOrderByCreadaEnAscIdAsc(
+				"2026/2027", EstadoPreinscripcion.EN_LISTA_ESPERA)).thenReturn(cola);
+		when(turnos.findAllByIdForUpdate(anyList())).thenAnswer(inv -> {
+			Collection<Long> ids = inv.getArgument(0);
+			return List.of(lunes, miercoles).stream().filter(t -> ids.contains(t.getId())).toList();
+		});
+		when(preinscripciones.countDistinctByTurnosContainingAndTemporadaAndEstado(
+				any(Turno.class), eq("2026/2027"), eq(EstadoPreinscripcion.PENDIENTE))).thenAnswer(inv -> {
+			Turno turno = inv.getArgument(0);
+			return cola.stream()
+					.filter(p -> p.getEstado() == EstadoPreinscripcion.PENDIENTE)
+					.filter(p -> p.getTurnos().contains(turno))
+					.count();
+		});
+		AforoPreinscripcionService aforoReal = new AforoPreinscripcionService(
+				turnos, alumnoDeportes, preinscripciones, configuracion);
+		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
+				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
+				new ObjectMapper(), aforoReal);
+
+		servicioPromocion.promocionarTodas();
+
+		assertEquals(EstadoPreinscripcion.PENDIENTE, primera.getEstado());
+		assertEquals(EstadoPreinscripcion.EN_LISTA_ESPERA, segunda.getEstado());
+		assertNotNull(primera.getPromocionadaEn());
+		assertEquals(1L, preinscripciones.countDistinctByTurnosContainingAndTemporadaAndEstado(
+				lunes, "2026/2027", EstadoPreinscripcion.PENDIENTE));
+		assertEquals(1L, preinscripciones.countDistinctByTurnosContainingAndTemporadaAndEstado(
+				miercoles, "2026/2027", EstadoPreinscripcion.PENDIENTE));
+		verify(preinscripciones).saveAndFlush(primera);
+		verify(preinscripciones, never()).saveAndFlush(segunda);
+		verify(email, times(1)).sendEmail(eq("primera@example.com"), startsWith("Ya tienes plaza"), anyString());
+	}
+
+	@Test
+	void muestraTurnoHistoricoSinGrupoSinLanzarNullPointerException() {
+		Turno historico = new Turno("Viernes", "19:00", "20:00", null);
+		historico.setId(30L);
+		Preinscripcion solicitud = new Preinscripcion();
+		solicitud.setTurnos(new java.util.LinkedHashSet<>(List.of(historico)));
+
+		List<java.util.Map<String, Object>> resultado = service.turnosSolicitados(solicitud);
+
+		assertEquals(1, resultado.size());
+		assertNull(resultado.get(0).get("grupoId"));
+		assertEquals("Grupo no disponible", resultado.get(0).get("grupo"));
+	}
+
+	private Preinscripcion solicitudEnEspera(String referencia, String correo, List<Turno> seleccion) {
+		PlantillaPreinscripcion plantilla = new PlantillaPreinscripcion();
+		plantilla.setInstrucciones("Formaliza la inscripción.");
+		Preinscripcion solicitud = new Preinscripcion();
+		solicitud.setReferencia(referencia);
+		solicitud.setNombre("Ana");
+		solicitud.setEmail(correo);
+		solicitud.setDeporte(Deporte.TAEKWONDO);
+		solicitud.setTemporada("2026/2027");
+		solicitud.setEstado(EstadoPreinscripcion.EN_LISTA_ESPERA);
+		solicitud.setPlantilla(plantilla);
+		solicitud.setTurnos(new java.util.LinkedHashSet<>(seleccion));
+		return solicitud;
 	}
 
 	private FinalizarPreinscripcionRequest request(Long alumnoId, Set<CampoActualizable> campos,
