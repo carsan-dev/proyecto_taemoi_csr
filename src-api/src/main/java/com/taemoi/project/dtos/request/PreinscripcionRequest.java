@@ -1,13 +1,13 @@
 package com.taemoi.project.dtos.request;
 
 import java.time.LocalDate;
+import java.util.List;
 import com.taemoi.project.entities.Deporte;
 import jakarta.validation.constraints.*;
 
 public record PreinscripcionRequest(
  @NotNull Deporte deporte,
- Long grupoId,
- Long turnoId,
+ @NotEmpty List<@NotNull @Positive Long> turnoIds,
  @NotBlank @Size(max=100) String nombre,
  @NotBlank @Size(max=160) String apellidos,
  @Size(max=16) @Pattern(regexp="(?i)^(?:|[0-9XYZ][0-9]{7}[A-Z])$",message="El DNI/NIE no tiene un formato válido") String dni,
@@ -24,8 +24,8 @@ public record PreinscripcionRequest(
  @NotBlank @Size(max=180) String firmanteNombre,
  @NotBlank @Size(max=700000) String firmaBase64
 ) {
- @AssertTrue(message="Es necesario seleccionar un grupo")
- public boolean hasGrupoOTurno(){return grupoId!=null||turnoId!=null;}
+ @AssertTrue(message="No se puede seleccionar el mismo turno más de una vez")
+ public boolean hasTurnosUnicos(){return turnoIds==null||turnoIds.size()==turnoIds.stream().distinct().count();}
  @AssertTrue(message="El DNI/NIE es obligatorio para las personas adultas")
  public boolean isDniCompatibleConEdad(){return fechaNacimiento==null||esMenor()||!blank(dni);}
  @AssertTrue(message="Los menores deben indicar responsable legal y su DNI/NIE")

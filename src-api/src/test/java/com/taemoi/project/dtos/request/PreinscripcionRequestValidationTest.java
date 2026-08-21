@@ -3,6 +3,7 @@ package com.taemoi.project.dtos.request;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,7 @@ class PreinscripcionRequestValidationTest {
 
 	private PreinscripcionRequest request(String dni, LocalDate nacimiento, String tutor, String tutorDni,
 			Boolean discapacidad) {
-		return new PreinscripcionRequest(Deporte.TAEKWONDO, 7L, null, "Ana", "García López", dni,
+		return new PreinscripcionRequest(Deporte.TAEKWONDO, List.of(11L), "Ana", "García López", dni,
 				nacimiento, "Calle Mayor 1", "612 345 678", "611 222 333", "ana@example.com",
 				tutor, tutorDni, discapacidad, false, true, "María García", "data:image/png;base64,AAAA");
 	}

@@ -1,6 +1,8 @@
 package com.taemoi.project.entities;
 
 import java.time.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import jakarta.persistence.*;
 
 @Entity
@@ -24,6 +26,9 @@ public class Preinscripcion {
  @Lob @Column(name="turno_snapshot",columnDefinition="LONGTEXT") private String turnoSnapshot;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="grupo_id") private Grupo grupo;
  @Lob @Column(name="grupo_snapshot",columnDefinition="LONGTEXT") private String grupoSnapshot;
+ @ManyToMany(fetch=FetchType.LAZY)
+ @JoinTable(name="preinscripcion_turno",joinColumns=@JoinColumn(name="preinscripcion_id"),inverseJoinColumns=@JoinColumn(name="turno_id"))
+ private Set<Turno> turnos=new LinkedHashSet<>();
  @ManyToOne(optional=false,fetch=FetchType.LAZY) @JoinColumn(name="plantilla_id") private PlantillaPreinscripcion plantilla;
  @Lob @Column(name="plantilla_snapshot",nullable=false,columnDefinition="LONGTEXT") private String plantillaSnapshot;
  @Lob @Column(name="pdf_firmado",nullable=false,columnDefinition="MEDIUMBLOB") private byte[] pdfFirmado;
@@ -42,6 +47,7 @@ public class Preinscripcion {
  public String getTutorNombre(){return tutorNombre;} public void setTutorNombre(String v){tutorNombre=v;} public String getTutorDni(){return tutorDni;} public void setTutorDni(String v){tutorDni=v;}
  public Boolean getConsentimientoFotografico(){return consentimientoFotografico;} public void setConsentimientoFotografico(Boolean v){consentimientoFotografico=v;} public Boolean getAceptacionNormas(){return aceptacionNormas;} public void setAceptacionNormas(Boolean v){aceptacionNormas=v;} public String getFirmanteNombre(){return firmanteNombre;} public void setFirmanteNombre(String v){firmanteNombre=v;} public byte[] getFirma(){return firma;} public void setFirma(byte[] v){firma=v;}
  public Turno getTurno(){return turno;} public void setTurno(Turno v){turno=v;} public String getTurnoSnapshot(){return turnoSnapshot;} public void setTurnoSnapshot(String v){turnoSnapshot=v;} public Grupo getGrupo(){return grupo;} public void setGrupo(Grupo v){grupo=v;} public String getGrupoSnapshot(){return grupoSnapshot;} public void setGrupoSnapshot(String v){grupoSnapshot=v;} public PlantillaPreinscripcion getPlantilla(){return plantilla;} public void setPlantilla(PlantillaPreinscripcion v){plantilla=v;} public String getPlantillaSnapshot(){return plantillaSnapshot;} public void setPlantillaSnapshot(String v){plantillaSnapshot=v;}
+ public Set<Turno> getTurnos(){return turnos;} public void setTurnos(Set<Turno> v){turnos=v==null?new LinkedHashSet<>():new LinkedHashSet<>(v);} public void addTurno(Turno v){if(v!=null)turnos.add(v);}
  public byte[] getPdfFirmado(){return pdfFirmado;} public void setPdfFirmado(byte[] v){pdfFirmado=v;} public String getTokenDocumentoHash(){return tokenDocumentoHash;} public void setTokenDocumentoHash(String v){tokenDocumentoHash=v;}
  public Boolean getEmailEnviado(){return emailEnviado;} public void setEmailEnviado(Boolean v){emailEnviado=v;} public Integer getEmailIntentos(){return emailIntentos;} public void setEmailIntentos(Integer v){emailIntentos=v;} public String getEmailUltimoError(){return emailUltimoError;} public void setEmailUltimoError(String v){emailUltimoError=v;}
  public Instant getCreadaEn(){return creadaEn;} public Instant getFinalizadaEn(){return finalizadaEn;} public void setFinalizadaEn(Instant v){finalizadaEn=v;} public Instant getCanceladaEn(){return canceladaEn;} public void setCanceladaEn(Instant v){canceladaEn=v;} public Alumno getAlumno(){return alumno;} public void setAlumno(Alumno v){alumno=v;}

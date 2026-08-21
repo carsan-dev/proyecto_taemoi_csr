@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -71,8 +72,11 @@ class PreinscripcionServiceTest {
 		miercoles = turno(12L, "Miércoles");
 		preinscripcion = solicitudPendiente();
 		when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
-		when(aforo.bloquearGrupo(7L)).thenReturn(grupo);
-		when(turnos.findByGrupo(grupo)).thenReturn(List.of(lunes, miercoles));
+		when(aforo.bloquearTurnos(anyCollection())).thenAnswer(inv -> {
+			Collection<Long> ids = inv.getArgument(0);
+			return List.of(lunes, miercoles).stream().filter(t -> ids.contains(t.getId())).toList();
+		});
+		lenient().when(turnos.findByGrupo(grupo)).thenReturn(List.of(lunes, miercoles));
 		lenient().when(alumnos.saveAndFlush(any(Alumno.class))).thenAnswer(inv -> {
 			Alumno alumno = inv.getArgument(0);
 			if (alumno.getId() == null) alumno.setId(99L);
@@ -114,6 +118,55 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
+	void asignaTurnosExactosDeDosGruposDiferentes() {
+		Grupo segundoGrupo = new Grupo();
+		segundoGrupo.setId(8L);
+		segundoGrupo.setNombre("Taekwondo martes y jueves");
+		segundoGrupo.setDeporte(Deporte.TAEKWONDO);
+		Turno jueves = new Turno();
+		jueves.setId(21L);
+		jueves.setDiaSemana("Jueves");
+		jueves.setHoraInicio("18:00");
+		jueves.setHoraFin("19:00");
+		jueves.setGrupo(segundoGrupo);
+		preinscripcion.setTurnos(new java.util.LinkedHashSet<>(List.of(lunes, jueves)));
+		when(aforo.bloquearTurnos(List.of(11L, 21L))).thenReturn(List.of(lunes, jueves));
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
+		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
+		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+
+		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
+
+		Alumno creado = preinscripcion.getAlumno();
+		assertEquals(List.of(lunes, jueves), creado.getTurnos());
+		assertTrue(creado.getGrupos().containsAll(List.of(grupo, segundoGrupo)));
+	}
+
+	@Test
+	void rechazaTurnosIncompatiblesConLaEdad() {
+		grupo.setRangoEdadMax(10);
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo())));
+
+		assertTrue(error.getMessage().contains("edad"));
+		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+	}
+
+	@Test
+	void rechazaDosTurnosDelMismoDia() {
+		miercoles.setDiaSemana("Lunes");
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo())));
+
+		assertTrue(error.getMessage().contains("por día"));
+		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+	}
+
+	@Test
 	void actualizaSoloDiferenciasConfirmadasYConservaAsignacionesPrevias() {
 		Alumno existente = alumnoExistente(true);
 		preinscripcion.setConsentimientoFotografico(true);
@@ -134,8 +187,8 @@ class PreinscripcionServiceTest {
 		assertEquals("conservar@example.com", existente.getEmail());
 		assertEquals(611222333, existente.getTelefono2());
 		assertTrue(existente.getAutorizacionWeb());
-		assertEquals(List.of(previo, lunes, miercoles), existente.getTurnos());
-		verify(alumnoDeportes, never()).save(any());
+		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
+		verify(alumnoDeportes).save(deporte);
 	}
 
 	@Test
@@ -171,7 +224,7 @@ class PreinscripcionServiceTest {
 		when(alumnos.findById(3L)).thenReturn(Optional.of(equivocado));
 
 		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-				() -> service.finalizar("PRE-1", request(3L, Set.of(), null)));
+				() -> service.finalizar("PRE-1", requestSinDatos(3L, Set.of())));
 
 		assertTrue(error.getMessage().contains("identidad"));
 		verify(alumnoDeportes, never()).save(any());
@@ -186,7 +239,7 @@ class PreinscripcionServiceTest {
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 
 		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-				() -> service.finalizar("PRE-1", request(3L, Set.of(), null)));
+				() -> service.finalizar("PRE-1", requestSinDatos(3L, Set.of())));
 
 		assertTrue(error.getMessage().contains("tarifa"));
 		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
@@ -263,9 +316,9 @@ class PreinscripcionServiceTest {
 
 		service.finalizar("PRE-1", solicitud);
 
-		assertSame(grupo, preinscripcion.getGrupo());
+		assertNull(preinscripcion.getGrupo());
 		assertFalse(preinscripcion.getAlumno().getTieneDiscapacidad());
-		assertTrue(preinscripcion.getAlumno().getTurnos().containsAll(List.of(lunes, miercoles)));
+		assertEquals(List.of(lunes),preinscripcion.getAlumno().getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
 	}
 
@@ -274,7 +327,16 @@ class PreinscripcionServiceTest {
 		return new FinalizarPreinscripcionRequest(alumnoId == null
 				? FinalizarPreinscripcionRequest.AccionAlumno.CREAR_NUEVO
 				: FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE,
-				alumnoId, campos, null, datos);
+				alumnoId, campos, null, datos==null?datosTarifaExistente():datos);
+	}
+
+	private FinalizarPreinscripcionRequest requestSinDatos(Long alumnoId, Set<CampoActualizable> campos) {
+		return new FinalizarPreinscripcionRequest(FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE,
+				alumnoId, campos, null, null);
+	}
+
+	private DatosAltaDeporte datosTarifaExistente() {
+		return new DatosAltaDeporte(TipoTarifa.INFANTIL, 32.0, null, null, null, null);
 	}
 
 	private DatosAltaDeporte datosTaekwondo() {
@@ -323,6 +385,8 @@ class PreinscripcionServiceTest {
 		ad.setDeporte(Deporte.TAEKWONDO);
 		ad.setActivo(activo);
 		ad.setPrincipal(false);
+		ad.setTipoTarifa(TipoTarifa.INFANTIL);
+		ad.setCuantiaTarifa(28.0);
 		return ad;
 	}
 

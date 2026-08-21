@@ -6,8 +6,8 @@ public interface PreinscripcionRepository extends JpaRepository<Preinscripcion,L
  @Query("select p from Preinscripcion p where p.referencia = :referencia")
  Optional<Preinscripcion> findByReferenciaForUpdate(@org.springframework.data.repository.query.Param("referencia") String referencia);
  boolean existsByIdentidadHashAndDeporteAndTemporadaAndEstadoNot(String identidadHash,Deporte deporte,String temporada,EstadoPreinscripcion estado);
- long countByGrupoAndTemporadaAndEstado(Grupo grupo,String temporada,EstadoPreinscripcion estado);
- List<Preinscripcion> findByGrupoAndTemporadaAndEstadoOrderByCreadaEnAscIdAsc(Grupo grupo,String temporada,EstadoPreinscripcion estado);
- long countByGrupoAndTemporadaAndEstadoAndCreadaEnLessThan(Grupo grupo,String temporada,EstadoPreinscripcion estado,java.time.Instant creadaEn);
- long countByGrupoAndTemporadaAndEstadoAndCreadaEnAndIdLessThan(Grupo grupo,String temporada,EstadoPreinscripcion estado,java.time.Instant creadaEn,Long id);
+ long countDistinctByTurnosContainingAndTemporadaAndEstado(Turno turno,String temporada,EstadoPreinscripcion estado);
+ List<Preinscripcion> findByTemporadaAndEstadoOrderByCreadaEnAscIdAsc(String temporada,EstadoPreinscripcion estado);
+ @Query("select count(distinct previa.id) from Preinscripcion previa join previa.turnos t where previa.temporada=:temporada and previa.estado=:estado and t in :turnos and (previa.creadaEn<:creadaEn or (previa.creadaEn=:creadaEn and previa.id<:id))")
+ long countAnterioresSolapadas(@org.springframework.data.repository.query.Param("temporada") String temporada,@org.springframework.data.repository.query.Param("estado") EstadoPreinscripcion estado,@org.springframework.data.repository.query.Param("turnos") Collection<Turno> turnos,@org.springframework.data.repository.query.Param("creadaEn") java.time.Instant creadaEn,@org.springframework.data.repository.query.Param("id") Long id);
 }
