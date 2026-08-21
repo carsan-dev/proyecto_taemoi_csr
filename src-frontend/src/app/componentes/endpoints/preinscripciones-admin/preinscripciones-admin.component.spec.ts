@@ -45,6 +45,8 @@ describe('PreinscripcionesAdminComponent', () => {
         responsableLegalNombre: 'María García',
         responsableLegalNif: '87654321X',
         requiereDatosDeporte: false,
+        tipoTarifa: 'INFANTIL',
+        cuantiaTarifa: 35,
       }],
     };
 
@@ -52,6 +54,7 @@ describe('PreinscripcionesAdminComponent', () => {
 
     expect([...component.camposActualizar].sort()).toEqual(['EMAIL', 'NOMBRE']);
     expect(component.requiereDatosDeporte).toBeFalse();
+    expect(component.datosAlta.cuantiaTarifa).toBe(35);
     expect(component.tieneCoincidenciaDniExacta).toBeTrue();
     component.crearNuevaFicha();
     expect(component.accionAlumno).toBe('VINCULAR_EXISTENTE');

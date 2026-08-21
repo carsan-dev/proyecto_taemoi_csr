@@ -108,7 +108,7 @@
 
       <div class="admission-summary">
         <p><strong>{{seleccion.nombre}} {{seleccion.apellidos}}</strong><span>{{seleccion.dni || 'Sin DNI/NIE'}} · {{seleccion.deporte}}</span></p>
-        <p><strong>Grupo y turnos solicitados</strong><span>{{seleccion.grupo}}</span></p>
+        <p><strong>{{seleccion.turnosSolicitados?.length || 1}} turno(s) solicitado(s)</strong><span>{{seleccion.grupo}}</span></p>
       </div>
 
       <section>
@@ -136,7 +136,7 @@
           <h3>Ficha existente</h3>
           <p class="status-note">{{alumno.activo ? 'Alumno activo' : 'Alumno inactivo: se reactivará y se limpiará su fecha de baja.'}}</p>
           @if (alumno.deporteRegistrado) {
-            <p class="status-note">{{alumno.deporteActivo ? 'Deporte ya activo: se conservarán sus datos.' : 'Deporte inactivo: se reactivará conservando grado, tarifa y antigüedad.'}}</p>
+            <p class="status-note">{{alumno.deporteActivo ? 'Deporte ya activo: se reemplazarán sus horarios y se confirmará la tarifa.' : 'Deporte inactivo: se reactivará conservando grado y antigüedad.'}}</p>
           }
           <div class="diff-list">
             @for (campo of camposAplicables; track campo.clave) {
@@ -165,9 +165,10 @@
         </section>
       }
 
-      @if (requiereDatosDeporte) {
+      @if (accionAlumno) {
         <section class="sport-data">
-          <h3>Datos del alta deportiva</h3>
+          <h3>Tarifa y horarios deportivos</h3>
+          <p class="status-note">La cuantía se decide manualmente. Los turnos anteriores de este deporte serán reemplazados por los {{seleccion.turnosSolicitados?.length || 1}} solicitados.</p>
           <div class="form-grid">
             <label>Tipo de tarifa
               <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
@@ -181,7 +182,7 @@
             @if (datosAlta.tipoTarifa === 'HERMANOS') {
               <label>Grupo familiar<input maxlength="50" [(ngModel)]="datosAlta.grupoFamiliar"></label>
             }
-            @if (requiereGrado) {
+            @if (requiereDatosDeporte && requiereGrado) {
               <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado) { <option [value]="grado">{{grado}}</option> }</select></label>
               <label>Fecha del grado<input type="date" [(ngModel)]="datosAlta.fechaGrado"></label>
             }
