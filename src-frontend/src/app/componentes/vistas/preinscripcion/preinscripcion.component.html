@@ -91,7 +91,7 @@
             @if(form.controls.turnoIds.touched && form.controls.turnoIds.invalid){<p class="error">Selecciona al menos un horario.</p>}
             @if(errorHorarios){<p class="error" role="alert">{{errorHorarios}}</p>}
             @if(turnosSeleccionados.length){
-              <div class="selection-summary"><strong>{{turnosSeleccionados.length}} {{turnosSeleccionados.length===1?'turno seleccionado':'turnos seleccionados'}}</strong><span>Si al menos uno tiene plaza, se concederá selección completa.</span></div>
+              <div class="selection-summary"><strong>{{turnosSeleccionados.length}} {{turnosSeleccionados.length===1?'turno seleccionado':'turnos seleccionados'}}</strong><span>Si hay plaza en cualquiera, te asignaremos todos los horarios elegidos.</span></div>
             }
           }
         }
@@ -127,7 +127,7 @@
         <p class="hint">Firma dentro del recuadro con el dedo, ratón o lápiz.</p>
         <canvas #firma (pointerdown)="iniciar($event)" (pointermove)="mover($event)" (pointerup)="terminar()" (pointercancel)="terminar()"></canvas>
         <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
-        <div class="notice"><strong>Antes de enviar:</strong> si al menos un horario tiene hueco, se concederán todos los elegidos. Solo entrarás en lista de espera cuando todos estén completos.</div>
+        <div class="notice"><strong>Cómo funciona:</strong> si hay plaza en cualquiera de los horarios, te asignaremos todos los que has elegido. Solo quedarás en lista de espera si ninguno tiene plaza.</div>
         @if(error){<p class="error" role="alert">{{error}}</p>}
         <button class="submit" type="submit" [disabled]="enviando || !normasDisponibles">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
       </section>
