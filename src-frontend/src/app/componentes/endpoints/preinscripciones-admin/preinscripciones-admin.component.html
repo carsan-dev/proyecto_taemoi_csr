@@ -17,6 +17,9 @@
     <button (click)="buscar(true)">Filtrar</button>
   </div>
 
+  @if (cargando) {
+    <app-skeleton-card type="table" [count]="8"></app-skeleton-card>
+  } @else {
   <div class="workspace">
     <div class="table-wrap">
       <table>
@@ -27,7 +30,7 @@
               <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td><td>{{x.estadoEmailFinalizacion}} ({{x.emailFinalizacionIntentos}})</td>
             </tr>
           } @empty {
-            <tr><td colspan="7">{{cargando ? 'Cargando…' : 'No hay solicitudes con estos filtros.'}}</td></tr>
+            <tr><td colspan="7">No hay solicitudes con estos filtros.</td></tr>
           }
         </tbody>
       </table>
@@ -35,6 +38,7 @@
     <p class="pagination-summary">{{primerResultado}}–{{ultimoResultado}} de {{totalElementos}} preinscripciones</p>
     <app-paginacion [paginaActual]="pagina + 1" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando" (pageChange)="cambiarPagina($event)"></app-paginacion>
   </div>
+  }
   } @else {
     <header><div><p>Documentos</p><h1>Plantillas PDF</h1></div><span>Layout y estilos bloqueados</span></header>
     <section class="template-toolbar">
@@ -42,7 +46,9 @@
       <button type="button" (click)="preview()" [disabled]="cargandoPlantilla || procesandoPlantilla">Previsualizar PDF</button>
       @if (auth.tieneRolAdmin()) { <button class="primary" type="button" (click)="publicar()" [disabled]="!dirty || !valida() || procesandoPlantilla">Publicar nueva versión</button> }
     </section>
-    @if (cargandoPlantilla) { <p class="loader">Cargando plantilla…</p> } @else {
+    @if (cargandoPlantilla) {
+      <app-skeleton-card type="grid" [count]="2" [columns]="2"></app-skeleton-card>
+    } @else {
       <div class="template-grid">
         <form class="template-form" (input)="marcarCambios()">
           <p class="version">Versión activa {{plantilla.version}}</p>

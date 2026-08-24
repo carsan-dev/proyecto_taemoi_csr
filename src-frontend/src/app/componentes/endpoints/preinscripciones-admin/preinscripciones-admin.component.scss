@@ -58,8 +58,6 @@ td span[data-state=EN_LISTA_ESPERA] { color: #9a6816; }
 .history h2 { margin: 0; }
 .history article { display: grid; gap: .25rem; padding-bottom: .8rem; border-bottom: 1px solid #e0e3e4; }
 .history small { color: #687175; }
-.loader { padding: 3rem; text-align: center; background: #fff; }
-
 @media (max-width: 900px) {
   .admin-pre { padding: 6rem 1rem 2rem; }
   .filters { grid-template-columns: 1fr 1fr; }

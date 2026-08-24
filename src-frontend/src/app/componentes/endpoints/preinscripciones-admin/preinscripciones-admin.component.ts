@@ -5,12 +5,13 @@ import Swal from 'sweetalert2';
 import { PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, Router } from '@angular/router';
 
-@Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
+@Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent,SkeletonCardComponent],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
 export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
-  items:any[]=[]; cargando=false; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
+  items:any[]=[]; cargando=true; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
   mostrandoFinalizacion=false; procesandoFinalizacion=false; camposActualizar=new Set<string>();
   accionAlumno:''|'CREAR_NUEVO'|'VINCULAR_EXISTENTE'=''; alumnoSeleccionado:any; discapacidadHistorica:boolean|null=null;
   decisionEmail:''|'CONSERVAR_FICHA'|'USAR_PREINSCRIPCION'='';
