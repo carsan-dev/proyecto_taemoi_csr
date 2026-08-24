@@ -20,14 +20,14 @@
   <div class="workspace">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email</th></tr></thead>
+        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email inicial</th><th>Confirmación final</th></tr></thead>
         <tbody>
           @for (x of items; track x.referencia) {
             <tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia === x.referencia">
-              <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td>
+              <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td><td>{{x.estadoEmailFinalizacion}} ({{x.emailFinalizacionIntentos}})</td>
             </tr>
           } @empty {
-            <tr><td colspan="6">{{cargando ? 'Cargando…' : 'No hay solicitudes con estos filtros.'}}</td></tr>
+            <tr><td colspan="7">{{cargando ? 'Cargando…' : 'No hay solicitudes con estos filtros.'}}</td></tr>
           }
         </tbody>
       </table>
@@ -68,7 +68,7 @@
     <button class="close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
     <p class="kicker">{{seleccion.referencia}}</p>
     <h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2>
-    <dl><dt>DNI/NIE</dt><dd>{{seleccion.dni || 'Sin DNI/NIE'}}</dd><dt>Teléfono secundario</dt><dd>{{seleccion.telefono2 || 'No facilitado'}}</dd><dt>Discapacidad</dt><dd>{{seleccion.tieneDiscapacidad == null ? 'No recogido' : seleccion.tieneDiscapacidad ? 'Sí' : 'No'}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd></dl>
+    <dl><dt>DNI/NIE</dt><dd>{{seleccion.dni || 'Sin DNI/NIE'}}</dd><dt>Teléfono secundario</dt><dd>{{seleccion.telefono2 || 'No facilitado'}}</dd><dt>Discapacidad</dt><dd>{{seleccion.tieneDiscapacidad == null ? 'No recogido' : seleccion.tieneDiscapacidad ? 'Sí' : 'No'}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd><dt>Confirmación final</dt><dd>{{seleccion.estadoEmailFinalizacion}} · {{seleccion.emailFinalizacionIntentos}} intento(s)</dd>@if(seleccion.emailFinalizacionEnviadoEn){<dt>Enviada</dt><dd>{{seleccion.emailFinalizacionEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailFinalizacionUltimoError){<dt>Último error</dt><dd>{{seleccion.emailFinalizacionUltimoError}}</dd>}</dl>
     @if(seleccion.estado === 'EN_LISTA_ESPERA'){<p><strong>Posición en cola:</strong> {{seleccion.posicionListaEspera}}</p>}
 
     <section class="signature-preview">
@@ -92,6 +92,7 @@
       <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
     }
     @if (seleccion.estado === 'EN_LISTA_ESPERA') { <button class="danger" (click)="cancelar()">Cancelar lista de espera</button> }
+    @if (seleccion.estado === 'FINALIZADA') { <button class="primary" (click)="reenviarFinalizacion()">Reenviar confirmación</button> }
     @if (puedeEliminar) {
       <button class="danger delete" (click)="eliminar()">Eliminar definitivamente</button>
     }
@@ -150,6 +151,16 @@
           </div>
           @if (camposActualizar.size === 0) { <p class="status-note">No se actualizarán datos personales de la ficha.</p> }
         </section>
+        @if (correosDiferentes) {
+          <section>
+            <h3>Correo definitivo de acceso</h3>
+            <p class="status-note">Los correos no coinciden. El elegido se guardará en la ficha, recibirá la confirmación y será el usado para acceder al portal.</p>
+            <div class="diff-list">
+              <label class="diff-row"><input type="radio" name="decisionEmail" value="CONSERVAR_FICHA" [(ngModel)]="decisionEmail"><span><strong>Conservar correo de la ficha</strong><small>{{alumno.email}}</small></span></label>
+              <label class="diff-row"><input type="radio" name="decisionEmail" value="USAR_PREINSCRIPCION" [(ngModel)]="decisionEmail"><span><strong>Usar correo de la preinscripción</strong><small>{{seleccion.email}}</small></span></label>
+            </div>
+          </section>
+        }
       } @else if (accionAlumno === 'CREAR_NUEVO') {
         <section><h3>Nueva ficha</h3><p class="status-note">Se crearán ficha activa, número de expediente y fechas de alta usando los datos recibidos.</p></section>
       }

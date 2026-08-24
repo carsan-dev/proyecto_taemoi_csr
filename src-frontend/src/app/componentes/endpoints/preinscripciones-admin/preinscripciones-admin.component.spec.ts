@@ -52,7 +52,12 @@ describe('PreinscripcionesAdminComponent', () => {
 
     component.abrirFinalizacion();
 
-    expect([...component.camposActualizar].sort()).toEqual(['EMAIL', 'NOMBRE']);
+    expect([...component.camposActualizar].sort()).toEqual(['NOMBRE']);
+    expect(component.correosDiferentes).toBeTrue();
+    expect(component.decisionEmail).toBe('');
+    expect(component.finalizacionValida).toBeFalse();
+    component.decisionEmail = 'CONSERVAR_FICHA';
+    expect(component.finalizacionValida).toBeTrue();
     expect(component.requiereDatosDeporte).toBeFalse();
     expect(component.datosAlta.cuantiaTarifa).toBe(35);
     expect(component.tieneCoincidenciaDniExacta).toBeTrue();
@@ -63,14 +68,12 @@ describe('PreinscripcionesAdminComponent', () => {
   it('envía datos deportivos y campos confirmados al finalizar', () => {
     component.seleccion = solicitudBase();
     component.abrirFinalizacion();
-    component.camposActualizar.add('EMAIL');
-
     component.finalizar();
 
     const payload = api.finalizar.calls.mostRecent().args[1];
     expect(payload.alumnoId).toBeUndefined();
     expect(payload.accionAlumno).toBe('CREAR_NUEVO');
-    expect(payload.camposActualizar).toContain('EMAIL');
+    expect(payload.camposActualizar).not.toContain('EMAIL');
     expect(payload.datosDeporte.tipoTarifa).toBe('INFANTIL');
     expect(payload.datosDeporte.grado).toBe('BLANCO');
   });
@@ -86,6 +89,7 @@ describe('PreinscripcionesAdminComponent', () => {
         apellidos: 'García López',
         fechaNacimiento: '2014-04-12',
         telefono2: 699887766,
+        email: 'ana@example.com',
         requiereDatosDeporte: false,
       }],
     };

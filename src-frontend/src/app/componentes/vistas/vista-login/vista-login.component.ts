@@ -39,6 +39,12 @@ export class VistaLoginComponent implements OnInit {
   ngOnInit(): void {
     // Check for OAuth2 error parameters
     this.route.queryParams.subscribe(params => {
+      if (params['modo'] === 'registro') {
+        this.mostrarRegistro = true;
+        if (typeof params['email'] === 'string') {
+          this.registro.email = params['email'].trim().toLowerCase();
+        }
+      }
       if (params['error']) {
         const errorType = params['error'];
         const errorMessage = params['message'] || 'Error desconocido';
