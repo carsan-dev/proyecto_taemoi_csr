@@ -121,15 +121,27 @@ public class Grupo {
 
 	public void addAlumno(Alumno alumno) {
 		if (alumno != null) {
-			alumnos.add(alumno);
-			alumno.getGrupos().add(this);
+			if (alumnos.stream().noneMatch(actual -> mismaEntidad(actual, alumno))) {
+				alumnos.add(alumno);
+			}
+			if (alumno.getGrupos().stream().noneMatch(actual -> mismaEntidad(actual, this))) {
+				alumno.getGrupos().add(this);
+			}
 		}
 	}
 
 	public void removeAlumno(Alumno alumno) {
 		if (alumno != null) {
-			alumnos.remove(alumno);
-			alumno.getGrupos().remove(this);
+			alumnos.removeIf(actual -> mismaEntidad(actual, alumno));
+			alumno.getGrupos().removeIf(actual -> mismaEntidad(actual, this));
 		}
+	}
+
+	private boolean mismaEntidad(Alumno actual, Alumno objetivo) {
+		return actual == objetivo || actual.getId() != null && actual.getId().equals(objetivo.getId());
+	}
+
+	private boolean mismaEntidad(Grupo actual, Grupo objetivo) {
+		return actual == objetivo || actual.getId() != null && actual.getId().equals(objetivo.getId());
 	}
 }

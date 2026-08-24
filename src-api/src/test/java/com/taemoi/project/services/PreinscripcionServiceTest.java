@@ -87,6 +87,7 @@ class PreinscripcionServiceTest {
 
 	@Test
 	void creaAlumnoDeporteGrupoYTodosLosTurnosEnUnaFinalizacion() {
+		preinscripcion.setNombre("Ana María");
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
 		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
@@ -98,6 +99,8 @@ class PreinscripcionServiceTest {
 
 		Alumno creado = preinscripcion.getAlumno();
 		assertNotNull(creado);
+		assertEquals("ANA MARÍA", creado.getNombre());
+		assertEquals("GARCÍA LÓPEZ", creado.getApellidos());
 		assertEquals(41, creado.getNumeroExpediente());
 		assertEquals(612345678, creado.getTelefono());
 		assertEquals(611222333, creado.getTelefono2());
@@ -106,7 +109,7 @@ class PreinscripcionServiceTest {
 		assertEquals("87654321X", creado.getResponsableLegalNif());
 		assertTrue(creado.getActivo());
 		assertFalse(creado.getAutorizacionWeb());
-		assertTrue(creado.getGrupos().contains(grupo));
+		assertEquals(List.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
 		verify(alumnoDeportes).save(argThat(ad -> ad.getAlumno() == creado
@@ -116,6 +119,26 @@ class PreinscripcionServiceTest {
 				&& ad.getFechaAlta() != null
 				&& ad.getFechaAltaInicial() != null
 				&& ad.getGrado() == blanco));
+	}
+
+	@Test
+	void noDuplicaGrupoCuandoDosTurnosDevuelvenInstanciasEquivalentes() {
+		Grupo mismoGrupo = new Grupo();
+		mismoGrupo.setId(grupo.getId());
+		mismoGrupo.setNombre(grupo.getNombre());
+		mismoGrupo.setDeporte(grupo.getDeporte());
+		miercoles.setGrupo(mismoGrupo);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
+		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
+		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+
+		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
+
+		Alumno creado = preinscripcion.getAlumno();
+		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
+		assertEquals(List.of(grupo), creado.getGrupos());
 	}
 
 	@Test
@@ -142,7 +165,7 @@ class PreinscripcionServiceTest {
 
 		Alumno creado = preinscripcion.getAlumno();
 		assertEquals(List.of(lunes, jueves), creado.getTurnos());
-		assertTrue(creado.getGrupos().containsAll(List.of(grupo, segundoGrupo)));
+		assertEquals(List.of(grupo, segundoGrupo), creado.getGrupos());
 	}
 
 	@Test

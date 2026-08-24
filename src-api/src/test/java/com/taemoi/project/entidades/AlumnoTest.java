@@ -10,7 +10,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.entities.Turno;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -220,6 +222,40 @@ public class AlumnoTest {
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
 		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void addTurnoEsIdempotentePorIdEnAmbosLados() {
+		Alumno alumno = new Alumno();
+		alumno.setId(1L);
+		Turno turno = new Turno();
+		turno.setId(10L);
+		Turno turnoEquivalente = new Turno();
+		turnoEquivalente.setId(10L);
+
+		alumno.addTurno(turno);
+		alumno.addTurno(turno);
+		alumno.addTurno(turnoEquivalente);
+
+		assertEquals(1, alumno.getTurnos().size());
+		assertEquals(1, turno.getAlumnos().size());
+	}
+
+	@Test
+	void addAlumnoAGrupoEsIdempotentePorIdEnAmbosLados() {
+		Alumno alumno = new Alumno();
+		alumno.setId(1L);
+		Grupo grupo = new Grupo();
+		grupo.setId(7L);
+		Grupo grupoEquivalente = new Grupo();
+		grupoEquivalente.setId(7L);
+
+		grupo.addAlumno(alumno);
+		grupo.addAlumno(alumno);
+		grupoEquivalente.addAlumno(alumno);
+
+		assertEquals(1, alumno.getGrupos().size());
+		assertEquals(1, grupo.getAlumnos().size());
 	}
 
 	/*

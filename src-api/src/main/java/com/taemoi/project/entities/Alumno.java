@@ -534,15 +534,27 @@ public class Alumno {
 	}
 
 	public void addTurno(Turno turno) {
-		if (!this.turnos.contains(turno)) {
+		if (turno != null && this.turnos.stream().noneMatch(actual -> mismaEntidad(actual, turno))) {
 			this.turnos.add(turno);
+		}
+		if (turno != null && turno.getAlumnos().stream().noneMatch(actual -> mismaEntidad(actual, this))) {
 			turno.getAlumnos().add(this);
 		}
 	}
 
 	public void removeTurno(Turno turno) {
-		this.turnos.remove(turno);
-		turno.getAlumnos().remove(this);
+		if (turno != null) {
+			this.turnos.removeIf(actual -> mismaEntidad(actual, turno));
+			turno.getAlumnos().removeIf(actual -> mismaEntidad(actual, this));
+		}
+	}
+
+	private boolean mismaEntidad(Turno actual, Turno objetivo) {
+		return actual == objetivo || actual.getId() != null && actual.getId().equals(objetivo.getId());
+	}
+
+	private boolean mismaEntidad(Alumno actual, Alumno objetivo) {
+		return actual == objetivo || actual.getId() != null && actual.getId().equals(objetivo.getId());
 	}
 
 	public Usuario getUsuario() {
