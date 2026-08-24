@@ -35,6 +35,10 @@ public class Preinscripcion {
  @Column(name="token_documento_hash",nullable=false,length=64) private String tokenDocumentoHash;
  @Column(name="email_enviado",nullable=false) private Boolean emailEnviado=false; @Column(name="email_intentos",nullable=false) private Integer emailIntentos=0;
  @Column(name="email_ultimo_error",length=500) private String emailUltimoError;
+ @Enumerated(EnumType.STRING) @Column(name="email_finalizacion_estado",nullable=false,length=20) private EstadoEmailFinalizacion estadoEmailFinalizacion=EstadoEmailFinalizacion.NO_ENVIADO;
+ @Column(name="email_finalizacion_enviado_en") private Instant emailFinalizacionEnviadoEn;
+ @Column(name="email_finalizacion_intentos",nullable=false) private Integer emailFinalizacionIntentos=0;
+ @Column(name="email_finalizacion_ultimo_error",length=500) private String emailFinalizacionUltimoError;
  @Column(name="creada_en",nullable=false) private Instant creadaEn; @Column(name="actualizada_en",nullable=false) private Instant actualizadaEn;
  @Column(name="finalizada_en") private Instant finalizadaEn; @Column(name="cancelada_en") private Instant canceladaEn;
  @Column(name="promocionada_en") private Instant promocionadaEn;
@@ -50,6 +54,10 @@ public class Preinscripcion {
  public Set<Turno> getTurnos(){return turnos;} public void setTurnos(Set<Turno> v){turnos=v==null?new LinkedHashSet<>():new LinkedHashSet<>(v);} public void addTurno(Turno v){if(v!=null)turnos.add(v);}
  public byte[] getPdfFirmado(){return pdfFirmado;} public void setPdfFirmado(byte[] v){pdfFirmado=v;} public String getTokenDocumentoHash(){return tokenDocumentoHash;} public void setTokenDocumentoHash(String v){tokenDocumentoHash=v;}
  public Boolean getEmailEnviado(){return emailEnviado;} public void setEmailEnviado(Boolean v){emailEnviado=v;} public Integer getEmailIntentos(){return emailIntentos;} public void setEmailIntentos(Integer v){emailIntentos=v;} public String getEmailUltimoError(){return emailUltimoError;} public void setEmailUltimoError(String v){emailUltimoError=v;}
+ public EstadoEmailFinalizacion getEstadoEmailFinalizacion(){return estadoEmailFinalizacion;} public void setEstadoEmailFinalizacion(EstadoEmailFinalizacion v){estadoEmailFinalizacion=v;}
+ public Instant getEmailFinalizacionEnviadoEn(){return emailFinalizacionEnviadoEn;} public void setEmailFinalizacionEnviadoEn(Instant v){emailFinalizacionEnviadoEn=v;}
+ public Integer getEmailFinalizacionIntentos(){return emailFinalizacionIntentos==null?0:emailFinalizacionIntentos;} public void setEmailFinalizacionIntentos(Integer v){emailFinalizacionIntentos=v;}
+ public String getEmailFinalizacionUltimoError(){return emailFinalizacionUltimoError;} public void setEmailFinalizacionUltimoError(String v){emailFinalizacionUltimoError=v;}
  public Instant getCreadaEn(){return creadaEn;} public Instant getFinalizadaEn(){return finalizadaEn;} public void setFinalizadaEn(Instant v){finalizadaEn=v;} public Instant getCanceladaEn(){return canceladaEn;} public void setCanceladaEn(Instant v){canceladaEn=v;} public Alumno getAlumno(){return alumno;} public void setAlumno(Alumno v){alumno=v;}
  public Instant getPromocionadaEn(){return promocionadaEn;} public void setPromocionadaEn(Instant v){promocionadaEn=v;}
 }

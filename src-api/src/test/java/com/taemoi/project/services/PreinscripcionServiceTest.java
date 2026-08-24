@@ -16,15 +16,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.CampoActualizable;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DatosAltaDeporte;
+import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DecisionEmail;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
+import com.taemoi.project.entities.EstadoEmailFinalizacion;
+import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.PlantillaPreinscripcion;
@@ -54,6 +58,7 @@ class PreinscripcionServiceTest {
 	@Mock EmailService email;
 	@Mock ConfiguracionSistemaService configuracion;
 	@Mock AforoPreinscripcionService aforo;
+	@Mock ApplicationEventPublisher eventos;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -64,7 +69,7 @@ class PreinscripcionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
-				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo);
+				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos);
 		grupo = new Grupo();
 		grupo.setId(7L);
 		grupo.setNombre("Taekwondo infantil");
@@ -112,6 +117,8 @@ class PreinscripcionServiceTest {
 		assertEquals(List.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
+		assertEquals(EstadoEmailFinalizacion.PENDIENTE, preinscripcion.getEstadoEmailFinalizacion());
+		verify(eventos).publishEvent(new PreinscripcionFinalizadaEvent("PRE-1"));
 		verify(alumnoDeportes).save(argThat(ad -> ad.getAlumno() == creado
 				&& ad.getDeporte() == Deporte.TAEKWONDO
 				&& Boolean.TRUE.equals(ad.getActivo())
@@ -213,6 +220,63 @@ class PreinscripcionServiceTest {
 		assertTrue(existente.getAutorizacionWeb());
 		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
 		verify(alumnoDeportes).save(deporte);
+	}
+
+	@Test
+	void bloqueaLaFinalizacionSiLosCorreosDifierenYNoHayDecisionExpresa() {
+		Alumno existente = alumnoExistente(true);
+		existente.setEmail("ficha@example.com");
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		FinalizarPreinscripcionRequest solicitud = new FinalizarPreinscripcionRequest(
+				FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE, 3L, Set.of(), null,
+				null, datosTarifaExistente());
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.finalizar("PRE-1", solicitud));
+
+		assertTrue(error.getMessage().contains("elegirse expresamente"));
+		assertEquals("ficha@example.com", existente.getEmail());
+		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+		verify(eventos, never()).publishEvent(any());
+	}
+
+	@Test
+	void usaElCorreoDePreinscripcionCuandoSeEligeComoDefinitivo() {
+		Alumno existente = alumnoExistente(true);
+		existente.setEmail("ficha@example.com");
+		AlumnoDeporte deporte = deporte(existente, true);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO)).thenReturn(Optional.of(deporte));
+		FinalizarPreinscripcionRequest solicitud = new FinalizarPreinscripcionRequest(
+				FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE, 3L, Set.of(), null,
+				DecisionEmail.USAR_PREINSCRIPCION, datosTarifaExistente());
+
+		service.finalizar("PRE-1", solicitud);
+
+		assertEquals("ana@example.com", existente.getEmail());
+		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
+	}
+
+	@Test
+	void reenvioFinalSoloSeSolicitaParaUnaInscripcionFinalizada() {
+		preinscripcion.setEstado(EstadoPreinscripcion.FINALIZADA);
+
+		service.reenviarFinalizacion("PRE-1");
+
+		assertEquals(EstadoEmailFinalizacion.PENDIENTE, preinscripcion.getEstadoEmailFinalizacion());
+		verify(eventos).publishEvent(new PreinscripcionFinalizadaEvent("PRE-1"));
+	}
+
+	@Test
+	void rechazaReenvioFinalSiLaPreinscripcionNoEstaFinalizada() {
+		IllegalStateException error = assertThrows(IllegalStateException.class,
+				() -> service.reenviarFinalizacion("PRE-1"));
+
+		assertTrue(error.getMessage().contains("solo puede reenviarse"));
+		assertEquals(EstadoEmailFinalizacion.NO_ENVIADO, preinscripcion.getEstadoEmailFinalizacion());
+		verify(eventos, never()).publishEvent(any());
 	}
 
 	@Test
@@ -336,7 +400,7 @@ class PreinscripcionServiceTest {
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
 		FinalizarPreinscripcionRequest solicitud = new FinalizarPreinscripcionRequest(
 				FinalizarPreinscripcionRequest.AccionAlumno.CREAR_NUEVO, null, Set.of(), false,
-				datosTaekwondo());
+				null, datosTaekwondo());
 
 		service.finalizar("PRE-1", solicitud);
 
@@ -377,7 +441,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnoDeportes, preinscripciones, configuracion);
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
-				new ObjectMapper(), aforoReal);
+				new ObjectMapper(), aforoReal, eventos);
 
 		servicioPromocion.promocionarTodas();
 
@@ -427,12 +491,13 @@ class PreinscripcionServiceTest {
 		return new FinalizarPreinscripcionRequest(alumnoId == null
 				? FinalizarPreinscripcionRequest.AccionAlumno.CREAR_NUEVO
 				: FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE,
-				alumnoId, campos, null, datos==null?datosTarifaExistente():datos);
+				alumnoId, campos, null, alumnoId == null ? null : DecisionEmail.CONSERVAR_FICHA,
+				datos==null?datosTarifaExistente():datos);
 	}
 
 	private FinalizarPreinscripcionRequest requestSinDatos(Long alumnoId, Set<CampoActualizable> campos) {
 		return new FinalizarPreinscripcionRequest(FinalizarPreinscripcionRequest.AccionAlumno.VINCULAR_EXISTENTE,
-				alumnoId, campos, null, null);
+				alumnoId, campos, null, DecisionEmail.CONSERVAR_FICHA, null);
 	}
 
 	private DatosAltaDeporte datosTarifaExistente() {

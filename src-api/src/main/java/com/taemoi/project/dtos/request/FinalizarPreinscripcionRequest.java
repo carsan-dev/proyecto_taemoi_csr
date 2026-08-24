@@ -17,8 +17,10 @@ public record FinalizarPreinscripcionRequest(
 		Long alumnoId,
 		Set<CampoActualizable> camposActualizar,
 		Boolean discapacidadHistorica,
+		DecisionEmail decisionEmail,
 		@Valid DatosAltaDeporte datosDeporte) {
 	public enum AccionAlumno { CREAR_NUEVO, VINCULAR_EXISTENTE }
+	public enum DecisionEmail { CONSERVAR_FICHA, USAR_PREINSCRIPCION }
 
 	public enum CampoActualizable {
 		NOMBRE,
