@@ -140,7 +140,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			Integer page,
 			Integer size,
 			Boolean incluirRuido) {
-		Specification<AuditoriaEvento> spec = Specification.where(null);
+		Specification<AuditoriaEvento> spec = Specification.unrestricted();
 		spec = spec.and(filtroFechaDesde(desde))
 				.and(filtroFechaHasta(hasta))
 				.and(filtroResultado(resultado))

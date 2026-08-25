@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.taemoi.project.config.AuditoriaRequestFilter;
@@ -56,46 +56,46 @@ class SecurityAuthorizationWebMvcTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private AuthenticationService authenticationService;
 
-	@MockBean
+	@MockitoBean
 	private UsuarioService usuarioService;
 
-	@MockBean
+	@MockitoBean
 	private UsuarioRepository usuarioRepository;
 
-	@MockBean
+	@MockitoBean
 	private AlumnoRepository alumnoRepository;
 
-	@MockBean
+	@MockitoBean
 	private PasswordResetService passwordResetService;
 
-	@MockBean
+	@MockitoBean
 	private RegistroService registroService;
 
-	@MockBean
+	@MockitoBean
 	private EventoService eventoService;
 
-	@MockBean
+	@MockitoBean
 	private ImagenService imagenService;
 
-	@MockBean
+	@MockitoBean
 	private DocumentoService documentoService;
 
-	@MockBean
+	@MockitoBean
 	private JwtService jwtService;
 
-	@MockBean
+	@MockitoBean
 	private AuditoriaService auditoriaService;
 
-	@MockBean
+	@MockitoBean
 	private AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
 
-	@MockBean
+	@MockitoBean
 	private PasswordEncoder passwordEncoder;
 
-	@MockBean
+	@MockitoBean
 	private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
 
 	@Test

@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -47,15 +47,15 @@ import com.taemoi.project.services.UsuarioService;
 class PreinscripcionControllerSecurityWebMvcTest {
 	@Autowired MockMvc mockMvc;
 
-	@MockBean PreinscripcionService preinscripciones;
-	@MockBean TemporadaService temporadas;
-	@MockBean UsuarioService usuarios;
-	@MockBean AlumnoRepository alumnos;
-	@MockBean JwtService jwtService;
-	@MockBean AuditoriaService auditoriaService;
-	@MockBean AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
-	@MockBean PasswordEncoder passwordEncoder;
-	@MockBean OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+	@MockitoBean PreinscripcionService preinscripciones;
+	@MockitoBean TemporadaService temporadas;
+	@MockitoBean UsuarioService usuarios;
+	@MockitoBean AlumnoRepository alumnos;
+	@MockitoBean JwtService jwtService;
+	@MockitoBean AuditoriaService auditoriaService;
+	@MockitoBean AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
+	@MockitoBean PasswordEncoder passwordEncoder;
+	@MockitoBean OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
 
 	@Test
 	void anonimoNoPuedeReenviarAvisoDeCambio() throws Exception {
