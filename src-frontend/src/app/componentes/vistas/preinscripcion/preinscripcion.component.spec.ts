@@ -4,7 +4,7 @@ import { PreinscripcionComponent } from './preinscripcion.component';
 describe('PreinscripcionComponent normas', () => {
   function crear(configuracion: unknown, grupos: any[] = [], parametros: Record<string,string> = {}) {
     const api = {
-      temporada: () => of({ temporada: '2026/2027' }),
+      temporada: () => of({ temporada: '2026-2027' }),
       grupos: () => of(grupos),
       configuracion: () => configuracion instanceof Error ? throwError(() => configuracion) : of(configuracion)
     };
@@ -88,11 +88,27 @@ describe('PreinscripcionComponent normas', () => {
       {id: 2, rangoEdadMin: 13, rangoEdadMax: 17, turnos: [{id: 12, diaSemana: 'Martes'}]},
     ]);
     component.ngOnInit();
-    component.form.controls.fechaNacimiento.setValue(`${new Date().getFullYear()-10}-01-01`);
+    component.form.controls.fechaNacimiento.setValue('2016-01-01');
     component.form.controls.deporte.setValue('TAEKWONDO');
     component.cambiarDeporte();
 
     expect(component.gruposCompatibles.map(g => g.id)).toEqual([1]);
+  });
+
+  it('usa año de nacimiento para mantener toda la cohorte en el mismo grupo', () => {
+    const component = crear({ deporte: 'TAEKWONDO', version: 1, contenido: { normas: ['Norma'] } }, [
+      {id: 1, rangoEdadMin: 7, rangoEdadMax: 7, turnos: [{id: 11, diaSemana: 'Lunes', horaInicio: '17:00'}]},
+      {id: 2, rangoEdadMin: 8, rangoEdadMax: 8, turnos: [{id: 12, diaSemana: 'Lunes', horaInicio: '18:00'}]},
+    ]);
+    component.ngOnInit();
+    component.form.controls.deporte.setValue('TAEKWONDO');
+    component.cambiarDeporte();
+
+    component.form.controls.fechaNacimiento.setValue('2018-01-02');
+    expect(component.gruposCompatibles.map(g => g.id)).toEqual([2]);
+
+    component.form.controls.fechaNacimiento.setValue('2018-12-30');
+    expect(component.gruposCompatibles.map(g => g.id)).toEqual([2]);
   });
 
   it('permite turnos de grupos distintos y reemplaza selección del mismo día', () => {
@@ -122,7 +138,7 @@ describe('PreinscripcionComponent normas', () => {
 
     component.ngOnInit();
     expect(component.form.controls.turnoIds.value).toEqual([]);
-    component.form.controls.fechaNacimiento.setValue(`${new Date().getFullYear()-10}-01-01`);
+    component.form.controls.fechaNacimiento.setValue('2016-01-01');
 
     expect(component.form.controls.turnoIds.value).toEqual([12]);
   });
