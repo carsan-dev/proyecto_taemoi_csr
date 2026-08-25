@@ -167,4 +167,12 @@ describe('PreinscripcionComponent normas', () => {
 
     expect(component.form.controls.turnoIds.value).toEqual([11,13]);
   });
+
+  it('limita las observaciones del horario a mil caracteres', () => {
+    const component = crear({ deporte: 'PILATES', version: 1, contenido: { normas: ['Norma'] } });
+
+    component.form.controls.observaciones.setValue('x'.repeat(1001));
+
+    expect(component.form.controls.observaciones.hasError('maxlength')).toBeTrue();
+  });
 });

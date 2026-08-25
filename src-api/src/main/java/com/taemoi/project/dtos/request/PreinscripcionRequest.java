@@ -16,6 +16,7 @@ public record PreinscripcionRequest(
  @NotBlank @Pattern(regexp="^(?:(?:\\+|00)34[ ]*)?[6789](?:[ ]*\\d){8}$",message="El teléfono debe tener nueve dígitos y prefijo +34 opcional") String telefono,
  @Pattern(regexp="^(?:|(?:(?:\\+|00)34[ ]*)?[6789](?:[ ]*\\d){8})$",message="El teléfono secundario debe tener nueve dígitos y prefijo +34 opcional") String telefono2,
  @NotBlank @Email @Size(max=180) String email,
+ @Size(max=1000) String observaciones,
  @Size(max=180) String tutorNombre,
  @Size(max=16) @Pattern(regexp="(?i)^(?:|[0-9XYZ][0-9]{7}[A-Z])$",message="El DNI/NIE del responsable no tiene un formato válido") String tutorDni,
  @NotNull Boolean tieneDiscapacidad,

@@ -51,10 +51,24 @@ class PreinscripcionRequestValidationTest {
 		assertTrue(VALIDATOR.validate(request).stream().anyMatch(v -> v.getPropertyPath().toString().equals("tieneDiscapacidad")));
 	}
 
+	@Test
+	void limitaLasObservacionesAMilCaracteres() {
+		PreinscripcionRequest request = request("12345678Z", LocalDate.of(1990, 1, 1), null, null, false,
+				"x".repeat(1001));
+
+		assertTrue(VALIDATOR.validate(request).stream()
+				.anyMatch(v -> v.getPropertyPath().toString().equals("observaciones")));
+	}
+
 	private PreinscripcionRequest request(String dni, LocalDate nacimiento, String tutor, String tutorDni,
 			Boolean discapacidad) {
+		return request(dni, nacimiento, tutor, tutorDni, discapacidad, null);
+	}
+
+	private PreinscripcionRequest request(String dni, LocalDate nacimiento, String tutor, String tutorDni,
+			Boolean discapacidad, String observaciones) {
 		return new PreinscripcionRequest(Deporte.TAEKWONDO, List.of(11L), "Ana", "García López", dni,
 				nacimiento, "Calle Mayor 1", "612 345 678", "611 222 333", "ana@example.com",
-				tutor, tutorDni, discapacidad, false, true, "María García", "data:image/png;base64,AAAA");
+				observaciones, tutor, tutorDni, discapacidad, false, true, "María García", "data:image/png;base64,AAAA");
 	}
 }

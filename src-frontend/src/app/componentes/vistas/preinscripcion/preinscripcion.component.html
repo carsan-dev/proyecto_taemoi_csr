@@ -95,6 +95,13 @@
             }
           }
         }
+        <label class="schedule-observations">
+          <span class="field-label">Observaciones sobre el horario <span class="optional">(opcional)</span></span>
+          <span class="observation-help">¿Necesitas que revisemos el horario? Si por edad, tamaño, experiencia o recomendación del profesor crees que otro grupo puede encajar mejor, cuéntanoslo aquí. Nuestro equipo revisará tu solicitud y se pondrá en contacto contigo si es necesario.</span>
+          <textarea formControlName="observaciones" maxlength="1000" rows="4" placeholder="Por ejemplo: su profesor recomienda que pruebe en el grupo siguiente."></textarea>
+          <small class="character-count">{{form.controls.observaciones.value.length}}/1000</small>
+          @if(form.controls.observaciones.touched && form.controls.observaciones.invalid){<small>La observación no puede superar los 1.000 caracteres.</small>}
+        </label>
       </section>
 
       <section>
