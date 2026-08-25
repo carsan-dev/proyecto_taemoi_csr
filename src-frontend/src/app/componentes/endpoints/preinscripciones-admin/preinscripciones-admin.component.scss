@@ -15,6 +15,7 @@ th { color: #687175; font-size: .72rem; text-transform: uppercase; }
 tbody tr { cursor: pointer; }
 tbody tr:hover, .selected { background: #f0ece3; }
 td small { display: block; color: #778085; }
+.observation-flag { color: #a52229 !important; font-weight: 800; }
 td span { font-size: .7rem; font-weight: 800; }
 td span[data-state=PENDIENTE] { color: #9a6816; }
 td span[data-state=FINALIZADA] { color: #1c7154; }
@@ -36,6 +37,23 @@ td span[data-state=EN_LISTA_ESPERA] { color: #9a6816; }
 .signature-preview { margin: 1.5rem 0; }
 .signature-preview img, .signature-loading { display: flex; width: 100%; height: 112px; align-items: center; justify-content: center; object-fit: contain; border: 1px solid #e0e3e4; background: #fafafa; color: #687175; }
 .signature-preview button { width: 100%; margin-top: .5rem; }
+.observation-detail { margin: 1rem 0; padding: .9rem 1rem; border-left: 3px solid #cbd2d4; background: #f6f8f8; }
+.observation-detail.has-observation { border-left-color: #a52229; background: #fbf4f2; }
+.observation-detail h3 { margin: 0 0 .4rem; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; }
+.observation-detail p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.schedule-editor { margin: 1rem 0; padding: 1rem; border: 1px solid #d9e0e2; background: #f7f9f9; }
+.schedule-editor > h3 { margin: 0 0 .35rem; }
+.schedule-editor > p, .schedule-loading { margin: 0 0 .8rem; color: #607075; font-size: .85rem; }
+.schedule-options { display: grid; gap: .5rem; max-height: 360px; overflow: auto; }
+.schedule-options label { display: grid; grid-template-columns: auto 1fr; gap: .6rem; padding: .65rem; border: 1px solid #d7dfe1; background: #fff; cursor: pointer; }
+.schedule-options label.is-selected { border-color: #172126; background: #edf3f3; }
+.schedule-options input { margin-top: .2rem; }
+.schedule-options strong, .schedule-options small { display: block; }
+.schedule-options small { margin-top: .15rem; color: #647378; }
+.schedule-options em { display: flex; gap: .35rem; margin-top: .35rem; font-style: normal; }
+.schedule-options b { padding: .15rem .35rem; background: #f7dddd; color: #8c2025; font-size: .68rem; }
+.schedule-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .8rem; }
+.schedule-error { color: #a52229 !important; }
 .detail-panel > button:not(.close) { display: block; width: 100%; margin: .5rem 0; }
 .primary { border-color: #172126; background: #172126; color: #fff; }
 .danger { color: #a52229; }

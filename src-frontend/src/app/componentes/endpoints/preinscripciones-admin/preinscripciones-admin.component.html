@@ -23,14 +23,14 @@
   <div class="workspace">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email inicial</th><th>Confirmación final</th></tr></thead>
+        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email inicial</th><th>Aviso de cambio</th><th>Confirmación final</th></tr></thead>
         <tbody>
           @for (x of items; track x.referencia) {
             <tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia === x.referencia">
-              <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small></td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td><td>{{x.estadoEmailFinalizacion}} ({{x.emailFinalizacionIntentos}})</td>
+              <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small>@if(x.observaciones){<small class="observation-flag">Con observación</small>}</td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td><td>{{x.estadoEmailCambioTurnos}} ({{x.emailCambioTurnosIntentos}})</td><td>{{x.estadoEmailFinalizacion}} ({{x.emailFinalizacionIntentos}})</td>
             </tr>
           } @empty {
-            <tr><td colspan="7">No hay solicitudes con estos filtros.</td></tr>
+            <tr><td colspan="8">No hay solicitudes con estos filtros.</td></tr>
           }
         </tbody>
       </table>
@@ -74,15 +74,37 @@
     <button class="close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
     <p class="kicker">{{seleccion.referencia}}</p>
     <h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2>
-    <dl><dt>DNI/NIE</dt><dd>{{seleccion.dni || 'Sin DNI/NIE'}}</dd><dt>Teléfono secundario</dt><dd>{{seleccion.telefono2 || 'No facilitado'}}</dd><dt>Discapacidad</dt><dd>{{seleccion.tieneDiscapacidad == null ? 'No recogido' : seleccion.tieneDiscapacidad ? 'Sí' : 'No'}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Grupo</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd><dt>Confirmación final</dt><dd>{{seleccion.estadoEmailFinalizacion}} · {{seleccion.emailFinalizacionIntentos}} intento(s)</dd>@if(seleccion.emailFinalizacionEnviadoEn){<dt>Enviada</dt><dd>{{seleccion.emailFinalizacionEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailFinalizacionUltimoError){<dt>Último error</dt><dd>{{seleccion.emailFinalizacionUltimoError}}</dd>}</dl>
+    <dl><dt>DNI/NIE</dt><dd>{{seleccion.dni || 'Sin DNI/NIE'}}</dd><dt>Teléfono secundario</dt><dd>{{seleccion.telefono2 || 'No facilitado'}}</dd><dt>Discapacidad</dt><dd>{{seleccion.tieneDiscapacidad == null ? 'No recogido' : seleccion.tieneDiscapacidad ? 'Sí' : 'No'}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Horario solicitado originalmente</dt><dd>{{seleccion.grupoOriginal}}</dd><dt>Asignación vigente</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd><dt>Aviso de cambio</dt><dd>{{seleccion.estadoEmailCambioTurnos}} · {{seleccion.emailCambioTurnosIntentos}} intento(s)</dd>@if(seleccion.turnosModificadosEn){<dt>Turnos modificados</dt><dd>{{seleccion.turnosModificadosEn | date:'medium'}}</dd>}@if(seleccion.emailCambioTurnosEnviadoEn){<dt>Aviso enviado</dt><dd>{{seleccion.emailCambioTurnosEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailCambioTurnosUltimoError){<dt>Error del aviso</dt><dd>{{seleccion.emailCambioTurnosUltimoError}}</dd>}<dt>Confirmación final</dt><dd>{{seleccion.estadoEmailFinalizacion}} · {{seleccion.emailFinalizacionIntentos}} intento(s)</dd>@if(seleccion.emailFinalizacionEnviadoEn){<dt>Confirmación enviada</dt><dd>{{seleccion.emailFinalizacionEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailFinalizacionUltimoError){<dt>Error de confirmación</dt><dd>{{seleccion.emailFinalizacionUltimoError}}</dd>}</dl>
+    <section class="observation-detail" [class.has-observation]="seleccion.observaciones"><h3>Observación sobre el horario</h3><p>{{seleccion.observaciones || 'Sin observaciones.'}}</p></section>
     @if(seleccion.estado === 'EN_LISTA_ESPERA'){<p><strong>Posición en cola:</strong> {{seleccion.posicionListaEspera}}</p>}
 
     <section class="signature-preview">
       <h3>Firma presentada</h3>
       @if (firmaUrl) { <img [src]="firmaUrl" alt="Firma trazada por {{seleccion.nombre}} {{seleccion.apellidos}}"> }
       @else { <div class="signature-loading">Cargando firma…</div> }
-      <button type="button" (click)="descargarDocumento()">Descargar PDF firmado</button>
+      <button type="button" (click)="descargarDocumento()">Descargar solicitud original firmada</button>
     </section>
+
+    @if(puedeEditarTurnos && !editandoTurnos){<button type="button" (click)="abrirEdicionTurnos()">Modificar turnos</button>}
+    @if(editandoTurnos){
+      <section class="schedule-editor">
+        <h3>Asignación administrativa</h3>
+        <p>Puede ignorar edad y aforo. Solo se admite un turno por día.</p>
+        @if(cargandoTurnos){<div class="schedule-loading">Cargando turnos…</div>}
+        @else{
+          <div class="schedule-options">
+            @for(turno of turnosDisponibles;track turno.id){
+              <label [class.is-selected]="turnoAdminSeleccionado(turno.id)">
+                <input type="checkbox" [checked]="turnoAdminSeleccionado(turno.id)" (change)="alternarTurnoAdmin(turno,$any($event.target).checked)">
+                <span><strong>{{turno.diaSemana}} · {{turno.horaInicio}}–{{turno.horaFin}}</strong><small>{{turno.grupo}} · {{turno.rangoEdadMin}}–{{turno.rangoEdadMax}} años</small><em>@if(turnoFueraEdad(turno)){<b>Fuera de edad</b>}@if(turno.completo){<b>{{turnoEsPlazaActual(turno) ? 'Plaza actual' : 'Sin plaza'}}</b>}</em></span>
+              </label>
+            }
+          </div>
+          @if(!turnoIdsEdicion.length){<p class="schedule-error">Selecciona al menos un turno.</p>}
+          <div class="schedule-actions"><button type="button" [disabled]="procesandoTurnos" (click)="cerrarEdicionTurnos()">Cancelar</button><button type="button" class="primary" [disabled]="!turnoIdsEdicion.length || !turnosEdicionCambiados || procesandoTurnos" (click)="guardarTurnos()">{{procesandoTurnos?'Guardando…':'Guardar turnos'}}</button></div>
+        }
+      </section>
+    }
 
     @if (seleccion.estado === 'PENDIENTE') {
       <section class="student-match">
@@ -94,10 +116,11 @@
         }
       </section>
       <button class="primary" (click)="abrirFinalizacion()">Revisar y finalizar alta</button>
-      <button (click)="reenviar()">Reenviar correo</button>
+      <button (click)="reenviar()">Reenviar solicitud original</button>
+      @if(puedeReenviarCambioTurnos){<button (click)="reenviarCambioTurnos()">Reenviar aviso de cambio</button>}
       <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
     }
-    @if (seleccion.estado === 'EN_LISTA_ESPERA') { <button class="danger" (click)="cancelar()">Cancelar lista de espera</button> }
+    @if (seleccion.estado === 'EN_LISTA_ESPERA') { <button (click)="reenviar()">Reenviar solicitud original</button><button class="danger" (click)="cancelar()">Cancelar lista de espera</button> }
     @if (seleccion.estado === 'FINALIZADA') { <button class="primary" (click)="reenviarFinalizacion()">Reenviar confirmación</button> }
     @if (puedeEliminar) {
       <button class="danger delete" (click)="eliminar()">Eliminar definitivamente</button>
@@ -115,7 +138,7 @@
 
       <div class="admission-summary">
         <p><strong>{{seleccion.nombre}} {{seleccion.apellidos}}</strong><span>{{seleccion.dni || 'Sin DNI/NIE'}} · {{seleccion.deporte}}</span></p>
-        <p><strong>{{seleccion.turnosSolicitados?.length || 1}} turno(s) solicitado(s)</strong><span>{{seleccion.grupo}}</span></p>
+        <p><strong>{{seleccion.turnosSolicitados?.length || 1}} turno(s) en la asignación vigente</strong><span>{{seleccion.grupo}}</span></p>
       </div>
 
       <section>
@@ -185,7 +208,7 @@
       @if (accionAlumno) {
         <section class="sport-data">
           <h3>Tarifa y horarios deportivos</h3>
-          <p class="status-note">La cuantía se decide manualmente. Los turnos anteriores de este deporte serán reemplazados por los {{seleccion.turnosSolicitados?.length || 1}} solicitados.</p>
+          <p class="status-note">La cuantía se decide manualmente. Los turnos anteriores de este deporte serán reemplazados por los {{seleccion.turnosSolicitados?.length || 1}} de la asignación vigente.</p>
           <div class="form-grid">
             <label>Tipo de tarifa
               <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
