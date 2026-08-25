@@ -14,11 +14,14 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.dtos.request.ActualizarTurnosPreinscripcionRequest;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.CampoActualizable;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DatosAltaDeporte;
@@ -26,9 +29,11 @@ import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DecisionEm
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.EstadoEmailCambioTurnos;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.EstadoEmailFinalizacion;
 import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
+import com.taemoi.project.events.PreinscripcionTurnosModificadosEvent;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.PlantillaPreinscripcion;
@@ -123,7 +128,6 @@ class PreinscripcionServiceTest {
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
 		assertEquals(EstadoEmailFinalizacion.PENDIENTE, preinscripcion.getEstadoEmailFinalizacion());
-		verify(temporadas).edadCohorte(LocalDate.of(2014, 4, 12), "2026-2027");
 		verify(eventos).publishEvent(new PreinscripcionFinalizadaEvent("PRE-1"));
 		verify(alumnoDeportes).save(argThat(ad -> ad.getAlumno() == creado
 				&& ad.getDeporte() == Deporte.TAEKWONDO
@@ -182,14 +186,148 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
-	void rechazaTurnosIncompatiblesConLaEdad() {
+	void finalizaTurnosAsignadosAdministrativamenteAunqueEstanFueraDeEdad() {
+		grupo.setRangoEdadMax(10);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
+		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
+		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+
+		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
+
+		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
+		verify(temporadas, never()).edadCohorte(any(), anyString());
+	}
+
+	@Test
+	void rechazaTurnosFueraDeEdadEnLaSeleccionPublica() {
 		grupo.setRangoEdadMax(10);
 
 		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-				() -> service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo())));
+				() -> service.validarSeleccion(Deporte.TAEKWONDO, LocalDate.of(2014, 4, 12),
+						"2026-2027", List.of(lunes)));
 
 		assertTrue(error.getMessage().contains("edad"));
+	}
+
+	@Test
+	void cambiaTurnosSinAlterarSolicitudOriginalYPoneElAvisoEnCola() {
+		preinscripcion.setEstado(EstadoPreinscripcion.EN_LISTA_ESPERA);
+		preinscripcion.setGrupoSnapshot("Taekwondo · Lunes 18:00-19:00 (Taekwondo infantil)");
+		byte[] pdfOriginal = {1, 2, 3, 4};
+		preinscripcion.setPdfFirmado(pdfOriginal);
+		Grupo mayores = new Grupo();
+		mayores.setId(8L);
+		mayores.setNombre("Taekwondo mayores");
+		mayores.setDeporte(Deporte.TAEKWONDO);
+		mayores.setRangoEdadMin(16);
+		mayores.setRangoEdadMax(99);
+		Turno viernes = new Turno();
+		viernes.setId(21L);
+		viernes.setDiaSemana("Viernes");
+		viernes.setHoraInicio("20:00");
+		viernes.setHoraFin("21:00");
+		viernes.setGrupo(mayores);
+		when(aforo.bloquearTurnos(Set.of(11L, 12L, 21L))).thenReturn(List.of(lunes, miercoles, viernes));
+
+		service.actualizarTurnos("PRE-1", new ActualizarTurnosPreinscripcionRequest(List.of(21L)));
+
+		assertEquals(List.of(viernes), preinscripcion.getTurnos().stream().toList());
+		assertSame(mayores, preinscripcion.getGrupo());
 		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+		assertEquals("Taekwondo · Lunes 18:00-19:00 (Taekwondo infantil)", preinscripcion.getGrupoSnapshot());
+		assertSame(pdfOriginal, preinscripcion.getPdfFirmado());
+		assertTrue(service.grupoVigente(preinscripcion).contains("Taekwondo mayores"));
+		assertEquals(EstadoEmailCambioTurnos.PENDIENTE, preinscripcion.getEstadoEmailCambioTurnos());
+		assertNotNull(preinscripcion.getTurnosModificadosEn());
+		assertTrue(preinscripcion.getEmailCambioTurnosAnteriorSnapshot().contains("Taekwondo infantil"));
+		assertTrue(preinscripcion.getEmailCambioTurnosNuevoSnapshot().contains("Taekwondo mayores"));
+		verify(preinscripciones).saveAndFlush(preinscripcion);
+		verify(eventos).publishEvent(new PreinscripcionTurnosModificadosEvent("PRE-1"));
+		verify(email, never()).sendEmailSync(anyString(), anyString(), anyString());
+	}
+
+	@Test
+	void conservaComparacionesEnLaObservacionYRecortaLosExtremos() {
+		String resultado = ReflectionTestUtils.invokeMethod(service, "limpiarObservacion", "  Peso > 45 kg y < 60 kg  ");
+
+		assertEquals("Peso > 45 kg y < 60 kg", resultado);
+	}
+
+	@Test
+	void reenviaSolicitudOriginalConHorarioYPdfOriginalesSinAfirmarEstado() {
+		preinscripcion.setEstado(EstadoPreinscripcion.PENDIENTE);
+		preinscripcion.setGrupoSnapshot("Horario original");
+		preinscripcion.setEmailCambioTurnosNuevoSnapshot("Horario vigente");
+		preinscripcion.setObservaciones("Peso > 45 kg <script>alert('x')</script>");
+		byte[] pdfOriginal = {9, 8, 7};
+		preinscripcion.setPdfFirmado(pdfOriginal);
+		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		service.reenviar("PRE-1");
+
+		ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+		verify(email).sendEmailConAdjunto(eq("ana@example.com"), startsWith("Copia de la solicitud original"),
+				html.capture(), eq("solicitud-original-PRE-1.pdf"), same(pdfOriginal));
+		assertTrue(html.getValue().contains("Horario original"));
+		assertFalse(html.getValue().contains("Horario vigente"));
+		assertFalse(html.getValue().contains("Plaza asignada"));
+		assertTrue(html.getValue().contains("Peso &gt; 45 kg"));
+		assertFalse(html.getValue().contains("<script>"));
+	}
+
+	@Test
+	void solicitaReenvioDelUltimoCambioMientrasSiguePendiente() {
+		preinscripcion.setEmailCambioTurnosAnteriorSnapshot("Horario anterior");
+		preinscripcion.setEmailCambioTurnosNuevoSnapshot("Horario vigente");
+		preinscripcion.setEstadoEmailCambioTurnos(EstadoEmailCambioTurnos.ERROR);
+		preinscripcion.setEmailCambioTurnosUltimoError("SMTP");
+
+		service.reenviarCambioTurnos("PRE-1");
+
+		assertEquals(EstadoEmailCambioTurnos.PENDIENTE, preinscripcion.getEstadoEmailCambioTurnos());
+		assertNull(preinscripcion.getEmailCambioTurnosUltimoError());
+		verify(eventos).publishEvent(new PreinscripcionTurnosModificadosEvent("PRE-1"));
+	}
+
+	@Test
+	void rechazaReenvioDeCambioTrasFinalizarLaSolicitud() {
+		preinscripcion.setEstado(EstadoPreinscripcion.FINALIZADA);
+		preinscripcion.setEmailCambioTurnosAnteriorSnapshot("Horario anterior");
+		preinscripcion.setEmailCambioTurnosNuevoSnapshot("Horario vigente");
+
+		assertThrows(IllegalStateException.class, () -> service.reenviarCambioTurnos("PRE-1"));
+		verify(eventos, never()).publishEvent(new PreinscripcionTurnosModificadosEvent("PRE-1"));
+	}
+
+	@Test
+	void cambioAdministrativoRechazaDosTurnosDelMismoDia() {
+		miercoles.setDiaSemana("Lunes");
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.actualizarTurnos("PRE-1", new ActualizarTurnosPreinscripcionRequest(List.of(11L, 12L))));
+
+		assertTrue(error.getMessage().contains("por día"));
+		verify(preinscripciones, never()).saveAndFlush(preinscripcion);
+	}
+
+	@Test
+	void incluyeObservacionEscapadaEnCorreosDeClienteYAdmin() {
+		PlantillaPreinscripcion plantilla = new PlantillaPreinscripcion();
+		plantilla.setInstrucciones("Acude al club.");
+		preinscripcion.setPlantilla(plantilla);
+		preinscripcion.setGrupoSnapshot("Taekwondo · Lunes 18:00-19:00");
+		preinscripcion.setObservaciones("<b>Es grande & fuerte</b>");
+		ReflectionTestUtils.setField(service, "frontendBaseUrl", "http://localhost:4200");
+
+		String cliente = ReflectionTestUtils.invokeMethod(service, "htmlConfirmacion", preinscripcion);
+		String admin = ReflectionTestUtils.invokeMethod(service, "htmlAdmin", preinscripcion);
+
+		assertTrue(cliente.contains("Es grande &amp; fuerte"));
+		assertTrue(admin.contains("Es grande &amp; fuerte"));
+		assertFalse(cliente.contains("<b>Es grande"));
+		assertFalse(admin.contains("<b>Es grande"));
 	}
 
 	@Test

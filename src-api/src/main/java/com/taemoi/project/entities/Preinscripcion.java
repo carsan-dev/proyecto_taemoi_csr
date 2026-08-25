@@ -17,6 +17,7 @@ public class Preinscripcion {
  @Column(length=16) private String dni; @Column(name="identidad_hash",nullable=false,length=64) private String identidadHash; @Column(name="fecha_nacimiento",nullable=false) private LocalDate fechaNacimiento;
  @Column(nullable=false) private String direccion; @Column(nullable=false,length=20) private String telefono; @Column(length=20) private String telefono2; @Column(nullable=false,length=180) private String email;
  @Column(name="tiene_discapacidad") private Boolean tieneDiscapacidad;
+ @Column(length=1000) private String observaciones;
  @Column(name="tutor_nombre",length=180) private String tutorNombre; @Column(name="tutor_dni",length=16) private String tutorDni;
  @Column(name="consentimiento_fotografico",nullable=false) private Boolean consentimientoFotografico=false;
  @Column(name="aceptacion_normas",nullable=false) private Boolean aceptacionNormas;
@@ -39,6 +40,13 @@ public class Preinscripcion {
  @Column(name="email_finalizacion_enviado_en") private Instant emailFinalizacionEnviadoEn;
  @Column(name="email_finalizacion_intentos",nullable=false) private Integer emailFinalizacionIntentos=0;
  @Column(name="email_finalizacion_ultimo_error",length=500) private String emailFinalizacionUltimoError;
+ @Enumerated(EnumType.STRING) @Column(name="email_cambio_turnos_estado",nullable=false,length=20) private EstadoEmailCambioTurnos estadoEmailCambioTurnos=EstadoEmailCambioTurnos.NO_ENVIADO;
+ @Column(name="email_cambio_turnos_intentos",nullable=false) private Integer emailCambioTurnosIntentos=0;
+ @Column(name="email_cambio_turnos_enviado_en") private Instant emailCambioTurnosEnviadoEn;
+ @Column(name="email_cambio_turnos_ultimo_error",length=500) private String emailCambioTurnosUltimoError;
+ @Column(name="turnos_modificados_en") private Instant turnosModificadosEn;
+ @Lob @Column(name="email_cambio_turnos_anterior_snapshot",columnDefinition="LONGTEXT") private String emailCambioTurnosAnteriorSnapshot;
+ @Lob @Column(name="email_cambio_turnos_nuevo_snapshot",columnDefinition="LONGTEXT") private String emailCambioTurnosNuevoSnapshot;
  @Column(name="creada_en",nullable=false) private Instant creadaEn; @Column(name="actualizada_en",nullable=false) private Instant actualizadaEn;
  @Column(name="finalizada_en") private Instant finalizadaEn; @Column(name="cancelada_en") private Instant canceladaEn;
  @Column(name="promocionada_en") private Instant promocionadaEn;
@@ -48,6 +56,7 @@ public class Preinscripcion {
  public Deporte getDeporte(){return deporte;} public void setDeporte(Deporte v){deporte=v;} public EstadoPreinscripcion getEstado(){return estado;} public void setEstado(EstadoPreinscripcion v){estado=v;}
  public String getNombre(){return nombre;} public void setNombre(String v){nombre=v;} public String getApellidos(){return apellidos;} public void setApellidos(String v){apellidos=v;} public String getDni(){return dni;} public void setDni(String v){dni=v;} public String getIdentidadHash(){return identidadHash;} public void setIdentidadHash(String v){identidadHash=v;}
  public LocalDate getFechaNacimiento(){return fechaNacimiento;} public void setFechaNacimiento(LocalDate v){fechaNacimiento=v;} public String getDireccion(){return direccion;} public void setDireccion(String v){direccion=v;} public String getTelefono(){return telefono;} public void setTelefono(String v){telefono=v;} public String getTelefono2(){return telefono2;} public void setTelefono2(String v){telefono2=v;} public String getEmail(){return email;} public void setEmail(String v){email=v;} public Boolean getTieneDiscapacidad(){return tieneDiscapacidad;} public void setTieneDiscapacidad(Boolean v){tieneDiscapacidad=v;}
+ public String getObservaciones(){return observaciones;} public void setObservaciones(String v){observaciones=v;}
  public String getTutorNombre(){return tutorNombre;} public void setTutorNombre(String v){tutorNombre=v;} public String getTutorDni(){return tutorDni;} public void setTutorDni(String v){tutorDni=v;}
  public Boolean getConsentimientoFotografico(){return consentimientoFotografico;} public void setConsentimientoFotografico(Boolean v){consentimientoFotografico=v;} public Boolean getAceptacionNormas(){return aceptacionNormas;} public void setAceptacionNormas(Boolean v){aceptacionNormas=v;} public String getFirmanteNombre(){return firmanteNombre;} public void setFirmanteNombre(String v){firmanteNombre=v;} public byte[] getFirma(){return firma;} public void setFirma(byte[] v){firma=v;}
  public Turno getTurno(){return turno;} public void setTurno(Turno v){turno=v;} public String getTurnoSnapshot(){return turnoSnapshot;} public void setTurnoSnapshot(String v){turnoSnapshot=v;} public Grupo getGrupo(){return grupo;} public void setGrupo(Grupo v){grupo=v;} public String getGrupoSnapshot(){return grupoSnapshot;} public void setGrupoSnapshot(String v){grupoSnapshot=v;} public PlantillaPreinscripcion getPlantilla(){return plantilla;} public void setPlantilla(PlantillaPreinscripcion v){plantilla=v;} public String getPlantillaSnapshot(){return plantillaSnapshot;} public void setPlantillaSnapshot(String v){plantillaSnapshot=v;}
@@ -58,6 +67,13 @@ public class Preinscripcion {
  public Instant getEmailFinalizacionEnviadoEn(){return emailFinalizacionEnviadoEn;} public void setEmailFinalizacionEnviadoEn(Instant v){emailFinalizacionEnviadoEn=v;}
  public Integer getEmailFinalizacionIntentos(){return emailFinalizacionIntentos==null?0:emailFinalizacionIntentos;} public void setEmailFinalizacionIntentos(Integer v){emailFinalizacionIntentos=v;}
  public String getEmailFinalizacionUltimoError(){return emailFinalizacionUltimoError;} public void setEmailFinalizacionUltimoError(String v){emailFinalizacionUltimoError=v;}
+ public EstadoEmailCambioTurnos getEstadoEmailCambioTurnos(){return estadoEmailCambioTurnos;} public void setEstadoEmailCambioTurnos(EstadoEmailCambioTurnos v){estadoEmailCambioTurnos=v;}
+ public Integer getEmailCambioTurnosIntentos(){return emailCambioTurnosIntentos==null?0:emailCambioTurnosIntentos;} public void setEmailCambioTurnosIntentos(Integer v){emailCambioTurnosIntentos=v;}
+ public Instant getEmailCambioTurnosEnviadoEn(){return emailCambioTurnosEnviadoEn;} public void setEmailCambioTurnosEnviadoEn(Instant v){emailCambioTurnosEnviadoEn=v;}
+ public String getEmailCambioTurnosUltimoError(){return emailCambioTurnosUltimoError;} public void setEmailCambioTurnosUltimoError(String v){emailCambioTurnosUltimoError=v;}
+ public Instant getTurnosModificadosEn(){return turnosModificadosEn;} public void setTurnosModificadosEn(Instant v){turnosModificadosEn=v;}
+ public String getEmailCambioTurnosAnteriorSnapshot(){return emailCambioTurnosAnteriorSnapshot;} public void setEmailCambioTurnosAnteriorSnapshot(String v){emailCambioTurnosAnteriorSnapshot=v;}
+ public String getEmailCambioTurnosNuevoSnapshot(){return emailCambioTurnosNuevoSnapshot;} public void setEmailCambioTurnosNuevoSnapshot(String v){emailCambioTurnosNuevoSnapshot=v;}
  public Instant getCreadaEn(){return creadaEn;} public Instant getFinalizadaEn(){return finalizadaEn;} public void setFinalizadaEn(Instant v){finalizadaEn=v;} public Instant getCanceladaEn(){return canceladaEn;} public void setCanceladaEn(Instant v){canceladaEn=v;} public Alumno getAlumno(){return alumno;} public void setAlumno(Alumno v){alumno=v;}
  public Instant getPromocionadaEn(){return promocionadaEn;} public void setPromocionadaEn(Instant v){promocionadaEn=v;}
 }
