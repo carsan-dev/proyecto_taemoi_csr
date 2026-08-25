@@ -70,6 +70,11 @@ class PreinscripcionServiceTest {
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos);
+		lenient().when(temporadas.edadCohorte(any(LocalDate.class), anyString())).thenAnswer(inv -> {
+			LocalDate nacimiento = inv.getArgument(0);
+			String temporada = inv.getArgument(1);
+			return Integer.parseInt(temporada.substring(0, 4)) - nacimiento.getYear();
+		});
 		grupo = new Grupo();
 		grupo.setId(7L);
 		grupo.setNombre("Taekwondo infantil");
@@ -118,6 +123,7 @@ class PreinscripcionServiceTest {
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
 		assertEquals(EstadoEmailFinalizacion.PENDIENTE, preinscripcion.getEstadoEmailFinalizacion());
+		verify(temporadas).edadCohorte(LocalDate.of(2014, 4, 12), "2026-2027");
 		verify(eventos).publishEvent(new PreinscripcionFinalizadaEvent("PRE-1"));
 		verify(alumnoDeportes).save(argThat(ad -> ad.getAlumno() == creado
 				&& ad.getDeporte() == Deporte.TAEKWONDO
@@ -514,6 +520,7 @@ class PreinscripcionServiceTest {
 		p.setReferencia("PRE-1");
 		p.setEstado(EstadoPreinscripcion.PENDIENTE);
 		p.setDeporte(Deporte.TAEKWONDO);
+		p.setTemporada("2026-2027");
 		p.setGrupo(grupo);
 		p.setNombre("Ana");
 		p.setApellidos("García López");
