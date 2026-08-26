@@ -1,6 +1,7 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
 @use "@angular/material" as mat;
+@use "sass:meta";
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
@@ -26,6 +27,82 @@ $Taemoi_Angular_Front-theme: mat.define-theme();
 @import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 @import "leaflet-control-geocoder/dist/Control.Geocoder.css";
 @import "leaflet-minimap/dist/Control.MiniMap.min.css";
+
+// Bootstrap enables smooth scrolling globally. Keep route restoration deterministic;
+// explicit smooth scrolls (for example the back-to-top button) still override this.
+html {
+  scroll-behavior: auto !important;
+}
+
+// Modern replacement for ngx-spinner's legacy prefixed animation stylesheet.
+.la-ball-clip-rotate,
+.la-ball-clip-rotate > div {
+  box-sizing: border-box;
+  position: relative;
+}
+
+.la-ball-clip-rotate {
+  display: block;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0;
+}
+
+.la-ball-clip-rotate > div {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 2px solid currentColor;
+  border-bottom-color: transparent;
+  border-radius: 100%;
+  background: transparent;
+  animation: ball-clip-rotate 0.75s linear infinite;
+}
+
+.la-ball-clip-rotate.la-sm,
+.la-ball-clip-rotate.la-sm > div {
+  width: 16px;
+  height: 16px;
+}
+
+.la-ball-clip-rotate.la-sm > div {
+  border-width: 1px;
+}
+
+.la-ball-clip-rotate.la-2x,
+.la-ball-clip-rotate.la-2x > div {
+  width: 64px;
+  height: 64px;
+}
+
+.la-ball-clip-rotate.la-2x > div {
+  border-width: 4px;
+}
+
+.la-ball-clip-rotate.la-3x,
+.la-ball-clip-rotate.la-3x > div {
+  width: 96px;
+  height: 96px;
+}
+
+.la-ball-clip-rotate.la-3x > div {
+  border-width: 6px;
+}
+
+@keyframes ball-clip-rotate {
+  from { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Shared admin rules are emitted once instead of being duplicated in every
+// standalone component bundle. Scope protects public and user-facing views.
+:where(body:has(.admin-ui)) {
+  @include meta.load-css("app/componentes/admin-shared-styles");
+  @include meta.load-css("app/componentes/admin-mobile-forms");
+}
 
 @font-face {
   font-family: "Osaka-Sans Serif";

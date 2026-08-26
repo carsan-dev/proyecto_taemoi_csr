@@ -1,6 +1,5 @@
 // Import shared admin styles
-@use '../../../componentes/admin-shared-styles.scss' as *;
-@use '../../../componentes/admin-mobile-forms.scss' as *;
+@use '../../../componentes/admin-theme' as *;
 
 // Component-specific styles
 .turnos-section {

@@ -1,0 +1,142 @@
+@use 'sass:color';
+
+$primary-color: #007bff;
+$primary-dark: #0056b3;
+$dark-bg: #1b2b2e;
+$dark-accent: #284747;
+$text-light: #ffffff;
+$text-dark: #212529;
+$text-muted: #6c757d;
+$background-light: #f8f9fa;
+
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+$taekwondo-color: #0d47a1;
+$taekwondo-hover: #1976d2;
+$kickboxing-color: #ff4500;
+$kickboxing-hover: #e83e00;
+$pilates-color: #57a2a8;
+$pilates-hover: #468a8f;
+$defensa-color: #c2185b;
+$defensa-hover: #d81b60;
+
+$success-color: #4caf50;
+$success-hover: #45a049;
+$danger-color: #f44336;
+$danger-hover: #da190b;
+$warning-color: #ff9800;
+$warning-hover: #e68900;
+$info-color: #2196f3;
+$info-hover: #0b7dda;
+$whatsapp-color: #25d366;
+$whatsapp-hover: #128c7e;
+
+@mixin modern-card {
+  background: $text-light;
+  border: none;
+  border-radius: 20px;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+  transition: $transition;
+
+  &:hover {
+    box-shadow: $shadow-lg;
+    transform: translateY(-3px);
+  }
+}
+
+@mixin modern-button($bg-color, $hover-color) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
+  overflow: hidden;
+  border: none;
+  border-radius: 50px;
+  background: $bg-color;
+  box-shadow: $shadow-sm;
+  color: $text-light;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: $transition;
+
+  i {
+    font-size: 1.2rem;
+  }
+
+  &:hover {
+    background: $hover-color;
+    box-shadow: $shadow-md;
+    color: $text-light;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+  }
+}
+
+@mixin form-input {
+  padding: 0.875rem 1.25rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: $text-light;
+  font-size: 1rem;
+  transition: $transition;
+
+  &:focus {
+    border-color: $primary-color;
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+  }
+
+  &:hover:not(:focus) {
+    border-color: #c0c0c0;
+  }
+}
+
+@mixin page-header {
+  margin-bottom: 2.5rem;
+  animation: fadeInDown 0.6s ease;
+
+  h1,
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    color: $text-dark;
+    font-family: 'Osaka-Sans Serif', sans-serif;
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 700;
+
+    i {
+      padding: 0.75rem;
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+      color: $primary-color;
+      font-size: 2.5rem;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: $text-muted;
+    font-size: 1.125rem;
+  }
+}
