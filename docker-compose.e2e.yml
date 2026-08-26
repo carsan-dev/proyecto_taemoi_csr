@@ -1,0 +1,64 @@
+name: taemoi-scroll-e2e
+
+services:
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root-e2e-only
+      MYSQL_DATABASE: taemoi_e2e
+      MYSQL_USER: taemoi
+      MYSQL_PASSWORD: taemoi-e2e-only
+    volumes:
+      - database_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot-e2e-only"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./src-api
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: e2e
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/taemoi_e2e?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Europe/Madrid
+      SPRING_DATASOURCE_USERNAME: taemoi
+      SPRING_DATASOURCE_PASSWORD: taemoi-e2e-only
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
+      JWT_SECRET: e2e-scroll-secret-that-is-long-enough-and-never-used-outside-tests-2026
+      CORS_ALLOWED_ORIGIN: http://localhost:4200
+      APP_BASE_URL: http://localhost:8080
+      APP_FRONTEND_BASE_URL: http://localhost:4200
+      APP_BOOTSTRAP_ADMIN_EMAIL: e2e-admin@taemoi.test
+      APP_BOOTSTRAP_ADMIN_PASSWORD: E2e-Scroll-Only-2026!
+      APP_BOOTSTRAP_ADMIN_NOMBRE: Admin
+      APP_BOOTSTRAP_ADMIN_APELLIDOS: E2E
+      GOOGLE_CLIENT_ID: e2e-google-client
+      GOOGLE_CLIENT_SECRET: e2e-google-secret
+      GOOGLE_REDIRECT_URI: http://localhost:8080/login/oauth2/code/google
+      SPRING_MAIL_USERNAME: e2e@taemoi.test
+      SPRING_MAIL_PASSWORD: e2e-mail-disabled
+      APP_PREINSCRIPCIONES_ADMIN_EMAIL: e2e@taemoi.test
+      APP_IMAGENES_PATH_DOCKER: /var/www/app/imagenes/alumnos/
+      APP_DOCUMENTOS_PATH_DOCKER: /var/www/app/documentos/
+    volumes:
+      - images_data:/var/www/app/imagenes
+      - documents_data:/var/www/app/documentos
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/api/eventos"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 45s
+
+volumes:
+  database_data:
+  images_data:
+  documents_data:

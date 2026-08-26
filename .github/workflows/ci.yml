@@ -68,15 +68,62 @@ jobs:
       - name: Run frontend tests
         env:
           CHROME_BIN: ${{ github.workspace }}/src-frontend/chrome-no-sandbox
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npm test -- --watch=false --browsers=ChromeHeadlessStable
 
       - name: Build frontend for production
         run: npm run build:production
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src-frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start disposable E2E backend and MySQL
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f docker-compose.e2e.yml up --build --detach --wait --wait-timeout 300
+
+      - name: Run desktop and mobile E2E journeys
+        run: npm run test:e2e
+
+      - name: Preserve Playwright diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-${{ github.run_attempt }}
+          path: |
+            src-frontend/playwright-report
+            src-frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove disposable E2E volumes
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f docker-compose.e2e.yml down --volumes --remove-orphans
 
   publish-images:
     needs:
       - backend-tests
       - frontend-tests
+      - e2e
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     strategy:
