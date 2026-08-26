@@ -74,11 +74,11 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
     );
 
     this.seoService.updateDynamicSeo({
-      title: `${evento.titulo} | Eventos Moiskimdo - Taekwondo en Umbrete`,
+      title: `${evento.titulo} | Eventos Moi's Kim Do - Taekwondo en Umbrete`,
       description: descripcionCorta,
-      keywords: `${evento.titulo}, evento taekwondo, competicion artes marciales, moiskimdo, umbrete, sevilla`,
       ogImage: imageUrl,
       canonical: `https://moiskimdo.es/eventos/${evento.id}`,
+      ogType: 'article',
       breadcrumbs: [
         { name: 'Inicio', url: '/' },
         { name: 'Eventos', url: '/eventos' },

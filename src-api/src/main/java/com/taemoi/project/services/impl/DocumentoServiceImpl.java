@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -244,25 +246,120 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 
 		Path rutaBaseDocumentos = obtenerRutaBaseDocumentos();
+		String rutaDocumentoNormalizada = normalizarSeparadores(rutaDocumento.trim());
+		String rutaRelativaLegacy = extraerRutaRelativaLegacy(rutaDocumentoNormalizada);
 		Path rutaNormalizada;
 
-		if (rutaDocumento.startsWith("/") || rutaDocumento.matches("^[A-Za-z]:.*")) {
-			logger.warn("Document path stored as absolute path (deprecated): {}", rutaDocumento);
-			if (rutaDocumento.startsWith("/opt/taemoi/static_resources/documentos/")) {
-				String relativePart = rutaDocumento.substring("/opt/taemoi/static_resources/documentos/".length());
-				rutaNormalizada = rutaBaseDocumentos.resolve(relativePart).normalize();
-			} else {
-				rutaNormalizada = Path.of(rutaDocumento).toAbsolutePath().normalize();
-			}
+		if (rutaRelativaLegacy != null) {
+			rutaNormalizada = rutaBaseDocumentos.resolve(rutaRelativaLegacy).normalize();
 		} else {
-			rutaNormalizada = rutaBaseDocumentos.resolve(rutaDocumento).normalize();
+			Path rutaDocumentoPath = Path.of(rutaDocumentoNormalizada);
+
+			if (rutaDocumentoPath.isAbsolute() || rutaDocumentoNormalizada.matches("^[A-Za-z]:.*")) {
+				logger.warn("Document path stored as absolute path (deprecated): {}", rutaDocumento);
+				if (rutaDocumentoNormalizada.startsWith("/opt/taemoi/static_resources/documentos/")) {
+					String relativePart = rutaDocumentoNormalizada.substring("/opt/taemoi/static_resources/documentos/".length());
+					rutaNormalizada = rutaBaseDocumentos.resolve(relativePart).normalize();
+				} else {
+					rutaNormalizada = rutaDocumentoPath.toAbsolutePath().normalize();
+				}
+			} else {
+				rutaNormalizada = rutaBaseDocumentos.resolve(rutaDocumentoPath).normalize();
+			}
 		}
+
+		rutaNormalizada = resolveLegacyFolderByPrefix(rutaBaseDocumentos, rutaNormalizada);
 
 		if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
 			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
 		}
 
 		return rutaNormalizada;
+	}
+
+	private String normalizarSeparadores(String rutaDocumento) {
+		return rutaDocumento.replace('\\', '/');
+	}
+
+	private String extraerRutaRelativaLegacy(String rutaDocumentoNormalizada) {
+		String rutaLower = rutaDocumentoNormalizada.toLowerCase();
+		String[] marcadores = { "documentos_alumnos_moiskimdo/", "documentos_eventos/" };
+
+		for (String marcador : marcadores) {
+			int idx = rutaLower.indexOf(marcador);
+			if (idx >= 0) {
+				return rutaDocumentoNormalizada.substring(idx);
+			}
+		}
+
+		return null;
+	}
+
+	private Path resolveLegacyFolderByPrefix(Path rutaBaseDocumentos, Path rutaNormalizada) {
+		try {
+			if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
+				return rutaNormalizada;
+			}
+
+			Path carpetaEsperada = rutaNormalizada.getParent();
+			if (carpetaEsperada == null || Files.exists(carpetaEsperada)) {
+				return rutaNormalizada;
+			}
+
+			Path relativa = rutaBaseDocumentos.relativize(rutaNormalizada);
+			if (relativa.getNameCount() < 3) {
+				return rutaNormalizada;
+			}
+
+			Path directorioCategoria = rutaBaseDocumentos.resolve(relativa.getName(0).toString());
+			if (!Files.isDirectory(directorioCategoria)) {
+				return rutaNormalizada;
+			}
+
+			String carpetaLegacy = relativa.getName(1).toString();
+			String prefijo = extraerPrefijoCarpetaLegacy(carpetaLegacy);
+			if (prefijo == null) {
+				return rutaNormalizada;
+			}
+
+			List<Path> candidatas;
+			try (Stream<Path> hijos = Files.list(directorioCategoria)) {
+				candidatas = hijos
+						.filter(Files::isDirectory)
+						.filter(path -> path.getFileName().toString().startsWith(prefijo + "_"))
+						.toList();
+			}
+
+			if (candidatas.size() != 1) {
+				return rutaNormalizada;
+			}
+
+			Path relativaAjustada = Path.of(relativa.getName(0).toString())
+					.resolve(candidatas.get(0).getFileName().toString());
+			for (int i = 2; i < relativa.getNameCount(); i++) {
+				relativaAjustada = relativaAjustada.resolve(relativa.getName(i).toString());
+			}
+
+			Path rutaAjustada = rutaBaseDocumentos.resolve(relativaAjustada).normalize();
+			logger.warn("Resolved legacy folder by prefix fallback: {} -> {}", rutaNormalizada, rutaAjustada);
+			return rutaAjustada;
+		} catch (IOException e) {
+			logger.warn("Could not resolve legacy folder by prefix for {}: {}", rutaNormalizada, e.getMessage());
+			return rutaNormalizada;
+		}
+	}
+
+	private String extraerPrefijoCarpetaLegacy(String carpetaLegacy) {
+		if (carpetaLegacy == null || carpetaLegacy.isBlank()) {
+			return null;
+		}
+
+		int idx = carpetaLegacy.indexOf('_');
+		if (idx <= 0) {
+			return null;
+		}
+
+		return carpetaLegacy.substring(0, idx);
 	}
 
 	private Path obtenerRutaBaseDocumentos() {
@@ -342,8 +439,35 @@ public class DocumentoServiceImpl implements DocumentoService {
 						+ "' en '" + directorio + "'");
 			}
 
-			return coincidencias.isEmpty() ? null : coincidencias.get(0);
+			if (!coincidencias.isEmpty()) {
+				return coincidencias.get(0);
+			}
 		}
+
+		String nombreEsperadoNormalizado = normalizarTokenPath(nombreEsperado);
+		try (Stream<Path> hijos = Files.list(directorio)) {
+			List<Path> coincidenciasNormalizadas = hijos
+					.filter(hijo -> normalizarTokenPath(hijo.getFileName().toString()).equals(nombreEsperadoNormalizado))
+					.toList();
+
+			if (coincidenciasNormalizadas.size() > 1) {
+				throw new IOException("Se encontraron varias coincidencias normalizadas para '" + nombreEsperado
+						+ "' en '" + directorio + "'");
+			}
+
+			return coincidenciasNormalizadas.isEmpty() ? null : coincidenciasNormalizadas.get(0);
+		}
+	}
+
+	private String normalizarTokenPath(String valor) {
+		if (valor == null) {
+			return "";
+		}
+
+		String normalizado = Normalizer.normalize(valor, Normalizer.Form.NFKD)
+				.replaceAll("\\p{M}+", "")
+				.toLowerCase(Locale.ROOT);
+		return normalizado;
 	}
 	/**
 	 * Busca una carpeta existente para el alumno basandose en el numero de expediente.
@@ -388,5 +512,3 @@ public class DocumentoServiceImpl implements DocumentoService {
 		}
 	}
 }
-
-

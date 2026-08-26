@@ -24,6 +24,8 @@ public class AlumnoDTO {
 	private String nif;
 	private String direccion;
 	private String email;
+	private String responsableLegalNombre;
+	private String responsableLegalNif;
 	private Integer telefono;
 	private Integer telefono2;
 	private String observaciones;
@@ -149,6 +151,22 @@ public class AlumnoDTO {
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public String getResponsableLegalNombre() {
+		return responsableLegalNombre;
+	}
+
+	public void setResponsableLegalNombre(String responsableLegalNombre) {
+		this.responsableLegalNombre = responsableLegalNombre;
+	}
+
+	public String getResponsableLegalNif() {
+		return responsableLegalNif;
+	}
+
+	public void setResponsableLegalNif(String responsableLegalNif) {
+		this.responsableLegalNif = responsableLegalNif;
 	}
 
 	public Integer getTelefono() {
@@ -461,6 +479,8 @@ public class AlumnoDTO {
 				fechaLicencia,
 				alumno.getTieneDiscapacidad(),
 				aptoParaExamen);
+		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
+		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
 
 		// Populate deportes list from AlumnoDeporte entities
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
@@ -561,6 +581,8 @@ public class AlumnoDTO {
 				fechaLicencia,
 				alumno.getTieneDiscapacidad(),
 				aptoParaExamen);
+		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
+		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
 
 		// Populate deportes list from AlumnoDeporte entities
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {

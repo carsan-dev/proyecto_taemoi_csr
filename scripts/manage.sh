@@ -202,9 +202,45 @@ cmd_restore_db() {
 }
 
 cmd_ssl_renew() {
+    check_env
+
+    if [ -z "${DOMAIN:-}" ]; then
+        log_error "DOMAIN is not configured in .env"
+        return 1
+    fi
+
     log_info "Renewing SSL certificates..."
-    docker-compose -f $COMPOSE_FILE exec certbot certbot renew
-    docker-compose -f $COMPOSE_FILE restart frontend
+
+    if ! docker-compose -f "$COMPOSE_FILE" stop certbot; then
+        log_error "Failed to stop the automatic Certbot service"
+        return 1
+    fi
+
+    if ! docker-compose -f "$COMPOSE_FILE" run --rm --no-deps \
+        --entrypoint certbot certbot \
+        renew --cert-name "$DOMAIN" --non-interactive; then
+        log_error "SSL certificate renewal failed"
+        docker-compose -f "$COMPOSE_FILE" up -d --force-recreate certbot || true
+        return 1
+    fi
+
+    if ! docker-compose -f "$COMPOSE_FILE" exec -T frontend nginx -t; then
+        log_error "Nginx rejected the renewed certificate configuration"
+        docker-compose -f "$COMPOSE_FILE" up -d --force-recreate certbot || true
+        return 1
+    fi
+
+    if ! docker-compose -f "$COMPOSE_FILE" exec -T frontend nginx -s reload; then
+        log_error "Failed to reload Nginx"
+        docker-compose -f "$COMPOSE_FILE" up -d --force-recreate certbot || true
+        return 1
+    fi
+
+    if ! docker-compose -f "$COMPOSE_FILE" up -d --force-recreate certbot; then
+        log_error "Certificate renewed, but the automatic Certbot service did not restart"
+        return 1
+    fi
+
     log_info "SSL certificates renewed!"
 }
 
@@ -302,7 +338,7 @@ case "$1" in
         cmd_restore_db "$2"
         ;;
     ssl-renew)
-        cmd_ssl_renew
+        cmd_ssl_renew || exit $?
         ;;
     clean)
         cmd_clean

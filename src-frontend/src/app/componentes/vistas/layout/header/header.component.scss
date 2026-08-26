@@ -237,6 +237,32 @@ header.fixed-header {
     }
 
     // Botón login móvil (usuario no logueado)
+    .btn-join-mobile {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
+      border: 1px solid rgba($primary-color, 0.55);
+      color: $text-light;
+      font-size: 1.15rem;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: $transition-fast;
+      box-shadow: 0 4px 14px rgba($primary-color, 0.32);
+
+      &:hover {
+        color: $text-light;
+        transform: scale(1.05);
+        box-shadow: 0 6px 18px rgba($primary-color, 0.42);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+
     .btn-login-mobile {
       display: none;
       width: 44px;
@@ -386,6 +412,34 @@ header.fixed-header {
 
             i {
               color: $primary-color;
+            }
+          }
+
+          &.nav-link-join {
+            background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
+            color: $text-light;
+            border-radius: $border-radius-pill;
+            box-shadow: 0 8px 22px rgba($primary-color, 0.28);
+            font-weight: 700;
+
+            i {
+              color: $text-light;
+              transform: none;
+            }
+
+            &::after {
+              display: none;
+            }
+
+            &:hover,
+            &.active {
+              background: linear-gradient(135deg, color.adjust($primary-color, $lightness: 6%), $primary-hover);
+              transform: translateY(-2px);
+
+              i {
+                color: $text-light;
+                transform: none;
+              }
             }
           }
         }
@@ -583,6 +637,12 @@ header.fixed-header {
         border-color: #dc2743;
         color: $text-light;
       }
+
+      &[href*="tiktok"]:hover {
+        background: linear-gradient(135deg, #111111, #25f4ee, #fe2c55);
+        border-color: #25f4ee;
+        color: $text-light;
+      }
     }
 
     .header-actions-mobile {
@@ -723,6 +783,12 @@ header.fixed-header {
       &[href*="instagram"] {
         background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
         border-color: #dc2743;
+        color: $text-light;
+      }
+
+      &[href*="tiktok"] {
+        background: linear-gradient(135deg, #111111, #25f4ee, #fe2c55);
+        border-color: #25f4ee;
         color: $text-light;
       }
     }
@@ -1012,6 +1078,7 @@ header.fixed-header {
         min-width: 0;
       }
 
+      .btn-join-mobile,
       .btn-login-mobile,
       .btn-logout-mobile,
       .btn-account-mobile {
@@ -1261,6 +1328,7 @@ header.fixed-header {
         }
       }
 
+      .btn-join-mobile,
       .btn-login-mobile,
       .btn-logout-mobile,
       .btn-account-mobile {
@@ -1283,7 +1351,8 @@ header.fixed-header {
         }
       }
 
-      .btn-login-mobile i {
+      .btn-login-mobile i,
+      .btn-join-mobile i {
         font-size: 1rem;
       }
 
@@ -1525,6 +1594,16 @@ header.fixed-header {
 
     i {
       color: color.adjust($primary-color, $lightness: 22%);
+    }
+  }
+
+  &.mobile-header-link-join {
+    background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
+    border-color: rgba($primary-color, 0.45);
+    color: $text-light;
+
+    i {
+      color: $text-light;
     }
   }
 

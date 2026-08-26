@@ -77,6 +77,83 @@ class DocumentoServiceImplTest {
 	}
 
 	@Test
+	void obtenerRecursoDocumento_debeResolverRutaWindowsLegacyHaciaDirectorioActual() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("733_MOISKIMDO_TAEKWONDO"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("dni-frontal.pdf"));
+
+		Documento documento = crearDocumento(
+				"C:\\Users\\Carlos\\Desktop\\Documentos_Alumnos_Moiskimdo\\733_MOISKIMDO_TAEKWONDO\\dni-frontal.pdf",
+				"dni-frontal.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
+	void obtenerRecursoDocumento_debeResolverCarpetaLegacyPorPrefijoUnico() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("452_ANGELA_MORENO_LAAPEZ"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("AL452.pdf"));
+
+		Documento documento = crearDocumento(
+				"/opt/taemoi/static_resources/documentos/Documentos_Alumnos_Moiskimdo/452_ANGELA_MORENO_LOPEZ/AL452.pdf",
+				"AL452.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
+	void obtenerRecursoDocumento_debeResolverRutaRelativaConBackslashes() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("733_MOISKIMDO_TAEKWONDO"));
+		Path archivoReal = Files.createFile(carpetaAlumno.resolve("dni-trasera.pdf"));
+
+		Documento documento = crearDocumento(
+				"Documentos_Alumnos_Moiskimdo\\733_MOISKIMDO_TAEKWONDO\\dni-trasera.pdf",
+				"dni-trasera.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
+	void obtenerRecursoDocumento_debeResolverNombreConAcentosDiferentes() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+
+		Path carpetaAlumno = Files.createDirectories(
+				tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("226_MANUEL_CAMPOS_SANCHEZ"));
+		Path archivoReal = Files.createFile(
+				carpetaAlumno.resolve("AL226_PARTE_FACULTATIVO_LESIÓN_MANUEL_CAMPOS_SANCHEZ_05102024.pdf"));
+
+		Documento documento = crearDocumento(
+				"/opt/taemoi/static_resources/documentos/Documentos_Alumnos_Moiskimdo/226_MANUEL_CAMPOS_SANCHEZ/AL226_PARTE_FACULTATIVO_LESION_MANUEL_CAMPOS_SANCHEZ_05102024.pdf",
+				"AL226_PARTE_FACULTATIVO_LESION_MANUEL_CAMPOS_SANCHEZ_05102024.pdf");
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+
+		assertTrue(recurso.exists());
+		assertEquals(archivoReal.toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
 	void obtenerRecursoDocumento_debeLanzarExcepcionSiArchivoNoExiste() {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());

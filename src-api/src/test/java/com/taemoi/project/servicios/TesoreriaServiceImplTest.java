@@ -1,6 +1,8 @@
 package com.taemoi.project.servicios;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,7 +16,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +32,7 @@ import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.impl.TesoreriaServiceImpl;
 
@@ -34,6 +41,9 @@ class TesoreriaServiceImplTest {
 
 	@Mock
 	private ProductoAlumnoRepository productoAlumnoRepository;
+
+	@Mock
+	private AlumnoRepository alumnoRepository;
 
 	@InjectMocks
 	private TesoreriaServiceImpl tesoreriaService;
@@ -196,6 +206,66 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any());
+	}
+
+	@Test
+	void generarCertificadoCobrosAlumno_generaPdfConCobrosPagadosCertificables() throws Exception {
+		Alumno alumno = new Alumno();
+		alumno.setId(20L);
+		alumno.setNombre("Adrian");
+		alumno.setApellidos("Naranjo");
+
+		ProductoAlumno mensualidad = crearMovimiento(
+				10L,
+				"MENSUALIDAD ENERO 2026 - TAEKWONDO",
+				fecha(2026, 1, 5),
+				true,
+				25.0);
+		mensualidad.getAlumno().setId(20L);
+		ProductoAlumno examen = crearMovimiento(
+				11L,
+				"EXAMEN FEBRERO 2026",
+				fecha(2026, 2, 5),
+				true,
+				40.0);
+		examen.getAlumno().setId(20L);
+
+		when(alumnoRepository.findById(20L)).thenReturn(Optional.of(alumno));
+		when(productoAlumnoRepository.findMovimientosTesoreriaFiltrados(
+				any(),
+				any(),
+				eq(true),
+				any(),
+				eq(false),
+				eq(2026),
+				eq("2026"),
+				isNull(),
+				isNull()))
+				.thenReturn(List.of(mensualidad, examen));
+
+		byte[] pdf = tesoreriaService.generarCertificadoCobrosAlumno(20L, 2026);
+
+		assertTrue(pdf.length > 1000);
+		try (PDDocument document = PDDocument.load(pdf)) {
+			PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+			assertNotNull(acroForm);
+			assertFalse(acroForm.getNeedAppearances());
+			for (PDField field : acroForm.getFieldTree()) {
+				assertFalse(field.getWidgets().isEmpty());
+				assertTrue(field.getWidgets().get(0).isPrinted());
+				assertNotNull(field.getWidgets().get(0).getNormalAppearanceStream());
+			}
+		}
+		verify(productoAlumnoRepository).findMovimientosTesoreriaFiltrados(
+				any(),
+				any(),
+				eq(true),
+				any(),
+				eq(false),
+				eq(2026),
+				eq("2026"),
+				isNull(),
+				isNull());
 	}
 
 	private ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection crearMovimientoBase(

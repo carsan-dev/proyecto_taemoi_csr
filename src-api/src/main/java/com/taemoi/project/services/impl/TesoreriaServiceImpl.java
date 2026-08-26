@@ -1,6 +1,8 @@
 package com.taemoi.project.services.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -16,8 +18,23 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +47,7 @@ import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.TesoreriaService;
 
@@ -39,7 +57,13 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private static final int DEFAULT_PAGE_SIZE = 25;
 	private static final int MAX_PAGE_SIZE = 200;
 	private static final DateTimeFormatter FECHA_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	private static final DateTimeFormatter FECHA_CERTIFICADO_FORMATTER =
+			DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
 	private static final Pattern ANO_PATTERN = Pattern.compile("\\b(20\\d{2})\\b");
+	private static final String RESPONSABLE_NOMBRE = "DÑA. DOLORES MARIA ROMAN RUIZ";
+	private static final String RESPONSABLE_DNI = "28756368C";
+	private static final String CLUB_NOMBRE_LEGAL = "Club Deportivo Moi's Kim do Taekwondo";
+	private static final String CLUB_CIF = "G90341173";
 	private static final String[] MESES_ES = {
 			"ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
 			"JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
@@ -47,6 +71,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
+
+	@Autowired
+	private AlumnoRepository alumnoRepository;
 
 	@Override
 	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos) {
@@ -308,6 +335,247 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		} catch (Exception ex) {
 			throw new RuntimeException("Error al generar el informe PDF de tesoreria", ex);
 		}
+	}
+
+	@Override
+	public byte[] generarCertificadoCobrosAlumno(Long alumnoId, Integer ano) {
+		validarCertificadoCobros(alumnoId, ano);
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado: " + alumnoId));
+		CertificadoCobrosData certificado = construirCertificadoCobros(alumno, ano);
+		return generarPdfCertificadoCobros(certificado);
+	}
+
+	@Override
+	public byte[] generarCertificadosCobrosZip(List<Long> alumnoIds, Integer ano) {
+		if (alumnoIds == null || alumnoIds.isEmpty()) {
+			throw new IllegalArgumentException("Debes seleccionar al menos un alumno.");
+		}
+		if (ano == null || ano < 1900 || ano > 2200) {
+			throw new IllegalArgumentException("El año no es válido.");
+		}
+
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+			for (Long alumnoId : alumnoIds.stream().filter(Objects::nonNull).distinct().toList()) {
+				Alumno alumno = alumnoRepository.findById(alumnoId)
+						.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado: " + alumnoId));
+				byte[] pdfBytes = generarPdfCertificadoCobros(construirCertificadoCobros(alumno, ano));
+				ZipEntry entry = new ZipEntry(construirNombreSeguroCertificado(alumno, ano) + ".pdf");
+				zipOutputStream.putNextEntry(entry);
+				zipOutputStream.write(pdfBytes);
+				zipOutputStream.closeEntry();
+			}
+			zipOutputStream.finish();
+			return outputStream.toByteArray();
+		} catch (IOException ex) {
+			throw new RuntimeException("Error al generar el ZIP de certificados de cobros", ex);
+		}
+	}
+
+	private void validarCertificadoCobros(Long alumnoId, Integer ano) {
+		if (alumnoId == null) {
+			throw new IllegalArgumentException("Debes seleccionar un alumno.");
+		}
+		if (ano == null || ano < 1900 || ano > 2200) {
+			throw new IllegalArgumentException("El año no es válido.");
+		}
+	}
+
+	private CertificadoCobrosData construirCertificadoCobros(Alumno alumno, Integer ano) {
+		FiltroTesoreria filtro = construirFiltro(null, ano, "TODOS");
+		List<ProductoAlumno> movimientos = obtenerMovimientosFiltrados(filtro, true, null, false).stream()
+				.filter(this::esConceptoCertificable)
+				.filter(pa -> Objects.equals(obtenerAlumnoId(pa), alumno.getId()))
+				.collect(Collectors.toList());
+
+		double[] importesPorMes = new double[12];
+		for (ProductoAlumno movimiento : movimientos) {
+			PeriodoMovimiento periodo = obtenerPeriodoMovimiento(
+					movimiento.getConcepto(),
+					movimiento.getFechaAsignacion(),
+					movimiento.getFechaPago());
+			if (periodo != null && Objects.equals(periodo.ano, ano) && periodo.mes != null && periodo.mes >= 1 && periodo.mes <= 12) {
+				importesPorMes[periodo.mes - 1] += valorSeguro(movimiento.getPrecio());
+			}
+		}
+
+		return new CertificadoCobrosData(alumno, ano, importesPorMes);
+	}
+
+	private boolean esConceptoCertificable(ProductoAlumno productoAlumno) {
+		String concepto = productoAlumno.getConcepto() != null
+				? productoAlumno.getConcepto().toUpperCase(Locale.ROOT)
+				: "";
+		return concepto.startsWith("MENSUALIDAD")
+				|| concepto.startsWith("TARIFA COMPETIDOR")
+				|| concepto.startsWith("RESERVA DE PLAZA")
+				|| concepto.startsWith("MATRICULA")
+				|| concepto.startsWith("MATRÍCULA");
+	}
+
+	private byte[] generarPdfCertificadoCobros(CertificadoCobrosData certificado) {
+		try (PDDocument document = new PDDocument();
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			PDPage page = new PDPage(PDRectangle.A4);
+			document.addPage(page);
+
+			PDAcroForm acroForm = new PDAcroForm(document);
+			PDResources resources = new PDResources();
+			resources.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA);
+			acroForm.setDefaultResources(resources);
+			acroForm.setDefaultAppearance("/Helv 10 Tf 0 g");
+			acroForm.setNeedAppearances(false);
+			document.getDocumentCatalog().setAcroForm(acroForm);
+
+			try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+				dibujarLogo(document, content);
+				dibujarTextoCertificado(content, acroForm, page, certificado);
+			}
+
+			acroForm.refreshAppearances();
+			document.save(outputStream);
+			return outputStream.toByteArray();
+		} catch (IOException ex) {
+			throw new RuntimeException("Error al generar el certificado PDF editable", ex);
+		}
+	}
+
+	private void dibujarLogo(PDDocument document, PDPageContentStream content) throws IOException {
+		ClassPathResource logoResource = new ClassPathResource("static/Logo_nuevo_sin_vectorizar.jpeg");
+		if (!logoResource.exists()) {
+			return;
+		}
+		byte[] logoBytes;
+		try (InputStream inputStream = logoResource.getInputStream()) {
+			logoBytes = inputStream.readAllBytes();
+		}
+		PDImageXObject logo = PDImageXObject.createFromByteArray(document, logoBytes, "Logo_nuevo_sin_vectorizar.jpeg");
+		content.drawImage(logo, 458, 718, 92, 92);
+	}
+
+	private void dibujarTextoCertificado(
+			PDPageContentStream content,
+			PDAcroForm acroForm,
+			PDPage page,
+			CertificadoCobrosData certificado) throws IOException {
+		String alumnoNombre = obtenerNombreCompletoAlumno(certificado.alumno);
+		String fechaGeneracion = "En Umbrete, a " + FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now()) + ".";
+
+		content.setNonStrokingColor(245, 248, 252);
+		content.addRect(52, 729, 380, 42);
+		content.fill();
+		content.setNonStrokingColor(31, 77, 134);
+		content.addRect(52, 725, 380, 4);
+		content.fill();
+		content.setNonStrokingColor(0, 0, 0);
+		escribirTexto(content, 72, 751, "CERTIFICADO DE COBROS", 13, true);
+		escribirTexto(content, 72, 735, "Ejercicio " + certificado.ano + " - " + CLUB_NOMBRE_LEGAL, 9, false);
+
+		escribirTexto(content, 72, 655, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
+				+ ", en calidad de Presidenta del", 10, false);
+		escribirTexto(content, 72, 634, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
+				+ ", hago constar que ha recibido de", 10, false);
+		escribirTexto(content, 72, 613, "D/Dña.", 10, false);
+		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 607, 235, 17);
+		escribirTexto(content, 350, 613, "la cantidad de", 10, false);
+		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 607, 72, 17);
+		escribirTexto(content, 72, 592, "durante el ejercicio " + certificado.ano
+				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor", 10, false);
+		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 565, 325, 17);
+		escribirTexto(content, 402, 571, ".", 10, false);
+
+		escribirTexto(content, 72, 528, "Se desglosa el importe total del ejercicio " + certificado.ano
+				+ " en los siguientes importes:", 10, false);
+
+		dibujarTablaMeses(content);
+		for (int i = 0; i < 6; i++) {
+			float y = 496 - (i * 28);
+			escribirTexto(content, 80, y, MESES_ES[i], 9, true);
+			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 177, y - 7, 75, 17);
+		}
+		for (int i = 6; i < 12; i++) {
+			float y = 496 - ((i - 6) * 28);
+			escribirTexto(content, 310, y, MESES_ES[i], 9, true);
+			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 408, y - 7, 75, 17);
+		}
+
+		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 240, 250, 17);
+		escribirTexto(content, 72, 185, "Firmado:", 10, true);
+		escribirTexto(content, 72, 164, RESPONSABLE_NOMBRE, 10, false);
+		escribirTexto(content, 72, 109, "PRESIDENTA", 10, false);
+		escribirTexto(content, 72, 88, "C.D. MOI'S KIMDO TAEKWONDO", 10, false);
+		escribirTexto(content, 72, 67, "C.I.F.: " + CLUB_CIF, 10, false);
+	}
+
+	private void dibujarTablaMeses(PDPageContentStream content) throws IOException {
+		content.setStrokingColor(210, 221, 234);
+		content.setLineWidth(0.6f);
+		for (int row = 0; row <= 6; row++) {
+			float y = 510 - (row * 28);
+			content.moveTo(72, y);
+			content.lineTo(257, y);
+			content.moveTo(302, y);
+			content.lineTo(487, y);
+		}
+		for (float x : new float[] { 72, 168, 257, 302, 398, 487 }) {
+			content.moveTo(x, 510);
+			content.lineTo(x, 342);
+		}
+		content.stroke();
+		content.setStrokingColor(0, 0, 0);
+	}
+
+	private void escribirTexto(PDPageContentStream content, float x, float y, String texto, int size, boolean bold)
+			throws IOException {
+		content.beginText();
+		content.setFont(bold ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA, size);
+		content.newLineAtOffset(x, y);
+		content.showText(sanitizarPdfText(texto));
+		content.endText();
+	}
+
+	private void aniadirCampoTexto(
+			PDAcroForm acroForm,
+			PDPage page,
+			String nombre,
+			String valor,
+			float x,
+			float y,
+			float width,
+			float height) throws IOException {
+		PDTextField field = new PDTextField(acroForm);
+		field.setPartialName(nombre);
+		field.setDefaultAppearance("/Helv 10 Tf 0 g");
+
+		PDAnnotationWidget widget = field.getWidgets().get(0);
+		widget.setRectangle(new PDRectangle(x, y, width, height));
+		widget.setPage(page);
+		widget.setPrinted(true);
+		PDBorderStyleDictionary borderStyle = new PDBorderStyleDictionary();
+		borderStyle.setWidth(0.4f);
+		widget.setBorderStyle(borderStyle);
+		page.getAnnotations().add(widget);
+		acroForm.getFields().add(field);
+		field.setValue(sanitizarPdfText(valor));
+	}
+
+	private String formatearEuros(double importe) {
+		return String.format(Locale.forLanguageTag("es-ES"), "%.2f €", importe);
+	}
+
+	private String sanitizarPdfText(String value) {
+		if (value == null) {
+			return "";
+		}
+		return value;
+	}
+
+	private String construirNombreSeguroCertificado(Alumno alumno, Integer ano) {
+		String base = obtenerNombreCompletoAlumno(alumno).toLowerCase(Locale.ROOT)
+				.replaceAll("[^a-z0-9]+", "_")
+				.replaceAll("^_+|_+$", "");
+		return "certificado_cobros_" + (base.isBlank() ? alumno.getId() : base) + "_" + ano;
 	}
 
 	private List<ProductoAlumno> obtenerMovimientosFiltrados(
@@ -787,6 +1055,24 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				.replace(">", "&gt;")
 				.replace("\"", "&quot;")
 				.replace("'", "&#39;");
+	}
+
+	private static class CertificadoCobrosData {
+		private final Alumno alumno;
+		private final Integer ano;
+		private final double[] importesPorMes;
+		private final double total;
+
+		private CertificadoCobrosData(Alumno alumno, Integer ano, double[] importesPorMes) {
+			this.alumno = alumno;
+			this.ano = ano;
+			this.importesPorMes = importesPorMes;
+			double suma = 0.0;
+			for (double importe : importesPorMes) {
+				suma += importe;
+			}
+			this.total = suma;
+		}
 	}
 
 	private static class FiltroTesoreria {

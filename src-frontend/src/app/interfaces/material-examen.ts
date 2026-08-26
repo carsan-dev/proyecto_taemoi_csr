@@ -10,6 +10,13 @@ export interface MaterialExamenVideoDTO {
   streamUrl: string;
 }
 
+export interface MaterialExamenVideoGrupoDTO {
+  grado: string;
+  titulo: string;
+  bloqueId: string;
+  videos: MaterialExamenVideoDTO[];
+}
+
 export interface MaterialExamenDocumentoDTO {
   id: string;
   fileName: string;
@@ -24,8 +31,11 @@ export interface MaterialExamenDocumentoDTO {
 export interface MaterialExamenDTO {
   deporte: string;
   gradoActual: string | null;
+  siguienteGrado: string | null;
   bloqueId: string | null;
   temario: MaterialExamenTemarioDTO | null;
   documentos: MaterialExamenDocumentoDTO[];
   videos: MaterialExamenVideoDTO[];
+  videosAnteriores: MaterialExamenVideoDTO[];
+  gruposVideosAnteriores: MaterialExamenVideoGrupoDTO[];
 }

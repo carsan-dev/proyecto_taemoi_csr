@@ -25,7 +25,14 @@
             rel="noopener noreferrer" aria-label="Instagram">
             <i class="bi bi-instagram"></i>
           </a>
+          <a class="social-link social-link-compact" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
+            rel="noopener noreferrer" aria-label="TikTok">
+            <i class="bi bi-tiktok"></i>
+          </a>
         </div>
+        <a class="btn-join-mobile" [routerLink]="['/preinscripcion']" aria-label="Preinscripción online">
+          <i class="bi bi-pencil-square"></i>
+        </a>
         <a class="btn-login-mobile" [routerLink]="['/login']" aria-label="Iniciar sesión">
           <i class="bi bi-box-arrow-in-right"></i>
         </a>
@@ -94,6 +101,11 @@
                 <i class="bi bi-envelope me-1"></i>Contacto
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active">
+                <i class="bi bi-stars me-1"></i>Únete a nosotros
+              </a>
+            </li>
           </ul>
         </div>
         <div class="navbar-right">
@@ -108,6 +120,12 @@
               <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
                 rel="noopener noreferrer" aria-label="Instagram">
                 <i class="bi bi-instagram"></i>
+              </a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
+                rel="noopener noreferrer" aria-label="TikTok">
+                <i class="bi bi-tiktok"></i>
               </a>
             </li>
             <li class="nav-item">
@@ -179,6 +197,11 @@
         (click)="closeMobileMenu()">
         <i class="bi bi-envelope" aria-hidden="true"></i>
         <span>Contacto</span>
+      </a>
+      <a class="mobile-header-link mobile-header-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-stars" aria-hidden="true"></i>
+        <span>Únete a nosotros</span>
       </a>
       <div class="mobile-header-section-title">Cuenta</div>
       <a class="mobile-header-link" [routerLink]="['/login']" routerLinkActive="active"
@@ -332,6 +355,7 @@
     <li class="menu-section">
       <span class="section-title">Gestión</span>
     </li>
+    <li><a class="menu-link" [routerLink]="['/preinscripciones']" routerLinkActive="active" (click)="closeAdminMenu()"><i class="bi bi-clipboard2-check"></i><span>Preinscripciones</span></a></li>
 
     <!-- Alumnos Section -->
     <li class="menu-item-expandable">
@@ -533,7 +557,14 @@
             rel="noopener noreferrer" aria-label="Instagram">
             <i class="bi bi-instagram"></i>
           </a>
+          <a class="social-link social-link-compact" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
+            rel="noopener noreferrer" aria-label="TikTok">
+            <i class="bi bi-tiktok"></i>
+          </a>
         </div>
+        <a class="btn-join-mobile" [routerLink]="['/preinscripcion']" aria-label="Preinscripción online">
+          <i class="bi bi-pencil-square"></i>
+        </a>
         <div class="mobile-user-quick-menu" [class.open]="isMobileUserQuickMenuOpen">
           <button class="btn-account-mobile" type="button" (click)="toggleMobileUserQuickMenu()"
             [attr.aria-expanded]="isMobileUserQuickMenuOpen" aria-label="Opciones de cuenta">
@@ -627,6 +658,11 @@
                 <i class="bi bi-envelope me-1"></i>Contacto
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active">
+                <i class="bi bi-stars me-1"></i>Únete a nosotros
+              </a>
+            </li>
           </ul>
         </div>
         <div class="navbar-right">
@@ -641,6 +677,12 @@
               <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
                 rel="noopener noreferrer" aria-label="Instagram">
                 <i class="bi bi-instagram"></i>
+              </a>
+            </li>
+            <li class="nav-item me-3">
+              <a class="social-link" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
+                rel="noopener noreferrer" aria-label="TikTok">
+                <i class="bi bi-tiktok"></i>
               </a>
             </li>
             <li class="nav-item user-desktop-menu d-none d-lg-flex">
@@ -737,6 +779,11 @@
         (click)="closeMobileMenu()">
         <i class="bi bi-envelope" aria-hidden="true"></i>
         <span>Contacto</span>
+      </a>
+      <a class="mobile-header-link mobile-header-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active"
+        (click)="closeMobileMenu()">
+        <i class="bi bi-stars" aria-hidden="true"></i>
+        <span>Únete a nosotros</span>
       </a>
       <div class="mobile-header-section-title">Cuenta</div>
       <a class="mobile-header-link" [routerLink]="['/userpage']" routerLinkActive="active"

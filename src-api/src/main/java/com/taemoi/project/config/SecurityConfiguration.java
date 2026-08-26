@@ -112,6 +112,11 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/preinscripciones").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/public/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/*/documento").permitAll()
+						.requestMatchers("/api/preinscripciones/plantillas/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
+						.requestMatchers("/api/preinscripciones/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(
 								"/api/auth/signin",
 								"/api/auth/signup",

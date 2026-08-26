@@ -60,6 +60,7 @@ public class EventoServiceImpl implements EventoService {
 	}
 
 	@Override
+	@Transactional
 	public Evento guardarEvento(@NonNull Evento evento, MultipartFile archivoImagen) throws IOException {
 		ensureOrdenesGlobal();
 		if (archivoImagen != null && !archivoImagen.isEmpty()) {
@@ -72,7 +73,7 @@ public class EventoServiceImpl implements EventoService {
 		}
 
 		if (evento.getOrden() == null) {
-			evento.setOrden(obtenerSiguienteOrden());
+			return guardarEventoAlInicio(evento);
 		}
 
 		// Save the Evento after the Imagen is saved
@@ -292,12 +293,20 @@ public class EventoServiceImpl implements EventoService {
 		eventoRepository.saveAll(eventosSinOrden);
 	}
 
-	private int obtenerSiguienteOrden() {
-		Integer maxOrden = eventoRepository.findMaxOrden();
-		if (maxOrden == null) {
-			return 1;
+	private Evento guardarEventoAlInicio(Evento evento) {
+		List<Evento> eventosExistentes = eventoRepository.findAllByOrderByOrdenAsc();
+		for (Evento eventoExistente : eventosExistentes) {
+			int ordenActual = eventoExistente.getOrden() != null ? eventoExistente.getOrden() : 0;
+			eventoExistente.setOrden(ordenActual + 1);
 		}
-		return maxOrden + 1;
+
+		evento.setOrden(1);
+
+		if (!eventosExistentes.isEmpty()) {
+			eventoRepository.saveAll(eventosExistentes);
+		}
+
+		return eventoRepository.save(evento);
 	}
 
 }

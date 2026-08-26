@@ -21,7 +21,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
@@ -30,12 +33,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.Preinscripcion;
+import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -48,6 +55,8 @@ import com.taemoi.project.utils.GradoUtils;
 
 @Service
 public class PDFServiceImpl implements PDFService {
+	private static final Pattern TEMPORADA_PATTERN = Pattern.compile("\\b(20\\d{2})/(20\\d{2})\\b");
+	private static final ObjectMapper TEMPLATE_JSON_MAPPER = new ObjectMapper();
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
@@ -75,6 +84,89 @@ public class PDFServiceImpl implements PDFService {
 
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
+	private String logoPreinscripcionBase64Cache = null;
+
+	@Override public byte[] generarPreviewPreinscripcion(Deporte deporte,String contenido,String instrucciones){
+		PlantillaPreinscripcion plantilla=new PlantillaPreinscripcion();plantilla.setDeporte(deporte);plantilla.setVersion(0);plantilla.setContenido(contenido);plantilla.setInstrucciones(instrucciones);
+		Preinscripcion p=new Preinscripcion();p.setDeporte(deporte);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setTelefono2("611 111 111");p.setEmail("maria@example.org");p.setTieneDiscapacidad(false);p.setDireccion("Calle Ejemplo, 1, Umbrete");p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
+	}
+	private byte[] firmaPreview(){try{java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(360,90,java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();g.setColor(java.awt.Color.WHITE);g.fillRect(0,0,360,90);g.setColor(java.awt.Color.DARK_GRAY);g.drawString("Firma de previsualización",80,48);g.dispose();ByteArrayOutputStream out=new ByteArrayOutputStream();javax.imageio.ImageIO.write(image,"png",out);return out.toByteArray();}catch(Exception e){throw new IllegalStateException(e);}}
+
+	@Override
+	public byte[] generarPreinscripcionFirmada(Preinscripcion p) {
+		String firma = "data:image/png;base64," + Base64.getEncoder().encodeToString(p.getFirma());
+		String nombreDeporte = p.getDeporte().name().replace('_', ' ');
+		boolean conNormas = true;
+		JsonNode contenidoPlantilla = parsearContenidoPlantilla(p.getPlantilla().getContenido());
+		String cabecera=campoPlantilla(contenidoPlantilla,"cabecera","Escuela Moi Kim Do");
+		String contacto=campoPlantilla(contenidoPlantilla,"contacto","");
+		String titulo=campoPlantilla(contenidoPlantilla,"titulo","Solicitud de preinscripción");
+		String consentimiento=campoPlantilla(contenidoPlantilla,"consentimiento","");
+		String importes=campoPlantilla(contenidoPlantilla,"importes","");
+		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
+				+ "@page{size:A4;margin:10mm 12mm 11mm}body{font-family:Arial,sans-serif;color:#172126;font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
+				+ ".head{border-bottom:2px solid #b7272d;padding-bottom:6px;margin-bottom:9px}.head-table{width:100%;border-collapse:collapse}.head-table td{padding:0;vertical-align:middle}.logo-cell{width:24mm}.head img{display:block;width:19mm}.title-cell{padding:0 4mm!important}h1{font-size:15pt;margin:0 0 2px;text-transform:uppercase;line-height:1.08}h2{font-size:10pt;color:#b7272d;margin:0}.ref-cell{width:34mm;text-align:right;font-weight:bold;white-space:nowrap}.section{margin:9px 0}.keep{page-break-inside:avoid}.section h3{font-size:10pt;margin:7px 0 4px;border-bottom:1px solid #aeb6b9;padding-bottom:3px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:4px;text-align:left}.label{font-size:7pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:3px solid #b7272d;padding:6px}.signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:#59666b;margin-top:6px}"
+				+ "</style></head><body><div class='head'><table class='head-table'><tr><td class='logo-cell'>" + (!getLogoPreinscripcionBase64().isEmpty()?"<img src='"+getLogoPreinscripcionBase64()+"'/>":"")
+				+ "</td><td class='title-cell'><h1>"+esc(titulo)+"</h1><h2>"+esc(cabecera)+" · "+esc(contacto)+" · Temporada "+esc(p.getTemporada())+"</h2></td><td class='ref-cell'>"+esc(p.getReferencia())+"</td></tr></table></div>"
+				+ "<div class='notice'><strong>Preinscripción recibida.</strong> "+(p.getEstado()==com.taemoi.project.entities.EstadoPreinscripcion.EN_LISTA_ESPERA?"Solicitud incorporada a la lista de espera. Se notificará la asignación automática cuando exista aforo.":"Plaza asignada; esta solicitud ya cuenta en el aforo del grupo.")+"</div>"
+				+ "<div class='section'><h3>Datos de la persona solicitante</h3><table class='grid'><tr><td><span class='label'>Nombre y apellidos</span><br/>"+esc(p.getNombre()+" "+p.getApellidos())+"</td><td><span class='label'>DNI/NIE</span><br/>"+esc(p.getDni()==null||p.getDni().isBlank()?"No facilitado":p.getDni())+"</td></tr>"
+				+ "<tr><td><span class='label'>Fecha de nacimiento</span><br/>"+p.getFechaNacimiento()+"</td><td><span class='label'>Correo electrónico</span><br/>"+esc(p.getEmail())+"</td></tr><tr><td><span class='label'>Teléfono principal</span><br/>"+esc(p.getTelefono())+"</td><td><span class='label'>Teléfono secundario</span><br/>"+esc(p.getTelefono2()==null||p.getTelefono2().isBlank()?"No facilitado":p.getTelefono2())+"</td></tr><tr><td><span class='label'>Discapacidad</span><br/>"+(p.getTieneDiscapacidad()==null?"No indicado":Boolean.TRUE.equals(p.getTieneDiscapacidad())?"Sí":"No")+"</td><td><span class='label'>Dirección</span><br/>"+esc(p.getDireccion())+"</td></tr></table></div>"
+				+ (p.getTutorNombre()!=null&&!p.getTutorNombre().isBlank()?"<div class='section'><h3>Responsable legal</h3>"+esc(p.getTutorNombre())+" · "+esc(p.getTutorDni())+"</div>":"")
+				+ "<div class='section'><h3>Actividad solicitada</h3>"+esc(p.getGrupoSnapshot()!=null?p.getGrupoSnapshot():nombreDeportePublico(p.getDeporte()))+"</div>"
+				+ (conNormas ? "<div class='section keep'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"[X] Autorizado. ":"[ ] No autorizado. ")+esc(consentimiento)+"</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(contenidoPlantilla)+"<p><strong>[X] Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
+				+ "<div class='section keep'><h3>Importes y pago</h3><p>"+esc(importes)+"</p></div>"
+				+ "<div class='section keep'><h3>Firma</h3><img class='signature' src='"+firma+"'/><p>Firmado por "+esc(p.getFirmanteNombre())+" el "+LocalDate.now(ZoneId.of("Europe/Madrid"))+".</p></div>"
+				+ "<div class='foot'>Documento generado electrónicamente. Referencia "+esc(p.getReferencia())+". Versión documental preservada con la solicitud.</div></body></html>";
+		try { ByteArrayOutputStream out=new ByteArrayOutputStream(); PdfRendererBuilder builder=new PdfRendererBuilder(); builder.withHtmlContent(html,null); builder.toStream(out); builder.run(); return out.toByteArray(); }
+		catch(Exception e){throw new IllegalStateException("No se pudo generar la solicitud PDF",e);}
+	}
+
+	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
+	private String nombreDeportePublico(Deporte deporte){return switch(deporte){case TAEKWONDO->"Taekwondo";case KICKBOXING->"Kickboxing";case PILATES->"Pilates";case DEFENSA_PERSONAL_FEMENINA->"Defensa personal femenina";};}
+	private JsonNode parsearContenidoPlantilla(String contenido) {
+		if (contenido == null || contenido.isBlank()) {
+			return TEMPLATE_JSON_MAPPER.createObjectNode();
+		}
+		try {
+			JsonNode root = TEMPLATE_JSON_MAPPER.readTree(contenido);
+			return root != null && root.isObject() ? root : TEMPLATE_JSON_MAPPER.createObjectNode();
+		} catch (IOException e) {
+			return TEMPLATE_JSON_MAPPER.createObjectNode();
+		}
+	}
+
+	private String campoPlantilla(JsonNode contenido, String campo, String fallback) {
+		JsonNode valor = contenido.path(campo);
+		return valor.isTextual() ? normalizarTextoPlantilla(valor.textValue()) : fallback;
+	}
+
+	private String normasHtml(JsonNode contenido) {
+		JsonNode normas = contenido.path("normas");
+		if (!normas.isArray()) {
+			return "";
+		}
+		StringBuilder out = new StringBuilder("<ol>");
+		for (JsonNode item : normas) {
+			if (item.isTextual()) {
+				out.append("<li>").append(esc(normalizarTextoPlantilla(item.textValue()))).append("</li>");
+			}
+		}
+		return out.append("</ol>").toString();
+	}
+
+	private String normalizarTextoPlantilla(String value) {
+		return value.replace('\r', ' ').replace('\n', ' ').replace("\\n", " ");
+	}
+
+	private String getLogoPreinscripcionBase64() {
+		if (logoPreinscripcionBase64Cache != null) return logoPreinscripcionBase64Cache;
+		try (InputStream input = new ClassPathResource("static/logo_tkd_kick.jpeg").getInputStream()) {
+			logoPreinscripcionBase64Cache = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(input.readAllBytes());
+			return logoPreinscripcionBase64Cache;
+		} catch (Exception e) {
+			return "";
+		}
+	}
 
 	/**
 	 * Converts the school logo SVG to PNG and returns it as a base64 data URI. This
@@ -1954,6 +2046,213 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarInformeMensualidadesKickboxing(boolean soloActivos) {
 		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING, soloActivos);
+	}
+
+	@Override
+	public List<String> obtenerTemporadasReservasPlaza() {
+		TreeSet<String> temporadas = new TreeSet<>(Comparator.reverseOrder());
+		for (String concepto : productoAlumnoRepository.findConceptosReservaPlaza()) {
+			if (concepto == null) {
+				continue;
+			}
+			Matcher matcher = TEMPORADA_PATTERN.matcher(concepto);
+			while (matcher.find()) {
+				temporadas.add(matcher.group());
+			}
+		}
+		return new ArrayList<>(temporadas);
+	}
+
+	@Override
+	public byte[] generarInformeReservasPlaza(String temporada, boolean soloActivos) {
+		if (temporada == null || !TEMPORADA_PATTERN.matcher(temporada).matches()) {
+			throw new IllegalArgumentException("Temporada no valida");
+		}
+
+		List<com.taemoi.project.entities.ProductoAlumno> reservas = productoAlumnoRepository
+				.findReservasPlazaByTemporada(temporada, soloActivos);
+
+		LocalDate today = LocalDate.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
+		String fechaGeneracion = today.format(formatter);
+
+		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte = new java.util.LinkedHashMap<>();
+		for (com.taemoi.project.entities.ProductoAlumno reserva : reservas) {
+			Deporte deporte = obtenerDeporteReserva(reserva);
+			String key = deporte != null ? deporte.name() : "SIN_DEPORTE";
+			reservasPorDeporte.computeIfAbsent(key, ignored -> new ArrayList<>()).add(reserva);
+		}
+
+		StringBuilder html = new StringBuilder();
+		html.append("<!DOCTYPE html>");
+		html.append("<html>");
+		html.append("<head>");
+		html.append("<meta charset='UTF-8' />");
+		html.append("<style>");
+		html.append(generarEstilosModernos("Informe de Reservas de Plaza", fechaGeneracion));
+		html.append(".status-badge { display: inline-block; padding: 1mm 3mm; border-radius: 2mm; font-weight: 600; font-size: 9pt; }");
+		html.append(".status-pagado { background: #d4edda; color: #155724; }");
+		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
+		html.append(".resumen-general { margin-top: 8mm; padding: 4mm; background: #f8f9fa; border: 2px solid #007bff; border-radius: 2mm; text-align: center; }");
+		html.append(".sport-section { page-break-inside: avoid; margin-bottom: 8mm; }");
+		html.append(".sport-section tr { page-break-inside: avoid; page-break-after: auto; }");
+		html.append("</style>");
+		html.append("</head>");
+		html.append("<body>");
+		html.append(generarCabeceraConLogo("Informe de Reservas de Plaza - " + temporada, "#007bff"));
+
+		if (reservasPorDeporte.isEmpty()) {
+			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("No hay reservas de plaza registradas para la temporada ").append(temporada);
+			html.append("</div>");
+		} else {
+			int totalReservas = 0;
+			int totalPagadas = 0;
+			int totalPendientes = 0;
+
+			for (Map.Entry<String, List<com.taemoi.project.entities.ProductoAlumno>> entry : ordenarReservasPorDeporte(reservasPorDeporte).entrySet()) {
+				List<com.taemoi.project.entities.ProductoAlumno> reservasDeporte = entry.getValue();
+				Deporte deporte = obtenerDeporteReserva(reservasDeporte.get(0));
+				String deporteNombre = deporte != null ? getDeporteNombre(deporte) : "Sin deporte";
+				String color = getColorDeporte(deporte);
+
+				html.append("<div class='sport-section'>");
+				html.append("<div class='section-header' style='background-color: ").append(color).append(";'>");
+				html.append(deporteNombre).append(" (").append(reservasDeporte.size()).append(" reservas)");
+				html.append("</div>");
+				html.append("<table>");
+				html.append("<thead><tr>");
+				html.append("<th>Alumno</th>");
+				html.append("<th>Concepto</th>");
+				html.append("<th>Estado</th>");
+				html.append("</tr></thead>");
+				html.append("<tbody>");
+
+				for (com.taemoi.project.entities.ProductoAlumno reserva : reservasDeporte) {
+					Alumno alumno = obtenerAlumnoReserva(reserva);
+					boolean pagado = Boolean.TRUE.equals(reserva.getPagado());
+					totalReservas++;
+					if (pagado) {
+						totalPagadas++;
+					} else {
+						totalPendientes++;
+					}
+
+					html.append("<tr>");
+					html.append("<td>").append(formatearNombreAlumno(alumno)).append("</td>");
+					html.append("<td>").append(reserva.getConcepto() != null ? reserva.getConcepto() : "N/A").append("</td>");
+					html.append("<td><span class='status-badge ").append(pagado ? "status-pagado" : "status-pendiente")
+							.append("'>").append(pagado ? "Pagado" : "Sin Pagar").append("</span></td>");
+					html.append("</tr>");
+				}
+
+				html.append("</tbody>");
+				html.append("</table>");
+				html.append("</div>");
+			}
+
+			html.append("<div class='resumen-general'>");
+			html.append("<h3>RESUMEN GENERAL</h3>");
+			html.append("<p><strong>Temporada:</strong> ").append(temporada).append("</p>");
+			html.append("<p><strong>Total reservas:</strong> ").append(totalReservas).append("</p>");
+			html.append("<p style='color: #28a745;'><strong>Pagadas:</strong> ").append(totalPagadas).append("</p>");
+			html.append("<p style='color: #dc3545;'><strong>Sin pagar:</strong> ").append(totalPendientes).append("</p>");
+			html.append("</div>");
+		}
+
+		html.append("</body>");
+		html.append("</html>");
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			System.err.println("Error generando PDF de reservas de plaza: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException("Error al generar el informe PDF de reservas de plaza", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	private Map<String, List<com.taemoi.project.entities.ProductoAlumno>> ordenarReservasPorDeporte(
+			Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte) {
+		return reservasPorDeporte.entrySet().stream()
+				.sorted((e1, e2) -> {
+					int prioridad1 = prioridadDeporte(obtenerDeporteReserva(e1.getValue().get(0)));
+					int prioridad2 = prioridadDeporte(obtenerDeporteReserva(e2.getValue().get(0)));
+					if (prioridad1 != prioridad2) {
+						return Integer.compare(prioridad1, prioridad2);
+					}
+					return e1.getKey().compareTo(e2.getKey());
+				})
+				.collect(Collectors.toMap(
+						Map.Entry::getKey,
+						entry -> entry.getValue().stream()
+								.sorted(Comparator.comparing(pa -> formatearNombreAlumno(obtenerAlumnoReserva(pa))))
+								.collect(Collectors.toList()),
+						(a, b) -> a,
+						java.util.LinkedHashMap::new));
+	}
+
+	private int prioridadDeporte(Deporte deporte) {
+		if (deporte == Deporte.TAEKWONDO) {
+			return 0;
+		}
+		if (deporte == Deporte.KICKBOXING) {
+			return 1;
+		}
+		return 2;
+	}
+
+	private String getColorDeporte(Deporte deporte) {
+		if (deporte == Deporte.TAEKWONDO) {
+			return "#0D47A1";
+		}
+		if (deporte == Deporte.KICKBOXING) {
+			return "#ff4500";
+		}
+		if (deporte == Deporte.PILATES) {
+			return "#57A2A8";
+		}
+		if (deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+			return "#c2185b";
+		}
+		return "#007bff";
+	}
+
+	private Alumno obtenerAlumnoReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
+		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getAlumno() != null) {
+			return reserva.getAlumnoDeporte().getAlumno();
+		}
+		return reserva.getAlumno();
+	}
+
+	private Deporte obtenerDeporteReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
+		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getDeporte() != null) {
+			return reserva.getAlumnoDeporte().getDeporte();
+		}
+		if (reserva.getAlumno() != null && reserva.getAlumno().getDeporte() != null) {
+			return reserva.getAlumno().getDeporte();
+		}
+		return inferDeporteFromConcepto(reserva.getConcepto());
+	}
+
+	private String formatearNombreAlumno(Alumno alumno) {
+		if (alumno == null) {
+			return "N/A";
+		}
+		return alumno.getNombre() + " " + alumno.getApellidos();
+	}
+
+	private String formatearFecha(Date fecha) {
+		if (fecha == null) {
+			return "N/A";
+		}
+		LocalDate localDate = Instant.ofEpochMilli(fecha.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+		return localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 	}
 
 	/**

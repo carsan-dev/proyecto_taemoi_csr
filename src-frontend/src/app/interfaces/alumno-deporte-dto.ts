@@ -55,6 +55,9 @@ export interface AlumnoConDeportesDTO {
   sexo: string | null;
   email: string | null;
   telefono: string | null;
+  telefono2: string | null;
+  responsableLegalNombre: string | null;
+  responsableLegalNif: string | null;
   telefonoFamiliar: string | null;
   rolFamiliar: string | null;
   grupoFamiliar: string | null;

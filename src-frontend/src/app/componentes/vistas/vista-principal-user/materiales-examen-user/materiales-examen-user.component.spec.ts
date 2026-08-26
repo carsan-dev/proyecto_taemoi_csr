@@ -22,9 +22,11 @@ describe('MaterialesExamenUserComponent', () => {
   beforeEach(async () => {
     endpointsServiceSpy = jasmine.createSpyObj<EndpointsService>('EndpointsService', [
       'obtenerMaterialExamenAlumno',
+      'obtenerUrlVideoMaterialExamenAlumno',
       'descargarArchivoPrivado',
     ]);
     endpointsServiceSpy.descargarArchivoPrivado.and.returnValue(of(new Blob(['pdf'])));
+    endpointsServiceSpy.obtenerUrlVideoMaterialExamenAlumno.and.returnValue('/video-url');
 
     await TestBed.configureTestingModule({
       imports: [MaterialesExamenUserComponent],
@@ -123,6 +125,7 @@ describe('MaterialesExamenUserComponent', () => {
       of({
         deporte: 'TAEKWONDO',
         gradoActual: 'AMARILLO',
+        siguienteGrado: 'AMARILLO_NARANJA',
         bloqueId: 'b02_amarillo_a_naranja',
         temario: {
           fileName: 'temario.pdf',
@@ -136,7 +139,7 @@ describe('MaterialesExamenUserComponent', () => {
 
     expect(component.material?.documentos.length).toBe(1);
     expect(component.material?.documentos[0].fileName).toBe('Temario para cinturón Amarillo-Naranja.pdf');
-    expect(component.material?.documentos[0].title).toBe('Temario para cinturón Amarillo/Naranja');
+    expect(component.material?.documentos[0].title).toBe('Temario para cinturón Amarillo-Naranja');
     expect(component.material?.documentos[0].previewable).toBeTrue();
     expect(component.material?.documentos[0].downloadUrl).toContain('download=true');
   });
@@ -244,5 +247,58 @@ describe('MaterialesExamenUserComponent', () => {
     component.toggleDocumentoVisor();
 
     expect(component.mostrarDocumentoVisor).toBeTrue();
+  });
+
+  it('debe mostrar y reproducir videos anteriores al desplegar Taeguks/Pumses anteriores', () => {
+    endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(
+      of({
+        deporte: 'TAEKWONDO',
+        gradoActual: 'NARANJA',
+        bloqueId: 'b03_naranja_a_verde',
+        temario: null,
+        videos: [],
+        videosAnteriores: [
+          {
+            id: 'anterior__b02_amarillo_a_naranja__01_taeguk.mp4',
+            title: 'Taeguk amarillo',
+            order: 1,
+            streamUrl: '/api/video-anterior',
+          },
+        ],
+        gruposVideosAnteriores: [
+          {
+            grado: 'AMARILLO',
+            titulo: 'Taeguks/Pumses de AMARILLO',
+            bloqueId: 'b02_amarillo_a_naranja',
+            videos: [
+              {
+                id: 'anterior__b02_amarillo_a_naranja__01_taeguk.mp4',
+                title: 'Taeguk amarillo',
+                order: 1,
+                streamUrl: '/api/video-anterior',
+              },
+            ],
+          },
+        ],
+        documentos: [],
+      } as any)
+    );
+
+    triggerInputs();
+
+    expect(fixture.nativeElement.textContent).toContain('Taeguks/Pumses anteriores');
+    expect(fixture.nativeElement.textContent).not.toContain('Taeguks/Pumses de AMARILLO');
+    expect(fixture.nativeElement.querySelectorAll('.previous-video-list .video-item-btn').length).toBe(0);
+
+    component.toggleVideosAnteriores();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Taeguks/Pumses de AMARILLO');
+    const anterior = fixture.nativeElement.querySelector('.previous-video-list .video-item-btn') as HTMLButtonElement;
+    anterior.click();
+    fixture.detectChanges();
+
+    expect(component.videoSeleccionado?.id).toBe('anterior__b02_amarillo_a_naranja__01_taeguk.mp4');
+    expect(component.videoSeleccionadoUrl).toBe('/api/video-anterior');
   });
 });

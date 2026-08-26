@@ -49,6 +49,7 @@ public class GrupoController {
 
 	@Autowired
 	private AlumnoAccessControlService alumnoAccessControlService;
+	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	/**
 	 * Obtiene todos los grupos con sus respectivos alumnos.
@@ -254,6 +255,7 @@ public class GrupoController {
 		}
 
 		grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
+		preinscripcionService.promocionarTodas();
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
@@ -291,6 +293,7 @@ public class GrupoController {
 			@PathVariable @NonNull Long turnoId) {
 		try {
 			grupoService.eliminarTurnoDeGrupo(grupoId, turnoId);
+			preinscripcionService.promocionarTodas();
 			return ResponseEntity.ok().build();
 		} catch (GrupoNoEncontradoException | TurnoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();

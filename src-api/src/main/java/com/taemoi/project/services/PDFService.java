@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Preinscripcion;
 
 public interface PDFService {
 	byte[] generarInformeAlumnosPorGrado(boolean soloActivos);
@@ -38,6 +39,10 @@ public interface PDFService {
 
 	byte[] generarInformeMensualidadesKickboxing(boolean soloActivos);
 
+	List<String> obtenerTemporadasReservasPlaza();
+
+	byte[] generarInformeReservasPlaza(String temporada, boolean soloActivos);
+
 	byte[] generarListadoMensualidadMensual(String mesAno, boolean soloActivos);
 
 	byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException;
@@ -47,4 +52,8 @@ public interface PDFService {
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 
 	byte[] generarInformeCompetidores();
+
+	byte[] generarPreinscripcionFirmada(Preinscripcion preinscripcion);
+
+	byte[] generarPreviewPreinscripcion(Deporte deporte, String contenido, String instrucciones);
 }

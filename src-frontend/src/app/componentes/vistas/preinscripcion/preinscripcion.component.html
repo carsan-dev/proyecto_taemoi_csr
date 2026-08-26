@@ -1,0 +1,143 @@
+<main class="pre-page">
+  <section class="hero">
+    <p class="eyebrow">Temporada {{temporada}}</p>
+    <h1>Preinscripción online</h1>
+    <p>Solicita plaza y combina los días compatibles que necesites. Si todos están completos, entrarás en lista de espera.</p>
+  </section>
+
+  @if(resultado){
+    <section class="success">
+      <span class="check">✓</span>
+      <h2>{{resultado.plazaAsignada ? 'Plaza asignada' : 'Lista de espera'}}</h2>
+      <p class="reference">{{resultado.referencia}}</p>
+      @if(resultado.plazaAsignada){<p><strong>Tu preinscripción ya cuenta en el aforo de todos los turnos elegidos.</strong> Recibirás documento e instrucciones por correo.</p>}@else{<p><strong>Todos los horarios elegidos están completos.</strong> Estás en posición {{resultado.posicionListaEspera}}. Te avisaremos automáticamente cuando uno tenga plaza.</p>}
+      <button type="button" (click)="descargar()">Descargar solicitud firmada</button>
+      <a routerLink="/">Volver al inicio</a>
+    </section>
+  }
+  @else {
+    <form [formGroup]="form" (ngSubmit)="enviar()" [class.is-submitting]="enviando">
+      @if(enviando){
+        <div class="submit-overlay" role="status" aria-live="assertive" aria-busy="true">
+          <div class="submit-progress">
+            <span class="spinner" aria-hidden="true"></span>
+            <strong>Generando y enviando solicitud…</strong>
+            <p>Estamos preparando el PDF firmado y enviando la confirmación por correo.</p>
+          </div>
+        </div>
+      }
+      <nav class="steps" aria-label="Pasos">
+        <span>1 · Datos</span><span>2 · Horarios</span><span>3 · Consentimientos</span><span>4 · Firma</span>
+      </nav>
+
+      <section>
+        <h2>Datos de la persona solicitante</h2>
+        <div class="grid">
+          <label>Nombre<input formControlName="nombre" autocomplete="given-name"></label>
+          <label>Apellidos<input formControlName="apellidos" autocomplete="family-name"></label>
+          <label>DNI/NIE {{esMenor() ? '(opcional para menores)' : ''}}<input formControlName="dni" maxlength="9">@if(form.controls.dni.touched && form.controls.dni.invalid){<small>{{esMenor() ? 'Si lo indicas, debe tener un formato válido.' : 'El DNI/NIE es obligatorio y debe tener un formato válido.'}}</small>}</label>
+          <label>Fecha de nacimiento<input type="date" formControlName="fechaNacimiento"></label>
+          <label class="wide">Dirección<input formControlName="direccion" autocomplete="street-address"></label>
+          <label>Teléfono<input formControlName="telefono" inputmode="tel" placeholder="612 345 678 o +34 612 345 678">@if(form.controls.telefono.touched && form.controls.telefono.invalid){<small>Introduce nueve dígitos; puedes añadir el prefijo +34.</small>}</label>
+          <label><span class="field-label">Teléfono secundario <span class="optional">(opcional)</span></span><input formControlName="telefono2" inputmode="tel" placeholder="611 234 567">@if(form.controls.telefono2.touched && form.controls.telefono2.invalid){<small>Introduce nueve dígitos; puedes añadir el prefijo +34.</small>}</label>
+          <label>Email<input type="email" formControlName="email" autocomplete="email"></label>
+          <fieldset class="binary-field"><legend>¿Tiene discapacidad?</legend><div class="binary-options"><label class="binary-option"><input type="radio" formControlName="tieneDiscapacidad" [value]="true"><span>Sí</span></label><label class="binary-option"><input type="radio" formControlName="tieneDiscapacidad" [value]="false"><span>No</span></label></div>@if(form.controls.tieneDiscapacidad.touched && form.controls.tieneDiscapacidad.invalid){<small>Selecciona una opción.</small>}</fieldset>
+        </div>
+        @if(esMenor()){
+          <div class="tutor">
+            <h3>Responsable legal</h3>
+            <div class="grid">
+              <label>Nombre y apellidos<input formControlName="tutorNombre"></label>
+              <label>DNI/NIE<input formControlName="tutorDni" maxlength="9">@if(form.controls.tutorDni.touched && form.controls.tutorDni.invalid){<small>Introduce un DNI/NIE válido.</small>}</label>
+            </div>
+          </div>
+        }
+      </section>
+
+      <section>
+        <h2>Actividad y horarios</h2>
+        <label>Deporte
+          <select formControlName="deporte" (change)="cambiarDeporte()">
+            <option value="">Selecciona una actividad</option>
+            @for(d of deportes;track d[0]){<option [value]="d[0]">{{d[1]}}</option>}
+          </select>
+        </label>
+        @if(form.controls.deporte.value){
+          @if(!form.controls.fechaNacimiento.value){
+            <p class="notice">Indica primero fecha de nacimiento para mostrar horarios compatibles.</p>
+          } @else if(cargandoGrupos){
+            <div class="groups" aria-busy="true" aria-label="Cargando horarios">
+              @for(i of [1,2,3,4];track i){
+                <div class="group-card skeleton-card"><span class="skeleton-radio"></span><span><span class="skeleton-line title"></span><span class="skeleton-line short"></span><span class="skeleton-chips"><span></span><span></span></span></span></div>
+              }
+            </div>
+          } @else {
+            <p class="hint">Elige uno o varios días. Solo puede seleccionarse un turno por día.</p>
+            <div class="groups">
+              @for(g of gruposCompatibles;track g.id){
+                @for(t of g.turnos;track t.id){
+                  <label class="group-card" [class.is-selected]="turnoSeleccionado(t.id)">
+                    <input type="checkbox" [checked]="turnoSeleccionado(t.id)" (change)="alternarTurno(t,$any($event.target).checked)">
+                    <span>
+                      <strong>{{t.diaSemana}} · {{t.horaInicio}}–{{t.horaFin}}</strong>
+                      @if(t.completo){<small class="wait-badge">Completo</small>}@else{<small class="available-badge">Con plaza</small>}
+                      <small>{{g.rangoEdadMin}}–{{g.rangoEdadMax}} años</small>
+                    </span>
+                  </label>
+                }
+              }
+              @empty{<p class="empty">No hay horarios compatibles con edad indicada.</p>}
+            </div>
+            @if(form.controls.turnoIds.touched && form.controls.turnoIds.invalid){<p class="error">Selecciona al menos un horario.</p>}
+            @if(errorHorarios){<p class="error" role="alert">{{errorHorarios}}</p>}
+            @if(turnosSeleccionados.length){
+              <div class="selection-summary"><strong>{{turnosSeleccionados.length}} {{turnosSeleccionados.length===1?'turno seleccionado':'turnos seleccionados'}}</strong><span>Si hay plaza en cualquiera, te asignaremos todos los horarios elegidos.</span></div>
+            }
+          }
+        }
+        <label class="schedule-observations">
+          <span class="field-label">Observaciones sobre el horario <span class="optional">(opcional)</span></span>
+          <span class="observation-help">¿Necesitas que revisemos el horario? Si por edad, tamaño, experiencia o recomendación del profesor crees que otro grupo puede encajar mejor, cuéntanoslo aquí. Nuestro equipo revisará tu solicitud y se pondrá en contacto contigo si es necesario.</span>
+          <textarea formControlName="observaciones" maxlength="1000" rows="4" placeholder="Por ejemplo: su profesor recomienda que pruebe en el grupo siguiente."></textarea>
+          <small class="character-count">{{form.controls.observaciones.value.length}}/1000</small>
+          @if(form.controls.observaciones.touched && form.controls.observaciones.invalid){<small>La observación no puede superar los 1.000 caracteres.</small>}
+        </label>
+      </section>
+
+      <section>
+        <h2>Normas y consentimientos</h2>
+        @if(!form.controls.deporte.value){
+          <div class="rules rules-status" role="status">Selecciona una actividad para consultar sus normas.</div>
+        } @else if(cargandoNormas){
+          <div class="rules rules-skeleton" role="status" aria-label="Cargando normas">
+            <span class="skeleton-line rules-skeleton-title" aria-hidden="true"></span>
+            @for(i of [1,2,3,4,5];track i){
+              <span class="skeleton-line rules-skeleton-rule" aria-hidden="true"></span>
+            }
+          </div>
+        } @else if(errorNormas){
+          <div class="rules rules-error" role="alert">{{errorNormas}}</div>
+        } @else if(configuracion){
+          <div class="rules rules-content" tabindex="0" (scroll)="comprobarLecturaNormas($any($event.target))">
+            <p>{{configuracion.contenido.importes}}</p>
+            <ul>@for(n of configuracion.contenido.normas;track n){<li>{{n}}</li>}</ul>
+          </div>
+          @if(form.controls.aceptacionNormas.disabled){<p class="rules-hint">Lee detenidamente todas las normas. Al completar la lectura podrás confirmar su aceptación.</p>}
+        }
+        <label class="checkline" [class.is-disabled]="form.controls.aceptacionNormas.disabled"><input type="checkbox" formControlName="aceptacionNormas"> He leído y acepto las normas de la actividad <strong>(obligatorio)</strong></label>
+        <label class="checkline"><input type="checkbox" formControlName="consentimientoFotografico"> Autorizo el uso de imágenes en actividades del club <span>(opcional)</span></label>
+      </section>
+
+      <section>
+        <h2>Firma y envío</h2>
+        <label>Nombre de quien firma<input formControlName="firmanteNombre"></label>
+        <p class="hint">Firma dentro del recuadro con el dedo, ratón o lápiz.</p>
+        <canvas #firma (pointerdown)="iniciar($event)" (pointermove)="mover($event)" (pointerup)="terminar()" (pointercancel)="terminar()"></canvas>
+        <button class="clear" type="button" (click)="limpiarFirma()">Borrar firma</button>
+        <div class="notice"><strong>Cómo funciona:</strong> si hay plaza en cualquiera de los horarios, te asignaremos todos los que has elegido. Solo quedarás en lista de espera si ninguno tiene plaza.</div>
+        @if(error){<p class="error" role="alert">{{error}}</p>}
+        <button class="submit" type="submit" [disabled]="enviando || !normasDisponibles">@if(enviando){<span class="button-spinner" aria-hidden="true"></span>}{{enviando?'Enviando…':'Enviar preinscripción'}}</button>
+      </section>
+    </form>
+  }
+</main>

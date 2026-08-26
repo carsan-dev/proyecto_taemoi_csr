@@ -1,0 +1,239 @@
+<main class="admin-pre">
+  <nav class="tabs" aria-label="Secciones de preinscripciones">
+    <button [class.active]="tab === 'solicitudes'" (click)="cambiarTab('solicitudes')">Solicitudes</button>
+    <button [class.active]="tab === 'plantillas'" (click)="cambiarTab('plantillas')">Plantillas PDF</button>
+  </nav>
+  @if (tab === 'solicitudes') {
+  <header>
+    <div><p>Admisiones</p><h1>Preinscripciones</h1></div>
+    <button (click)="buscar()">Actualizar</button>
+  </header>
+
+  <div class="filters">
+    <input [(ngModel)]="filtros.temporada" placeholder="Temporada">
+    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select>
+    <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_LISTA_ESPERA</option><option>FINALIZADA</option><option>CANCELADA</option></select>
+    <input [(ngModel)]="filtros.q" placeholder="DNI, referencia o nombre">
+    <button (click)="buscar(true)">Filtrar</button>
+  </div>
+
+  @if (cargando) {
+    <app-skeleton-card type="table" [count]="8"></app-skeleton-card>
+  } @else {
+  <div class="workspace">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Referencia</th><th>Alumno/a</th><th>Deporte</th><th>Temporada</th><th>Estado</th><th>Email inicial</th><th>Aviso de cambio</th><th>Confirmación final</th></tr></thead>
+        <tbody>
+          @for (x of items; track x.referencia) {
+            <tr (click)="seleccionar(x)" [class.selected]="seleccion?.referencia === x.referencia">
+              <td><strong>{{x.referencia}}</strong><small>{{x.dni || 'Sin DNI'}}</small>@if(x.observaciones){<small class="observation-flag">Con observación</small>}</td><td>{{x.nombre}} {{x.apellidos}}</td><td>{{x.deporte}}</td><td>{{x.temporada}}</td><td><span [attr.data-state]="x.estado">{{x.estado === 'EN_LISTA_ESPERA' ? 'LISTA DE ESPERA · ' + x.posicionListaEspera : x.estado}}</span></td><td>{{x.emailEnviado ? 'Enviado' : 'Pendiente'}} ({{x.emailIntentos}})</td><td>{{x.estadoEmailCambioTurnos}} ({{x.emailCambioTurnosIntentos}})</td><td>{{x.estadoEmailFinalizacion}} ({{x.emailFinalizacionIntentos}})</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8">No hay solicitudes con estos filtros.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="pagination-summary">{{primerResultado}}–{{ultimoResultado}} de {{totalElementos}} preinscripciones</p>
+    <app-paginacion [paginaActual]="pagina + 1" [totalPaginas]="totalPaginas" [tamanoPagina]="tamanoPagina" [deshabilitado]="cargando" (pageChange)="cambiarPagina($event)"></app-paginacion>
+  </div>
+  }
+  } @else {
+    <header><div><p>Documentos</p><h1>Plantillas PDF</h1></div><span>Layout y estilos bloqueados</span></header>
+    <section class="template-toolbar">
+      <label>Deporte<select [ngModel]="deportePlantilla" (ngModelChange)="cambiarDeporte($event)">@for (d of deportes; track d) { <option [value]="d">{{d}}</option> }</select></label>
+      <button type="button" (click)="preview()" [disabled]="cargandoPlantilla || procesandoPlantilla">Previsualizar PDF</button>
+      @if (auth.tieneRolAdmin()) { <button class="primary" type="button" (click)="publicar()" [disabled]="!dirty || !valida() || procesandoPlantilla">Publicar nueva versión</button> }
+    </section>
+    @if (cargandoPlantilla) {
+      <app-skeleton-card type="grid" [count]="2" [columns]="2"></app-skeleton-card>
+    } @else {
+      <div class="template-grid">
+        <form class="template-form" (input)="marcarCambios()">
+          <p class="version">Versión activa {{plantilla.version}}</p>
+          <label>Cabecera<input [(ngModel)]="plantilla.cabecera" name="cabecera" maxlength="120" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Contacto<input [(ngModel)]="plantilla.contacto" name="contacto" maxlength="180" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Título<input [(ngModel)]="plantilla.titulo" name="titulo" maxlength="180" required [disabled]="!auth.tieneRolAdmin()"></label>
+          <label>Consentimiento fotográfico<textarea [(ngModel)]="plantilla.consentimiento" name="consentimiento" maxlength="1500" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+          <fieldset><legend>Normas</legend>
+            @for (norma of plantilla.normas; track $index; let i=$index) { <div class="rule"><span>{{i+1}}</span><textarea [(ngModel)]="plantilla.normas[i]" [name]="'norma'+i" maxlength="2000" required [disabled]="!auth.tieneRolAdmin()"></textarea>@if(auth.tieneRolAdmin()){<button type="button" (click)="moverNorma(i,-1)" [disabled]="i===0">↑</button><button type="button" (click)="moverNorma(i,1)" [disabled]="i===plantilla.normas.length-1">↓</button><button type="button" (click)="eliminarNorma(i)">×</button>}</div> }
+            @if(auth.tieneRolAdmin()){<button type="button" (click)="agregarNorma()">Añadir norma</button>}
+          </fieldset>
+          <label>Importes o información de pago<textarea [(ngModel)]="plantilla.importes" name="importes" maxlength="3000" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+          <label>Instrucciones posteriores<textarea [(ngModel)]="plantilla.instrucciones" name="instrucciones" maxlength="3000" required [disabled]="!auth.tieneRolAdmin()"></textarea></label>
+        </form>
+        <aside class="history"><h2>Historial</h2>@for(v of historial;track v.id){<article><strong>Versión {{v.version}}</strong><small>{{v.creadaEn | date:'medium'}} {{v.activa ? '· Activa' : ''}}</small>@if(auth.tieneRolAdmin() && !v.activa){<button type="button" (click)="restaurar(v.version)" [disabled]="procesandoPlantilla">Restaurar</button>}</article>}</aside>
+      </div>
+    }
+  }
+</main>
+
+@if (tab === 'solicitudes' && seleccion) {
+  <aside class="detail-panel" aria-label="Detalle de la preinscripción">
+    <button class="close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
+    <p class="kicker">{{seleccion.referencia}}</p>
+    <h2>{{seleccion.nombre}} {{seleccion.apellidos}}</h2>
+    <dl><dt>DNI/NIE</dt><dd>{{seleccion.dni || 'Sin DNI/NIE'}}</dd><dt>Teléfono secundario</dt><dd>{{seleccion.telefono2 || 'No facilitado'}}</dd><dt>Discapacidad</dt><dd>{{seleccion.tieneDiscapacidad == null ? 'No recogido' : seleccion.tieneDiscapacidad ? 'Sí' : 'No'}}</dd><dt>Deporte</dt><dd>{{seleccion.deporte}}</dd><dt>Horario solicitado originalmente</dt><dd>{{seleccion.grupoOriginal}}</dd><dt>Asignación vigente</dt><dd>{{seleccion.grupo}}</dd><dt>Estado</dt><dd>{{seleccion.estado}}</dd><dt>Aviso de cambio</dt><dd>{{seleccion.estadoEmailCambioTurnos}} · {{seleccion.emailCambioTurnosIntentos}} intento(s)</dd>@if(seleccion.turnosModificadosEn){<dt>Turnos modificados</dt><dd>{{seleccion.turnosModificadosEn | date:'medium'}}</dd>}@if(seleccion.emailCambioTurnosEnviadoEn){<dt>Aviso enviado</dt><dd>{{seleccion.emailCambioTurnosEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailCambioTurnosUltimoError){<dt>Error del aviso</dt><dd>{{seleccion.emailCambioTurnosUltimoError}}</dd>}<dt>Confirmación final</dt><dd>{{seleccion.estadoEmailFinalizacion}} · {{seleccion.emailFinalizacionIntentos}} intento(s)</dd>@if(seleccion.emailFinalizacionEnviadoEn){<dt>Confirmación enviada</dt><dd>{{seleccion.emailFinalizacionEnviadoEn | date:'medium'}}</dd>}@if(seleccion.emailFinalizacionUltimoError){<dt>Error de confirmación</dt><dd>{{seleccion.emailFinalizacionUltimoError}}</dd>}</dl>
+    <section class="observation-detail" [class.has-observation]="seleccion.observaciones"><h3>Observación sobre el horario</h3><p>{{seleccion.observaciones || 'Sin observaciones.'}}</p></section>
+    @if(seleccion.estado === 'EN_LISTA_ESPERA'){<p><strong>Posición en cola:</strong> {{seleccion.posicionListaEspera}}</p>}
+
+    <section class="signature-preview">
+      <h3>Firma presentada</h3>
+      @if (firmaUrl) { <img [src]="firmaUrl" alt="Firma trazada por {{seleccion.nombre}} {{seleccion.apellidos}}"> }
+      @else { <div class="signature-loading">Cargando firma…</div> }
+      <button type="button" (click)="descargarDocumento()">Descargar solicitud original firmada</button>
+    </section>
+
+    @if(puedeEditarTurnos && !editandoTurnos){<button type="button" (click)="abrirEdicionTurnos()">Modificar turnos</button>}
+    @if(editandoTurnos){
+      <section class="schedule-editor">
+        <h3>Asignación administrativa</h3>
+        <p>Puede ignorar edad y aforo. Solo se admite un turno por día.</p>
+        @if(cargandoTurnos){<div class="schedule-loading">Cargando turnos…</div>}
+        @else{
+          <div class="schedule-options">
+            @for(turno of turnosDisponibles;track turno.id){
+              <label [class.is-selected]="turnoAdminSeleccionado(turno.id)">
+                <input type="checkbox" [checked]="turnoAdminSeleccionado(turno.id)" (change)="alternarTurnoAdmin(turno,$any($event.target).checked)">
+                <span><strong>{{turno.diaSemana}} · {{turno.horaInicio}}–{{turno.horaFin}}</strong><small>{{turno.grupo}} · {{turno.rangoEdadMin}}–{{turno.rangoEdadMax}} años</small><em>@if(turnoFueraEdad(turno)){<b>Fuera de edad</b>}@if(turno.completo){<b>{{turnoEsPlazaActual(turno) ? 'Plaza actual' : 'Sin plaza'}}</b>}</em></span>
+              </label>
+            }
+          </div>
+          @if(!turnoIdsEdicion.length){<p class="schedule-error">Selecciona al menos un turno.</p>}
+          <div class="schedule-actions"><button type="button" [disabled]="procesandoTurnos" (click)="cerrarEdicionTurnos()">Cancelar</button><button type="button" class="primary" [disabled]="!turnoIdsEdicion.length || !turnosEdicionCambiados || procesandoTurnos" (click)="guardarTurnos()">{{procesandoTurnos?'Guardando…':'Guardar turnos'}}</button></div>
+        }
+      </section>
+    }
+
+    @if (seleccion.estado === 'PENDIENTE') {
+      <section class="student-match">
+        <h3>Ficha de alumno</h3>
+        @if (seleccion.alumnosCoincidentes?.length) {
+          <p><strong>{{seleccion.alumnosCoincidentes.length}} {{seleccion.alumnosCoincidentes.length === 1 ? 'ficha compatible' : 'fichas compatibles'}}</strong><span>Administración confirmará si se reutiliza una ficha o se crea otra.</span></p>
+        } @else {
+          <p class="no-match"><strong>No se ha encontrado una ficha compatible.</strong><span>Se propondrá crear una ficha nueva al aceptar la preinscripción.</span></p>
+        }
+      </section>
+      <button class="primary" (click)="abrirFinalizacion()">Revisar y finalizar alta</button>
+      <button (click)="reenviar()">Reenviar solicitud original</button>
+      @if(puedeReenviarCambioTurnos){<button (click)="reenviarCambioTurnos()">Reenviar aviso de cambio</button>}
+      <button class="danger" (click)="cancelar()">Cancelar solicitud</button>
+    }
+    @if (seleccion.estado === 'EN_LISTA_ESPERA') { <button (click)="reenviar()">Reenviar solicitud original</button><button class="danger" (click)="cancelar()">Cancelar lista de espera</button> }
+    @if (seleccion.estado === 'FINALIZADA') { <button class="primary" (click)="reenviarFinalizacion()">Reenviar confirmación</button> }
+    @if (puedeEliminar) {
+      <button class="danger delete" (click)="eliminar()">Eliminar definitivamente</button>
+    }
+  </aside>
+}
+
+@if (mostrandoFinalizacion && seleccion) {
+  <div class="admission-backdrop" (click)="cerrarFinalizacion()">
+    <section class="admission-modal" role="dialog" aria-modal="true" aria-labelledby="admission-title" (click)="$event.stopPropagation()">
+      <header>
+        <div><p>Confirmación administrativa</p><h2 id="admission-title">Finalizar preinscripción</h2></div>
+        <button type="button" class="close" aria-label="Cerrar" [disabled]="procesandoFinalizacion" (click)="cerrarFinalizacion()">×</button>
+      </header>
+
+      <div class="admission-summary">
+        <p><strong>{{seleccion.nombre}} {{seleccion.apellidos}}</strong><span>{{seleccion.dni || 'Sin DNI/NIE'}} · {{seleccion.deporte}}</span></p>
+        <p><strong>{{seleccion.turnosSolicitados?.length || 1}} turno(s) en la asignación vigente</strong><span>{{seleccion.grupo}}</span></p>
+      </div>
+
+      <section>
+        <h3>Destino de la ficha</h3>
+        <div class="diff-list">
+          @for (candidato of seleccion.alumnosCoincidentes || []; track candidato.id) {
+            <label class="diff-row">
+              <input type="radio" name="accionAlumno" [checked]="accionAlumno === 'VINCULAR_EXISTENTE' && alumnoSeleccionado?.id === candidato.id" (change)="elegirAlumno(candidato)">
+              <span><strong>Usar {{candidato.nombre}} {{candidato.apellidos}}</strong><small>{{candidato.nif || 'Sin DNI/NIE'}} · {{candidato.activo ? 'Activo' : 'De baja'}}</small></span>
+            </label>
+          }
+          @if (!tieneCoincidenciaDniExacta) {
+            <label class="diff-row">
+              <input type="radio" name="accionAlumno" [checked]="accionAlumno === 'CREAR_NUEVO'" (change)="crearNuevaFicha()">
+              <span><strong>Crear una ficha nueva</strong><small>No se reutilizará ninguna coincidencia.</small></span>
+            </label>
+          }
+        </div>
+        @if (tieneCoincidenciaDniExacta) { <p class="status-note">Ya existe una ficha con este DNI/NIE, por lo que debe reutilizarse.</p> }
+        @if (!seleccion.dni) { <p class="status-note">Al no existir DNI/NIE, ninguna coincidencia se vincula automáticamente.</p> }
+      </section>
+
+      @if (accionAlumno === 'VINCULAR_EXISTENTE' && alumnoSeleccionado; as alumno) {
+        <section>
+          <h3>Ficha existente</h3>
+          <p class="status-note">{{alumno.activo ? 'Alumno activo' : 'Alumno inactivo: se reactivará y se limpiará su fecha de baja.'}}</p>
+          @if (alumno.deporteRegistrado) {
+            <p class="status-note">{{alumno.deporteActivo ? 'Deporte ya activo: se reemplazarán sus horarios y se confirmará la tarifa.' : 'Deporte inactivo: se reactivará conservando grado y antigüedad.'}}</p>
+          }
+          <div class="diff-list">
+            @for (campo of camposAplicables; track campo.clave) {
+              @if (hayDiferencia(campo)) {
+                <label class="diff-row">
+                  <input type="checkbox" [checked]="camposActualizar.has(campo.clave)" (change)="alternarCampo(campo.clave, $any($event.target).checked)">
+                  <span><strong>{{campo.etiqueta}}</strong><small>Ficha: {{mostrarValor(alumno[campo.alumno])}}</small><small>Preinscripción: {{mostrarValor(valorPreinscripcion(campo))}}</small></span>
+                </label>
+              }
+            }
+          </div>
+          @if (camposActualizar.size === 0) { <p class="status-note">No se actualizarán datos personales de la ficha.</p> }
+        </section>
+        @if (correosDiferentes) {
+          <section>
+            <h3>Correo definitivo de acceso</h3>
+            <p class="status-note">Los correos no coinciden. El elegido se guardará en la ficha, recibirá la confirmación y será el usado para acceder al portal.</p>
+            <div class="diff-list">
+              <label class="diff-row"><input type="radio" name="decisionEmail" value="CONSERVAR_FICHA" [(ngModel)]="decisionEmail"><span><strong>Conservar correo de la ficha</strong><small>{{alumno.email}}</small></span></label>
+              <label class="diff-row"><input type="radio" name="decisionEmail" value="USAR_PREINSCRIPCION" [(ngModel)]="decisionEmail"><span><strong>Usar correo de la preinscripción</strong><small>{{seleccion.email}}</small></span></label>
+            </div>
+          </section>
+        }
+      } @else if (accionAlumno === 'CREAR_NUEVO') {
+        <section><h3>Nueva ficha</h3><p class="status-note">Se crearán ficha activa, número de expediente y fechas de alta usando los datos recibidos.</p></section>
+      }
+
+      @if (seleccion.tieneDiscapacidad == null) {
+        <section>
+          <h3>Dato pendiente de solicitud antigua</h3>
+          <p class="status-note">Esta preinscripción no recogió la discapacidad. Debes confirmarla antes de finalizar.</p>
+          <div class="diff-list">
+            <label class="diff-row"><input type="radio" name="discapacidadHistorica" [checked]="discapacidadHistorica === true" (change)="confirmarDiscapacidadHistorica(true)"><span><strong>Sí tiene discapacidad</strong></span></label>
+            <label class="diff-row"><input type="radio" name="discapacidadHistorica" [checked]="discapacidadHistorica === false" (change)="confirmarDiscapacidadHistorica(false)"><span><strong>No tiene discapacidad</strong></span></label>
+          </div>
+        </section>
+      }
+
+      @if (accionAlumno) {
+        <section class="sport-data">
+          <h3>Tarifa y horarios deportivos</h3>
+          <p class="status-note">La cuantía se decide manualmente. Los turnos anteriores de este deporte serán reemplazados por los {{seleccion.turnosSolicitados?.length || 1}} de la asignación vigente.</p>
+          <div class="form-grid">
+            <label>Tipo de tarifa
+              <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
+                @for (tarifa of tarifasDisponibles; track tarifa) { <option [value]="tarifa">{{tarifa}}</option> }
+              </select>
+            </label>
+            <label>Cuantía mensual (€)<input type="number" min="0" step="0.01" [(ngModel)]="datosAlta.cuantiaTarifa"></label>
+            @if (datosAlta.tipoTarifa === 'PADRES_HIJOS') {
+              <label>Rol familiar<select [(ngModel)]="datosAlta.rolFamiliar"><option value="NINGUNO">Seleccionar</option><option>PADRE</option><option>MADRE</option><option>HIJO</option><option>HIJA</option></select></label>
+            }
+            @if (datosAlta.tipoTarifa === 'HERMANOS') {
+              <label>Grupo familiar<input maxlength="50" [(ngModel)]="datosAlta.grupoFamiliar"></label>
+            }
+            @if (requiereDatosDeporte && requiereGrado) {
+              <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado) { <option [value]="grado">{{grado}}</option> }</select></label>
+              <label>Fecha del grado<input type="date" [(ngModel)]="datosAlta.fechaGrado"></label>
+            }
+          </div>
+        </section>
+      }
+
+      <footer>
+        <button type="button" [disabled]="procesandoFinalizacion" (click)="cerrarFinalizacion()">Volver</button>
+        <button type="button" class="primary" [disabled]="!finalizacionValida || procesandoFinalizacion" (click)="finalizar()">{{procesandoFinalizacion ? 'Finalizando…' : 'Aceptar y completar alta'}}</button>
+      </footer>
+    </section>
+  </div>
+}

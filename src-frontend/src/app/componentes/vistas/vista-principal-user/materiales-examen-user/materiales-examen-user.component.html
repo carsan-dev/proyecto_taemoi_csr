@@ -88,6 +88,54 @@
       } @else {
       <p class="materials-state">No hay videos en este bloque.</p>
       }
+
+      @if (material.gruposVideosAnteriores.length > 0) {
+      <div class="previous-videos">
+        <button
+          type="button"
+          class="previous-videos-toggle"
+          [class.is-open]="videosAnterioresExpandido"
+          (click)="toggleVideosAnteriores()"
+        >
+          <span>
+            <i class="bi bi-arrow-counterclockwise"></i>
+            Taeguks/Pumses anteriores
+          </span>
+          <i class="bi" [ngClass]="videosAnterioresExpandido ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </button>
+
+        @if (videosAnterioresExpandido) {
+        <div class="previous-video-groups">
+          @for (grupo of material.gruposVideosAnteriores; track grupo.bloqueId) {
+          <section class="previous-video-group">
+            <p class="previous-video-group-title">{{ grupo.titulo }}</p>
+            <div class="video-list previous-video-list">
+              @for (video of grupo.videos; track video.id) {
+              <div class="video-item-wrap">
+                <button
+                  type="button"
+                  class="video-item-btn is-previous"
+                  [class.is-active]="video.id === videoSeleccionado?.id"
+                  (click)="onSeleccionarVideo(video)"
+                >
+                  <span class="video-order">{{ video.order }}</span>
+                  <span class="video-title">{{ video.title }}</span>
+                </button>
+
+                @if (esVideoActivoEnMovil(video)) {
+                <div class="video-mobile-player">
+                  <ng-container [ngTemplateOutlet]="videoPlayerTemplate"></ng-container>
+                </div>
+                }
+              </div>
+              }
+            </div>
+          </section>
+          }
+        </div>
+        }
+      </div>
+      }
     </div>
 
     <div class="materials-player-panel">

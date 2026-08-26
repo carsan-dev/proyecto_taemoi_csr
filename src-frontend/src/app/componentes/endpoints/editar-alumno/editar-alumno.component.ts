@@ -167,6 +167,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     email?: string;
     telefono?: string;
     telefono2?: string;
+    responsableLegalNombre?: string;
+    responsableLegalNif?: string;
     tieneDiscapacidad?: boolean;
     autorizacionWeb?: boolean;
     fechaBaja?: string;
@@ -184,6 +186,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     email?: string;
     telefono?: string;
     telefono2?: string;
+    responsableLegalNif?: string;
   } = {};
   private readonly basicInfoValidators: Record<string, (value: any) => string | null> = {
     nombre: (value) => (this.isBlank(value) ? 'El nombre es obligatorio' : null),
@@ -194,6 +197,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     email: (value) => this.validateEmail(value),
     telefono: (value) => this.validateTelefono(value, true),
     telefono2: (value) => this.validateTelefono(value, false),
+    responsableLegalNif: (value) => this.isBlank(value) ? null : this.validateNif(value),
   };
 
   // Categorias for Taekwondo competitors (must match database categoria.nombre values)
@@ -258,6 +262,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             Validators.maxLength(9),
           ],
         ],
+        responsableLegalNombre: ['', Validators.maxLength(180)],
+        responsableLegalNif: ['', Validators.pattern(String.raw`^[0-9XYZxyz][0-9]{7}[A-Za-z]$`)],
         deporte: [''], // DEPRECATED: No longer required - managed via tabs
         fechaBaja: [''],
         autorizacionWeb: [true, Validators.required],
@@ -966,6 +972,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       email: alumno.email,
       telefono: alumno.telefono,
       telefono2: alumno.telefono2,
+      responsableLegalNombre: alumno.responsableLegalNombre,
+      responsableLegalNif: alumno.responsableLegalNif,
       fechaNacimiento,
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
@@ -1638,6 +1646,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       email: this.alumno.email,
       telefono: this.alumno.telefono,
       telefono2: this.alumno.telefono2,
+      responsableLegalNombre: this.alumno.responsableLegalNombre,
+      responsableLegalNif: this.alumno.responsableLegalNif,
       tipoTarifa: this.alumno.tipoTarifa,
       cuantiaTarifa: this.alumno.cuantiaTarifa,
       rolFamiliar: this.alumno.rolFamiliar,
@@ -4886,8 +4896,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return null;
     }
     const nifValue = String(value).trim();
-    if (!/^\d{8}[A-Za-z]$/.test(nifValue)) {
-      return 'Formato inválido (8 números y una letra)';
+    if (!/^[0-9XYZxyz][0-9]{7}[A-Za-z]$/.test(nifValue)) {
+      return 'Formato de DNI/NIE inválido';
     }
     return null;
   }
@@ -4994,6 +5004,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       email: this.pendingBasicInfoChanges.email ?? this.alumno.email,
       telefono: telefonoInt,
       telefono2: telefono2Int,
+      responsableLegalNombre: this.pendingBasicInfoChanges.responsableLegalNombre ?? this.alumno.responsableLegalNombre,
+      responsableLegalNif: (this.pendingBasicInfoChanges.responsableLegalNif ?? this.alumno.responsableLegalNif)?.trim().toUpperCase() || null,
       tieneDiscapacidad: this.pendingBasicInfoChanges.tieneDiscapacidad ?? this.alumno.tieneDiscapacidad,
       autorizacionWeb: this.pendingBasicInfoChanges.autorizacionWeb ?? this.alumno.autorizacionWeb,
       fechaBaja: fechaBaja,

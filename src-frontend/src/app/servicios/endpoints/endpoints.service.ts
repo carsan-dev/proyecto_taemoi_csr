@@ -886,6 +886,15 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarCertificadosCobros(alumnoIds: number[], ano: number): Observable<Blob> {
+    return this.http
+      .post(`${this.urlBase}/tesoreria/certificados-cobros`, { alumnoIds, ano }, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   private construirParamsTesoreria(
     mes: number | null,
     ano: number | null,
@@ -1343,7 +1352,7 @@ export class EndpointsService {
         tap((nuevoEvento) => {
           this.limpiarCacheEventosPublicos();
           const eventosActuales = this.eventosSubject.getValue();
-          this.eventosSubject.next([...eventosActuales, nuevoEvento]);
+          this.eventosSubject.next([nuevoEvento, ...eventosActuales]);
         }),
         catchError(this.manejarError)
       );
@@ -1669,11 +1678,27 @@ export class EndpointsService {
     if (!Array.isArray(material.videos)) {
       material.videos = [];
     } else {
-      material.videos = material.videos.map((video) => ({
-        ...video,
-        streamUrl: video?.id
-          ? this.obtenerUrlVideoMaterialExamenAlumno(alumnoId, deporte, video.id)
-          : '',
+      material.videos = material.videos.map((video) =>
+        this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte)
+      );
+    }
+
+    if (!Array.isArray(material.videosAnteriores)) {
+      material.videosAnteriores = [];
+    } else {
+      material.videosAnteriores = material.videosAnteriores.map((video) =>
+        this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte)
+      );
+    }
+
+    if (!Array.isArray(material.gruposVideosAnteriores)) {
+      material.gruposVideosAnteriores = [];
+    } else {
+      material.gruposVideosAnteriores = material.gruposVideosAnteriores.map((grupo) => ({
+        ...grupo,
+        videos: Array.isArray(grupo?.videos)
+          ? grupo.videos.map((video) => this.normalizarUrlVideoMaterialExamen(video, alumnoId, deporte))
+          : [],
       }));
     }
 
@@ -1705,6 +1730,19 @@ export class EndpointsService {
     }
 
     return documento.order === 0 && documento.fileName === temarioFileName;
+  }
+
+  private normalizarUrlVideoMaterialExamen(
+    video: MaterialExamenDTO['videos'][number] | null | undefined,
+    alumnoId: number,
+    deporte: string
+  ): MaterialExamenDTO['videos'][number] {
+    return {
+      ...video!,
+      streamUrl: video?.id
+        ? this.obtenerUrlVideoMaterialExamenAlumno(alumnoId, deporte, video.id)
+        : '',
+    };
   }
 
   generarInformeAlumnosPorGrado(soloActivos: boolean = true): Observable<Blob> {
@@ -1926,6 +1964,27 @@ export class EndpointsService {
     const params = new HttpParams().set('soloActivos', soloActivos.toString());
     return this.http
       .get(`${this.urlBase}/informes/mensualidades/kickboxing`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  obtenerTemporadasReservasPlaza(): Observable<string[]> {
+    return this.http
+      .get<string[]>(`${this.urlBase}/informes/reservas-plaza/temporadas`, {
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
+  generarInformeReservasPlaza(temporada: string, soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams()
+      .set('temporada', temporada)
+      .set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/reservas-plaza`, {
         params,
         withCredentials: true,
         responseType: 'blob',

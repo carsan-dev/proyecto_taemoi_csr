@@ -17,6 +17,8 @@ public class TurnoCortoDTO {
 	private Integer rangoEdadMin;
 	private Integer rangoEdadMax;
 	private List<AlumnoDTO> alumnos;
+	private Integer ocupacionEfectiva;
+	private Boolean completo;
 
 	public TurnoCortoDTO() {
 	}
@@ -92,6 +94,11 @@ public class TurnoCortoDTO {
 	public void setAlumnos(List<AlumnoDTO> alumnos) {
 		this.alumnos = alumnos;
 	}
+
+	public Integer getOcupacionEfectiva() { return ocupacionEfectiva; }
+	public void setOcupacionEfectiva(Integer ocupacionEfectiva) { this.ocupacionEfectiva = ocupacionEfectiva; }
+	public Boolean getCompleto() { return completo; }
+	public void setCompleto(Boolean completo) { this.completo = completo; }
 
 	public static TurnoCortoDTO deTurno(Turno turno) {
 		if (turno == null) {

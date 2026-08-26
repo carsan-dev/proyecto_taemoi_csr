@@ -38,4 +38,8 @@ public interface TesoreriaService {
 			Boolean pagado,
 			String texto,
 			Boolean soloActivos);
+
+	byte[] generarCertificadoCobrosAlumno(Long alumnoId, Integer ano);
+
+	byte[] generarCertificadosCobrosZip(List<Long> alumnoIds, Integer ano);
 }

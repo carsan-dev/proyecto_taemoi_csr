@@ -46,6 +46,7 @@ public class TurnoController {
 	 */
 	@Autowired
 	private ConfiguracionSistemaService configuracionSistemaService;
+	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	/**
 	 * Obtiene todos los turnos disponibles.
@@ -132,6 +133,7 @@ public class TurnoController {
 	public ResponseEntity<TurnoDTO> actualizarTurno(@PathVariable @NonNull Long turnoId,
 			@Valid @RequestBody TurnoDTO turnoDTO) {
 		TurnoDTO turnoActualizadoDTO = turnoService.actualizarTurno(turnoId, turnoDTO);
+		preinscripcionService.promocionarTodas();
 		if (turnoActualizadoDTO != null) {
 			return ResponseEntity.ok(turnoActualizadoDTO);
 		} else {
@@ -151,15 +153,12 @@ public class TurnoController {
 	@DeleteMapping("/{turnoId}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<Void> eliminarTurno(@PathVariable @NonNull Long turnoId) {
-		try {
-			boolean eliminado = turnoService.eliminarTurno(turnoId);
-			if (eliminado) {
-				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-			} else {
-				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-			}
-		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		boolean eliminado = turnoService.eliminarTurno(turnoId);
+		if (eliminado) {
+			preinscripcionService.promocionarTodas();
+			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		} else {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 

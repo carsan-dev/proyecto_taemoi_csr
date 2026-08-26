@@ -21,11 +21,8 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./src-api
-      dockerfile: Dockerfile
-      args:
-        SPRING_PROFILE: production
+    image: ${TAEMOI_BACKEND_IMAGE:-ghcr.io/carsan-dev/taemoi-backend:latest}
+    pull_policy: always
     container_name: taemoi-backend-prod
     restart: unless-stopped
     depends_on:
@@ -41,6 +38,8 @@ services:
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
       SPRING_MAIL_FROM: ${SPRING_MAIL_FROM}
+      SPRING_MAIL_FROM_NAME: ${SPRING_MAIL_FROM_NAME:-Moi's Kim Do}
+      APP_PREINSCRIPCIONES_ADMIN_EMAIL: ${APP_PREINSCRIPCIONES_ADMIN_EMAIL:-${EMAIL:-}}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
       APP_BASE_URL: ${APP_BASE_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -61,11 +60,8 @@ services:
       start_period: 180s  # Increased from 90s - backend needs more time on first start
 
   frontend:
-    build:
-      context: ./src-frontend
-      dockerfile: Dockerfile.production
-      args:
-        ENVIRONMENT: production
+    image: ${TAEMOI_FRONTEND_IMAGE:-ghcr.io/carsan-dev/taemoi-frontend:latest}
+    pull_policy: always
     container_name: taemoi-frontend-prod
     restart: unless-stopped
     depends_on:
@@ -75,9 +71,12 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf:ro
+      - ./src-frontend/nginx-cert-reloader.sh:/usr/local/bin/nginx-cert-reloader:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx
+    entrypoint: ["/bin/sh", "/usr/local/bin/nginx-cert-reloader"]
+    command: ["-g", "daemon off;"]
     networks:
       - taemoi-network
     healthcheck:
@@ -90,10 +89,14 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: taemoi-certbot
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_healthy
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --non-interactive; sleep 12h & wait $${!}; done;'"
     networks:
       - taemoi-network
 

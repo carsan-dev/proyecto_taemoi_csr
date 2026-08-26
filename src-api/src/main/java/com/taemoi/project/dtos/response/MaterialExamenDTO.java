@@ -6,10 +6,13 @@ import java.util.List;
 public class MaterialExamenDTO {
 	private String deporte;
 	private String gradoActual;
+	private String siguienteGrado;
 	private String bloqueId;
 	private MaterialExamenTemarioDTO temario;
 	private List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 	private List<MaterialExamenVideoDTO> videos = new ArrayList<>();
+	private List<MaterialExamenVideoDTO> videosAnteriores = new ArrayList<>();
+	private List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores = new ArrayList<>();
 
 	public MaterialExamenDTO() {
 	}
@@ -28,6 +31,14 @@ public class MaterialExamenDTO {
 
 	public void setGradoActual(String gradoActual) {
 		this.gradoActual = gradoActual;
+	}
+
+	public String getSiguienteGrado() {
+		return siguienteGrado;
+	}
+
+	public void setSiguienteGrado(String siguienteGrado) {
+		this.siguienteGrado = siguienteGrado;
 	}
 
 	public String getBloqueId() {
@@ -52,6 +63,22 @@ public class MaterialExamenDTO {
 
 	public void setVideos(List<MaterialExamenVideoDTO> videos) {
 		this.videos = videos;
+	}
+
+	public List<MaterialExamenVideoDTO> getVideosAnteriores() {
+		return videosAnteriores;
+	}
+
+	public void setVideosAnteriores(List<MaterialExamenVideoDTO> videosAnteriores) {
+		this.videosAnteriores = videosAnteriores;
+	}
+
+	public List<MaterialExamenVideoGrupoDTO> getGruposVideosAnteriores() {
+		return gruposVideosAnteriores;
+	}
+
+	public void setGruposVideosAnteriores(List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores) {
+		this.gruposVideosAnteriores = gruposVideosAnteriores;
 	}
 
 	public List<MaterialExamenDocumentoDTO> getDocumentos() {

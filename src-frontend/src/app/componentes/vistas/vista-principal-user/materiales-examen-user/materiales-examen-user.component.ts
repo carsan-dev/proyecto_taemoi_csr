@@ -63,6 +63,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   material: MaterialExamenDTO | null = null;
   videoSeleccionado: MaterialExamenVideoDTO | null = null;
   videoSeleccionadoUrl: string | null = null;
+  videosAnterioresExpandido: boolean = false;
 
   documentoSeleccionado: MaterialExamenDocumentoDTO | null = null;
   mostrarDocumentoVisor: boolean = false;
@@ -97,26 +98,25 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private pdfRenderTask: RenderTask | null = null;
   private readonly mobileViewportMediaQuery =
     '(max-width: 768px), (max-height: 540px) and (pointer: coarse)';
-  private readonly descripcionPreparacionPorGrado: Record<string, string> = {
-    BLANCO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N BLANCO/AMARILLO',
-    BLANCO_AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO',
-    AMARILLO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AMARILLO/NARANJA',
-    AMARILLO_NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA',
-    NARANJA: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NARANJA/VERDE',
-    NARANJA_VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE',
-    VERDE: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N VERDE/AZUL',
-    VERDE_AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL',
-    AZUL: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N AZUL/ROJO',
-    AZUL_ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO',
-    ROJO: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 1\u00BA PUM / NEGRO 1\u00BA DAN',
-    ROJO_NEGRO_1_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 2\u00BA PUM',
-    ROJO_NEGRO_2_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
-    ROJO_NEGRO_3_PUM: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ROJO NEGRO 3\u00BA PUM',
-    NEGRO_1_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 2\u00BA DAN',
-    NEGRO_2_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 3\u00BA DAN',
-    NEGRO_3_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 4\u00BA DAN',
-    NEGRO_4_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 5\u00BA DAN',
-    NEGRO_5_DAN: 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N NEGRO 6\u00BA DAN',
+  private readonly etiquetasSiguienteGrado: Record<string, string> = {
+    BLANCO_AMARILLO: 'BLANCO-AMARILLO',
+    AMARILLO: 'AMARILLO',
+    AMARILLO_NARANJA: 'AMARILLO-NARANJA',
+    NARANJA: 'NARANJA',
+    NARANJA_VERDE: 'NARANJA-VERDE',
+    VERDE: 'VERDE',
+    VERDE_AZUL: 'VERDE-AZUL',
+    AZUL: 'AZUL',
+    AZUL_ROJO: 'AZUL-ROJO',
+    ROJO: 'ROJO',
+    ROJO_NEGRO_1_PUM: 'NEGRO 1\u00BA PUM',
+    ROJO_NEGRO_2_PUM: 'NEGRO 2\u00BA PUM',
+    ROJO_NEGRO_3_PUM: 'NEGRO 3\u00BA PUM',
+    NEGRO_1_DAN: 'NEGRO 1\u00BA DAN',
+    NEGRO_2_DAN: 'NEGRO 2\u00BA DAN',
+    NEGRO_3_DAN: 'NEGRO 3\u00BA DAN',
+    NEGRO_4_DAN: 'NEGRO 4\u00BA DAN',
+    NEGRO_5_DAN: 'NEGRO 5\u00BA DAN',
   };
 
   constructor(private readonly endpointsService: EndpointsService) {}
@@ -174,6 +174,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   onSeleccionarVideo(video: MaterialExamenVideoDTO): void {
     this.videoSeleccionado = video;
     this.cargarVideoSeleccionado(video);
+  }
+
+  toggleVideosAnteriores(): void {
+    this.videosAnterioresExpandido = !this.videosAnterioresExpandido;
   }
 
   onBloquearDescargaContenido(event: Event): void {
@@ -544,6 +548,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.limpiarEstadoPdfViewer();
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
+    this.videosAnterioresExpandido = false;
     this.documentoSeleccionado = null;
     this.mostrarDocumentoVisor = false;
     this.docsActionsOffsetPx = 0;
@@ -587,10 +592,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return {
       deporte: material?.deporte ?? this.deporteSeleccionado ?? '',
       gradoActual: material?.gradoActual ?? null,
+      siguienteGrado: material?.siguienteGrado ?? null,
       bloqueId: material?.bloqueId ?? null,
       temario: material?.temario ?? null,
       documentos: documentosCompat,
       videos: Array.isArray(material?.videos) ? material!.videos : [],
+      videosAnteriores: Array.isArray(material?.videosAnteriores) ? material!.videosAnteriores : [],
+      gruposVideosAnteriores: Array.isArray(material?.gruposVideosAnteriores)
+        ? material!.gruposVideosAnteriores.filter((grupo) => Array.isArray(grupo?.videos) && grupo.videos.length > 0)
+        : [],
     };
   }
 
@@ -602,7 +612,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       : [];
 
     if (documentos.length > 0) {
-      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.gradoActual));
+      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.siguienteGrado));
     }
 
     if (!material?.temario?.downloadUrl) {
@@ -610,7 +620,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
 
     const fileName = this.construirNombreTemarioParaGrado(
-      material?.gradoActual,
+      material?.siguienteGrado,
       material.temario.fileName,
       'application/pdf'
     );
@@ -621,7 +631,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       {
         id: fileName,
         fileName,
-        title: this.construirTituloTemarioParaGrado(material?.gradoActual),
+        title: this.construirTituloTemarioParaGrado(material?.siguienteGrado),
         order: 0,
         mimeType: 'application/pdf',
         previewable: true,
@@ -699,14 +709,14 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private normalizarNombreTemarioDocumento(
     documento: MaterialExamenDocumentoDTO,
-    gradoActual: string | null | undefined
+    siguienteGrado: string | null | undefined
   ): MaterialExamenDocumentoDTO {
     if (!this.esDocumentoPrincipal(documento)) {
       return documento;
     }
 
     const fileName = this.construirNombreTemarioParaGrado(
-      gradoActual,
+      siguienteGrado,
       documento.fileName,
       documento.mimeType
     );
@@ -714,12 +724,12 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return {
       ...documento,
       fileName,
-      title: this.construirTituloTemarioParaGrado(gradoActual),
+      title: this.construirTituloTemarioParaGrado(siguienteGrado),
     };
   }
 
   private construirNombreTemarioParaGrado(
-    gradoActual: string | null | undefined,
+    siguienteGrado: string | null | undefined,
     fileNameOriginal: string | null | undefined,
     mimeType: string | null | undefined
   ): string {
@@ -727,7 +737,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       this.extraerExtensionDesdeNombre(fileNameOriginal) ||
       this.obtenerExtensionDesdeMime(mimeType) ||
       'pdf';
-    const titulo = this.construirTituloTemarioParaGrado(gradoActual);
+    const titulo = this.construirTituloTemarioParaGrado(siguienteGrado);
     const baseSanitizada = titulo
       .replace(/\s*\/\s*/g, '-')
       .replace(/[\\:*?"<>|]/g, '-')
@@ -736,31 +746,19 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return `${baseSanitizada}.${extension}`;
   }
 
-  private construirTituloTemarioParaGrado(gradoActual: string | null | undefined): string {
-    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(gradoActual);
+  private construirTituloTemarioParaGrado(siguienteGrado: string | null | undefined): string {
+    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(siguienteGrado);
     if (!etiquetaCinturon) {
       return 'Temario';
     }
-    return `Temario para cintur\u00F3n ${etiquetaCinturon}`;
+    return `Temario para cintur\u00F3n ${this.formatearEtiquetaCinturon(etiquetaCinturon)}`;
   }
 
-  private obtenerEtiquetaCinturonObjetivo(gradoActual: string | null | undefined): string | null {
-    const gradoNormalizado = (gradoActual || '').toUpperCase().trim();
-    if (!gradoNormalizado) {
+  private obtenerEtiquetaCinturonObjetivo(siguienteGrado: string | null | undefined): string | null {
+    if (!siguienteGrado) {
       return null;
     }
-
-    const descripcion = this.descripcionPreparacionPorGrado[gradoNormalizado];
-    if (!descripcion) {
-      return null;
-    }
-
-    const prefijo = 'PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ';
-    if (!descripcion.startsWith(prefijo)) {
-      return null;
-    }
-
-    return this.formatearEtiquetaCinturon(descripcion.substring(prefijo.length));
+    return this.etiquetasSiguienteGrado[siguienteGrado] ?? null;
   }
 
   private formatearEtiquetaCinturon(etiquetaRaw: string): string {
@@ -808,12 +806,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
-    const gradoNormalizado = (material.gradoActual || '').toUpperCase().trim();
-    if (!gradoNormalizado) {
+    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.siguienteGrado);
+    if (!etiqueta) {
       return null;
     }
-
-    return this.descripcionPreparacionPorGrado[gradoNormalizado] ?? null;
+    return `PREPARACI\u00D3N DE EXAMEN PARA CINTUR\u00D3N ${etiqueta}`;
   }
 
   private obtenerDeportesConMaterial(): AlumnoDeporteDTO[] {
@@ -848,6 +845,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.material = null;
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
+    this.videosAnterioresExpandido = false;
     this.documentoSeleccionado = null;
     this.errorCarga = null;
     this.cargando = false;
@@ -1074,11 +1072,13 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
 
     this.cargandoVideoSeleccionado = false;
-    this.videoSeleccionadoUrl = this.endpointsService.obtenerUrlVideoMaterialExamenAlumno(
-      this.alumnoId,
-      this.deporteSeleccionado,
-      video.id
-    );
+    this.videoSeleccionadoUrl =
+      video.streamUrl ||
+      this.endpointsService.obtenerUrlVideoMaterialExamenAlumno(
+        this.alumnoId,
+        this.deporteSeleccionado,
+        video.id
+      );
   }
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {

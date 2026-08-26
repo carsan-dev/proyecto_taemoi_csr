@@ -65,6 +65,22 @@ export const routes: Routes = [
   },
   { path: 'inicio', redirectTo: '', pathMatch: 'full' },
   {
+    path: 'aljarafe',
+    data: { seo: SEO_ROUTES.aljarafe, landingKey: 'aljarafe' },
+    loadComponent: () =>
+      import('./componentes/vistas/localidad-landing/localidad-landing.component').then(
+        (m) => m.LocalidadLandingComponent
+      ),
+  },
+  {
+    path: 'sevilla',
+    data: { seo: SEO_ROUTES.sevilla, landingKey: 'sevilla' },
+    loadComponent: () =>
+      import('./componentes/vistas/localidad-landing/localidad-landing.component').then(
+        (m) => m.LocalidadLandingComponent
+      ),
+  },
+  {
     path: 'eltaekwondo',
     redirectTo: '/taekwondo',
     pathMatch: 'full',
@@ -137,6 +153,11 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/tarifas/tarifas.component').then(m => m.TarifasComponent)
   },
   {
+    path: 'preinscripcion',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/preinscripcion/preinscripcion.component').then(m => m.PreinscripcionComponent)
+  },
+  {
     path: 'login',
     data: { seo: SEO_ROUTES.noIndex },
     component: VistaLoginComponent // Eager-load login page for better UX
@@ -178,6 +199,12 @@ export const routes: Routes = [
     path: 'alumnosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-alumnos/listado-alumnos.component').then(m => m.ListadoAlumnosComponent),
+    canActivate: [roleGuard],
+  },
+  {
+    path: 'preinscripciones',
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component').then(m => m.PreinscripcionesAdminComponent),
     canActivate: [roleGuard],
   },
   {

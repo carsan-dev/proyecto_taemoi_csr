@@ -1,5 +1,7 @@
 package com.taemoi.project.exceptions;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -79,5 +81,25 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ProductoNoEncontradoException.class)
 	public ResponseEntity<String> handleProductoNoEncontradoException(ProductoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<Map<String,String>> handleIllegalArgument(IllegalArgumentException e) {
+		return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<Map<String,String>> handleIllegalState(IllegalStateException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(SecurityException.class)
+	public ResponseEntity<Map<String,String>> handleSecurity(SecurityException e) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(java.util.NoSuchElementException.class)
+	public ResponseEntity<Map<String,String>> handleNotFound(java.util.NoSuchElementException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", e.getMessage()));
 	}
 }

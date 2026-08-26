@@ -16,6 +16,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { PaginatedResponse } from '../../../interfaces/paginated-response';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
+import { AlumnoDTO } from '../../../interfaces/alumno-dto';
 
 type EstadoFiltro = 'TODOS' | 'PENDIENTES' | 'PAGADOS';
 
@@ -67,6 +68,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   cargando: boolean = true;
   exportandoInforme: boolean = false;
+  generandoCertificados: boolean = false;
   isAdmin: boolean = false;
   fechaCarga: Date = new Date();
 
@@ -85,6 +87,12 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   movimientos: TesoreriaMovimiento[] = [];
   movimientosFiltrados: TesoreriaMovimiento[] = [];
+  mostrarModalCertificados: boolean = false;
+  alumnosCertificado: AlumnoDTO[] = [];
+  alumnosCertificadoSeleccionados: number[] = [];
+  filtroAlumnoCertificado: string = '';
+  anoCertificado: number = new Date().getFullYear();
+  cargandoAlumnosCertificado: boolean = false;
   paginaActual: number = 1;
   tamanoPagina: number = 25;
   totalPaginas: number = 0;
@@ -282,6 +290,105 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   exportarInformeDeudasCSV(): void {
     this.exportarInformeDeudas('csv');
+  }
+
+  abrirModalCertificados(): void {
+    this.mostrarModalCertificados = true;
+    this.anoCertificado = this.filtroAno ?? new Date().getFullYear();
+    this.filtroAlumnoCertificado = '';
+    this.alumnosCertificadoSeleccionados = [];
+    this.cargarAlumnosCertificado();
+  }
+
+  cerrarModalCertificados(): void {
+    if (this.generandoCertificados) {
+      return;
+    }
+    this.mostrarModalCertificados = false;
+  }
+
+  toggleAlumnoCertificado(alumnoId: number, checked: boolean): void {
+    if (checked) {
+      if (!this.alumnosCertificadoSeleccionados.includes(alumnoId)) {
+        this.alumnosCertificadoSeleccionados = [...this.alumnosCertificadoSeleccionados, alumnoId];
+      }
+      return;
+    }
+
+    this.alumnosCertificadoSeleccionados = this.alumnosCertificadoSeleccionados.filter((id) => id !== alumnoId);
+  }
+
+  estaAlumnoCertificadoSeleccionado(alumnoId: number): boolean {
+    return this.alumnosCertificadoSeleccionados.includes(alumnoId);
+  }
+
+  seleccionarTodosAlumnosCertificado(): void {
+    const idsVisibles = this.alumnosCertificadoFiltrados().map((alumno) => alumno.id);
+    this.alumnosCertificadoSeleccionados = Array.from(new Set([
+      ...this.alumnosCertificadoSeleccionados,
+      ...idsVisibles,
+    ]));
+  }
+
+  limpiarSeleccionAlumnosCertificado(): void {
+    this.alumnosCertificadoSeleccionados = [];
+  }
+
+  alumnosCertificadoFiltrados(): AlumnoDTO[] {
+    const texto = this.filtroAlumnoCertificado.trim().toLowerCase();
+    if (!texto) {
+      return this.alumnosCertificado;
+    }
+
+    return this.alumnosCertificado.filter((alumno) =>
+      this.obtenerNombreCompletoAlumno(alumno).toLowerCase().includes(texto)
+    );
+  }
+
+  generarCertificadosCobros(): void {
+    if (this.generandoCertificados) {
+      return;
+    }
+
+    if (!this.anoCertificado) {
+      showErrorToast('Debes seleccionar un ano');
+      return;
+    }
+
+    if (this.alumnosCertificadoSeleccionados.length === 0) {
+      showErrorToast('Debes seleccionar al menos un alumno');
+      return;
+    }
+
+    this.generandoCertificados = true;
+    this.loadingService.show();
+    const totalSeleccionados = this.alumnosCertificadoSeleccionados.length;
+
+    this.endpointsService
+      .generarCertificadosCobros(this.alumnosCertificadoSeleccionados, this.anoCertificado)
+      .pipe(
+        finalize(() => {
+          this.generandoCertificados = false;
+          this.loadingService.hide();
+        })
+      )
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = globalThis.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = totalSeleccionados > 1
+            ? `certificados_cobros_${this.anoCertificado}.zip`
+            : `certificado_cobros_${this.anoCertificado}.pdf`;
+          a.click();
+          globalThis.URL.revokeObjectURL(url);
+          this.mostrarModalCertificados = false;
+          showSuccessToast('Certificados generados correctamente');
+        },
+        error: () => {
+          showErrorToast('No se pudieron generar los certificados');
+        },
+      });
   }
 
   getMesLabel(mes: number | null): string {
@@ -525,6 +632,27 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     });
   }
 
+  private cargarAlumnosCertificado(): void {
+    if (this.alumnosCertificado.length > 0 || this.cargandoAlumnosCertificado) {
+      return;
+    }
+
+    this.cargandoAlumnosCertificado = true;
+    this.endpointsService
+      .obtenerTodosLosAlumnosSinPaginar(false)
+      .pipe(finalize(() => (this.cargandoAlumnosCertificado = false)))
+      .subscribe({
+        next: (alumnos) => {
+          this.alumnosCertificado = (alumnos ?? [])
+            .filter((alumno) => alumno?.id)
+            .sort((a, b) => this.obtenerNombreCompletoAlumno(a).localeCompare(this.obtenerNombreCompletoAlumno(b)));
+        },
+        error: () => {
+          showErrorToast('No se pudieron cargar los alumnos');
+        },
+      });
+  }
+
   private configurarBusquedaTexto(): void {
     this.textoFiltroSubject
       .pipe(
@@ -677,6 +805,10 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
 
   private convertirFechaIsoMediodia(fechaYyyyMmDd: string): Date {
     return new Date(`${fechaYyyyMmDd}T12:00:00`);
+  }
+
+  obtenerNombreCompletoAlumno(alumno: AlumnoDTO): string {
+    return `${alumno.nombre ?? ''} ${alumno.apellidos ?? ''}`.trim() || `Alumno ${alumno.id}`;
   }
 
   private resolverPermisos(): void {

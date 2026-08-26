@@ -29,7 +29,10 @@ public class AlumnoConDeportesDTO {
 	private String direccion;
 	private String observaciones;
 	private Integer telefono;
+	private Integer telefono2;
 	private String email;
+	private String responsableLegalNombre;
+	private String responsableLegalNif;
 	private TipoTarifa tipoTarifa;
 	private Double cuantiaTarifa;
 	private RolFamiliar rolFamiliar;
@@ -82,7 +85,10 @@ public class AlumnoConDeportesDTO {
 		dto.setDireccion(alumno.getDireccion());
 		dto.setObservaciones(alumno.getObservaciones());
 		dto.setTelefono(alumno.getTelefono());
+		dto.setTelefono2(alumno.getTelefono2());
 		dto.setEmail(alumno.getEmail());
+		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
+		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
 
 		// Tarifa
 		dto.setTipoTarifa(tipoTarifa);
@@ -192,6 +198,14 @@ public class AlumnoConDeportesDTO {
 		this.telefono = telefono;
 	}
 
+	public Integer getTelefono2() {
+		return telefono2;
+	}
+
+	public void setTelefono2(Integer telefono2) {
+		this.telefono2 = telefono2;
+	}
+
 	public String getEmail() {
 		return email;
 	}
@@ -270,6 +284,22 @@ public class AlumnoConDeportesDTO {
 
 	public void setAutorizacionWeb(Boolean autorizacionWeb) {
 		this.autorizacionWeb = autorizacionWeb;
+	}
+
+	public String getResponsableLegalNombre() {
+		return responsableLegalNombre;
+	}
+
+	public void setResponsableLegalNombre(String responsableLegalNombre) {
+		this.responsableLegalNombre = responsableLegalNombre;
+	}
+
+	public String getResponsableLegalNif() {
+		return responsableLegalNif;
+	}
+
+	public void setResponsableLegalNif(String responsableLegalNif) {
+		this.responsableLegalNif = responsableLegalNif;
 	}
 
 	public Boolean getCompetidor() {

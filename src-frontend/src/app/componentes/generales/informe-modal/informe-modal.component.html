@@ -52,6 +52,7 @@
                         [id]="opcion.value"
                         [value]="opcion.value"
                         [(ngModel)]="selectedInforme"
+                        (change)="seleccionarInforme(opcion.value)"
                         (click)="$event.stopPropagation()">
                       <span class="radio-custom"></span>
                     </div>
@@ -68,6 +69,7 @@
             <p>No hay informes disponibles</p>
           </div>
         }
+
       </div>
 
       <!-- Footer -->
@@ -86,7 +88,7 @@
           <button
             type="button"
             class="btn-generate"
-            [disabled]="!selectedInforme"
+            [disabled]="!puedeGenerarInforme()"
             (click)="generarInforme()">
             <i class="bi bi-file-earmark-pdf"></i>
             Generar Informe
