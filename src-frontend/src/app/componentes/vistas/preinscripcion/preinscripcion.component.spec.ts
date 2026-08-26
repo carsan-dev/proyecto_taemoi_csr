@@ -2,14 +2,22 @@ import { of, throwError } from 'rxjs';
 import { PreinscripcionComponent } from './preinscripcion.component';
 
 describe('PreinscripcionComponent normas', () => {
-  function crear(configuracion: unknown, grupos: any[] = [], parametros: Record<string,string> = {}) {
+  function crear(
+    configuracion: unknown,
+    grupos: any[] = [],
+    parametros: Record<string,string> = {},
+    scrollService: { scrollToTopAfterRender: (behavior?: ScrollBehavior) => Promise<void> } = {
+      scrollToTopAfterRender: () => Promise.resolve(),
+    },
+  ) {
     const api = {
       temporada: () => of({ temporada: '2026-2027' }),
       grupos: () => of(grupos),
-      configuracion: () => configuracion instanceof Error ? throwError(() => configuracion) : of(configuracion)
+      configuracion: () => configuracion instanceof Error ? throwError(() => configuracion) : of(configuracion),
+      crear: () => of({ referencia: 'PRE-123', plazaAsignada: true }),
     };
     const route = { snapshot: { queryParamMap: { get: (clave:string) => parametros[clave] ?? null } } };
-    return new PreinscripcionComponent(api as any, route as any);
+    return new PreinscripcionComponent(api as any, route as any, scrollService as any);
   }
 
   it('muestra normas recibidas como objeto y mantiene bloqueada su aceptación', () => {
@@ -174,5 +182,45 @@ describe('PreinscripcionComponent normas', () => {
     component.form.controls.observaciones.setValue('x'.repeat(1001));
 
     expect(component.form.controls.observaciones.hasError('maxlength')).toBeTrue();
+  });
+
+  it('sube instantáneamente después de renderizar el resultado', () => {
+    const scrollService = jasmine.createSpyObj('ScrollService', ['scrollToTopAfterRender']);
+    scrollService.scrollToTopAfterRender.and.returnValue(Promise.resolve());
+    const component = crear(
+      { deporte: 'PILATES', version: 1, contenido: { normas: ['Norma'] } },
+      [],
+      {},
+      scrollService,
+    );
+    component.configuracion = {
+      deporte: 'PILATES',
+      version: 1,
+      contenido: { normas: ['Norma'] },
+    } as any;
+    component.form.controls.aceptacionNormas.enable();
+    component.form.patchValue({
+      deporte: 'PILATES',
+      turnoIds: [1],
+      nombre: 'Ana',
+      apellidos: 'Pérez',
+      dni: '12345678Z',
+      fechaNacimiento: '1990-01-01',
+      direccion: 'Calle Principal 1',
+      telefono: '612345678',
+      email: 'ana@example.com',
+      tieneDiscapacidad: false,
+      aceptacionNormas: true,
+      firmanteNombre: 'Ana Pérez',
+    });
+    component.firmada = true;
+    component.canvas = {
+      nativeElement: { toDataURL: () => 'data:image/png;base64,firma' },
+    } as any;
+
+    component.enviar();
+
+    expect(component.resultado.referencia).toBe('PRE-123');
+    expect(scrollService.scrollToTopAfterRender).toHaveBeenCalledOnceWith('auto');
   });
 });

@@ -1,40 +1,45 @@
-import { Injectable } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { ApplicationRef, Injectable } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ScrollService {
-  constructor(private router: Router) {
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.scrollToTopInstant();
-      });
-  }
+  constructor(private readonly applicationRef: ApplicationRef) {}
 
   /**
    * Scrolls to the top of the window smoothly
    */
   scrollToTop(behavior: ScrollBehavior = 'smooth'): void {
-    const doc = document;
-    const win = window;
-    const scrollingElement = doc.scrollingElement as HTMLElement | null;
+    const scrollingElement = document.scrollingElement as HTMLElement | null;
 
-    this.scrollElementToTop(scrollingElement, behavior);
-    this.scrollElementToTop(doc.documentElement, behavior);
-    this.scrollElementToTop(doc.body, behavior);
-
-    const content = doc.getElementById('content');
-    if (content) {
-      this.scrollElementToTop(content, behavior);
+    if (behavior === 'auto') {
+      // Direct assignment bypasses Bootstrap's global `scroll-behavior: smooth`.
+      if (scrollingElement) {
+        scrollingElement.scrollTop = 0;
+        scrollingElement.scrollLeft = 0;
+      }
+      return;
     }
 
-    win.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: behavior,
+    window.scrollTo({ top: 0, left: 0, behavior });
+  }
+
+  /**
+   * Waits until Angular has rendered a state change before scrolling.
+   */
+  async scrollToTopAfterRender(behavior: ScrollBehavior = 'auto'): Promise<void> {
+    await this.applicationRef.whenStable();
+    await new Promise<void>((resolve) => {
+      const scroll = () => {
+        this.scrollToTop(behavior);
+        resolve();
+      };
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(scroll);
+      } else {
+        scroll();
+      }
     });
   }
 
@@ -62,19 +67,7 @@ export class ScrollService {
     window.scrollTo({
       top: y,
       left: 0,
-      behavior: behavior,
+      behavior,
     });
-  }
-
-  private scrollElementToTop(element: HTMLElement | null, behavior: ScrollBehavior): void {
-    if (!element) {
-      return;
-    }
-
-    if (typeof element.scrollTo === 'function') {
-      element.scrollTo({ top: 0, left: 0, behavior });
-    } else {
-      element.scrollTop = 0;
-    }
   }
 }

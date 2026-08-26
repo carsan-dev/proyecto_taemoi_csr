@@ -6,7 +6,7 @@
   </section>
 
   @if(resultado){
-    <section class="success">
+    <section #resultadoSection class="success" tabindex="-1">
       <span class="check">✓</span>
       <h2>{{resultado.plazaAsignada ? 'Plaza asignada' : 'Lista de espera'}}</h2>
       <p class="reference">{{resultado.referencia}}</p>

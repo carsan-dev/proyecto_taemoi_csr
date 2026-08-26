@@ -1,5 +1,4 @@
-﻿import { RouterModule, Routes } from '@angular/router';
-import { NgModule } from '@angular/core';
+﻿import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
@@ -351,8 +350,3 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
   }
 ];
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule { }
