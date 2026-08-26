@@ -21,7 +21,15 @@ describe('HeaderComponent', () => {
       events: of(),
     };
 
-    return new HeaderComponent(authServiceMock as any, routerMock as any, new NgZone({}));
+    const pageScroll = { scrollTop: 0 };
+    const scrollLock = { lock: () => () => undefined };
+    return new HeaderComponent(
+      authServiceMock as any,
+      routerMock as any,
+      new NgZone({}),
+      pageScroll as any,
+      scrollLock as any
+    );
   }
 
   let component: HeaderComponent;

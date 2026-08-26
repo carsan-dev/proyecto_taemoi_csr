@@ -6,8 +6,8 @@ describe('PreinscripcionComponent normas', () => {
     configuracion: unknown,
     grupos: any[] = [],
     parametros: Record<string,string> = {},
-    scrollService: { scrollToTopAfterRender: (behavior?: ScrollBehavior) => Promise<void> } = {
-      scrollToTopAfterRender: () => Promise.resolve(),
+    scrollService: { scrollToTopAfterNextRender: (behavior?: ScrollBehavior) => Promise<boolean> } = {
+      scrollToTopAfterNextRender: () => Promise.resolve(true),
     },
   ) {
     const api = {
@@ -185,8 +185,8 @@ describe('PreinscripcionComponent normas', () => {
   });
 
   it('sube instantáneamente después de renderizar el resultado', () => {
-    const scrollService = jasmine.createSpyObj('ScrollService', ['scrollToTopAfterRender']);
-    scrollService.scrollToTopAfterRender.and.returnValue(Promise.resolve());
+    const scrollService = jasmine.createSpyObj('PageScrollService', ['scrollToTopAfterNextRender']);
+    scrollService.scrollToTopAfterNextRender.and.returnValue(Promise.resolve(true));
     const component = crear(
       { deporte: 'PILATES', version: 1, contenido: { normas: ['Norma'] } },
       [],
@@ -221,6 +221,6 @@ describe('PreinscripcionComponent normas', () => {
     component.enviar();
 
     expect(component.resultado.referencia).toBe('PRE-123');
-    expect(scrollService.scrollToTopAfterRender).toHaveBeenCalledOnceWith('auto');
+    expect(scrollService.scrollToTopAfterNextRender).toHaveBeenCalledOnceWith('auto');
   });
 });
