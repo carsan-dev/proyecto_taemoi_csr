@@ -55,6 +55,9 @@ src-frontend/dist/
 src-frontend/.angular/
 src-frontend/.vscode/
 src-frontend/*.log
+src-frontend/playwright-report/
+src-frontend/test-results/
+src-frontend/blob-report/
 
 # Build artifacts
 *.class
