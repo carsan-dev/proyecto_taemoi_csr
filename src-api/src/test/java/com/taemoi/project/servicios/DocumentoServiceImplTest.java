@@ -21,6 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.DocumentoRepository;
@@ -237,6 +238,32 @@ class DocumentoServiceImplTest {
 
 		assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", documento.getTipo());
 		assertTrue(documento.getNombre().endsWith(".docx"));
+	}
+
+	@Test
+	void guardarDocumento_debeMantenerLaEscrituraDentroDelDirectorioPermitido() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "baseUrl", "http://localhost:8080");
+		when(documentoRepository.save(org.mockito.ArgumentMatchers.any(Documento.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+
+		Alumno alumno = new Alumno();
+		alumno.setNumeroExpediente(27);
+		alumno.setNombre("../../Ana");
+		alumno.setApellidos("../Prueba");
+		MultipartFile archivo = new MockMultipartFile(
+				"archivo",
+				"../../documento.pdf",
+				"application/pdf",
+				"contenido-pdf".getBytes());
+
+		Documento documento = documentoService.guardarDocumento(alumno, archivo);
+
+		Path basePermitida = tempDir.resolve("Documentos_Alumnos_Moiskimdo").toAbsolutePath().normalize();
+		Path rutaGuardada = tempDir.resolve(documento.getRuta()).toAbsolutePath().normalize();
+		assertTrue(rutaGuardada.startsWith(basePermitida));
+		assertTrue(Files.exists(rutaGuardada));
 	}
 
 	private Documento crearDocumento(String ruta, String nombre) {

@@ -116,7 +116,7 @@ public class ImagenServiceImpl implements ImagenService {
 			throw new IllegalStateException("Sistema operativo no soportado: " + os);
 		}
 
-		return Path.of(directorioImagenes);
+		return Path.of(directorioImagenes).toAbsolutePath().normalize();
 	}
 
 	private BufferedImage redimensionarParaEvento(BufferedImage original) {
@@ -145,7 +145,14 @@ public class ImagenServiceImpl implements ImagenService {
 		return salida;
 	}
 
-	private void guardarComoWebp(BufferedImage imagen, Path rutaArchivo, float quality) throws IOException {
+	private Path guardarComoWebp(BufferedImage imagen, Path directorioDestino, String nombreArchivo, float quality)
+			throws IOException {
+		Path directorioSeguro = directorioDestino.toAbsolutePath().normalize();
+		Path rutaArchivo = directorioSeguro.resolve(nombreArchivo).normalize().toAbsolutePath();
+		if (!rutaArchivo.startsWith(directorioSeguro) || !directorioSeguro.equals(rutaArchivo.getParent())) {
+			throw new IllegalArgumentException("Ruta de imagen fuera del directorio permitido.");
+		}
+
 		Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
 		if (!writers.hasNext()) {
 			writers = ImageIO.getImageWritersBySuffix("webp");
@@ -166,9 +173,17 @@ public class ImagenServiceImpl implements ImagenService {
 		} finally {
 			writer.dispose();
 		}
+		return rutaArchivo;
 	}
 
-	private void guardarComoJpeg(BufferedImage imagen, Path rutaArchivo, float quality) throws IOException {
+	private Path guardarComoJpeg(BufferedImage imagen, Path directorioDestino, String nombreArchivo, float quality)
+			throws IOException {
+		Path directorioSeguro = directorioDestino.toAbsolutePath().normalize();
+		Path rutaArchivo = directorioSeguro.resolve(nombreArchivo).normalize().toAbsolutePath();
+		if (!rutaArchivo.startsWith(directorioSeguro) || !directorioSeguro.equals(rutaArchivo.getParent())) {
+			throw new IllegalArgumentException("Ruta de imagen fuera del directorio permitido.");
+		}
+
 		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
 		if (!writers.hasNext()) {
 			writers = ImageIO.getImageWritersByMIMEType("image/jpeg");
@@ -191,23 +206,22 @@ public class ImagenServiceImpl implements ImagenService {
 		} finally {
 			writer.dispose();
 		}
+		return rutaArchivo;
 	}
 
 	private Imagen guardarImagenProcesadaConFallback(BufferedImage imagen, Path directorioDestino, String nombreBase,
 			String carpetaPublica, float webpQuality) throws IOException {
 		String nombreBaseArchivo = UUID.randomUUID() + "_" + nombreBase;
 		String nombreWebp = nombreBaseArchivo + ".webp";
-		Path rutaWebp = directorioDestino.resolve(nombreWebp);
 		try {
-			guardarComoWebp(imagen, rutaWebp, webpQuality);
+			Path rutaWebp = guardarComoWebp(imagen, directorioDestino, nombreWebp, webpQuality);
 			String urlAcceso = baseUrl + "/imagenes/" + carpetaPublica + "/" + nombreWebp;
 			return new Imagen(nombreWebp, "image/webp", urlAcceso, rutaWebp.toString());
 		} catch (Exception e) {
 			logger.warn("Fallo al guardar imagen en WebP, se usara fallback JPEG. Carpeta: {}, nombreBase: {}. Causa: {}",
 					carpetaPublica, nombreBase, e.getMessage());
 			String nombreJpeg = nombreBaseArchivo + ".jpg";
-			Path rutaJpeg = directorioDestino.resolve(nombreJpeg);
-			guardarComoJpeg(imagen, rutaJpeg, JPEG_FALLBACK_QUALITY);
+			Path rutaJpeg = guardarComoJpeg(imagen, directorioDestino, nombreJpeg, JPEG_FALLBACK_QUALITY);
 			String urlAcceso = baseUrl + "/imagenes/" + carpetaPublica + "/" + nombreJpeg;
 			return new Imagen(nombreJpeg, "image/jpeg", urlAcceso, rutaJpeg.toString());
 		}

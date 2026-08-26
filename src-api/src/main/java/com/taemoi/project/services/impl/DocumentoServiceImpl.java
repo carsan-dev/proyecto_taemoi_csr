@@ -61,7 +61,8 @@ public class DocumentoServiceImpl implements DocumentoService {
 			throw new IllegalStateException("Sistema operativo no soportado: " + os);
 		}
 
-		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Alumnos_Moiskimdo");
+		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Alumnos_Moiskimdo")
+				.toAbsolutePath().normalize();
 		if (!Files.exists(rutaBaseDocumentos)) {
 			Files.createDirectories(rutaBaseDocumentos);
 		}
@@ -79,7 +80,10 @@ public class DocumentoServiceImpl implements DocumentoService {
 			String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
 			String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
 			String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
-			rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno);
+			rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno).normalize();
+			if (!rutaCarpetaAlumno.startsWith(rutaBaseDocumentos)) {
+				throw new IllegalArgumentException("Ruta de alumno fuera del directorio permitido.");
+			}
 			logger.info("*** New folder path: {}", rutaCarpetaAlumno);
 
 			if (!Files.exists(rutaCarpetaAlumno)) {
@@ -94,7 +98,14 @@ public class DocumentoServiceImpl implements DocumentoService {
 		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
 		String nombreArchivoFinal = nombreOriginalLimpio;
 
-		Path rutaArchivoFinal = rutaCarpetaAlumno.resolve(nombreArchivoFinal);
+		Path rutaCarpetaAlumnoSegura = rutaCarpetaAlumno.toAbsolutePath().normalize();
+		Path rutaArchivoFinal = rutaCarpetaAlumnoSegura.resolve(nombreArchivoFinal).normalize().toAbsolutePath();
+		if (!rutaCarpetaAlumnoSegura.startsWith(rutaBaseDocumentos)
+				|| !rutaArchivoFinal.startsWith(rutaCarpetaAlumnoSegura)
+				|| !rutaCarpetaAlumnoSegura.equals(rutaArchivoFinal.getParent())
+				|| !rutaArchivoFinal.startsWith(rutaBaseDocumentos)) {
+			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
+		}
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
 
 		// Use the actual folder name (not the generated one) for the URL
@@ -136,14 +147,18 @@ public class DocumentoServiceImpl implements DocumentoService {
 			throw new IllegalStateException("Sistema operativo no soportado: " + os);
 		}
 
-		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Eventos");
+		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Eventos")
+				.toAbsolutePath().normalize();
 		if (!Files.exists(rutaBaseDocumentos)) {
 			Files.createDirectories(rutaBaseDocumentos);
 		}
 
 		String tituloLimpio = FileUtils.limpiarNombreArchivo(evento.getTitulo());
 		String carpetaEvento = evento.getId() + "_" + tituloLimpio;
-		Path rutaCarpetaEvento = rutaBaseDocumentos.resolve(carpetaEvento);
+		Path rutaCarpetaEvento = rutaBaseDocumentos.resolve(carpetaEvento).normalize();
+		if (!rutaCarpetaEvento.startsWith(rutaBaseDocumentos)) {
+			throw new IllegalArgumentException("Ruta de evento fuera del directorio permitido.");
+		}
 
 		if (!Files.exists(rutaCarpetaEvento)) {
 			Files.createDirectories(rutaCarpetaEvento);
@@ -153,7 +168,13 @@ public class DocumentoServiceImpl implements DocumentoService {
 		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
 		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
 
-		Path rutaArchivoFinal = rutaCarpetaEvento.resolve(nombreOriginalLimpio);
+		Path rutaCarpetaEventoSegura = rutaCarpetaEvento.toAbsolutePath().normalize();
+		Path rutaArchivoFinal = rutaCarpetaEventoSegura.resolve(nombreOriginalLimpio).normalize().toAbsolutePath();
+		if (!rutaArchivoFinal.startsWith(rutaCarpetaEventoSegura)
+				|| !rutaCarpetaEventoSegura.equals(rutaArchivoFinal.getParent())
+				|| !rutaArchivoFinal.startsWith(rutaBaseDocumentos)) {
+			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
+		}
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
 
 		String urlAcceso = "%s/documentos/Documentos_Eventos/%s/%s".formatted(baseUrl, carpetaEvento, nombreOriginalLimpio);
