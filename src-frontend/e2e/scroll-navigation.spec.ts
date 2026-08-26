@@ -173,9 +173,7 @@ test('guardar un alumno restaura su sección mientras el toast sigue visible', a
     expect((await update).ok()).toBeTruthy();
 
     await expect(page.locator('.swal2-toast')).toBeVisible();
-    await expect.poll(() => section.evaluate((element) =>
-      Math.abs(element.getBoundingClientRect().top - previousTop)
-    )).toBeLessThanOrEqual(16);
+    await expectElementTopNear(page, '#alumno-informacion-personal', previousTop, 16);
     await expect(section).toContainText(`${student.nombre}Editado`);
   } finally {
     await page.request.delete(`${apiUrl}/alumnos/${student.id}`, { timeout: 5_000 })
