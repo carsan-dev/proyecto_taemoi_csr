@@ -33,6 +33,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
@@ -54,6 +56,7 @@ import com.taemoi.project.utils.GradoUtils;
 @Service
 public class PDFServiceImpl implements PDFService {
 	private static final Pattern TEMPORADA_PATTERN = Pattern.compile("\\b(20\\d{2})/(20\\d{2})\\b");
+	private static final ObjectMapper TEMPLATE_JSON_MAPPER = new ObjectMapper();
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
@@ -94,11 +97,12 @@ public class PDFServiceImpl implements PDFService {
 		String firma = "data:image/png;base64," + Base64.getEncoder().encodeToString(p.getFirma());
 		String nombreDeporte = p.getDeporte().name().replace('_', ' ');
 		boolean conNormas = true;
-		String cabecera=campoPlantilla(p.getPlantilla().getContenido(),"cabecera","Escuela Moi Kim Do");
-		String contacto=campoPlantilla(p.getPlantilla().getContenido(),"contacto","");
-		String titulo=campoPlantilla(p.getPlantilla().getContenido(),"titulo","Solicitud de preinscripción");
-		String consentimiento=campoPlantilla(p.getPlantilla().getContenido(),"consentimiento","");
-		String importes=campoPlantilla(p.getPlantilla().getContenido(),"importes","");
+		JsonNode contenidoPlantilla = parsearContenidoPlantilla(p.getPlantilla().getContenido());
+		String cabecera=campoPlantilla(contenidoPlantilla,"cabecera","Escuela Moi Kim Do");
+		String contacto=campoPlantilla(contenidoPlantilla,"contacto","");
+		String titulo=campoPlantilla(contenidoPlantilla,"titulo","Solicitud de preinscripción");
+		String consentimiento=campoPlantilla(contenidoPlantilla,"consentimiento","");
+		String importes=campoPlantilla(contenidoPlantilla,"importes","");
 		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
 				+ "@page{size:A4;margin:10mm 12mm 11mm}body{font-family:Arial,sans-serif;color:#172126;font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
 				+ ".head{border-bottom:2px solid #b7272d;padding-bottom:6px;margin-bottom:9px}.head-table{width:100%;border-collapse:collapse}.head-table td{padding:0;vertical-align:middle}.logo-cell{width:24mm}.head img{display:block;width:19mm}.title-cell{padding:0 4mm!important}h1{font-size:15pt;margin:0 0 2px;text-transform:uppercase;line-height:1.08}h2{font-size:10pt;color:#b7272d;margin:0}.ref-cell{width:34mm;text-align:right;font-weight:bold;white-space:nowrap}.section{margin:9px 0}.keep{page-break-inside:avoid}.section h3{font-size:10pt;margin:7px 0 4px;border-bottom:1px solid #aeb6b9;padding-bottom:3px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:4px;text-align:left}.label{font-size:7pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:3px solid #b7272d;padding:6px}.signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:#59666b;margin-top:6px}"
@@ -109,7 +113,7 @@ public class PDFServiceImpl implements PDFService {
 				+ "<tr><td><span class='label'>Fecha de nacimiento</span><br/>"+p.getFechaNacimiento()+"</td><td><span class='label'>Correo electrónico</span><br/>"+esc(p.getEmail())+"</td></tr><tr><td><span class='label'>Teléfono principal</span><br/>"+esc(p.getTelefono())+"</td><td><span class='label'>Teléfono secundario</span><br/>"+esc(p.getTelefono2()==null||p.getTelefono2().isBlank()?"No facilitado":p.getTelefono2())+"</td></tr><tr><td><span class='label'>Discapacidad</span><br/>"+(p.getTieneDiscapacidad()==null?"No indicado":Boolean.TRUE.equals(p.getTieneDiscapacidad())?"Sí":"No")+"</td><td><span class='label'>Dirección</span><br/>"+esc(p.getDireccion())+"</td></tr></table></div>"
 				+ (p.getTutorNombre()!=null&&!p.getTutorNombre().isBlank()?"<div class='section'><h3>Responsable legal</h3>"+esc(p.getTutorNombre())+" · "+esc(p.getTutorDni())+"</div>":"")
 				+ "<div class='section'><h3>Actividad solicitada</h3>"+esc(p.getGrupoSnapshot()!=null?p.getGrupoSnapshot():nombreDeportePublico(p.getDeporte()))+"</div>"
-				+ (conNormas ? "<div class='section keep'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"[X] Autorizado. ":"[ ] No autorizado. ")+esc(consentimiento)+"</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(p.getPlantilla().getContenido())+"<p><strong>[X] Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
+				+ (conNormas ? "<div class='section keep'><h3>Consentimiento fotográfico (opcional)</h3><p>"+(Boolean.TRUE.equals(p.getConsentimientoFotografico())?"[X] Autorizado. ":"[ ] No autorizado. ")+esc(consentimiento)+"</p></div><div class='section'><h3>Normas de la escuela</h3>"+normasHtml(contenidoPlantilla)+"<p><strong>[X] Me comprometo a cumplir las normas establecidas por el club.</strong></p></div>" : "")
 				+ "<div class='section keep'><h3>Importes y pago</h3><p>"+esc(importes)+"</p></div>"
 				+ "<div class='section keep'><h3>Firma</h3><img class='signature' src='"+firma+"'/><p>Firmado por "+esc(p.getFirmanteNombre())+" el "+LocalDate.now(ZoneId.of("Europe/Madrid"))+".</p></div>"
 				+ "<div class='foot'>Documento generado electrónicamente. Referencia "+esc(p.getReferencia())+". Versión documental preservada con la solicitud.</div></body></html>";
@@ -119,8 +123,40 @@ public class PDFServiceImpl implements PDFService {
 
 	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
 	private String nombreDeportePublico(Deporte deporte){return switch(deporte){case TAEKWONDO->"Taekwondo";case KICKBOXING->"Kickboxing";case PILATES->"Pilates";case DEFENSA_PERSONAL_FEMENINA->"Defensa personal femenina";};}
-	private String campoPlantilla(String contenido,String campo,String fallback){Matcher m=Pattern.compile("\\\""+Pattern.quote(campo)+"\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\"").matcher(contenido);return m.find()?m.group(1).replace("\\\\\"","\"").replace("\\\\n"," "):fallback;}
-	private String normasHtml(String contenido){Matcher bloque=Pattern.compile("\\\"normas\\\"\\s*:\\s*\\[(.*?)]").matcher(contenido);if(!bloque.find())return "";Matcher item=Pattern.compile("\\\"((?:\\\\.|[^\\\"])*)\\\"").matcher(bloque.group(1));StringBuilder out=new StringBuilder("<ol>");while(item.find())out.append("<li>").append(esc(item.group(1).replace("\\\\\"","\"").replace("\\\\n"," "))).append("</li>");return out.append("</ol>").toString();}
+	private JsonNode parsearContenidoPlantilla(String contenido) {
+		if (contenido == null || contenido.isBlank()) {
+			return TEMPLATE_JSON_MAPPER.createObjectNode();
+		}
+		try {
+			JsonNode root = TEMPLATE_JSON_MAPPER.readTree(contenido);
+			return root != null && root.isObject() ? root : TEMPLATE_JSON_MAPPER.createObjectNode();
+		} catch (IOException e) {
+			return TEMPLATE_JSON_MAPPER.createObjectNode();
+		}
+	}
+
+	private String campoPlantilla(JsonNode contenido, String campo, String fallback) {
+		JsonNode valor = contenido.path(campo);
+		return valor.isTextual() ? normalizarTextoPlantilla(valor.textValue()) : fallback;
+	}
+
+	private String normasHtml(JsonNode contenido) {
+		JsonNode normas = contenido.path("normas");
+		if (!normas.isArray()) {
+			return "";
+		}
+		StringBuilder out = new StringBuilder("<ol>");
+		for (JsonNode item : normas) {
+			if (item.isTextual()) {
+				out.append("<li>").append(esc(normalizarTextoPlantilla(item.textValue()))).append("</li>");
+			}
+		}
+		return out.append("</ol>").toString();
+	}
+
+	private String normalizarTextoPlantilla(String value) {
+		return value.replace('\r', ' ').replace('\n', ' ').replace("\\n", " ");
+	}
 
 	private String getLogoPreinscripcionBase64() {
 		if (logoPreinscripcionBase64Cache != null) return logoPreinscripcionBase64Cache;
