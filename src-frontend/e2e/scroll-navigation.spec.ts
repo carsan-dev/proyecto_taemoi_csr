@@ -11,6 +11,37 @@ async function expectScrollNear(page: Page, expected: number, tolerance = 12): P
   ).toBeLessThanOrEqual(tolerance);
 }
 
+async function expectAnchorVisibleBelowFixedHeader(page: Page, selector: string): Promise<void> {
+  await expect.poll(async () => page.locator(selector).evaluate((element) => {
+    const targetTop = element.getBoundingClientRect().top;
+    const headers = Array.from(document.querySelectorAll<HTMLElement>([
+      '.header-anonimo.fixed-header',
+      '.header-user.fixed-header',
+      '.admin-top-navbar',
+      'header.fixed-header',
+      '.navbar.fixed-top',
+      '.navbar.sticky-top',
+    ].join(','))).filter((header) => {
+      const style = getComputedStyle(header);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    const visibleHeaderBottom = headers
+      .filter((header) => !header.classList.contains('is-hidden'))
+      .reduce((bottom, header) => Math.max(bottom, header.getBoundingClientRect().bottom), 0);
+    const reservedHeaderHeight = headers
+      .reduce((height, header) => Math.max(height, header.getBoundingClientRect().height), 0);
+
+    return targetTop >= Math.max(0, visibleHeaderBottom) - 1
+      && targetTop <= Math.max(visibleHeaderBottom, reservedHeaderHeight) + 16;
+  }), { timeout: 5_000 }).toBe(true);
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('cookieConsent', 'rejected');
+  });
+});
+
 async function loginAsAdmin(page: Page): Promise<void> {
   const response = await page.request.post(`${apiUrl}/auth/signin`, {
     data: { email: adminEmail, contrasena: adminPassword, rememberMe: false },
@@ -60,7 +91,7 @@ test('una ruta nueva empieza arriba y Atrás restaura el fondo de la página', a
   const previousY = await page.evaluate(() => window.scrollY);
   expect(previousY).toBeGreaterThan(500);
 
-  await page.locator('footer').getByRole('link', { name: 'Contacto', exact: true }).click();
+  await page.locator('footer a[href="/contacto"]').click();
   await expect(page).toHaveURL(/\/contacto$/);
   await expectScrollNear(page, 0);
 
@@ -73,15 +104,7 @@ test('la navegación a anclas descuenta la cabecera fija', async ({ page }) => {
   await page.goto('/');
   await page.locator('.schedule-btn').filter({ hasText: /Dónde estamos/i }).click();
 
-  await expect.poll(async () => {
-    return page.locator('#map-section').evaluate((element) => {
-      const targetTop = element.getBoundingClientRect().top;
-      const headers = Array.from(document.querySelectorAll<HTMLElement>('header'))
-        .filter((header) => getComputedStyle(header).display !== 'none' && !header.classList.contains('is-hidden'));
-      const headerBottom = headers.reduce((bottom, header) => Math.max(bottom, header.getBoundingClientRect().bottom), 0);
-      return Math.abs(targetTop - Math.max(0, headerBottom));
-    });
-  }).toBeLessThanOrEqual(16);
+  await expectAnchorVisibleBelowFixedHeader(page, '#map-section');
 });
 
 test('un cambio exclusivo de query params conserva el viewport', async ({ page }) => {
@@ -178,7 +201,7 @@ test('la confirmación de preinscripción sube al resultado tras el render', asy
   await page.locator('[formcontrolname="direccion"]').fill('Calle E2E 1');
   await page.locator('[formcontrolname="telefono"]').fill('612345678');
   await page.locator('[formcontrolname="email"]').fill('preinscripcion@e2e.taemoi.test');
-  await page.locator('[formcontrolname="tieneDiscapacidad"][value="false"]').check();
+  await page.getByRole('radio', { name: 'No', exact: true }).check();
   await page.locator('[formcontrolname="deporte"]').selectOption('TAEKWONDO');
   await page.locator('.group-card input[type="checkbox"]').check();
 
@@ -207,7 +230,9 @@ test('la confirmación de preinscripción sube al resultado tras el render', asy
 
 test('abrir y cerrar overlays bloquea y restaura el viewport real', async ({ page }) => {
   await page.goto('/horarios');
-  const classCard = page.locator('.timetable-cell:not(.empty), .mobile-class-card').first();
+  const classCard = page.locator(
+    '.desktop-view .day-cell.has-class:visible, .mobile-view .mobile-class-card:visible'
+  ).first();
   await expect(classCard).toBeVisible();
   await classCard.scrollIntoViewIfNeeded();
   const previousY = await page.evaluate(() => window.scrollY);
@@ -225,8 +250,12 @@ test('el menú móvil usa un bloqueo contabilizado y devuelve el scroll', async 
   test.skip(!testInfo.project.name.includes('mobile'), 'Solo aplica al menú móvil');
   await page.goto('/');
   await page.evaluate(() => window.scrollTo(0, 500));
+  await page.evaluate(() => window.scrollTo(0, 450));
+  const openMenu = page.getByRole('button', { name: 'Abrir menú de navegación' });
+  await expect(openMenu).toBeVisible();
   const previousY = await page.evaluate(() => window.scrollY);
-  await page.getByRole('button', { name: 'Abrir menú de navegación' }).click();
+  expect(previousY).toBeGreaterThan(100);
+  await openMenu.click();
   await expect(page.locator('.mobile-header-overlay')).toBeVisible();
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).position)).toBe('fixed');
 

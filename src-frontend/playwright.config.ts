@@ -5,7 +5,9 @@ export default defineConfig({
   outputDir: 'test-results',
   fullyParallel: false,
   forbidOnly: Boolean(process.env['CI']),
-  retries: process.env['CI'] ? 2 : 0,
+  // Deterministic failures must fail fast. Traces and screenshots retain the
+  // evidence needed to diagnose them without tripling the CI duration.
+  retries: 0,
   // The fixture creates its own alumno. Serial execution also exercises the
   // backend's real expediente allocation without introducing a test-only race.
   workers: 1,
