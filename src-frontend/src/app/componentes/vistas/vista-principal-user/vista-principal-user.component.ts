@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { ConvocatoriaDTO } from '../../../interfaces/convocatoria-dto';
@@ -275,7 +276,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     private readonly authService: AuthenticationService,
     private readonly alumnoService: AlumnoService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly pageScroll: PageScrollService
   ) {}
 
   @ViewChild('misDocumentosSection')
@@ -328,174 +330,9 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   scrollToSection(sectionId: string): void {
-    const documentRef = globalThis.document;
-    const windowRef = globalThis.window;
-    if (!documentRef || !windowRef) {
-      return;
+    if (!this.pageScroll.scrollToAnchor(sectionId, 'smooth')) {
+      void this.pageScroll.scrollToAnchorAfterNextRender(sectionId, 'smooth');
     }
-
-    const desplazar = (): boolean => {
-      const target = documentRef.getElementById(sectionId);
-      if (!(target instanceof HTMLElement)) {
-        return false;
-      }
-      this.scrollElementoConOffsetHeader(target, this.obtenerComportamientoScroll());
-      return true;
-    };
-
-    if (desplazar()) {
-      return;
-    }
-
-    if (typeof windowRef.setTimeout === 'function') {
-      windowRef.setTimeout(() => {
-        desplazar();
-      }, 120);
-    }
-  }
-
-  private scrollElementoConOffsetHeader(target: HTMLElement, behavior: ScrollBehavior): void {
-    const documentRef = globalThis.document;
-    const windowRef = globalThis.window;
-    if (!documentRef || !windowRef) {
-      return;
-    }
-
-    try {
-      target.scrollIntoView({
-        behavior,
-        block: 'start',
-        inline: 'nearest',
-      });
-    } catch {
-      target.scrollIntoView(true);
-    }
-
-    const headerOffsetPx = this.obtenerOffsetHeaderFijo();
-    const extraSeparacionPx = 12;
-    const scrollMarginTopPx = this.obtenerScrollMarginTop(target, windowRef);
-    const ajusteNecesarioPx = Math.max(
-      0,
-      Math.round(headerOffsetPx + extraSeparacionPx - scrollMarginTopPx)
-    );
-    if (ajusteNecesarioPx <= 0) {
-      return;
-    }
-
-    const aplicarAjuste = () => this.ajustarScrollTrasAnclaje(target, ajusteNecesarioPx);
-    if (typeof windowRef.requestAnimationFrame === 'function') {
-      windowRef.requestAnimationFrame(aplicarAjuste);
-      return;
-    }
-    aplicarAjuste();
-  }
-
-  private ajustarScrollTrasAnclaje(target: HTMLElement, ajusteNecesarioPx: number): void {
-    const documentRef = globalThis.document;
-    const windowRef = globalThis.window;
-    if (!documentRef || !windowRef) {
-      return;
-    }
-
-    const content = documentRef.getElementById('content');
-    if (
-      content instanceof HTMLElement &&
-      content.contains(target) &&
-      this.esContenedorConScrollInterno(content, windowRef)
-    ) {
-      const destino = Math.max(0, content.scrollTop - ajusteNecesarioPx);
-      this.scrollContenedor(content, destino, 'auto');
-      return;
-    }
-
-    const windowScrollTop =
-      windowRef.scrollY ||
-      documentRef.documentElement.scrollTop ||
-      documentRef.body?.scrollTop ||
-      0;
-    const destinoWindowTop = Math.max(0, Math.round(windowScrollTop - ajusteNecesarioPx));
-    this.scrollWindow(windowRef, destinoWindowTop, 'auto');
-  }
-
-  private esContenedorConScrollInterno(element: HTMLElement, windowRef: Window): boolean {
-    const styles = windowRef.getComputedStyle?.(element);
-    const overflowY = (styles?.overflowY || '').toLowerCase();
-    const tieneScrollPropio =
-      overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
-    return tieneScrollPropio && element.scrollHeight > element.clientHeight + 1;
-  }
-
-  private obtenerScrollMarginTop(target: HTMLElement, windowRef: Window): number {
-    const styles = windowRef.getComputedStyle?.(target);
-    if (!styles) {
-      return 0;
-    }
-    const margin = Number.parseFloat(styles.scrollMarginTop || '0');
-    return Number.isFinite(margin) ? margin : 0;
-  }
-
-  private scrollWindow(windowRef: Window, top: number, behavior: ScrollBehavior): void {
-    try {
-      windowRef.scrollTo({ top, behavior });
-    } catch {
-      windowRef.scrollTo(0, top);
-    }
-  }
-
-  private scrollContenedor(element: HTMLElement, top: number, behavior: ScrollBehavior): void {
-    try {
-      if (typeof element.scrollTo === 'function') {
-        element.scrollTo({ top, behavior });
-      } else {
-        element.scrollTop = top;
-      }
-    } catch {
-      element.scrollTop = top;
-    }
-  }
-
-  private obtenerComportamientoScroll(): ScrollBehavior {
-    const windowRef = globalThis.window;
-    if (!windowRef?.matchMedia) {
-      return 'smooth';
-    }
-
-    return windowRef.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-  }
-
-  private obtenerOffsetHeaderFijo(): number {
-    const documentRef = globalThis.document;
-    const windowRef = globalThis.window;
-    if (!documentRef || !windowRef) {
-      return 0;
-    }
-
-    const selectors = [
-      '.header-anonimo.fixed-header',
-      '.header-user.fixed-header',
-      '.admin-top-navbar',
-      'header.fixed-header',
-      '.navbar.fixed-top',
-      '.navbar.sticky-top',
-    ];
-
-    let maxBottom = 0;
-    selectors.forEach((selector) => {
-      const elements = documentRef.querySelectorAll<HTMLElement>(selector);
-      elements.forEach((element) => {
-        const styles = windowRef.getComputedStyle?.(element);
-        if (!styles || styles.display === 'none' || styles.visibility === 'hidden') {
-          return;
-        }
-        const rect = element.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) {
-          return;
-        }
-        maxBottom = Math.max(maxBottom, rect.bottom);
-      });
-    });
-
-    return Math.max(0, Math.round(maxBottom));
   }
 
   irAMisClases(): void {

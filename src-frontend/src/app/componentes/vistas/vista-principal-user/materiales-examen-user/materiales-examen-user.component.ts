@@ -11,6 +11,7 @@ import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
+import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 import {
   MaterialExamenDTO,
@@ -85,7 +86,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private materialSubscription: Subscription | null = null;
   private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
-  private bodyOverflowOriginal: string | null = null;
+  private viewerScrollRelease?: ScrollLockRelease;
   private docsGridRef: ElementRef<HTMLElement> | undefined;
   private docsActionsRef: ElementRef<HTMLElement> | undefined;
   private docsResizeObserver: ResizeObserver | null = null;
@@ -119,7 +120,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     NEGRO_5_DAN: 'NEGRO 5\u00BA DAN',
   };
 
-  constructor(private readonly endpointsService: EndpointsService) {}
+  constructor(
+    private readonly endpointsService: EndpointsService,
+    private readonly scrollLock: ScrollLockService
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['alumnoId'] && !changes['deportes']) {
@@ -867,23 +871,12 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private actualizarBloqueoScrollDocumento(activar: boolean): void {
-    const body = globalThis.document?.body;
-    if (!body) {
-      return;
-    }
-
     if (activar) {
-      if (this.bodyOverflowOriginal === null) {
-        this.bodyOverflowOriginal = body.style.overflow;
-      }
-      body.style.overflow = 'hidden';
+      this.viewerScrollRelease ??= this.scrollLock.lock();
       return;
     }
-
-    if (this.bodyOverflowOriginal !== null) {
-      body.style.overflow = this.bodyOverflowOriginal;
-      this.bodyOverflowOriginal = null;
-    }
+    this.viewerScrollRelease?.();
+    this.viewerScrollRelease = undefined;
   }
 
   private actualizarOffsetSuperiorVisorExpandido(): void {

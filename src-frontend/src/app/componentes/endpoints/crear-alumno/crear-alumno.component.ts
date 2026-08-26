@@ -14,11 +14,12 @@ import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
-import { ScrollService } from '../../../servicios/generales/scroll.service';
+import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
+import { showSuccessToast } from '../../../utils/toast.util';
 
 /**
  * Interface for sport entry in the form
@@ -66,7 +67,7 @@ export class CrearAlumnoComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly endpointsService: EndpointsService,
     private readonly router: Router,
-    private readonly scrollService: ScrollService
+    private readonly scrollService: PageScrollService
   ) {}
 
   ngOnInit(): void {
@@ -572,15 +573,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.endpointsService.crearAlumno(alumnoData, this.imagen).subscribe({
       next: (response) => {
         const numDeportes = alumnoData.deportesInicial?.length || 0;
-        Swal.fire({
-          title: 'Perfecto!',
-          text: `Has creado un nuevo alumno con ${numDeportes} deporte(s)`,
-          icon: 'success',
-          timer: 2000,
-        }).then(() => {
-          // Scroll to top after success message
-          this.scrollService.scrollToTop();
-        });
+        showSuccessToast(`Alumno creado con ${numDeportes} deporte(s)`);
         // Navigate directly to edit page with the newly created alumno's ID
         if (response && response.id) {
           this.router.navigate(['/alumnosEditar', response.id]);
@@ -590,13 +583,12 @@ export class CrearAlumnoComponent implements OnInit {
         }
       },
       error: (error) => {
-        Swal.fire({
+        // Move before opening the modal so the overlay locks the final viewport.
+        this.scrollService.scrollToTop('auto');
+        void Swal.fire({
           title: 'Error en la petición',
           text: error.error || 'No has completado todos los campos requeridos',
           icon: 'error',
-        }).then(() => {
-          // Scroll to top to show form errors
-          this.scrollService.scrollToTop();
         });
       },
       complete: () => {},

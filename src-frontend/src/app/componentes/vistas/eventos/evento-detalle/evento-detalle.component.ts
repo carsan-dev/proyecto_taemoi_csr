@@ -112,17 +112,14 @@ export class EventoDetalleComponent implements OnInit, OnDestroy {
 
   abrirModalImagen(): void {
     this.modalImagenAbierto = true;
-    document.body.style.overflow = 'hidden'; // Deshabilitar scroll del body
   }
 
   cerrarModalImagen(): void {
     this.modalImagenAbierto = false;
-    document.body.style.overflow = '';
   }
 
   ngOnDestroy(): void {
     // Ensure scroll is restored if the modal was left open on navigation.
-    document.body.style.overflow = '';
     // Limpiar Event Schema al salir de la página
     this.seoService.removeEventSchema();
   }

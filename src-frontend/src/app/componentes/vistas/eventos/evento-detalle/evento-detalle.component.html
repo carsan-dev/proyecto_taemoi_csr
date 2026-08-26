@@ -122,7 +122,7 @@
     </div>
 
     @if (modalImagenAbierto) {
-      <div class="image-modal" (click)="cerrarModalImagen()">
+  <div class="image-modal" data-scroll-lock-overlay="true" (click)="cerrarModalImagen()">
         <div class="modal-overlay"></div>
         <div class="modal-content">
           <button class="close-button" (click)="cerrarModalImagen()" title="Cerrar">

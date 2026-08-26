@@ -9,6 +9,8 @@ import {
   AdminQuickNavigationItem,
 } from '../../../../core/constants/navigation.constants';
 import { resolverPortalContexto } from '../../../../app.routes';
+import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
+import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 
 @Component({
   selector: 'app-header',
@@ -36,6 +38,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   username: string | null = null;
   private documentScrollHandler?: (event: Event) => void;
   private resizeHandler?: () => void;
+  private mobileMenuScrollRelease?: ScrollLockRelease;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -59,7 +62,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private readonly authService: AuthenticationService,
     private readonly router: Router,
-    private readonly zone: NgZone
+    private readonly zone: NgZone,
+    private readonly pageScroll: PageScrollService,
+    private readonly scrollLock: ScrollLockService
   ) {}
 
   ngOnInit(): void {
@@ -220,11 +225,12 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private setBodyScrollLock(locked: boolean): void {
-    const documentRef = this.getDocumentRef();
-    if (!documentRef?.body) {
+    if (locked) {
+      this.mobileMenuScrollRelease ??= this.scrollLock.lock();
       return;
     }
-    documentRef.body.style.overflow = locked ? 'hidden' : '';
+    this.mobileMenuScrollRelease?.();
+    this.mobileMenuScrollRelease = undefined;
   }
 
   comprobarRoles() {
@@ -299,40 +305,24 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleScrollEvent(event?: Event): void {
-    const windowRef = this.getWindowRef();
-    const documentRef = this.getDocumentRef();
-    if (windowRef !== undefined && documentRef !== undefined) {
-      const currentScrollTop = this.getEffectiveScrollTop(event, windowRef, documentRef);
+    const currentScrollTop = this.pageScroll.scrollTop;
 
-      // Siempre mostrar header en la parte superior
-      if (currentScrollTop <= this.scrollThreshold) {
-        this.isHidden = false;
-        this.lastScrollTop = currentScrollTop;
-      }
-      // Scroll hacia abajo: ocultar
-      else if (currentScrollTop > this.lastScrollTop && currentScrollTop > this.scrollThreshold) {
-        this.isHidden = true;
-      }
-      // Scroll hacia arriba: mostrar
-      else if (currentScrollTop < this.lastScrollTop) {
-        this.isHidden = false;
-      }
-
-      this.lastScrollTop = Math.max(currentScrollTop, 0);
-
-      // Collapse navbar when scrolling
-      this.collapseNavbar();
+    // Siempre mostrar header en la parte superior
+    if (currentScrollTop <= this.scrollThreshold) {
+      this.isHidden = false;
+      this.lastScrollTop = currentScrollTop;
     }
-  }
+    // Scroll hacia abajo: ocultar
+    else if (currentScrollTop > this.lastScrollTop && currentScrollTop > this.scrollThreshold) {
+      this.isHidden = true;
+    }
+    // Scroll hacia arriba: mostrar
+    else if (currentScrollTop < this.lastScrollTop) {
+      this.isHidden = false;
+    }
 
-  private getEffectiveScrollTop(event: Event | undefined, windowRef: Window, documentRef: Document): number {
-    const target = event?.target;
-    const targetScrollTop = target instanceof HTMLElement ? target.scrollTop : 0;
-    const scrollingElement = documentRef.scrollingElement as HTMLElement | null;
-    const scrollingElementTop = scrollingElement?.scrollTop ?? 0;
-    const windowScrollTop = windowRef.scrollY || documentRef.documentElement.scrollTop || documentRef.body?.scrollTop || 0;
-
-    return Math.max(targetScrollTop, scrollingElementTop, windowScrollTop);
+    this.lastScrollTop = Math.max(currentScrollTop, 0);
+    this.collapseNavbar();
   }
 
   @HostListener('document:click', ['$event'])

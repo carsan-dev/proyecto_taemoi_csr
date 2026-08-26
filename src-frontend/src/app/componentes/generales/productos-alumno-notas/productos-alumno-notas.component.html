@@ -1,4 +1,5 @@
-<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" style="display: block;">
+<div class="modal fade" [class.show]="modalVisible" tabindex="-1" role="dialog" aria-modal="true"
+  data-scroll-lock-overlay="true" style="display: block;">
   <div class="modal-dialog modal-dialog-scrollable" role="document" (click)="$event.stopPropagation()">
     <div class="modal-content">
       <div class="modal-header">

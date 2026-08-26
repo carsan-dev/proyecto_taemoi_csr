@@ -25,7 +25,7 @@ import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad'
 import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
-import { ScrollService } from '../../../servicios/generales/scroll.service';
+import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 import Swal from 'sweetalert2';
@@ -47,6 +47,7 @@ import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 export class EditarAlumnoComponent implements OnInit, OnDestroy {
   alumno: any = null;
   cargando: boolean = true; // Loading state - start as true to show skeleton immediately
+  refrescando: boolean = false;
 
   // Pagination - each page represents one alumno
   paginaActual: number = 1;
@@ -234,7 +235,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly route: ActivatedRoute,
     private readonly location: Location,
-    private readonly scrollService: ScrollService
+    private readonly scrollService: PageScrollService
   ) {
     this.alumnoForm = this.fb.group(
       {
@@ -452,10 +453,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
   }
 
-  cargarAlumno(id: number): void {
-    this.cargando = true;
+  cargarAlumno(id: number, afterLoad?: () => void): void {
+    const cargaInicial = !this.alumno || Number(this.alumno.id) !== id;
+    this.cargando = cargaInicial;
+    this.refrescando = !cargaInicial;
     this.endpointsService.obtenerAlumnoPorId(id)
-      .pipe(finalize(() => (this.cargando = false)))
+      .pipe(finalize(() => {
+        this.cargando = false;
+        this.refrescando = false;
+        afterLoad?.();
+      }))
       .subscribe({
         next: (alumnoResponse: any) => {
           this.alumno = alumnoResponse;
@@ -547,8 +554,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const scrollPositions = this.captureScrollPositions();
-
     Swal.fire({
       title: 'Marcar como pagado',
       text: `¿Quieres marcar como pagado "${producto.concepto}"?`,
@@ -559,8 +564,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       confirmButtonColor: '#28a745',
       focusConfirm: false,
       returnFocus: false,
-      didOpen: () => this.restoreScrollPositions(scrollPositions),
-      didClose: () => this.restoreScrollPositions(scrollPositions),
     }).then((result) => {
       if (!result.isConfirmed) {
         return;
@@ -610,51 +613,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   private isProductoQueAfectaGrado(producto: ProductoAlumnoDTO): boolean {
     const concepto = (producto?.concepto ?? '').toUpperCase();
     return concepto.includes('RECOMPENSA') || concepto.includes('DERECHO A EXAMEN');
-  }
-
-  private captureScrollPositions(): {
-    windowY: number;
-    scrollingElementY: number;
-    documentElementY: number;
-    bodyY: number;
-    contentY: number;
-  } {
-    const doc = document;
-    const content = doc.getElementById('content');
-    const scrollingElement = doc.scrollingElement as HTMLElement | null;
-    return {
-      windowY: window.scrollY || 0,
-      scrollingElementY: scrollingElement?.scrollTop ?? 0,
-      documentElementY: doc.documentElement?.scrollTop ?? 0,
-      bodyY: doc.body?.scrollTop ?? 0,
-      contentY: content?.scrollTop ?? 0,
-    };
-  }
-
-  private restoreScrollPositions(positions: {
-    windowY: number;
-    scrollingElementY: number;
-    documentElementY: number;
-    bodyY: number;
-    contentY: number;
-  }): void {
-    const doc = document;
-    const content = doc.getElementById('content');
-    const scrollingElement = doc.scrollingElement as HTMLElement | null;
-
-    if (scrollingElement) {
-      scrollingElement.scrollTop = positions.scrollingElementY;
-    }
-    if (doc.documentElement) {
-      doc.documentElement.scrollTop = positions.documentElementY;
-    }
-    if (doc.body) {
-      doc.body.scrollTop = positions.bodyY;
-    }
-    if (content) {
-      content.scrollTop = positions.contentY;
-    }
-    window.scrollTo({ top: positions.windowY, left: 0 });
   }
 
   /**
@@ -1416,9 +1374,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Si estaba expandido y ahora se colapsa, hacer scroll a la sección
     if (estabaExpandido) {
-      setTimeout(() => {
-        this.scrollService.scrollToElement('documentos-section');
-      }, 50);
+      void this.scrollService.scrollToAnchorAfterNextRender('documentos-section', 'smooth');
     }
   }
 
@@ -4968,6 +4924,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const scrollSnapshot = this.scrollService.captureSnapshot('alumno-informacion-personal');
+
     // Get telefono value - ensure it's a number
     const telefonoValue = this.pendingBasicInfoChanges.telefono ?? this.alumno.telefono;
     const telefonoInt = typeof telefonoValue === 'string'
@@ -5027,7 +4985,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.pendingBasicInfoChanges = {};
         this.editingBasicInfo = false;
         // Reload alumno data
-        this.cargarAlumno(this.alumnoId!);
+        this.cargarAlumno(this.alumnoId!, () => {
+          void this.scrollService.restoreSnapshotAfterNextRender(scrollSnapshot, 'auto');
+        });
       },
       error: (error) => {
         showErrorToast('Error al actualizar la información');

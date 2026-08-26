@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, HostListener, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 
 @Component({
   selector: 'app-botonscroll',
@@ -12,13 +13,15 @@ export class BotonscrollComponent implements OnInit, AfterViewInit, OnDestroy {
   bottomOffset = 'calc(20px + env(safe-area-inset-bottom, 0px))';
   private readonly scrollThreshold = 100;
   private readonly bottomBasePx = 20;
-  private documentScrollHandler?: (event: Event) => void;
   private windowResizeHandler?: () => void;
   private visualViewportResizeHandler?: () => void;
   private visualViewportScrollHandler?: () => void;
   private rafBottomOffsetId: number | null = null;
 
-  constructor(private readonly zone: NgZone) {}
+  constructor(
+    private readonly zone: NgZone,
+    private readonly pageScroll: PageScrollService
+  ) {}
 
   ngOnInit(): void {
     this.updateVisibility();
@@ -29,15 +32,6 @@ export class BotonscrollComponent implements OnInit, AfterViewInit, OnDestroy {
     if (globalThis.document === undefined) {
       return;
     }
-
-    const doc = globalThis.document;
-    this.documentScrollHandler = (event: Event) => {
-      this.zone.run(() => {
-        this.updateVisibility(event);
-        this.programarActualizacionBottomOffset();
-      });
-    };
-    doc.addEventListener('scroll', this.documentScrollHandler, true);
 
     const win = globalThis.window;
     if (win !== undefined) {
@@ -63,12 +57,6 @@ export class BotonscrollComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.documentScrollHandler && globalThis.document !== undefined) {
-      const doc = globalThis.document;
-      doc.removeEventListener('scroll', this.documentScrollHandler, true);
-      this.documentScrollHandler = undefined;
-    }
-
     const win = globalThis.window;
     if (win !== undefined && this.windowResizeHandler) {
       win.removeEventListener('resize', this.windowResizeHandler);
@@ -92,11 +80,7 @@ export class BotonscrollComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   scrollArriba(): void {
-    if (globalThis.window === undefined || globalThis.document === undefined) {
-      return;
-    }
-
-    this.scrollWindowToTop();
+    this.pageScroll.scrollToTop('smooth');
   }
 
   @HostListener('window:scroll')
@@ -110,70 +94,13 @@ export class BotonscrollComponent implements OnInit, AfterViewInit, OnDestroy {
     this.programarActualizacionBottomOffset();
   }
 
-  private updateVisibility(event?: Event): void {
-    if (globalThis.window === undefined || globalThis.document === undefined) {
-      return;
-    }
-
-    const shouldShow = this.getEffectiveScrollTop(event) > this.scrollThreshold;
+  private updateVisibility(): void {
+    const shouldShow = this.pageScroll.scrollTop > this.scrollThreshold;
     if (shouldShow === this.mostrarBoton) {
       return;
     }
 
     this.mostrarBoton = shouldShow;
-  }
-
-  private getWindowScrollTop(): number {
-    const win = globalThis.window;
-    const doc = globalThis.document;
-    return win.scrollY || doc.documentElement.scrollTop || doc.body.scrollTop || 0;
-  }
-
-  private getEffectiveScrollTop(event?: Event): number {
-    const doc = globalThis.document;
-    const target = event?.target;
-    const targetScrollTop = target instanceof HTMLElement ? target.scrollTop : 0;
-    const scrollingElement = doc.scrollingElement as HTMLElement | null;
-    const scrollingElementTop = scrollingElement?.scrollTop ?? 0;
-    const windowScrollTop = this.getWindowScrollTop();
-
-    return Math.max(targetScrollTop, scrollingElementTop, windowScrollTop);
-  }
-
-  private scrollWindowToTop(): void {
-    const doc = globalThis.document;
-    const win = globalThis.window;
-    const behavior = this.getScrollBehavior();
-    const scrollingElement = doc.scrollingElement as HTMLElement | null;
-    if (scrollingElement) {
-      this.scrollElementToTop(scrollingElement, behavior);
-    }
-
-    if (doc.documentElement) {
-      this.scrollElementToTop(doc.documentElement, behavior);
-    }
-    if (doc.body) {
-      this.scrollElementToTop(doc.body, behavior);
-    }
-
-    win.scrollTo({ top: 0, behavior });
-  }
-
-  private scrollElementToTop(element: HTMLElement, behavior: ScrollBehavior): void {
-    if (typeof element.scrollTo === 'function') {
-      element.scrollTo({ top: 0, behavior });
-    } else {
-      element.scrollTop = 0;
-    }
-  }
-
-  private getScrollBehavior(): ScrollBehavior {
-    const win = globalThis.window;
-    if (win === undefined || win.matchMedia === undefined) {
-      return 'smooth';
-    }
-
-    return win.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   }
 
   private programarActualizacionBottomOffset(): void {

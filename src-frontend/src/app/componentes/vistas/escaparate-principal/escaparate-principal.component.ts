@@ -16,6 +16,7 @@ import { MapaComponent } from '../../generales/mapa/mapa.component';
 import { Router, RouterLink } from '@angular/router';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { SeoService } from '../../../servicios/generales/seo.service';
+import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 
 @Component({
   selector: 'app-escaparate-principal',
@@ -59,6 +60,7 @@ export class EscaparatePrincipalComponent
     private readonly authService: AuthenticationService,
     private readonly router: Router,
     private readonly seoService: SeoService,
+    private readonly pageScroll: PageScrollService,
   ) {}
 
   ngOnInit(): void {
@@ -322,10 +324,7 @@ export class EscaparatePrincipalComponent
   }
 
   scrollToMap() {
-    const mapSection = document.getElementById('map-section');
-    if (mapSection) {
-      mapSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    this.pageScroll.scrollToAnchor('map-section', 'smooth');
   }
 
   private redirigirUsuarioAutenticado(roles: string[]): void {
