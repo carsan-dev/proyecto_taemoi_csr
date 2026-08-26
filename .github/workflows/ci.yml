@@ -76,6 +76,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      E2E_ADMIN_EMAIL: e2e-admin@taemoi.test
+      E2E_ADMIN_PASSWORD: E2e-Scroll-Only-2026!
     defaults:
       run:
         working-directory: src-frontend
@@ -100,15 +103,29 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: docker compose -f docker-compose.e2e.yml up --build --detach --wait --wait-timeout 300
 
+      - name: Verify disposable admin login
+        run: |
+          status="$(curl --silent --show-error \
+            --output /tmp/e2e-login-response.json \
+            --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data "{\"email\":\"${E2E_ADMIN_EMAIL}\",\"contrasena\":\"${E2E_ADMIN_PASSWORD}\",\"rememberMe\":false}" \
+            http://localhost:8080/api/auth/signin)"
+          if [ "$status" != "200" ]; then
+            echo "El login del administrador E2E devolvió HTTP $status"
+            cat /tmp/e2e-login-response.json
+            exit 1
+          fi
+
+      - name: Run desktop and mobile E2E journeys
+        run: npm run test:e2e
+
       - name: Show E2E container diagnostics on failure
         if: failure()
         working-directory: ${{ github.workspace }}
         run: |
           docker compose -f docker-compose.e2e.yml ps --all || true
           docker compose -f docker-compose.e2e.yml logs --no-color --timestamps database backend || true
-
-      - name: Run desktop and mobile E2E journeys
-        run: npm run test:e2e
 
       - name: Preserve Playwright diagnostics on failure
         if: failure()

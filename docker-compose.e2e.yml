@@ -32,12 +32,12 @@ services:
       SPRING_DATASOURCE_USERNAME: taemoi
       SPRING_DATASOURCE_PASSWORD: taemoi-e2e-only
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
-      JWT_SECRET: e2e-scroll-secret-that-is-long-enough-and-never-used-outside-tests-2026
+      JWT_SECRET: dGFlbW9pLWUyZS1qd3Qtc2lnbmluZy1zZWNyZXQtMjAyNi1vbmx5LWZvci1kaXNwb3NhYmxlLWNp
       CORS_ALLOWED_ORIGIN: http://localhost:4200
       APP_BASE_URL: http://localhost:8080
       APP_FRONTEND_BASE_URL: http://localhost:4200
-      APP_BOOTSTRAP_ADMIN_EMAIL: e2e-admin@taemoi.test
-      APP_BOOTSTRAP_ADMIN_PASSWORD: E2e-Scroll-Only-2026!
+      APP_BOOTSTRAP_ADMIN_EMAIL: ${E2E_ADMIN_EMAIL:-e2e-admin@taemoi.test}
+      APP_BOOTSTRAP_ADMIN_PASSWORD: ${E2E_ADMIN_PASSWORD:-E2e-Scroll-Only-2026!}
       APP_BOOTSTRAP_ADMIN_NOMBRE: Admin
       APP_BOOTSTRAP_ADMIN_APELLIDOS: E2E
       GOOGLE_CLIENT_ID: e2e-google-client
