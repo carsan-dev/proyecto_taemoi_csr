@@ -11,6 +11,20 @@ async function expectScrollNear(page: Page, expected: number, tolerance = 12): P
   ).toBeLessThanOrEqual(tolerance);
 }
 
+async function expectElementTopNear(
+  page: Page,
+  selector: string,
+  expected: number,
+  tolerance = 12
+): Promise<void> {
+  await expect.poll(
+    () => page.locator(selector).evaluate((element, target) =>
+      Math.abs(element.getBoundingClientRect().top - target), expected
+    ),
+    { timeout: 5_000 }
+  ).toBeLessThanOrEqual(tolerance);
+}
+
 async function expectAnchorVisibleBelowFixedHeader(page: Page, selector: string): Promise<void> {
   await expect.poll(async () => page.locator(selector).evaluate((element) => {
     const targetTop = element.getBoundingClientRect().top;
@@ -111,19 +125,31 @@ test('un cambio exclusivo de query params conserva el viewport', async ({ page }
   await loginAsAdmin(page);
   await page.goto('/alumnosListar');
   await expect(page.getByRole('heading', { name: /Gestión de Alumnos/i })).toBeVisible();
+  await expect(page.locator('app-skeleton-card')).toHaveCount(0);
   await page.evaluate(() => {
+    const container = document.querySelector('.admin-page-container');
+    if (!container) {
+      throw new Error('Student page container not found');
+    }
+    const anchor = document.createElement('div');
+    anchor.dataset['scrollAnchor'] = 'e2e-query-context';
+    anchor.style.height = '1px';
     const spacer = document.createElement('div');
     spacer.style.height = '1800px';
     spacer.dataset['e2eSpacer'] = 'true';
-    document.querySelector('.admin-page-container')?.append(spacer);
-    window.scrollTo(0, 640);
+    container.append(anchor, spacer);
+    const anchorTop = window.scrollY + anchor.getBoundingClientRect().top;
+    window.scrollTo(0, Math.max(0, anchorTop - 160));
   });
-  const previousY = await page.evaluate(() => window.scrollY);
+  const contextAnchor = '[data-scroll-anchor="e2e-query-context"]';
+  const previousTop = await page.locator(contextAnchor).evaluate((element) =>
+    element.getBoundingClientRect().top
+  );
 
   await page.getByRole('button', { name: 'Filtrar por alumnos aptos para examen' })
     .evaluate((button: HTMLElement) => button.click());
   await expect(page).toHaveURL(/aptoParaExamen=true/);
-  await expectScrollNear(page, previousY);
+  await expectElementTopNear(page, contextAnchor, previousTop);
 });
 
 test('guardar un alumno restaura su sección mientras el toast sigue visible', async ({ page }, testInfo) => {
@@ -136,14 +162,14 @@ test('guardar un alumno restaura su sección mientras el toast sigue visible', a
     const section = page.locator('#alumno-informacion-personal');
     await expect(section).toBeVisible();
     await section.scrollIntoViewIfNeeded();
-    await section.getByRole('button', { name: 'Editar', exact: true }).click();
+    await section.getByRole('button', { name: /Editar$/ }).click();
     await page.locator('#nombre').fill(`${student.nombre}Editado`);
     const previousTop = await section.evaluate((element) => element.getBoundingClientRect().top);
 
     const update = page.waitForResponse((response) =>
       response.request().method() === 'PUT' && response.url() === `${apiUrl}/alumnos/${student.id}`
     );
-    await page.getByRole('button', { name: 'Guardar Cambios', exact: true }).click();
+    await page.getByRole('button', { name: /Guardar Cambios$/ }).click();
     expect((await update).ok()).toBeTruthy();
 
     await expect(page.locator('.swal2-toast')).toBeVisible();
@@ -152,7 +178,8 @@ test('guardar un alumno restaura su sección mientras el toast sigue visible', a
     )).toBeLessThanOrEqual(16);
     await expect(section).toContainText(`${student.nombre}Editado`);
   } finally {
-    await page.request.delete(`${apiUrl}/alumnos/${student.id}`);
+    await page.request.delete(`${apiUrl}/alumnos/${student.id}`, { timeout: 5_000 })
+      .catch(() => undefined);
   }
 });
 
@@ -201,7 +228,11 @@ test('la confirmación de preinscripción sube al resultado tras el render', asy
   await page.locator('[formcontrolname="direccion"]').fill('Calle E2E 1');
   await page.locator('[formcontrolname="telefono"]').fill('612345678');
   await page.locator('[formcontrolname="email"]').fill('preinscripcion@e2e.taemoi.test');
-  await page.getByRole('radio', { name: 'No', exact: true }).check();
+  const disabilityNo = page.locator('label.binary-option')
+    .filter({ has: page.locator('input[formcontrolname="tieneDiscapacidad"]') })
+    .filter({ hasText: /^No$/ });
+  await disabilityNo.getByText('No', { exact: true }).click();
+  await expect(disabilityNo.locator('input')).toBeChecked();
   await page.locator('[formcontrolname="deporte"]').selectOption('TAEKWONDO');
   await page.locator('.group-card input[type="checkbox"]').check();
 
@@ -259,7 +290,9 @@ test('el menú móvil usa un bloqueo contabilizado y devuelve el scroll', async 
   await expect(page.locator('.mobile-header-overlay')).toBeVisible();
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).position)).toBe('fixed');
 
-  await page.getByRole('button', { name: 'Cerrar menú' }).click();
+  await page.locator('.mobile-header-overlay')
+    .getByRole('button', { name: 'Cerrar menú', exact: true })
+    .click();
   await expect(page.locator('.mobile-header-overlay')).toBeHidden();
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).position)).not.toBe('fixed');
   await expectScrollNear(page, previousY);
