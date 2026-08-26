@@ -13,7 +13,12 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(
       routes,
-      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
+      // RouteScrollCoordinator owns all page-level restoration. Keep Angular's
+      // Scroll events enabled while disabling its competing DOM writes.
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'disabled',
+        anchorScrolling: 'disabled',
+      })
     ),
     provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor, loadingInterceptor, errorInterceptor])),
     provideAnimationsAsync(),

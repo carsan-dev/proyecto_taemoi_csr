@@ -4,9 +4,14 @@ import { adminOnlyGuard } from './guards/admin-only.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
+import { RouteScrollPolicy } from './servicios/generales/page-scroll.service';
 
 type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER';
 export type PortalContext = 'public' | 'admin' | 'user';
+export interface AppRouteData {
+  portalContext?: PortalContext;
+  scrollPolicy?: RouteScrollPolicy;
+}
 
 const ROUTE_ROLE_SETS = {
   management: ['ROLE_ADMIN', 'ROLE_MANAGER'] as const satisfies readonly RouteRole[],
@@ -14,17 +19,18 @@ const ROUTE_ROLE_SETS = {
   userPortal: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] as const satisfies readonly RouteRole[],
 };
 
-function privateRouteData(requiredRoles: readonly RouteRole[], portalContext: PortalContext = 'admin') {
+function privateRouteData(
+  requiredRoles: readonly RouteRole[],
+  portalContext: PortalContext = 'admin',
+  scrollPolicy: RouteScrollPolicy = 'standard'
+) {
   return {
     seo: SEO_ROUTES.noIndex,
     requiredRoles,
     portalContext,
+    scrollPolicy,
   };
 }
-
-type RouteDataWithPortalContext = {
-  portalContext?: PortalContext;
-};
 
 function normalizarRuta(url: string): string {
   return (url || '').split('?')[0].split('#')[0];
@@ -52,7 +58,7 @@ function coincideRuta(routePath: string, url: string): boolean {
 export function resolverPortalContexto(url: string): PortalContext {
   const rutaNormalizada = normalizarRuta(url);
   const matchingRoute = routes.find((route) => route.path && coincideRuta(route.path, rutaNormalizada));
-  const routeData = matchingRoute?.data as RouteDataWithPortalContext | undefined;
+  const routeData = matchingRoute?.data as AppRouteData | undefined;
   return routeData?.portalContext ?? 'public';
 }
 

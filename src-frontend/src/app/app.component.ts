@@ -3,6 +3,8 @@ import { RouterOutlet } from '@angular/router';
 import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton.component';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { SeoService } from './servicios/generales/seo.service';
+import { RouteScrollCoordinator } from './servicios/generales/route-scroll-coordinator.service';
+import { ScrollLockService } from './servicios/generales/scroll-lock.service';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +21,14 @@ export class AppComponent {
   private selectTypeaheadResetTimer: number | null = null;
   private activeSelect: HTMLSelectElement | null = null;
 
-  constructor(private seoService: SeoService) {}
+  constructor(
+    private seoService: SeoService,
+    routeScrollCoordinator: RouteScrollCoordinator,
+    scrollLock: ScrollLockService
+  ) {
+    routeScrollCoordinator.start();
+    scrollLock.observeOverlays();
+  }
 
   @HostListener('document:keydown', ['$event'])
   handleSelectTypeahead(event: KeyboardEvent): void {

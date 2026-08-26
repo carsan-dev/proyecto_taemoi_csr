@@ -119,12 +119,19 @@ html {
 
 html,
 body {
-  height: 100%;
-  overflow-x: hidden; // Prevent horizontal scroll globally
+  min-height: 100%;
 }
 
+html {
+  overflow-x: clip;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
 
 body {
+  // `hidden` here computes vertical overflow as `auto`, turning body into a
+  // separate scroller that Angular's route restoration cannot control.
+  overflow-x: clip;
   margin: 0;
   font-family: Montserrat, sans-serif;
   background: #f8f9fa; // Clean, light background matching the main site
@@ -198,7 +205,12 @@ body:has(.admin-top-navbar) #content {
 .container,
 .container-fluid {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+[data-scroll-anchor],
+[id] {
+  scroll-margin-top: 80px;
 }
 
 // Allow navbar dropdowns to overflow properly
@@ -276,6 +288,7 @@ main#content {
 .swal2-container.swal2-top-right,
 .swal2-container.swal2-top-center {
   z-index: 9999 !important;
+  position: fixed !important;
 }
 
 .cookie-consent {
