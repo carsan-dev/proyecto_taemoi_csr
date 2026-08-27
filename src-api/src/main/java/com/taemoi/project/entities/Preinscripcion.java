@@ -34,6 +34,7 @@ public class Preinscripcion {
  @Lob @Column(name="plantilla_snapshot",nullable=false,columnDefinition="LONGTEXT") private String plantillaSnapshot;
  @Lob @Column(name="pdf_firmado",nullable=false,columnDefinition="MEDIUMBLOB") private byte[] pdfFirmado;
  @Column(name="token_documento_hash",nullable=false,length=64) private String tokenDocumentoHash;
+ @Column(name="idempotency_key_hash",length=64,unique=true) private String idempotencyKeyHash;
  @Column(name="email_enviado",nullable=false) private Boolean emailEnviado=false; @Column(name="email_intentos",nullable=false) private Integer emailIntentos=0;
  @Column(name="email_ultimo_error",length=500) private String emailUltimoError;
  @Enumerated(EnumType.STRING) @Column(name="email_finalizacion_estado",nullable=false,length=20) private EstadoEmailFinalizacion estadoEmailFinalizacion=EstadoEmailFinalizacion.NO_ENVIADO;
@@ -62,6 +63,7 @@ public class Preinscripcion {
  public Turno getTurno(){return turno;} public void setTurno(Turno v){turno=v;} public String getTurnoSnapshot(){return turnoSnapshot;} public void setTurnoSnapshot(String v){turnoSnapshot=v;} public Grupo getGrupo(){return grupo;} public void setGrupo(Grupo v){grupo=v;} public String getGrupoSnapshot(){return grupoSnapshot;} public void setGrupoSnapshot(String v){grupoSnapshot=v;} public PlantillaPreinscripcion getPlantilla(){return plantilla;} public void setPlantilla(PlantillaPreinscripcion v){plantilla=v;} public String getPlantillaSnapshot(){return plantillaSnapshot;} public void setPlantillaSnapshot(String v){plantillaSnapshot=v;}
  public Set<Turno> getTurnos(){return turnos;} public void setTurnos(Set<Turno> v){turnos=v==null?new LinkedHashSet<>():new LinkedHashSet<>(v);} public void addTurno(Turno v){if(v!=null)turnos.add(v);}
  public byte[] getPdfFirmado(){return pdfFirmado;} public void setPdfFirmado(byte[] v){pdfFirmado=v;} public String getTokenDocumentoHash(){return tokenDocumentoHash;} public void setTokenDocumentoHash(String v){tokenDocumentoHash=v;}
+ public String getIdempotencyKeyHash(){return idempotencyKeyHash;} public void setIdempotencyKeyHash(String v){idempotencyKeyHash=v;}
  public Boolean getEmailEnviado(){return emailEnviado;} public void setEmailEnviado(Boolean v){emailEnviado=v;} public Integer getEmailIntentos(){return emailIntentos;} public void setEmailIntentos(Integer v){emailIntentos=v;} public String getEmailUltimoError(){return emailUltimoError;} public void setEmailUltimoError(String v){emailUltimoError=v;}
  public EstadoEmailFinalizacion getEstadoEmailFinalizacion(){return estadoEmailFinalizacion;} public void setEstadoEmailFinalizacion(EstadoEmailFinalizacion v){estadoEmailFinalizacion=v;}
  public Instant getEmailFinalizacionEnviadoEn(){return emailFinalizacionEnviadoEn;} public void setEmailFinalizacionEnviadoEn(Instant v){emailFinalizacionEnviadoEn=v;}

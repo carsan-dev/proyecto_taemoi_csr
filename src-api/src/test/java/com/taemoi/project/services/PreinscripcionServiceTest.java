@@ -26,6 +26,7 @@ import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.CampoActualizable;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DatosAltaDeporte;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest.DecisionEmail;
+import com.taemoi.project.dtos.request.PreinscripcionRequest;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
@@ -34,6 +35,7 @@ import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.EstadoEmailFinalizacion;
 import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
 import com.taemoi.project.events.PreinscripcionTurnosModificadosEvent;
+import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.PlantillaPreinscripcion;
@@ -98,6 +100,43 @@ class PreinscripcionServiceTest {
 			if (alumno.getId() == null) alumno.setId(99L);
 			return alumno;
 		});
+	}
+
+	@Test
+	void rechazaOtraPreinscripcionDeLaMismaPersonaDeporteYTemporada() {
+		when(temporadas.actual()).thenReturn("2026-2027");
+		when(preinscripciones.existsByIdentidadHashAndDeporteAndTemporadaAndEstadoIn(
+				anyString(), eq(Deporte.TAEKWONDO), eq("2026-2027"), anyCollection())).thenReturn(true);
+
+		PreinscripcionDuplicadaException error = assertThrows(PreinscripcionDuplicadaException.class,
+				() -> service.crear(nuevaSolicitud(Deporte.TAEKWONDO), "envio-1"));
+
+		assertTrue(error.getMessage().contains("persona y deporte"));
+		verify(aforo, never()).bloquearTurnos(anyCollection());
+	}
+
+	@Test
+	void rechazaElReenvioDeLaMismaPeticionIdempotente() {
+		when(preinscripciones.existsByIdempotencyKeyHash(anyString())).thenReturn(true);
+
+		assertThrows(PreinscripcionDuplicadaException.class,
+				() -> service.crear(nuevaSolicitud(Deporte.TAEKWONDO), "envio-repetido"));
+
+		verify(preinscripciones, never()).existsByIdentidadHashAndDeporteAndTemporadaAndEstadoIn(
+				anyString(), any(), anyString(), anyCollection());
+		verify(aforo, never()).bloquearTurnos(anyCollection());
+	}
+
+	@Test
+	void compruebaDuplicadosDentroDelDeporteSolicitado() {
+		grupo.setDeporte(Deporte.PILATES);
+		when(temporadas.actual()).thenReturn("2026-2027");
+
+		assertThrows(IllegalArgumentException.class,
+				() -> service.crear(nuevaSolicitud(Deporte.PILATES), "envio-pilates"));
+
+		verify(preinscripciones).existsByIdentidadHashAndDeporteAndTemporadaAndEstadoIn(
+				anyString(), eq(Deporte.PILATES), eq("2026-2027"), anyCollection());
 	}
 
 	@Test
@@ -628,6 +667,13 @@ class PreinscripcionServiceTest {
 		solicitud.setPlantilla(plantilla);
 		solicitud.setTurnos(new java.util.LinkedHashSet<>(seleccion));
 		return solicitud;
+	}
+
+	private PreinscripcionRequest nuevaSolicitud(Deporte deporte) {
+		return new PreinscripcionRequest(deporte, List.of(11L), "Ana", "García López", "12345678Z",
+				LocalDate.of(1990, 1, 1), "Calle Mayor 1", "612 345 678", "611 222 333",
+				"ana@example.com", null, null, null, false, false, true, "Ana García",
+				"data:image/png;base64,AAAA");
 	}
 
 	private FinalizarPreinscripcionRequest request(Long alumnoId, Set<CampoActualizable> campos,

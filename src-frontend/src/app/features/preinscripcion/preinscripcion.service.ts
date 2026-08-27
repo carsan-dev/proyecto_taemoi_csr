@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 export interface ContenidoPreinscripcion {
@@ -21,7 +21,7 @@ export class PreinscripcionService {
  configuracion(deporte:string){return this.http.get<ConfiguracionPreinscripcion>(`${this.base}/public/configuracion/${deporte}`);}
  grupos(deporte:string){return this.http.get<any[]>(`${this.base}/public/grupos/${deporte}`);}
  turnos(deporte:string){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`);}
- crear(data:any){return this.http.post<any>(this.base,data);}
+ crear(data:any,idempotencyKey?:string){const headers=idempotencyKey?new HttpHeaders({'Idempotency-Key':idempotencyKey}):undefined;return this.http.post<any>(this.base,data,{headers});}
  listar(filtros:Record<string,string>={},page=0,size=25){let params=new HttpParams().set('page',page).set('size',size);Object.entries(filtros).filter(([,v])=>v).forEach(([k,v])=>params=params.set(k,v));return this.http.get<{content:any[];page:number;size:number;totalElements:number;totalPages:number;first:boolean;last:boolean}>(this.base,{params});}
  cancelar(ref:string){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{});}
  eliminar(ref:string){return this.http.delete<void>(`${this.base}/${ref}`);}

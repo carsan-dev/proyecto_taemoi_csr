@@ -1,4 +1,4 @@
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PreinscripcionComponent } from './preinscripcion.component';
 
 describe('PreinscripcionComponent normas', () => {
@@ -222,5 +222,31 @@ describe('PreinscripcionComponent normas', () => {
 
     expect(component.resultado.referencia).toBe('PRE-123');
     expect(scrollService.scrollToTopAfterNextRender).toHaveBeenCalledOnceWith('auto');
+  });
+
+  it('ignora un segundo envio mientras el primero sigue pendiente', () => {
+    const respuesta = new Subject<any>();
+    const api = {
+      temporada: () => of({ temporada: '2026-2027' }),
+      crear: jasmine.createSpy('crear').and.returnValue(respuesta),
+    };
+    const route = { snapshot: { queryParamMap: { get: () => null } } };
+    const scrollService = { scrollToTopAfterNextRender: () => Promise.resolve(true) };
+    const component = new PreinscripcionComponent(api as any, route as any, scrollService as any);
+    component.configuracion = { deporte: 'PILATES', version: 1, contenido: { normas: ['Norma'] } } as any;
+    component.form.controls.aceptacionNormas.enable();
+    component.form.patchValue({
+      deporte: 'PILATES', turnoIds: [1], nombre: 'Ana', apellidos: 'Perez', dni: '12345678Z',
+      fechaNacimiento: '1990-01-01', direccion: 'Calle Principal 1', telefono: '612345678',
+      email: 'ana@example.com', tieneDiscapacidad: false, aceptacionNormas: true, firmanteNombre: 'Ana Perez',
+    });
+    component.firmada = true;
+    component.canvas = { nativeElement: { toDataURL: () => 'data:image/png;base64,firma' } } as any;
+
+    component.enviar();
+    component.enviar();
+
+    expect(api.crear).toHaveBeenCalledTimes(1);
+    expect(api.crear.calls.mostRecent().args[1]).toMatch(/^[A-Za-z0-9-]+$/);
   });
 });

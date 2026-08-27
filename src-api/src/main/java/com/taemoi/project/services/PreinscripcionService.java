@@ -62,10 +62,13 @@ import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
 import com.taemoi.project.events.PreinscripcionTurnosModificadosEvent;
+import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
 
 @Service
 public class PreinscripcionService {
  private static final Logger log=LoggerFactory.getLogger(PreinscripcionService.class);
+ private static final Set<EstadoPreinscripcion> ESTADOS_NO_REPETIBLES=Set.of(EstadoPreinscripcion.PENDIENTE,EstadoPreinscripcion.EN_LISTA_ESPERA,EstadoPreinscripcion.FINALIZADA);
+ private static final String MENSAJE_DUPLICADA="Ya existe una preinscripción para esta persona y deporte en la temporada actual.";
  private final PreinscripcionRepository repo; private final PlantillaPreinscripcionRepository plantillas; private final GrupoRepository grupos; private final TurnoRepository turnos;
  private final AlumnoRepository alumnos; private final AlumnoDeporteRepository alumnoDeportes; private final GradoRepository grados; private final TemporadaService temporadas; private final PDFService pdf;
  private final EmailService email; private final ConfiguracionSistemaService configuracion; private final ObjectMapper json; private final AforoPreinscripcionService aforo; private final ApplicationEventPublisher eventos;
@@ -73,16 +76,19 @@ public class PreinscripcionService {
  @Value("${app.frontend.base-url:http://localhost:4200}") private String frontendBaseUrl;
  public PreinscripcionService(PreinscripcionRepository r,PlantillaPreinscripcionRepository p,GrupoRepository g,TurnoRepository t,AlumnoRepository a,AlumnoDeporteRepository ad,GradoRepository gr,TemporadaService ts,PDFService ps,EmailService es,ConfiguracionSistemaService cs,ObjectMapper om,AforoPreinscripcionService af,ApplicationEventPublisher ev){repo=r;plantillas=p;grupos=g;turnos=t;alumnos=a;alumnoDeportes=ad;grados=gr;temporadas=ts;pdf=ps;email=es;configuracion=cs;json=om;aforo=af;eventos=ev;}
 
- @Transactional public Map<String,Object> crear(PreinscripcionRequest d){
+ @Transactional public Map<String,Object> crear(PreinscripcionRequest d){return crear(d,null);}
+ @Transactional public Map<String,Object> crear(PreinscripcionRequest d,String idempotencyKey){
+  String idempotencyKeyHash=hashIdempotencia(idempotencyKey);
+  if(idempotencyKeyHash!=null&&repo.existsByIdempotencyKeyHash(idempotencyKeyHash))throw duplicada();
   String dni=blank(d.dni())?null:d.dni().trim().toUpperCase(Locale.ROOT), temporada=temporadas.actual();String identidadHash=hash(identidadCanonica(dni,d.tutorDni(),d.nombre(),d.apellidos(),d.fechaNacimiento()));
-  if(repo.existsByIdentidadHashAndDeporteAndTemporadaAndEstadoNot(identidadHash,d.deporte(),temporada,EstadoPreinscripcion.CANCELADA)) throw new IllegalArgumentException("Ya existe una preinscripción activa para esta persona, deporte y temporada.");
+  if(repo.existsByIdentidadHashAndDeporteAndTemporadaAndEstadoIn(identidadHash,d.deporte(),temporada,ESTADOS_NO_REPETIBLES))throw duplicada();
   List<Turno> horarios=aforo.bloquearTurnos(d.turnoIds());validarSeleccion(d.deporte(),d.fechaNacimiento(),temporada,horarios);
   Grupo grupo=horarios.get(0).getGrupo();
   if(Period.between(d.fechaNacimiento(),LocalDate.now()).getYears()<18&&(blank(d.tutorNombre())||blank(d.tutorDni()))) throw new IllegalArgumentException("Los menores deben indicar responsable legal y su DNI.");
   byte[] firma=decodificarFirma(d.firmaBase64()); PlantillaPreinscripcion plantilla=plantillas.findFirstByDeporteAndActivaTrueOrderByVersionDesc(d.deporte()).orElseThrow(()->new IllegalStateException("No hay plantilla activa."));
   Preinscripcion p=new Preinscripcion(); p.setReferencia(referencia()); p.setTemporada(temporada); p.setDeporte(d.deporte()); p.setEstado(aforo.algunaPlaza(horarios,temporada)?EstadoPreinscripcion.PENDIENTE:EstadoPreinscripcion.EN_LISTA_ESPERA); p.setNombre(clean(d.nombre())); p.setApellidos(clean(d.apellidos())); p.setDni(dni);p.setIdentidadHash(identidadHash); p.setFechaNacimiento(d.fechaNacimiento()); p.setDireccion(clean(d.direccion())); p.setTelefono(clean(d.telefono()));p.setTelefono2(blank(d.telefono2())?null:clean(d.telefono2())); p.setEmail(d.email().trim().toLowerCase(Locale.ROOT));p.setObservaciones(limpiarObservacion(d.observaciones()));p.setTieneDiscapacidad(d.tieneDiscapacidad()); p.setTutorNombre(clean(d.tutorNombre())); p.setTutorDni(blank(d.tutorDni())?null:d.tutorDni().trim().toUpperCase(Locale.ROOT)); p.setConsentimientoFotografico(d.consentimientoFotografico()); p.setAceptacionNormas(true); p.setFirmanteNombre(clean(d.firmanteNombre())); p.setFirma(firma); p.setGrupo(grupo);p.setTurnos(new LinkedHashSet<>(horarios)); p.setGrupoSnapshot(snapshotTurnos(d.deporte(),horarios)); p.setPlantilla(plantilla);
   try{p.setPlantillaSnapshot(json.writeValueAsString(Map.of("version",plantilla.getVersion(),"contenido",plantilla.getContenido(),"instrucciones",plantilla.getInstrucciones())));}catch(Exception e){throw new IllegalStateException(e);}
-  String token=UUID.randomUUID().toString().replace("-",""); p.setTokenDocumentoHash(hash(token)); p.setPdfFirmado(pdf.generarPreinscripcionFirmada(p));try{repo.saveAndFlush(p);}catch(DataIntegrityViolationException e){throw new IllegalArgumentException("Ya existe una preinscripción activa para esta persona, deporte y temporada.",e);} enviarInicial(p); notificarAdmin(p);
+  String token=UUID.randomUUID().toString().replace("-",""); p.setTokenDocumentoHash(hash(token));p.setIdempotencyKeyHash(idempotencyKeyHash);p.setPdfFirmado(pdf.generarPreinscripcionFirmada(p));try{repo.saveAndFlush(p);}catch(DataIntegrityViolationException e){if(esConflictoDuplicado(e))throw duplicada(e);throw e;} enviarInicial(p); notificarAdmin(p);
   long posicion=p.getEstado()==EstadoPreinscripcion.EN_LISTA_ESPERA?aforo.posicion(p):0;Map<String,Object> respuesta=new LinkedHashMap<>();respuesta.put("referencia",p.getReferencia());respuesta.put("temporada",p.getTemporada());respuesta.put("tokenDocumento",token);respuesta.put("emailEnviado",p.getEmailEnviado());respuesta.put("estado",p.getEstado());respuesta.put("plazaAsignada",p.getEstado()==EstadoPreinscripcion.PENDIENTE);respuesta.put("posicionListaEspera",posicion==0?null:posicion);respuesta.put("mensaje",p.getEstado()==EstadoPreinscripcion.PENDIENTE?"Preinscripción recibida con plaza asignada.":"Preinscripción añadida a la lista de espera.");return respuesta;
  }
  public Map<String,Object> configuracion(Deporte deporte){PlantillaPreinscripcion p=plantillas.findFirstByDeporteAndActivaTrueOrderByVersionDesc(deporte).orElseThrow(); return Map.of("deporte",deporte,"version",p.getVersion(),"contenido",parse(p.getContenido()),"instrucciones",p.getInstrucciones());}
@@ -178,6 +184,9 @@ public Page<Preinscripcion> listar(String temporada,Deporte deporte,EstadoPreins
  private Comparator<Turno> comparadorTurnos(){return Comparator.comparingInt((Turno t)->ordenDia(t.getDiaSemana())).thenComparing(Turno::getHoraInicio);}
  private int ordenDia(String dia){return switch(normalizar(dia)){case "lunes"->1;case "martes"->2;case "miercoles"->3;case "jueves"->4;case "viernes"->5;case "sabado"->6;case "domingo"->7;default->99;};}
  private String referencia(){return "PRE-"+LocalDate.now().getYear()+"-"+UUID.randomUUID().toString().substring(0,8).toUpperCase();} private String hash(String s){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
+ private String hashIdempotencia(String value){if(blank(value))return null;String normalizada=value.trim();if(normalizada.length()>128||!normalizada.matches("[A-Za-z0-9._:-]+"))throw new IllegalArgumentException("La clave de idempotencia no tiene un formato válido.");return hash(normalizada);}
+ private PreinscripcionDuplicadaException duplicada(){return new PreinscripcionDuplicadaException(MENSAJE_DUPLICADA);} private PreinscripcionDuplicadaException duplicada(Throwable cause){PreinscripcionDuplicadaException error=duplicada();error.initCause(cause);return error;}
+ private boolean esConflictoDuplicado(DataIntegrityViolationException error){Throwable causa=error;while(causa!=null){String mensaje=causa.getMessage();if(mensaje!=null){String normalizado=mensaje.toLowerCase(Locale.ROOT);if(normalizado.contains("uk_preinscripcion_activa")||normalizado.contains("uk_preinscripcion_idempotencia"))return true;}causa=causa.getCause();}return false;}
  private String clean(String s){return s==null?null:s.replaceAll("[<>]","").trim();} private String limpiarObservacion(String s){return blank(s)?null:s.trim();} private boolean blank(String s){return s==null||s.isBlank();} private Object parse(String s){try{return json.readTree(s);}catch(Exception e){return s;}} private void jsonValido(String s){try{json.readTree(s);}catch(Exception e){throw new IllegalArgumentException("El contenido debe ser JSON válido.");}}
  private String esc(String value){return value==null?"":value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;");}
 }

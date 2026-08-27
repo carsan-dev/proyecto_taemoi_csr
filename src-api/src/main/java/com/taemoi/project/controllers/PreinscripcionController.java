@@ -9,7 +9,7 @@ import com.taemoi.project.dtos.request.*; import com.taemoi.project.entities.*; 
 public class PreinscripcionController {
  private final PreinscripcionService service; private final TemporadaService temporadas; private final ConcurrentMap<String,Deque<Instant>> intentos=new ConcurrentHashMap<>();
  public PreinscripcionController(PreinscripcionService s,TemporadaService t){service=s;temporadas=t;}
- @PostMapping public ResponseEntity<?> crear(@Valid @RequestBody PreinscripcionRequest body,HttpServletRequest request){limitar(request);return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(body));}
+ @PostMapping public ResponseEntity<?> crear(@Valid @RequestBody PreinscripcionRequest body,@RequestHeader(name="Idempotency-Key",required=false) String idempotencyKey,HttpServletRequest request){limitar(request);return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(body,idempotencyKey));}
  @GetMapping("/public/temporada") public Map<String,String> temporada(){return Map.of("temporada",temporadas.actual());}
  @GetMapping("/public/configuracion/{deporte}") public Map<String,Object> configuracion(@PathVariable Deporte deporte){return service.configuracion(deporte);}
  @GetMapping("/public/grupos/{deporte}") public List<Map<String,Object>> grupos(@PathVariable Deporte deporte){return service.grupos(deporte);}

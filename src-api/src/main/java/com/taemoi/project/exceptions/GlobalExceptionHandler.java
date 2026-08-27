@@ -16,6 +16,7 @@ import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.exceptions.pago.PagoNotFoundException;
+import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
@@ -81,6 +82,11 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ProductoNoEncontradoException.class)
 	public ResponseEntity<String> handleProductoNoEncontradoException(ProductoNoEncontradoException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	}
+
+	@ExceptionHandler(PreinscripcionDuplicadaException.class)
+	public ResponseEntity<Map<String,String>> handlePreinscripcionDuplicada(PreinscripcionDuplicadaException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
