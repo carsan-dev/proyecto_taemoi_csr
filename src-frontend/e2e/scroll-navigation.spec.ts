@@ -278,10 +278,18 @@ test('abrir y cerrar overlays bloquea y restaura el viewport real', async ({ pag
 test('el menú móvil usa un bloqueo contabilizado y devuelve el scroll', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes('mobile'), 'Solo aplica al menú móvil');
   await page.goto('/');
+  const header = page.locator('header.fixed-header');
+  await expect(header).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 500));
+  await expect(header).toHaveClass(/is-hidden/);
   await page.evaluate(() => window.scrollTo(0, 450));
+  await expect(header).not.toHaveClass(/is-hidden/);
   const openMenu = page.getByRole('button', { name: 'Abrir menú de navegación' });
   await expect(openMenu).toBeVisible();
+  await expect.poll(() => openMenu.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return rect.top >= -1 && rect.bottom <= window.innerHeight + 1;
+  })).toBe(true);
   const previousY = await page.evaluate(() => window.scrollY);
   expect(previousY).toBeGreaterThan(100);
   await openMenu.click();
