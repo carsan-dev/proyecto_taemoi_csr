@@ -155,11 +155,29 @@ class PreinscripcionMySqlConcurrencyTest {
 	}
 
 	@Test
-	void flywayAplicaV8YV16ConIndicesUnicosEsperados() {
+	void flywayAplicaMigracionesYActivaLasNormasCompletasDeKickboxing() {
 		assertEquals(1, migracionAplicada("8"));
 		assertEquals(1, migracionAplicada("16"));
+		assertEquals(1, migracionAplicada("17"));
 		assertTrue(indiceUnicoPresente("uk_preinscripcion_activa"));
 		assertTrue(indiceUnicoPresente("uk_preinscripcion_idempotencia"));
+		assertEquals(1, jdbc.queryForObject(
+				"SELECT COUNT(*) FROM plantilla_preinscripcion WHERE deporte='KICKBOXING' AND activa=1",
+				Integer.class));
+		assertEquals(11, jdbc.queryForObject("""
+				SELECT JSON_LENGTH(JSON_EXTRACT(contenido, '$.normas'))
+				FROM plantilla_preinscripcion
+				WHERE deporte='KICKBOXING' AND activa=1
+				""", Integer.class));
+		String contenidoKickboxing = jdbc.queryForObject("""
+				SELECT contenido FROM plantilla_preinscripcion
+				WHERE deporte='KICKBOXING' AND activa=1
+				""", String.class);
+		assertTrue(contenidoKickboxing.contains("54,95 €"));
+		assertTrue(contenidoKickboxing.contains("71,95 €"));
+		assertTrue(contenidoKickboxing.contains("mantenimiento de 10 €"));
+		assertTrue(contenidoKickboxing.contains("recargo de 5 €"));
+		assertTrue(contenidoKickboxing.contains("matrícula de 20 €"));
 	}
 
 	private long crearTurnoSiFalta(String nombreGrupo, Deporte deporte) {

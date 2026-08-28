@@ -13,6 +13,10 @@ describe('PreinscripcionesAdminComponent', () => {
       reenviarCambioTurnos: jasmine.createSpy('reenviarCambioTurnos').and.returnValue(of(void 0)),
       turnos: jasmine.createSpy('turnos').and.returnValue(of([])),
       listar: jasmine.createSpy('listar').and.returnValue(of({content: [], page: 0, totalElements: 0, totalPages: 0})),
+      plantillas: jasmine.createSpy('plantillas').and.returnValue(of({
+        activa: {version: 1, contenido: {cabecera: '', contacto: '', titulo: '', consentimiento: '', normas: ['Norma'], importes: ''}, instrucciones: ''},
+        historial: [],
+      })),
     };
     const auth = {tieneRolAdmin: () => true};
     const route = {snapshot: {queryParamMap: {get: () => null}}};
@@ -192,6 +196,24 @@ describe('PreinscripcionesAdminComponent', () => {
 		 expect(alerta).toHaveBeenCalled();
 		 expect(api.actualizarTurnos).not.toHaveBeenCalled();
 	 });
+
+  it('carga la plantilla independiente de Kickboxing al cambiar el selector', async () => {
+    api.plantillas.and.returnValue(of({
+      activa: {
+        version: 2,
+        contenido: {cabecera: 'Escuela', contacto: 'Umbrete', titulo: 'Kickboxing', consentimiento: 'Consentimiento', normas: ['Norma Kickboxing'], importes: 'Pago'},
+        instrucciones: 'Instrucciones',
+      },
+      historial: [{id: 2, version: 2, activa: true}],
+    }));
+
+    await component.cambiarDeporte('KICKBOXING');
+
+    expect(api.plantillas).toHaveBeenCalledOnceWith('KICKBOXING');
+    expect(component.deportePlantilla).toBe('KICKBOXING');
+    expect(component.plantilla.version).toBe(2);
+    expect(component.plantilla.normas).toEqual(['Norma Kickboxing']);
+  });
 
   function solicitudBase() {
     return {
