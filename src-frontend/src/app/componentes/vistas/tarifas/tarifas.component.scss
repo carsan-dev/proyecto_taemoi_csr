@@ -208,9 +208,6 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     }
   }
 
-  &.family-card {
-    grid-column: 2;
-  }
 
   .card-header {
     padding: 2rem;
@@ -645,13 +642,6 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
     }
   }
 
-  .pricing-card {
-    &.family-card {
-      grid-column: 1 / -1;
-      justify-self: center;
-      width: min(100%, 380px);
-    }
-  }
 }
 
 @media (max-width: 768px) {
@@ -712,9 +702,6 @@ $cta-spacing: clamp(2.5rem, 6vw, 5rem);
   .pricing-card {
     border-radius: 14px;
 
-    &.family-card {
-      grid-column: auto;
-    }
 
     &:hover {
       transform: none;
