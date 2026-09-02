@@ -489,6 +489,26 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
+	void reactivaAlumnoSinRecrearVinculoConGrupoYaSeleccionado() {
+		Alumno existente = alumnoExistente(false);
+		Grupo grupoPersistido = spy(grupo);
+		grupoPersistido.addAlumno(existente);
+		existente.addTurno(lunes);
+		AlumnoDeporte deporte = deporte(existente, false);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO)).thenReturn(Optional.of(deporte));
+		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(3L)).thenReturn(0L);
+		clearInvocations(grupoPersistido);
+
+		service.finalizar("PRE-1", request(3L, Set.of(), null));
+
+		assertEquals(List.of(grupoPersistido), existente.getGrupos());
+		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
+		verify(grupoPersistido, never()).removeAlumno(existente);
+	}
+
+	@Test
 	void rechazaAlumnoCuyoDniNoCoincide() {
 		Alumno equivocado = alumnoExistente(true);
 		equivocado.setNif("87654321X");
