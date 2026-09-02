@@ -163,7 +163,7 @@ class PreinscripcionServiceTest {
 		assertEquals("87654321X", creado.getResponsableLegalNif());
 		assertTrue(creado.getActivo());
 		assertFalse(creado.getAutorizacionWeb());
-		assertEquals(List.of(grupo), creado.getGrupos());
+		assertEquals(Set.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
 		assertEquals(EstadoEmailFinalizacion.PENDIENTE, preinscripcion.getEstadoEmailFinalizacion());
@@ -194,7 +194,7 @@ class PreinscripcionServiceTest {
 
 		Alumno creado = preinscripcion.getAlumno();
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
-		assertEquals(List.of(grupo), creado.getGrupos());
+		assertEquals(Set.of(grupo), creado.getGrupos());
 	}
 
 	@Test
@@ -221,7 +221,7 @@ class PreinscripcionServiceTest {
 
 		Alumno creado = preinscripcion.getAlumno();
 		assertEquals(List.of(lunes, jueves), creado.getTurnos());
-		assertEquals(List.of(grupo, segundoGrupo), creado.getGrupos());
+		assertEquals(Set.of(grupo, segundoGrupo), creado.getGrupos());
 	}
 
 	@Test
@@ -503,7 +503,7 @@ class PreinscripcionServiceTest {
 
 		service.finalizar("PRE-1", request(3L, Set.of(), null));
 
-		assertEquals(List.of(grupoPersistido), existente.getGrupos());
+		assertEquals(Set.of(grupoPersistido), existente.getGrupos());
 		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
 		verify(grupoPersistido, never()).removeAlumno(existente);
 	}

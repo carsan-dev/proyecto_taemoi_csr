@@ -1,7 +1,10 @@
 package com.taemoi.project.entities;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -49,7 +52,7 @@ public class Grupo {
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
 	@JsonBackReference
-	private List<Alumno> alumnos = new ArrayList<>();
+	private Set<Alumno> alumnos = new LinkedHashSet<>();
 
 	@OneToMany(mappedBy = "grupo", fetch = FetchType.LAZY)
 	@JsonBackReference
@@ -103,12 +106,12 @@ public class Grupo {
 		this.rangoEdadMax = rangoEdadMax;
 	}
 
-	public List<Alumno> getAlumnos() {
+	public Set<Alumno> getAlumnos() {
 		return alumnos;
 	}
 
-	public void setAlumnos(List<Alumno> alumnos) {
-		this.alumnos = alumnos;
+	public void setAlumnos(Collection<Alumno> alumnos) {
+		this.alumnos = alumnos == null ? new LinkedHashSet<>() : new LinkedHashSet<>(alumnos);
 	}
 
 	public List<Turno> getTurnos() {

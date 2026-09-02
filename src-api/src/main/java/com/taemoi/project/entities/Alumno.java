@@ -1,9 +1,12 @@
 package com.taemoi.project.entities;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -196,7 +199,7 @@ public class Alumno {
 	private Boolean tieneDerechoExamen = false;
 
 	@ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
-	private List<Grupo> grupos = new ArrayList<>();;
+	private Set<Grupo> grupos = new LinkedHashSet<>();
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "alumno_turno", joinColumns = @JoinColumn(name = "alumno_id"), inverseJoinColumns = @JoinColumn(name = "turno_id"))
@@ -517,12 +520,12 @@ public class Alumno {
 		this.deporte = deporte;
 	}
 
-	public List<Grupo> getGrupos() {
+	public Set<Grupo> getGrupos() {
 		return grupos;
 	}
 
-	public void setGrupos(List<Grupo> grupos) {
-		this.grupos = grupos;
+	public void setGrupos(Collection<Grupo> grupos) {
+		this.grupos = grupos == null ? new LinkedHashSet<>() : new LinkedHashSet<>(grupos);
 	}
 
 	public List<Turno> getTurnos() {
