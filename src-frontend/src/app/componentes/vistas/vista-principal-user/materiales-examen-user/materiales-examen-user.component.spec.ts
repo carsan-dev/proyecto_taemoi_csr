@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 
 import { MaterialesExamenUserComponent } from './materiales-examen-user.component';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
+import Swal from 'sweetalert2';
 
 describe('MaterialesExamenUserComponent', () => {
   let component: MaterialesExamenUserComponent;
@@ -247,6 +248,29 @@ describe('MaterialesExamenUserComponent', () => {
     component.toggleDocumentoVisor();
 
     expect(component.mostrarDocumentoVisor).toBeTrue();
+  });
+
+  it('mantiene complementarios protegidos al compartir el visor', () => {
+    const documento = { id: 'reglamento', fileName: 'reglamento.pdf', title: 'Reglamento',
+      order: 2, mimeType: 'application/pdf', previewable: true,
+      openUrl: '/reglamento.pdf', downloadUrl: '/reglamento.pdf?download=true' };
+    endpointsServiceSpy.obtenerMaterialExamenAlumno.and.returnValue(of({
+      deporte: 'TAEKWONDO', gradoActual: 'AMARILLO', bloqueId: 'bloque', videos: [], documentos: [documento]
+    } as any));
+    spyOn(Swal, 'fire'); spyOn(window, 'open');
+    triggerInputs();
+    endpointsServiceSpy.descargarArchivoPrivado.calls.reset();
+    component.descargarDocumentoSeleccionado();
+    component.onDescargarDocumentoDesdeLista(documento);
+    expect(endpointsServiceSpy.descargarArchivoPrivado).not.toHaveBeenCalled();
+    expect(component.getDocumentoDownloadUrl()).toBeNull();
+    component.abrirDocumentoSeleccionado();
+    expect(component.mostrarDocumentoVisor).toBeTrue();
+    expect(window.open).not.toHaveBeenCalled();
+    fixture.detectChanges();
+    const host = fixture.nativeElement.querySelector('app-pdf-viewer');
+    expect(host).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.docs-link-secondary')).toBeNull();
   });
 
   it('debe mostrar y reproducir videos anteriores al desplegar Taeguks/Pumses anteriores', () => {

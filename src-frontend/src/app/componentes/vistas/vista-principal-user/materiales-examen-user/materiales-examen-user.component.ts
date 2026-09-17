@@ -1,17 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
-import {
-  getDocument,
-  GlobalWorkerOptions,
-  PDFDocumentLoadingTask,
-  PDFDocumentProxy,
-  RenderTask,
-} from 'pdfjs-dist';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
-import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
+import { PdfViewerComponent } from '../../../generales/pdf-viewer/pdf-viewer.component';
 import { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 import {
   MaterialExamenDTO,
@@ -20,19 +13,10 @@ import {
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
 
-const baseHref = globalThis.document?.querySelector('base')?.getAttribute('href') ?? '/';
-const baseUrl = globalThis.location
-  ? new URL(baseHref, globalThis.location.origin)
-  : new URL('http://localhost/');
-GlobalWorkerOptions.workerSrc = new URL(
-  'assets/pdfjs/pdf.worker.min.mjs?v=20260222-1',
-  baseUrl
-).toString();
-
 @Component({
   selector: 'app-materiales-examen-user',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PdfViewerComponent],
   templateUrl: './materiales-examen-user.component.html',
   styleUrl: './materiales-examen-user.component.scss',
 })
@@ -51,14 +35,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.reiniciarObservadorAlineacionDocs();
     this.programarRecalculoAlineacionDocs();
   }
-  @ViewChild('pdfCanvasRef')
-  set pdfCanvasRefSetter(ref: ElementRef<HTMLCanvasElement> | undefined) {
-    this.pdfCanvasRef = ref;
-    if (ref && this.mostrarDocumentoVisor && this.esVisorCanvasComplementarioActivo()) {
-      this.programarRenderPaginaPdf();
-    }
-  }
-
   deportesConMaterial: AlumnoDeporteDTO[] = [];
   deporteSeleccionado: string | null = null;
   material: MaterialExamenDTO | null = null;
@@ -68,8 +44,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   documentoSeleccionado: MaterialExamenDocumentoDTO | null = null;
   mostrarDocumentoVisor: boolean = false;
-  visorExpandido: boolean = false;
-  visorExpandidoTopOffsetPx: number = 0;
+  documentoBlob: Blob | null = null;
 
   cargando: boolean = false;
   cargandoVideoSeleccionado: boolean = false;
@@ -77,26 +52,16 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   errorCarga: string | null = null;
   descripcionBloqueActual: string | null = null;
   docsActionsOffsetPx: number = 0;
-  totalPaginasPdf: number = 0;
-  paginaActualPdf: number = 1;
-  zoomPdf: number = 1;
-  cargandoPaginaPdf: boolean = false;
   errorVisorPdf: string | null = null;
 
   private materialSubscription: Subscription | null = null;
   private documentoPreviewSubscription: Subscription | null = null;
   private lastFetchKey: string | null = null;
-  private viewerScrollRelease?: ScrollLockRelease;
   private docsGridRef: ElementRef<HTMLElement> | undefined;
   private docsActionsRef: ElementRef<HTMLElement> | undefined;
   private docsResizeObserver: ResizeObserver | null = null;
   private rafAlineacionDocsId: number | null = null;
   private rafScrollDocsId: number | null = null;
-  private rafPdfRenderId: number | null = null;
-  private pdfCanvasRef: ElementRef<HTMLCanvasElement> | undefined;
-  private pdfLoadingTask: PDFDocumentLoadingTask | null = null;
-  private pdfDocument: PDFDocumentProxy | null = null;
-  private pdfRenderTask: RenderTask | null = null;
   private readonly mobileViewportMediaQuery =
     '(max-width: 768px), (max-height: 540px) and (pointer: coarse)';
   private readonly etiquetasSiguienteGrado: Record<string, string> = {
@@ -121,8 +86,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   };
 
   constructor(
-    private readonly endpointsService: EndpointsService,
-    private readonly scrollLock: ScrollLockService
+    private readonly endpointsService: EndpointsService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -149,7 +113,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.materialSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
-    this.cerrarVisorExpandido();
     this.limpiarEstadoPdfViewer();
     this.docsResizeObserver?.disconnect();
     if (this.rafAlineacionDocsId !== null) {
@@ -160,10 +123,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       globalThis.cancelAnimationFrame?.(this.rafScrollDocsId);
       this.rafScrollDocsId = null;
     }
-    if (this.rafPdfRenderId !== null) {
-      globalThis.cancelAnimationFrame?.(this.rafPdfRenderId);
-      this.rafPdfRenderId = null;
-    }
+
   }
 
   onSeleccionarDeporte(deporte: string): void {
@@ -189,69 +149,12 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     event.stopPropagation();
   }
 
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    if (this.visorExpandido) {
-      this.actualizarOffsetSuperiorVisorExpandido();
-    }
-    if (!this.mostrarDocumentoVisor || !this.esVisorCanvasComplementarioActivo()) {
-      return;
-    }
-    this.programarRenderPaginaPdf();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscapeKey(): void {
-    if (this.visorExpandido) {
-      this.cerrarVisorExpandido();
-    }
-  }
-
-  irAPaginaAnteriorPdf(): void {
-    if (!this.pdfDocument || this.paginaActualPdf <= 1) {
-      return;
-    }
-    this.paginaActualPdf -= 1;
-    this.programarRenderPaginaPdf();
-  }
-
-  irAPaginaSiguientePdf(): void {
-    if (!this.pdfDocument || this.paginaActualPdf >= this.totalPaginasPdf) {
-      return;
-    }
-    this.paginaActualPdf += 1;
-    this.programarRenderPaginaPdf();
-  }
-
-  aumentarZoomPdf(): void {
-    if (!this.pdfDocument) {
-      return;
-    }
-    this.zoomPdf = Math.min(2.2, this.zoomPdf + 0.15);
-    this.programarRenderPaginaPdf();
-  }
-
-  reducirZoomPdf(): void {
-    if (!this.pdfDocument) {
-      return;
-    }
-    this.zoomPdf = Math.max(0.75, this.zoomPdf - 0.15);
-    this.programarRenderPaginaPdf();
-  }
-
-  getZoomPdfPorcentaje(): number {
-    return Math.round(this.zoomPdf * 100);
-  }
-
   esVisorCanvasComplementarioActivo(): boolean {
     const documento = this.documentoSeleccionado;
     return !!documento && !!documento.previewable && this.esDocumentoPdf(documento);
   }
 
   onSeleccionarDocumento(documento: MaterialExamenDocumentoDTO): void {
-    if (this.documentoSeleccionado?.id !== documento.id) {
-      this.cerrarVisorExpandido();
-    }
     const visorEstabaAbierto = this.mostrarDocumentoVisor;
     this.documentoSeleccionado = documento;
     this.mostrarDocumentoVisor =
@@ -270,28 +173,11 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     }
     this.mostrarDocumentoVisor = !this.mostrarDocumentoVisor;
     if (!this.mostrarDocumentoVisor) {
-      this.cerrarVisorExpandido();
-      this.programarScrollListaAlDocumentoSeleccionado();
+        this.programarScrollListaAlDocumentoSeleccionado();
       return;
     }
-    if (this.esVisorCanvasComplementarioActivo()) {
-      this.programarRenderPaginaPdf();
-    }
-    this.programarRecalculoAlineacionDocs();
-  }
 
-  toggleVisorExpandido(): void {
-    if (!this.mostrarDocumentoVisor || !this.esVisorCanvasComplementarioActivo()) {
-      return;
-    }
-    this.visorExpandido = !this.visorExpandido;
-    this.actualizarBloqueoScrollDocumento(this.visorExpandido);
-    if (this.visorExpandido) {
-      this.actualizarOffsetSuperiorVisorExpandido();
-    } else {
-      this.visorExpandidoTopOffsetPx = 0;
-    }
-    this.programarRenderPaginaPdf();
+    this.programarRecalculoAlineacionDocs();
   }
 
   getDeporteLabel(deporte: string): string {
@@ -337,7 +223,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (!this.puedeAbrirDocumentoExterno(documento)) {
       if (this.esDocumentoSeleccionadoPrevisualizable()) {
         this.mostrarDocumentoVisor = true;
-        this.programarRenderPaginaPdf();
+
         this.programarRecalculoAlineacionDocs();
         return;
       }
@@ -369,9 +255,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (this.documentoSeleccionado?.id !== documento.id) {
       this.onSeleccionarDocumento(documento);
       this.mostrarDocumentoVisor = true;
-      if (this.esVisorCanvasComplementarioActivo()) {
-        this.programarRenderPaginaPdf();
-      }
+
       this.programarRecalculoAlineacionDocs();
       return;
     }
@@ -433,7 +317,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     if (!this.puedeAbrirDocumentoExterno(documento)) {
       if (this.esDocumentoSeleccionadoPrevisualizable()) {
         this.mostrarDocumentoVisor = true;
-        this.programarRenderPaginaPdf();
+
         this.programarRecalculoAlineacionDocs();
       } else {
         this.mostrarAvisoDocumentoComplementarioProtegido();
@@ -548,7 +432,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.errorCarga = null;
     this.material = null;
     this.documentoPreviewSubscription?.unsubscribe();
-    this.cerrarVisorExpandido();
     this.limpiarEstadoPdfViewer();
     this.videoSeleccionado = null;
     this.videoSeleccionadoUrl = null;
@@ -843,7 +726,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private resetearVista(): void {
     this.materialSubscription?.unsubscribe();
     this.documentoPreviewSubscription?.unsubscribe();
-    this.cerrarVisorExpandido();
     this.limpiarEstadoPdfViewer();
     this.deporteSeleccionado = null;
     this.material = null;
@@ -859,58 +741,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.descripcionBloqueActual = null;
     this.docsActionsOffsetPx = 0;
     this.lastFetchKey = null;
-  }
-
-  private cerrarVisorExpandido(): void {
-    if (!this.visorExpandido) {
-      return;
-    }
-    this.visorExpandido = false;
-    this.visorExpandidoTopOffsetPx = 0;
-    this.actualizarBloqueoScrollDocumento(false);
-  }
-
-  private actualizarBloqueoScrollDocumento(activar: boolean): void {
-    if (activar) {
-      this.viewerScrollRelease ??= this.scrollLock.lock();
-      return;
-    }
-    this.viewerScrollRelease?.();
-    this.viewerScrollRelease = undefined;
-  }
-
-  private actualizarOffsetSuperiorVisorExpandido(): void {
-    const documentRef = globalThis.document;
-    if (!documentRef) {
-      this.visorExpandidoTopOffsetPx = 0;
-      return;
-    }
-
-    const candidatos = Array.from(
-      documentRef.querySelectorAll<HTMLElement>('header.fixed-header, .admin-top-navbar')
-    );
-    let bottomMaximo = 0;
-
-    for (const candidato of candidatos) {
-      const estilos = globalThis.getComputedStyle?.(candidato);
-      if (!estilos) {
-        continue;
-      }
-      if (estilos.display === 'none' || estilos.visibility === 'hidden') {
-        continue;
-      }
-      if (candidato.classList.contains('is-hidden')) {
-        continue;
-      }
-
-      const rect = candidato.getBoundingClientRect();
-      if (rect.height <= 0 || rect.bottom <= 0) {
-        continue;
-      }
-      bottomMaximo = Math.max(bottomMaximo, rect.bottom);
-    }
-
-    this.visorExpandidoTopOffsetPx = Math.ceil(bottomMaximo) + 8;
   }
 
   private esDocumentoPdf(documento: MaterialExamenDocumentoDTO | null | undefined): boolean {
@@ -1076,7 +906,6 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private cargarPreviewDocumentoSeleccionado(documento: MaterialExamenDocumentoDTO): void {
     this.documentoPreviewSubscription?.unsubscribe();
-    this.cerrarVisorExpandido();
     this.limpiarEstadoPdfViewer();
 
     if (!this.puedeMostrarDocumentoEnVisorIntegrado(documento)) {
@@ -1092,22 +921,10 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     this.documentoPreviewSubscription = this.endpointsService
       .descargarArchivoPrivado(documento.openUrl)
       .subscribe({
-        next: async (blob) => {
-          if (this.documentoSeleccionado?.id !== documentoId) {
-            this.cargandoDocumentoSeleccionado = false;
-            return;
-          }
-
-          try {
-            const data = await blob.arrayBuffer();
-            await this.inicializarVisorPdfCanvas(data, documentoId);
-          } catch {
-            if (this.documentoSeleccionado?.id !== documentoId) {
-              return;
-            }
-            this.errorVisorPdf = 'No se pudo preparar el visor de este documento.';
-            this.cargandoDocumentoSeleccionado = false;
-          }
+        next: (blob) => {
+          if (this.documentoSeleccionado?.id !== documentoId) { return; }
+          this.documentoBlob = blob;
+          this.cargandoDocumentoSeleccionado = false;
         },
         error: () => {
           this.cargandoDocumentoSeleccionado = false;
@@ -1119,159 +936,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       });
   }
 
-  private async inicializarVisorPdfCanvas(data: ArrayBuffer, documentoId: string): Promise<void> {
-    this.errorVisorPdf = null;
-    this.cargandoPaginaPdf = true;
-    const loadingTask = getDocument({
-      data,
-      enableXfa: false,
-      isEvalSupported: false,
-      useSystemFonts: true,
-    });
-    this.pdfLoadingTask = loadingTask;
-
-    try {
-      const pdf = await loadingTask.promise;
-      if (this.documentoSeleccionado?.id !== documentoId || this.pdfLoadingTask !== loadingTask) {
-        await pdf.destroy();
-        return;
-      }
-
-      this.pdfDocument = pdf;
-      this.totalPaginasPdf = pdf.numPages;
-      this.paginaActualPdf = 1;
-      this.zoomPdf = 1;
-      this.cargandoDocumentoSeleccionado = false;
-      this.programarRenderPaginaPdf();
-    } catch {
-      if (this.pdfLoadingTask !== loadingTask || this.documentoSeleccionado?.id !== documentoId) {
-        return;
-      }
-      this.errorVisorPdf = 'No se pudo cargar el visor de este PDF.';
-      this.cargandoDocumentoSeleccionado = false;
-      this.cargandoPaginaPdf = false;
-    }
-  }
-
-  private programarRenderPaginaPdf(): void {
-    if (!this.mostrarDocumentoVisor || !this.esVisorCanvasComplementarioActivo()) {
-      return;
-    }
-    if (!this.pdfCanvasRef?.nativeElement || !this.pdfDocument) {
-      return;
-    }
-
-    if (typeof globalThis.requestAnimationFrame !== 'function') {
-      this.renderPaginaPdfActual();
-      return;
-    }
-
-    if (this.rafPdfRenderId !== null) {
-      globalThis.cancelAnimationFrame?.(this.rafPdfRenderId);
-    }
-
-    this.rafPdfRenderId = globalThis.requestAnimationFrame(() => {
-      this.rafPdfRenderId = null;
-      this.renderPaginaPdfActual();
-    });
-  }
-
-  private async renderPaginaPdfActual(): Promise<void> {
-    const pdf = this.pdfDocument;
-    const canvas = this.pdfCanvasRef?.nativeElement;
-    if (!pdf || !canvas) {
-      return;
-    }
-
-    if (this.pdfRenderTask) {
-      try {
-        this.pdfRenderTask.cancel();
-      } catch {
-        // no-op
-      }
-      this.pdfRenderTask = null;
-    }
-
-    this.cargandoPaginaPdf = true;
-    this.errorVisorPdf = null;
-
-    try {
-      const page = await pdf.getPage(this.paginaActualPdf);
-      const viewportBase = page.getViewport({ scale: 1 });
-      const parentWidth = Math.max(1, (canvas.parentElement?.clientWidth ?? viewportBase.width) - 8);
-      const fitScale = parentWidth / viewportBase.width;
-      const finalScale = Math.max(0.1, Math.min(3.2, fitScale * this.zoomPdf));
-      const viewport = page.getViewport({ scale: finalScale });
-      const pixelRatio = Math.max(1, globalThis.window?.devicePixelRatio ?? 1);
-      const context = canvas.getContext('2d', { alpha: false });
-      if (!context) {
-        throw new Error('No se pudo inicializar el canvas del visor');
-      }
-
-      canvas.width = Math.floor(viewport.width * pixelRatio);
-      canvas.height = Math.floor(viewport.height * pixelRatio);
-      canvas.style.width = `${Math.floor(viewport.width)}px`;
-      canvas.style.height = `${Math.floor(viewport.height)}px`;
-      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      context.clearRect(0, 0, viewport.width, viewport.height);
-
-      const renderTask = page.render({
-        canvasContext: context,
-        viewport,
-      });
-      this.pdfRenderTask = renderTask;
-      await renderTask.promise;
-      if (this.pdfRenderTask === renderTask) {
-        this.pdfRenderTask = null;
-      }
-      this.cargandoPaginaPdf = false;
-    } catch (error) {
-      const esCancelado =
-        typeof error === 'object' &&
-        error !== null &&
-        'name' in error &&
-        (error as { name?: string }).name === 'RenderingCancelledException';
-      if (esCancelado) {
-        return;
-      }
-      this.errorVisorPdf = 'No se pudo renderizar la pagina del documento.';
-      this.cargandoPaginaPdf = false;
-    }
-  }
-
   private limpiarEstadoPdfViewer(): void {
-    if (this.rafPdfRenderId !== null) {
-      globalThis.cancelAnimationFrame?.(this.rafPdfRenderId);
-      this.rafPdfRenderId = null;
-    }
-    if (this.pdfRenderTask) {
-      try {
-        this.pdfRenderTask.cancel();
-      } catch {
-        // no-op
-      }
-      this.pdfRenderTask = null;
-    }
-    if (this.pdfLoadingTask) {
-      try {
-        this.pdfLoadingTask.destroy();
-      } catch {
-        // no-op
-      }
-      this.pdfLoadingTask = null;
-    }
-    if (this.pdfDocument) {
-      try {
-        this.pdfDocument.destroy();
-      } catch {
-        // no-op
-      }
-      this.pdfDocument = null;
-    }
-    this.totalPaginasPdf = 0;
-    this.paginaActualPdf = 1;
-    this.zoomPdf = 1;
-    this.cargandoPaginaPdf = false;
+    this.documentoBlob = null;
     this.errorVisorPdf = null;
   }
 }
