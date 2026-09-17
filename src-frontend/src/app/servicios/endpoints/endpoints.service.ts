@@ -1,5 +1,7 @@
 ﻿import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { HttpContext } from '@angular/common/http';
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
 import { Turno } from '../../interfaces/turno';
@@ -2038,6 +2040,7 @@ export class EndpointsService {
 
     return this.http
       .get(`${this.urlBase}/informes/asistencia`, {
+        context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
         params,
         responseType: 'blob',
       })

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import type { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import Swal from 'sweetalert2';
+import { ERROR_HANDLED_LOCALLY } from '../http-context';
 
 // Flag para evitar mostrar múltiples diálogos de sesión expirada
 let sesionExpiradaMostrada = false;
@@ -24,6 +25,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      if (req.context.get(ERROR_HANDLED_LOCALLY) && error.status !== 401) {
+        return throwError(() => error);
+      }
       let errorMessage = 'Ha ocurrido un error inesperado';
       let errorTitle = 'Error';
 
