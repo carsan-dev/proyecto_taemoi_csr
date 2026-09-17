@@ -150,12 +150,13 @@ export class PageScrollService {
 
     for (const element of Array.from(this.document.querySelectorAll<HTMLElement>(selectors.join(',')))) {
       const style = win.getComputedStyle(element);
-      if (style.display === 'none' || style.visibility === 'hidden' || element.classList.contains('is-hidden')) {
+      if (style.display === 'none' || style.visibility === 'hidden') {
         continue;
       }
       const rect = element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0 && rect.bottom > 0) {
-        bottom = Math.max(bottom, rect.bottom);
+      if (rect.width > 0 && rect.height > 0) {
+        // Reserve the full header height even while its hide/show transform is running.
+        bottom = Math.max(bottom, rect.height, rect.bottom);
       }
     }
 
