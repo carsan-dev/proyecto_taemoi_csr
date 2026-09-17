@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { map as mapInforme } from 'rxjs/operators';
 import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
+import { SelectorMesAnoComponent } from '../../generales/selector-mes-ano/selector-mes-ano.component';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
@@ -36,6 +37,7 @@ type ResumenAlumno = {
   selector: 'app-listado-alumnos',
   standalone: true,
   imports: [InformePdfModalComponent,
+    SelectorMesAnoComponent,
     CommonModule,
     PaginacionComponent,
     FormsModule,

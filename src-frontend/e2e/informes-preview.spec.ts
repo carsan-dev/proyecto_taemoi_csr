@@ -110,7 +110,8 @@ test('asistencia múltiple: fallos parciales, selector, descarga visible y scrol
   });
   const section = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Listado de Asistencia' }) });
   await section.locator('summary').click();
-  await section.locator('#mesAnoAsis').fill('2026-09');
+  await section.locator('#mesAnoAsis-ano').selectOption('2026');
+  await section.locator('#mesAnoAsis').selectOption('09');
   for (const dia of ['viernes', 'lunes', 'martes']) { await section.locator('.dia-chip').filter({ hasText: new RegExp(dia, 'i') }).click(); }
   const trigger = section.getByRole('button', { name: /Ver PDF/ });
   await trigger.scrollIntoViewIfNeeded();
