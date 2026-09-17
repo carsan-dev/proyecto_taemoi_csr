@@ -8,19 +8,22 @@
       </h2>
       <div class="action-buttons">
         <button class="admin-btn admin-btn-info"
+                (click)="generarReporte(convocatoriaSeleccionada, 'ver')"
+                [disabled]="informes.ocupado || !convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">Ver PDF</button>
+<button class="admin-btn admin-btn-info"
                 (click)="generarReporte(convocatoriaSeleccionada)"
-                [disabled]="generandoReporte || !convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
-          @if (generandoReporte) {
+                [disabled]="informes.ocupado || !convocatoriaSeleccionada || !alumnosInscritos || alumnosInscritos.length === 0">
+          @if (informes.ocupado) {
             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
             <span>Generando...</span>
           } @else if (convocatoriaSeleccionada) {
             <i class="bi bi-file-earmark-text"></i>
             <span>
-              Generar Informe - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
+              Descargar PDF - {{ convocatoriaSeleccionada.fechaConvocatoria | date: 'dd/MM/yyyy' }}
             </span>
           } @else {
             <i class="bi bi-file-earmark-text"></i>
-            <span>Generar Informe</span>
+            <span>Descargar PDF</span>
           }
         </button>
 
@@ -311,3 +314,7 @@
     }
   </div>
 </div>
+
+@if (informes.documentos.length) {
+  <app-informe-pdf-modal [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno" (cerrar)="informes.cerrar()" />
+}

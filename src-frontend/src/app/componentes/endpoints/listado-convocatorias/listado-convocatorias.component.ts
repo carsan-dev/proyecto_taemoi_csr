@@ -1,3 +1,7 @@
+import { inject } from '@angular/core';
+import { map as mapInforme } from 'rxjs/operators';
+import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
+import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
 import { ChangeDetectorRef, Component, LOCALE_ID, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CommonModule, registerLocaleData } from '@angular/common';
@@ -60,10 +64,10 @@ export class CapitalizeMonthPipe implements PipeTransform {
 @Component({
   selector: 'app-listado-convocatorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe, SkeletonCardComponent, SearchableSelectDirective],
+  imports: [InformePdfModalComponent, CommonModule, FormsModule, PaginacionComponent, FilterPipe, CapitalizeMonthPipe, SkeletonCardComponent, SearchableSelectDirective],
   templateUrl: './listado-convocatorias.component.html',
   styleUrl: './listado-convocatorias.component.scss',
-  providers: [{ provide: LOCALE_ID, useValue: 'es' }],
+  providers: [InformePdfService, { provide: LOCALE_ID, useValue: 'es' }],
   animations: [
     trigger('slideDown', [
       transition(':enter', [
@@ -77,6 +81,7 @@ export class CapitalizeMonthPipe implements PipeTransform {
   ]
 })
 export class ListadoConvocatoriasComponent implements OnInit {
+  readonly informes = inject(InformePdfService);
   convocatorias: any[] = [];
   convocatoriaSeleccionada: any;
   alumnosInscritos: any[] = [];
@@ -623,54 +628,14 @@ export class ListadoConvocatoriasComponent implements OnInit {
     });
   }
 
-  generarReporte(convocatoria: any): void {
-    if (!convocatoria?.id || this.generandoReporte) {
-      return;
-    }
-
-    this.generandoReporte = true;
-    this.loadingService.show();
-
-    this.endpointsService
-      .descargarInformePDFConvocatoria(convocatoria.id)
-      .pipe(
-        finalize(() => {
-          this.generandoReporte = false;
-          this.loadingService.hide();
-        })
-      )
-      .subscribe({
-        next: (blob: Blob) => {
-          // Create download link
-          const url = globalThis.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-
-          // Format filename
-          const fechaStr = new Date(convocatoria.fechaConvocatoria).toLocaleDateString('es-ES').replaceAll('/', '_');
-          link.download = `informe_convocatoria_${convocatoria.deporte}_${fechaStr}.pdf`;
-
-          // Trigger download
-          link.click();
-
-          // Cleanup
-          globalThis.URL.revokeObjectURL(url);
-
-          Swal.fire({
-            title: 'Éxito',
-            text: 'El informe se ha descargado correctamente.',
-            icon: 'success',
-            timer: 2000,
-          });
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo generar el informe.',
-            icon: 'error',
-          });
-        },
-      });
+  generarReporte(convocatoria: any, accion: AccionInforme = 'descargar'): void {
+    if (!convocatoria?.id || this.informes.ocupado || this.informes.destruido) { return; }
+    const fechaStr = new Date(convocatoria.fechaConvocatoria).toLocaleDateString('es-ES').replaceAll('/', '_');
+    this.informes.generar(this.endpointsService.descargarInformePDFConvocatoria(convocatoria.id).pipe(
+      mapInforme(blob => ({ documentos: [{ blob,
+        nombreArchivo: `informe_convocatoria_${convocatoria.deporte}_${fechaStr}.pdf`,
+        titulo: `Convocatoria ${convocatoria.deporte} — ${fechaStr}` }] }))
+    ), accion, 'No se pudo generar el informe.');
   }
 
   private guardarEstadoPaginacion(): void {

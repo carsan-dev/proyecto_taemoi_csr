@@ -1,3 +1,7 @@
+import { inject } from '@angular/core';
+import { map as mapInforme } from 'rxjs/operators';
+import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
+import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,13 +25,15 @@ import { AlumnoDTO } from '../../../interfaces/alumno-dto';
 type EstadoFiltro = 'TODOS' | 'PENDIENTES' | 'PAGADOS';
 
 @Component({
+  providers: [InformePdfService],
   selector: 'app-tesoreria-cobros',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SkeletonCardComponent, PaginacionComponent],
+  imports: [InformePdfModalComponent, CommonModule, FormsModule, RouterLink, SkeletonCardComponent, PaginacionComponent],
   templateUrl: './tesoreria-cobros.component.html',
   styleUrl: './tesoreria-cobros.component.scss',
 })
 export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
+  readonly informes = inject(InformePdfService);
   readonly meses = [
     { value: 1, label: 'Enero' },
     { value: 2, label: 'Febrero' },
@@ -284,8 +290,8 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     });
   }
 
-  exportarInformeDeudasPDF(): void {
-    this.exportarInformeDeudas('pdf');
+  exportarInformeDeudasPDF(accion: AccionInforme = 'descargar'): void {
+    this.exportarInformeDeudas('pdf', accion);
   }
 
   exportarInformeDeudasCSV(): void {
@@ -533,77 +539,18 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     this.normalizarPeriodo();
   }
 
-  private exportarInformeDeudas(formato: 'pdf' | 'csv'): void {
-    if (this.exportandoInforme) {
-      return;
-    }
-
-    this.exportandoInforme = true;
-    this.loadingService.show();
+  private exportarInformeDeudas(formato: 'pdf' | 'csv', accion: AccionInforme = 'descargar'): void {
+    if (this.informes.ocupado || this.informes.destruido) { return; }
     const pagado = this.convertirEstadoAPagado(this.filtroEstado);
-
-    if (formato === 'pdf') {
-      this.endpointsService
-        .exportarTesoreriaPDF(
-          this.filtroMes,
-          this.filtroAno,
-          this.filtroDeporte,
-          pagado,
-          this.filtroTexto,
-          this.filtroSoloActivos
-        )
-        .pipe(
-          finalize(() => {
-            this.exportandoInforme = false;
-            this.loadingService.hide();
-          })
-        )
-        .subscribe({
-          next: (pdfBlob: Blob) => {
-            const fileURL = globalThis.URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = fileURL;
-            a.download = this.obtenerNombrePDF();
-            a.click();
-            globalThis.URL.revokeObjectURL(fileURL);
-            showSuccessToast('Informe PDF de tesoreria descargado correctamente');
-          },
-          error: () => {
-            showErrorToast('No se pudo generar el informe PDF de tesoreria');
-          },
-        });
-      return;
-    }
-
-    this.endpointsService
-      .exportarTesoreriaCSV(
-        this.filtroMes,
-        this.filtroAno,
-        this.filtroDeporte,
-        pagado,
-        this.filtroTexto,
-        this.filtroSoloActivos
-      )
-      .pipe(
-        finalize(() => {
-          this.exportandoInforme = false;
-          this.loadingService.hide();
-        })
-      )
-      .subscribe({
-        next: (csvBlob: Blob) => {
-          const url = globalThis.URL.createObjectURL(csvBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = this.obtenerNombreCSV();
-          a.click();
-          globalThis.URL.revokeObjectURL(url);
-          showSuccessToast('CSV de tesoreria descargado correctamente');
-        },
-        error: () => {
-          showErrorToast('No se pudo generar el informe CSV de tesoreria');
-        },
-      });
+    const solicitud = formato === 'pdf'
+      ? this.endpointsService.exportarTesoreriaPDF(this.filtroMes, this.filtroAno, this.filtroDeporte,
+          pagado, this.filtroTexto, this.filtroSoloActivos)
+      : this.endpointsService.exportarTesoreriaCSV(this.filtroMes, this.filtroAno, this.filtroDeporte,
+          pagado, this.filtroTexto, this.filtroSoloActivos);
+    const nombreArchivo = formato === 'pdf' ? this.obtenerNombrePDF() : this.obtenerNombreCSV();
+    this.informes.generar(solicitud.pipe(mapInforme(blob => ({
+      documentos: [{ blob, nombreArchivo, titulo: 'Deudas de tesorería' }]
+    }))), accion, `No se pudo generar el informe ${formato.toUpperCase()} de tesoreria`);
   }
 
   private convertirEstadoAPagado(estado: EstadoFiltro): boolean | undefined {

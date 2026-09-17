@@ -1,3 +1,4 @@
+import { AccionInforme } from '../../../servicios/generales/informe-pdf.service';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -24,6 +25,7 @@ interface InformeCategory {
   styleUrl: './informe-modal.component.scss'
 })
 export class InformeModalComponent implements OnInit, OnChanges {
+  @Input() generando = false;
   @Input() title: string = 'Generar Informe';
   @Input() opcionesInforme: Array<{ value: string, label: string }> = [];
   @Input() temporadasReservasPlaza: string[] = [];
@@ -36,7 +38,7 @@ export class InformeModalComponent implements OnInit, OnChanges {
   opcionesTemporadaReservas: Array<{ value: string, label: string }> = [];
 
   @Output() cerrar = new EventEmitter<void>();
-  @Output() informeSeleccionado = new EventEmitter<{ tipo: string, soloActivos: boolean, temporada?: string }>();
+  @Output() informeSeleccionado = new EventEmitter<{ tipo: string, soloActivos: boolean, temporada?: string, accion: AccionInforme }>();
 
   ngOnInit(): void {
     this.organizarInformesPorCategoria();
@@ -163,19 +165,17 @@ export class InformeModalComponent implements OnInit, OnChanges {
     }, 300);
   }
 
-  generarInforme(): void {
-    if (!this.selectedInforme) {
+  generarInforme(accion: AccionInforme = 'descargar'): void {
+    if (!this.selectedInforme || this.generando) {
       return;
     }
     this.informeSeleccionado.emit({
+      accion,
       tipo: this.selectedInforme,
       soloActivos: this.soloActivos,
       temporada: this.esInformeReservasPlaza() ? this.temporadaSeleccionada : undefined,
     });
-    if (this.esInformeReservasPlaza()) {
-      return;
-    }
-    this.cerrarModal();
+
   }
 
   /**
@@ -190,6 +190,6 @@ export class InformeModalComponent implements OnInit, OnChanges {
   }
 
   puedeGenerarInforme(): boolean {
-    return !!this.selectedInforme;
+    return !!this.selectedInforme && !this.generando;
   }
 }

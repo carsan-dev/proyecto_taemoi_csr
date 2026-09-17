@@ -684,14 +684,17 @@
               </div>
 
               <button class="admin-btn admin-btn-primary w-100 mt-4"
-                [disabled]="generandoListadoAsistencia || !mesAnoAsistencia || gruposSeleccionados.length === 0"
+                [disabled]="informes.ocupado || !mesAnoAsistencia || gruposSeleccionados.length === 0"
+                (click)="generarListadoAsistencia('ver')"><i class="bi bi-eye"></i> Ver PDF</button>
+<button class="admin-btn admin-btn-primary w-100 mt-4"
+                [disabled]="informes.ocupado || !mesAnoAsistencia || gruposSeleccionados.length === 0"
                 (click)="generarListadoAsistencia()">
-                @if (generandoListadoAsistencia) {
+                @if (informes.ocupado) {
                   <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                   <span>Generando...</span>
                 } @else {
                   <i class="bi bi-file-earmark-pdf-fill"></i>
-                  <span>Generar Informe de Asistencia</span>
+                  <span>Descargar PDF</span>
                 }
               </button>
             </div>
@@ -732,14 +735,17 @@
               </div>
 
               <button class="admin-btn admin-btn-success w-100 mt-4"
-                [disabled]="generandoListadoMensualidades || !mesAnoMensualidad"
+                [disabled]="informes.ocupado || !mesAnoMensualidad"
+                (click)="generarListadoMensualidadMensual('ver')"><i class="bi bi-eye"></i> Ver PDF</button>
+<button class="admin-btn admin-btn-success w-100 mt-4"
+                [disabled]="informes.ocupado || !mesAnoMensualidad"
                 (click)="generarListadoMensualidadMensual()">
-                @if (generandoListadoMensualidades) {
+                @if (informes.ocupado) {
                   <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                   <span>Generando...</span>
                 } @else {
                   <i class="bi bi-file-earmark-text-fill"></i>
-                  <span>Generar Informe de Mensualidades</span>
+                  <span>Descargar PDF</span>
                 }
               </button>
             </div>
@@ -750,10 +756,14 @@
 
     <!-- Informe Modal -->
     @if (mostrarModalInforme) {
-      <app-informe-modal [title]="modalTitle" [opcionesInforme]="opcionesInforme"
+      <app-informe-modal [title]="modalTitle" [generando]="informes.ocupado" [opcionesInforme]="opcionesInforme"
         [temporadasReservasPlaza]="temporadasReservasPlaza"
         (cerrar)="cerrarModalInforme()" (informeSeleccionado)="generarInformeSeleccionado($event)">
       </app-informe-modal>
     }
   </div>
 </div>
+
+@if (informes.documentos.length) {
+  <app-informe-pdf-modal [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno" (cerrar)="informes.cerrar()" />
+}

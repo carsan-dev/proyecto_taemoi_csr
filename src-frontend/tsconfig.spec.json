@@ -20,7 +20,12 @@
     "src/app/componentes/vistas/horarios/horarios.component.spec.ts",
     "src/app/componentes/vistas/preinscripcion/preinscripcion.component.spec.ts",
     "src/app/componentes/vistas/layout/header/header.component.spec.ts",
-    "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.component.spec.ts"
+    "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.component.spec.ts",
+    "src/app/servicios/generales/informe-pdf.service.spec.ts",
+    "src/app/componentes/generales/informe-pdf-modal/informe-pdf-modal.component.spec.ts",
+    "src/app/componentes/generales/pdf-viewer/pdf-viewer.component.spec.ts",
+    "src/app/componentes/endpoints/listado-alumnos/informes-preview.spec.ts",
+    "src/app/core/interceptors/error.interceptor.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

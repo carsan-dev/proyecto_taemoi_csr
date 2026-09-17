@@ -130,9 +130,14 @@
           <button
             type="button"
             class="btn-exportar btn-exportar-pdf"
-            [disabled]="exportandoInforme"
+            [disabled]="informes.ocupado"
+            (click)="exportarInformeDeudasPDF('ver')">Ver PDF</button>
+<button
+            type="button"
+            class="btn-exportar btn-exportar-pdf"
+            [disabled]="informes.ocupado"
             (click)="exportarInformeDeudasPDF()">
-            @if (exportandoInforme) {
+            @if (informes.ocupado) {
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               Generando...
             } @else {
@@ -142,9 +147,9 @@
           <button
             type="button"
             class="btn-exportar btn-exportar-csv"
-            [disabled]="exportandoInforme"
+            [disabled]="informes.ocupado"
             (click)="exportarInformeDeudasCSV()">
-            @if (exportandoInforme) {
+            @if (informes.ocupado) {
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               Generando...
             } @else {
@@ -364,3 +369,7 @@
     </section>
   }
 </section>
+
+@if (informes.documentos.length) {
+  <app-informe-pdf-modal [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno" (cerrar)="informes.cerrar()" />
+}

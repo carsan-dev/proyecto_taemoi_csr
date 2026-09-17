@@ -1,3 +1,7 @@
+import { inject } from '@angular/core';
+import { map as mapInforme } from 'rxjs/operators';
+import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
+import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
@@ -28,9 +32,10 @@ type ResumenAlumno = {
 };
 
 @Component({
+  providers: [InformePdfService],
   selector: 'app-listado-alumnos',
   standalone: true,
-  imports: [
+  imports: [InformePdfModalComponent,
     CommonModule,
     PaginacionComponent,
     FormsModule,
@@ -43,6 +48,7 @@ type ResumenAlumno = {
   styleUrl: './listado-alumnos.component.scss',
 })
 export class ListadoAlumnosComponent implements OnInit, OnDestroy {
+  readonly informes = inject(InformePdfService);
   alumnos: any[] = [];
   alumnosCompletos: any[] = []; // Full dataset for client-side filtering
   alumnosSeleccionables: any[] = [];
@@ -84,8 +90,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   procesandoMensualidadIndividual: boolean = false;
   procesandoLicenciasGenerales: boolean = false;
   procesandoLicenciaIndividual: boolean = false;
-  generandoListadoAsistencia: boolean = false;
-  generandoListadoMensualidades: boolean = false;
 
   // Multi-sport data
   deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
@@ -111,30 +115,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   private generarPdfConLoading(
     observable$: import('rxjs').Observable<Blob>,
     errorMessage: string,
-    filename: string = 'informe.pdf'
+    filename: string = 'informe.pdf',
+    accion: AccionInforme = 'descargar',
+    titulo: string = 'Informe'
   ): void {
-    this.loadingService.show();
-    observable$.pipe(finalize(() => this.loadingService.hide())).subscribe({
-      next: (pdfBlob: Blob) => {
-        this.descargarBlob(pdfBlob, filename);
-      },
-      error: () => {
-        Swal.fire('Error', errorMessage, 'error');
-      },
-    });
-  }
-
-  private descargarBlob(blob: Blob, filename: string): void {
-    const fileURL = globalThis.URL.createObjectURL(blob);
-    const link = globalThis.document?.createElement('a');
-    if (!link) {
-      globalThis.URL.revokeObjectURL(fileURL);
-      return;
-    }
-    link.href = fileURL;
-    link.download = filename;
-    link.click();
-    globalThis.URL.revokeObjectURL(fileURL);
+    this.informes.generar(observable$.pipe(mapInforme(blob => ({
+      documentos: [{ blob, nombreArchivo: filename, titulo }]
+    }))), accion, errorMessage);
   }
 
   ngOnInit(): void {
@@ -237,11 +224,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     } else {
       this.gruposSeleccionados.push(grupo);
     }
-    this.gruposSeleccionados = this.ordenarGruposSeleccionados(this.gruposSeleccionados);
-  }
-
-  private ordenarGruposSeleccionados(grupos: string[]): string[] {
-    return [...grupos].sort((a, b) => this.grupos.indexOf(a) - this.grupos.indexOf(b));
   }
 
   abrirModalInforme(): void {
@@ -900,110 +882,113 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     tipo: string;
     soloActivos: boolean;
     temporada?: string;
+    accion: AccionInforme;
   }): void {
-    const { tipo, soloActivos, temporada } = event;
+    if (this.informes.ocupado || this.informes.destruido) { return; }
+    const { tipo, soloActivos, temporada, accion } = event;
+    const titulo = this.opcionesInforme.find(opcion => opcion.value === tipo)?.label || 'Informe';
 
     switch (tipo) {
       case 'general':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeAlumnosPorGrado(soloActivos),
-          'No se pudo generar el informe general'
+          'No se pudo generar el informe general', 'informe.pdf', accion, titulo
         );
         break;
       case 'taekwondo':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeTaekwondoPorGrado(soloActivos),
-          'No se pudo generar el informe de Taekwondo'
+          'No se pudo generar el informe de Taekwondo', 'informe.pdf', accion, titulo
         );
         break;
       case 'kickboxing':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeKickboxingPorGrado(soloActivos),
-          'No se pudo generar el informe de Kickboxing'
+          'No se pudo generar el informe de Kickboxing', 'informe.pdf', accion, titulo
         );
         break;
       case 'licencias':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeLicencias(soloActivos),
-          'No se pudo generar el informe de licencias'
+          'No se pudo generar el informe de licencias', 'informe.pdf', accion, titulo
         );
         break;
       case 'infantiles':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeInfantilesAPromocionar(soloActivos),
-          'No se pudo generar el informe de infantiles'
+          'No se pudo generar el informe de infantiles', 'informe.pdf', accion, titulo
         );
         break;
       case 'adultos':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeAdultosAPromocionar(soloActivos),
-          'No se pudo generar el informe de adultos'
+          'No se pudo generar el informe de adultos', 'informe.pdf', accion, titulo
         );
         break;
       case 'infantiles-taekwondo':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeInfantilesAPromocionarTaekwondo(soloActivos),
-          'No se pudo generar el informe de infantiles de Taekwondo'
+          'No se pudo generar el informe de infantiles de Taekwondo', 'informe.pdf', accion, titulo
         );
         break;
       case 'infantiles-kickboxing':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeInfantilesAPromocionarKickboxing(soloActivos),
-          'No se pudo generar el informe de infantiles de Kickboxing'
+          'No se pudo generar el informe de infantiles de Kickboxing', 'informe.pdf', accion, titulo
         );
         break;
       case 'adultos-taekwondo':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeAdultosAPromocionarTaekwondo(soloActivos),
-          'No se pudo generar el informe de adultos de Taekwondo'
+          'No se pudo generar el informe de adultos de Taekwondo', 'informe.pdf', accion, titulo
         );
         break;
       case 'adultos-kickboxing':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeAdultosAPromocionarKickboxing(soloActivos),
-          'No se pudo generar el informe de adultos de Kickboxing'
+          'No se pudo generar el informe de adultos de Kickboxing', 'informe.pdf', accion, titulo
         );
         break;
       case 'deudas':
-        this.generarInformeDeudas(soloActivos);
+        this.generarInformeDeudas(soloActivos, accion);
         break;
       case 'mensualidades':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeMensualidades(soloActivos),
-          'No se pudo generar el informe de mensualidades'
+          'No se pudo generar el informe de mensualidades', 'informe.pdf', accion, titulo
         );
         break;
       case 'mensualidades-taekwondo':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeMensualidadesTaekwondo(soloActivos),
-          'No se pudo generar el informe de mensualidades de Taekwondo'
+          'No se pudo generar el informe de mensualidades de Taekwondo', 'informe.pdf', accion, titulo
         );
         break;
       case 'mensualidades-kickboxing':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos),
-          'No se pudo generar el informe de mensualidades de Kickboxing'
+          'No se pudo generar el informe de mensualidades de Kickboxing', 'informe.pdf', accion, titulo
         );
         break;
       case 'reservas-plaza':
-        this.solicitarTemporadaReservasPlaza(soloActivos, temporada);
+        this.solicitarTemporadaReservasPlaza(soloActivos, temporada, accion);
         break;
       case 'productos':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeProductos(),
-          'No se pudo generar el informe de productos'
+          'No se pudo generar el informe de productos', 'informe.pdf', accion, titulo
         );
         break;
       case 'competidores':
         this.generarPdfConLoading(
           this.endpointsService.generarInformeCompetidores(),
-          'No se pudo generar el informe de competidores'
+          'No se pudo generar el informe de competidores', 'informe.pdf', accion, titulo
         );
         break;
     }
   }
 
-  private solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string): void {
+  private solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string, accion: AccionInforme = 'descargar'): void {
     if (this.cargandoTemporadasReservasPlaza) {
       Swal.fire('Cargando temporadas', 'Espera unos segundos y vuelve a generar el informe.', 'info');
       return;
@@ -1023,7 +1008,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       return options;
     }, {} as Record<string, string>);
 
-    Swal.fire({
+    this.informes.seleccionar({
       title: 'Seleccionar temporada',
       input: 'select',
       inputOptions,
@@ -1033,15 +1018,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       inputValidator: value => value ? null : 'Debes seleccionar una temporada',
     }).then(result => {
-      if (!result.isConfirmed || !result.value) {
+      if (!result?.isConfirmed || !result.value) {
         return;
       }
       const temporada = result.value;
-      this.cerrarModalInforme();
       this.generarPdfConLoading(
         this.endpointsService.generarInformeReservasPlaza(temporada, soloActivos),
         'No se pudo generar el informe de reservas de plaza',
-        `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`
+        `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`, accion, `Reservas de plaza ${temporada}`
       );
     });
   }
@@ -1049,46 +1033,23 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   /**
    * Handles deudas report generation with format selection dialog
    */
-  private generarInformeDeudas(soloActivos: boolean): void {
-    Swal.fire({
-      title: 'Seleccionar Formato',
-      text: '¿En qué formato deseas generar el informe de deudas?',
-      icon: 'question',
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonText: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-      denyButtonText: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc3545',
-      denyButtonColor: '#28a745',
-      cancelButtonColor: '#6c757d',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeDeudas(soloActivos),
-          'No se pudo generar el informe de deudas en PDF'
-        );
-      } else if (result.isDenied) {
-        this.loadingService.show();
-        this.endpointsService
-          .generarInformeDeudasCSV(soloActivos)
-          .pipe(finalize(() => this.loadingService.hide()))
-          .subscribe({
-            next: (csvBlob: Blob) => {
-              const url = globalThis.URL.createObjectURL(csvBlob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'informe_deudas_alumnos.csv';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              globalThis.URL.revokeObjectURL(url);
-              showSuccessToast('CSV descargado correctamente');
-            },
-            error: () => {
-              Swal.fire('Error', 'No se pudo generar el informe de deudas en CSV', 'error');
-            },
-          });
+  private generarInformeDeudas(soloActivos: boolean, accion: AccionInforme): void {
+    if (accion === 'ver') {
+      this.generarPdfConLoading(this.endpointsService.generarInformeDeudas(soloActivos),
+        'No se pudo generar el informe de deudas en PDF', 'informe.pdf', accion, 'Deudas');
+      return;
+    }
+    void this.informes.seleccionar({
+      title: 'Seleccionar Formato', text: '¿En qué formato deseas generar el informe de deudas?',
+      icon: 'question', showCancelButton: true, showDenyButton: true,
+      confirmButtonText: 'PDF', denyButtonText: 'CSV', cancelButtonText: 'Cancelar',
+    }).then(result => {
+      if (result?.isConfirmed) {
+        this.generarPdfConLoading(this.endpointsService.generarInformeDeudas(soloActivos),
+          'No se pudo generar el informe de deudas en PDF');
+      } else if (result?.isDenied) {
+        this.generarPdfConLoading(this.endpointsService.generarInformeDeudasCSV(soloActivos),
+          'No se pudo generar el informe CSV', 'informe_deudas_alumnos.csv');
       }
     });
   }
@@ -1708,93 +1669,37 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     });
   }
 
-  generarListadoAsistencia(): void {
-    if (this.generandoListadoAsistencia) {
-      return;
-    }
-
+  generarListadoAsistencia(accion: AccionInforme = 'descargar'): void {
+    if (this.informes.ocupado || this.informes.destruido) { return; }
     if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
-      Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error');
-      return;
+      Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error'); return;
     }
-
-    const [year, month] = this.mesAnoAsistencia.split('-').map(Number);
-    const grupos = this.ordenarGruposSeleccionados(this.gruposSeleccionados);
-    const solicitudes = grupos.map((grupo) =>
-      this.endpointsService.descargarAsistencia(year, month, grupo).pipe(
-        map((blob) => ({ grupo, blob })),
-        catchError(() => of({ grupo, blob: null as Blob | null }))
-      )
-    );
-
-    this.generandoListadoAsistencia = true;
-    this.loadingService.show();
-    forkJoin(solicitudes)
-      .pipe(
-        finalize(() => {
-          this.generandoListadoAsistencia = false;
-          this.loadingService.hide();
-        })
-      )
-      .subscribe({
-        next: (resultados) => {
-          const fallidos: string[] = [];
-          resultados.forEach((resultado) => {
-            if (!resultado.blob) {
-              fallidos.push(resultado.grupo);
-              return;
-            }
-            const url = globalThis.URL.createObjectURL(resultado.blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Asistencia-${resultado.grupo}-${this.mesAnoAsistencia}.pdf`;
-            a.click();
-            globalThis.URL.revokeObjectURL(url);
-          });
-
-          if (fallidos.length > 0) {
-            Swal.fire(
-              'Aviso',
-              `No se pudo generar el PDF para: ${fallidos.join(', ')}`,
-              'warning'
-            );
-          }
-        },
-        error: () => {
-          Swal.fire('Error', 'No se pudo generar el listado de asistencia', 'error');
-        },
-      });
+    const mesAno = this.mesAnoAsistencia;
+    const [year, month] = mesAno.split('-').map(Number);
+    const grupos = [...this.gruposSeleccionados];
+    const solicitudes = grupos.map(grupo => this.endpointsService.descargarAsistencia(year, month, grupo).pipe(
+      map(blob => ({ grupo, blob })), catchError(() => of({ grupo, blob: null as Blob | null }))
+    ));
+    this.informes.generar(forkJoin(solicitudes).pipe(map(resultados => {
+      const fallidos = resultados.filter(r => !r.blob).map(r => r.grupo);
+      return {
+        documentos: resultados.filter(r => r.blob).map(r => ({ blob: r.blob!,
+          nombreArchivo: `Asistencia-${r.grupo}-${mesAno}.pdf`, titulo: `Asistencia ${r.grupo} — ${mesAno}` })),
+        aviso: fallidos.length ? `No se pudo generar el PDF para: ${fallidos.join(', ')}` : '',
+      };
+    })), accion, 'No se pudo generar el listado de asistencia');
   }
 
-  generarListadoMensualidadMensual() {
-    if (this.generandoListadoMensualidades) {
-      return;
-    }
-
+  generarListadoMensualidadMensual(accion: AccionInforme = 'descargar'): void {
+    if (this.informes.ocupado || this.informes.destruido) { return; }
     if (!this.mesAnoMensualidad) {
-      Swal.fire('Error', 'Debes seleccionar un mes y año', 'error');
-      return;
+      Swal.fire('Error', 'Debes seleccionar un mes y año', 'error'); return;
     }
-
-    this.generandoListadoMensualidades = true;
-    this.loadingService.show();
-    this.endpointsService
-      .generarListadoMensualidadMensual(this.mesAnoMensualidad, true)
-      .pipe(
-        finalize(() => {
-          this.generandoListadoMensualidades = false;
-          this.loadingService.hide();
-        })
-      )
-      .subscribe({
-        next: (pdfBlob: Blob) => {
-          const nombreArchivo = `listado_mensualidad_${this.formatearNombreMensualidad(this.mesAnoMensualidad)}.pdf`;
-          this.descargarBlob(pdfBlob, nombreArchivo);
-        },
-        error: () => {
-          Swal.fire('Error', 'No se pudo generar el listado de mensualidad mensual', 'error');
-        },
-      });
+    const mesAno = this.mesAnoMensualidad;
+    this.generarPdfConLoading(this.endpointsService.generarListadoMensualidadMensual(mesAno, true),
+      'No se pudo generar el listado de mensualidad mensual',
+      `listado_mensualidad_${this.formatearNombreMensualidad(mesAno)}.pdf`, accion,
+      `Mensualidades ${this.formatearNombreMensualidad(mesAno)}`);
   }
 
   private formatearNombreMensualidad(mesAno: string): string {

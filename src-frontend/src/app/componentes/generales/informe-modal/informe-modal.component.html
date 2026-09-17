@@ -5,14 +5,14 @@
       <!-- Header -->
       <div class="modal-header">
         <div class="header-content">
-          <i class="bi bi-file-earmark-bar-graph-fill header-icon"></i>
+          <i aria-hidden="true" class="bi bi-file-earmark-bar-graph-fill header-icon"></i>
           <div>
             <h4 class="modal-title">{{ title }}</h4>
             <p class="modal-subtitle">Selecciona el tipo de informe que deseas generar</p>
           </div>
         </div>
         <button type="button" class="btn-close-custom" (click)="cerrarModal()" aria-label="Cerrar">
-          <i class="bi bi-x-lg"></i>
+          <i aria-hidden="true" class="bi bi-x-lg"></i>
         </button>
       </div>
 
@@ -22,7 +22,7 @@
           <div class="informe-category">
             <!-- Category Header -->
             <div class="category-header" [style.border-left-color]="categoria.color">
-              <i class="bi {{ categoria.icon }}" [style.color]="categoria.color"></i>
+              <i aria-hidden="true" class="bi {{ categoria.icon }}" [style.color]="categoria.color"></i>
               <h5 class="category-title">{{ categoria.title }}</h5>
               <span class="category-badge">{{ categoria.opciones.length }}</span>
             </div>
@@ -34,11 +34,13 @@
                   class="informe-option"
                   [class.selected]="selectedInforme === opcion.value"
                   (click)="seleccionarInforme(opcion.value)"
+                  (keydown.enter)="seleccionarInforme(opcion.value)"
+                  (keydown.space)="$event.preventDefault(); seleccionarInforme(opcion.value)"
                   role="button"
                   tabindex="0">
                   <div class="option-content">
                     <div class="option-header">
-                      <i class="bi {{ opcion.icon }} option-icon"></i>
+                      <i aria-hidden="true" class="bi {{ opcion.icon }} option-icon"></i>
                       <div class="option-text">
                         <h6 class="option-title">{{ opcion.label }}</h6>
                         @if (opcion.description) {
@@ -66,7 +68,7 @@
 
         @if (categoriasInforme.length === 0) {
           <div class="no-informes">
-            <i class="bi bi-inbox"></i>
+            <i aria-hidden="true" class="bi bi-inbox"></i>
             <p>No hay informes disponibles</p>
           </div>
         }
@@ -82,8 +84,11 @@
           </label>
         </div>
         <div class="footer-buttons">
+          <button type="button" class="btn-generate" [disabled]="!puedeGenerarInforme()" (click)="generarInforme('ver')">
+            <i aria-hidden="true" class="bi bi-eye"></i> Ver PDF
+          </button>
           <button type="button" class="btn-cancel" (click)="cerrarModal()">
-            <i class="bi bi-x-circle"></i>
+            <i aria-hidden="true" class="bi bi-x-circle"></i>
             Cancelar
           </button>
           <button
@@ -91,8 +96,8 @@
             class="btn-generate"
             [disabled]="!puedeGenerarInforme()"
             (click)="generarInforme()">
-            <i class="bi bi-file-earmark-pdf"></i>
-            Generar Informe
+            <i aria-hidden="true" class="bi bi-file-earmark-pdf"></i>
+            {{ esInformeReservasPlaza() || selectedInforme !== 'deudas' ? 'Descargar PDF' : 'Descargar PDF/CSV' }}
           </button>
         </div>
       </div>
