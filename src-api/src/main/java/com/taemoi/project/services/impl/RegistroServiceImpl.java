@@ -70,7 +70,7 @@ public class RegistroServiceImpl implements RegistroService {
 		if (usuarioExistente.isPresent()) {
 			Usuario usuario = usuarioExistente.get();
 			if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
-				throw new IllegalArgumentException("Este email usa Google. Inicia sesion con Google.");
+				throw new IllegalArgumentException("Ya existe una cuenta con este email. Inicia sesión con Google o recupera el acceso para establecer una contraseña.");
 			}
 			throw new IllegalArgumentException("Ya existe una cuenta con ese email.");
 		}

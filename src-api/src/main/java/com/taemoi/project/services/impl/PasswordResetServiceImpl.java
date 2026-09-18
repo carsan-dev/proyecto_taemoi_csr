@@ -8,13 +8,10 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
@@ -23,7 +20,6 @@ import com.taemoi.project.utils.EmailUtils;
 
 @Service
 public class PasswordResetServiceImpl implements PasswordResetService {
-	private static final Logger logger = LoggerFactory.getLogger(PasswordResetServiceImpl.class);
 	private static final int TOKEN_BYTES = 32;
 
 	private final UsuarioRepository usuarioRepository;
@@ -58,11 +54,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 		}
 
 		Usuario usuario = usuarioOptional.get();
-		if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
-			logger.info("Password reset requested for GOOGLE account: {}", normalizedEmail);
-			return;
-		}
-
 		String token = generarToken();
 		String tokenHash = hashToken(token);
 
@@ -84,10 +75,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 		String tokenHash = hashToken(token);
 		Usuario usuario = usuarioRepository.findByResetTokenHash(tokenHash)
 				.orElseThrow(() -> new IllegalArgumentException("Token invalido o caducado."));
-
-		if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
-			throw new IllegalArgumentException("Las cuentas de Google no pueden restablecer contrasena.");
-		}
 
 		LocalDateTime expiresAt = usuario.getResetTokenExpiresAt();
 		if (expiresAt == null || expiresAt.isBefore(LocalDateTime.now())) {
