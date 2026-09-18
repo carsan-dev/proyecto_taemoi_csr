@@ -1,10 +1,10 @@
-<div id="imageModal" class="modal" (click)="cerrarModal()">
-  <span class="close" (click)="cerrarModal()">
+<dialog id="imageModal" class="modal" aria-label="Foto ampliada del alumno" (click)="cerrarModal()">
+  <button type="button" class="close" aria-label="Cerrar foto ampliada" (click)="cerrarModal()">
     <i class="bi bi-x-circle-fill"></i>
-  </span>
+  </button>
   <img class="modal-content" id="imgAmpliada" alt="Foto del Alumno" loading="lazy" />
   <div id="caption"></div>
-</div>
+</dialog>
 
 <!-- Skeleton Loading -->
 @if (cargando) {
@@ -26,28 +26,18 @@
 
     <!-- Profile Card Skeleton -->
     <div class="admin-card admin-card-large alumno-profile-card mb-4">
-      <!-- Deportes Banner Skeleton -->
-      <div class="deportes-banner-container" style="display: flex; gap: 8px; margin-bottom: 16px;">
-        <div class="skeleton-badge" style="width: 120px; height: 32px; border-radius: 16px;"></div>
-        <div class="skeleton-badge" style="width: 100px; height: 32px; border-radius: 16px;"></div>
-      </div>
-
       <div class="profile-content">
-        <div class="skeleton-avatar" style="width: 140px; height: 140px; border-radius: 50%;"></div>
-        <div class="profile-header" style="flex: 1;">
-          <div class="skeleton-line skeleton-title" style="width: 280px; height: 28px; margin-bottom: 12px;"></div>
-          <div style="display: flex; gap: 16px; align-items: center;">
-            <div class="skeleton-line skeleton-text" style="width: 150px; height: 18px;"></div>
-            <div class="skeleton-badge" style="width: 80px; height: 24px; border-radius: 12px;"></div>
+        <div class="skeleton-avatar profile-photo-skeleton"></div>
+        <div class="profile-details">
+          <div class="deportes-banner-container">
+            <div class="skeleton-badge" style="width: 120px; height: 32px;"></div>
+            <div class="skeleton-badge" style="width: 100px; height: 32px;"></div>
           </div>
+          <div class="skeleton-line skeleton-title" style="width: 280px; max-width: 100%; height: 28px;"></div>
+          <div class="skeleton-line skeleton-text" style="width: 200px; max-width: 100%; height: 24px;"></div>
+          <div class="skeleton-button" style="width: 220px; max-width: 100%; height: 38px;"></div>
+          <div class="skeleton-button" style="width: 140px; height: 36px;"></div>
         </div>
-      </div>
-
-      <!-- Pagination Skeleton -->
-      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
-        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
-        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
-        <div class="skeleton-button" style="width: 36px; height: 36px; border-radius: 8px;"></div>
       </div>
     </div>
 
@@ -127,82 +117,81 @@
 
         <!-- Card con la info principal del alumno -->
         <div class="admin-card admin-card-large alumno-profile-card mb-4">
-          <!-- Multi-sport badges header (only active sports) -->
-          <div class="deportes-banner-container">
-            @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
-            @if (deporteItem.activo !== false) {
-            <div class="deporte-banner-badge" [ngClass]="{
-                'taekwondo': deporteItem.deporte === 'TAEKWONDO',
-                'pilates': deporteItem.deporte === 'PILATES',
-                'kickboxing': deporteItem.deporte === 'KICKBOXING',
-                'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
-              }">
-              <i class="bi bi-trophy-fill"></i>
-              <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
-            </div>
-            }
-            }
-          </div>
-
           <div class="profile-content">
-            <div class="profile-image-wrapper" (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)" style="cursor: pointer;">
+            <button type="button" class="profile-image-wrapper" aria-label="Ampliar foto del alumno" (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)">
               <img class="profile-image"
                 [src]="imagenPreview || (alumno.fotoAlumno?.url ? (alumno.fotoAlumno.url + '?w=420&v=' + (alumno.fotoAlumno.id || alumno.fotoAlumno.nombre || '0')) : '../../../../assets/media/default.webp')"
                 [alt]="'Foto de perfil de ' + alumno.nombre + ' ' + alumno.apellidos"
                 loading="eager"
                 decoding="async"
-                width="150"
-                height="150" />
+                width="220"
+                height="280" />
               <div class="profile-image-overlay">
                 <i class="bi bi-zoom-in"></i>
               </div>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center gap-2">
-              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="inputFile.click()"
-                aria-label="Editar imagen del alumno">
-                <i class="bi bi-pencil"></i>
-                <span>Editar Imagen</span>
-              </button>
-              <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarFoto(alumno.id)"
-                [disabled]="!alumno.fotoAlumno?.url" aria-label="Eliminar imagen del alumno">
-                <i class="bi bi-trash"></i>
-                <span>Eliminar Imagen</span>
-              </button>
-              <input #inputFile type="file" id="inputFile" (change)="onFileSelected($event)" accept="image/*"
-                style="display: none;" aria-label="Seleccionar nueva imagen del alumno" />
-            </div>
-
-            <div class="profile-header">
-              <h3 class="profile-name">{{ alumno.nombre }} {{ alumno.apellidos }}</h3>
-              <div class="profile-meta">
-                <span class="meta-item">
-                  <i class="bi bi-hash"></i>
-                  Expediente: {{ alumno.numeroExpediente }}
-                </span>
-                @if (isAlumnoActivo()) {
-                <span class="meta-item">
-                  <span class="status-badge status-active">
-                    <i class="bi bi-check-circle-fill"></i>
-                    Activo
-                  </span>
-                </span>
+            </button>
+            <div class="profile-details">
+              <div class="deportes-banner-container">
+                @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
+                @if (deporteItem.activo !== false) {
+                <div class="deporte-banner-badge" [ngClass]="{
+                    'taekwondo': deporteItem.deporte === 'TAEKWONDO',
+                    'pilates': deporteItem.deporte === 'PILATES',
+                    'kickboxing': deporteItem.deporte === 'KICKBOXING',
+                    'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
+                  }">
+                  <i class="bi bi-trophy-fill"></i>
+                  <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
+                </div>
                 }
-                @if (!isAlumnoActivo()) {
-                <span class="meta-item">
-                  <span class="status-badge status-inactive">
-                    <i class="bi bi-x-circle-fill"></i>
-                    Inactivo
-                  </span>
-                </span>
                 }
               </div>
+
+              <div class="profile-header">
+                <h3 class="profile-name">{{ alumno.nombre }} {{ alumno.apellidos }}</h3>
+                <div class="profile-meta">
+                  <span class="meta-item">
+                    <i class="bi bi-hash"></i>
+                    Expediente: {{ alumno.numeroExpediente }}
+                  </span>
+                  @if (isAlumnoActivo()) {
+                  <span class="meta-item">
+                    <span class="status-badge status-active">
+                      <i class="bi bi-check-circle-fill"></i>
+                      Activo
+                    </span>
+                  </span>
+                  }
+                  @if (!isAlumnoActivo()) {
+                  <span class="meta-item">
+                    <span class="status-badge status-inactive">
+                      <i class="bi bi-x-circle-fill"></i>
+                      Inactivo
+                    </span>
+                  </span>
+                  }
+                </div>
+              </div>
+              <div class="d-flex flex-wrap justify-content-center gap-2">
+                <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="inputFile.click()"
+                  aria-label="Editar imagen del alumno">
+                  <i class="bi bi-pencil"></i>
+                  <span>Editar Imagen</span>
+                </button>
+                <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" (click)="eliminarFoto(alumno.id)"
+                  [disabled]="!alumno.fotoAlumno?.url" aria-label="Eliminar imagen del alumno">
+                  <i class="bi bi-trash"></i>
+                  <span>Eliminar Imagen</span>
+                </button>
+                <input #inputFile type="file" id="inputFile" (change)="onFileSelected($event)" accept="image/*"
+                  style="display: none;" aria-label="Seleccionar nueva imagen del alumno" />
+              </div>
+
+              <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [deshabilitado]="cargando"
+                (pageChange)="cambiarPagina($event)">
+              </app-paginacion>
             </div>
           </div>
-
-          <!-- Pagination Component -->
-          <app-paginacion [paginaActual]="paginaActual" [totalPaginas]="totalPaginas" [deshabilitado]="cargando"
-            (pageChange)="cambiarPagina($event)">
-          </app-paginacion>
         </div>
 
         <!-- Multi-Sport Tabs Section -->

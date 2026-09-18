@@ -1620,22 +1620,22 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Abre el modal con la imagen ampliada (si hay URL disponible).
    */
   abrirModal(imagenUrl: string | null | undefined) {
-    const modal = document.getElementById('imageModal');
+    const modal = document.getElementById('imageModal') as HTMLDialogElement | null;
     const modalImg = document.getElementById('imgAmpliada') as HTMLImageElement;
 
     // Use default image if no URL is provided
     const urlToShow = imagenUrl || '../../../../assets/media/default.webp';
 
     if (modal && modalImg) {
-      modal.style.display = 'block';
       modalImg.src = urlToShow;
+      modal.showModal();
     }
   }
 
   cerrarModal() {
-    const modal = document.getElementById('imageModal');
+    const modal = document.getElementById('imageModal') as HTMLDialogElement | null;
     if (modal) {
-      modal.style.display = 'none';
+      modal.close();
     }
   }
 

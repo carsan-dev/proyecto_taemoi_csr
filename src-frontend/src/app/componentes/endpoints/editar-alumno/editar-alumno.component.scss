@@ -6,7 +6,73 @@
 // COMPONENT-SPECIFIC STYLES FOR EDITAR-ALUMNO
 // ========================================
 
-// Header for "Deportes del Alumno" section with responsive buttons
+// Compact profile, keeping the same outer width as the rest of the page.
+.alumno-profile-card {
+  .profile-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding: 0;
+    gap: 1.25rem;
+    max-width: 1100px;
+    margin-inline: auto;
+  }
+
+  .profile-image-wrapper,
+  .profile-photo-skeleton {
+    width: 180px;
+    height: 230px;
+    border-radius: 16px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .profile-image-wrapper:focus-visible {
+    outline: 3px solid $primary-color;
+    outline-offset: 4px;
+    .profile-image-overlay { opacity: 1; }
+  }
+
+  .profile-image { object-position: center 30%; }
+
+  .profile-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .profile-name { overflow-wrap: anywhere; }
+  .deportes-banner-container {
+    margin: 0;
+    padding: 0.5rem;
+    width: 100%;
+    border-radius: 12px;
+    border-bottom: 0;
+    background: transparent;
+    gap: 0.5rem;
+  }
+  .deporte-banner-badge {
+    max-width: 100%;
+    padding: 0.5rem 0.75rem;
+    overflow-wrap: anywhere;
+    .deporte-badge-text { min-width: 0; line-height: 1.3; }
+  }
+  app-paginacion { max-width: 100%; }
+
+  @media (min-width: 768px) {
+    .profile-content {
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 2rem;
+    }
+    .profile-image-wrapper,
+    .profile-photo-skeleton { width: 220px; height: 280px; }
+  }
+}
+
 .deportes-alumno-header {
   display: flex;
   justify-content: space-between;
@@ -64,6 +130,16 @@
 }
 
 // Convocatorias Modal (different structure from image modal)
+#imageModal {
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+
+  &[open] { display: block; }
+  .close { background: transparent; border: 0; }
+}
+
 #convocatoriaModal,
 #eliminarConvocatoriaModal {
   .modal-content {
