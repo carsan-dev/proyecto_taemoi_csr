@@ -139,7 +139,7 @@
       <div class="row g-3 align-items-end mt-2">
         <div class="col-sm-12 col-md-8 col-lg-9">
           <label class="form-label fw-semibold">Seleccionar Producto:</label>
-          <select appSearchableSelect class="admin-form-control form-select" [(ngModel)]="selectedProductoId" required>
+          <select appSearchableSelect class="admin-form-control form-select" [(ngModel)]="selectedProductoId" (ngModelChange)="selectedDeporte = null" required>
             <option [ngValue]="null">Seleccione un producto</option>
             @for (producto of products; track producto.id) {
             <option [ngValue]="producto.id">
@@ -148,9 +148,23 @@
             }
           </select>
         </div>
+        @if (esMatriculaSeleccionada()) {
+        <div class="col-sm-12 col-md-8 col-lg-9">
+          <label for="deporte-matricula" class="form-label fw-semibold">Deporte de la matrícula:</label>
+          <select id="deporte-matricula" class="admin-form-control form-select" [(ngModel)]="selectedDeporte" required>
+            <option [ngValue]="null">Seleccione un deporte</option>
+            @for (deporte of deportesAlumno; track deporte.id) {
+            <option [ngValue]="deporte.deporte">{{ deporte.deporte.replaceAll('_', ' ') }}</option>
+            }
+          </select>
+          @if (deportesAlumno.length === 0) {
+          <p class="text-muted mt-2 mb-0">No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar la matrícula.</p>
+          }
+        </div>
+        }
         <div class="col-sm-12 col-md-4 col-lg-3">
           <button type="button" class="admin-btn admin-btn-success w-100"
-            (click)="asignarProducto()" [disabled]="!selectedProductoId">
+            (click)="asignarProducto()" [disabled]="cargando || !selectedProductoId || (esMatriculaSeleccionada() && !selectedDeporte)">
             <i class="bi bi-plus-circle"></i>
             <span>Asignar Producto</span>
           </button>
@@ -161,15 +175,16 @@
       <div class="pending-assignments mt-3">
         <h6 class="pending-title">Pendientes de asignar</h6>
         <div class="pending-list">
-          @for (productoId of pendingAsignaciones; track $index) {
+          @for (asignacion of pendingAsignaciones; track $index) {
           <div class="pending-item">
             <div class="pending-info">
               <span class="pending-name">
-                {{ getProductoPendiente(productoId)?.concepto || ('Producto #' + productoId) }}
+                {{ getProductoPendiente(asignacion.productoId)?.concepto || ('Producto #' + asignacion.productoId) }}
+                @if (asignacion.deporte) { — {{ asignacion.deporte.replaceAll('_', ' ') }} }
               </span>
-              @if (getProductoPendiente(productoId)?.precio !== undefined) {
+              @if (getProductoPendiente(asignacion.productoId)?.precio !== undefined) {
               <span class="pending-price">
-                {{ getProductoPendiente(productoId)?.precio | currency: 'EUR':'symbol':'1.2-2' }}
+                {{ getProductoPendiente(asignacion.productoId)?.precio | currency: 'EUR':'symbol':'1.2-2' }}
               </span>
               }
             </div>

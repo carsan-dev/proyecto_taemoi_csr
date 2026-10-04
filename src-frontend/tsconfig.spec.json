@@ -16,6 +16,7 @@
     "src/app/servicios/endpoints/endpoints.service.spec.ts",
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/editar-alumno.component.spec.ts",
+    "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component.spec.ts",
     "src/app/componentes/vistas/vista-login/vista-login.component.spec.ts",
     "src/app/componentes/vistas/horarios/horarios.component.spec.ts",
     "src/app/componentes/vistas/preinscripcion/preinscripcion.component.spec.ts",

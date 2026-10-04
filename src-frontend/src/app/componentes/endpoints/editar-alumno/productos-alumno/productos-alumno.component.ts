@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { Producto } from '../../../../interfaces/producto';
+import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { CommonModule, Location } from '@angular/common';
@@ -14,6 +15,11 @@ import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton
 import { Observable, concat, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../../directives/searchable-select.directive';
+
+interface AsignacionPendiente {
+  productoId: number;
+  deporte: string | null;
+}
 
 @Component({
   selector: 'app-productos-alumno',
@@ -36,7 +42,9 @@ export class ProductosAlumnoComponent implements OnInit {
   private productosSnapshot = new Map<number, string>();
   private pendingUpdates = new Set<number>();
   private pendingDeletes = new Set<number>();
-  pendingAsignaciones: number[] = [];
+  pendingAsignaciones: AsignacionPendiente[] = [];
+  deportesAlumno: AlumnoDeporteDTO[] = [];
+  selectedDeporte: string | null = null;
 
   mostrarModalNotas = false;
   productoSeleccionado!: ProductoAlumnoDTO;
@@ -53,6 +61,10 @@ export class ProductosAlumnoComponent implements OnInit {
     this.restaurarEstadoPaginacion();
     this.obtenerProductosAlumno(this.alumnoId);
     this.obtenerProductos();
+    this.endpointsService.obtenerAlumnoPorId(this.alumnoId).subscribe({
+      next: (alumno) => { this.deportesAlumno = alumno.deportes ?? []; },
+      error: () => { showErrorToast('No se han podido obtener los deportes del alumno'); },
+    });
   }
 
   obtenerProductosAlumno(alumnoId: number) {
@@ -126,8 +138,19 @@ export class ProductosAlumnoComponent implements OnInit {
       });
       return;
     }
-    this.pendingAsignaciones.push(this.selectedProductoId);
+    const esMatricula = this.esMatriculaSeleccionada();
+    if (esMatricula && !this.deportesAlumno.some((item) => item.deporte === this.selectedDeporte)) {
+      Swal.fire({ title: 'Seleccione un deporte', text: 'La matrícula debe asignarse a un deporte del alumno.', icon: 'error' });
+      return;
+    }
+    this.pendingAsignaciones.push({ productoId: this.selectedProductoId, deporte: esMatricula ? this.selectedDeporte : null });
     this.selectedProductoId = null;
+    this.selectedDeporte = null;
+  }
+
+  esMatriculaSeleccionada(): boolean {
+    const concepto = this.products.find((item) => item.id === this.selectedProductoId)?.concepto ?? '';
+    return /\bMATRICULA\b/.test(concepto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase());
   }
 
   marcarProductoParaEliminar(productoAlumnoId: number) {
@@ -238,7 +261,7 @@ export class ProductosAlumnoComponent implements OnInit {
       );
     });
 
-    this.pendingAsignaciones.forEach((productoId) => {
+    this.pendingAsignaciones.forEach(({ productoId, deporte }) => {
       const detalles: ProductoAlumnoDTO = {
         id: 0,
         productoId: productoId,
@@ -251,8 +274,11 @@ export class ProductosAlumnoComponent implements OnInit {
         fechaPago: null,
         notas: '',
       };
+      const asignacion = deporte
+        ? this.endpointsService.asignarProductoAAlumnoDeporte(this.alumnoId, productoId, deporte, detalles)
+        : this.endpointsService.asignarProductoAAlumno(this.alumnoId, productoId, detalles);
       operaciones.push(
-        this.endpointsService.asignarProductoAAlumno(this.alumnoId, productoId, detalles).pipe(
+        asignacion.pipe(
           catchError(() => {
             hasErrors = true;
             showErrorToast('No se pudo asignar un producto');
@@ -283,6 +309,7 @@ export class ProductosAlumnoComponent implements OnInit {
     this.resetPendingChanges();
     this.obtenerProductosAlumno(this.alumnoId);
     this.selectedProductoId = null;
+    this.selectedDeporte = null;
   }
 
   getProductoPendiente(productoId: number): Producto | undefined {

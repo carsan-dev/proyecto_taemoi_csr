@@ -559,6 +559,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  asignarProductoAAlumnoDeporte(
+    alumnoId: number,
+    productoId: number,
+    deporte: string,
+    detalles: ProductoAlumnoDTO
+  ): Observable<ProductoAlumnoDTO> {
+    return this.http.post<ProductoAlumnoDTO>(
+      `${this.urlBase}/productos-alumno/alumno/${alumnoId}/producto/${productoId}/deporte/${encodeURIComponent(deporte)}`,
+      detalles,
+      { withCredentials: true }
+    ).pipe(catchError(this.manejarError));
+  }
+
   actualizarProductoAlumno(
     id: number,
     detalles: Partial<ProductoAlumnoDTO>
