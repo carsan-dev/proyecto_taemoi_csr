@@ -60,6 +60,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private static final DateTimeFormatter FECHA_CERTIFICADO_FORMATTER =
 			DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
 	private static final Pattern ANO_PATTERN = Pattern.compile("\\b(20\\d{2})\\b");
+	private static final Pattern MATRICULA_PATTERN = Pattern.compile("\\s*MATR[IÍ]CULA\\b");
 	private static final String RESPONSABLE_NOMBRE = "DÑA. DOLORES MARIA ROMAN RUIZ";
 	private static final String RESPONSABLE_DNI = "28756368C";
 	private static final String CLUB_NOMBRE_LEGAL = "Club Deportivo Moi's Kim do Taekwondo";
@@ -909,6 +910,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		}
 		if (conceptoUpper.startsWith("TARIFA COMPETIDOR")) {
 			return "TARIFA_COMPETIDOR";
+		}
+		if (MATRICULA_PATTERN.matcher(conceptoUpper).lookingAt()) {
+			return "MATRICULA";
 		}
 		if (conceptoUpper.contains("LICENCIA")) {
 			return "LICENCIA";

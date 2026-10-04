@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -23,6 +24,9 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,7 +55,7 @@ class TesoreriaServiceImplTest {
 	private TesoreriaServiceImpl tesoreriaService;
 
 	@Test
-	void obtenerMovimientos_matriculaSigueEnOtroYPriorizaAsociacionExplicita() {
+	void obtenerMovimientos_matriculaPriorizaAsociacionExplicita() {
 		ProductoAlumno matricula = crearMovimiento(9L, "Matrícula - TAEKWONDO", fecha(2026, 1, 20), false, 25.0);
 		AlumnoDeporte ad = new AlumnoDeporte();
 		ad.setAlumno(matricula.getAlumno());
@@ -65,9 +69,63 @@ class TesoreriaServiceImplTest {
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any())).thenReturn(List.of(matricula));
 		TesoreriaMovimientoDTO resultado = tesoreriaService.obtenerMovimientos(
 				1, 2026, "TODOS", null, null, null, 1, 25).getContent().get(0);
-		assertEquals("OTRO", resultado.getCategoria());
+		assertEquals("MATRICULA", resultado.getCategoria());
 		assertEquals("KICKBOXING", resultado.getDeporte());
 		assertEquals("Matrícula - TAEKWONDO", matricula.getConcepto());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"MATRICULA|MATRICULA",
+			"mAtRíCuLa|MATRICULA",
+			"'  matrícula  - PILATES  '|MATRICULA",
+			"MATRICULA - KICKBOXING|MATRICULA",
+			"Matrícula licencia anual|MATRICULA",
+			"Matrícula examen inicial|MATRICULA",
+			"PREMATRICULA|OTRO",
+			"MATRICULACION|OTRO",
+			"MATRÍCULAR|OTRO",
+			"Pago de matrícula|OTRO",
+			"MENSUALIDAD MATRICULA|MENSUALIDAD",
+			"TARIFA COMPETIDOR MATRICULA|TARIFA_COMPETIDOR",
+			"LICENCIA MATRICULA|LICENCIA",
+			"RESERVA DE PLAZA MATRICULA|RESERVA_PLAZA",
+			"EXAMEN MATRICULA|EXAMEN",
+			"RECOMPENSA|EXAMEN",
+			"CAMISETA|OTRO"
+	}, delimiter = '|')
+	void obtenerMovimientos_clasificaConceptosSinCambiarOtrasReglas(String concepto, String categoria) {
+		assertEquals(categoria, obtenerMovimientoSinPeriodo(concepto).getCategoria());
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	void obtenerMovimientos_conceptoVacioSigueEnOtro(String concepto) {
+		assertEquals("OTRO", obtenerMovimientoSinPeriodo(concepto).getCategoria());
+	}
+
+	@Test
+	void exportarMovimientosCSV_incluyeCategoriaMatriculaYDeporteDelConcepto() {
+		ProductoAlumno matricula = crearMovimiento(9L, "Matrícula - TAEKWONDO", fecha(2026, 1, 20), false, 25.0);
+		when(productoAlumnoRepository.findMovimientosTesoreriaFiltrados(
+				any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				.thenReturn(List.of(matricula));
+
+		String csv = new String(tesoreriaService.exportarMovimientosCSV(
+				null, null, "TODOS", null, null, null), StandardCharsets.UTF_8);
+
+		assertTrue(csv.startsWith("Alumno,Deporte,Concepto,Categoria,"));
+		assertEquals("MATRICULA", csv.split("\n")[1].split(",")[3]);
+		assertEquals("TAEKWONDO", csv.split("\n")[1].split(",")[1]);
+	}
+
+	private TesoreriaMovimientoDTO obtenerMovimientoSinPeriodo(String concepto) {
+		ProductoAlumno movimiento = crearMovimiento(9L, concepto, fecha(2026, 1, 20), false, 25.0);
+		when(productoAlumnoRepository.findMovimientosTesoreriaPaginados(
+				any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(movimiento)));
+		return tesoreriaService.obtenerMovimientos(
+				null, null, "TODOS", null, null, null, 1, 25).getContent().get(0);
 	}
 
 	@Test
