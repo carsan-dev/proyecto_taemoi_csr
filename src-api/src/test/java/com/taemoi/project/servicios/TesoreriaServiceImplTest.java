@@ -31,6 +31,8 @@ import org.springframework.data.domain.Page;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
@@ -47,6 +49,26 @@ class TesoreriaServiceImplTest {
 
 	@InjectMocks
 	private TesoreriaServiceImpl tesoreriaService;
+
+	@Test
+	void obtenerMovimientos_matriculaSigueEnOtroYPriorizaAsociacionExplicita() {
+		ProductoAlumno matricula = crearMovimiento(9L, "Matrícula - TAEKWONDO", fecha(2026, 1, 20), false, 25.0);
+		AlumnoDeporte ad = new AlumnoDeporte();
+		ad.setAlumno(matricula.getAlumno());
+		ad.setDeporte(Deporte.KICKBOXING);
+		matricula.setAlumnoDeporte(ad);
+		ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection base =
+				crearMovimientoBase(9L, matricula.getConcepto(), matricula.getFechaAsignacion());
+		when(productoAlumnoRepository.findMovimientosTesoreriaPeriodoBase(
+				any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				.thenReturn(List.of(base));
+		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any())).thenReturn(List.of(matricula));
+		TesoreriaMovimientoDTO resultado = tesoreriaService.obtenerMovimientos(
+				1, 2026, "TODOS", null, null, null, 1, 25).getContent().get(0);
+		assertEquals("OTRO", resultado.getCategoria());
+		assertEquals("KICKBOXING", resultado.getDeporte());
+		assertEquals("Matrícula - TAEKWONDO", matricula.getConcepto());
+	}
 
 	@Test
 	void obtenerMovimientos_mensualidadUsaMesDelConceptoAntesQueFecha() {

@@ -1,5 +1,6 @@
 package com.taemoi.project.services.impl;
 
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -81,6 +82,15 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
 
+	private String normalizarConcepto(String concepto) {
+		return concepto == null ? "" : Normalizer.normalize(concepto, Normalizer.Form.NFD)
+				.replaceAll("\\p{M}+", "").toUpperCase(Locale.ROOT);
+	}
+
+	private boolean esMatricula(String concepto) {
+		return normalizarConcepto(concepto).matches(".*\\bMATRICULA\\b.*");
+	}
+
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -88,6 +98,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto producto = productoRepository.findById(productoId)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+
+		if (esMatricula(producto.getConcepto())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Seleccione un deporte del alumno para asignar la matrícula.");
+		}
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -981,6 +996,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumnoDeporte(Long alumnoId, Long productoId, String deporte, ProductoAlumnoDTO detallesDTO) {
+		if (deporte == null || deporte.isBlank()) {
+			throw new IllegalArgumentException("Seleccione un deporte del alumno.");
+		}
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
 
@@ -1006,7 +1024,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(producto);
 		productoAlumno.setAlumnoDeporte(alumnoDeporte);
-		productoAlumno.setConcepto(producto.getConcepto());
+		String concepto = producto.getConcepto();
+		String deporteNombre = deporteEnum.name().replace('_', ' ');
+		if (esMatricula(concepto)
+				&& !normalizarConcepto(concepto).replace('_', ' ').matches(
+						".*\\b" + deporteNombre + "\\b.*")) {
+			concepto += " - " + deporteEnum.name();
+		}
+		productoAlumno.setConcepto(concepto);
 		productoAlumno.setPrecio(producto.getPrecio());
 		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
 		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);

@@ -70,6 +70,77 @@ class ProductoAlumnoServiceImplTest {
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
+	private void prepararAsignacion(String concepto) {
+		Alumno alumno = new Alumno();
+		alumno.setId(10L);
+		Producto producto = new Producto();
+		producto.setId(20L);
+		producto.setConcepto(concepto);
+		producto.setPrecio(25.0);
+		when(alumnoRepository.findById(10L)).thenReturn(Optional.of(alumno));
+		when(productoRepository.findById(20L)).thenReturn(Optional.of(producto));
+	}
+
+	@Test
+	void matricula_genericaRechazaAcentosYMayusculasSinGuardar() {
+		for (String concepto : List.of("MATRICULA", "Matrícula", "matrícula anual")) {
+			prepararAsignacion(concepto);
+			ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+					() -> productoAlumnoService.asignarProductoAAlumno(10L, 20L, new ProductoAlumnoDTO()));
+			assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		}
+		verify(productoAlumnoRepository, never()).save(any());
+	}
+
+	@Test
+	void matricula_deporteAusenteInvalidoONoInscritoNoGuarda() {
+		prepararAsignacion("Matrícula");
+		for (String deporte : new String[] { null, "", "TODOS", "PILATES" }) {
+			assertThrows(IllegalArgumentException.class,
+					() -> productoAlumnoService.asignarProductoAAlumnoDeporte(10L, 20L, deporte, new ProductoAlumnoDTO()));
+		}
+		verify(productoAlumnoRepository, never()).save(any());
+	}
+
+	@Test
+	void matricula_dosDeportesCreanSoloDosCargosConConceptoYAsociacion() {
+		prepararAsignacion("Matrícula anual");
+		when(productoAlumnoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		for (Deporte deporte : List.of(Deporte.TAEKWONDO, Deporte.KICKBOXING)) {
+			AlumnoDeporte ad = new AlumnoDeporte();
+			ad.setDeporte(deporte);
+			when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, deporte)).thenReturn(Optional.of(ad));
+			ProductoAlumnoDTO resultado = productoAlumnoService.asignarProductoAAlumnoDeporte(
+					10L, 20L, deporte.name().toLowerCase(), new ProductoAlumnoDTO());
+			assertEquals("Matrícula anual - " + deporte.name(), resultado.getConcepto());
+		}
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository, times(2)).save(captor.capture());
+		assertEquals(Deporte.TAEKWONDO, captor.getAllValues().get(0).getAlumnoDeporte().getDeporte());
+		assertEquals(Deporte.KICKBOXING, captor.getAllValues().get(1).getAlumnoDeporte().getDeporte());
+	}
+
+	@Test
+	void matricula_conceptoConDeporteNoLoDuplica() {
+		prepararAsignacion("Matrícula - taekwondo");
+		AlumnoDeporte ad = new AlumnoDeporte();
+		ad.setDeporte(Deporte.TAEKWONDO);
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, Deporte.TAEKWONDO)).thenReturn(Optional.of(ad));
+		when(productoAlumnoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		assertEquals("Matrícula - taekwondo", productoAlumnoService.asignarProductoAAlumnoDeporte(
+				10L, 20L, "TAEKWONDO", new ProductoAlumnoDTO()).getConcepto());
+	}
+
+	@Test
+	void productoNoMatricula_conservaAsignacionGenerica() {
+		prepararAsignacion("DOBOK");
+		when(productoAlumnoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		assertEquals("DOBOK", productoAlumnoService.asignarProductoAAlumno(10L, 20L, new ProductoAlumnoDTO()).getConcepto());
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		assertNull(captor.getValue().getAlumnoDeporte());
+	}
+
 	@AfterEach
 	void limpiarContexto() {
 		SecurityContextHolder.clearContext();
