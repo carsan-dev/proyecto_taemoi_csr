@@ -154,6 +154,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (detallesDTO.getNotas() != null) {
 			productoAlumno.setNotas(detallesDTO.getNotas());
 		}
+		if (detallesDTO.getFechaAsignacion() != null) {
+			productoAlumno.setFechaAsignacion(detallesDTO.getFechaAsignacion());
+		}
 
 		boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
 		Boolean pagadoSolicitado = detallesDTO.getPagado();

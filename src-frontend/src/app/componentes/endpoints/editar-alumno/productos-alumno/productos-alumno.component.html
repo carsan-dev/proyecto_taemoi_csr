@@ -48,7 +48,13 @@
                   <span class="badge bg-secondary ms-2">Pendiente de eliminar</span>
                   }
                 </td>
-                <td>{{ productoAlumno.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <input #fechaAsignacion type="date" class="admin-form-control admin-form-control-sm fecha-input"
+                    [value]="getFechaAsignacionInput(productoAlumno)"
+                    (change)="onFechaAsignacionChange(productoAlumno, fechaAsignacion.value); fechaAsignacion.value = getFechaAsignacionInput(productoAlumno)"
+                    [disabled]="isPendingDelete(productoAlumno.id)"
+                    [attr.aria-label]="'Fecha de asignación de ' + productoAlumno.concepto + ' (producto ' + productoAlumno.id + ')'" />
+                </td>
                 <td>
                   <input type="number" class="admin-form-control admin-form-control-sm cantidad-input"
                     [(ngModel)]="productoAlumno.cantidad"

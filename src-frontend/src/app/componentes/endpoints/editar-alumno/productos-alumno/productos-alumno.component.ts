@@ -5,7 +5,7 @@ import { Producto } from '../../../../interfaces/producto';
 import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule, formatDate, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
@@ -192,6 +192,33 @@ export class ProductosAlumnoComponent implements OnInit {
     this.location.back();
   }
 
+  getFechaAsignacionInput(producto: ProductoAlumnoDTO): string {
+    return producto.fechaAsignacion
+      ? formatDate(producto.fechaAsignacion, 'yyyy-MM-dd', 'en-US')
+      : '';
+  }
+
+  onFechaAsignacionChange(producto: ProductoAlumnoDTO, value: string): void {
+    // The calendar follows DatePipe's local day, not the ISO timestamp prefix.
+    // Do not rewrite unchanged timestamps or clear legacy dates.
+    if (this.isPendingDelete(producto.id) || !/^\d{4}-\d{2}-\d{2}$/.test(value)
+      || value === this.getFechaAsignacionInput(producto)) {
+      return;
+    }
+    const [year, month, day] = value.split('-').map(Number);
+    const fecha = producto.fechaAsignacion ? new Date(producto.fechaAsignacion) : new Date();
+    if (!producto.fechaAsignacion) {
+      fecha.setHours(12, 0, 0, 0);
+    }
+    // Retain local time (and milliseconds); noon is safe for legacy null dates.
+    fecha.setFullYear(year, month - 1, day);
+    if (formatDate(fecha, 'yyyy-MM-dd', 'en-US') !== value) {
+      return;
+    }
+    producto.fechaAsignacion = fecha;
+    this.onProductoChange(producto);
+  }
+
   onProductoChange(productoAlumno: ProductoAlumnoDTO): void {
     if (this.pendingDeletes.has(productoAlumno.id)) {
       return;
@@ -328,6 +355,7 @@ export class ProductosAlumnoComponent implements OnInit {
       precio: producto.precio,
       pagado: producto.pagado,
       fechaPago: producto.fechaPago,
+      fechaAsignacion: producto.fechaAsignacion,
       notas: producto.notas ?? '',
     });
   }

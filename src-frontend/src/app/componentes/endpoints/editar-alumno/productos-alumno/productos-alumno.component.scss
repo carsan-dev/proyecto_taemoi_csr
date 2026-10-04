@@ -3,6 +3,9 @@
 @use 'sass:color';
 
 // Component-specific styles
+.fecha-input {
+  min-width: 150px;
+}
 
 // Responsive table wrapper for horizontal scroll on small screens
 .admin-table-responsive {

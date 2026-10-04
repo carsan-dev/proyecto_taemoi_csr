@@ -190,6 +190,38 @@ class ProductoAlumnoServiceImplTest {
 		verify(productoAlumnoRepository).save(any(ProductoAlumno.class));
 	}
 
+	@Test
+	void actualizarProductoAlumno_fechaAsignacionModificadaSeGuarda() {
+		Date nuevaFecha = Date.from(java.time.Instant.parse("2026-02-15T23:30:12.123Z"));
+		comprobarActualizacionFecha(nuevaFecha, nuevaFecha);
+	}
+
+	@Test
+	void actualizarProductoAlumno_fechaAsignacionNullUOmitidaConservaOriginal() {
+		comprobarActualizacionFecha(null, Date.from(java.time.Instant.parse("2026-01-20T23:30:12.123Z")));
+	}
+
+	private void comprobarActualizacionFecha(Date solicitada, Date esperada) {
+		ProductoAlumno producto = crearProductoPagado();
+		producto.setFechaAsignacion(Date.from(java.time.Instant.parse("2026-01-20T23:30:12.123Z")));
+		Date fechaPagoOriginal = producto.getFechaPago();
+		ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
+		cambios.setFechaAsignacion(solicitada);
+		when(productoAlumnoRepository.findById(1L)).thenReturn(Optional.of(producto));
+		when(productoAlumnoRepository.save(any(ProductoAlumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(alumnoConvocatoriaRepository.findByProductoAlumnoId(1L)).thenReturn(Optional.empty());
+
+		ProductoAlumnoDTO resultado = productoAlumnoService.actualizarProductoAlumno(1L, cambios);
+
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		assertEquals(esperada, captor.getValue().getFechaAsignacion());
+		assertEquals(esperada, resultado.getFechaAsignacion());
+		assertEquals(fechaPagoOriginal, resultado.getFechaPago());
+		assertEquals(35.0, resultado.getPrecio());
+		assertEquals(1, resultado.getCantidad());
+	}
+
 	private ProductoAlumno crearProductoPagado() {
 		Alumno alumno = new Alumno();
 		alumno.setId(10L);
