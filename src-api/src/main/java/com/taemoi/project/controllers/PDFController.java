@@ -294,6 +294,18 @@ public class PDFController {
 		response.getOutputStream().flush();
 	}
 
+	@GetMapping("/alumnas-dpf")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<byte[]> generarInformeAlumnasDpf(
+			@RequestParam(defaultValue = "true") boolean soloActivos) {
+		byte[] pdfBytes = pdfService.generarInformeAlumnasDpf(soloActivos);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDisposition(
+				ContentDisposition.builder("inline").filename("informe_alumnas_dpf.pdf").build());
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+	}
+
 	@GetMapping("/competidores")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<byte[]> generarInformeCompetidores() {

@@ -291,6 +291,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         value: 'competidores',
         label: 'Informe de Competidores',
       },
+      {
+        value: 'dpf',
+        label: 'Informe de Alumnas de D.P.F',
+      },
     ];
     this.temporadasReservasPlaza = [];
     this.cargandoTemporadasReservasPlaza = true;
@@ -985,6 +989,12 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         this.generarPdfConLoading(
           this.endpointsService.generarInformeCompetidores(),
           'No se pudo generar el informe de competidores', 'informe.pdf', accion, titulo
+        );
+        break;
+      case 'dpf':
+        this.generarPdfConLoading(
+          this.endpointsService.generarInformeAlumnasDpf(soloActivos),
+          'No se pudo generar el informe de alumnas de D.P.F', 'informe_alumnas_dpf.pdf', accion, titulo
         );
         break;
     }
