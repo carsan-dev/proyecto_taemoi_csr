@@ -53,6 +53,8 @@ public interface PDFService {
 
 	byte[] generarInformeCompetidores();
 
+	byte[] generarInformeAlumnasDpf(boolean soloActivos);
+
 	byte[] generarPreinscripcionFirmada(Preinscripcion preinscripcion);
 
 	byte[] generarPreviewPreinscripcion(Deporte deporte, String contenido, String instrucciones);

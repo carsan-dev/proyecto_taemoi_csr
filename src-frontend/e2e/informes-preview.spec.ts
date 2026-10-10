@@ -52,6 +52,35 @@ async function abrirInforme(page: Page) {
   return { dialog, trigger };
 }
 
+test('listados de alumnos: DPF respeta filtro, vista previa y descarga', async ({ page }) => {
+  const requests = await preparar(page);
+  await page.getByRole('button', { name: 'Generar informe de alumnos' }).click();
+  const modal = page.locator('app-informe-modal');
+  const lists = modal.locator('.informe-category').filter({ hasText: 'Listados de Alumnos' });
+  await expect(lists.locator('.informe-option')).toHaveCount(5);
+  await expect(lists).toContainText('Competidores activos de Taekwondo y Kickboxing');
+  await expect(lists).toContainText('nombres y apellidos');
+  await lists.getByText('Informe de Alumnas de D.P.F', { exact: true }).click();
+  await modal.getByLabel('Solo alumnos activos').uncheck();
+  await modal.getByRole('button', { name: 'Ver PDF', exact: true }).click();
+  const dialog = page.locator('app-informe-pdf-modal dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('.pdf-canvas-loading')).toHaveCount(0);
+  expect(requests).toEqual(['/api/informes/alumnas-dpf?soloActivos=false']);
+  const previewDownload = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Descargar PDF', exact: true }).click();
+  expect((await previewDownload).suggestedFilename()).toBe('informe_alumnas_dpf.pdf');
+  expect(requests).toHaveLength(1);
+  await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await modal.getByLabel('Solo alumnos activos').check();
+  const directDownload = page.waitForEvent('download');
+  await modal.getByRole('button', { name: 'Descargar PDF', exact: true }).click();
+  expect((await directDownload).suggestedFilename()).toBe('informe_alumnas_dpf.pdf');
+  expect(requests).toEqual([
+    '/api/informes/alumnas-dpf?soloActivos=false', '/api/informes/alumnas-dpf?soloActivos=true'
+  ]);
+});
+
 test('PDF real: ver, navegar, zoom, expansión, teclado, descargar sin regenerar y restaurar foco/scroll', async ({ page }, testInfo) => {
   const requests = await preparar(page);
   let downloads = 0; page.on('download', () => downloads++);

@@ -2029,6 +2029,17 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  generarInformeAlumnasDpf(soloActivos: boolean = true): Observable<Blob> {
+    const params = new HttpParams().set('soloActivos', soloActivos.toString());
+    return this.http
+      .get(`${this.urlBase}/informes/alumnas-dpf`, {
+        params,
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   descargarAsistencia(
     year: number,
     month: number,

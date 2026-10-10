@@ -63,7 +63,7 @@ export class InformeModalComponent implements OnInit, OnChanges {
   organizarInformesPorCategoria(): void {
     const categorias: InformeCategory[] = [
       {
-        title: 'Informes por Grado',
+        title: 'Listados de Alumnos',
         icon: 'bi-trophy-fill',
         color: '#6366f1',
         opciones: []
@@ -92,7 +92,7 @@ export class InformeModalComponent implements OnInit, OnChanges {
     this.opcionesInforme.forEach(opcion => {
       const value = opcion.value.toLowerCase();
 
-      if (value.includes('grado')) {
+      if (['general', 'taekwondo', 'kickboxing', 'competidores', 'dpf'].includes(value) || value.includes('grado')) {
         categorias[0].opciones.push({
           ...opcion,
           icon: 'bi-award',
@@ -131,6 +131,8 @@ export class InformeModalComponent implements OnInit, OnChanges {
       'general': 'Listado completo de alumnos organizados por cinturón',
       'taekwondo': 'Alumnos de Taekwondo por nivel de grado',
       'kickboxing': 'Alumnos de Kickboxing por nivel de grado',
+      'competidores': 'Competidores activos de Taekwondo y Kickboxing organizados por categoría',
+      'dpf': 'Listado de alumnas de Defensa Personal Femenina con sus nombres y apellidos',
       'licencias': 'Estado actual de todas las licencias deportivas',
       'infantiles': 'Alumnos menores aptos para promoción de grado',
       'adultos': 'Alumnos adultos aptos para promoción de grado',

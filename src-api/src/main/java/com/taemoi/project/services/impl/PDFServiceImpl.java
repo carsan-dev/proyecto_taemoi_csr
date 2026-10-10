@@ -2841,6 +2841,45 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
+	public byte[] generarInformeAlumnasDpf(boolean soloActivos) {
+		List<Alumno> alumnas = alumnoDeporteRepository
+				.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA).stream()
+				.map(AlumnoDeporte::getAlumno)
+				.filter(alumno -> alumno != null && (!soloActivos || Boolean.TRUE.equals(alumno.getActivo())))
+				.sorted(Comparator.comparing(alumno ->
+						((alumno.getNombre() == null ? "" : alumno.getNombre()) + " "
+						+ (alumno.getApellidos() == null ? "" : alumno.getApellidos())), String.CASE_INSENSITIVE_ORDER))
+				.collect(Collectors.toList());
+		String titulo = "Informe de Alumnas de D.P.F";
+		String fecha = LocalDate.now().format(
+				DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES")));
+		StringBuilder html = new StringBuilder("<!DOCTYPE html><html><head><meta charset='UTF-8' /><style>");
+		html.append(generarEstilosModernos(titulo, fecha)).append("</style></head><body>")
+				.append(generarCabeceraConLogo(titulo));
+		if (alumnas.isEmpty()) {
+			html.append("<p>No hay alumnas de D.P.F. para los filtros seleccionados.</p>");
+		} else {
+			html.append("<table><thead><tr><th>Nombre</th><th>Apellidos</th></tr></thead><tbody>");
+			for (Alumno alumna : alumnas) {
+				html.append("<tr><td>").append(esc(alumna.getNombre())).append("</td><td>")
+						.append(esc(alumna.getApellidos())).append("</td></tr>");
+			}
+			html.append("</tbody></table>");
+		}
+		html.append("</body></html>");
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		PdfRendererBuilder builder = new PdfRendererBuilder();
+		builder.withHtmlContent(html.toString(), null);
+		builder.toStream(outputStream);
+		try {
+			builder.run();
+		} catch (Exception e) {
+			throw new RuntimeException("Error al generar el informe de alumnas de D.P.F. PDF", e);
+		}
+		return outputStream.toByteArray();
+	}
+
+	@Override
 	public byte[] generarInformeCompetidores() {
 		// Get all active competitors for Taekwondo and Kickboxing
 		List<AlumnoDeporte> competidores = alumnoDeporteRepository
