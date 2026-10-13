@@ -443,17 +443,45 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		long hija = alumno(ORG1, "HIJACONC", menor(), nif);
 		JsonNode grupo = grupoCon(tokenAdmin, padre);
 
-		java.util.concurrent.CountDownLatch salida = new java.util.concurrent.CountDownLatch(1);
+		// Una transacción aparte retiene la fila de un miembro (FOR UPDATE) hasta que las dos peticiones
+		// llevan al menos un segundo paradas en una consulta (esperando ese bloqueo); así se solapan seguro
+		// y, al soltarla, la segunda compite con la primera. (INNODB_TRX no lista de forma fiable estas
+		// esperas; PROCESSLIST sí.)
 		java.util.concurrent.ExecutorService hilos = java.util.concurrent.Executors.newFixedThreadPool(2);
-		try {
+		try (java.sql.Connection retenedora = java.sql.DriverManager.getConnection(MYSQL.getJdbcUrl(),
+				MYSQL.getUsername(), MYSQL.getPassword());
+				java.sql.Connection root = java.sql.DriverManager.getConnection(MYSQL.getJdbcUrl(), "root",
+						MYSQL.getPassword())) {
+			retenedora.setAutoCommit(false);
+			try (java.sql.PreparedStatement ps = retenedora.prepareStatement("SELECT id FROM alumno WHERE id = ? FOR UPDATE")) {
+				ps.setLong(1, hijo);
+				ps.executeQuery().close();
+			}
+			long idRetenedora;
+			try (java.sql.Statement st = retenedora.createStatement();
+					java.sql.ResultSet rs = st.executeQuery("SELECT CONNECTION_ID()")) {
+				rs.next();
+				idRetenedora = rs.getLong(1);
+			}
 			List<java.util.concurrent.Future<MvcResult>> futuros = new ArrayList<>();
 			for (int i = 0; i < 2; i++) {
-				futuros.add(hilos.submit(() -> {
-					salida.await();
-					return aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andReturn();
-				}));
+				futuros.add(hilos.submit(() -> aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andReturn()));
 			}
-			salida.countDown();
+			long limite = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(30);
+			int esperando = 0;
+			while (esperando < 2 && System.nanoTime() < limite) {
+				try (java.sql.Statement st = root.createStatement();
+						java.sql.ResultSet rs = st.executeQuery("""
+								SELECT COUNT(*) FROM information_schema.PROCESSLIST
+								WHERE USER = '%s' AND COMMAND = 'Query' AND TIME >= 1 AND ID <> %d
+								""".formatted(MYSQL.getUsername(), idRetenedora))) {
+					rs.next();
+					esperando = rs.getInt(1);
+				}
+				Thread.onSpinWait();
+			}
+			assertEquals(2, esperando, "las dos peticiones esperan un bloqueo a la vez");
+			retenedora.commit();
 			int aplicados = 0;
 			for (java.util.concurrent.Future<MvcResult> f : futuros) {
 				MvcResult r = f.get(60, java.util.concurrent.TimeUnit.SECONDS);
