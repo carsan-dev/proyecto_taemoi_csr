@@ -1,5 +1,9 @@
 package com.taemoi.project.dtos;
 
+import java.util.EnumSet;
+import java.util.Set;
+
+import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 
 public class UsuarioDTO {
@@ -45,14 +49,17 @@ public class UsuarioDTO {
 	 * Convierte una entidad Usuario a UsuarioDTO.
 	 *
 	 * @param usuario La entidad Usuario a convertir.
+	 * @param roles   autoridades del usuario en la organización activa (de sus membresías); el
+	 *                campo {@code rol} mantiene el formato de siempre, p. ej. {@code [ROLE_USER, ROLE_ADMIN]}.
 	 * @return Un objeto UsuarioDTO.
 	 */
-	public static UsuarioDTO deUsuario(Usuario usuario) {
+	public static UsuarioDTO deUsuario(Usuario usuario, Set<Roles> roles) {
 		if (usuario == null) {
 			return null;
 		}
+		Set<Roles> ordenados = roles == null || roles.isEmpty() ? EnumSet.noneOf(Roles.class) : EnumSet.copyOf(roles);
 		return new UsuarioDTO(usuario.getId(), usuario.getNombre(), usuario.getApellidos(), usuario.getEmail(),
-				usuario.getRoles().toString(), usuario.getAuthProvider().name());
+				ordenados.toString(), usuario.getAuthProvider().name());
 	}
 
 	public String getNombre() {

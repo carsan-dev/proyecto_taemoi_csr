@@ -14,11 +14,12 @@ public class OrganizacionWebConfig {
 	static final int ORDEN = SecurityProperties.DEFAULT_FILTER_ORDER - 10;
 
 	@Bean
-	FilterRegistrationBean<OrganizacionRequestFilter> organizacionRequestFilter(ResolutorOrganizacion resolutor) {
+	FilterRegistrationBean<OrganizacionRequestFilter> organizacionRequestFilter(ResolutorOrganizacion resolutor,
+			IdentificadorSesion identificadorSesion) {
 		FilterRegistrationBean<OrganizacionRequestFilter> registro =
-				new FilterRegistrationBean<>(new OrganizacionRequestFilter(resolutor));
+				new FilterRegistrationBean<>(new OrganizacionRequestFilter(resolutor, identificadorSesion));
 		registro.setOrder(ORDEN);
-		registro.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
+		registro.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC, DispatcherType.ERROR);
 		registro.addUrlPatterns("/*");
 		return registro;
 	}

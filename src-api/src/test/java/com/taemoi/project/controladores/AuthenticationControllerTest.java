@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.taemoi.project.controllers.AuthenticationController;
@@ -66,11 +67,12 @@ class AuthenticationControllerTest {
 	void obtenerUsuarioAutenticado_roleUserConAlumnoAsociadoActivo_loMantiene() {
 		String email = "familia@example.com";
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
+						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
 		Alumno asociadoActivo = crearAlumno(7L, "Ana", "Activa", true, email);
 		Alumno otroActivo = crearAlumno(8L, "Beto", "Activo", true, email);
-		Usuario usuario = crearUsuario(99L, email, Set.of(Roles.ROLE_USER), asociadoActivo);
+		Usuario usuario = crearUsuario(99L, email, asociadoActivo);
 
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email))
@@ -87,11 +89,12 @@ class AuthenticationControllerTest {
 	void obtenerUsuarioAutenticado_roleUserConAsociadoInactivo_devuelveAlumnoActivoPorEmail() {
 		String email = "familia@example.com";
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
+						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
 		Alumno asociadoInactivo = crearAlumno(10L, "Clara", "Inactiva", false, email);
 		Alumno activo = crearAlumno(11L, "Diego", "Activo", true, email);
-		Usuario usuario = crearUsuario(100L, email, Set.of(Roles.ROLE_USER), asociadoInactivo);
+		Usuario usuario = crearUsuario(100L, email, asociadoInactivo);
 
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email))
@@ -108,9 +111,10 @@ class AuthenticationControllerTest {
 	void obtenerRecordatorioRachaEmail_devuelvePreferenciaActual() {
 		String email = "familia@example.com";
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
+						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
-		Usuario usuario = crearUsuario(101L, email, Set.of(Roles.ROLE_USER), null);
+		Usuario usuario = crearUsuario(101L, email, null);
 		usuario.setRecordatorioRachaEmailHabilitado(true);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 
@@ -124,9 +128,10 @@ class AuthenticationControllerTest {
 	void actualizarRecordatorioRachaEmail_actualizaPreferencia() {
 		String email = "familia@example.com";
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token"));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
+						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
-		Usuario usuario = crearUsuario(102L, email, Set.of(Roles.ROLE_USER), null);
+		Usuario usuario = crearUsuario(102L, email, null);
 		usuario.setRecordatorioRachaEmailHabilitado(false);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 		when(usuarioService.actualizarUsuario(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -142,11 +147,10 @@ class AuthenticationControllerTest {
 		assertEquals(true, usuario.getRecordatorioRachaEmailHabilitado());
 	}
 
-	private Usuario crearUsuario(Long id, String email, Set<Roles> roles, Alumno alumno) {
+	private Usuario crearUsuario(Long id, String email, Alumno alumno) {
 		Usuario usuario = new Usuario();
 		usuario.setId(id);
 		usuario.setEmail(email);
-		usuario.setRoles(roles);
 		usuario.setAlumno(alumno);
 		return usuario;
 	}

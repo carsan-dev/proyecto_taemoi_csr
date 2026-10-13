@@ -25,7 +25,10 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
    petición que el usuario sigue teniendo una membresía activa en esa escuela.
 9. **Durante la transición, los permisos nuevos se traducen a las autoridades actuales**
    (`ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_USER`), para no tocar de golpe los ~186 `@PreAuthorize`.
-10. **La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
+10. **Organización = empresa con cuentas propias; sede = cada escuela o local de esa empresa**
+    (confirmado con el usuario, 13/10/2026). Propietario y administrador gestionan todas las
+    sedes; el responsable de sede, solo las suyas. En la interfaz se usa «Sede».
+11. **La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
     empieza usando solo la aplicación de gestión.
 
 ## Diagrama

@@ -72,6 +72,8 @@ import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
@@ -129,6 +131,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+
+	@Autowired
+	private MembresiaService membresiaService;
 
 	@Autowired
 	private TurnoRepository turnoRepository;
@@ -582,6 +587,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			if (usuario != null && normalizedEmail != null) {
 				String usuarioEmail = usuario.getEmail();
 				if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
+					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
+					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
+							alumnoExistente.getOrganizacionId())) {
+						throw new UsuarioCompartidoException("El alumno está vinculado a una cuenta que también "
+								+ "pertenece a otra escuela: su email no se puede cambiar desde esta escuela.");
+					}
 					Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
 					if (usuarioConEmail.isPresent() && !usuarioConEmail.get().getId().equals(usuario.getId())) {
 						throw new IllegalArgumentException("El correo electronico ya esta asociado a otro usuario.");
@@ -1584,9 +1595,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			if (alumno.getUsuario() != null) {
+				// La cuenta es global: se quita solo su acceso como familia a esta escuela y se borra
+				// únicamente si ya no le queda ninguna membresía (en ninguna escuela).
 				Usuario usuario = alumno.getUsuario();
 				alumno.setUsuario(null);
-				usuarioRepository.delete(usuario);
+				usuario.setAlumno(null);
+				if (membresiaService.retirarFamilia(usuario.getId(), alumno.getOrganizacionId())) {
+					usuarioRepository.save(usuario);
+				} else {
+					usuarioRepository.delete(usuario);
+				}
 			}
 
 			for (Grupo grupo : alumno.getGrupos()) {

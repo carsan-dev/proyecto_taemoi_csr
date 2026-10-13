@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -49,10 +51,19 @@ class RecordatorioRachaServiceImplTest {
 	@InjectMocks
 	private RecordatorioRachaServiceImpl recordatorioRachaService;
 
+	private static final Long ORGANIZACION = 1L;
+
 	private ZoneId zoneId;
+
+	@AfterEach
+	void limpiarOrganizacion() {
+		TenantContext.clear();
+	}
 
 	@BeforeEach
 	void setUp() {
+		// El job fija la organización (EjecutorPorOrganizacion); aquí se simula.
+		TenantContext.set(ORGANIZACION);
 		zoneId = ZoneId.of("Europe/Madrid");
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderEnabled", true);
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderWindowHours", 3);
@@ -63,7 +74,7 @@ class RecordatorioRachaServiceImplTest {
 	void enviarRecordatoriosSiCorresponde_enviaEmailCuandoHayRachaEnRiesgo() {
 		fijarHora("2026-02-17T22:30:00");
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
-		when(usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER))
+		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
 		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
 				.thenReturn(List.of(crearAlumno("Ana", "Activa", "familia@example.com", 5, LocalDate.of(2026, 2, 16))));
@@ -80,7 +91,7 @@ class RecordatorioRachaServiceImplTest {
 
 		recordatorioRachaService.enviarRecordatoriosSiCorresponde();
 
-		verify(usuarioRepository, never()).findByRolAndRecordatorioRachaEmailHabilitadoTrue(any());
+		verify(usuarioRepository, never()).findConRecordatorioRachaYMembresiaActiva(any(), any());
 		verify(emailService, never()).sendEmail(any(), any(), any());
 	}
 
@@ -88,7 +99,7 @@ class RecordatorioRachaServiceImplTest {
 	void enviarRecordatoriosSiCorresponde_noEnviaSiToggleDesactivado() {
 		fijarHora("2026-02-17T22:30:00");
 		Usuario usuario = crearUsuario("familia@example.com", false, null);
-		when(usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER))
+		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
 
 		recordatorioRachaService.enviarRecordatoriosSiCorresponde();
@@ -101,7 +112,7 @@ class RecordatorioRachaServiceImplTest {
 	void enviarRecordatoriosSiCorresponde_noEnviaSiNoHayRachaMantenible() {
 		fijarHora("2026-02-17T22:30:00");
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
-		when(usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER))
+		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
 		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
 				.thenReturn(List.of(
@@ -118,7 +129,7 @@ class RecordatorioRachaServiceImplTest {
 	void enviarRecordatoriosSiCorresponde_deduplicaPorResetObjetivo() {
 		fijarHora("2026-02-17T22:30:00");
 		Usuario usuario = crearUsuario("familia@example.com", true, LocalDate.of(2026, 2, 18));
-		when(usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER))
+		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
 
 		recordatorioRachaService.enviarRecordatoriosSiCorresponde();
@@ -131,7 +142,7 @@ class RecordatorioRachaServiceImplTest {
 	void enviarRecordatoriosSiCorresponde_agrupaVariosAlumnosEnUnSoloCorreo() {
 		fijarHora("2026-02-17T22:30:00");
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
-		when(usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER))
+		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
 		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
 				.thenReturn(List.of(
@@ -158,7 +169,6 @@ class RecordatorioRachaServiceImplTest {
 		Usuario usuario = new Usuario();
 		usuario.setEmail(email);
 		usuario.setNombre("Familia");
-		usuario.setRoles(Set.of(Roles.ROLE_USER));
 		usuario.setRecordatorioRachaEmailHabilitado(habilitado);
 		usuario.setUltimoRecordatorioRachaReset(ultimoReset);
 		return usuario;

@@ -20,6 +20,8 @@ import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaExcep
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
+import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
+import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -86,6 +88,16 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(PreinscripcionDuplicadaException.class)
 	public ResponseEntity<Map<String,String>> handlePreinscripcionDuplicada(PreinscripcionDuplicadaException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(UsuarioNoEncontradoException.class)
+	public ResponseEntity<Map<String,String>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(UsuarioCompartidoException.class)
+	public ResponseEntity<Map<String,String>> handleUsuarioCompartido(UsuarioCompartidoException e) {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
 	}
 

@@ -21,12 +21,13 @@ import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.RegistroPendiente;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.RegistroPendienteRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -39,6 +40,7 @@ public class RegistroServiceImpl implements RegistroService {
 	private final UsuarioRepository usuarioRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final EmailService emailService;
+	private final MembresiaService membresiaService;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Value("${app.frontend.base-url:https://moiskimdo.es}")
@@ -51,12 +53,14 @@ public class RegistroServiceImpl implements RegistroService {
 			AlumnoRepository alumnoRepository,
 			UsuarioRepository usuarioRepository,
 			PasswordEncoder passwordEncoder,
-			EmailService emailService) {
+			EmailService emailService,
+			MembresiaService membresiaService) {
 		this.registroPendienteRepository = registroPendienteRepository;
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.emailService = emailService;
+		this.membresiaService = membresiaService;
 	}
 
 	@Override
@@ -138,9 +142,11 @@ public class RegistroServiceImpl implements RegistroService {
 		usuario.setEmail(registro.getEmail());
 		usuario.setContrasena(registro.getPasswordHash());
 		usuario.setAuthProvider(AuthProvider.LOCAL);
-		usuario.getRoles().add(Roles.ROLE_USER);
 		usuario.setAlumno(alumno);
+		usuario.setUltimaOrganizacionId(alumno.getOrganizacionId());
 		usuarioRepository.save(usuario);
+		// Familia en la escuela del alumno (sustituye a ROLE_USER en usuario_rol).
+		membresiaService.asegurarMembresia(usuario.getId(), alumno.getOrganizacionId(), RolMembresia.FAMILIA);
 
 		alumno.setUsuario(usuario);
 		alumnoRepository.save(alumno);

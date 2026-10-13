@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grupo;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.GrupoRepository;
 
 /**
@@ -27,11 +28,11 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JdbcTemplate jdbc;
 
 	@Test
-	void flywayDejaLaBaseEnV19SinMigracionesPendientes() {
+	void flywayDejaLaBaseEnV20SinMigracionesPendientes() {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("19", actual.getVersion().getVersion());
+		assertEquals("20", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 
@@ -44,6 +45,11 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void repositorioGuardaYLeeUnGrupo() {
+		// Fuera de una petición no hay organización: el test la fija explícitamente (fallo cerrado).
+		TenantContext.ejecutarCon(1L, this::guardarYLeerGrupo);
+	}
+
+	private void guardarYLeerGrupo() {
 		Grupo grupo = new Grupo();
 		grupo.setNombre("IT smoke grupo");
 		grupo.setTipo("Pilates");

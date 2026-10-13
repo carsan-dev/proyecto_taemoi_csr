@@ -229,6 +229,29 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	boolean existsByEmailIgnoreCaseAndActivoTrue(String email);
 
+	/**
+	 * Alumnos activos con ese email en una organización CONCRETA, sin depender de la organización
+	 * de la sesión de Hibernate. Es la única consulta nativa permitida sobre {@code alumno}: se usa al
+	 * iniciar sesión o cambiar de escuela, cuando la sesión abierta (open-in-view) puede ser de otra
+	 * organización. Filtra explícitamente por {@code organizacion_id}.
+	 */
+	@Query(value = """
+			SELECT COUNT(*) FROM alumno
+			WHERE organizacion_id = :organizacionId
+			  AND activo = TRUE
+			  AND LOWER(email) = LOWER(:email)
+			""", nativeQuery = true)
+	long contarActivosPorEmailEnOrganizacion(@Param("email") String email,
+			@Param("organizacionId") Long organizacionId);
+
+	/**
+	 * Carga por id como consulta (filtrada por la organización activa). A diferencia de
+	 * {@code findById}, si ya hay un proxy sin inicializar de otra organización en el contexto de
+	 * persistencia devuelve vacío en lugar de intentar inicializarlo.
+	 */
+	@Query("SELECT a FROM Alumno a WHERE a.id = :id")
+	Optional<Alumno> buscarPorIdEnOrganizacionActiva(@Param("id") Long id);
+
 	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
 
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")

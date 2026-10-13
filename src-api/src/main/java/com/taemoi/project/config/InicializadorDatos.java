@@ -15,12 +15,13 @@ import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.AuthProvider;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
@@ -69,6 +70,9 @@ public class InicializadorDatos implements CommandLineRunner {
 
 	@Autowired
 	private ResolutorOrganizacion resolutorOrganizacion;
+
+	@Autowired
+	private MembresiaService membresiaService;
 
 	@Value("${app.bootstrap.admin.email:}")
 	private String bootstrapAdminEmail;
@@ -222,10 +226,12 @@ public class InicializadorDatos implements CommandLineRunner {
 				bootstrapAdminNombre,
 				bootstrapAdminApellidos,
 				bootstrapAdminPassword,
-				Roles.ROLE_ADMIN);
+				RolMembresia.PROPIETARIO);
 	}
 
-	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {
+	/** Crea el usuario con la membresía {@code rol} en la organización por defecto (la del arranque). */
+	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena,
+			RolMembresia rol) {
 		String normalizedEmail = EmailUtils.normalizeEmail(email);
 		if (usuarioRepository.findByEmailIgnoreCase(normalizedEmail).isEmpty()) {
 			Usuario usuario = new Usuario();
@@ -234,8 +240,10 @@ public class InicializadorDatos implements CommandLineRunner {
 			usuario.setEmail(normalizedEmail);
 			usuario.setContrasena(passwordEncoder.encode(contrasena));
 			usuario.setAuthProvider(AuthProvider.LOCAL);
-			usuario.getRoles().add(rol);
+			Long organizacionId = resolutorOrganizacion.getOrganizacionPorDefecto();
+			usuario.setUltimaOrganizacionId(organizacionId);
 			usuarioRepository.save(usuario);
+			membresiaService.asegurarMembresia(usuario.getId(), organizacionId, rol);
 		}
 	}
 

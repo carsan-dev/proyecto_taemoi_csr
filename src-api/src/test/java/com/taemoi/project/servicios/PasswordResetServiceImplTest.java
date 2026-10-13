@@ -32,15 +32,25 @@ class PasswordResetServiceImplTest {
     private final AlumnoRepository alumnos = mock(AlumnoRepository.class);
     private final EmailService email = mock(EmailService.class);
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private final MembresiaRepository membresiaRepo = mock(MembresiaRepository.class);
+    // Permisos por organización (V20): las membresías sustituyen a usuario_rol.
+    private final java.util.List<Membresia> membresiasUsuario = new java.util.ArrayList<>();
+    private MembresiaServiceImpl membresias;
     private final Usuario user = new Usuario();
     private PasswordResetServiceImpl reset;
     private AuthenticationServiceImpl auth;
 
     @BeforeEach
     void setup() {
+        user.setId(5L);
         user.setEmail("alumno@example.test");
         user.setContrasena(encoder.encode("Anterior-123!"));
-        user.setRoles(Set.of(Roles.ROLE_USER));
+        membresiasUsuario.add(new Membresia(5L, 1L, RolMembresia.FAMILIA));
+        when(membresiaRepo.findActivasDeUsuario(5L)).thenAnswer(call -> java.util.List.copyOf(membresiasUsuario));
+        when(membresiaRepo.findRolesActivos(5L, 1L)).thenAnswer(call ->
+            membresiasUsuario.stream().map(Membresia::getRol).toList());
+        membresias = new MembresiaServiceImpl(membresiaRepo, mock(OrganizacionRepository.class), users, alumnos,
+            new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
         user.setAlumno(new Alumno());
         when(users.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
         when(users.findByResetTokenHash(anyString())).thenAnswer(call ->
@@ -50,9 +60,10 @@ class PasswordResetServiceImplTest {
         ReflectionTestUtils.setField(reset, "resetTokenHours", 1L);
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(name -> user);
         provider.setPasswordEncoder(encoder);
-        auth = new AuthenticationServiceImpl(users, alumnos, new LoginAttemptServiceImpl(), encoder,
-            mock(JwtService.class), new ProviderManager(provider));
-        when(alumnos.existsByEmailIgnoreCaseAndActivoTrue(user.getEmail())).thenReturn(true);
+        auth = new AuthenticationServiceImpl(users, new LoginAttemptServiceImpl(), encoder,
+            mock(JwtService.class), new ProviderManager(provider), membresias,
+            new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
+        when(alumnos.contarActivosPorEmailEnOrganizacion(user.getEmail(), 1L)).thenReturn(1L);
     }
 
     @AfterEach
@@ -79,7 +90,8 @@ class PasswordResetServiceImplTest {
         reset.resetearContrasena(token, "Nueva-456!");
         assertEquals(origin, user.getAuthProvider());
         assertSame(linked, user.getAlumno());
-        assertEquals(Set.of(Roles.ROLE_USER), user.getRoles());
+        verify(membresiaRepo, never()).save(any());
+        assertEquals(Set.of(Roles.ROLE_USER), membresias.autoridadesEn(5L, 1L));
         assertNull(user.getResetTokenHash());
         assertNull(user.getResetTokenExpiresAt());
         assertThrows(IllegalArgumentException.class, () -> reset.resetearContrasena(token, "Otra-789!"));
@@ -88,14 +100,14 @@ class PasswordResetServiceImplTest {
         String hash = user.getContrasena();
         OAuth2User google = mock(OAuth2User.class);
         when(google.getAttribute("email")).thenReturn(user.getEmail());
-        assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder).processOAuth2Login(google, "google"));
+        assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder, membresias).processOAuth2Login(google, "google"));
         assertEquals(hash, user.getContrasena());
         assertDoesNotThrow(() -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
-        when(alumnos.existsByEmailIgnoreCaseAndActivoTrue(user.getEmail())).thenReturn(false);
+        when(alumnos.contarActivosPorEmailEnOrganizacion(user.getEmail(), 1L)).thenReturn(0L);
         assertThrows(DisabledException.class, () -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
-        user.setRoles(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER));
+        membresiasUsuario.add(new Membresia(5L, 1L, RolMembresia.PROPIETARIO));
         assertDoesNotThrow(() -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
-        assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder).processOAuth2Login(google, "google"));
+        assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder, membresias).processOAuth2Login(google, "google"));
         for (int i = 0; i < 5; i++) {
             assertThrows(BadCredentialsException.class, () -> auth.signin(new LoginRequest(user.getEmail(), "Incorrecta!")));
         }

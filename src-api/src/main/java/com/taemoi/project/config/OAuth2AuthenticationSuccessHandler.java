@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -14,8 +15,10 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.OAuth2UserService;
 
 import jakarta.servlet.ServletException;
@@ -32,6 +35,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	private final OAuth2UserService oauth2UserService;
 	private final JwtService jwtService;
+	private final MembresiaService membresiaService;
 
 	@Value("${cors.allowed.origin}")
 	private String frontendUrl;
@@ -43,9 +47,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	private String appBaseUrl;
 
 	public OAuth2AuthenticationSuccessHandler(OAuth2UserService oauth2UserService,
-											  JwtService jwtService) {
+											  JwtService jwtService,
+											  MembresiaService membresiaService) {
 		this.oauth2UserService = oauth2UserService;
 		this.jwtService = jwtService;
+		this.membresiaService = membresiaService;
 	}
 
 	@Override
@@ -70,9 +76,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 				}
 			}
 
+			// Escuela de la sesión: misma regla que el login con contraseña.
+			Long organizacionId = membresiaService.elegirOrganizacionParaLogin(usuario)
+					.orElseThrow(() -> new IllegalArgumentException(
+							membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()
+								? "El usuario no tiene acceso a ninguna escuela. Contacte con el administrador."
+								: "No hay alumnos activos asociados a este email. Contacte con el administrador."));
+			membresiaService.registrarUltimaOrganizacion(usuario, organizacionId);
+			Set<Roles> autoridades = membresiaService.autoridadesEn(usuario.getId(), organizacionId);
+
 			// Generar JWT token
 			long expirationMillis = rememberMe ? 1000L * 60 * 60 * 24 * 30 : 1000L * 60 * 60 * 10;
-			String jwt = jwtService.generateToken(usuario, expirationMillis);
+			String jwt = jwtService.generateToken(usuario, expirationMillis, organizacionId);
 
 			// Determinar si usar Secure basado en el perfil activo
 			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
@@ -102,8 +117,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 			// Redirigir al frontend basado en el rol del usuario
 			String redirectPath;
-			if (usuario.getRoles().contains(com.taemoi.project.entities.Roles.ROLE_ADMIN) ||
-				usuario.getRoles().contains(com.taemoi.project.entities.Roles.ROLE_MANAGER)) {
+			if (autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER)) {
 				redirectPath = "/adminpage";
 			} else {
 				redirectPath = "/userpage";

@@ -24,16 +24,21 @@ public class EjecutorPorOrganizacion {
 	private static final Logger logger = LoggerFactory.getLogger(EjecutorPorOrganizacion.class);
 
 	private final OrganizacionRepository organizaciones;
+	private final ResolutorOrganizacion resolutor;
 
-	public EjecutorPorOrganizacion(OrganizacionRepository organizaciones) {
+	public EjecutorPorOrganizacion(OrganizacionRepository organizaciones, ResolutorOrganizacion resolutor) {
 		this.organizaciones = organizaciones;
+		this.resolutor = resolutor;
 	}
 
 	/** @return número de organizaciones procesadas sin error. */
 	public int paraCadaOrganizacionActiva(String tarea, Consumer<Long> accion) {
-		List<Long> ids = organizaciones.findByActivaTrueOrderByIdAsc().stream()
-				.map(Organizacion::getId)
-				.toList();
+		// La lista de organizaciones es global, pero Hibernate exige una organización para abrir
+		// la sesión (fallo cerrado): se consulta con la organización por defecto fijada.
+		List<Long> ids = TenantContext.calcularCon(resolutor.getOrganizacionPorDefecto(),
+				() -> organizaciones.findByActivaTrueOrderByIdAsc().stream()
+						.map(Organizacion::getId)
+						.toList());
 		int correctas = 0;
 		for (Long id : ids) {
 			try {

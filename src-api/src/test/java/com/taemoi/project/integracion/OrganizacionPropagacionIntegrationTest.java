@@ -144,7 +144,8 @@ class OrganizacionPropagacionIntegrationTest extends MySqlIntegrationTest {
 
 		rachaReminderJob.ejecutarRecordatorioRacha();
 
-		List<Long> esperadas = organizaciones.findByActivaTrueOrderByIdAsc().stream().map(Organizacion::getId).toList();
+		List<Long> esperadas = TenantContext.calcularCon(1L,
+				() -> organizaciones.findByActivaTrueOrderByIdAsc().stream().map(Organizacion::getId).toList());
 		assertEquals(esperadas, vistas, "Una pasada por organización activa, en orden y con su organización");
 		assertTrue(vistas.contains(1L));
 		assertTrue(vistas.contains(activa), "El fallo de una organización no debe parar a las demás");
@@ -166,7 +167,8 @@ class OrganizacionPropagacionIntegrationTest extends MySqlIntegrationTest {
 		org.setSlug("it-prop-" + UUID.randomUUID().toString().substring(0, 8));
 		org.setNombre("Escuela propagación");
 		org.setActiva(activa);
-		return organizaciones.save(org).getId();
+		// organizacion es global, pero abrir la sesión exige organización (fallo cerrado).
+		return TenantContext.calcularCon(1L, () -> organizaciones.save(org).getId());
 	}
 
 	@TestConfiguration

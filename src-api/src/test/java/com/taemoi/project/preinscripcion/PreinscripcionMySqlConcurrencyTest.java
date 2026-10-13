@@ -52,7 +52,10 @@ import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.exceptions.GlobalExceptionHandler;
 import com.taemoi.project.integracion.MySqlIntegrationTest;
 import com.taemoi.project.services.AforoPreinscripcionService;
+import com.taemoi.project.organizacion.IdentificadorSesion;
 import com.taemoi.project.organizacion.OrganizacionHibernateConfig;
+import com.taemoi.project.organizacion.OrganizacionRequestFilter;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.EmailService;
@@ -101,6 +104,8 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 		when(pdfMock.generarPreinscripcionFirmada(any())).thenReturn("pdf-test".getBytes(StandardCharsets.UTF_8));
 		firma = firmaValida();
 		mvc = MockMvcBuilders.standaloneSetup(new PreinscripcionController(service, temporadas))
+				// Como en producción: la petición anónima corre en la organización por defecto.
+				.addFilters(new OrganizacionRequestFilter(new ResolutorOrganizacion(1L), IdentificadorSesion.ANONIMO))
 				.setControllerAdvice(new GlobalExceptionHandler())
 				.setValidator(validator)
 				.build();

@@ -115,9 +115,19 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void sinOrganizacionFijadaSeUsaLaPorDefecto() {
-		assertTrue(alumnos.findById(taemoi.alumnoId).isPresent());
-		assertTrue(alumnos.findById(otra.alumnoId).isEmpty());
+	void sinOrganizacionFijadaFallaCerrado() {
+		// Ya no hay organización por defecto implícita: sin TenantContext no se puede abrir sesión.
+		RuntimeException error = assertThrows(RuntimeException.class, () -> alumnos.findById(taemoi.alumnoId));
+		assertTrue(causas(error).contains("No hay organización activa"), causas(error));
+		assertThrows(RuntimeException.class, () -> organizaciones.findAll());
+	}
+
+	private static String causas(Throwable error) {
+		StringBuilder texto = new StringBuilder();
+		for (Throwable t = error; t != null; t = t.getCause()) {
+			texto.append(t.getMessage()).append(" | ");
+		}
+		return texto.toString();
 	}
 
 	@Test
@@ -351,7 +361,8 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		Organizacion org = new Organizacion();
 		org.setSlug(prefijoSlug + "-" + UUID.randomUUID().toString().substring(0, 8));
 		org.setNombre("Escuela " + prefijoSlug);
-		long id = organizaciones.save(org).getId();
+		// organizacion es global, pero abrir la sesión exige organización (fallo cerrado).
+		long id = TenantContext.calcularCon(ORG_TAEMOI, () -> organizaciones.save(org).getId());
 		assertNotEquals(ORG_TAEMOI, id);
 		return id;
 	}

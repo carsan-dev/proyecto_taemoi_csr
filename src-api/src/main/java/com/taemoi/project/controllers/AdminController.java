@@ -32,7 +32,9 @@ import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
 import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.services.AlumnoService;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.services.PreinscripcionService;
@@ -68,6 +70,8 @@ public class AdminController {
 	@Autowired
 	private ConfiguracionSistemaService configuracionSistemaService;
 	@Autowired private PreinscripcionService preinscripcionService;
+	@Autowired private MembresiaService membresiaService;
+	@Autowired private ResolutorOrganizacion resolutorOrganizacion;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o no paginada según los parámetros
@@ -149,16 +153,16 @@ public class AdminController {
 			@RequestBody java.util.Set<Roles> roles) {
 		logger.info("## AdminController :: actualizarRolesUsuario - userId: {}, roles: {}", userId, roles);
 
-		// Buscar el usuario
-		Usuario usuario = usuarioService.encontrarPorId(userId)
-				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
+		// Buscar el usuario (solo los de la escuela activa: los de otras escuelas no existen aquí)
+		Long organizacionId = resolutorOrganizacion.organizacionActual();
+		Usuario usuario = usuarioDeLaOrganizacion(userId, organizacionId);
 
-		// Actualizar roles
-		usuario.setRoles(roles);
-		Usuario usuarioActualizado = usuarioService.actualizarUsuario(usuario);
+		// Los roles se guardan como membresías de la escuela activa (ya no en usuario_rol)
+		java.util.Set<Roles> resultantes = membresiaService.reemplazarAutoridades(usuario.getId(), organizacionId,
+				roles);
 
 		// Convertir a DTO y devolver
-		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuarioActualizado);
+		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuario, resultantes);
 		return ResponseEntity.ok(usuarioDTO);
 	}
 
@@ -168,15 +172,27 @@ public class AdminController {
 			@Valid @RequestBody PasswordResetAdminRequest request) {
 		logger.info("## AdminController :: actualizarContrasenaUsuario - userId: {}", userId);
 
-		Usuario usuario = usuarioService.encontrarPorId(userId)
-				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
+		Long organizacionId = resolutorOrganizacion.organizacionActual();
+		Usuario usuario = usuarioDeLaOrganizacion(userId, organizacionId);
+		// La contraseña es de la cuenta global: solo si el usuario no pertenece a ninguna otra escuela.
+		if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(), organizacionId)) {
+			throw new SecurityException(
+					"El usuario también pertenece a otra escuela: no se puede cambiar su contraseña desde esta escuela.");
+		}
 
 		if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
 			throw new IllegalArgumentException("Las cuentas de Google no permiten restablecer contrasena manualmente.");
 		}
 
 		Usuario actualizado = usuarioService.actualizarContrasena(userId, request.getNuevaContrasena());
-		return ResponseEntity.ok(UsuarioDTO.deUsuario(actualizado));
+		return ResponseEntity.ok(UsuarioDTO.deUsuario(actualizado,
+				membresiaService.autoridadesEn(actualizado.getId(), organizacionId)));
+	}
+
+	private Usuario usuarioDeLaOrganizacion(Long userId, Long organizacionId) {
+		return usuarioService.encontrarPorId(userId)
+				.filter(u -> membresiaService.esUsuarioDeOrganizacion(u.getId(), organizacionId))
+				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
 	}
 
 	/**
