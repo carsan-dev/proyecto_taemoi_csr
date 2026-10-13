@@ -83,6 +83,15 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	@Enumerated(EnumType.STRING)
 	private TipoTarifa tipoTarifa;
 
+	/**
+	 * Tarifa del catálogo (V24, rellenada desde {@code tipoTarifa}). Todavía no la escribe ni la lee
+	 * el código actual: {@code tipoTarifa} sigue siendo la fuente hasta el cambio de llamadores.
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "tarifa_id")
+	private Tarifa tarifa;
+
 	private Double cuantiaTarifa;
 
 	@Enumerated(EnumType.STRING)
@@ -223,6 +232,14 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 
 	public void setTipoTarifa(TipoTarifa tipoTarifa) {
 		this.tipoTarifa = tipoTarifa;
+	}
+
+	public Tarifa getTarifa() {
+		return tarifa;
+	}
+
+	public void setTarifa(Tarifa tarifa) {
+		this.tarifa = tarifa;
 	}
 
 	public Double getCuantiaTarifa() {
