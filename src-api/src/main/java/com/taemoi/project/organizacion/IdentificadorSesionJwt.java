@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
@@ -60,7 +61,7 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 	public Optional<SesionVerificada> identificar(HttpServletRequest request) {
 		String path = request.getRequestURI();
 		// Imágenes públicas: nunca se autentican (igual que antes en JwtAuthenticationFilter).
-		if (path != null && path.startsWith("/imagenes/") && !path.startsWith("/imagenes/alumnos/")) {
+		if (esImagenPublicaSinSesion(path)) {
 			return Optional.empty();
 		}
 		for (String jwt : candidatos(request)) {
@@ -74,6 +75,16 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 			}
 		}
 		return Optional.empty();
+	}
+
+	/**
+	 * Solo se omite la sesión en imágenes claramente públicas: sin ningún segmento {@code alumnos} (tampoco
+	 * {@code org-<id>/alumnos}, que necesita la escuela de la sesión) y sin nada codificado. Ante la duda se
+	 * verifica el token: nunca se pierde la escuela activa de una petición privada.
+	 */
+	static boolean esImagenPublicaSinSesion(String path) {
+		return path != null && path.startsWith("/imagenes/") && path.indexOf('%') < 0
+				&& RutasArchivos.esImagenPublica(path.substring("/imagenes/".length()));
 	}
 
 	private Optional<SesionVerificada> verificar(String jwt, String path) {

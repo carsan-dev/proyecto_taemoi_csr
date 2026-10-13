@@ -28,11 +28,11 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JdbcTemplate jdbc;
 
 	@Test
-	void flywayDejaLaBaseEnV20SinMigracionesPendientes() {
+	void flywayDejaLaBaseEnLaUltimaVersionSinMigracionesPendientes() {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("20", actual.getVersion().getVersion());
+		assertEquals("21", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 

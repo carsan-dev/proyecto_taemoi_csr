@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,6 +29,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.impl.MaterialExamenServiceImpl;
 
@@ -53,6 +55,69 @@ class MaterialExamenServiceImplTest {
 		ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
 		ReflectionTestUtils.setField(service, "directorioDocumentosWindows", tempDir.toString());
 		ReflectionTestUtils.setField(service, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(service, "organizacionPorDefecto", 1L);
+		TenantContext.set(1L);
+	}
+
+	@AfterEach
+	void limpiarOrganizacion() {
+		TenantContext.clear();
+	}
+
+	@Test
+	void laEscuelaPorDefectoUsaSuCarpetaConPrefijoSiExiste() throws Exception {
+		mockAlumnoConDeporte(40L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+		Path nuevo = tempDir.resolve("org-1").resolve("materiales").resolve("taekwondo").resolve("b01_inicio_a_amarillo");
+		Files.createDirectories(nuevo.resolve("temario"));
+		Files.writeString(nuevo.resolve("temario").resolve("nuevo.pdf"), "nuevo");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(40L, Deporte.TAEKWONDO);
+
+		assertEquals("nuevo.pdf", material.getTemario().getFileName());
+	}
+
+	@Test
+	void laEscuelaPorDefectoRecurreALaCarpetaHeredadaSiNoHayPrefijo() throws Exception {
+		mockAlumnoConDeporte(41L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(41L, Deporte.TAEKWONDO);
+
+		assertEquals("heredado.pdf", material.getTemario().getFileName());
+	}
+
+	@Test
+	void otraEscuelaSoloLeeSuCarpetaConPrefijoYNuncaLaHeredada() throws Exception {
+		TenantContext.set(2L);
+		mockAlumnoConDeporte(42L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+
+		MaterialExamenDTO sinMaterial = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		assertNull(sinMaterial.getTemario());
+		assertThrows(java.util.NoSuchElementException.class, () -> service.obtenerTemario(42L, Deporte.TAEKWONDO));
+
+		Path propio = tempDir.resolve("org-2").resolve("materiales").resolve("taekwondo").resolve("b01_inicio_a_amarillo");
+		Files.createDirectories(propio.resolve("temario"));
+		Files.writeString(propio.resolve("temario").resolve("propio.pdf"), "propio");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		assertEquals("propio.pdf", material.getTemario().getFileName());
+		assertEquals(propio.resolve("temario").resolve("propio.pdf").toRealPath(),
+				service.obtenerTemario(42L, Deporte.TAEKWONDO).getPath().toRealPath());
+	}
+
+	@Test
+	void sinEscuelaActivaFallaCerrado() {
+		TenantContext.clear();
+		mockAlumnoConDeporte(43L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		assertThrows(IllegalStateException.class, () -> service.obtenerMaterialExamen(43L, Deporte.TAEKWONDO));
 	}
 
 	@Test

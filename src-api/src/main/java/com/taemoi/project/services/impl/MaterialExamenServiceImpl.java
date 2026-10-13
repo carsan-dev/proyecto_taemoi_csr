@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.ExamMaterialBlockConfig;
 import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
@@ -51,6 +52,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	@Value("${app.documentos.directorio.windows}")
 	private String directorioDocumentosWindows;
+
+	@Value("${app.organizacion.por-defecto:1}")
+	private Long organizacionPorDefecto;
 
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
@@ -332,10 +336,28 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return grado.name().replace('_', '-');
 	}
 
+	/**
+	 * Carpeta del bloque de la escuela activa: {@code org-<id>/materiales/<deporte>/<bloque>}. Solo la
+	 * escuela por defecto recurre a la carpeta heredada {@code Materiales_Examen/<deporte>/<bloque>}
+	 * cuando la suya no existe; otra escuela nunca lee material ajeno.
+	 */
 	private Path obtenerCarpetaBloque(Deporte deporte, String bloqueId) {
-		return obtenerRutaBaseDocumentos()
-				.resolve("Materiales_Examen")
-				.resolve(deporte.name().toLowerCase(Locale.ROOT))
+		Long organizacion = RutasArchivos.organizacionActiva();
+		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
+		String deporteDir = deporte.name().toLowerCase(Locale.ROOT);
+		Path propia = base.resolve(RutasArchivos.carpetaOrganizacion(organizacion))
+				.resolve(RutasArchivos.CARPETA_MATERIALES)
+				.resolve(deporteDir)
+				.resolve(bloqueId)
+				.normalize();
+		if (!propia.startsWith(base)) {
+			throw new IllegalArgumentException("Bloque de material fuera del directorio permitido");
+		}
+		if (Files.isDirectory(propia) || !organizacion.equals(organizacionPorDefecto)) {
+			return propia;
+		}
+		return base.resolve(RutasArchivos.CARPETA_MATERIALES_LEGADO)
+				.resolve(deporteDir)
 				.resolve(bloqueId)
 				.normalize();
 	}

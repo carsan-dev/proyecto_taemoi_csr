@@ -69,6 +69,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.archivos.RutasArchivos;
+import com.taemoi.project.archivos.UrlArchivoSerializer;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
@@ -2143,9 +2145,11 @@ public class AlumnoController {
 		List<String> candidatos = new ArrayList<>();
 
 		if (urlImagen != null && !urlImagen.isBlank()) {
-			candidatos.add(urlImagen.trim());
+			// Las URL nuevas se guardan sin host (/imagenes/…): se completan al leer con app.base.url.
+			candidatos.add(UrlArchivoSerializer.absoluta(urlImagen.trim(), baseUrl));
 		}
-		if (nombre != null && !nombre.isBlank()) {
+		// Los respaldos por nombre en la carpeta heredada solo valen para imágenes heredadas (sin org-<id>/).
+		if (nombre != null && !nombre.isBlank() && RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
 			candidatos.add("/imagenes/alumnos/" + nombre);
 			if (baseUrl != null && !baseUrl.isBlank()) {
 				candidatos.add(baseUrl + "/imagenes/alumnos/" + nombre);
@@ -2175,10 +2179,19 @@ public class AlumnoController {
 		}
 
 		List<Path> candidatos = new ArrayList<>();
-		agregarCandidatoRuta(candidatos, imagen.getRuta());
+		// Ruta relativa (org-<id>/alumnos/…) bajo la raíz de imágenes, o absoluta heredada tal cual.
+		Path rutaGuardada = imagenService.resolverRutaArchivo(imagen);
+		if (rutaGuardada != null) {
+			candidatos.add(rutaGuardada);
+		}
+		if (RutasArchivos.esRutaAbsoluta(imagen.getRuta())) {
+			// Compatibilidad: rutas heredadas con variables (%USERPROFILE%…).
+			agregarCandidatoRuta(candidatos, imagen.getRuta());
+		}
 
 		String nombre = obtenerNombreImagenPrioritario(imagen);
-		if (nombre != null && !nombre.isBlank()) {
+		// Una imagen con prefijo org-<id>/ solo se lee de su ruta: nunca de ficheros heredados de la raíz.
+		if (nombre != null && !nombre.isBlank() && RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesLinux, nombre);
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesWindows, nombre);
 			agregarCandidatoRuta(candidatos, "/var/www/app/imagenes/alumnos/" + nombre);

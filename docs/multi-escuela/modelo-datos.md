@@ -28,7 +28,12 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
 10. **Organización = empresa con cuentas propias; sede = cada escuela o local de esa empresa**
     (confirmado con el usuario, 13/10/2026). Propietario y administrador gestionan todas las
     sedes; el responsable de sede, solo las suyas. En la interfaz se usa «Sede».
-11. **La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
+11. **Administrador de plataforma** (fase 3): marca global en `usuario` (`es_admin_plataforma`), no
+    una membresía. Solo él ve los errores técnicos de la API y la configuración de plataforma, de
+    todas las escuelas. El propietario ve el registro de acciones de su escuela (quién cambió qué)
+    pero no los errores técnicos; administrador, responsable de sede y profesor no ven ninguno.
+    Confirmado con el usuario (13/10/2026).
+12. **La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
     empieza usando solo la aplicación de gestión.
 
 ## Diagrama
@@ -232,7 +237,9 @@ Valores exactos en `valores-actuales.md`; tests en `src-api/src/test/.../caracte
 - **Tarifas:** `PADRES_HIJOS` = importe por rol (28/26) y `HERMANOS` = 26 fijo. Caben en `tarifa`.
 - **Columnas heredadas de `alumno`:** se siguen leyendo como respaldo. Producción confirmada
   (13/10/2026): ningún alumno sin `alumno_deporte`. Antes de V25 hay que quitar esos respaldos y
-  hacer que todo alta cree siempre su `alumno_deporte`.
+  hacer que todo alta cree siempre su `alumno_deporte`. En la misma limpieza se borran
+  `MigracionController`, `MigracionMultiDeporteService` y `AlumnoServiceImpl.crearAlumno(Alumno)`
+  (anterior a multideporte; guarda el `Usuario` recibido en la petición).
 - **Roles:** `ROLE_ADMIN` ya es superconjunto de `ROLE_MANAGER`; basta `PROPIETARIO` → `ROLE_ADMIN`.
 - **Categorías:** solo para competidores de taekwondo, por edad. Van a esa disciplina.
 - **DNI repetidos** (producción, 13/10/2026): 40 DNI compartidos por 81 alumnos, todos personas

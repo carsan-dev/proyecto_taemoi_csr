@@ -63,9 +63,26 @@ class OrganizacionMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("20", jdbc.queryForObject(
+		assertEquals("21", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
+	}
+
+	@Test
+	void v21IndexaLaRutaDeLosFicherosPorEscuelaYSePuedeRepetir() throws Exception {
+		try (Connection conexion = dataSource.getConnection()) {
+			ScriptUtils.executeSqlScript(conexion, new ClassPathResource("db/migration/V21__indices_ruta_archivos.sql"));
+		}
+		for (String[] tablaIndice : new String[][] { { "imagen", "idx_imagen_organizacion_ruta" },
+				{ "documento", "idx_documento_organizacion_ruta" } }) {
+			List<Map<String, Object>> columnas = jdbc.queryForList("""
+					SELECT COLUMN_NAME, SUB_PART FROM information_schema.STATISTICS
+					WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
+					ORDER BY SEQ_IN_INDEX""", tablaIndice[0], tablaIndice[1]);
+			assertEquals(List.of("organizacion_id", "ruta"),
+					columnas.stream().map(c -> String.valueOf(c.get("COLUMN_NAME"))).toList(), tablaIndice[1]);
+			assertEquals(255, ((Number) columnas.get(1).get("SUB_PART")).intValue(), tablaIndice[1]);
+		}
 	}
 
 	@Test

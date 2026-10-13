@@ -172,7 +172,10 @@ public class EventoController {
 				return ResponseEntity.notFound().build();
 			}
 
-			Path rutaArchivo = Path.of(imagen.getRuta());
+			Path rutaArchivo = imagenService.resolverRutaArchivo(imagen);
+			if (rutaArchivo == null) {
+				return ResponseEntity.notFound().build();
+			}
 			Resource recurso = new UrlResource(rutaArchivo.toUri());
 
 			if (!recurso.exists()) {
