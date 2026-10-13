@@ -52,6 +52,16 @@ public class Disciplina extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Boolean activa = Boolean.TRUE;
 
+	/** Producto de licencia de la disciplina (V24). NULL en Taemoi: sus licencias tienen variantes. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "producto_licencia_id")
+	private Producto productoLicencia;
+
+	/** Producto de tarifa de competidor de la disciplina (V24). */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "producto_competidor_id")
+	private Producto productoCompetidor;
+
 	public Long getId() {
 		return id;
 	}
@@ -122,5 +132,21 @@ public class Disciplina extends EntidadOrganizacion {
 
 	public void setActiva(Boolean activa) {
 		this.activa = activa;
+	}
+
+	public Producto getProductoLicencia() {
+		return productoLicencia;
+	}
+
+	public void setProductoLicencia(Producto productoLicencia) {
+		this.productoLicencia = productoLicencia;
+	}
+
+	public Producto getProductoCompetidor() {
+		return productoCompetidor;
+	}
+
+	public void setProductoCompetidor(Producto productoCompetidor) {
+		this.productoCompetidor = productoCompetidor;
 	}
 }

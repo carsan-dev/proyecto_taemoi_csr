@@ -58,4 +58,5 @@ public interface GradoRepository extends JpaRepository<Grado, Long> {
 	List<Grado> findBySistemaGradosIdOrderByOrdenAscIdAsc(Long sistemaGradosId);
 
 	Optional<Grado> findBySistemaGradosIdAndCodigo(Long sistemaGradosId, String codigo);
+
 }

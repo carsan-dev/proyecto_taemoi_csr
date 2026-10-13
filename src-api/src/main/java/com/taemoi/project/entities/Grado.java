@@ -86,6 +86,18 @@ public class Grado extends EntidadOrganizacion {
 	@Column(name = "bloque_temario", length = 60)
 	private String bloqueTemario;
 
+	/** Producto de derecho a examen para llegar a este grado (V24). */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "producto_examen_id")
+	private Producto productoExamen;
+
+	/** Producto de cambio de grado por recompensa para llegar a este grado (V24). */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "producto_recompensa_id")
+	private Producto productoRecompensa;
+
 	public Long getId() {
 		return id;
 	}
@@ -196,5 +208,21 @@ public class Grado extends EntidadOrganizacion {
 
 	public void setBloqueTemario(String bloqueTemario) {
 		this.bloqueTemario = bloqueTemario;
+	}
+
+	public Producto getProductoExamen() {
+		return productoExamen;
+	}
+
+	public void setProductoExamen(Producto productoExamen) {
+		this.productoExamen = productoExamen;
+	}
+
+	public Producto getProductoRecompensa() {
+		return productoRecompensa;
+	}
+
+	public void setProductoRecompensa(Producto productoRecompensa) {
+		this.productoRecompensa = productoRecompensa;
 	}
 }
