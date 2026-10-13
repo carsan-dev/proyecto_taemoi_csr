@@ -101,6 +101,25 @@ public class TutorService {
 	}
 
 	/**
+	 * Pone {@code nif} a un tutor existente (y opcionalmente lo marca responsable legal) sin tocar el
+	 * resto de sus datos; mantiene los campos heredados si es o pasa a ser responsable legal.
+	 */
+	@Transactional
+	public TutorDTO asignarNif(Long alumnoId, Long tutorId, String nif, boolean marcarResponsable) {
+		Alumno alumno = buscarAlumno(alumnoId);
+		Tutor tutor = buscarTutor(alumnoId, tutorId);
+		tutor.setNif(NifUtils.normalizeForStorage(nif));
+		if (marcarResponsable) {
+			tutor.setResponsableLegal(true);
+		}
+		tutores.saveAndFlush(tutor);
+		if (tutor.isResponsableLegal()) {
+			reflejarEnCamposHeredados(alumno);
+		}
+		return TutorDTO.de(tutor);
+	}
+
+	/**
 	 * Lleva los campos heredados {@code responsableLegalNombre/Nif} del alumno (recién escritos por el
 	 * alta, la edición o una preinscripción) al tutor responsable legal. El alumno debe estar guardado.
 	 */

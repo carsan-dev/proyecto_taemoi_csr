@@ -21,4 +21,17 @@ public final class NifUtils {
 		}
 		return normalized;
 	}
+
+	/**
+	 * Forma canónica para comparar NIFs: mayúsculas, sin espacios ni guiones; {@code null} si queda
+	 * vacío o es el marcador "sin NIF".
+	 */
+	public static String normalizeForComparison(String nif) {
+		String base = normalizeForStorage(nif);
+		if (base == null) {
+			return null;
+		}
+		String limpio = base.replaceAll("[\\s-]", "");
+		return limpio.isEmpty() || PLACEHOLDER_SIN_NIF.equals(limpio) ? null : limpio;
+	}
 }

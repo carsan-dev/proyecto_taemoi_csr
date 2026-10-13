@@ -3,6 +3,7 @@ package com.taemoi.project.config;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -41,6 +42,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	 */
 	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
+	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
+			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"));
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
@@ -104,6 +107,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		String payloadSanitizado = rutaSalud
 				? PAYLOAD_OMITIDO_SALUD
 				: auditoriaPayloadSanitizer.sanitizarPayload(payloadRaw, request.getContentType());
+		Set<String> clavesRedactadas = clavesRedactadas(endpoint);
+		if (!rutaSalud && !clavesRedactadas.isEmpty()) {
+			payloadSanitizado = auditoriaPayloadSanitizer.redactarClaves(payloadSanitizado, clavesRedactadas);
+		}
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
 		String queryParamsJson = auditoriaPayloadSanitizer.serializarQueryParams(request.getParameterMap());
@@ -120,6 +127,17 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 				status,
 				ipCliente,
 				userAgent);
+	}
+
+	/** Claves del cuerpo que no se guardan en la auditoría para una ruta (p. ej. la referencia cifrada a un DNI). */
+	static Set<String> clavesRedactadas(String endpoint) {
+		String ruta = normalizarParaComparar(endpoint);
+		for (Map.Entry<Pattern, Set<String>> regla : CLAVES_REDACTADAS_POR_RUTA.entrySet()) {
+			if (regla.getKey().matcher(ruta).matches()) {
+				return regla.getValue();
+			}
+		}
+		return Set.of();
 	}
 
 	static boolean esPeticionDeSalud(HttpServletRequest request, String endpoint) {

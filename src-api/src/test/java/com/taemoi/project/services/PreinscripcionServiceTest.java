@@ -582,6 +582,25 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
+	void noIncorporaComoNifDelAlumnoElDniDeUnoDeSusTutores() {
+		// Corrección de DNIs compartidos: el DNI del padre se movió a tutor y no debe volver a la ficha.
+		Alumno existente = alumnoExistente(true);
+		existente.setNif(null);
+		com.taemoi.project.entities.Tutor padre = new com.taemoi.project.entities.Tutor(existente);
+		padre.setNombre("Padre");
+		padre.setNif("12345678-z");
+		existente.getTutores().add(padre);
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO)).thenReturn(Optional.of(deporte(existente, true)));
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.NIF), null));
+
+		assertNull(existente.getNif());
+		assertSame(existente, preinscripcion.getAlumno());
+	}
+
+	@Test
 	void conservaTelefonoSecundarioExistenteCuandoNoFueFacilitado() {
 		Alumno existente = alumnoExistente(true);
 		existente.setTelefono2("699887766");
