@@ -252,7 +252,29 @@ class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 				assertEquals(recompensa, numero(fila.get("producto_recompensa_id")), plantilla + " " + g);
 			}
 		}
-		// Las variantes «bordado» no se enlazan a ningún grado.
+		// producto.grado_id: el grado que concede cada producto de examen/recompensa (sistema de
+		// taekwondo); las dos variantes «bordado» conceden ROJO.
+		long tkd = sistema("TAEKWONDO");
+		for (Map.Entry<String, String[]> e : CONOCIDOS.entrySet()) {
+			String codigo = e.getValue()[0];
+			String tipo = e.getValue()[1];
+			Map<String, Object> fila = jdbc.queryForMap(
+					"SELECT g.codigo, g.sistema_grados_id FROM producto p LEFT JOIN grado g ON g.id = p.grado_id WHERE p.id = ?",
+					canonico.get(e.getKey()));
+			if (tipo.equals("EXAMEN") || tipo.equals("RECOMPENSA")) {
+				String grado = codigo.endsWith("_ROJO_BORDADO") ? "ROJO" : codigo.substring(codigo.indexOf('_') + 1);
+				assertEquals(grado, fila.get("codigo"), e.getKey());
+				assertEquals(tkd, numero(fila.get("sistema_grados_id")), e.getKey());
+			} else {
+				assertNull(fila.get("codigo"), e.getKey());
+			}
+		}
+		for (long id : sinClasificar) {
+			assertNull(jdbc.queryForObject("SELECT grado_id FROM producto WHERE id = ?", Long.class, id));
+		}
+		assertTrue(existeFk("producto", "fk_producto_grado", "grado"));
+		assertTrue(existeIndice("producto", "idx_producto_grado"));
+		// Producto por defecto del grado: las variantes «bordado» no lo son.
 		for (String bordado : List.of("DERECHO A EXAMEN ROJO BORDADO", "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA")) {
 			assertEquals(0, jdbc.queryForObject(
 					"SELECT COUNT(*) FROM grado WHERE producto_examen_id = ? OR producto_recompensa_id = ?",
@@ -303,24 +325,130 @@ class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 	// ---------------- postcheck y repetición ----------------
 
 	@Test
-	void postcheck_listaRepetidosVariantesYNadaMas() throws Exception {
-		String sql = Files.readString(postcheck(), StandardCharsets.UTF_8).trim();
+	void postcheck_soloCuentas_detectaVariantesYDesincronizaciones_yElResyncLasCorrige() throws Exception {
+		Map<String, List<Map<String, Object>>> inicial = instantanea();
+		Map<String, Object> cuentas = postcheck();
+		for (Object valor : cuentas.values()) {
+			assertTrue(valor instanceof Number, "El postcheck solo devuelve cuentas: " + cuentas);
+		}
+		Map<String, Long> esperado = new LinkedHashMap<>(cuentasCero());
+		esperado.put("variantes_o_duplicados", 5L); // 2 MENSUALIDAD, AMARILLO, RESERVA, COMPETIDOR
+		esperado.put("variantes_id_menor", 1L); // «Mensualidad» (id 10)
+		assertEquals(esperado, aLong(cuentas));
+
+		// Desincronizaciones que el código actual puede provocar tras V24, más un renombrado y una
+		// tarifa sin disciplina.
+		long adulto = jdbc.queryForObject(
+				"SELECT id FROM alumno_deporte WHERE organizacion_id = 1 AND tipo_tarifa = 'ADULTO'", Long.class);
+		long hermanos = jdbc.queryForObject(
+				"SELECT id FROM alumno_deporte WHERE organizacion_id = 1 AND tipo_tarifa = 'HERMANOS'", Long.class);
+		jdbc.update("UPDATE alumno_deporte SET tipo_tarifa = 'INFANTIL' WHERE id = ?", adulto);
+		jdbc.update("UPDATE alumno_deporte SET tipo_tarifa = NULL WHERE id = ?", hermanos);
+		long reserva = canonico.get("RESERVA DE PLAZA");
+		jdbc.update("UPDATE producto SET concepto = 'RESERVA DE PLAZA 2026' WHERE id = ?", reserva);
+		jdbc.update("UPDATE tarifa SET disciplina_id = NULL WHERE organizacion_id = 1 AND codigo = 'PILATES'");
+
+		Map<String, Long> provocado = new LinkedHashMap<>(esperado);
+		provocado.put("variantes_o_duplicados", 4L); // la variante con espacio ya no coincide
+		provocado.put("productos_renombrados", 1L);
+		provocado.put("inscripciones_tarifa_distinta", 1L);
+		provocado.put("inscripciones_tarifa_sin_tipo", 1L);
+		provocado.put("tarifas_sin_disciplina", 1L);
+		assertEquals(provocado, aLong(postcheck()));
+
+		ejecutar("db/resync/resync_catalogo_v24.sql");
+		Map<String, Long> trasResync = new LinkedHashMap<>(provocado);
+		trasResync.put("inscripciones_tarifa_distinta", 0L);
+		trasResync.put("inscripciones_tarifa_sin_tipo", 0L);
+		assertEquals(trasResync, aLong(postcheck()));
+		assertEquals("INFANTIL", jdbc.queryForObject(
+				"SELECT t.codigo FROM alumno_deporte ad JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.id = ?",
+				String.class, adulto));
+		assertNull(jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE id = ?", Long.class, hermanos));
+
+		// Restaurar y resincronizar: vuelve exactamente al estado tras V24.
+		jdbc.update("UPDATE alumno_deporte SET tipo_tarifa = 'ADULTO' WHERE id = ?", adulto);
+		jdbc.update("UPDATE alumno_deporte SET tipo_tarifa = 'HERMANOS' WHERE id = ?", hermanos);
+		jdbc.update("UPDATE producto SET concepto = 'RESERVA DE PLAZA' WHERE id = ?", reserva);
+		jdbc.update("""
+				UPDATE tarifa SET disciplina_id = (SELECT id FROM disciplina WHERE organizacion_id = 1 AND codigo = 'PILATES')
+				WHERE organizacion_id = 1 AND codigo = 'PILATES'""");
+		ejecutar("db/resync/resync_catalogo_v24.sql");
+		assertEquals(inicial, instantanea());
+		assertEquals(esperado, aLong(postcheck()));
+	}
+
+	@Test
+	void resync_productosCreadosTrasV24_seClasificanYEnlazan_yEsRepetible() throws Exception {
+		Map<String, List<Map<String, Object>>> inicial = instantanea();
+		ejecutar("db/resync/resync_catalogo_v24.sql");
+		assertEquals(inicial, instantanea(), "El resync sobre datos sincronizados no cambia nada");
+
+		// Se borra el producto de recompensa rojo bordado (ON DELETE SET NULL) y el código actual
+		// crea otro con el mismo concepto: el resync lo clasifica y le asigna el grado.
+		long bordado = canonico.get("DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA");
+		jdbc.update("DELETE FROM producto WHERE id = ?", bordado);
+		jdbc.update("INSERT INTO producto (id, concepto, precio, organizacion_id) VALUES (5000, ?, 10.0, 1)",
+				"DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA");
+		ejecutar("db/resync/resync_catalogo_v24.sql");
+		Map<String, Object> nuevo = jdbc.queryForMap("""
+				SELECT p.codigo, p.tipo, g.codigo AS grado, g.sistema_grados_id FROM producto p
+				LEFT JOIN grado g ON g.id = p.grado_id WHERE p.id = 5000""");
+		assertEquals("RECOMPENSA_ROJO_BORDADO", nuevo.get("codigo"));
+		assertEquals("RECOMPENSA", nuevo.get("tipo"));
+		assertEquals("ROJO", nuevo.get("grado"));
+		assertEquals(sistema("TAEKWONDO"), numero(nuevo.get("sistema_grados_id")));
+
+		// Restaurar el id original para no afectar a los demás tests.
+		jdbc.update("DELETE FROM producto WHERE id = 5000");
+		jdbc.update("INSERT INTO producto (id, concepto, precio, organizacion_id) VALUES (?, ?, 10.0, 1)", bordado,
+				"DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA");
+		ejecutar("db/resync/resync_catalogo_v24.sql");
+		assertEquals(inicial, instantanea());
+	}
+
+	@Test
+	void v24IncluyeElResyncLiteralmente() throws Exception {
+		String v24 = leer("db/migration/V24__tarifas_y_productos.sql");
+		String resync = leer("db/resync/resync_catalogo_v24.sql");
+		assertTrue(resync.length() > 1000);
+		assertTrue(v24.contains(resync), "V24 debe contener el texto exacto de resync_catalogo_v24.sql");
+	}
+
+	private static String leer(String recurso) throws Exception {
+		return new String(new ClassPathResource(recurso).getInputStream().readAllBytes(), StandardCharsets.UTF_8)
+				.replace("\r\n", "\n");
+	}
+
+	private void ejecutar(String recurso) throws Exception {
+		try (Connection conexion = dataSource.getConnection()) {
+			ScriptUtils.executeSqlScript(conexion,
+					new EncodedResource(new ClassPathResource(recurso), StandardCharsets.UTF_8));
+		}
+	}
+
+	private Map<String, Object> postcheck() throws Exception {
+		String sql = Files.readString(rutaPostcheck(), StandardCharsets.UTF_8).trim();
 		if (sql.endsWith(";")) {
 			sql = sql.substring(0, sql.length() - 1);
 		}
-		List<Map<String, Object>> filas = jdbc.queryForList(sql);
-		Map<Long, String> variantes = new LinkedHashMap<>();
-		for (Map<String, Object> f : filas) {
-			assertEquals("VARIANTE_O_DUPLICADO", f.get("motivo"), "Fila inesperada: " + f);
-			variantes.put(numero(f.get("id")), (String) f.get("codigo"));
+		return jdbc.queryForMap(sql);
+	}
+
+	private static Map<String, Long> cuentasCero() {
+		Map<String, Long> m = new LinkedHashMap<>();
+		for (String c : List.of("variantes_o_duplicados", "variantes_id_menor", "codigos_sin_producto",
+				"productos_renombrados", "examen_recompensa_sin_grado", "inscripciones_sin_tarifa",
+				"inscripciones_tarifa_distinta", "inscripciones_tarifa_sin_tipo", "tarifas_sin_disciplina")) {
+			m.put(c, 0L);
 		}
-		assertEquals(Map.of(duplicadoMensualidadMayor, "MENSUALIDAD", duplicadoAmarilloMayor, "EXAMEN_AMARILLO",
-				varianteMinusculas, "MENSUALIDAD", varianteEspacioFinal, "RESERVA_PLAZA", varianteDobleEspacio,
-				"COMPETIDOR_TAEKWONDO"), variantes);
-		// La variante en minúsculas tiene id menor: findFirstByConcepto la podría devolver hoy.
-		assertEquals(1, jdbc.queryForList(sql).stream()
-				.filter(f -> numero(f.get("id")) == varianteMinusculas)
-				.mapToInt(f -> ((Number) f.get("id_menor")).intValue()).findFirst().orElseThrow());
+		return m;
+	}
+
+	private static Map<String, Long> aLong(Map<String, Object> fila) {
+		Map<String, Long> m = new LinkedHashMap<>();
+		fila.forEach((k, v) -> m.put(k.toLowerCase(), ((Number) v).longValue()));
+		return m;
 	}
 
 	@Test
@@ -417,7 +545,7 @@ class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 				"SELECT id FROM sistema_grados WHERE organizacion_id = 1 AND plantilla_origen = ?", Long.class, plantilla);
 	}
 
-	private static Path postcheck() {
+	private static Path rutaPostcheck() {
 		Path desdeModulo = Path.of("..", "docs", "multi-escuela", "postcheck-v24.sql");
 		Path desdeRaiz = Path.of("docs", "multi-escuela", "postcheck-v24.sql");
 		Path ruta = Files.exists(desdeModulo) ? desdeModulo : desdeRaiz;

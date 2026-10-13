@@ -50,6 +50,7 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TarifaRepository;
+import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.ProductoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.ProgresionGradosService;
@@ -80,13 +81,14 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * Conceptos en los que el servicio nuevo NO da lo mismo que el código actual, con
-	 * {legado, nuevo} (null = sin grado). Todos son de examen; las recompensas coinciden.
+	 * {legado, nuevo} (null = sin grado).
 	 * <ul>
 	 * <li>Intermedios y PUM: el legado devuelve el grado de color anterior (error conocido, ver
 	 * valores-actuales.md §1); el nuevo, el grado correcto por enlace.</li>
-	 * <li>ROJO BORDADO (examen): el legado activa ROJO por contains; el nuevo no resuelve grado
-	 * porque la variante bordada no está enlazada a ningún grado. PENDIENTE de decisión antes del
-	 * cambio de llamadores (el modelo solo tiene un producto de examen por grado).</li>
+	 * <li>ROJO BORDADO (recompensa): CAMBIO INTENCIONADO por decisión del usuario (el bordado es
+	 * solo el cinturón que se elige al pasar a rojo). El legado no activa ningún grado (su concepto
+	 * no contiene el de ROJO); el nuevo concede ROJO por {@code producto.grado_id}. El examen
+	 * bordado ya activaba ROJO y coincide.</li>
 	 * </ul>
 	 */
 	static final Map<String, String[]> DIVERGENCIAS_GRADO = new LinkedHashMap<>();
@@ -98,10 +100,11 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN AZUL/ROJO", new String[] { "AZUL", "AZUL_ROJO" });
 		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN ROJO/NEGRO 1º PUM", new String[] { "ROJO", "ROJO_NEGRO_1_PUM" });
 		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN ROJO/NEGRO 2º PUM", new String[] { "ROJO", "ROJO_NEGRO_2_PUM" });
-		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN ROJO BORDADO", new String[] { "ROJO", null });
+		DIVERGENCIAS_GRADO.put("DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA", new String[] { null, "ROJO" });
 	}
 
 	@Autowired TarifaConfig tarifaConfig;
+	@Autowired AlumnoDeporteService alumnoDeporteService;
 	@Autowired TarifasService tarifas;
 	@Autowired TarifaRepository tarifaRepository;
 	@Autowired ProductosCatalogoService catalogo;
@@ -404,6 +407,22 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 					}
 				}
 			}
+			// Rojo bordado: las dos variantes conceden ROJO, también en kickboxing (su propio sistema).
+			for (Deporte deporte : CON_GRADOS) {
+				Long sistema = progresion.buscarGrado(codigo(deporte), "ROJO").orElseThrow().getSistemaGrados().getId();
+				Grado examen = catalogo.buscarGradoPorProductoExamen(idLegado("DERECHO A EXAMEN ROJO BORDADO"),
+						codigo(deporte)).orElseThrow();
+				Grado recompensa = catalogo.buscarGradoPorProductoRecompensa(
+						idLegado("DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA"), codigo(deporte)).orElseThrow();
+				assertEquals("ROJO", examen.getCodigo());
+				assertEquals("ROJO", recompensa.getCodigo());
+				assertEquals(sistema, examen.getSistemaGrados().getId());
+				assertEquals(sistema, recompensa.getSistemaGrados().getId());
+			}
+			// El producto por defecto del grado ROJO sigue siendo el del cinturón normal.
+			assertEquals(idLegado("DERECHO A EXAMEN ROJO"), id(catalogo.buscarProductoExamen("TAEKWONDO", "ROJO")));
+			assertEquals(idLegado("DERECHO DE CAMBIO A ROJO POR RECOMPENSA"),
+					id(catalogo.buscarProductoRecompensa("TAEKWONDO", "ROJO")));
 			Long amarillo = idLegado("DERECHO A EXAMEN AMARILLO");
 			assertTrue(catalogo.buscarGradoPorProducto(amarillo, "PILATES").isEmpty());
 			assertTrue(catalogo.buscarGradoPorProducto(amarillo, null).isEmpty());
@@ -456,6 +475,51 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM producto WHERE id = ?", Integer.class, temporal));
 		assertNull(jdbc.queryForObject("SELECT producto_recompensa_id FROM grado WHERE id = ?", Long.class, negro5));
+	}
+
+	// ---------------- Resincronización tras V24 ----------------
+
+	@Test
+	void cambiarTipoTarifaPorElServicioActual_dejaTarifaIdDesfasada_yElResyncLaCorrige() throws Exception {
+		int expediente = 900000 + (int) (System.nanoTime() % 90000);
+		jdbc.update("""
+				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
+				  numero_expediente, telefono, tiene_derecho_examen, organizacion_id)
+				VALUES (1, 'Resync', 1, 'Calle 1', '2010-01-01', 'IT', ?, 600000000, 0, 1)""", expediente);
+		Long alumno = jdbc.queryForObject(
+				"SELECT id FROM alumno WHERE organizacion_id = 1 AND numero_expediente = ?", Long.class, expediente);
+		Long adulto = TenantContext.calcularCon(ORG_TAEMOI, () -> tarifas.obtenerPorCodigo("ADULTO").getId());
+		Long infantil = TenantContext.calcularCon(ORG_TAEMOI, () -> tarifas.obtenerPorCodigo("INFANTIL").getId());
+		jdbc.update("""
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, tipo_tarifa,
+				  tarifa_id, organizacion_id)
+				VALUES (1, 0, ?, 'TAEKWONDO', 0, 'ADULTO', ?, 1)""", alumno, adulto);
+		try {
+			// Camino real: PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa -> actualizarTipoTarifa.
+			TenantContext.ejecutarCon(ORG_TAEMOI,
+					() -> alumnoDeporteService.actualizarTipoTarifa(alumno, Deporte.TAEKWONDO, TipoTarifa.INFANTIL));
+			Map<String, Object> fila = jdbc.queryForMap(
+					"SELECT tipo_tarifa, tarifa_id FROM alumno_deporte WHERE alumno_id = ?", alumno);
+			assertEquals("INFANTIL", fila.get("tipo_tarifa"));
+			assertEquals(adulto, ((Number) fila.get("tarifa_id")).longValue(), "desfasada hasta el resync");
+
+			ejecutar("db/resync/resync_catalogo_v24.sql");
+			assertEquals(infantil, jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE alumno_id = ?",
+					Long.class, alumno));
+			ejecutar("db/resync/resync_catalogo_v24.sql");
+			assertEquals(infantil, jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE alumno_id = ?",
+					Long.class, alumno));
+		} finally {
+			jdbc.update("DELETE FROM alumno_deporte WHERE alumno_id = ?", alumno);
+			jdbc.update("DELETE FROM alumno WHERE id = ?", alumno);
+		}
+	}
+
+	private void ejecutar(String recurso) throws Exception {
+		try (Connection conexion = dataSource.getConnection()) {
+			ScriptUtils.executeSqlScript(conexion,
+					new EncodedResource(new ClassPathResource(recurso), StandardCharsets.UTF_8));
+		}
 	}
 
 	// ---------------- Aislamiento ----------------

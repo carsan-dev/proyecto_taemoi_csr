@@ -59,11 +59,4 @@ public interface GradoRepository extends JpaRepository<Grado, Long> {
 
 	Optional<Grado> findBySistemaGradosIdAndCodigo(Long sistemaGradosId, String codigo);
 
-	/** Grado del sistema enlazado a ese producto de examen; el de menor orden si hubiera varios. */
-	Optional<Grado> findFirstBySistemaGradosIdAndProductoExamenIdOrderByOrdenAscIdAsc(Long sistemaGradosId,
-			Long productoId);
-
-	/** Grado del sistema enlazado a ese producto de recompensa; el de menor orden si hubiera varios. */
-	Optional<Grado> findFirstBySistemaGradosIdAndProductoRecompensaIdOrderByOrdenAscIdAsc(Long sistemaGradosId,
-			Long productoId);
 }

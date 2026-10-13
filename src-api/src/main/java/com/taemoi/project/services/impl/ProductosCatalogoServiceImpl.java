@@ -81,26 +81,32 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 
 	@Override
 	public Optional<Grado> buscarGradoPorProductoExamen(Long productoId, String codigoDisciplina) {
-		Long sistema = sistemaDe(codigoDisciplina);
-		if (productoId == null || sistema == null) {
-			return Optional.empty();
-		}
-		return grados.findFirstBySistemaGradosIdAndProductoExamenIdOrderByOrdenAscIdAsc(sistema, productoId);
+		return gradoConcedido(productoId, codigoDisciplina, TipoProducto.EXAMEN);
 	}
 
 	@Override
 	public Optional<Grado> buscarGradoPorProductoRecompensa(Long productoId, String codigoDisciplina) {
-		Long sistema = sistemaDe(codigoDisciplina);
-		if (productoId == null || sistema == null) {
-			return Optional.empty();
-		}
-		return grados.findFirstBySistemaGradosIdAndProductoRecompensaIdOrderByOrdenAscIdAsc(sistema, productoId);
+		return gradoConcedido(productoId, codigoDisciplina, TipoProducto.RECOMPENSA);
 	}
 
 	@Override
 	public Optional<Grado> buscarGradoPorProducto(Long productoId, String codigoDisciplina) {
-		Optional<Grado> porRecompensa = buscarGradoPorProductoRecompensa(productoId, codigoDisciplina);
-		return porRecompensa.isPresent() ? porRecompensa : buscarGradoPorProductoExamen(productoId, codigoDisciplina);
+		return gradoConcedido(productoId, codigoDisciplina, null);
+	}
+
+	/**
+	 * {@code producto.grado_id} traducido al sistema de la disciplina por codigo de grado (el
+	 * enlace apunta al sistema de taekwondo y kickboxing comparte los productos).
+	 */
+	private Optional<Grado> gradoConcedido(Long productoId, String codigoDisciplina, TipoProducto tipo) {
+		Long sistema = sistemaDe(codigoDisciplina);
+		if (productoId == null || sistema == null) {
+			return Optional.empty();
+		}
+		return productos.findById(productoId)
+				.filter(p -> tipo == null || p.getTipo() == tipo)
+				.map(Producto::getGrado)
+				.flatMap(concedido -> grados.findBySistemaGradosIdAndCodigo(sistema, concedido.getCodigo()));
 	}
 
 	/** Sistema de grados de la disciplina; nulo si la disciplina es nula o no tiene grados. */
