@@ -12,6 +12,9 @@ public class Preinscripcion extends EntidadOrganizacion {
  @Column(nullable=false,unique=true,length=32) private String referencia;
  @Column(nullable=false,length=9) private String temporada;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private Deporte deporte;
+ /** Disciplina (V26, NOT NULL); se escribe junto a {@code deporte} hasta la contracción. */
+ @com.fasterxml.jackson.annotation.JsonIgnore @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="disciplina_id",nullable=false) private Disciplina disciplina;
+ public Disciplina getDisciplina(){return disciplina;} public void setDisciplina(Disciplina v){disciplina=v;}
  @Enumerated(EnumType.STRING) @Column(nullable=false) private EstadoPreinscripcion estado=EstadoPreinscripcion.PENDIENTE;
  @Column(nullable=false,length=100) private String nombre; @Column(nullable=false,length=160) private String apellidos;
  @Column(length=16) private String dni; @Column(name="identidad_hash",nullable=false,length=64) private String identidadHash; @Column(name="fecha_nacimiento",nullable=false) private LocalDate fechaNacimiento;

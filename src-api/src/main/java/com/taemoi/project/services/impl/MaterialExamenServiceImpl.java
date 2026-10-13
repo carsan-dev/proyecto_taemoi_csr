@@ -24,8 +24,6 @@ import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.archivos.RutasArchivos;
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.config.GradeProgressionConfig;
 import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.dtos.response.MaterialExamenTemarioDTO;
@@ -34,10 +32,10 @@ import com.taemoi.project.dtos.response.MaterialExamenVideoGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.MaterialExamenService;
-import com.taemoi.project.utils.DeporteEdadUtils;
 
 @Service
 public class MaterialExamenServiceImpl implements MaterialExamenService {
@@ -60,10 +58,10 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private AlumnoDeporteService alumnoDeporteService;
 
 	@Autowired
-	private ExamMaterialBlockConfig examMaterialBlockConfig;
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogo;
 
 	@Autowired
-	private GradeProgressionConfig gradeProgressionConfig;
+	private com.taemoi.project.services.ProgresionGradosService progresion;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -226,18 +224,19 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		Alumno alumno = null;
 		boolean esMenor = false;
 		if (deporteSeleccionado != null && deporteSeleccionado.getGrado() != null
-				&& deporteSeleccionado.getGrado().getTipoGrado() != null) {
-			tipoGradoActual = deporteSeleccionado.getGrado().getTipoGrado();
-			gradoActual = tipoGradoActual.name();
-			bloqueId = examMaterialBlockConfig.obtenerBloque(deporte, tipoGradoActual);
+				&& deporteSeleccionado.getGrado().getCodigo() != null) {
+			String disciplina = deporte.name();
+			gradoActual = deporteSeleccionado.getGrado().getCodigo();
+			tipoGradoActual = TipoGrado.valueOf(gradoActual);
+			bloqueId = progresion.obtenerBloqueTemario(disciplina, gradoActual);
 
 			alumno = deporteSeleccionado.getAlumno();
+			// Regla de DeporteEdadUtils (fecha nula = adulto), por disciplina.edad_adulto
 			esMenor = alumno != null
-					&& DeporteEdadUtils.esMenorParaDeporte(deporte, alumno.getFechaNacimiento());
-			TipoGrado siguiente = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, tipoGradoActual);
-			if (siguiente != null) {
-				siguienteGrado = siguiente.name();
-			}
+					&& catalogo.esMenorPorAnioNaturalFechaNulaComoAdulto(alumno.getFechaNacimiento(), disciplina);
+			siguienteGrado = progresion.obtenerSiguienteGrado(disciplina, esMenor, gradoActual)
+					.map(Grado::getCodigo)
+					.orElse(null);
 		}
 
 		if (bloqueId == null || bloqueId.isBlank()) {
@@ -278,12 +277,13 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			return List.of();
 		}
 
-		List<TipoGrado> gradosAnteriores = gradeProgressionConfig.obtenerGradosAnteriores(deporte, esMenor, tipoGradoActual);
+		List<Grado> gradosAnteriores = progresion.obtenerGradosAnteriores(deporte.name(), esMenor,
+				tipoGradoActual.name());
 		List<VideoGroupEntry> grupos = new ArrayList<>();
 		List<String> bloquesVisitados = new ArrayList<>();
 
-		for (TipoGrado gradoAnterior : gradosAnteriores) {
-			String bloqueAnterior = examMaterialBlockConfig.obtenerBloque(deporte, gradoAnterior);
+		for (Grado gradoAnterior : gradosAnteriores) {
+			String bloqueAnterior = gradoAnterior.getBloqueTemario();
 			if (bloqueAnterior == null || bloqueAnterior.isBlank()
 					|| bloqueAnterior.equals(bloqueActual)
 					|| bloquesVisitados.contains(bloqueAnterior)) {
@@ -307,7 +307,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 					.toList();
 
 			if (!videos.isEmpty()) {
-				grupos.add(new VideoGroupEntry(gradoAnterior, bloqueAnterior, videos));
+				grupos.add(new VideoGroupEntry(TipoGrado.valueOf(gradoAnterior.getCodigo()), bloqueAnterior, videos));
 			}
 		}
 

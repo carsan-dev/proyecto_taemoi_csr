@@ -36,12 +36,16 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
+import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProductoAlumnoService;
-import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.services.ProductosCatalogoService;
+import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.utils.MensualidadUtils;
 
 @Service
 public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
+
+	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ProductoAlumnoServiceImpl.class);
 
 	private static final String TARIFA_COMPETIDOR_TAEKWONDO = "TARIFA COMPETIDOR TAEKWONDO";
 	private static final String TARIFA_COMPETIDOR_KICKBOXING = "TARIFA COMPETIDOR KICKBOXING";
@@ -81,6 +85,15 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
+
+	@Autowired
+	private CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
+	private ProductosCatalogoService productosCatalogo;
+
+	@Autowired
+	private ProgresionGradosService progresionGrados;
 
 	private String normalizarConcepto(String concepto) {
 		return concepto == null ? "" : Normalizer.normalize(concepto, Normalizer.Form.NFD)
@@ -220,16 +233,19 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return false;
 	}
 
+	/**
+	 * Promueve al alumno al grado que concede el producto pagado (ver
+	 * {@link ProductosCatalogoService#buscarCodigoGradoConcedido}), resuelto por código en el sistema de
+	 * grados de la disciplina de la inscripción. Si esa disciplina no tiene un grado con ese código (o
+	 * no tiene grados), no promueve y lo registra: el cobro nunca falla por el grado.
+	 */
 	private void activarGradoPorRecompensaPagada(ProductoAlumno productoAlumno) {
-		String concepto = productoAlumno.getConcepto();
+		Long productoId = productoAlumno.getProducto() != null ? productoAlumno.getProducto().getId() : null;
+		String codigoGrado = productosCatalogo
+				.buscarCodigoGradoConcedido(productoId, productoAlumno.getConcepto())
+				.orElse(null);
 
-		// Buscar primero en productos de recompensa, luego en productos de examen
-		TipoGrado gradoObjetivo = TipoGrado.fromProductoRecompensa(concepto);
-		if (gradoObjetivo == null) {
-			gradoObjetivo = TipoGrado.fromProductoExamen(concepto);
-		}
-
-		if (gradoObjetivo == null) {
+		if (codigoGrado == null) {
 			return;
 		}
 
@@ -238,10 +254,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			return;
 		}
 
-		alumnoDeporteService.actualizarGradoPorDeporte(
+		String disciplina = alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name();
+		if (progresionGrados.buscarGrado(disciplina, codigoGrado).isEmpty()) {
+			LOG.warn("Cobro {} pagado: la disciplina {} no tiene el grado {}; no se promueve al alumno {}",
+					productoAlumno.getId(), disciplina, codigoGrado, alumnoDeporte.getAlumno().getId());
+			return;
+		}
+
+		alumnoDeporteService.actualizarGradoPorCodigo(
 				alumnoDeporte.getAlumno().getId(),
 				alumnoDeporte.getDeporte(),
-				gradoObjetivo
+				codigoGrado
 		);
 	}
 
@@ -823,7 +846,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte, int anioReferencia) {
 		String concepto;
 		if (deporte == Deporte.KICKBOXING) {
-			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
+			boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(), deporte.name(),
+					anioReferencia);
 			concepto = esMenor
 					? LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL
 					: LICENCIA_FEDERATIVA_KICKBOXING_ADULTO;
@@ -832,7 +856,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD
 					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
 		} else {
-			boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
+			boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
+					deporte == null ? null : deporte.name(), anioReferencia);
 			if (esMenor) {
 				concepto = esSegundaMitadDelAno
 						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
@@ -854,7 +879,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		// Usar la regla de edad correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte, anioReferencia);
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
+				deporte == null ? null : deporte.name(), anioReferencia);
 		if (esMenor) {
 			return esSegundaMitadDelAno ? 20.0 : 35.0;
 		}
@@ -875,8 +901,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private List<AlumnoDeporte> obtenerAlumnosDeportesLicencia(String deporte) {
 		List<AlumnoDeporte> alumnosDeportes;
 		if (deporte == null || "TODOS".equalsIgnoreCase(deporte)) {
+			// Disciplinas que exigen licencia federativa (disciplina.requiere_licencia)
 			alumnosDeportes = alumnoDeporteRepository.findActivosByDeporteIn(
-					List.of(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+					catalogoDisciplinas.codigosQueRequierenLicencia().stream().map(Deporte::valueOf).toList());
 		} else {
 			Deporte deporteEnum = parseDeporteLicencia(deporte);
 			alumnosDeportes = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporteEnum);
@@ -929,7 +956,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	private boolean deporteRequiereLicencia(Deporte deporte) {
-		return deporte == Deporte.TAEKWONDO || deporte == Deporte.KICKBOXING;
+		return deporte != null && catalogoDisciplinas.requiereLicencia(deporte.name());
 	}
 
 	private Set<String> obtenerConceptosLicenciaExistentes() {

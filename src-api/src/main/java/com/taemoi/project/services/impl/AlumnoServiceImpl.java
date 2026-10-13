@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
@@ -85,7 +84,6 @@ import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
-import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
 import com.taemoi.project.utils.NifUtils;
@@ -185,7 +183,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private PasswordEncoder passwordEncoder;
 
 	@Autowired
-	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
+	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
 
 	@Autowired
 	private com.taemoi.project.config.TarifaConfig tarifaConfig;
@@ -462,7 +463,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 				} catch (IllegalArgumentException e) {
 					throw new DatosAlumnoInvalidosException("Grado no válido para " + deporte + ": " + deporteDTO.getGrado());
 				}
-				if (gradoRepository.findByTipoGrado(tipoGrado) == null) {
+				if (catalogoDisciplinas.buscarPorCodigo(deporte.name()).isEmpty()) {
+					throw new DatosAlumnoInvalidosException(
+							"El deporte " + deporte + " no está configurado en la escuela.");
+				}
+				if (!progresionGrados.tieneProgresion(deporte.name())) {
+					throw new DatosAlumnoInvalidosException("El deporte " + deporte + " no tiene sistema de grados.");
+				}
+				if (progresionGrados.buscarGrado(deporte.name(), tipoGrado.name()).isEmpty()) {
 					throw new DatosAlumnoInvalidosException(
 							"El grado " + tipoGrado + " no está configurado en la escuela.");
 				}
@@ -492,8 +500,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		if (dto.getGrado() != null && !dto.getGrado().isEmpty()) {
 			deporte.setGrado(dto.getGrado());
-		} else if (dto.getDeporte() == Deporte.TAEKWONDO || dto.getDeporte() == Deporte.KICKBOXING) {
-			deporte.setGrado(TipoGrado.BLANCO.name());
+		} else if (catalogoDisciplinas.buscarPorCodigo(dto.getDeporte().name()).isPresent()) {
+			// Disciplina con grados: grado de entrada de su sistema (BLANCO en Taemoi)
+			progresionGrados.obtenerGradoInicial(dto.getDeporte().name())
+					.ifPresent(inicial -> deporte.setGrado(inicial.getCodigo()));
 		}
 		deporte.setFechaGrado(dto.getFechaGrado() != null ? dto.getFechaGrado() : hoy);
 		deporte.setFechaAlta(dto.getFechaAlta());
@@ -1888,42 +1898,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO) {
-		Deporte deporte = nuevoAlumnoDTO.getDeporte() != null ? nuevoAlumnoDTO.getDeporte() : Deporte.TAEKWONDO;
-		boolean esMenor = FechaUtils.esMenor(nuevoAlumnoDTO.getFechaNacimiento(), deporte);
+		// Sin deporte: taekwondo, como siempre. Disciplina sin grados: los de taekwondo (contrato heredado).
+		String disciplina = nuevoAlumnoDTO.getDeporte() != null ? nuevoAlumnoDTO.getDeporte().name()
+				: com.taemoi.project.services.GradoService.DISCIPLINA_POR_DEFECTO;
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(nuevoAlumnoDTO.getFechaNacimiento(), disciplina);
+		String disciplinaConGrados = progresionGrados.tieneProgresion(disciplina) ? disciplina
+				: com.taemoi.project.services.GradoService.DISCIPLINA_POR_DEFECTO;
 
-		List<TipoGrado> gradosDisponibles;
-
-		// Si el alumno es menor, asignar grados correspondientes a menores
-		if (esMenor) {
-			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
-					TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
-					TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO,
-					TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
-		} else {
-			// Si el alumno es adulto, asignar grados correspondientes a adultos
-			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN,
-					TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+		// Grados del grupo de edad del alumno en el sistema de la disciplina (aplica_a)
+		List<Grado> gradosDisponibles = progresionGrados.listarGradosAplicables(disciplinaConGrados, esMenor);
+		if (gradosDisponibles.isEmpty()) {
+			throw new IllegalStateException("La disciplina " + disciplinaConGrados + " no tiene grados configurados");
 		}
 
 		// Asignar un grado aleatoriamente de la lista de grados disponibles
-		TipoGrado tipoGradoAsignado = gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
-
-		// Buscar si el grado ya existe en la base de datos
-		Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGradoAsignado);
-		if (gradoExistente != null) {
-			return gradoExistente;
-		}
-
-		// Si no existe, crear un nuevo grado y guardarlo
-		Grado nuevoGrado = new Grado();
-		nuevoGrado.setTipoGrado(tipoGradoAsignado);
-		return gradoRepository.save(nuevoGrado);
+		return gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
 	}
 
 	/**
 	 * Calcula el siguiente grado para un alumno según su deporte, edad y grado actual.
-	 * Delegado a GradeProgressionConfig para centralizar la lógica de progresión.
+	 * Progresión del catálogo (ProgresionGradosService) en el sistema de grados de su disciplina.
 	 */
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
@@ -1939,23 +1933,21 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (deporteConGrado == null || deporteConGrado.getGrado() == null || deporteConGrado.getDeporte() == null) {
 			return null;
 		}
-		TipoGrado gradoActual = deporteConGrado.getGrado().getTipoGrado();
-		Deporte deporte = deporteConGrado.getDeporte();
-
-		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
-
-		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
+		return calcularSiguienteGradoPorDeporte(deporteConGrado.getGrado().getCodigo(), deporteConGrado.getDeporte(),
+				alumno);
 	}
 
 	/**
 	 * Calcula el siguiente grado para un alumno según un deporte específico y grado actual.
 	 * Útil para sistema multi-deporte.
 	 */
-	private TipoGrado calcularSiguienteGradoPorDeporte(TipoGrado gradoActual, Deporte deporte, Alumno alumno) {
-		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
-		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
+	private TipoGrado calcularSiguienteGradoPorDeporte(String codigoGradoActual, Deporte deporte, Alumno alumno) {
+		String disciplina = deporte == null ? null : deporte.name();
+		// Grupo de edad por disciplina.edad_adulto (año natural); siguiente grado en su sistema
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(), disciplina);
+		return progresionGrados.obtenerSiguienteGrado(disciplina, esMenor, codigoGradoActual)
+				.map(siguiente -> TipoGrado.valueOf(siguiente.getCodigo()))
+				.orElse(null);
 	}
 
 	private String resolverConceptoProducto(TipoGrado gradoSiguiente, boolean porRecompensa, boolean rojoBordado) {
@@ -2015,7 +2007,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Calculate next grade based on the AlumnoDeporte's current grade
 		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
-		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, convocatoria.getDeporte(), alumno);
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(alumnoDeporte.getGrado().getCodigo(),
+				convocatoria.getDeporte(), alumno);
 		if (gradoSiguiente == null) {
 			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno para el deporte " + convocatoria.getDeporte());
 		}
@@ -2089,8 +2082,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
-		// Validar que el deporte admite grados
-		if (deporte == Deporte.PILATES || deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+		// Validar que el deporte admite grados (disciplina sin sistema de grados)
+		if (!progresionGrados.tieneProgresion(deporte == null ? null : deporte.name())) {
 			throw new IllegalArgumentException("El deporte " + deporte + " no tiene sistema de grados");
 		}
 
@@ -2106,7 +2099,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Calcular siguiente grado con la misma lógica por edad y deporte
-		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, deporte, alumno);
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(alumnoDeporte.getGrado().getCodigo(), deporte,
+				alumno);
 		if (gradoSiguiente == null) {
 			throw new IllegalArgumentException(
 					"No se pudo determinar el siguiente grado del alumno para el deporte " + deporte);
@@ -2312,6 +2306,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	private org.springframework.data.jpa.domain.Specification<Alumno> buildAlumnoSpecification(
 			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, boolean aptoParaExamen) {
+		// El filtro por grado compara por codigo: el id que envía la aplicación es el de
+		// /api/grados (taekwondo) y debe encontrar también a los alumnos de kickboxing, cuyos
+		// grados están en su propio sistema (V26). Un id que no existe en la escuela no encuentra a nadie.
+		final boolean filtrarPorGrado = gradoId != null;
+		final String codigoGradoFiltro = gradoId == null ? null
+				: gradoRepository.findById(gradoId).map(Grado::getCodigo).orElse(null);
 		return (root, query, criteriaBuilder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
@@ -2337,7 +2337,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
 			}
 
-			if (gradoId != null || categoriaId != null) {
+			if (filtrarPorGrado || categoriaId != null) {
 				jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
 				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> deporteRoot = subquery.from(com.taemoi.project.entities.AlumnoDeporte.class);
 				List<Predicate> deportePredicates = new ArrayList<>();
@@ -2345,8 +2345,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("alumno").get("id"), root.get("id")));
 				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("activo"), true));
 
-				if (gradoId != null) {
-					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("grado").get("id"), gradoId));
+				if (filtrarPorGrado) {
+					deportePredicates.add(codigoGradoFiltro == null ? criteriaBuilder.disjunction()
+							: criteriaBuilder.equal(deporteRoot.get("grado").get("codigo"), codigoGradoFiltro));
 				}
 				if (categoriaId != null) {
 					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("categoria").get("id"), categoriaId));

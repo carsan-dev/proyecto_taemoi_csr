@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 //import static org.mockito.Mockito.verify;
@@ -70,7 +72,10 @@ public class AlumnoServiceImplTest {
 	private com.taemoi.project.config.TarifaConfig tarifaConfig;
 
 	@Mock
-	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
+
+	@Mock
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
 	@Mock
 	private com.taemoi.project.services.ContadorService contadorService;
@@ -156,7 +161,8 @@ public class AlumnoServiceImplTest {
 
 	@Test
 	public void testAsignarGradoSegunEdad() {
-		when(gradoRepository.findByTipoGrado(any(TipoGrado.class))).thenReturn(new Grado());
+		when(progresionGrados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(progresionGrados.listarGradosAplicables(eq("TAEKWONDO"), anyBoolean())).thenReturn(List.of(new Grado()));
 
 		AlumnoDTO alumnoDTO = new AlumnoDTO();
 		alumnoDTO.setFechaNacimiento(new Date());
@@ -707,8 +713,8 @@ public class AlumnoServiceImplTest {
 		alumno.addDeporte(pilates);
 		alumno.addDeporte(kickboxingInactivo);
 		alumno.addDeporte(taekwondo);
-		when(gradeProgressionConfig.obtenerSiguienteGrado(Deporte.TAEKWONDO, false, TipoGrado.AMARILLO))
-				.thenReturn(TipoGrado.NARANJA);
+		when(progresionGrados.obtenerSiguienteGrado("TAEKWONDO", false, "AMARILLO"))
+				.thenReturn(Optional.of(gradoConCodigo("NARANJA")));
 
 		assertEquals(TipoGrado.NARANJA, alumnoService.calcularSiguienteGrado(alumno));
 	}
@@ -721,8 +727,8 @@ public class AlumnoServiceImplTest {
 		kickboxing.setPrincipal(true);
 		alumno.addDeporte(deporteConGrado(Deporte.TAEKWONDO, true, TipoGrado.AMARILLO));
 		alumno.addDeporte(kickboxing);
-		when(gradeProgressionConfig.obtenerSiguienteGrado(Deporte.KICKBOXING, false, TipoGrado.VERDE))
-				.thenReturn(TipoGrado.AZUL);
+		when(progresionGrados.obtenerSiguienteGrado("KICKBOXING", false, "VERDE"))
+				.thenReturn(Optional.of(gradoConCodigo("AZUL")));
 		assertEquals(TipoGrado.AZUL, alumnoService.calcularSiguienteGrado(alumno));
 
 		Alumno soloPilates = new Alumno();
@@ -734,8 +740,15 @@ public class AlumnoServiceImplTest {
 		AlumnoDeporte ad = deporteApto(deporte, activo, false);
 		Grado grado = new Grado();
 		grado.setTipoGrado(tipoGrado);
+		grado.setCodigo(tipoGrado.name());
 		ad.setGrado(grado);
 		return ad;
+	}
+
+	private static Grado gradoConCodigo(String codigo) {
+		Grado grado = new Grado();
+		grado.setCodigo(codigo);
+		return grado;
 	}
 
 	private static AlumnoDeporte deporteApto(Deporte deporte, boolean activo, boolean apto) {

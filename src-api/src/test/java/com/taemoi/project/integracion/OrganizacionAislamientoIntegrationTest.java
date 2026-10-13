@@ -44,6 +44,7 @@ import com.taemoi.project.entities.Turno;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.PlantillaPreinscripcionRepository;
@@ -68,6 +69,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired AlumnoRepository alumnos;
 	@Autowired AlumnoDeporteRepository alumnoDeportes;
+	@Autowired DisciplinaRepository disciplinas;
 	@Autowired GrupoRepository grupos;
 	@Autowired TurnoRepository turnos;
 	@Autowired ProductoRepository productos;
@@ -289,6 +291,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		AlumnoDeporte deporte = new AlumnoDeporte();
 		deporte.setAlumno(alumnoGuardado);
 		deporte.setDeporte(Deporte.TAEKWONDO);
+		deporte.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO"));
 		deporte.setActivo(true);
 		deporte.setPrincipal(true);
 		deporte.setAptoParaExamen(true);
@@ -297,6 +300,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		Grupo grupo = new Grupo();
 		grupo.setNombre("G " + marca);
 		grupo.setDeporte(Deporte.TAEKWONDO);
+		grupo.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO"));
 		grupo.getAlumnos().add(alumnos.findById(d.alumnoId).orElseThrow());
 		Grupo grupoGuardado = grupos.save(grupo);
 		d.grupoId = grupoGuardado.getId();
@@ -319,6 +323,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		// los únicos ahora incluyen organizacion_id.
 		PlantillaPreinscripcion plantilla = new PlantillaPreinscripcion();
 		plantilla.setDeporte(Deporte.PILATES);
+		plantilla.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "PILATES"));
 		plantilla.setVersion(900);
 		plantilla.setActiva(false);
 		plantilla.setContenido("{}");
@@ -333,6 +338,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		p.setReferencia("IT" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
 		p.setTemporada("2099-2100");
 		p.setDeporte(Deporte.PILATES);
+		p.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "PILATES"));
 		p.setEstado(EstadoPreinscripcion.PENDIENTE);
 		p.setNombre("PRE " + marca);
 		p.setApellidos("PRUEBA");

@@ -47,6 +47,31 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 	}
 
 	@Override
+	public List<Grado> listarGrados(String codigoDisciplina) {
+		Long sistema = sistemaDe(codigoDisciplina);
+		return sistema == null ? List.of() : grados.findBySistemaGradosIdOrderByIdAsc(sistema);
+	}
+
+	@Override
+	public List<Grado> listarGradosAplicables(String codigoDisciplina, boolean esMenor) {
+		if (sistemaDe(codigoDisciplina) == null) {
+			return List.of();
+		}
+		AplicaGrado grupo = esMenor ? AplicaGrado.MENORES : AplicaGrado.ADULTOS;
+		return gradosDelSistema(codigoDisciplina).stream()
+				.filter(g -> g.getAplicaA() == AplicaGrado.TODOS || g.getAplicaA() == grupo)
+				.toList();
+	}
+
+	@Override
+	public Optional<Grado> obtenerGradoInicial(String codigoDisciplina) {
+		if (sistemaDe(codigoDisciplina) == null) {
+			return Optional.empty();
+		}
+		return gradosDelSistema(codigoDisciplina).stream().findFirst();
+	}
+
+	@Override
 	public Optional<Grado> obtenerSiguienteGrado(String codigoDisciplina, boolean esMenor, String codigoGrado) {
 		if (codigoDisciplina == null || codigoGrado == null) {
 			return Optional.empty();
@@ -82,7 +107,7 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 
 	@Override
 	public long obtenerMesesRequeridos(String codigoDisciplina, String codigoGrado, boolean esMenor) {
-		Integer meses = buscarGradoOHeredado(codigoDisciplina, codigoGrado)
+		Integer meses = buscarGrado(codigoDisciplina, codigoGrado)
 				.map(g -> esMenor ? g.getMesesMinimosMenor() : g.getMesesMinimosAdulto())
 				.orElse(null);
 		return meses == null ? Long.MAX_VALUE : meses.longValue();
@@ -114,33 +139,23 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 
 	@Override
 	public String obtenerNombreVisible(String codigoDisciplina, String codigoGrado) {
-		if (codigoGrado == null) {
+		if (codigoGrado == null || sistemaDe(codigoDisciplina) == null) {
 			return SIN_NOMBRE;
 		}
-		Grado grado = buscarGradoOHeredado(codigoDisciplina, codigoGrado)
+		Grado grado = buscarGrado(codigoDisciplina, codigoGrado)
 				.orElseThrow(() -> new IllegalArgumentException("Grado no encontrado: " + codigoGrado));
 		return obtenerNombreVisible(grado);
 	}
 
 	// ---------------------------------------------------------------------------------
 
-	/**
-	 * Grado del sistema de la disciplina; si la disciplina es nula o no tiene grados, el grado
-	 * heredado con ese código (sistema de taekwondo), que es el que leen hoy las clases que no
-	 * distinguen disciplina (ExamEligibilityConfig, GradoUtils). Desaparece con el cambio de
-	 * llamadores, junto con {@code GradoRepository.SOLO_GRADOS_HEREDADOS}.
-	 */
-	private Optional<Grado> buscarGradoOHeredado(String codigoDisciplina, String codigoGrado) {
-		if (codigoGrado == null) {
-			return Optional.empty();
+	/** Sistema de grados de la disciplina; nulo si la disciplina es nula o no tiene grados. */
+	private Long sistemaDe(String codigoDisciplina) {
+		if (codigoDisciplina == null) {
+			return null;
 		}
-		if (codigoDisciplina != null) {
-			Disciplina disciplina = catalogo.obtenerPorCodigo(codigoDisciplina);
-			if (disciplina.tieneGrados()) {
-				return grados.findBySistemaGradosIdAndCodigo(disciplina.getSistemaGrados().getId(), codigoGrado);
-			}
-		}
-		return grados.findHeredadoPorCodigo(codigoGrado);
+		Disciplina disciplina = catalogo.obtenerPorCodigo(codigoDisciplina);
+		return disciplina.tieneGrados() ? disciplina.getSistemaGrados().getId() : null;
 	}
 
 	/** Grados del sistema de la disciplina, por orden (sin los que no tienen orden). */

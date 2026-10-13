@@ -492,8 +492,9 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		Long infantil = TenantContext.calcularCon(ORG_TAEMOI, () -> tarifas.obtenerPorCodigo("INFANTIL").getId());
 		jdbc.update("""
 				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, tipo_tarifa,
-				  tarifa_id, organizacion_id)
-				VALUES (1, 0, ?, 'TAEKWONDO', 0, 'ADULTO', ?, 1)""", alumno, adulto);
+				  tarifa_id, organizacion_id, disciplina_id)
+				VALUES (1, 0, ?, 'TAEKWONDO', 0, 'ADULTO', ?, 1,
+				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = 'TAEKWONDO'))""", alumno, adulto);
 		try {
 			// Camino real: PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa -> actualizarTipoTarifa.
 			TenantContext.ejecutarCon(ORG_TAEMOI,

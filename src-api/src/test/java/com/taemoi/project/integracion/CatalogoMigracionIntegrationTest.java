@@ -53,7 +53,9 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		flyway("21").migrate();
 		insertarDatosV21();
-		flyway(null).migrate();
+		// Hasta V25: V26 (cambio de llamadores) reasigna los grados de kickboxing y pone disciplina_id
+		// NOT NULL; lo comprueba SwitchGradosMigracionIntegrationTest.
+		flyway("25").migrate();
 	}
 
 	/** Id heredado de cada grado: inverso al orden del enum (BLANCO = 119 … NEGRO_5_DAN = 101). */

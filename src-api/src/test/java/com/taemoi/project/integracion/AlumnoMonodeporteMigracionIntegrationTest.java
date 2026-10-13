@@ -70,7 +70,8 @@ class AlumnoMonodeporteMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		precheck = ejecutarPrecheck();
 
-		flyway(null).migrate();
+		// Hasta V25: V26 reasigna los grados de kickboxing a su sistema (SwitchGradosMigracionIntegrationTest).
+		flyway("25").migrate();
 	}
 
 	@Test

@@ -8,6 +8,9 @@ import jakarta.persistence.*;
 public class PlantillaPreinscripcion extends EntidadOrganizacion {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private Deporte deporte;
+ /** Disciplina (V26, NOT NULL); se escribe junto a {@code deporte} hasta la contracción. */
+ @com.fasterxml.jackson.annotation.JsonIgnore @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="disciplina_id",nullable=false) private Disciplina disciplina;
+ public Disciplina getDisciplina(){return disciplina;} public void setDisciplina(Disciplina v){disciplina=v;}
  @Column(nullable=false) private Integer version;
  @Column(nullable=false) private Boolean activa = true;
  @Lob @Column(nullable=false, columnDefinition="LONGTEXT") private String contenido;

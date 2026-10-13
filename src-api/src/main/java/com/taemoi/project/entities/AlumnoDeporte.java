@@ -50,6 +50,15 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	@NotNull(message = "El deporte no puede ser nulo")
 	private Deporte deporte;
 
+	/**
+	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
+	 * contracción para poder volver al código anterior.
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "disciplina_id", nullable = false)
+	private Disciplina disciplina;
+
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "grado_id")
 	@JsonManagedReference
@@ -152,6 +161,14 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+	}
+
+	public Disciplina getDisciplina() {
+		return disciplina;
+	}
+
+	public void setDisciplina(Disciplina disciplina) {
+		this.disciplina = disciplina;
 	}
 
 	public Grado getGrado() {

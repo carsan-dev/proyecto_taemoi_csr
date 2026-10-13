@@ -4,13 +4,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -30,6 +35,15 @@ public class Convocatoria extends EntidadOrganizacion {
 	@Enumerated(EnumType.STRING)
 	@NotNull(message = "El deporte de la convocatoria no puede ser nulo")
 	private Deporte deporte;
+
+	/**
+	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
+	 * contracción para poder volver al código anterior.
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "disciplina_id", nullable = false)
+	private Disciplina disciplina;
 
 	@OneToMany(mappedBy = "convocatoria", cascade = CascadeType.ALL)
 	private List<AlumnoConvocatoria> alumnosConvocatoria = new ArrayList<>();
@@ -56,6 +70,14 @@ public class Convocatoria extends EntidadOrganizacion {
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+	}
+
+	public Disciplina getDisciplina() {
+		return disciplina;
+	}
+
+	public void setDisciplina(Disciplina disciplina) {
+		this.disciplina = disciplina;
 	}
 
 	public List<AlumnoConvocatoria> getAlumnosConvocatoria() {

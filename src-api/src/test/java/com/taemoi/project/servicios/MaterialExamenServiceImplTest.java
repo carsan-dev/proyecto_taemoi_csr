@@ -21,8 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.config.GradeProgressionConfig;
+import com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
@@ -47,11 +46,10 @@ class MaterialExamenServiceImplTest {
 	@BeforeEach
 	void setUp() {
 		service = new MaterialExamenServiceImpl();
-		GradeProgressionConfig gradeProgressionConfig = new GradeProgressionConfig();
-		gradeProgressionConfig.init();
+		CatalogoTaemoiEnMemoria catalogoTaemoi = new CatalogoTaemoiEnMemoria();
 		ReflectionTestUtils.setField(service, "alumnoDeporteService", alumnoDeporteService);
-		ReflectionTestUtils.setField(service, "examMaterialBlockConfig", new ExamMaterialBlockConfig());
-		ReflectionTestUtils.setField(service, "gradeProgressionConfig", gradeProgressionConfig);
+		ReflectionTestUtils.setField(service, "catalogo", catalogoTaemoi.catalogo());
+		ReflectionTestUtils.setField(service, "progresion", catalogoTaemoi.progresion());
 		ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
 		ReflectionTestUtils.setField(service, "directorioDocumentosWindows", tempDir.toString());
 		ReflectionTestUtils.setField(service, "directorioDocumentosLinux", tempDir.toString());
@@ -341,6 +339,7 @@ class MaterialExamenServiceImplTest {
 
 		Grado entidadGrado = new Grado();
 		entidadGrado.setTipoGrado(grado);
+		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 
 		when(alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId)).thenReturn(List.of(alumnoDeporte));
@@ -352,6 +351,7 @@ class MaterialExamenServiceImplTest {
 
 		Grado entidadGrado = new Grado();
 		entidadGrado.setTipoGrado(grado);
+		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 
 		Alumno alumno = new Alumno();

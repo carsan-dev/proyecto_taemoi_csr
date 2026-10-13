@@ -455,10 +455,11 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 				INSERT INTO preinscripcion (referencia, temporada, deporte, estado, nombre, apellidos, dni, identidad_hash,
 				  fecha_nacimiento, direccion, telefono, email, consentimiento_fotografico, aceptacion_normas,
 				  firmante_nombre, firma, plantilla_id, plantilla_snapshot, pdf_firmado, token_documento_hash,
-				  creada_en, actualizada_en, alumno_id, organizacion_id)
+				  creada_en, actualizada_en, alumno_id, organizacion_id, disciplina_id)
 				VALUES (?, '2025-2026', 'TAEKWONDO', 'FINALIZADA', 'Ana', 'Prueba', NULL, ?, '2012-05-05', 'Calle 1',
 				  '600000000', 'ana@example.test', 0, 1, 'Madre Firmante', x'00', ?, '{}', x'00', ?,
-				  '2025-09-10 12:00:00', '2025-09-10 12:00:00', ?, 1)
+				  '2025-09-10 12:00:00', '2025-09-10 12:00:00', ?, 1,
+				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = 'TAEKWONDO'))
 				""", referencia, UUID.randomUUID().toString().replace("-", ""), plantilla, "f".repeat(64),
 				alumnoPreinscripcion);
 

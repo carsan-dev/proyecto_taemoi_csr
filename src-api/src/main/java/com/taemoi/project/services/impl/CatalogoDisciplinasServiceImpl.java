@@ -43,6 +43,11 @@ public class CatalogoDisciplinasServiceImpl implements CatalogoDisciplinasServic
 	}
 
 	@Override
+	public List<Disciplina> listarTodas() {
+		return disciplinas.findAllByOrderByOrdenAscIdAsc();
+	}
+
+	@Override
 	public int obtenerEdadAdulto(String codigoDisciplina) {
 		if (codigoDisciplina == null) {
 			return EDAD_ADULTO_SIN_DISCIPLINA;
@@ -71,5 +76,31 @@ public class CatalogoDisciplinasServiceImpl implements CatalogoDisciplinasServic
 	@Override
 	public boolean esMenorParaExamenPorEdadCumplida(int edadCumplida) {
 		return edadCumplida < EDAD_CUMPLIDA_ADULTO_EXAMEN;
+	}
+
+	@Override
+	public boolean permiteCompeticion(String codigoDisciplina) {
+		return buscarPorCodigo(codigoDisciplina).map(d -> Boolean.TRUE.equals(d.getPermiteCompeticion())).orElse(false);
+	}
+
+	@Override
+	public boolean requiereLicencia(String codigoDisciplina) {
+		return buscarPorCodigo(codigoDisciplina).map(d -> Boolean.TRUE.equals(d.getRequiereLicencia())).orElse(false);
+	}
+
+	@Override
+	public List<String> codigosQuePermitenCompeticion() {
+		return disciplinas.findAllByOrderByOrdenAscIdAsc().stream()
+				.filter(d -> Boolean.TRUE.equals(d.getPermiteCompeticion()))
+				.map(Disciplina::getCodigo)
+				.toList();
+	}
+
+	@Override
+	public List<String> codigosQueRequierenLicencia() {
+		return disciplinas.findAllByOrderByOrdenAscIdAsc().stream()
+				.filter(d -> Boolean.TRUE.equals(d.getRequiereLicencia()))
+				.map(Disciplina::getCodigo)
+				.toList();
 	}
 }

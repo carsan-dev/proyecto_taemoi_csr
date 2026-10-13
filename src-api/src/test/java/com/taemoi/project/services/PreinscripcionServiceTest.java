@@ -45,7 +45,6 @@ import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
-import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PlantillaPreinscripcionRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
@@ -59,7 +58,8 @@ class PreinscripcionServiceTest {
 	@Mock TurnoRepository turnos;
 	@Mock AlumnoRepository alumnos;
 	@Mock AlumnoDeporteRepository alumnoDeportes;
-	@Mock GradoRepository grados;
+	@Mock com.taemoi.project.services.ProgresionGradosService grados;
+	@Mock com.taemoi.project.services.CatalogoDisciplinasService catalogo;
 	@Mock TemporadaService temporadas;
 	@Mock PDFService pdf;
 	@Mock EmailService email;
@@ -79,7 +79,12 @@ class PreinscripcionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
-				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos);
+				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo);
+		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
+			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
+			disciplina.setCodigo(inv.getArgument(0));
+			return disciplina;
+		});
 		lenient().when(temporadas.edadCohorte(any(LocalDate.class), anyString())).thenAnswer(inv -> {
 			LocalDate nacimiento = inv.getArgument(0);
 			String temporada = inv.getArgument(1);
@@ -150,7 +155,8 @@ class PreinscripcionServiceTest {
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		Grado blanco = new Grado();
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(blanco);
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(blanco));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -194,7 +200,8 @@ class PreinscripcionServiceTest {
 		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -221,7 +228,8 @@ class PreinscripcionServiceTest {
 		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -237,7 +245,8 @@ class PreinscripcionServiceTest {
 		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -549,7 +558,8 @@ class PreinscripcionServiceTest {
 		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -606,7 +616,8 @@ class PreinscripcionServiceTest {
 		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 		FinalizarPreinscripcionRequest solicitud = new FinalizarPreinscripcionRequest(
 				FinalizarPreinscripcionRequest.AccionAlumno.CREAR_NUEVO, null, Set.of(), false,
 				null, datosTaekwondo());
@@ -650,7 +661,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnoDeportes, preinscripciones, configuracion);
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
-				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos);
+				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo);
 
 		servicioPromocion.promocionarTodas();
 

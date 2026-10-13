@@ -131,6 +131,15 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId, Deporte deporte, TipoGrado nuevoGrado);
 
 	/**
+	 * Como {@link #actualizarGradoPorDeporte(Long, Deporte, TipoGrado)} con el código de grado del
+	 * catálogo (resuelto en el sistema de grados de la disciplina de la inscripción). No exige que el
+	 * código sea un {@link TipoGrado}: sirve para escuelas con sistemas propios.
+	 *
+	 * @throws IllegalArgumentException si la disciplina no tiene grados o no tiene ese código.
+	 */
+	AlumnoDeporte actualizarGradoPorCodigo(Long alumnoId, Deporte deporte, String codigoGrado);
+
+	/**
 	 * Actualiza el estado de aptitud para examen de un alumno en un deporte específico
 	 *
 	 * @param alumnoId ID del alumno

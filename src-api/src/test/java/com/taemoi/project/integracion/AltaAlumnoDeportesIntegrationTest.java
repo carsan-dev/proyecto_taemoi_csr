@@ -30,15 +30,19 @@ import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.entities.SistemaGrados;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.repositories.SistemaGradosRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -59,6 +63,8 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired AlumnoRepository alumnos;
 	@Autowired GradoRepository grados;
+	@Autowired SistemaGradosRepository sistemas;
+	@Autowired DisciplinaRepository disciplinas;
 	@Autowired ProductoRepository productos;
 	@Autowired ProductoAlumnoRepository productosAlumno;
 	@Autowired ContadorService contadores;
@@ -80,11 +86,18 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 		nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(
 				hoy.getYear() + "-" + "%02d".formatted(hoy.getMonthValue()));
 		TenantContext.ejecutarCon(org, () -> {
+			// Catálogo propio de la escuela (V26: los grados se resuelven por disciplina): taekwondo con
+			// tres grados, kickboxing con su grado de entrada y pilates sin grados.
+			SistemaGrados tkd = sistema("Taekwondo");
+			int orden = 1;
 			for (TipoGrado tipo : List.of(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.VERDE)) {
-				Grado g = new Grado();
-				g.setTipoGrado(tipo);
-				grados.save(g);
+				grado(tkd, tipo, orden++);
 			}
+			SistemaGrados kb = sistema("Kickboxing");
+			grado(kb, TipoGrado.BLANCO, 1);
+			disciplina("TAEKWONDO", tkd, 14, 1);
+			disciplina("KICKBOXING", kb, 15, 2);
+			disciplina("PILATES", null, 14, 3);
 			// Mensualidad del mes ya cargada: el alta debe añadir la del nuevo alumno.
 			Producto mensualidad = productos.save(new Producto("MENSUALIDAD", 30.0, null));
 			// Si el alta cobrara la licencia, este producto lo permitiría: no debe usarse.
@@ -106,6 +119,36 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 			pa.setPagado(false);
 			productosAlumno.save(pa);
 		});
+	}
+
+	private SistemaGrados sistema(String nombre) {
+		SistemaGrados sistema = new SistemaGrados();
+		sistema.setNombre(nombre);
+		return sistemas.save(sistema);
+	}
+
+	private void grado(SistemaGrados sistema, TipoGrado tipo, int orden) {
+		Grado g = new Grado();
+		g.setTipoGrado(tipo);
+		g.setCodigo(tipo.name());
+		g.setNombre(tipo.getNombre());
+		g.setOrden(orden);
+		g.setSistemaGrados(sistema);
+		g.setMesesMinimosMenor(2);
+		g.setMesesMinimosAdulto(3);
+		grados.save(g);
+	}
+
+	private void disciplina(String codigo, SistemaGrados sistema, int edadAdulto, int orden) {
+		Disciplina d = new Disciplina();
+		d.setCodigo(codigo);
+		d.setNombre(codigo);
+		d.setSistemaGrados(sistema);
+		d.setEdadAdulto(edadAdulto);
+		d.setOrden(orden);
+		d.setPermiteCompeticion(sistema != null);
+		d.setRequiereLicencia(sistema != null);
+		disciplinas.save(d);
 	}
 
 	@AfterEach

@@ -68,6 +68,9 @@ public class GrupoServiceImpl implements GrupoService {
 	@Autowired
 	private PreinscripcionRepository preinscripcionRepository;
 
+	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
@@ -516,6 +519,10 @@ public class GrupoServiceImpl implements GrupoService {
 				grupo.setDeporte(Deporte.valueOf(grupoDTO.getDeporte()));
 			} catch (IllegalArgumentException e) {
 				// If invalid deporte, leave it null
+			}
+			if (grupo.getDeporte() != null) {
+				// disciplina_id (V26) junto al deporte heredado
+				grupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(grupo.getDeporte().name()));
 			}
 		}
 

@@ -74,6 +74,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private MembresiaService membresiaService;
 
+	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
 	@Value("${app.bootstrap.admin.email:}")
 	private String bootstrapAdminEmail;
 
@@ -184,6 +187,7 @@ public class InicializadorDatos implements CommandLineRunner {
 
 			// Asignar deporte basado en el tipo del grupo
 			nuevoGrupo.setDeporte(determinarDeportePorTipo(tipo));
+			nuevoGrupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(nuevoGrupo.getDeporte().name()));
 
 			return grupoRepository.save(nuevoGrupo);
 		});

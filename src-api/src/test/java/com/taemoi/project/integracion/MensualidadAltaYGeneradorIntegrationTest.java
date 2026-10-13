@@ -32,7 +32,9 @@ import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.repositories.SistemaGradosRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -54,6 +56,8 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired AlumnoRepository alumnos;
 	@Autowired GradoRepository grados;
+	@Autowired DisciplinaRepository disciplinas;
+	@Autowired SistemaGradosRepository sistemas;
 	@Autowired ProductoRepository productos;
 	@Autowired ProductoAlumnoRepository productosAlumno;
 	@Autowired ProductoAlumnoService productoAlumnoService;
@@ -186,9 +190,10 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		long org = TenantContext.calcularCon(ORG_TAEMOI, () -> organizaciones.save(o).getId());
 		assertNotEquals(ORG_TAEMOI, org);
 		TenantContext.ejecutarCon(org, () -> {
-			Grado g = new Grado();
-			g.setTipoGrado(TipoGrado.BLANCO);
-			grados.save(g);
+			// Catálogo propio de la escuela (V26): grados por disciplina.
+			DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "TAEKWONDO", 14, TipoGrado.BLANCO);
+			DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "KICKBOXING", 15, TipoGrado.BLANCO);
+			DisciplinasDePrueba.asegurar(disciplinas, "PILATES");
 			productos.save(new Producto("MENSUALIDAD", 30.0, null));
 		});
 		return org;
@@ -206,9 +211,9 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		long id = alumnos.save(a).getId();
 		jdbc.update("""
 				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, principal,
-				  tipo_tarifa, cuantia_tarifa, tiene_licencia, organizacion_id, fecha_alta, fecha_alta_inicial)
-				VALUES (1, 0, ?, 'TAEKWONDO', 0, 1, 'ADULTO', 30, 0, ?, '2020-09-01', '2020-09-01')
-				""", id, TenantContext.get());
+				  tipo_tarifa, cuantia_tarifa, tiene_licencia, organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id)
+				VALUES (1, 0, ?, 'TAEKWONDO', 0, 1, 'ADULTO', 30, 0, ?, '2020-09-01', '2020-09-01', ?)
+				""", id, TenantContext.get(), DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO").getId());
 		return id;
 	}
 

@@ -1,7 +1,13 @@
 package com.taemoi.project.services.impl;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
@@ -10,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -20,6 +27,12 @@ import com.taemoi.project.services.ProgresionGradosService;
 @Service
 @Transactional(readOnly = true)
 public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
+
+	private static final Logger log = LoggerFactory.getLogger(ProductosCatalogoServiceImpl.class);
+
+	/** Variantes «rojo bordado» que el código cobraba hasta V26 (AlumnoServiceImpl): conceden ROJO. */
+	private static final String EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN ROJO BORDADO";
+	private static final String RECOMPENSA_ROJO_BORDADO = "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA";
 
 	private final ProductoRepository productos;
 	private final GradoRepository grados;
@@ -92,6 +105,78 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	@Override
 	public Optional<Grado> buscarGradoPorProducto(Long productoId, String codigoDisciplina) {
 		return gradoConcedido(productoId, codigoDisciplina, null);
+	}
+
+	@Override
+	public Optional<String> buscarCodigoGradoConcedido(Long productoId, String conceptoCargo) {
+		Optional<String> porProducto = productoId == null ? Optional.empty()
+				: productos.findById(productoId).map(Producto::getGrado).map(Grado::getCodigo);
+		if (porProducto.isPresent() || conceptoCargo == null) {
+			return porProducto;
+		}
+		Optional<String> porConcepto = gradoDelConcepto(conceptoCargo);
+		int sufijo = conceptoCargo.lastIndexOf(SEPARADOR_DISCIPLINA);
+		if (porConcepto.isEmpty() && sufijo > 0) {
+			porConcepto = gradoDelConcepto(conceptoCargo.substring(0, sufijo));
+		}
+		if (porConcepto.isPresent()) {
+			return porConcepto;
+		}
+		Optional<String> porNombreContenido = gradoPorNombreContenido(conceptoCargo, TipoProducto.RECOMPENSA)
+				.or(() -> gradoPorNombreContenido(conceptoCargo, TipoProducto.EXAMEN));
+		porNombreContenido.ifPresent(codigo -> log.info(
+				"Grado {} concedido por nombre contenido en el concepto del cargo «{}» (producto {} sin grado)",
+				codigo, conceptoCargo, productoId));
+		return porNombreContenido;
+	}
+
+	/**
+	 * Último respaldo: el nombre de producto de ese tipo contenido en el concepto (sin distinguir
+	 * mayúsculas) que sea más LARGO.
+	 */
+	private Optional<String> gradoPorNombreContenido(String concepto, TipoProducto tipo) {
+		String conceptoMayusculas = concepto.toUpperCase(Locale.ROOT);
+		String mejorNombre = null;
+		String mejorCodigo = null;
+		for (Map.Entry<String, String> candidato : nombresQueConcedenGrado(tipo).entrySet()) {
+			String nombre = candidato.getKey();
+			if (conceptoMayusculas.contains(nombre) && (mejorNombre == null || nombre.length() > mejorNombre.length())) {
+				mejorNombre = nombre;
+				mejorCodigo = candidato.getValue();
+			}
+		}
+		return Optional.ofNullable(mejorCodigo);
+	}
+
+	/**
+	 * Nombre de producto (en mayúsculas) -> código de grado que concede: los productos clasificados de
+	 * la organización activa y, hasta la contracción, los nombres que usaba el código (Taemoi).
+	 */
+	private Map<String, String> nombresQueConcedenGrado(TipoProducto tipo) {
+		boolean recompensa = tipo == TipoProducto.RECOMPENSA;
+		Map<String, String> nombres = new LinkedHashMap<>();
+		for (TipoGrado grado : TipoGrado.values()) {
+			if (recompensa ? grado.tieneProductoRecompensa() : grado.tieneProductoExamen()) {
+				nombres.put(grado.obtenerNombreProducto(recompensa).toUpperCase(Locale.ROOT), grado.name());
+			}
+		}
+		nombres.put((recompensa ? RECOMPENSA_ROJO_BORDADO : EXAMEN_ROJO_BORDADO).toUpperCase(Locale.ROOT),
+				TipoGrado.ROJO.name());
+		for (Producto producto : productos.findByTipoAndGradoIsNotNullOrderByIdAsc(tipo)) {
+			if (producto.getConcepto() != null && !producto.getConcepto().isBlank()) {
+				nombres.putIfAbsent(producto.getConcepto().trim().toUpperCase(Locale.ROOT), producto.getGrado().getCodigo());
+			}
+		}
+		return nombres;
+	}
+
+	/** Separador del sufijo de disciplina en los cargos («DERECHO A EXAMEN AZUL - Taekwondo»). */
+	private static final String SEPARADOR_DISCIPLINA = " - ";
+
+	private Optional<String> gradoDelConcepto(String concepto) {
+		return productos.findFirstByConceptoAndGradoIsNotNullOrderByIdAsc(concepto)
+				.map(Producto::getGrado)
+				.map(Grado::getCodigo);
 	}
 
 	/**

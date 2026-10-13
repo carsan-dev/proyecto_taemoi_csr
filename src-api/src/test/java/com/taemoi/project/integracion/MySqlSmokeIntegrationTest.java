@@ -25,6 +25,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 
 	@Autowired Flyway flyway;
 	@Autowired GrupoRepository grupos;
+	@Autowired com.taemoi.project.repositories.DisciplinaRepository disciplinas;
 	@Autowired JdbcTemplate jdbc;
 
 	@Test
@@ -32,7 +33,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("25", actual.getVersion().getVersion());
+		assertEquals("26", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 
@@ -54,6 +55,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		grupo.setNombre("IT smoke grupo");
 		grupo.setTipo("Pilates");
 		grupo.setDeporte(Deporte.PILATES);
+		grupo.setDisciplina(disciplinas.findByCodigo("PILATES").orElseThrow());
 
 		Long id = grupos.save(grupo).getId();
 		try {

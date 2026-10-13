@@ -107,7 +107,9 @@ class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		flyway("23").migrate();
 		insertarDatosV23();
-		flyway(null).migrate();
+		// Hasta V25: los datos de prueba incluyen una inscripción de otra escuela sin catálogo, que V26
+		// (disciplina_id NOT NULL) rechaza a propósito (SwitchGradosMigracionIntegrationTest).
+		flyway("25").migrate();
 	}
 
 	@Test

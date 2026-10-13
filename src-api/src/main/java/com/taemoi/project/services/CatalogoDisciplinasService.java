@@ -1,6 +1,8 @@
 package com.taemoi.project.services;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,8 +11,8 @@ import com.taemoi.project.entities.Disciplina;
 /**
  * Catálogo de disciplinas de la organización activa (tabla {@code disciplina}).
  *
- * <p>Sustituirá a {@code Deporte}, {@code FechaUtils} (14/15 años) y {@code DeporteEdadUtils}.
- * Todavía no lo usa ningún llamador: los tests de paridad comprueban que da lo mismo que esas
+ * <p>Sustituye a {@code Deporte} (indicadores de cada disciplina), {@code FechaUtils} (14/15
+ * años) y {@code DeporteEdadUtils}. Los tests de paridad comprueban que da lo mismo que esas
  * clases para Taemoi.
  *
  * <p>Hay DOS reglas de «menor» y se exponen por separado, sin unificar:
@@ -42,6 +44,9 @@ public interface CatalogoDisciplinasService {
 	/** Disciplinas activas, por {@code orden}. */
 	List<Disciplina> listarActivas();
 
+	/** Todas las disciplinas (activas o no), por {@code orden}. */
+	List<Disciplina> listarTodas();
+
 	/**
 	 * Edad adulta de la disciplina ({@code disciplina.edad_adulto}); con {@code codigo == null},
 	 * {@link #EDAD_ADULTO_SIN_DISCIPLINA}.
@@ -69,4 +74,44 @@ public interface CatalogoDisciplinasService {
 
 	/** Regla de exámenes por edad cumplida: {@code edadCumplida < 13}, sin disciplina. */
 	boolean esMenorParaExamenPorEdadCumplida(int edadCumplida);
+
+	/** Si la disciplina admite competidores ({@code permite_competicion}); {@code false} si no existe. */
+	boolean permiteCompeticion(String codigoDisciplina);
+
+	/** Si la disciplina exige licencia federativa ({@code requiere_licencia}); {@code false} si no existe. */
+	boolean requiereLicencia(String codigoDisciplina);
+
+	/** Códigos de las disciplinas que admiten competidores, por {@code orden}. */
+	List<String> codigosQuePermitenCompeticion();
+
+	/** Códigos de las disciplinas que exigen licencia federativa, por {@code orden}. */
+	List<String> codigosQueRequierenLicencia();
+
+	// --- Variantes con java.util.Date (fechas de las entidades) ---
+
+	/** {@link #esMenorPorAnioNatural(LocalDate, String)} con una fecha de entidad. */
+	default boolean esMenorPorAnioNatural(Date fechaNacimiento, String codigoDisciplina) {
+		return esMenorPorAnioNatural(aLocalDate(fechaNacimiento), codigoDisciplina);
+	}
+
+	/** {@link #esMenorPorAnioNatural(LocalDate, String, int)} con una fecha de entidad. */
+	default boolean esMenorPorAnioNatural(Date fechaNacimiento, String codigoDisciplina, int anioReferencia) {
+		return esMenorPorAnioNatural(aLocalDate(fechaNacimiento), codigoDisciplina, anioReferencia);
+	}
+
+	/** {@link #esMenorPorAnioNaturalFechaNulaComoAdulto(LocalDate, String)} con una fecha de entidad. */
+	default boolean esMenorPorAnioNaturalFechaNulaComoAdulto(Date fechaNacimiento, String codigoDisciplina) {
+		return esMenorPorAnioNaturalFechaNulaComoAdulto(aLocalDate(fechaNacimiento), codigoDisciplina);
+	}
+
+	/** Igual que la conversión de {@code FechaUtils}: {@code java.sql.Date} sin zona horaria. */
+	private static LocalDate aLocalDate(Date fecha) {
+		if (fecha == null) {
+			return null;
+		}
+		if (fecha instanceof java.sql.Date fechaSql) {
+			return fechaSql.toLocalDate();
+		}
+		return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+	}
 }

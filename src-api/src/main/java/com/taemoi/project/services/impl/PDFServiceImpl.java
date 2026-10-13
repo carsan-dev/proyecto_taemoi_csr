@@ -46,13 +46,11 @@ import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
-import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
-import com.taemoi.project.utils.GradoUtils;
 
 @Service
 public class PDFServiceImpl implements PDFService {
@@ -64,9 +62,6 @@ public class PDFServiceImpl implements PDFService {
 
 	@Autowired
 	private AlumnoDeporteRepository alumnoDeporteRepository;
-
-	@Autowired
-	private GradoRepository gradoRepository;
 
 	@Autowired
 	private ProductoRepository productoRepository;
@@ -81,7 +76,36 @@ public class PDFServiceImpl implements PDFService {
 	private com.taemoi.project.services.ConvocatoriaService convocatoriaService;
 
 	@Autowired
-	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
+	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
+
+	/** Grupo de edad del alumno en la disciplina de la inscripción (disciplina.edad_adulto, año natural). */
+	private boolean esMenor(Alumno alumno, AlumnoDeporte alumnoDeporte) {
+		return catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
+				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name());
+	}
+
+	/** Nombre visible del grado de la inscripción (el de su fila: «MARRÓN» en kickboxing); «N/A» sin grado. */
+	private String nombreGrado(AlumnoDeporte alumnoDeporte) {
+		return progresionGrados.obtenerNombreVisible(alumnoDeporte.getGrado());
+	}
+
+	/** Siguiente grado de la inscripción en el sistema de su disciplina; nulo si no tiene grado o no hay siguiente. */
+	private Grado siguienteGrado(Alumno alumno, AlumnoDeporte alumnoDeporte) {
+		if (alumnoDeporte.getGrado() == null) {
+			return null;
+		}
+		return progresionGrados.obtenerSiguienteGrado(
+				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name(),
+				esMenor(alumno, alumnoDeporte), alumnoDeporte.getGrado().getCodigo()).orElse(null);
+	}
+
+	/** Tipo del grado (para dibujar el cinturón); nulo si no hay grado. */
+	private static TipoGrado tipoDe(Grado grado) {
+		return grado == null || grado.getCodigo() == null ? null : TipoGrado.valueOf(grado.getCodigo());
+	}
 
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
@@ -407,20 +431,21 @@ public class PDFServiceImpl implements PDFService {
 	 */
 	private String generarSeccion(List<AlumnoDeporte> alumnos) {
 		StringBuilder html = new StringBuilder();
-		// Obtener el deporte de la lista (todos los alumnos son del mismo deporte)
-		Deporte deporte = alumnos.isEmpty() ? Deporte.TAEKWONDO : alumnos.get(0).getDeporte();
-		Map<Grado, List<AlumnoDeporte>> alumnosPorGrado = alumnos.stream()
-				.collect(Collectors.groupingBy(AlumnoDeporte::getGrado));
+		// Un apartado por codigo de grado (todos los alumnos son de la misma disciplina), del grado más
+		// alto al más bajo según el orden del sistema de grados de la disciplina.
+		Map<String, List<AlumnoDeporte>> alumnosPorGrado = alumnos.stream()
+				.collect(Collectors.groupingBy(ad -> ad.getGrado().getCodigo(), java.util.LinkedHashMap::new,
+						Collectors.toList()));
 
-		List<Map.Entry<Grado, List<AlumnoDeporte>>> entradasOrdenadas = new ArrayList<>(alumnosPorGrado.entrySet());
+		List<Map.Entry<String, List<AlumnoDeporte>>> entradasOrdenadas = new ArrayList<>(alumnosPorGrado.entrySet());
 		entradasOrdenadas.sort((e1, e2) -> {
-			int ordinal1 = e1.getKey().getTipoGrado().ordinal();
-			int ordinal2 = e2.getKey().getTipoGrado().ordinal();
-			return Integer.compare(ordinal2, ordinal1);
+			int orden1 = ordenPresentacion(e1.getValue().get(0).getGrado());
+			int orden2 = ordenPresentacion(e2.getValue().get(0).getGrado());
+			return Integer.compare(orden2, orden1);
 		});
 
-		for (Map.Entry<Grado, List<AlumnoDeporte>> entry : entradasOrdenadas) {
-			Grado grado = entry.getKey();
+		for (Map.Entry<String, List<AlumnoDeporte>> entry : entradasOrdenadas) {
+			Grado grado = entry.getValue().get(0).getGrado();
 			List<AlumnoDeporte> alumnosGrado = entry.getValue();
 			alumnosGrado.sort(Comparator.comparing(ad -> {
 				Alumno alumno = ad.getAlumno();
@@ -429,7 +454,7 @@ public class PDFServiceImpl implements PDFService {
 				}
 				return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
 			}));
-			TipoGrado tipo = grado.getTipoGrado();
+			TipoGrado tipo = tipoDe(grado);
 
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
@@ -490,7 +515,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='cinturon' style='" + cinturonStyle + "'></div>");
 			}
 
-			html.append("<span class='grado-nombre'>").append(GradoUtils.getNombreGradoParaDeporte(tipo, deporte))
+			html.append("<span class='grado-nombre'>").append(progresionGrados.obtenerNombreVisible(grado))
 					.append("</span>");
 			html.append("</div>");
 			html.append("<div class='derecha'>");
@@ -632,9 +657,9 @@ public class PDFServiceImpl implements PDFService {
 			alumnos = alumnos.stream().filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && ad.getAlumno() != null
 					&& Boolean.TRUE.equals(ad.getAlumno().getActivo())).collect(Collectors.toList());
 		}
-		// Exclude sports without license requirements
+		// Exclude sports without license requirements (disciplina.requiere_licencia)
 		alumnos = alumnos.stream().filter(
-				ad -> ad.getDeporte() != Deporte.PILATES && ad.getDeporte() != Deporte.DEFENSA_PERSONAL_FEMENINA)
+				ad -> ad.getDeporte() != null && catalogoDisciplinas.requiereLicencia(ad.getDeporte().name()))
 				.collect(Collectors.toList());
 
 		LocalDate today = LocalDate.now();
@@ -765,14 +790,40 @@ public class PDFServiceImpl implements PDFService {
 			}
 			html.append("<td>").append(fechaLic).append("</td>");
 			// Use belt drawing for grade
-			TipoGrado tipoGrado = (alumnoDeporte.getGrado() != null) ? alumnoDeporte.getGrado().getTipoGrado() : null;
-			String nombreGrado = GradoUtils.getNombreGradoParaDeporte(tipoGrado, alumnoDeporte.getDeporte());
-			html.append(generarCeldaGrado(tipoGrado, nombreGrado));
+			TipoGrado tipoGrado = tipoDe(alumnoDeporte.getGrado());
+			html.append(generarCeldaGrado(tipoGrado, nombreGrado(alumnoDeporte)));
 			html.append("</tr>");
 		}
 		html.append("</tbody>");
 		html.append("</table>");
 		return html.toString();
+	}
+
+	/**
+	 * Orden de presentación de los grados en los informes (del más bajo al más alto). Para los códigos de
+	 * Taemoi es el de siempre (el del enum: los PUM antes que los DAN, también en kickboxing, aunque su
+	 * {@code grado.orden} de progresión ponga los PUM al final para que no tengan siguiente). Los códigos
+	 * propios de otras escuelas usan {@code grado.orden}. Hasta que el catálogo tenga un orden de
+	 * presentación propio (contracción).
+	 */
+	private static final Map<String, Integer> ORDEN_PRESENTACION_TAEMOI = new java.util.HashMap<>();
+
+	static {
+		for (TipoGrado tipo : TipoGrado.values()) {
+			ORDEN_PRESENTACION_TAEMOI.put(tipo.name(), tipo.ordinal() + 1);
+		}
+	}
+
+	private static int ordenPresentacion(String codigo, Integer ordenCatalogo) {
+		Integer taemoi = codigo == null ? null : ORDEN_PRESENTACION_TAEMOI.get(codigo);
+		if (taemoi != null) {
+			return taemoi;
+		}
+		return ordenCatalogo == null ? Integer.MIN_VALUE : ordenCatalogo;
+	}
+
+	private static int ordenPresentacion(Grado grado) {
+		return grado == null ? Integer.MIN_VALUE : ordenPresentacion(grado.getCodigo(), grado.getOrden());
 	}
 
 	private String generarCeldaGrado(TipoGrado tipoGrado, String texto) {
@@ -815,7 +866,7 @@ public class PDFServiceImpl implements PDFService {
 						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
 					continue;
 				}
-				if (!FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
+				if (!esMenor(alumno, alumnoDeporte)) {
 					continue;
 				}
 
@@ -898,20 +949,11 @@ public class PDFServiceImpl implements PDFService {
 
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
-								? alumnoDeporte.getGrado().getTipoGrado()
-								: null;
-						String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
-								alumnoDeporte.getDeporte());
-						html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
+						html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
 
-						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
-								alumnoDeporte.getDeporte(),
-								FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
-								gradoActualTipo);
-						String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
-								alumnoDeporte.getDeporte());
-						html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
+						Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
+						html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 						html.append("<td>").append(edad).append("</td>");
@@ -975,7 +1017,7 @@ public class PDFServiceImpl implements PDFService {
 						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
 					continue;
 				}
-				if (FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte())) {
+				if (esMenor(alumno, alumnoDeporte)) {
 					continue;
 				}
 
@@ -1052,21 +1094,12 @@ public class PDFServiceImpl implements PDFService {
 								.append("</td>");
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
-								? alumnoDeporte.getGrado().getTipoGrado()
-								: null;
-						String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
-								alumnoDeporte.getDeporte());
-						html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
+						html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
 
 						// Grado a Promocionar with belt
-						TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
-								alumnoDeporte.getDeporte(),
-								FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
-								alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-						String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
-								alumnoDeporte.getDeporte());
-						html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
+						Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
+						html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 						html.append("<td>").append(edad).append("</td>");
@@ -1123,7 +1156,7 @@ public class PDFServiceImpl implements PDFService {
 	 *
 	 * @param soloActivos Filter only active students
 	 * @param deporte     Sport to filter (TAEKWONDO or KICKBOXING)
-	 * @param esInfantil  true for menores segun FechaUtils.esMenor, false for
+	 * @param esInfantil  true for menores (disciplina.edad_adulto), false for
 	 *                    adultos
 	 * @return PDF bytes
 	 */
@@ -1160,7 +1193,7 @@ public class PDFServiceImpl implements PDFService {
 						|| !Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
 					continue;
 				}
-				boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte());
+				boolean esMenor = esMenor(alumno, alumnoDeporte);
 				if (esInfantil != esMenor) {
 					continue;
 				}
@@ -1232,21 +1265,12 @@ public class PDFServiceImpl implements PDFService {
 							.append("</td>");
 					html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-					TipoGrado gradoActualTipo = alumnoDeporte.getGrado() != null
-							? alumnoDeporte.getGrado().getTipoGrado()
-							: null;
-					String gradoActualNombre = GradoUtils.getNombreGradoParaDeporte(gradoActualTipo,
-							alumnoDeporte.getDeporte());
-					html.append(generarCeldaGrado(gradoActualTipo, gradoActualNombre));
+					html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
 
 					// Grado a Promocionar with belt
-					TipoGrado gradoPromocionTipo = gradeProgressionConfig.obtenerSiguienteGrado(
-							alumnoDeporte.getDeporte(),
-							FechaUtils.esMenor(alumno.getFechaNacimiento(), alumnoDeporte.getDeporte()),
-							alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado() : null);
-					String gradoPromocionNombre = GradoUtils.getNombreGradoParaDeporte(gradoPromocionTipo,
-							alumnoDeporte.getDeporte());
-					html.append(generarCeldaGrado(gradoPromocionTipo, gradoPromocionNombre));
+					Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
+					html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+							progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
 					html.append("<td>").append(edad).append("</td>");
@@ -1283,24 +1307,14 @@ public class PDFServiceImpl implements PDFService {
 			return "Sin Grado Asignado";
 		}
 
-		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
-		Deporte deporte = alumnoDeporte.getDeporte();
-		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
+		// Siguiente grado en el sistema de la disciplina (orden + aplica_a), por grupo de edad
+		Grado nuevoGrado = siguienteGrado(alumno, alumnoDeporte);
 
-		// Get next grade using grade progression config
-		TipoGrado nuevoTipo = gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
-
-		if (nuevoTipo == null) {
+		if (nuevoGrado == null) {
 			return "Grado Máximo Alcanzado";
 		}
 
-		var nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-		if (nuevoGrado == null) {
-			return "Grado No Encontrado";
-		}
-
-		return GradoUtils.getNombreGradoParaDeporte(nuevoGrado.getTipoGrado(), deporte);
+		return progresionGrados.obtenerNombreVisible(nuevoGrado);
 	}
 
 	@Override
@@ -2897,7 +2911,8 @@ public class PDFServiceImpl implements PDFService {
 	public byte[] generarInformeCompetidores() {
 		// Get all active competitors for Taekwondo and Kickboxing
 		List<AlumnoDeporte> competidores = alumnoDeporteRepository
-				.findCompetidoresActivosByDeporteIn(Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING));
+				.findCompetidoresActivosByDeporteIn(catalogoDisciplinas.codigosQuePermitenCompeticion().stream()
+						.map(Deporte::valueOf).toList());
 
 		LocalDate now = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
@@ -3073,8 +3088,8 @@ public class PDFServiceImpl implements PDFService {
 				}
 
 				// Grado del alumno
-				TipoGrado tipoGrado = (ad.getGrado() != null) ? ad.getGrado().getTipoGrado() : null;
-				String nombreGrado = (tipoGrado != null) ? GradoUtils.getNombreGradoParaDeporte(tipoGrado, deporte)
+				TipoGrado tipoGrado = tipoDe(ad.getGrado());
+				String nombreGrado = (tipoGrado != null) ? progresionGrados.obtenerNombreVisible(ad.getGrado())
 						: "Sin grado";
 
 				html.append("<tr>");
@@ -3170,9 +3185,11 @@ public class PDFServiceImpl implements PDFService {
 		List<Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>>> sortedGroups = new ArrayList<>(
 				groupedByGrade.entrySet());
 		sortedGroups.sort((e1, e2) -> {
-			TipoGrado g1 = e1.getValue().get(0).getGradoActual();
-			TipoGrado g2 = e2.getValue().get(0).getGradoActual();
-			return Integer.compare(g2.ordinal(), g1.ordinal());
+			TipoGrado t1 = e1.getValue().get(0).getGradoActual();
+			TipoGrado t2 = e2.getValue().get(0).getGradoActual();
+			int g1 = ordenPresentacion(t1 == null ? null : t1.name(), null);
+			int g2 = ordenPresentacion(t2 == null ? null : t2.name(), null);
+			return Integer.compare(g2, g1);
 		});
 
 		for (Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> entry : sortedGroups) {
@@ -3196,7 +3213,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<span class='belt-with-text'>");
 			html.append(generarCinturonInlineHTML(gradoActual, 50, 15));
 			html.append("<span class='belt-text'>DE ")
-					.append(GradoUtils.getNombreGradoParaDeporte(gradoActual, convocatoria.getDeporte()).toUpperCase())
+					.append(progresionGrados.obtenerNombreVisible(convocatoria.getDeporte().name(),
+							gradoActual == null ? null : gradoActual.name()).toUpperCase())
 					.append("</span>");
 			html.append("</span>");
 			html.append("</td>");
@@ -3210,7 +3228,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<td class='grade-to'>");
 			html.append("<span class='belt-with-text'>");
 			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(
-					GradoUtils.getNombreGradoParaDeporte(gradoSiguiente, convocatoria.getDeporte()).toUpperCase())
+					progresionGrados.obtenerNombreVisible(convocatoria.getDeporte().name(),
+							gradoSiguiente == null ? null : gradoSiguiente.name()).toUpperCase())
 					.append("</span>");
 			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
 			html.append("</span>");

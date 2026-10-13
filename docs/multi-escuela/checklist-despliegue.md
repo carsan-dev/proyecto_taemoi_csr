@@ -12,6 +12,9 @@
 - [ ] Cargar fuera del repositorio los datos legales de la organización 1 (`nombre_legal`, `cif`, `firmante_*`).
 - [ ] V23 (catálogo) nunca se despliega sin el cambio de código de los enums a las tablas (fase 2, tarea 5).
 - [ ] Antes de V22, ejecutar `docs/multi-escuela/precheck-v22.sql` (solo lectura, solo recuentos) y guardar el resultado.
+- [ ] Antes de V26, ejecutar `docs/multi-escuela/postcheck-v26.sql` (solo lectura, solo recuentos): la primera consulta debe dar 0 en las cinco tablas o V26 se detiene.
+      Si V26 falla, corregir la fila indicada en el error (`v26_<tabla>_tiene_filas_sin_disciplina`),
+      ejecutar `flyway repair` y volver a desplegar: V26 se detiene antes de cambiar ninguna columna.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.
@@ -21,3 +24,8 @@
 ## Vuelta atrás
 Desde V20 los roles viven en `membresia` y `usuario_rol` deja de actualizarse: volver al código
 anterior exige restaurar la copia de seguridad.
+
+Desde V26 las cinco columnas `disciplina_id` son NOT NULL y el código anterior a V26 no las escribe.
+Volver a ese código exige antes `ALTER TABLE … MODIFY disciplina_id BIGINT NULL` en `alumno_deporte`,
+`grupo`, `convocatoria`, `plantilla_preinscripcion` y `preinscripcion` (en la práctica, volver atrás
+después de V20 ya supone restaurar la copia de seguridad).

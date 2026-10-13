@@ -84,7 +84,8 @@ class PersonasMigracionIntegrationTest extends MySqlIntegrationTest {
 		preInviernoNoche = preinscripcion("V25-INVIERNO", "FINALIZADA", nocturno, "2007-09-11", true, "Nocturno",
 				"2025-01-15 23:30:00", plantilla, 1);
 
-		flyway(null).migrate();
+		// Hasta V25 (la versión que se prueba); V26 la cubre SwitchGradosMigracionIntegrationTest.
+		flyway("25").migrate();
 	}
 
 	@Test

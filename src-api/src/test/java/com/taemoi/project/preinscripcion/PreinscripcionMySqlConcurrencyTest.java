@@ -74,6 +74,8 @@ import com.taemoi.project.services.TutorService;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ PreinscripcionService.class, AforoPreinscripcionService.class, ContadorService.class,
 		TutorService.class, ConsentimientoService.class,
+		com.taemoi.project.services.impl.CatalogoDisciplinasServiceImpl.class,
+		com.taemoi.project.services.impl.ProgresionGradosServiceImpl.class,
 		OrganizacionHibernateConfig.class, PreinscripcionMySqlConcurrencyTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
@@ -194,8 +196,9 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 				"SELECT t.id FROM turno t JOIN grupo g ON g.id=t.grupo_id WHERE g.nombre=? ORDER BY t.id LIMIT 1",
 				Long.class, nombreGrupo);
 		if (!existentes.isEmpty()) return existentes.get(0);
-		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max,organizacion_id) VALUES (?,NULL,?,0,99,1)",
-				nombreGrupo, deporte.name());
+		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max,organizacion_id,disciplina_id) VALUES (?,NULL,?,0,99,1,"
+				+ "(SELECT d.id FROM disciplina d WHERE d.organizacion_id=1 AND d.codigo=?))",
+				nombreGrupo, deporte.name(), deporte.name());
 		Long grupoId = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre=?", Long.class, nombreGrupo);
 		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id,organizacion_id) VALUES ('Lunes','18:00','19:00',NULL,?,1)",
 				grupoId);

@@ -15,4 +15,6 @@ public interface DisciplinaRepository extends JpaRepository<Disciplina, Long> {
 	Optional<Disciplina> findByCodigo(String codigo);
 
 	List<Disciplina> findByActivaTrueOrderByOrdenAscIdAsc();
+
+	List<Disciplina> findAllByOrderByOrdenAscIdAsc();
 }
