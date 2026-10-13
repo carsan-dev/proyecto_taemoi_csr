@@ -1,0 +1,96 @@
+# Entorno local de pruebas (staging) que reproduce el estado de producción: MySQL 8.0 con Flyway en V17
+# y datos SINTÉTICOS. Ver scripts/pruebas/README.md.
+#
+# Todos los secretos de este fichero son FALSOS y solo valen para este entorno local.
+# Puertos: base de datos 3308, backend 8081, frontend 8088 (no chocan con docker-compose.yml).
+name: taemoi-pruebas
+
+services:
+  database:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root-pruebas-local
+      MYSQL_DATABASE: taemoi_pruebas
+      MYSQL_USER: taemoi
+      MYSQL_PASSWORD: taemoi-pruebas-local
+      TZ: Europe/Madrid
+    ports:
+      - "3308:3306"
+    volumes:
+      - database_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot-pruebas-local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - pruebas
+
+  backend:
+    build:
+      context: ./src-api
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      # Perfil sin fichero propio: ni "docker" ni "production", así la cookie jwt sale sin Secure
+      # y el login funciona sobre http://localhost.
+      SPRING_PROFILES_ACTIVE: pruebas
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/taemoi_pruebas?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Europe/Madrid
+      SPRING_DATASOURCE_USERNAME: taemoi
+      SPRING_DATASOURCE_PASSWORD: taemoi-pruebas-local
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
+      JWT_SECRET: dGFlbW9pLXBydWViYXMtbG9jYWwtand0LXNlY3JldC1zb2xvLXBhcmEtc3RhZ2luZy1uby1wcm9kdWNjaW9uLTIwMjY=
+      # Origen del navegador: el frontend en 8088 (las llamadas /api pasan por su nginx).
+      CORS_ALLOWED_ORIGIN: http://localhost:8088
+      # Host localhost => la cookie no lleva Domain.
+      APP_BASE_URL: http://localhost:8088
+      APP_FRONTEND_BASE_URL: http://localhost:8088
+      GOOGLE_CLIENT_ID: pruebas-google-client
+      GOOGLE_CLIENT_SECRET: pruebas-google-secret
+      GOOGLE_REDIRECT_URI: http://localhost:8081/login/oauth2/code/google
+      # Correo falso: los envíos fallarán sin salir a ningún buzón real.
+      SPRING_MAIL_HOST: localhost
+      SPRING_MAIL_PORT: "2525"
+      SPRING_MAIL_USERNAME: pruebas@example.test
+      SPRING_MAIL_PASSWORD: correo-desactivado
+      APP_PREINSCRIPCIONES_ADMIN_EMAIL: pruebas@example.test
+      STREAK_REMINDER_ENABLED: "false"
+      APP_IMAGENES_PATH_DOCKER: /var/www/app/imagenes/
+      APP_DOCUMENTOS_PATH_DOCKER: /var/www/app/documentos/
+    volumes:
+      - imagenes_data:/var/www/app/imagenes
+      - documentos_data:/var/www/app/documentos
+    networks:
+      pruebas:
+        # El nginx del frontend apunta a "springboot:8080" (src-frontend/nginx.conf), igual que en
+        # docker-compose.yml; el alias evita usar container_name y chocar con el entorno de desarrollo.
+        aliases:
+          - springboot
+
+  frontend:
+    build:
+      context: ./src-frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8088:80"
+    networks:
+      - pruebas
+
+volumes:
+  database_data:
+  imagenes_data:
+  documentos_data:
+
+networks:
+  pruebas:
+    driver: bridge
