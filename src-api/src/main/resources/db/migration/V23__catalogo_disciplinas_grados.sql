@@ -6,10 +6,7 @@
 --   2. grado gana las columnas del catálogo. Las filas existentes de la organización 1 conservan
 --      su id y pasan a ser el sistema de taekwondo; se crea una copia para kickboxing con sus
 --      nombres visibles (ROJO -> 'MARRÓN', como GradoUtils) y su propio orden.
---   3. Las inscripciones (alumno_deporte) y la columna heredada alumno.grado_id que apuntan a un
---      grado de otro sistema se reasignan al grado del mismo código del sistema de su disciplina
---      (en la práctica: kickboxing pasa a la copia de kickboxing).
---   4. disciplina_id (NULL) junto a cada columna deporte: alumno_deporte, grupo, convocatoria,
+--   3. disciplina_id (NULL) junto a cada columna deporte: alumno_deporte, grupo, convocatoria,
 --      plantilla_preinscripcion y preinscripcion; rellenada por codigo.
 --
 -- Valores de progresión (orden, aplica_a), meses mínimos y bloques de temario: copiados de
@@ -25,6 +22,13 @@
 -- No se rellenan: color_1/color_2 (decisión visual pendiente) ni equivalente_adulto_id (sin uso
 -- todavía). tipo_grado se mantiene hasta la contracción.
 -- Todas las sentencias son repetibles sin efectos duplicados.
+--
+-- SOLO AMPLÍA: no cambia ningún grado_id existente. Las inscripciones de kickboxing siguen
+-- apuntando a los grados de taekwondo (lo que escribe y lee el código actual) y la copia de
+-- kickboxing queda sin uso. La reasignación de alumno_deporte.grado_id al sistema de su
+-- disciplina va en la migración del cambio de llamadores, en el mismo despliegue que pasa a los
+-- escritores a ProgresionGradosService.buscarGrado(disciplina, codigo).
+-- No usa ninguna columna de alumno: V22 borra las columnas monodeporte (deporte, grado_id…).
 
 SET @schema_name = DATABASE();
 
@@ -310,36 +314,6 @@ WHERE t.organizacion_id = 1
     WHERE k.sistema_grados_id = @sistema_kb AND k.codigo = t.codigo
   )
 ORDER BY t.orden;
-
--- ----------------------------------------------------------------------------
--- Reasignar grado_id al sistema de la disciplina (kickboxing -> copia de kickboxing)
--- ----------------------------------------------------------------------------
-UPDATE alumno_deporte ad
-JOIN grado actual ON actual.id = ad.grado_id
-JOIN disciplina d
-  ON d.organizacion_id = ad.organizacion_id
- AND d.codigo = CONVERT(ad.deporte USING utf8mb4) COLLATE utf8mb4_bin
-JOIN grado destino
-  ON destino.organizacion_id = ad.organizacion_id
- AND destino.sistema_grados_id = d.sistema_grados_id
- AND destino.codigo = actual.codigo
-SET ad.grado_id = destino.id
-WHERE d.sistema_grados_id IS NOT NULL
-  AND NOT (actual.sistema_grados_id <=> d.sistema_grados_id);
-
--- Columna heredada (contracción en V25+): mismo criterio con alumno.deporte.
-UPDATE alumno a
-JOIN grado actual ON actual.id = a.grado_id
-JOIN disciplina d
-  ON d.organizacion_id = a.organizacion_id
- AND d.codigo = CONVERT(a.deporte USING utf8mb4) COLLATE utf8mb4_bin
-JOIN grado destino
-  ON destino.organizacion_id = a.organizacion_id
- AND destino.sistema_grados_id = d.sistema_grados_id
- AND destino.codigo = actual.codigo
-SET a.grado_id = destino.id
-WHERE d.sistema_grados_id IS NOT NULL
-  AND NOT (actual.sistema_grados_id <=> d.sistema_grados_id);
 
 -- ----------------------------------------------------------------------------
 -- disciplina_id junto a deporte. Patrón por tabla: columna NULL, índice, relleno por codigo,

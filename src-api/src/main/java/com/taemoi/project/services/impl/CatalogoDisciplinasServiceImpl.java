@@ -56,6 +56,11 @@ public class CatalogoDisciplinasServiceImpl implements CatalogoDisciplinasServic
 	}
 
 	@Override
+	public boolean esMenorPorAnioNaturalFechaNulaComoAdulto(LocalDate fechaNacimiento, String codigoDisciplina) {
+		return fechaNacimiento != null && esMenorPorAnioNatural(fechaNacimiento, codigoDisciplina);
+	}
+
+	@Override
 	public boolean esMenorPorAnioNatural(LocalDate fechaNacimiento, String codigoDisciplina, int anioReferencia) {
 		if (fechaNacimiento == null) {
 			return true;

@@ -82,7 +82,7 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 
 	@Override
 	public long obtenerMesesRequeridos(String codigoDisciplina, String codigoGrado, boolean esMenor) {
-		Integer meses = buscarGrado(codigoDisciplina, codigoGrado)
+		Integer meses = buscarGradoOHeredado(codigoDisciplina, codigoGrado)
 				.map(g -> esMenor ? g.getMesesMinimosMenor() : g.getMesesMinimosAdulto())
 				.orElse(null);
 		return meses == null ? Long.MAX_VALUE : meses.longValue();
@@ -117,11 +117,31 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 		if (codigoGrado == null) {
 			return SIN_NOMBRE;
 		}
-		List<Grado> sistema = gradosDelSistema(codigoDisciplina);
-		return obtenerNombreVisible(buscarEn(sistema, codigoDisciplina, codigoGrado));
+		Grado grado = buscarGradoOHeredado(codigoDisciplina, codigoGrado)
+				.orElseThrow(() -> new IllegalArgumentException("Grado no encontrado: " + codigoGrado));
+		return obtenerNombreVisible(grado);
 	}
 
 	// ---------------------------------------------------------------------------------
+
+	/**
+	 * Grado del sistema de la disciplina; si la disciplina es nula o no tiene grados, el grado
+	 * heredado con ese código (sistema de taekwondo), que es el que leen hoy las clases que no
+	 * distinguen disciplina (ExamEligibilityConfig, GradoUtils). Desaparece con el cambio de
+	 * llamadores, junto con {@code GradoRepository.SOLO_GRADOS_HEREDADOS}.
+	 */
+	private Optional<Grado> buscarGradoOHeredado(String codigoDisciplina, String codigoGrado) {
+		if (codigoGrado == null) {
+			return Optional.empty();
+		}
+		if (codigoDisciplina != null) {
+			Disciplina disciplina = catalogo.obtenerPorCodigo(codigoDisciplina);
+			if (disciplina.tieneGrados()) {
+				return grados.findBySistemaGradosIdAndCodigo(disciplina.getSistemaGrados().getId(), codigoGrado);
+			}
+		}
+		return grados.findHeredadoPorCodigo(codigoGrado);
+	}
 
 	/** Grados del sistema de la disciplina, por orden (sin los que no tienen orden). */
 	private List<Grado> gradosDelSistema(String codigoDisciplina) {

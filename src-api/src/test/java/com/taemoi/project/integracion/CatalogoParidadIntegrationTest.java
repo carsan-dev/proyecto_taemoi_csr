@@ -38,6 +38,7 @@ import com.taemoi.project.repositories.SistemaGradosRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.GradoService;
 import com.taemoi.project.services.ProgresionGradosService;
+import com.taemoi.project.utils.DeporteEdadUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.GradoUtils;
 
@@ -55,7 +56,6 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 	private static final long ORG_TAEMOI = 1L;
 	private static final List<Deporte> DEPORTES_Y_NULO = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING,
 			Deporte.PILATES, Deporte.DEFENSA_PERSONAL_FEMENINA, null);
-	private static final List<Deporte> CON_GRADOS = List.of(Deporte.TAEKWONDO, Deporte.KICKBOXING);
 	/** Alrededor del umbral de 13 años cumplidos, más extremos. */
 	private static final int[] EDADES = { -1, 0, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 30, 50, 80 };
 
@@ -168,7 +168,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void mesesRequeridosPorEdadCumplida_igualQueExamEligibilityConfig() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
-			for (Deporte deporte : CON_GRADOS) {
+			for (Deporte deporte : DEPORTES_Y_NULO) {
 				for (int edad : EDADES) {
 					for (TipoGrado grado : TipoGrado.values()) {
 						assertEquals(elegibilidadAntigua.obtenerMesesRequeridos(edad, grado),
@@ -185,7 +185,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void mesesYPeriodoPorGrupoDeEdad_igualQueLosMapasDeExamEligibilityConfig() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
-			for (Deporte deporte : CON_GRADOS) {
+			for (Deporte deporte : DEPORTES_Y_NULO) {
 				for (boolean esMenor : new boolean[] { true, false }) {
 					var mapa = esMenor ? elegibilidadAntigua.obtenerMesesRequeridosMenores()
 							: elegibilidadAntigua.obtenerMesesRequeridosMayores();
@@ -235,22 +235,22 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			for (Deporte deporte : DEPORTES_Y_NULO) {
 				for (TipoGrado tipo : TipoGrado.values()) {
-					String esperado = GradoUtils.getNombreGradoParaDeporte(tipo, deporte);
-					// El grado que tiene un alumno de esa disciplina tras V23: kickboxing, su copia;
-					// el resto, el grado heredado (el que asigna el código actual).
-					Grado grado = deporte == Deporte.KICKBOXING
-							? progresion.buscarGrado("KICKBOXING", tipo.name()).orElseThrow()
-							: grados.findByTipoGrado(tipo);
-					assertEquals(esperado, progresion.obtenerNombreVisible(grado), deporte + "/" + tipo);
-					if (deporte != null && progresionAntigua.tieneProgresion(deporte)) {
-						assertEquals(esperado, progresion.obtenerNombreVisible(codigo(deporte), tipo.name()),
-								deporte + "/" + tipo);
-					}
+					assertEquals(GradoUtils.getNombreGradoParaDeporte(tipo, deporte),
+							progresion.obtenerNombreVisible(codigo(deporte), tipo.name()), deporte + "/" + tipo);
 				}
 				assertEquals(GradoUtils.getNombreGradoParaDeporte((TipoGrado) null, deporte),
-						progresion.obtenerNombreVisible((Grado) null));
+						progresion.obtenerNombreVisible(codigo(deporte), null), String.valueOf(deporte));
 			}
-			assertEquals("N/A", progresion.obtenerNombreVisible("KICKBOXING", null));
+		});
+	}
+
+	@Test
+	void nombreVisiblePorEntidad_esElNombreDeLaFila() {
+		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
+			assertEquals("MARRÓN", progresion.obtenerNombreVisible(
+					progresion.buscarGrado("KICKBOXING", "ROJO").orElseThrow()));
+			assertEquals("Rojo", progresion.obtenerNombreVisible(grados.findByTipoGrado(TipoGrado.ROJO)));
+			assertEquals("N/A", progresion.obtenerNombreVisible((Grado) null));
 		});
 	}
 
@@ -277,6 +277,28 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 							catalogo.esMenorPorAnioNatural(nacimiento, codigo(deporte)), deporte + " " + nacimiento);
 				}
 				assertEquals(FechaUtils.esMenor(null, deporte), catalogo.esMenorPorAnioNatural(null, codigo(deporte)));
+			}
+		});
+	}
+
+	/** Regla de DeporteEdadUtils (MaterialExamenServiceImpl): fecha nula = adulto. */
+	@Test
+	void esMenorFechaNulaComoAdulto_igualQueDeporteEdadUtils() {
+		int anio = LocalDate.now().getYear();
+		List<LocalDate> nacimientos = fechasDePrueba(anio - 17, anio - 11);
+		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
+			for (Deporte deporte : DEPORTES_Y_NULO) {
+				for (LocalDate nacimiento : nacimientos) {
+					boolean nuevo = catalogo.esMenorPorAnioNaturalFechaNulaComoAdulto(nacimiento, codigo(deporte));
+					assertEquals(DeporteEdadUtils.esMenorParaDeporte(deporte, nacimiento), nuevo,
+							deporte + " " + nacimiento);
+					assertEquals(DeporteEdadUtils.esMenorParaDeporte(deporte, java.sql.Date.valueOf(nacimiento)),
+							nuevo, deporte + " " + nacimiento);
+				}
+				assertEquals(DeporteEdadUtils.esMenorParaDeporte(deporte, (LocalDate) null),
+						catalogo.esMenorPorAnioNaturalFechaNulaComoAdulto(null, codigo(deporte)));
+				assertEquals(DeporteEdadUtils.esMenorParaDeporte(deporte, (java.util.Date) null),
+						catalogo.esMenorPorAnioNaturalFechaNulaComoAdulto(null, codigo(deporte)));
 			}
 		});
 	}
@@ -344,7 +366,9 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 			assertEquals("Rojo", progresion.obtenerNombreVisible("TAEKWONDO", "ROJO"));
 			assertEquals(24L, progresion.obtenerMesesRequeridos("TAEKWONDO", "ROJO_NEGRO_1_PUM", true));
 			assertEquals(Long.MAX_VALUE, progresion.obtenerMesesRequeridos("TAEKWONDO", "ROJO_NEGRO_1_PUM", false));
-			assertEquals(Long.MAX_VALUE, progresion.obtenerMesesRequeridos("PILATES", "BLANCO", true));
+			assertEquals(2L, progresion.obtenerMesesRequeridos("PILATES", "BLANCO", true));
+			assertEquals("Rojo", progresion.obtenerNombreVisible("PILATES", "ROJO"));
+			assertEquals("Rojo", progresion.obtenerNombreVisible(null, "ROJO"));
 			assertEquals("b07_negro_1_a_negro_2", progresion.obtenerBloqueTemario("KICKBOXING", "ROJO_NEGRO_1_PUM"));
 			assertEquals(15, catalogo.obtenerEdadAdulto("KICKBOXING"));
 			assertThrows(IllegalArgumentException.class, () -> catalogo.obtenerEdadAdulto("NO_EXISTE"));

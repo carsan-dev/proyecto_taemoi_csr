@@ -16,7 +16,8 @@ import com.taemoi.project.entities.Disciplina;
  * <p>Hay DOS reglas de «menor» y se exponen por separado, sin unificar:
  * <ul>
  * <li>{@link #esMenorPorAnioNatural}: la de {@code FechaUtils.esMenor}, por disciplina
- * ({@code disciplina.edad_adulto}) y año natural.</li>
+ * ({@code disciplina.edad_adulto}) y año natural. Variante con fecha nula = adulto, como
+ * {@code DeporteEdadUtils}: {@link #esMenorPorAnioNaturalFechaNulaComoAdulto}.</li>
  * <li>{@link #esMenorParaExamenPorEdadCumplida}: la de
  * {@code ExamEligibilityConfig.obtenerMesesRequeridos(edad, grado)}, {@code edad < 13} años
  * cumplidos, igual para todas las disciplinas.</li>
@@ -55,6 +56,13 @@ public interface CatalogoDisciplinasService {
 	 * {@code DeporteEdadUtils} devuelve lo contrario y no se reproduce).
 	 */
 	boolean esMenorPorAnioNatural(LocalDate fechaNacimiento, String codigoDisciplina);
+
+	/**
+	 * Regla de {@code DeporteEdadUtils.esMenorParaDeporte} (la que usa
+	 * {@code MaterialExamenServiceImpl}): igual que {@link #esMenorPorAnioNatural(LocalDate, String)}
+	 * salvo con fecha nula, que cuenta como ADULTO ({@code false}).
+	 */
+	boolean esMenorPorAnioNaturalFechaNulaComoAdulto(LocalDate fechaNacimiento, String codigoDisciplina);
 
 	/** Igual que {@link #esMenorPorAnioNatural(LocalDate, String)} con un año de referencia. */
 	boolean esMenorPorAnioNatural(LocalDate fechaNacimiento, String codigoDisciplina, int anioReferencia);

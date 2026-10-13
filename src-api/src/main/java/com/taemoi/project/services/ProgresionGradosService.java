@@ -54,8 +54,9 @@ public interface ProgresionGradosService {
 
 	/**
 	 * Meses mínimos en el grado antes de examinarse ({@code meses_minimos_menor} /
-	 * {@code meses_minimos_adulto}); {@link Long#MAX_VALUE} = no apto (sin dato, grado nulo o
-	 * disciplina sin grados).
+	 * {@code meses_minimos_adulto}); {@link Long#MAX_VALUE} = no apto (sin dato o grado nulo).
+	 * Con disciplina nula o sin grados se usa el grado heredado (taekwondo), como
+	 * {@code ExamEligibilityConfig}, que no distingue disciplina.
 	 */
 	long obtenerMesesRequeridos(String codigoDisciplina, String codigoGrado, boolean esMenor);
 
@@ -76,9 +77,8 @@ public interface ProgresionGradosService {
 
 	/**
 	 * Nombre visible del grado con ese código en el sistema de la disciplina; «N/A» si el código
-	 * de grado es nulo.
-	 *
-	 * @throws IllegalArgumentException si la disciplina no tiene sistema de grados.
+	 * de grado es nulo. Con disciplina nula o sin grados, el nombre del grado heredado
+	 * (taekwondo), como {@code GradoUtils}.
 	 */
 	String obtenerNombreVisible(String codigoDisciplina, String codigoGrado);
 }

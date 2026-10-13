@@ -49,6 +49,10 @@ public interface GradoRepository extends JpaRepository<Grado, Long> {
 	@Query("SELECT g FROM Grado g WHERE " + SOLO_GRADOS_HEREDADOS + " ORDER BY g.id")
 	List<Grado> findGradosHeredados();
 
+	/** Grado heredado (sistema de taekwondo) con ese código; mismo criterio que {@link #findByTipoGrado}. */
+	@Query("SELECT g FROM Grado g WHERE g.codigo = :codigo AND " + SOLO_GRADOS_HEREDADOS)
+	Optional<Grado> findHeredadoPorCodigo(@Param("codigo") String codigo);
+
 	// --- Catálogo (servicios nuevos) ---
 
 	List<Grado> findBySistemaGradosIdOrderByOrdenAscIdAsc(Long sistemaGradosId);

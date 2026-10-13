@@ -26,7 +26,8 @@ import com.taemoi.project.entities.TipoGrado;
 /**
  * V23 sobre datos con la forma de producción: esquema propio migrado hasta V21, 19 grados con
  * ids propios (no consecutivos con el enum), inscripciones de taekwondo, kickboxing y
- * disciplinas sin grados; después se migra a la última versión y se repite V23.
+ * disciplinas sin grados; se simula V22 (sin columnas monodeporte en alumno), se migra a la
+ * última versión y se repite V23. V23 solo amplía: ningún grado_id cambia.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
@@ -52,6 +53,7 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		flyway("21").migrate();
 		insertarDatosV21();
+		simularV22();
 		flyway(null).migrate();
 	}
 
@@ -104,26 +106,27 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void lasInscripcionesDeKickboxingPasanALaCopiaPorCodigo() {
-		long kb = sistema("KICKBOXING");
-		assertEquals(gradoDe(kb, "ROJO"), gradoInscripcion(a1, "KICKBOXING"));
-		assertEquals(gradoDe(kb, "AZUL_ROJO"), gradoInscripcion(a2, "KICKBOXING"));
-		assertNull(gradoInscripcion(a3, "KICKBOXING"));
-		// Taekwondo y disciplinas sin grados no cambian.
+	void noSeReasignaNingunGradoExistente_lasInscripcionesSiguenEnTaekwondo() {
 		assertEquals(idHeredado(TipoGrado.ROJO), gradoInscripcion(a1, "TAEKWONDO"));
+		assertEquals(idHeredado(TipoGrado.ROJO), gradoInscripcion(a1, "KICKBOXING"));
+		assertEquals(idHeredado(TipoGrado.AZUL_ROJO), gradoInscripcion(a2, "KICKBOXING"));
 		assertNull(gradoInscripcion(a2, "PILATES"));
+		assertNull(gradoInscripcion(a3, "KICKBOXING"));
 		assertEquals(idHeredado(TipoGrado.BLANCO), gradoInscripcion(a3, "DEFENSA_PERSONAL_FEMENINA"));
-		// Columna heredada alumno.grado_id: mismo criterio con alumno.deporte.
-		assertEquals(idHeredado(TipoGrado.ROJO), jdbc.queryForObject("SELECT grado_id FROM alumno WHERE id = ?", Long.class, a1));
-		assertEquals(gradoDe(kb, "AZUL_ROJO"), jdbc.queryForObject("SELECT grado_id FROM alumno WHERE id = ?", Long.class, a2));
-		assertNull(jdbc.queryForObject("SELECT grado_id FROM alumno WHERE id = ?", Long.class, a3));
-		// Toda inscripción con grado apunta al sistema de su disciplina.
+		// La copia de kickboxing existe pero nadie la usa todavía.
 		assertEquals(0, jdbc.queryForObject("""
-				SELECT COUNT(*) FROM alumno_deporte ad
-				JOIN grado g ON g.id = ad.grado_id
-				JOIN disciplina d ON d.id = ad.disciplina_id
-				WHERE d.sistema_grados_id IS NOT NULL AND NOT (g.sistema_grados_id <=> d.sistema_grados_id)
-				""", Integer.class));
+				SELECT COUNT(*) FROM alumno_deporte ad JOIN grado g ON g.id = ad.grado_id
+				WHERE g.sistema_grados_id = ?""", Integer.class, sistema("KICKBOXING")));
+	}
+
+	@Test
+	void v23NoDependeDeLasColumnasMonodeporteDeAlumno() {
+		for (String columna : List.of("deporte", "grado_id")) {
+			assertEquals(0, jdbc.queryForObject("""
+					SELECT COUNT(*) FROM information_schema.COLUMNS
+					WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alumno' AND COLUMN_NAME = ?
+					""", Integer.class, columna), columna);
+		}
 	}
 
 	@Test
@@ -168,7 +171,6 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 		List<Map<String, Object>> gradosAntes = jdbc.queryForList("SELECT * FROM grado ORDER BY id");
 		List<Map<String, Object>> inscripcionesAntes = jdbc.queryForList(
 				"SELECT id, grado_id, disciplina_id FROM alumno_deporte ORDER BY id");
-		List<Map<String, Object>> alumnosAntes = jdbc.queryForList("SELECT id, grado_id FROM alumno ORDER BY id");
 		List<Map<String, Object>> disciplinasAntes = jdbc.queryForList("SELECT * FROM disciplina ORDER BY id");
 
 		try (Connection conexion = dataSource.getConnection()) {
@@ -179,7 +181,6 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(gradosAntes, jdbc.queryForList("SELECT * FROM grado ORDER BY id"));
 		assertEquals(inscripcionesAntes,
 				jdbc.queryForList("SELECT id, grado_id, disciplina_id FROM alumno_deporte ORDER BY id"));
-		assertEquals(alumnosAntes, jdbc.queryForList("SELECT id, grado_id FROM alumno ORDER BY id"));
 		assertEquals(disciplinasAntes, jdbc.queryForList("SELECT * FROM disciplina ORDER BY id"));
 		assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM sistema_grados", Integer.class));
 	}
@@ -215,6 +216,21 @@ class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 				VALUES ('CAT-1', '2026-2027', 'KICKBOXING', 'PENDIENTE', 'Ana', 'Prueba', NULL, ?, '1990-01-01', 'Calle 1',
 				  '600000000', 'ana@example.test', 1, 'Ana', x'00', ?, '{}', x'00', ?, NOW(6), NOW(6), 1)
 				""", "e".repeat(64), plantillaKb, "f".repeat(64));
+	}
+
+	/**
+	 * Efecto de V22 (tarea paralela, se ejecuta antes que V23): borra las columnas monodeporte de
+	 * alumno. Aquí basta con las que podría tocar V23 (deporte y grado_id, con su clave ajena).
+	 */
+	private void simularV22() {
+		List<String> fks = jdbc.queryForList("""
+				SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+				WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alumno' AND COLUMN_NAME = 'grado_id'
+				  AND REFERENCED_TABLE_NAME IS NOT NULL""", String.class);
+		for (String fk : fks) {
+			jdbc.execute("ALTER TABLE alumno DROP FOREIGN KEY " + fk);
+		}
+		jdbc.execute("ALTER TABLE alumno DROP COLUMN grado_id, DROP COLUMN deporte");
 	}
 
 	private long alumno(int expediente, String deporte, Long gradoId) {
