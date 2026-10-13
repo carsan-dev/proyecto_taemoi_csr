@@ -70,10 +70,10 @@ public class AlumnoConDeportesDTO {
 		AlumnoConDeportesDTO dto = new AlumnoConDeportesDTO();
 		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
-		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
-		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();
-		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : alumno.getRolFamiliar();
-		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : alumno.getGrupoFamiliar();
+		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
+		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null;
+		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : null;
+		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : null;
 
 		// Datos básicos
 		dto.setId(alumno.getId());
@@ -104,12 +104,12 @@ public class AlumnoConDeportesDTO {
 
 		// Otros campos
 		dto.setAutorizacionWeb(alumno.getAutorizacionWeb());
-		dto.setCompetidor(deportePrincipal != null ? deportePrincipal.getCompetidor() : alumno.getCompetidor());
-		dto.setPeso(deportePrincipal != null ? deportePrincipal.getPeso() : alumno.getPeso());
-		dto.setFechaPeso(deportePrincipal != null ? deportePrincipal.getFechaPeso() : alumno.getFechaPeso());
-		dto.setTieneLicencia(deportePrincipal != null ? deportePrincipal.getTieneLicencia() : alumno.getTieneLicencia());
-		dto.setNumeroLicencia(deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : alumno.getNumeroLicencia());
-		dto.setFechaLicencia(deportePrincipal != null ? deportePrincipal.getFechaLicencia() : alumno.getFechaLicencia());
+		dto.setCompetidor(deportePrincipal != null ? deportePrincipal.getCompetidor() : null);
+		dto.setPeso(deportePrincipal != null ? deportePrincipal.getPeso() : null);
+		dto.setFechaPeso(deportePrincipal != null ? deportePrincipal.getFechaPeso() : null);
+		dto.setTieneLicencia(deportePrincipal != null ? deportePrincipal.getTieneLicencia() : null);
+		dto.setNumeroLicencia(deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : null);
+		dto.setFechaLicencia(deportePrincipal != null ? deportePrincipal.getFechaLicencia() : null);
 		dto.setTieneDiscapacidad(alumno.getTieneDiscapacidad());
 		dto.setTieneDerechoExamen(alumno.getTieneDerechoExamen());
 		dto.setFotoAlumno(alumno.getFotoAlumno());

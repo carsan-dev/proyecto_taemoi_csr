@@ -487,9 +487,6 @@ public class GrupoServiceImpl implements GrupoService {
 						}
 						return null;
 					}
-					if (deporteGrupo != null && alumno.getDeporte() != null && !alumno.getDeporte().equals(deporteGrupo)) {
-						return null;
-					}
 					return AlumnoCortoDTO.deAlumno(alumno);
 				})
 				.filter(Objects::nonNull)

@@ -49,6 +49,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.PDFService;
+import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.GradoUtils;
@@ -2234,10 +2235,20 @@ public class PDFServiceImpl implements PDFService {
 		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getDeporte() != null) {
 			return reserva.getAlumnoDeporte().getDeporte();
 		}
-		if (reserva.getAlumno() != null && reserva.getAlumno().getDeporte() != null) {
-			return reserva.getAlumno().getDeporte();
+		Deporte deporteConcepto = inferDeporteFromConcepto(reserva.getConcepto());
+		if (deporteConcepto != null) {
+			return deporteConcepto;
 		}
-		return inferDeporteFromConcepto(reserva.getConcepto());
+		return deportePrincipal(reserva.getAlumno());
+	}
+
+	/** Deporte del AlumnoDeporte principal del alumno, o null si no tiene deportes. */
+	private Deporte deportePrincipal(Alumno alumno) {
+		if (alumno == null) {
+			return null;
+		}
+		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
+		return principal != null ? principal.getDeporte() : null;
 	}
 
 	private String formatearNombreAlumno(Alumno alumno) {
@@ -2308,9 +2319,12 @@ public class PDFServiceImpl implements PDFService {
 			if (alumno == null) {
 				continue;
 			}
-			Deporte deporte = alumnoDeporte != null ? alumnoDeporte.getDeporte() : alumno.getDeporte();
+			Deporte deporte = alumnoDeporte != null ? alumnoDeporte.getDeporte() : null;
 			if (deporte == null) {
 				deporte = inferDeporteFromConcepto(pa.getConcepto());
+			}
+			if (deporte == null) {
+				deporte = deportePrincipal(alumno);
 			}
 			Deporte deporteFinal = deporte;
 			String deporteKey = deporteFinal != null ? deporteFinal.name() : "SIN_DEPORTE";

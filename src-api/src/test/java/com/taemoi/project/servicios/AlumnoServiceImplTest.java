@@ -3,6 +3,7 @@ package com.taemoi.project.servicios;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -30,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Categoria;
@@ -68,6 +70,9 @@ public class AlumnoServiceImplTest {
 	private com.taemoi.project.config.TarifaConfig tarifaConfig;
 
 	@Mock
+	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+
+	@Mock
 	private com.taemoi.project.services.ContadorService contadorService;
 
 	@InjectMocks
@@ -100,16 +105,6 @@ public class AlumnoServiceImplTest {
 		Optional<AlumnoDTO> result = alumnoService.obtenerAlumnoPorIdDTO(1L);
 
 		assertFalse(result.isPresent());
-	}
-
-	@Test
-	public void testCrearAlumno() {
-		Alumno alumno = new Alumno();
-		when(alumnoRepository.save(alumno)).thenReturn(alumno);
-
-		Alumno result = alumnoService.crearAlumno(alumno);
-
-		assertNotNull(result);
 	}
 
 	/*
@@ -658,5 +653,96 @@ public class AlumnoServiceImplTest {
 				return logId;
 			}
 		};
+	}
+
+	@Test
+	void esAptoParaExamen_usaSoloLaAptitudDeLosDeportesActivos() {
+		Alumno sinDeportes = new Alumno();
+		assertFalse(alumnoService.esAptoParaExamen(sinDeportes));
+
+		Alumno conApto = new Alumno();
+		conApto.addDeporte(deporteApto(Deporte.PILATES, true, false));
+		conApto.addDeporte(deporteApto(Deporte.TAEKWONDO, true, true));
+		assertTrue(alumnoService.esAptoParaExamen(conApto));
+
+		Alumno aptoSoloEnInactivo = new Alumno();
+		aptoSoloEnInactivo.addDeporte(deporteApto(Deporte.TAEKWONDO, false, true));
+		aptoSoloEnInactivo.addDeporte(deporteApto(Deporte.KICKBOXING, true, false));
+		assertFalse(alumnoService.esAptoParaExamen(aptoSoloEnInactivo));
+	}
+
+	@Test
+	void obtenerAlumnoAptoPorId_devuelveElDeporteAptoONada() {
+		Alumno apto = new Alumno();
+		apto.setId(7L);
+		apto.setNombre("Ana");
+		AlumnoDeporte taekwondo = deporteApto(Deporte.TAEKWONDO, true, true);
+		Grado verde = new Grado();
+		verde.setTipoGrado(TipoGrado.VERDE);
+		taekwondo.setGrado(verde);
+		apto.addDeporte(deporteApto(Deporte.KICKBOXING, true, false));
+		apto.addDeporte(taekwondo);
+		when(alumnoRepository.findById(7L)).thenReturn(Optional.of(apto));
+
+		Optional<AlumnoConGruposDTO> resultado = alumnoService.obtenerAlumnoAptoPorId(7L);
+
+		assertTrue(resultado.isPresent());
+		assertEquals(TipoGrado.VERDE.name(), resultado.get().getGrado());
+
+		Alumno noApto = new Alumno();
+		noApto.setId(8L);
+		noApto.addDeporte(deporteApto(Deporte.TAEKWONDO, true, false));
+		when(alumnoRepository.findById(8L)).thenReturn(Optional.of(noApto));
+		assertTrue(alumnoService.obtenerAlumnoAptoPorId(8L).isEmpty());
+	}
+
+	@Test
+	void calcularSiguienteGrado_principalSinGradoUsaElPrimerDeporteActivoConGrado() {
+		Alumno alumno = new Alumno();
+		alumno.setFechaNacimiento(java.sql.Date.valueOf("1990-01-01"));
+		AlumnoDeporte pilates = deporteApto(Deporte.PILATES, true, false);
+		pilates.setPrincipal(true);
+		AlumnoDeporte kickboxingInactivo = deporteConGrado(Deporte.KICKBOXING, false, TipoGrado.AZUL);
+		AlumnoDeporte taekwondo = deporteConGrado(Deporte.TAEKWONDO, true, TipoGrado.AMARILLO);
+		alumno.addDeporte(pilates);
+		alumno.addDeporte(kickboxingInactivo);
+		alumno.addDeporte(taekwondo);
+		when(gradeProgressionConfig.obtenerSiguienteGrado(Deporte.TAEKWONDO, false, TipoGrado.AMARILLO))
+				.thenReturn(TipoGrado.NARANJA);
+
+		assertEquals(TipoGrado.NARANJA, alumnoService.calcularSiguienteGrado(alumno));
+	}
+
+	@Test
+	void calcularSiguienteGrado_usaElPrincipalSiTieneGradoYNullSiNingunoTiene() {
+		Alumno alumno = new Alumno();
+		alumno.setFechaNacimiento(java.sql.Date.valueOf("1990-01-01"));
+		AlumnoDeporte kickboxing = deporteConGrado(Deporte.KICKBOXING, true, TipoGrado.VERDE);
+		kickboxing.setPrincipal(true);
+		alumno.addDeporte(deporteConGrado(Deporte.TAEKWONDO, true, TipoGrado.AMARILLO));
+		alumno.addDeporte(kickboxing);
+		when(gradeProgressionConfig.obtenerSiguienteGrado(Deporte.KICKBOXING, false, TipoGrado.VERDE))
+				.thenReturn(TipoGrado.AZUL);
+		assertEquals(TipoGrado.AZUL, alumnoService.calcularSiguienteGrado(alumno));
+
+		Alumno soloPilates = new Alumno();
+		soloPilates.addDeporte(deporteApto(Deporte.PILATES, true, false));
+		assertNull(alumnoService.calcularSiguienteGrado(soloPilates));
+	}
+
+	private static AlumnoDeporte deporteConGrado(Deporte deporte, boolean activo, TipoGrado tipoGrado) {
+		AlumnoDeporte ad = deporteApto(deporte, activo, false);
+		Grado grado = new Grado();
+		grado.setTipoGrado(tipoGrado);
+		ad.setGrado(grado);
+		return ad;
+	}
+
+	private static AlumnoDeporte deporteApto(Deporte deporte, boolean activo, boolean apto) {
+		AlumnoDeporte ad = new AlumnoDeporte();
+		ad.setDeporte(deporte);
+		ad.setActivo(activo);
+		ad.setAptoParaExamen(apto);
+		return ad;
 	}
 }

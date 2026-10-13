@@ -423,10 +423,10 @@ public class AlumnoDTO {
 
 		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
-		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
-		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();
-		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : alumno.getRolFamiliar();
-		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : alumno.getGrupoFamiliar();
+		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
+		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null;
+		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : null;
+		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : null;
 
 		// Categoria is now per-sport (in AlumnoDeporte), not global
 		String categoriaNombre = deportePrincipal != null && deportePrincipal.getCategoria() != null
@@ -435,8 +435,6 @@ public class AlumnoDTO {
 		String gradoTipo = null;
 		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
 			gradoTipo = deportePrincipal.getGrado().getTipoGrado().name();
-		} else if (alumno.getGrado() != null) {
-			gradoTipo = alumno.getGrado().getTipoGrado().name();
 		}
 
 		Integer telefono = null;
@@ -452,15 +450,15 @@ public class AlumnoDTO {
 		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
 
-		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : alumno.getCompetidor();
-		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : alumno.getPeso();
-		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : alumno.getFechaPeso();
-		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : alumno.getDeporte();
-		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : alumno.getFechaGrado();
-		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : alumno.getTieneLicencia();
-		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : alumno.getNumeroLicencia();
-		Date fechaLicencia = deportePrincipal != null ? deportePrincipal.getFechaLicencia() : alumno.getFechaLicencia();
-		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : alumno.getAptoParaExamen();
+		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : null;
+		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : null;
+		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : null;
+		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : null;
+		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : null;
+		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : null;
+		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : null;
+		Date fechaLicencia = deportePrincipal != null ? deportePrincipal.getFechaLicencia() : null;
+		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : null;
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), NifUtils.normalizeForStorage(alumno.getNif()), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
@@ -537,8 +535,6 @@ public class AlumnoDTO {
 		String gradoTipo = null;
 		if (deporteSeleccionado.getGrado() != null) {
 			gradoTipo = deporteSeleccionado.getGrado().getTipoGrado().name();
-		} else if (alumno.getGrado() != null) {
-			gradoTipo = alumno.getGrado().getTipoGrado().name();
 		}
 
 		Integer telefono = null;

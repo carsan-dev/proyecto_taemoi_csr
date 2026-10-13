@@ -13,8 +13,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,7 +21,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Temporal;
@@ -33,7 +30,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -81,29 +77,6 @@ public class Alumno extends EntidadOrganizacion {
 	@Column(name = "responsable_legal_nif", length = 16)
 	private String responsableLegalNif;
 
-	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Enumerated(EnumType.STRING)
-	@Column(length = 50, nullable = true)
-	private TipoTarifa tipoTarifa;
-
-	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@PositiveOrZero(message = "La cuantía de la tarifa debe ser un valor positivo o cero")
-	@Column(nullable = true)
-	private Double cuantiaTarifa;
-
-	// Note: Nullable for multi-sport mode (rolFamiliar is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = true)
-	private RolFamiliar rolFamiliar;
-
-	// Note: Nullable for multi-sport mode (grupoFamiliar is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(length = 50, nullable = true)
-	private String grupoFamiliar;
-
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
 
@@ -123,38 +96,6 @@ public class Alumno extends EntidadOrganizacion {
 	@Column(columnDefinition = "LONGTEXT")
 	private String observaciones;
 
-	// Note: Nullable for multi-sport mode (competidor is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Boolean competidor;
-
-	// Note: Nullable for multi-sport mode (peso is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Double peso;
-
-	// Note: Nullable for multi-sport mode (fechaPeso is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaPeso;
-
-	// Note: Nullable for multi-sport mode (tieneLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Boolean tieneLicencia;
-
-	// Note: Nullable for multi-sport mode (numeroLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Integer numeroLicencia;
-
-	// Note: Nullable for multi-sport mode (fechaLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaLicencia;
-
 	private Boolean tieneDiscapacidad = false;
 
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -164,31 +105,6 @@ public class Alumno extends EntidadOrganizacion {
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference("alumno-documentos")
 	private List<Documento> documentos = new ArrayList<>();
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (deporte is per-sport in AlumnoDeporte)
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = true)
-	private Deporte deporte;
-
-	// DEPRECATED: Categoria moved to AlumnoDeporte for per-sport categories
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (grado is per-sport in AlumnoDeporte)
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "grado_id", nullable = true)
-	@JsonManagedReference
-	private Grado grado;
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (fechaGrado is per-sport in AlumnoDeporte)
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaGrado;
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (aptoParaExamen is per-sport in AlumnoDeporte)
-	@Column(nullable = true)
-	private Boolean aptoParaExamen;
 
 	// NUEVO: Relación de deportes del alumno (multi-deporte)
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -245,38 +161,6 @@ public class Alumno extends EntidadOrganizacion {
 
 	public void setApellidos(String apellidos) {
 		this.apellidos = apellidos;
-	}
-
-	public TipoTarifa getTipoTarifa() {
-		return tipoTarifa;
-	}
-
-	public void setTipoTarifa(TipoTarifa tipoTarifa) {
-		this.tipoTarifa = tipoTarifa;
-	}
-
-	public Double getCuantiaTarifa() {
-		return cuantiaTarifa;
-	}
-
-	public void setCuantiaTarifa(Double cuantiaTarifa) {
-		this.cuantiaTarifa = cuantiaTarifa;
-	}
-
-	public RolFamiliar getRolFamiliar() {
-		return rolFamiliar;
-	}
-
-	public void setRolFamiliar(RolFamiliar rolFamiliar) {
-		this.rolFamiliar = rolFamiliar;
-	}
-
-	public String getGrupoFamiliar() {
-		return grupoFamiliar;
-	}
-
-	public void setGrupoFamiliar(String grupoFamiliar) {
-		this.grupoFamiliar = grupoFamiliar;
 	}
 
 	public Integer getNumeroExpediente() {
@@ -359,30 +243,6 @@ public class Alumno extends EntidadOrganizacion {
 	// public void setCategoria(Categoria categoria) {
 	// 	this.categoria = categoria;
 	// }
-
-	public Grado getGrado() {
-		return grado;
-	}
-
-	public void setGrado(Grado grado) {
-		this.grado = grado;
-	}
-
-	public Date getFechaGrado() {
-		return fechaGrado;
-	}
-
-	public void setFechaGrado(Date fechaGrado) {
-		this.fechaGrado = fechaGrado;
-	}
-
-	public Boolean getAptoParaExamen() {
-		return aptoParaExamen;
-	}
-
-	public void setAptoParaExamen(Boolean aptoParaExamen) {
-		this.aptoParaExamen = aptoParaExamen;
-	}
 	
 	public Boolean getTieneDerechoExamen() {
 		return tieneDerechoExamen;
@@ -440,54 +300,6 @@ public class Alumno extends EntidadOrganizacion {
 		this.observaciones = observaciones;
 	}
 
-	public Boolean getCompetidor() {
-		return competidor;
-	}
-
-	public void setCompetidor(Boolean competidor) {
-		this.competidor = competidor;
-	}
-
-	public Double getPeso() {
-		return peso;
-	}
-
-	public void setPeso(Double peso) {
-		this.peso = peso;
-	}
-
-	public Date getFechaPeso() {
-		return fechaPeso;
-	}
-
-	public void setFechaPeso(Date fechaPeso) {
-		this.fechaPeso = fechaPeso;
-	}
-
-	public Boolean getTieneLicencia() {
-		return tieneLicencia;
-	}
-
-	public void setTieneLicencia(Boolean tieneLicencia) {
-		this.tieneLicencia = tieneLicencia;
-	}
-
-	public Integer getNumeroLicencia() {
-		return numeroLicencia;
-	}
-
-	public void setNumeroLicencia(Integer numeroLicencia) {
-		this.numeroLicencia = numeroLicencia;
-	}
-
-	public Date getFechaLicencia() {
-		return fechaLicencia;
-	}
-
-	public void setFechaLicencia(Date fechaLicencia) {
-		this.fechaLicencia = fechaLicencia;
-	}
-
 	public Boolean getTieneDiscapacidad() {
 		return tieneDiscapacidad;
 	}
@@ -510,14 +322,6 @@ public class Alumno extends EntidadOrganizacion {
 
 	public void setDocumentos(List<Documento> documentos) {
 		this.documentos = documentos;
-	}
-
-	public Deporte getDeporte() {
-		return deporte;
-	}
-
-	public void setDeporte(Deporte deporte) {
-		this.deporte = deporte;
 	}
 
 	public Set<Grupo> getGrupos() {

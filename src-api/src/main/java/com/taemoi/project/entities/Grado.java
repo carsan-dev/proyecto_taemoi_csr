@@ -1,19 +1,11 @@
 package com.taemoi.project.entities;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
@@ -26,24 +18,12 @@ public class Grado extends EntidadOrganizacion {
 	@Enumerated(EnumType.STRING)
 	private TipoGrado tipoGrado;
 
-	@OneToMany(mappedBy = "grado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JsonBackReference
-	private Set<Alumno> alumnos = new HashSet<>();
-
 	public Long getId() {
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public Set<Alumno> getAlumnos() {
-		return alumnos;
-	}
-
-	public void setAlumnos(Set<Alumno> alumnos) {
-		this.alumnos = alumnos;
 	}
 
 	public TipoGrado getTipoGrado() {

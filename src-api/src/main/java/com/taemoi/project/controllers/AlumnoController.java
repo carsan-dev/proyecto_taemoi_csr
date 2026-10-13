@@ -497,6 +497,9 @@ public class AlumnoController {
 		} catch (AlumnoDuplicadoException e) {
 			logger.error("Error de duplicado de alumno: {}", e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+		} catch (DatosAlumnoInvalidosException e) {
+			logger.warn("Datos de alta de alumno inválidos: {}", e.getMessage());
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		} catch (IOException e) {
 			logger.error("Error al procesar el archivo o el JSON: {}", e.getMessage(), e);
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);

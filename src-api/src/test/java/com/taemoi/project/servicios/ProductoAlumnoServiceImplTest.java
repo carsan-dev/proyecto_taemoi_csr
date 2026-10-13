@@ -250,7 +250,6 @@ class ProductoAlumnoServiceImplTest {
 		alumno.setId(alumnoId);
 		alumno.setNombre("Alumno");
 		alumno.setApellidos("Test");
-		alumno.setCuantiaTarifa(35.0);
 		alumno.setProductosAlumno(new ArrayList<>());
 
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
@@ -292,6 +291,42 @@ class ProductoAlumnoServiceImplTest {
 		assertEquals(2, guardados.size());
 		assertEquals(fechaEsperada, guardados.get(0).getFechaAsignacion());
 		assertEquals(fechaEsperada, guardados.get(1).getFechaAsignacion());
+	}
+
+	@Test
+	void cargarMensualidadIndividualPorDeporte_usaSoloLaTarifaDelDeporte() {
+		Long alumnoId = 2L;
+		Alumno alumno = new Alumno();
+		alumno.setId(alumnoId);
+		alumno.setNombre("Alumno");
+		alumno.setApellidos("Tarifa");
+		alumno.setProductosAlumno(new ArrayList<>());
+
+		AlumnoDeporte kickboxing = new AlumnoDeporte();
+		kickboxing.setAlumno(alumno);
+		kickboxing.setDeporte(Deporte.KICKBOXING);
+		kickboxing.setActivo(true);
+		kickboxing.setCompetidor(false);
+		kickboxing.setCuantiaTarifa(42.0);
+
+		Producto productoMensualidad = new Producto();
+		productoMensualidad.setId(100L);
+		productoMensualidad.setConcepto("MENSUALIDAD");
+		productoMensualidad.setPrecio(30.0);
+
+		when(alumnoRepository.findById(alumnoId)).thenReturn(Optional.of(alumno));
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.KICKBOXING))
+				.thenReturn(Optional.of(kickboxing));
+		when(productoRepository.findFirstByConcepto("MENSUALIDAD")).thenReturn(Optional.of(productoMensualidad));
+		when(productoAlumnoRepository.save(any(ProductoAlumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, "KICKBOXING", "2026-02", false,
+				LocalDate.of(2026, 2, 1));
+
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		assertEquals(42.0, captor.getValue().getPrecio());
+		assertEquals(kickboxing, captor.getValue().getAlumnoDeporte());
 	}
 
 	@Test

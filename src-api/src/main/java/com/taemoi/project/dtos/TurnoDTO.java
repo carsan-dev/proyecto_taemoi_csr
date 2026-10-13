@@ -148,12 +148,9 @@ public class TurnoDTO {
 						if (deporteGrupo == null) {
 							return true;
 						}
-						if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
-							return alumno.getDeportes().stream()
-									.anyMatch(ad -> deporteGrupo.equals(ad.getDeporte())
-											&& Boolean.TRUE.equals(ad.getActivo()));
-						}
-						return alumno.getDeporte() != null && alumno.getDeporte().equals(deporteGrupo);
+						return alumno.getDeportes() != null && alumno.getDeportes().stream()
+								.anyMatch(ad -> deporteGrupo.equals(ad.getDeporte())
+										&& Boolean.TRUE.equals(ad.getActivo()));
 					})
 					.map(alumno -> AlumnoDTO.deAlumno(alumno, deporteGrupo))
 					.collect(Collectors.toList()));

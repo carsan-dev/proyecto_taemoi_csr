@@ -33,8 +33,12 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
     todas las escuelas. El propietario ve el registro de acciones de su escuela (quién cambió qué)
     pero no los errores técnicos; administrador, responsable de sede y profesor no ven ninguno.
     Confirmado con el usuario (13/10/2026).
-12. **La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
-    empieza usando solo la aplicación de gestión.
+12. **Web pública editable por escuela** (fase 4, cambio del 13/10/2026): plantilla con bloques
+    editables (textos, imágenes, colores, orden), no editor libre. Horarios, tarifas, eventos,
+    sedes y preinscripción se alimentan de la gestión. Escuela resuelta por dominio o subdominio.
+    El primer cliente la necesita para su alta. Sustituye a la decisión anterior:
+13. ~~**La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
+    empieza usando solo la aplicación de gestión.~~ (descartada)
 
 ## Diagrama
 
@@ -191,11 +195,14 @@ Las tablas de unión (`alumno_grupo`, `alumno_turno`, `preinscripcion_turno`) no
 | V18 | `organizacion` (Taemoi = 1, solo nombre y slug), `configuracion_organizacion` desde `configuracion_sistema`, `contador` desde `MAX(numero_expediente)` | 1 |
 | V19 | `organizacion_id` en todas las tablas de negocio: añadir NULL, rellenar con 1, pasar a NOT NULL, FK e índice. Únicos compuestos | 1 |
 | V20 | `membresia` desde `usuario_rol` (adelantada a la fase 1: sin ella, `ROLE_ADMIN` seguiría siendo global entre escuelas) | 1 |
-| V21 | `disciplina` (4 filas desde el enum), `sistema_grados` (taekwondo y kickboxing), columnas nuevas de `grado`: las 19 filas pasan al sistema de taekwondo; se copian para kickboxing (con «Marrón» en lugar de «Rojo», como hace hoy `GradoUtils`) y se reasignan los `grado_id` de las inscripciones de kickboxing. Columnas `disciplina_id` junto a las de `deporte`, rellenadas por `codigo` | 2 |
-| V22 | `tarifa` desde `TarifaConfig`; `producto.tipo`/`codigo` desde los conceptos conocidos; `alumno_deporte.tarifa_id` | 2 |
-| V23 | `tutor` desde `responsable_legal_*`; `alumno_salud` y `consentimiento` vacías; `genero`, `localidad`, `codigo_postal`; teléfonos a VARCHAR | 2 |
-| V24 | `sede` (sede principal de Taemoi); `grupo.sede_id` y `alumno.sede_principal_id`; `usuario_alumno` desde `usuario.alumno_id` y las coincidencias de email actuales | 3 |
-| V25+ | Contracción: borrar columnas `deporte`, `tipo_grado`, `tipo_categoria`, `tipo_tarifa`, `usuario_rol`, `usuario.alumno_id`, columnas heredadas de `alumno` y `responsable_legal_*` | Tras cada fase |
+| V21 | Índices por `ruta` en `imagen` y `documento` (archivos por escuela) | 1 |
+| V22 | Borrado de las 14 columnas monodeporte de `alumno` (producción: ningún alumno sin `alumno_deporte`) | 2 |
+| V23 | `disciplina` (4 filas desde el enum), `sistema_grados` (taekwondo y kickboxing), columnas nuevas de `grado`: las 19 filas pasan al sistema de taekwondo; se copian para kickboxing (con «Marrón» en lugar de «Rojo», como hace hoy `GradoUtils`) y se reasignan los `grado_id` de las inscripciones de kickboxing. Columnas `disciplina_id` junto a las de `deporte`, rellenadas por `codigo` | 2 |
+| V24 | `tarifa` desde `TarifaConfig`; `producto.tipo`/`codigo` desde los conceptos conocidos; `alumno_deporte.tarifa_id` | 2 |
+| V25 | `tutor` desde `responsable_legal_*`; `alumno_salud` y `consentimiento` vacías; `genero`, `localidad`, `codigo_postal`; teléfonos a VARCHAR | 2 |
+| V27 | `sede` (sede principal de Taemoi); `grupo.sede_id` y `alumno.sede_principal_id`; `usuario_alumno` desde `usuario.alumno_id` y las coincidencias de email actuales | 3 |
+| V26 | Contracción del catálogo: borrar columnas `deporte`, `tipo_grado`, `tipo_categoria`, `tipo_tarifa` y `responsable_legal_*` | 2 |
+| V28+ | Contracción de permisos: borrar `usuario_rol` y `usuario.alumno_id` | 3 |
 
 Los valores de progresión, meses mínimos y edades se copian a mano desde las clases de configuración
 a V20, y los tests de caracterización de la fase 0 comprueban que el resultado es idéntico.

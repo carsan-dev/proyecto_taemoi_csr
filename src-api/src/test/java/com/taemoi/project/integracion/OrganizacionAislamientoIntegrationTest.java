@@ -31,6 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
@@ -41,6 +42,7 @@ import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
@@ -65,6 +67,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired AlumnoRepository alumnos;
+	@Autowired AlumnoDeporteRepository alumnoDeportes;
 	@Autowired GrupoRepository grupos;
 	@Autowired TurnoRepository turnos;
 	@Autowired ProductoRepository productos;
@@ -255,9 +258,10 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0L, alumnos.contarAlumnosPorGrupo(ajenos.grupoNombre));
 		assertEquals(1L, alumnos.contarAlumnosPorGrupo(propios.grupoNombre));
 		assertFalse(ids(alumnos.findAlumnosSinGrupo()).contains(ajenos.alumnoId));
-		assertTrue(alumnos.findAptosParaExamenPorDeporte(ajenos.marca, "NADA-QUE-EXCLUIR").isEmpty());
-		assertTrue(alumnos.findAptoParaExamenById(ajenos.alumnoId).isEmpty());
 		assertFalse(ids(alumnos.findAlumnosAptosParaExamen()).contains(ajenos.alumnoId));
+		assertTrue(ids(alumnos.findAlumnosAptosParaExamen()).contains(propios.alumnoId));
+		assertFalse(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO)).contains(ajenos.alumnoId));
+		assertTrue(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO)).contains(propios.alumnoId));
 
 		// Specification usada por AlumnoServiceImpl.obtenerAlumnosFiltrados
 		assertTrue(alumnoService.obtenerAlumnosFiltrados(ajenos.marca, null, null, true).isEmpty());
@@ -280,8 +284,15 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		Datos d = new Datos(marca);
 
 		Alumno alumno = alumnoNuevo(marca, contadores.siguienteNumeroExpediente());
-		alumno.setAptoParaExamen(true);
-		d.alumnoId = alumnos.save(alumno).getId();
+		Alumno alumnoGuardado = alumnos.save(alumno);
+		d.alumnoId = alumnoGuardado.getId();
+		AlumnoDeporte deporte = new AlumnoDeporte();
+		deporte.setAlumno(alumnoGuardado);
+		deporte.setDeporte(Deporte.TAEKWONDO);
+		deporte.setActivo(true);
+		deporte.setPrincipal(true);
+		deporte.setAptoParaExamen(true);
+		alumnoDeportes.save(deporte);
 
 		Grupo grupo = new Grupo();
 		grupo.setNombre("G " + marca);

@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Grupo;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.entities.Turno;
 
 import jakarta.validation.ConstraintViolation;
@@ -40,8 +39,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -59,8 +56,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -80,8 +75,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -96,7 +89,6 @@ public class AlumnoTest {
 	 * alumno.setNumeroExpediente(null); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif("12345678A"); alumno.setDireccion("Calle Principal, 123");
 	 * alumno.setTelefono(123456789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(30.0);
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 
@@ -117,8 +109,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -133,7 +123,6 @@ public class AlumnoTest {
 	 * alumno.setNumeroExpediente(12345); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif(""); alumno.setDireccion("Calle Principal, 123");
 	 * alumno.setTelefono(123456789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(30.0);
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 
@@ -153,8 +142,6 @@ public class AlumnoTest {
 		alumno.setDireccion("");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -174,8 +161,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(null);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -195,8 +180,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("emailinvalido.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -216,8 +199,6 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(123456789);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(null);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -264,7 +245,6 @@ public class AlumnoTest {
 	 * alumno.setNumeroExpediente(12345); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif("12345678A"); alumno.setDireccion("Calle Principal, 123");
 	 * alumno.setTelefono(12345789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(null);
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 

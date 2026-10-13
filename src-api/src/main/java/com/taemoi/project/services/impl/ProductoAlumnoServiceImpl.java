@@ -382,10 +382,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			// Verificar si ya existe esta mensualidad para este alumno y deporte
 			boolean mensualidadExiste = conceptosExistentes.contains(claveUnica);
 			if (!mensualidadExiste) {
-				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
-						? alumnoDeporte.getCuantiaTarifa()
-						: alumno.getCuantiaTarifa();
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -463,10 +460,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			boolean mensualidadExiste = conceptosExistentes.contains(claveMensualidad);
 
 			if (!mensualidadExiste) {
-				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
-						? alumnoDeporte.getCuantiaTarifa()
-						: alumno.getCuantiaTarifa();
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -573,10 +567,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 				mensajesExistentes.append(alumnoDeporte.getDeporte().name());
 			} else {
-				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
-						? alumnoDeporte.getCuantiaTarifa()
-						: alumno.getCuantiaTarifa();
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -717,13 +708,6 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (!deportesConLicencia.isEmpty()) {
 			deporteBase = deportesConLicencia.get(0);
 			fechaLicencia = deporteBase.getFechaLicencia();
-		} else if (Boolean.TRUE.equals(alumno.getTieneLicencia()) && alumno.getFechaLicencia() != null) {
-			fechaLicencia = alumno.getFechaLicencia();
-			deporteBase = alumno.getDeportes().stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
-					.filter(ad -> deporteRequiereLicencia(ad.getDeporte()))
-					.findFirst()
-					.orElse(null);
 		} else {
 			return;
 		}
@@ -1072,10 +1056,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
 
 			if (!yaExiste) {
-				// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
-						? alumnoDeporte.getCuantiaTarifa()
-						: alumno.getCuantiaTarifa();
+				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -1168,10 +1149,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		boolean tarifaCreada = false;
 
 		if (!mensualidadExiste) {
-			// Usar la tarifa del AlumnoDeporte, con fallback a la del alumno si es null
-			Double precioMensualidad = alumnoDeporte.getCuantiaTarifa() != null
-					? alumnoDeporte.getCuantiaTarifa()
-					: alumno.getCuantiaTarifa();
+			Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
 
 			ProductoAlumno productoAlumno = new ProductoAlumno();
 			productoAlumno.setAlumno(alumno);

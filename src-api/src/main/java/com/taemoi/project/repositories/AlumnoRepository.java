@@ -86,46 +86,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	//  */
 	// List<Alumno> findByCategoriaId(Long categoriaId);
 
-	/**
-	 * Busca una página de alumnos por el ID del grado especificado.
-	 *
-	 * @param gradoId  El ID del grado de los alumnos a buscar.
-	 * @param pageable Objeto Pageable para la paginación de resultados.
-	 * @return Una página de objetos Alumno que pertenecen al grado especificado.
-	 */
-	Page<Alumno> findByGradoId(Long gradoId, Pageable pageable);
-
-	/**
-	 * Busca una lista de alumnos por el ID del grado especificado.
-	 *
-	 * @param gradoId El ID del grado de los alumnos a buscar.
-	 * @return Una lista de objetos Alumno que pertenecen al grado especificado.
-	 */
-	List<Alumno> findByGradoId(Long gradoId);
-
-	/**
-	 * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
-	 * pertenezcan al grado con el ID especificado.
-	 *
-	 * @param nombre   La cadena a buscar en el nombre de los alumnos.
-	 * @param gradoId  El ID del grado de los alumnos a buscar.
-	 * @param pageable Objeto Pageable para la paginación de resultados.
-	 * @return Una página de objetos Alumno que cumplen con los criterios de
-	 *         búsqueda.
-	 */
-	Page<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId, Pageable pageable);
-
-	/**
-	 * Busca una lista de alumnos cuyo nombre contenga la cadena especificada y que
-	 * pertenezcan al grado con el ID especificado.
-	 *
-	 * @param nombre  La cadena a buscar en el nombre de los alumnos.
-	 * @param gradoId El ID del grado de los alumnos a buscar.
-	 * @return Una lista de objetos Alumno que cumplen con los criterios de
-	 *         búsqueda.
-	 */
-	List<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId);
-
 	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
 	// /**
 	//  * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
@@ -272,23 +232,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
 		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.deporte = :deporte")
 	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
-
-	// Método para obtener alumnos aptos para examen por un deporte específico,
-	// excluyendo competición para taekwondo
-	@Query("SELECT a FROM Alumno a JOIN a.grupos g WHERE a.aptoParaExamen = true AND g.nombre LIKE %:deporte% AND g.nombre NOT LIKE %:exclusion%")
-	List<Alumno> findAptosParaExamenPorDeporte(@Param("deporte") String deporte, @Param("exclusion") String exclusion);
-
-	// Método para obtener un alumno apto para examen por su ID
-	@Query("SELECT a FROM Alumno a WHERE a.aptoParaExamen = true AND a.id = :id")
-	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
-
-	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
-
-	// Obtener todos los alumnos por deporte
-	List<Alumno> findByDeporte(Deporte deporte);
-
-	// Obtener todos los alumnos activos por deportes
-	List<Alumno> findByActivoTrueAndDeporteIn(Collection<Deporte> deportes);
 
 	List<Alumno> findByActivoTrue();
 }
