@@ -7,17 +7,18 @@ import com.taemoi.project.entities.ParentescoTutor;
 
 /**
  * Grupo de alumnos de la escuela activa que comparten el mismo NIF normalizado, con la propuesta de
- * corrección. Nunca lleva el NIF completo: {@code nifEnmascarado} solo deja ver los 4 últimos
- * caracteres y {@code grupo} es una referencia opaca (el NIF cifrado y ligado a la escuela) que se
- * devuelve tal cual al aplicar.
+ * corrección. {@code nif} es el NIF normalizado completo (solo para administradores, como en la ficha;
+ * la respuesta va con {@code Cache-Control: no-store}). {@code grupo} es una referencia opaca (el NIF
+ * cifrado y ligado a la escuela) que se devuelve tal cual al aplicar, para que el DNI no viaje en el
+ * cuerpo de la petición ni quede en su auditoría.
  */
-public record DniCompartidoDTO(String grupo, String nifEnmascarado, List<Miembro> miembros, Propuesta propuesta) {
+public record DniCompartidoDTO(String grupo, String nif, List<Miembro> miembros, Propuesta propuesta) {
 
 	public record Miembro(Long id, String nombre, String apellidos, LocalDate fechaNacimiento, Integer edad,
 			boolean activo, List<TutorResumen> tutores) {
 	}
 
-	public record TutorResumen(Long id, String nombre, String apellidos, String nifEnmascarado,
+	public record TutorResumen(Long id, String nombre, String apellidos, String nif,
 			ParentescoTutor parentesco, boolean responsableLegal) {
 	}
 
@@ -29,6 +30,12 @@ public record DniCompartidoDTO(String grupo, String nifEnmascarado, List<Miembro
 			List<Cambio> cambios) {
 	}
 
-	public record Cambio(Long alumnoId, boolean quitarNif, boolean crearTutor, boolean responsableLegal) {
+	/**
+	 * Cambio previsto en un miembro. {@code tutorExistenteId}: tutor sin NIF con el mismo nombre al que
+	 * se le pondrá el NIF en lugar de crear otro. {@code responsableLegal}: el tutor creado o completado
+	 * pasará a ser responsable legal (menor sin responsable).
+	 */
+	public record Cambio(Long alumnoId, boolean quitarNif, boolean crearTutor, Long tutorExistenteId,
+			boolean responsableLegal) {
 	}
 }

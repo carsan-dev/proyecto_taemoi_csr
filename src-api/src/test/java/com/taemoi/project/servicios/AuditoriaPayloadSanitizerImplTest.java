@@ -29,6 +29,17 @@ class AuditoriaPayloadSanitizerImplTest {
 	}
 
 	@Test
+	void redactarClaves_sustituyeSoloLasClavesExactasYNoJsonEntero() {
+		String resultado = sanitizer.redactarClaves(
+				"{\"grupo\":\"v1:abc\",\"grupoFamiliar\":\"X\",\"alumnoIds\":[1,2],\"n\":{\"GRUPO\":\"v1:def\"}}",
+				java.util.Set.of("grupo"));
+
+		assertEquals("{\"grupo\":\"[redactado]\",\"grupoFamiliar\":\"X\",\"alumnoIds\":[1,2],\"n\":{\"GRUPO\":\"[redactado]\"}}",
+				resultado);
+		assertEquals("[redactado]", sanitizer.redactarClaves("grupo=v1:abc", java.util.Set.of("grupo")));
+	}
+
+	@Test
 	void serializarQueryParams_enmascaraQuerySensible() {
 		String resultado = sanitizer.serializarQueryParams(Map.of(
 				"page", new String[] { "1" },

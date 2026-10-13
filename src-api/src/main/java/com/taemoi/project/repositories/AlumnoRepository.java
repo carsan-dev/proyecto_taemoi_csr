@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Repository;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * Repositorio para la entidad Alumno. Proporciona métodos para realizar
@@ -215,6 +218,14 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
 	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
 	List<Alumno> buscarConNifEnOrganizacionActiva();
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) los alumnos indicados de la escuela activa, en orden de id
+	 * ascendente para que dos bloqueos concurrentes no se crucen.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT a FROM Alumno a WHERE a.id IN :ids ORDER BY a.id")
+	List<Alumno> bloquearPorIdsEnOrganizacionActiva(@Param("ids") Collection<Long> ids);
 
 	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
 

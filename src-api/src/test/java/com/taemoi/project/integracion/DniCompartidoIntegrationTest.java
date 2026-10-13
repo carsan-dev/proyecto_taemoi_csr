@@ -128,7 +128,7 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		tutorExistente(hija, "Abuela Responsable", null, true);
 
 		JsonNode grupo = grupoCon(tokenAdmin, padre);
-		assertEquals("*****" + nif.substring(5), grupo.get("nifEnmascarado").asText());
+		assertEquals(nif, grupo.get("nif").asText(), "NIF completo y normalizado en la respuesta del informe");
 		assertEquals(3, grupo.get("miembros").size());
 		JsonNode miembroPadre = miembro(grupo, padre);
 		assertTrue(miembroPadre.get("edad").asInt() >= 18);
@@ -148,6 +148,12 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(cambio(propuesta, padre).get("quitarNif").asBoolean());
 
 		assertFalse(salida.getAll().contains(nif), "el DNI completo aparece en el log");
+		assertFalse(salida.getAll().contains(nif.toLowerCase()), "el DNI completo aparece en el log");
+		// Ni en la auditoría de la lectura del informe.
+		assertEquals(0, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento
+				WHERE payload_json LIKE ? OR resumen LIKE ? OR query_params_json LIKE ?
+				""", Integer.class, "%" + nif + "%", "%" + nif + "%", "%" + nif + "%"));
 	}
 
 	@Test
@@ -255,6 +261,19 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		// El grupo ya no aparece en el informe.
 		assertTrue(buscarGrupo(listar(tokenAdmin), madre) == null);
 
+		// La auditoría de la petición no guarda la referencia cifrada del grupo.
+		String referencia = grupo.get("grupo").asText();
+		Map<String, Object> peticion = jdbc.queryForMap("""
+				SELECT * FROM auditoria_evento
+				WHERE endpoint = '/api/admin/dni-compartidos/aplicar' AND id > ? AND modulo <> 'dni-compartidos'
+				ORDER BY id LIMIT 1
+				""", eventosAntes);
+		String payload = (String) peticion.get("payload_json");
+		assertFalse(payload.contains(referencia), "la referencia del grupo queda en la auditoría");
+		assertTrue(payload.contains("\"grupo\":\"[redactado]\""), payload);
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE id > ? AND payload_json LIKE ?",
+				Integer.class, eventosAntes, "%" + referencia + "%"));
+
 		assertTrue(salida.getAll().contains("Corrección de DNI compartido *****" + nif.substring(5)),
 				"la corrección queda en el log, enmascarada");
 		assertFalse(salida.getAll().contains(nif), "el DNI completo aparece en el log");
@@ -292,7 +311,7 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 
 		// Enviar un subconjunto del grupo actual también es un cambio.
 		aplicarConIds(tokenAdmin, grupo.get("grupo").asText(), List.of(padre, hijo, nuevo, 999_999_999L),
-				"PROPUESTA", null, null).andExpect(status().isConflict());
+				"PROPUESTA", "TITULAR_ADULTO", padre, null).andExpect(status().isConflict());
 	}
 
 	@Test
@@ -302,6 +321,177 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		alumno(ORG1, "TITB", menor(), nif);
 		long ajeno = alumno(ORG1, "AJENO", adulto(), nifAleatorio());
 		aplicar(tokenAdmin, grupoCon(tokenAdmin, a), "TITULAR", ajeno, null).andExpect(status().isBadRequest());
+	}
+
+	// ------------------------------------------------------------------ tutores ya existentes
+
+	@Test
+	void unResponsableComunConOtroNifNoDaNombreAlTutorDelDni() throws Exception {
+		String nif = nifAleatorio();
+		String nifMadre = nifAleatorio();
+		long a = alumno(ORG1, "COMUNA", menor(), nif);
+		long b = alumno(ORG1, "COMUNB", menor(), nif);
+		tutorExistente(a, "Ana Madre", nifMadre, true);
+		tutorExistente(b, "Ana Madre", nifMadre, true);
+
+		JsonNode grupo = grupoCon(tokenAdmin, a);
+		JsonNode propuesta = grupo.get("propuesta");
+		assertEquals("TUTOR_NO_ALUMNO", propuesta.get("tipo").asText());
+		assertEquals("Pendiente", propuesta.get("nombreTutor").asText(), "Ana Madre es otra persona (otro NIF)");
+
+		aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andExpect(status().isOk());
+		for (long id : List.of(a, b)) {
+			Map<String, Object> nuevo = jdbc.queryForMap("SELECT * FROM tutor WHERE alumno_id = ? AND nif = ?", id, nif);
+			assertEquals("Pendiente", nuevo.get("nombre"));
+			assertEquals(Boolean.FALSE, nuevo.get("responsable_legal"), "ya tenía responsable legal");
+			assertEquals(nifMadre, jdbc.queryForObject(
+					"SELECT nif FROM tutor WHERE alumno_id = ? AND nombre = 'Ana Madre'", String.class, id));
+		}
+	}
+
+	@Test
+	void unResponsableMigradoSinNifRecibeElDniSinDuplicarse() throws Exception {
+		String nif = nifAleatorio();
+		long a = alumno(ORG1, "MIGRADOA", menor(), nif);
+		long b = alumno(ORG1, "MIGRADOB", menor(), nif);
+		tutorExistente(a, "Ana Madre", null, true);
+		tutorExistente(b, "ana  madre", null, true);
+
+		JsonNode grupo = grupoCon(tokenAdmin, a);
+		JsonNode propuesta = grupo.get("propuesta");
+		assertEquals("Ana Madre", propuesta.get("nombreTutor").asText());
+		assertFalse(cambio(propuesta, a).get("crearTutor").asBoolean());
+		assertFalse(cambio(propuesta, a).get("tutorExistenteId").isNull());
+
+		JsonNode resultado = leer(aplicar(tokenAdmin, grupo, "PROPUESTA", null, null)
+				.andExpect(status().isOk()).andReturn());
+		assertEquals(0, resultado.get("tutoresCreados").asInt());
+		assertEquals(2, resultado.get("tutoresCompletados").asInt());
+		for (long id : List.of(a, b)) {
+			Map<String, Object> t = jdbc.queryForMap("SELECT * FROM tutor WHERE alumno_id = ?", id);
+			assertEquals(nif, t.get("nif"));
+			assertEquals(Boolean.TRUE, t.get("responsable_legal"));
+			assertEquals(nif, jdbc.queryForObject("SELECT responsable_legal_nif FROM alumno WHERE id = ?", String.class, id));
+			assertNull(nifDe(id));
+		}
+	}
+
+	@Test
+	void conTitularAdultoSeCompletaElTutorHomonimoSinNif() throws Exception {
+		String nif = nifAleatorio();
+		long padre = alumnoConEmail(ORG1, "JOSÉ", adulto(), nif, "jose-" + sufijo + "@example.test");
+		long hijo = alumno(ORG1, "HIJOJOSE", menor(), nif);
+		tutorExistente(hijo, "jose " + sufijo + " prueba  dni", null, false);
+
+		JsonNode grupo = grupoCon(tokenAdmin, padre);
+		assertFalse(cambio(grupo.get("propuesta"), hijo).get("tutorExistenteId").isNull());
+		aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andExpect(status().isOk());
+
+		List<Map<String, Object>> lista = jdbc.queryForList("SELECT * FROM tutor WHERE alumno_id = ?", hijo);
+		assertEquals(1, lista.size(), "no se duplica el tutor");
+		assertEquals(nif, lista.get(0).get("nif"));
+		assertEquals(Boolean.TRUE, lista.get(0).get("responsable_legal"), "menor sin responsable");
+		assertEquals(nif, nifDe(padre));
+	}
+
+	// ------------------------------------------------------------------ cambios entre GET y POST
+
+	@Test
+	void siLaPropuestaCambioEntreElInformeYLaAplicacionDevuelve409() throws Exception {
+		String nif = nifAleatorio();
+		long a = alumno(ORG1, "CAMBIOA", adulto(), nif);
+		long b = alumno(ORG1, "CAMBIOB", menor(), nif);
+		JsonNode grupo = grupoCon(tokenAdmin, a);
+		assertEquals(a, grupo.get("propuesta").get("titularId").asLong());
+		// Se corrigen las fechas de nacimiento: ahora el adulto es B.
+		jdbc.update("UPDATE alumno SET fecha_nacimiento = ? WHERE id = ?", Date.valueOf(menor()), a);
+		jdbc.update("UPDATE alumno SET fecha_nacimiento = ? WHERE id = ?", Date.valueOf(adulto()), b);
+
+		aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andExpect(status().isConflict());
+		assertEquals(nif, nifDe(a));
+		assertEquals(nif, nifDe(b));
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id IN (?, ?)", Integer.class, a, b));
+	}
+
+	@Test
+	void idsFalseadosTrasAplicarDevuelven409() throws Exception {
+		String nif = nifAleatorio();
+		long madre = alumno(ORG1, "MADREF", adulto(), nif);
+		long hijo = alumno(ORG1, "HIJOF", menor(), nif);
+		long hija = alumno(ORG1, "HIJAF", menor(), nif);
+		long ajeno = alumno(ORG1, "AJENOF", menor(), null);
+		JsonNode grupo = grupoCon(tokenAdmin, madre);
+		aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andExpect(status().isOk());
+
+		String ref = grupo.get("grupo").asText();
+		aplicarConIds(tokenAdmin, ref, List.of(madre, hijo), "PROPUESTA", "TITULAR_ADULTO", madre, null)
+				.andExpect(status().isConflict());
+		aplicarConIds(tokenAdmin, ref, List.of(madre, hijo, hija, ajeno), "PROPUESTA", "TITULAR_ADULTO", madre, null)
+				.andExpect(status().isConflict());
+		aplicarConIds(tokenAdmin, ref, List.of(madre, hijo, hija), "TITULAR", null, hijo, null)
+				.andExpect(status().isConflict());
+		JsonNode igual = leer(aplicarConIds(tokenAdmin, ref, List.of(hija, hijo, madre), "PROPUESTA", "TITULAR_ADULTO",
+				madre, null).andExpect(status().isOk()).andReturn());
+		assertFalse(igual.get("aplicado").asBoolean());
+	}
+
+	@Test
+	void dosAplicacionesSimultaneasSoloCreanUnJuegoDeTutores() throws Exception {
+		String nif = nifAleatorio();
+		long padre = alumno(ORG1, "PADRECONC", adulto(), nif);
+		long hijo = alumno(ORG1, "HIJOCONC", menor(), nif);
+		long hija = alumno(ORG1, "HIJACONC", menor(), nif);
+		JsonNode grupo = grupoCon(tokenAdmin, padre);
+
+		java.util.concurrent.CountDownLatch salida = new java.util.concurrent.CountDownLatch(1);
+		java.util.concurrent.ExecutorService hilos = java.util.concurrent.Executors.newFixedThreadPool(2);
+		try {
+			List<java.util.concurrent.Future<MvcResult>> futuros = new ArrayList<>();
+			for (int i = 0; i < 2; i++) {
+				futuros.add(hilos.submit(() -> {
+					salida.await();
+					return aplicar(tokenAdmin, grupo, "PROPUESTA", null, null).andReturn();
+				}));
+			}
+			salida.countDown();
+			int aplicados = 0;
+			for (java.util.concurrent.Future<MvcResult> f : futuros) {
+				MvcResult r = f.get(60, java.util.concurrent.TimeUnit.SECONDS);
+				int estado = r.getResponse().getStatus();
+				assertTrue(estado == 200 || estado == 409, "estado " + estado);
+				if (estado == 200 && leer(r).get("aplicado").asBoolean()) {
+					aplicados++;
+				}
+			}
+			assertEquals(1, aplicados, "una sola aplicación efectiva");
+		} finally {
+			hilos.shutdownNow();
+		}
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ?", Integer.class, hijo));
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ?", Integer.class, hija));
+	}
+
+	// ------------------------------------------------------------------ límites
+
+	@Test
+	void quienCumple18HoyCuentaComoAdulto() throws Exception {
+		String nif = nifAleatorio();
+		long cumple = alumno(ORG1, "CUMPLE", LocalDate.now(ZoneId.of("Europe/Madrid")).minusYears(18), nif);
+		long menor = alumno(ORG1, "CASI", LocalDate.now(ZoneId.of("Europe/Madrid")).minusYears(18).plusDays(1), nif);
+		JsonNode grupo = grupoCon(tokenAdmin, cumple);
+		assertEquals(18, miembro(grupo, cumple).get("edad").asInt());
+		assertEquals(17, miembro(grupo, menor).get("edad").asInt());
+		assertEquals("TITULAR_ADULTO", grupo.get("propuesta").get("tipo").asText());
+		assertEquals(cumple, grupo.get("propuesta").get("titularId").asLong());
+	}
+
+	@Test
+	void elMarcadorSinNifNoFormaGrupo() throws Exception {
+		long a = alumno(ORG1, "MARCA", menor(), "00000000Z");
+		long b = alumno(ORG1, "MARCB", menor(), "00000000z");
+		JsonNode grupos = listar(tokenAdmin);
+		assertNull(buscarGrupo(grupos, a));
+		assertNull(buscarGrupo(grupos, b));
 	}
 
 	// ------------------------------------------------------------------ organización y permisos
@@ -323,8 +513,8 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 
 		// La referencia de grupo de otra escuela no sirve aquí, ni con sus ids.
 		aplicar(tokenAdminOtra, grupo1, "PROPUESTA", null, null).andExpect(status().isBadRequest());
-		aplicarConIds(tokenAdminOtra, grupo2.get("grupo").asText(), List.of(propio1, propio2), "PROPUESTA", null,
-				null).andExpect(status().isConflict());
+		aplicarConIds(tokenAdminOtra, grupo2.get("grupo").asText(), List.of(propio1, propio2), "PROPUESTA",
+				"TITULAR_ADULTO", otra1, null).andExpect(status().isConflict());
 		assertEquals(nif, nifDe(propio2));
 
 		aplicar(tokenAdminOtra, grupo2, "PROPUESTA", null, null).andExpect(status().isOk());
@@ -352,15 +542,23 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 			Long titularId, String nombreTutor) throws Exception {
 		List<Long> ids = new ArrayList<>();
 		grupo.get("miembros").forEach(m -> ids.add(m.get("id").asLong()));
-		return aplicarConIds(token, grupo.get("grupo").asText(), ids, accion, titularId, nombreTutor);
+		String tipo = null;
+		if ("PROPUESTA".equals(accion)) {
+			// Se acepta la propuesta tal y como se mostró.
+			JsonNode propuesta = grupo.get("propuesta");
+			tipo = propuesta.get("tipo").asText();
+			titularId = propuesta.get("titularId").isNull() ? null : propuesta.get("titularId").asLong();
+		}
+		return aplicarConIds(token, grupo.get("grupo").asText(), ids, accion, tipo, titularId, nombreTutor);
 	}
 
 	private org.springframework.test.web.servlet.ResultActions aplicarConIds(String token, String referencia,
-			List<Long> ids, String accion, Long titularId, String nombreTutor) throws Exception {
+			List<Long> ids, String accion, String tipo, Long titularId, String nombreTutor) throws Exception {
 		Map<String, Object> cuerpo = new java.util.LinkedHashMap<>();
 		cuerpo.put("grupo", referencia);
 		cuerpo.put("alumnoIds", ids);
 		cuerpo.put("accion", accion);
+		cuerpo.put("tipo", tipo);
 		cuerpo.put("titularId", titularId);
 		cuerpo.put("nombreTutor", nombreTutor);
 		return mvc.perform(post(BASE + "/aplicar").cookie(jwt(token)).contentType(MediaType.APPLICATION_JSON)
@@ -377,13 +575,8 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		String cuerpo = r.getResponse().getContentAsString();
 		JsonNode grupo = buscarGrupo(json.readTree(cuerpo), alumnoId);
 		assertNotNull(grupo, "grupo del alumno " + alumnoId);
-		// Ningún DNI completo en la respuesta (ni de alumnos ni de tutores).
-		for (JsonNode m : grupo.get("miembros")) {
-			String n = jdbc.queryForObject("SELECT nif FROM alumno WHERE id = ?", String.class, m.get("id").asLong());
-			if (n != null) {
-				assertFalse(cuerpo.contains(n) || cuerpo.contains(n.toUpperCase()), "DNI completo en la respuesta");
-			}
-		}
+		// La respuesta del informe lleva el NIF completo: nunca en caché.
+		assertTrue(r.getResponse().getHeader("Cache-Control").contains("no-store"));
 		return grupo;
 	}
 

@@ -1,16 +1,20 @@
 package com.taemoi.project.services;
 
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -43,18 +47,21 @@ import com.taemoi.project.utils.NifUtils;
  * las fichas de sus hijos). {@code alumno.nif} debe guardar solo el DNI del propio alumno; el de un
  * padre va en {@code tutor}. Nada se corrige solo: el informe propone y un administrador aplica.
  *
- * <p>Reglas de la propuesta (por grupo):
+ * <p>Reglas de la propuesta (por grupo; el NIF se compara normalizado y {@code 00000000Z} no cuenta):
  * <ul>
- * <li>Un único adulto (18 o más): el DNI es suyo; el resto queda sin NIF y con un tutor
- * TUTOR_LEGAL con ese NIF y su nombre, responsable legal si es menor y no tiene responsable.</li>
+ * <li>Un único adulto (18 o más, cumplidos hoy incluidos): el DNI es suyo; el resto queda sin NIF y
+ * con un tutor TUTOR_LEGAL con ese NIF y su nombre.</li>
  * <li>Todos menores: es de un tutor que no es alumno; todos quedan sin NIF y con ese tutor, con el
- * nombre conocido (tutores o responsable legal con ese NIF) o "Pendiente".</li>
+ * nombre que ya conste ({@link #nombreConocido}) o "Pendiente".</li>
  * <li>Si no (varios adultos, o falta alguna fecha de nacimiento): revisión manual.</li>
  * </ul>
+ * El tutor es responsable legal si el alumno es menor y no tiene ninguno. Si el alumno ya tiene un
+ * tutor con ese NIF no se toca; si tiene uno SIN NIF con el mismo nombre (sin distinguir mayúsculas,
+ * acentos ni espacios) se le pone el NIF en lugar de crear otro.
  *
- * <p>El DNI completo nunca sale de aquí: respuestas, auditoría y logs llevan solo la versión
- * enmascarada, y la referencia de grupo que viaja al cliente es el NIF cifrado (AES-GCM) ligado a la
- * escuela activa.
+ * <p>El DNI completo solo sale en el cuerpo de la respuesta del informe (administradores, sin caché):
+ * logs, auditoría, mensajes de error y la respuesta de la corrección llevan la versión enmascarada, y
+ * la referencia de grupo que viaja del cliente es el NIF cifrado (AES-GCM) ligado a la escuela activa.
  */
 @Service
 public class DniCompartidoService {
@@ -67,6 +74,7 @@ public class DniCompartidoService {
 	static final String NOMBRE_PENDIENTE = "Pendiente";
 	private static final int MAYORIA_EDAD = 18;
 	private static final int VISIBLES = 4;
+	private static final int LONGITUD_NIF = 9;
 	private static final ZoneId ZONA = ZoneId.of("Europe/Madrid");
 	private static final Logger logger = LoggerFactory.getLogger(DniCompartidoService.class);
 
@@ -94,7 +102,7 @@ public class DniCompartidoService {
 				return;
 			}
 			List<Ficha> fichas = miembros.stream().map(a -> ficha(a, hoy)).toList();
-			grupos.add(new DniCompartidoDTO(referencia(nif), enmascarar(nif),
+			grupos.add(new DniCompartidoDTO(referencia(nif), nif,
 					fichas.stream().map(DniCompartidoService::miembro).toList(), proponer(nif, fichas)));
 		});
 		return grupos;
@@ -106,19 +114,44 @@ public class DniCompartidoService {
 		String enmascarado = enmascarar(nif);
 		LocalDate hoy = LocalDate.now(ZONA);
 
-		Set<Long> pedidos = new LinkedHashSet<>(datos.alumnoIds());
-		List<Ficha> fichas = new ArrayList<>();
-		for (Long id : pedidos) {
-			Alumno alumno = alumnos.buscarPorIdEnOrganizacionActiva(id).orElseThrow(DniCompartidoService::grupoCambiado);
-			fichas.add(ficha(alumno, hoy));
+		// 1. Bloqueo de los miembros (orden de id ascendente) antes de leer nada más: dos peticiones
+		// simultáneas sobre el mismo grupo se serializan y la segunda ve lo que hizo la primera.
+		Set<Long> pedidos = new TreeSet<>(datos.alumnoIds());
+		List<Alumno> bloqueados = alumnos.bloquearPorIdsEnOrganizacionActiva(pedidos);
+		if (bloqueados.size() != pedidos.size()) {
+			throw grupoCambiado();
+		}
+		List<Ficha> fichas = bloqueados.stream().map(a -> ficha(a, hoy)).toList();
+
+		// 2. Pertenencia: o es el grupo actual (pendiente) o es exactamente el grupo ya corregido con este
+		// NIF (los que lo conservan más los que, sin NIF propio, lo tienen en un tutor).
+		Set<Long> actuales = new HashSet<>();
+		agruparPorNif().getOrDefault(nif, List.of()).forEach(a -> actuales.add(a.getId()));
+		boolean pendiente = pedidos.size() >= 2 && actuales.equals(pedidos);
+		boolean corregido = false;
+		if (!pendiente) {
+			Set<Long> huella = new HashSet<>(actuales);
+			huella.addAll(alumnosConTutorDeNif(nif));
+			corregido = huella.equals(pedidos) && fichas.stream()
+					.filter(f -> !actuales.contains(f.alumno().getId()))
+					.allMatch(f -> NifUtils.normalizeForComparison(f.alumno().getNif()) == null);
+		}
+		if (!pendiente && !corregido) {
+			throw grupoCambiado();
 		}
 
-		// Decisión: quién es el titular del DNI (o nadie) y con qué nombre se crea el tutor.
+		// 3. Decisión: quién es el titular del DNI (o nadie).
 		Ficha titular = null;
-		String[] nombreTutor;
 		Accion accion = datos.accion();
 		if (accion == Accion.PROPUESTA) {
+			if (datos.tipo() == null || datos.tipo().isBlank()) {
+				throw new IllegalArgumentException("Falta el tipo de la propuesta que se acepta.");
+			}
 			Propuesta propuesta = proponer(nif, fichas);
+			if (!propuesta.tipo().equals(datos.tipo()) || !Objects.equals(propuesta.titularId(), datos.titularId())) {
+				throw new IllegalStateException(
+						"La propuesta ha cambiado desde que se mostró el informe. Vuelve a cargarlo antes de aplicar.");
+			}
 			if (REVISION_MANUAL.equals(propuesta.tipo())) {
 				throw new IllegalArgumentException(
 						"Este grupo no tiene propuesta automática: elige quién es el titular del DNI.");
@@ -130,42 +163,46 @@ public class DniCompartidoService {
 			}
 			titular = buscar(fichas, datos.titularId());
 		}
-		if (titular != null) {
-			nombreTutor = new String[] { titular.alumno().getNombre(), titular.alumno().getApellidos() };
-		} else if (datos.nombreTutor() != null && !datos.nombreTutor().isBlank()) {
-			nombreTutor = new String[] { datos.nombreTutor().strip(), null };
-		} else {
-			String[] conocido = nombreConocido(nif, fichas);
-			nombreTutor = conocido != null ? conocido : new String[] { NOMBRE_PENDIENTE, null };
-		}
 		final Long titularId = titular == null ? null : titular.alumno().getId();
 		List<Ficha> resto = fichas.stream().filter(f -> !Objects.equals(f.alumno().getId(), titularId)).toList();
 		List<Long> sinNif = resto.stream().map(f -> f.alumno().getId()).toList();
 
-		// Grupo actual con ese NIF en la escuela activa.
-		Set<Long> actuales = new LinkedHashSet<>();
-		for (Alumno a : agruparPorNif().getOrDefault(nif, List.of())) {
-			actuales.add(a.getId());
+		// 4. Ya corregido: solo si coincide con esta misma decisión; si no, el grupo cambió.
+		if (corregido) {
+			if (!actuales.equals(titularId == null ? Set.of() : Set.of(titularId))
+					|| !resto.stream().allMatch(f -> tutorConNif(f, nif) != null)) {
+				throw grupoCambiado();
+			}
+			return new DniCompartidoResultadoDTO(enmascarado, false, titularId, sinNif, 0, 0);
 		}
 
-		boolean yaAplicado = actuales.equals(titularId == null ? Set.of() : Set.of(titularId))
-				&& resto.stream().allMatch(f -> normalizar(f.alumno().getNif()) == null && tieneTutorConNif(f, nif));
-		if (yaAplicado) {
-			return new DniCompartidoResultadoDTO(enmascarado, false, titularId, sinNif, 0);
+		// 5. Aplicar.
+		Nombre nombreTutor;
+		if (titular != null) {
+			nombreTutor = new Nombre(titular.alumno().getNombre(), titular.alumno().getApellidos());
+		} else if (datos.nombreTutor() != null && !datos.nombreTutor().isBlank()) {
+			nombreTutor = new Nombre(datos.nombreTutor().strip(), null);
+		} else {
+			Nombre conocido = nombreConocido(nif, fichas);
+			nombreTutor = conocido != null ? conocido : new Nombre(NOMBRE_PENDIENTE, null);
 		}
-		if (pedidos.size() < 2 || !actuales.equals(pedidos)) {
-			throw grupoCambiado();
+		if (titular != null && nif.length() == LONGITUD_NIF && !nif.equals(titular.alumno().getNif())) {
+			titular.alumno().setNif(nif);
+			alumnos.save(titular.alumno());
 		}
-
 		int creados = 0;
+		int completados = 0;
 		for (Ficha f : resto) {
 			Alumno alumno = f.alumno();
 			alumno.setNif(null);
 			alumnos.save(alumno);
-			if (!tieneTutorConNif(f, nif)) {
-				boolean responsable = esMenor(f) && !tieneResponsable(f);
-				tutorService.crear(alumno.getId(), new TutorRequest(nombreTutor[0], nombreTutor[1], nif,
-						ParentescoTutor.TUTOR_LEGAL, null, null, responsable, null));
+			Cambio cambio = cambio(f, nif, nombreTutor);
+			if (cambio.tutorExistenteId() != null) {
+				tutorService.asignarNif(alumno.getId(), cambio.tutorExistenteId(), nif, cambio.responsableLegal());
+				completados++;
+			} else if (cambio.crearTutor()) {
+				tutorService.crear(alumno.getId(), new TutorRequest(nombreTutor.nombre(), nombreTutor.apellidos(), nif,
+						ParentescoTutor.TUTOR_LEGAL, null, null, cambio.responsableLegal(), null));
 				creados++;
 			}
 		}
@@ -173,11 +210,11 @@ public class DniCompartidoService {
 		String resumen = "Corrección de DNI compartido " + enmascarado + " (" + accion + "): "
 				+ (titularId == null ? "sin titular alumno" : "titular alumno #" + titularId)
 				+ "; sin NIF: " + sinNif.stream().map(id -> "#" + id).collect(Collectors.joining(", "))
-				+ "; tutores creados: " + creados;
+				+ "; tutores creados: " + creados + "; tutores completados: " + completados;
 		auditoria.registrarAccesoSensible(AuditoriaAccion.UPDATE, MODULO_AUDITORIA, ENDPOINT_APLICAR,
 				titularId != null ? titularId : sinNif.get(0), resumen);
 		logger.info("{}", resumen);
-		return new DniCompartidoResultadoDTO(enmascarado, true, titularId, sinNif, creados);
+		return new DniCompartidoResultadoDTO(enmascarado, true, titularId, sinNif, creados, completados);
 	}
 
 	// ------------------------------------------------------------------ propuesta
@@ -189,15 +226,15 @@ public class DniCompartidoService {
 		List<Ficha> adultos = fichas.stream().filter(f -> !esMenor(f)).toList();
 		if (adultos.size() == 1) {
 			Alumno adulto = adultos.get(0).alumno();
-			String nombre = nombreCompleto(adulto.getNombre(), adulto.getApellidos());
-			return new Propuesta(TITULAR_ADULTO, "El DNI es de " + nombre + ".", adulto.getId(), nombre,
-					cambios(nif, fichas, adulto.getId()));
+			Nombre nombre = new Nombre(adulto.getNombre(), adulto.getApellidos());
+			return new Propuesta(TITULAR_ADULTO, "El DNI es de " + nombre.completo() + ".", adulto.getId(),
+					nombre.completo(), cambios(nif, fichas, adulto.getId(), nombre));
 		}
 		if (adultos.isEmpty()) {
-			String[] conocido = nombreConocido(nif, fichas);
-			String nombre = conocido == null ? NOMBRE_PENDIENTE : nombreCompleto(conocido[0], conocido[1]);
-			return new Propuesta(TUTOR_NO_ALUMNO, "DNI de un tutor no alumno.", null, nombre,
-					cambios(nif, fichas, null));
+			Nombre conocido = nombreConocido(nif, fichas);
+			Nombre nombre = conocido == null ? new Nombre(NOMBRE_PENDIENTE, null) : conocido;
+			return new Propuesta(TUTOR_NO_ALUMNO, "DNI de un tutor no alumno.", null, nombre.completo(),
+					cambios(nif, fichas, null, nombre));
 		}
 		return revisionManual("Revisión manual: varios adultos comparten el DNI.");
 	}
@@ -206,48 +243,66 @@ public class DniCompartidoService {
 		return new Propuesta(REVISION_MANUAL, descripcion, null, null, List.of());
 	}
 
-	private static List<Cambio> cambios(String nif, List<Ficha> fichas, Long titularId) {
-		return fichas.stream().map(f -> {
-			if (Objects.equals(f.alumno().getId(), titularId)) {
-				return new Cambio(f.alumno().getId(), false, false, false);
-			}
-			boolean crear = !tieneTutorConNif(f, nif);
-			return new Cambio(f.alumno().getId(), true, crear, crear && esMenor(f) && !tieneResponsable(f));
-		}).toList();
+	private static List<Cambio> cambios(String nif, List<Ficha> fichas, Long titularId, Nombre nombreTutor) {
+		return fichas.stream().map(f -> Objects.equals(f.alumno().getId(), titularId)
+				? new Cambio(f.alumno().getId(), false, false, null, false)
+				: cambio(f, nif, nombreTutor)).toList();
+	}
+
+	/** Qué pasa con el tutor de un miembro que pierde el NIF (nunca duplica un par nombre + NIF). */
+	private static Cambio cambio(Ficha f, String nif, Nombre nombreTutor) {
+		Long id = f.alumno().getId();
+		if (tutorConNif(f, nif) != null) {
+			return new Cambio(id, true, false, null, false);
+		}
+		String buscado = clave(nombreTutor.completo());
+		Tutor homonimo = f.tutores().stream()
+				.filter(t -> NifUtils.normalizeForComparison(t.getNif()) == null)
+				.filter(t -> !buscado.isEmpty() && buscado.equals(clave(t.getNombreCompleto())))
+				.findFirst().orElse(null);
+		boolean responsable = esMenor(f) && !tieneResponsable(f);
+		return homonimo != null
+				? new Cambio(id, true, false, homonimo.getId(), responsable)
+				: new Cambio(id, true, true, null, responsable);
 	}
 
 	/**
-	 * Nombre del tutor dueño del DNI si ya consta: un tutor con ese NIF, el responsable legal heredado
-	 * con ese NIF o, si todos los miembros tienen el mismo responsable legal, ese. {nombre, apellidos}.
+	 * Nombre del tutor dueño del DNI si ya consta, mirando solo tutores sin NIF o con ese NIF (uno con
+	 * otro NIF es otra persona): un tutor con ese NIF; el responsable legal heredado con ese NIF; o, si
+	 * todos los miembros tienen como primer responsable legal a la misma persona sin NIF o con ese NIF,
+	 * esa. Si no, {@code null}.
 	 */
-	private static String[] nombreConocido(String nif, List<Ficha> fichas) {
+	private static Nombre nombreConocido(String nif, List<Ficha> fichas) {
 		for (Ficha f : fichas) {
-			for (Tutor t : f.tutores()) {
-				if (nif.equals(normalizar(t.getNif())) && t.getNombre() != null && !t.getNombre().isBlank()) {
-					return new String[] { t.getNombre(), t.getApellidos() };
-				}
+			Tutor t = tutorConNif(f, nif);
+			if (t != null && t.getNombreCompleto() != null) {
+				return new Nombre(t.getNombre(), t.getApellidos());
 			}
 		}
 		for (Ficha f : fichas) {
 			Alumno a = f.alumno();
-			if (nif.equals(normalizar(a.getResponsableLegalNif())) && a.getResponsableLegalNombre() != null
-					&& !a.getResponsableLegalNombre().isBlank()) {
-				return new String[] { a.getResponsableLegalNombre().strip(), null };
+			if (nif.equals(NifUtils.normalizeForComparison(a.getResponsableLegalNif()))
+					&& a.getResponsableLegalNombre() != null && !a.getResponsableLegalNombre().isBlank()) {
+				return new Nombre(a.getResponsableLegalNombre().strip(), null);
 			}
 		}
-		Set<String> responsables = new LinkedHashSet<>();
+		Set<String> claves = new LinkedHashSet<>();
+		Tutor comun = null;
 		for (Ficha f : fichas) {
 			Tutor primero = f.tutores().stream().filter(Tutor::isResponsableLegal).findFirst().orElse(null);
 			if (primero == null || primero.getNombreCompleto() == null) {
 				return null;
 			}
-			responsables.add(primero.getNombreCompleto());
+			String suNif = NifUtils.normalizeForComparison(primero.getNif());
+			if (suNif != null && !suNif.equals(nif)) {
+				return null;
+			}
+			claves.add(clave(primero.getNombreCompleto()));
+			if (comun == null) {
+				comun = primero;
+			}
 		}
-		if (responsables.size() == 1) {
-			Tutor t = fichas.get(0).tutores().stream().filter(Tutor::isResponsableLegal).findFirst().orElseThrow();
-			return new String[] { t.getNombre(), t.getApellidos() };
-		}
-		return null;
+		return claves.size() == 1 && comun != null ? new Nombre(comun.getNombre(), comun.getApellidos()) : null;
 	}
 
 	// ------------------------------------------------------------------ utilidades
@@ -255,13 +310,23 @@ public class DniCompartidoService {
 	private Map<String, List<Alumno>> agruparPorNif() {
 		Map<String, List<Alumno>> grupos = new LinkedHashMap<>();
 		for (Alumno a : alumnos.buscarConNifEnOrganizacionActiva()) {
-			String nif = normalizar(a.getNif());
+			String nif = NifUtils.normalizeForComparison(a.getNif());
 			if (nif != null) {
 				grupos.computeIfAbsent(nif, k -> new ArrayList<>()).add(a);
 			}
 		}
 		grupos.values().forEach(l -> l.sort(Comparator.comparing(Alumno::getId)));
 		return grupos;
+	}
+
+	private Set<Long> alumnosConTutorDeNif(String nif) {
+		Set<Long> ids = new HashSet<>();
+		for (Object[] fila : tutores.buscarAlumnoYNifConNif()) {
+			if (nif.equals(NifUtils.normalizeForComparison((String) fila[1]))) {
+				ids.add((Long) fila[0]);
+			}
+		}
+		return ids;
 	}
 
 	private Ficha ficha(Alumno alumno, LocalDate hoy) {
@@ -275,7 +340,8 @@ public class DniCompartidoService {
 		return new Miembro(a.getId(), a.getNombre(), a.getApellidos(), f.nacimiento(), f.edad(),
 				Boolean.TRUE.equals(a.getActivo()),
 				f.tutores().stream().map(t -> new TutorResumen(t.getId(), t.getNombre(), t.getApellidos(),
-						enmascarar(normalizar(t.getNif())), t.getParentesco(), t.isResponsableLegal())).toList());
+						NifUtils.normalizeForComparison(t.getNif()), t.getParentesco(),
+						t.isResponsableLegal())).toList());
 	}
 
 	private static Ficha buscar(List<Ficha> fichas, Long id) {
@@ -290,14 +356,18 @@ public class DniCompartidoService {
 		return f.tutores().stream().anyMatch(Tutor::isResponsableLegal);
 	}
 
-	private static boolean tieneTutorConNif(Ficha f, String nif) {
-		return f.tutores().stream().anyMatch(t -> nif.equals(normalizar(t.getNif())));
+	private static Tutor tutorConNif(Ficha f, String nif) {
+		return f.tutores().stream().filter(t -> nif.equals(NifUtils.normalizeForComparison(t.getNif())))
+				.findFirst().orElse(null);
 	}
 
-	private static String nombreCompleto(String nombre, String apellidos) {
-		String n = nombre == null ? "" : nombre.strip();
-		String a = apellidos == null ? "" : apellidos.strip();
-		return (n + " " + a).strip();
+	/** Nombre para comparar: sin acentos, minúsculas y espacios simples. */
+	private static String clave(String nombre) {
+		if (nombre == null) {
+			return "";
+		}
+		String sinAcentos = Normalizer.normalize(nombre, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+		return sinAcentos.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
 	}
 
 	private static LocalDate fecha(java.util.Date fecha) {
@@ -310,24 +380,16 @@ public class DniCompartidoService {
 		return fecha.toInstant().atZone(ZONA).toLocalDate();
 	}
 
-	/** Mayúsculas, sin espacios ni guiones; {@code null} si queda vacío o es el marcador "sin NIF". */
-	static String normalizar(String nif) {
-		String base = NifUtils.normalizeForStorage(nif);
-		if (base == null) {
-			return null;
-		}
-		String limpio = base.replaceAll("[\\s-]", "");
-		return limpio.isEmpty() || NifUtils.PLACEHOLDER_SIN_NIF.equals(limpio) ? null : limpio;
-	}
-
 	/** Solo los 4 últimos caracteres a la vista (p. ej. {@code *****678Z}). */
 	static String enmascarar(String nif) {
 		if (nif == null) {
 			return null;
 		}
-		int ocultos = Math.max(0, nif.length() - VISIBLES);
-		return "*".repeat(nif.length() <= VISIBLES ? nif.length() : ocultos)
-				+ (nif.length() <= VISIBLES ? "" : nif.substring(ocultos));
+		if (nif.length() <= VISIBLES) {
+			return "*".repeat(nif.length());
+		}
+		int ocultos = nif.length() - VISIBLES;
+		return "*".repeat(ocultos) + nif.substring(ocultos);
 	}
 
 	private String referencia(String nif) {
@@ -336,7 +398,7 @@ public class DniCompartidoService {
 
 	private String leerReferencia(String referencia) {
 		try {
-			String nif = normalizar(cifrador.descifrar(referencia, contextoReferencia()));
+			String nif = NifUtils.normalizeForComparison(cifrador.descifrar(referencia, contextoReferencia()));
 			if (nif == null) {
 				throw new IllegalArgumentException("La referencia del grupo no es válida.");
 			}
@@ -361,5 +423,13 @@ public class DniCompartidoService {
 	}
 
 	private record Ficha(Alumno alumno, LocalDate nacimiento, Integer edad, List<Tutor> tutores) {
+	}
+
+	private record Nombre(String nombre, String apellidos) {
+		String completo() {
+			String n = nombre == null ? "" : nombre.strip();
+			String a = apellidos == null ? "" : apellidos.strip();
+			return (n + " " + a).strip();
+		}
 	}
 }
