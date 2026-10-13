@@ -17,7 +17,9 @@ public class GradoServiceImpl implements GradoService {
 
 	@Override
 	public List<Grado> obtenerTodosLosGrados() {
-		return gradoRepository.findAll();
+		// Solo los grados heredados: desde V23 hay una copia por sistema (taekwondo y kickboxing)
+		// y esta lista debe seguir siendo la de antes (un grado por TipoGrado).
+		return gradoRepository.findGradosHeredados();
 	}
 
 }

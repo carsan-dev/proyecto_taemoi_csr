@@ -1,0 +1,84 @@
+package com.taemoi.project.services;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.taemoi.project.entities.Grado;
+
+/**
+ * Progresión de grados leída del catálogo de la organización activa ({@code grado.orden},
+ * {@code aplica_a}, {@code meses_minimos_*}, {@code bloque_temario}, {@code nombre}).
+ *
+ * <p>Sustituirá a {@code GradeProgressionConfig}, {@code ExamEligibilityConfig},
+ * {@code ExamMaterialBlockConfig} y {@code GradoUtils}. Todavía no lo usa ningún llamador: los
+ * tests de paridad comprueban que da lo mismo que esas clases para Taemoi.
+ *
+ * <p>Regla del siguiente grado, dentro del sistema de grados de la disciplina:
+ * <ol>
+ * <li>Candidatos: grados con {@code orden} mayor que el actual, en orden.</li>
+ * <li>Si el grado actual es {@code TODOS} o del grupo de edad del alumno ({@code MENORES} /
+ * {@code ADULTOS}), el siguiente es el primer candidato {@code TODOS} o de ese grupo.</li>
+ * <li>Si no (un adulto con un grado de menores, un menor con uno de adultos, o un grado
+ * {@code NINGUNO}), el siguiente es el primer candidato {@code TODOS}.</li>
+ * <li>{@code NINGUNO} nunca es destino.</li>
+ * </ol>
+ *
+ * <p>Los códigos de disciplina y de grado son los del catálogo ({@code TAEKWONDO},
+ * {@code NEGRO_1_DAN}…). Un código que no existe en la organización activa lanza
+ * {@link IllegalArgumentException}.
+ */
+public interface ProgresionGradosService {
+
+	/** Si la disciplina tiene sistema de grados. {@code false} si es nula. */
+	boolean tieneProgresion(String codigoDisciplina);
+
+	/** Grado del sistema de la disciplina con ese código. */
+	Optional<Grado> buscarGrado(String codigoDisciplina, String codigoGrado);
+
+	/**
+	 * Siguiente grado (ver regla en la clase). Vacío si la disciplina o el grado son nulos o no hay
+	 * siguiente.
+	 *
+	 * @throws IllegalArgumentException si la disciplina no tiene sistema de grados.
+	 */
+	Optional<Grado> obtenerSiguienteGrado(String codigoDisciplina, boolean esMenor, String codigoGrado);
+
+	/**
+	 * Reproduce {@code GradeProgressionConfig.obtenerGradosAnteriores}: los grados que tienen
+	 * siguiente para ese grupo de edad («claves del mapa»), en orden, anteriores al actual. Si el
+	 * actual no tiene siguiente (no es clave), devuelve TODOS los que tienen siguiente.
+	 *
+	 * @throws IllegalArgumentException si la disciplina no tiene sistema de grados.
+	 */
+	List<Grado> obtenerGradosAnteriores(String codigoDisciplina, boolean esMenor, String codigoGrado);
+
+	/**
+	 * Meses mínimos en el grado antes de examinarse ({@code meses_minimos_menor} /
+	 * {@code meses_minimos_adulto}); {@link Long#MAX_VALUE} = no apto (sin dato o grado nulo).
+	 * Con disciplina nula o sin grados se usa el grado heredado (taekwondo), como
+	 * {@code ExamEligibilityConfig}, que no distingue disciplina.
+	 */
+	long obtenerMesesRequeridos(String codigoDisciplina, String codigoGrado, boolean esMenor);
+
+	/**
+	 * Como {@code ExamEligibilityConfig.obtenerMesesRequeridos(edad, grado)}: menor si
+	 * {@code edadCumplida < 13} ({@link CatalogoDisciplinasService#esMenorParaExamenPorEdadCumplida}).
+	 */
+	long obtenerMesesRequeridosPorEdadCumplida(String codigoDisciplina, int edadCumplida, String codigoGrado);
+
+	/** Si hay meses mínimos definidos para el grado y grupo de edad. */
+	boolean tienePeriodoDefinido(String codigoDisciplina, String codigoGrado, boolean esMenor);
+
+	/** Bloque de temario del grado; {@code null} si la disciplina no tiene grados o hay nulos. */
+	String obtenerBloqueTemario(String codigoDisciplina, String codigoGrado);
+
+	/** Nombre visible del grado en su disciplina; «N/A» si es nulo o no tiene nombre. */
+	String obtenerNombreVisible(Grado grado);
+
+	/**
+	 * Nombre visible del grado con ese código en el sistema de la disciplina; «N/A» si el código
+	 * de grado es nulo. Con disciplina nula o sin grados, el nombre del grado heredado
+	 * (taekwondo), como {@code GradoUtils}.
+	 */
+	String obtenerNombreVisible(String codigoDisciplina, String codigoGrado);
+}
