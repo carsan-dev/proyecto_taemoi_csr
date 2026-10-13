@@ -8,11 +8,13 @@ import java.util.stream.Collectors;
 import com.taemoi.project.dtos.AlumnoDeporteDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Genero;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.NifUtils;
+import com.taemoi.project.utils.ResponsableLegal;
 
 /**
  * DTO que representa un alumno con todos sus deportes
@@ -28,8 +30,11 @@ public class AlumnoConDeportesDTO {
 	private String nif;
 	private String direccion;
 	private String observaciones;
-	private Integer telefono;
-	private Integer telefono2;
+	private String telefono;
+	private String telefono2;
+	private Genero genero;
+	private String localidad;
+	private String codigoPostal;
 	private String email;
 	private String responsableLegalNombre;
 	private String responsableLegalNif;
@@ -87,8 +92,12 @@ public class AlumnoConDeportesDTO {
 		dto.setTelefono(alumno.getTelefono());
 		dto.setTelefono2(alumno.getTelefono2());
 		dto.setEmail(alumno.getEmail());
-		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
-		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
+		ResponsableLegal responsableLegal = ResponsableLegal.de(alumno);
+		dto.setResponsableLegalNombre(responsableLegal.nombre());
+		dto.setResponsableLegalNif(responsableLegal.nif());
+		dto.setGenero(alumno.getGenero());
+		dto.setLocalidad(alumno.getLocalidad());
+		dto.setCodigoPostal(alumno.getCodigoPostal());
 
 		// Tarifa
 		dto.setTipoTarifa(tipoTarifa);
@@ -190,20 +199,44 @@ public class AlumnoConDeportesDTO {
 		this.observaciones = observaciones;
 	}
 
-	public Integer getTelefono() {
+	public String getTelefono() {
 		return telefono;
 	}
 
-	public void setTelefono(Integer telefono) {
+	public void setTelefono(String telefono) {
 		this.telefono = telefono;
 	}
 
-	public Integer getTelefono2() {
+	public String getTelefono2() {
 		return telefono2;
 	}
 
-	public void setTelefono2(Integer telefono2) {
+	public void setTelefono2(String telefono2) {
 		this.telefono2 = telefono2;
+	}
+
+	public Genero getGenero() {
+		return genero;
+	}
+
+	public void setGenero(Genero genero) {
+		this.genero = genero;
+	}
+
+	public String getLocalidad() {
+		return localidad;
+	}
+
+	public void setLocalidad(String localidad) {
+		this.localidad = localidad;
+	}
+
+	public String getCodigoPostal() {
+		return codigoPostal;
+	}
+
+	public void setCodigoPostal(String codigoPostal) {
+		this.codigoPostal = codigoPostal;
 	}
 
 	public String getEmail() {

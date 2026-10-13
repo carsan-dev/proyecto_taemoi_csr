@@ -202,7 +202,7 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		a.setNumeroExpediente(contadores.siguienteNumeroExpediente());
 		a.setFechaNacimiento(Date.valueOf(LocalDate.of(2000, 1, 1)));
 		a.setDireccion("Calle 0");
-		a.setTelefono(600000000);
+		a.setTelefono("600000000");
 		long id = alumnos.save(a).getId();
 		jdbc.update("""
 				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, principal,

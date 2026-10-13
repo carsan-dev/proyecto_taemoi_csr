@@ -61,6 +61,9 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
+import com.taemoi.project.repositories.AlumnoSaludRepository;
+import com.taemoi.project.repositories.ConsentimientoRepository;
+import com.taemoi.project.repositories.TutorRepository;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRetoDiarioLogRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -76,6 +79,8 @@ import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
 import com.taemoi.project.services.MembresiaService;
+import com.taemoi.project.services.TutorService;
+import com.taemoi.project.services.ConsentimientoService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
@@ -84,6 +89,7 @@ import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
 import com.taemoi.project.utils.NifUtils;
+import com.taemoi.project.utils.TelefonoUtils;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -135,6 +141,21 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private MembresiaService membresiaService;
+
+	@Autowired
+	private TutorService tutorService;
+
+	@Autowired
+	private ConsentimientoService consentimientoService;
+
+	@Autowired
+	private ConsentimientoRepository consentimientoRepository;
+
+	@Autowired
+	private TutorRepository tutorRepository;
+
+	@Autowired
+	private AlumnoSaludRepository alumnoSaludRepository;
 
 	@Autowired
 	private TurnoRepository turnoRepository;
@@ -309,8 +330,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 		String normalizedEmail = EmailUtils.normalizeEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setEmail(normalizedEmail);
-		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
+		// El teléfono es obligatorio en el alta (la columna admite NULL por las fichas en papel).
+		if (TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono()) == null) {
+			throw new DatosAlumnoInvalidosException("El teléfono es obligatorio.");
+		}
+		nuevoAlumno.setTelefono(TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono()));
+		nuevoAlumno.setTelefono2(TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono2()));
+		nuevoAlumno.setGenero(nuevoAlumnoDTO.getGenero());
+		nuevoAlumno.setLocalidad(textoOpcional(nuevoAlumnoDTO.getLocalidad()));
+		nuevoAlumno.setCodigoPostal(textoOpcional(nuevoAlumnoDTO.getCodigoPostal()));
 		nuevoAlumno.setResponsableLegalNombre(nuevoAlumnoDTO.getResponsableLegalNombre());
 		nuevoAlumno.setResponsableLegalNif(NifUtils.normalizeForStorage(nuevoAlumnoDTO.getResponsableLegalNif()));
 		nuevoAlumno.setObservaciones(nuevoAlumnoDTO.getObservaciones());
@@ -339,6 +367,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
+		tutorService.sincronizarDesdeCamposHeredados(alumnoGuardado);
+		// La autorización de imagen de la ficha queda como consentimiento (origen APP, firmado por quien da el alta).
+		consentimientoService.registrarCambioAutorizacionWeb(alumnoGuardado,
+				Boolean.TRUE.equals(alumnoGuardado.getAutorizacionWeb()));
 
 		logger.info("Creando alumno con {} deporte(s){}", deportesIniciales.size(),
 				desdeCamposDeporteUnico ? " (campos de deporte único)" : "");
@@ -561,10 +593,31 @@ public class AlumnoServiceImpl implements AlumnoService {
 				}
 			}
 			alumnoExistente.setEmail(normalizedEmail);
-			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
-			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
-			alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
-			alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
+			alumnoExistente.setTelefono(TelefonoUtils.normalizar(alumnoActualizado.getTelefono()));
+			alumnoExistente.setTelefono2(TelefonoUtils.normalizar(alumnoActualizado.getTelefono2()));
+			// Campos nuevos (V25): el frontend actual aún no los envía, así que nulo = sin cambios (si no,
+			// cada edición borraría lo importado). Una cadena vacía sí vacía localidad y código postal.
+			if (alumnoActualizado.getGenero() != null) {
+				alumnoExistente.setGenero(alumnoActualizado.getGenero());
+			}
+			if (alumnoActualizado.getLocalidad() != null) {
+				alumnoExistente.setLocalidad(textoOpcional(alumnoActualizado.getLocalidad()));
+			}
+			if (alumnoActualizado.getCodigoPostal() != null) {
+				alumnoExistente.setCodigoPostal(textoOpcional(alumnoActualizado.getCodigoPostal()));
+			}
+			// Responsable legal: nulo (o ausente) = sin cambios; cadena vacía = quitarlo.
+			boolean cambiaResponsable = alumnoActualizado.getResponsableLegalNombre() != null
+					|| alumnoActualizado.getResponsableLegalNif() != null;
+			if (alumnoActualizado.getResponsableLegalNombre() != null) {
+				alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
+			}
+			if (alumnoActualizado.getResponsableLegalNif() != null) {
+				alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
+			}
+			if (cambiaResponsable) {
+				tutorService.sincronizarDesdeCamposHeredados(alumnoExistente);
+			}
 			if (alumnoActualizado.getObservaciones() != null) {
 				alumnoExistente.setObservaciones(alumnoActualizado.getObservaciones());
 			}
@@ -579,7 +632,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
+			Boolean autorizacionAnterior = alumnoExistente.getAutorizacionWeb();
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
+			if (alumnoActualizado.getAutorizacionWeb() != null
+					&& !alumnoActualizado.getAutorizacionWeb().equals(autorizacionAnterior)) {
+				consentimientoService.registrarCambioAutorizacionWeb(alumnoExistente,
+						alumnoActualizado.getAutorizacionWeb());
+			}
 
 			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
 
@@ -1502,6 +1561,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Transactional
 	public boolean eliminarAlumno(@NonNull Long id) {
 		return alumnoRepository.findById(id).map(alumno -> {
+			// Primero sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos, que se
+			// borran en cascada con el alumno), tutores y salud. Es la supresión completa del alumno.
+			consentimientoRepository.borrarDelAlumno(alumno.getId());
+			tutorRepository.borrarDelAlumno(alumno.getId());
+			alumnoSaludRepository.borrarDelAlumno(alumno.getId());
 			Imagen imagen = alumno.getFotoAlumno();
 			if (imagen != null) {
 				imagenService.eliminarImagenDeSistema(imagen);
@@ -2108,6 +2172,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param alumnoDTO El objeto AlumnoDTO con los datos del alumno.
 	 * @return true si los datos son válidos, false si no lo son.
 	 */
+	private static String textoOpcional(String valor) {
+		return valor == null || valor.isBlank() ? null : valor.strip();
+	}
+
 	@Override
 	public boolean datosAlumnoValidos(AlumnoDTO alumnoDTO) {
 		return datosAlumnoValidos(alumnoDTO, true);
@@ -2127,7 +2195,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 				|| alumnoDTO.getEmail().isEmpty()) {
 			return false;
 		}
-		if (alumnoDTO.getTelefono() != null && alumnoDTO.getTelefono() <= 0) {
+		if (TelefonoUtils.normalizar(alumnoDTO.getTelefono()) != null && !TelefonoUtils.esValido(alumnoDTO.getTelefono())) {
+			return false;
+		}
+		if (TelefonoUtils.normalizar(alumnoDTO.getTelefono2()) != null && !TelefonoUtils.esValido(alumnoDTO.getTelefono2())) {
+			return false;
+		}
+		if (alumnoDTO.getCodigoPostal() != null && alumnoDTO.getCodigoPostal().strip().length() > 10) {
+			return false;
+		}
+		if (alumnoDTO.getLocalidad() != null && alumnoDTO.getLocalidad().strip().length() > 100) {
 			return false;
 		}
 		if (requiereTarifaYFechaAlta) {

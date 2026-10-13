@@ -69,6 +69,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.exceptions.DocumentoReferenciadoException;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.archivos.UrlArchivoSerializer;
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -628,6 +629,8 @@ public class AlumnoController {
         try {
             alumnoService.eliminarDocumentoDeAlumno(alumnoId, documentoId);
             return new ResponseEntity<>(HttpStatus.OK);
+        } catch (DocumentoReferenciadoException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

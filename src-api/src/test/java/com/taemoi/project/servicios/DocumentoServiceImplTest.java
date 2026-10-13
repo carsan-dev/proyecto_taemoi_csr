@@ -27,6 +27,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.ConsentimientoRepository;
 import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.services.impl.DocumentoServiceImpl;
 
@@ -35,6 +36,9 @@ class DocumentoServiceImplTest {
 
 	@Mock
 	private DocumentoRepository documentoRepository;
+
+	@Mock
+	private ConsentimientoRepository consentimientoRepository;
 
 	@InjectMocks
 	private DocumentoServiceImpl documentoService;

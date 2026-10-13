@@ -21,7 +21,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -35,6 +38,7 @@ import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.UsuarioService;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -59,7 +63,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			"productos-alumno",
 			"tesoreria",
 			"turnos",
-			"convocatorias");
+			"convocatorias",
+			"salud");
 	private static final Set<Integer> ESTADOS_HTTP_RUIDO_ESCANER = Set.of(401, 403, 404, 405, 415);
 	private static final List<String> FRAGMENTOS_ENDPOINT_RUIDO_ESCANER = List.of(
 			"/upload",
@@ -124,6 +129,50 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 		} catch (Exception ex) {
 			logger.error("No se pudo registrar evento de auditoria", ex);
 		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void registrarAccesoSensible(AuditoriaAccion accion, String modulo, String endpoint, Long recursoId,
+			String resumen) {
+		AuditoriaEvento evento = new AuditoriaEvento();
+		evento.setFechaEvento(new Date());
+		evento.setAccion(accion);
+		evento.setMetodoHttp(metodoDe(accion));
+		evento.setEndpoint(endpoint);
+		evento.setModulo(modulo);
+		evento.setRecursoId(recursoId);
+		evento.setEstadoHttp(200);
+		evento.setPayloadTruncado(false);
+		ServletRequestAttributes atributos = RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes a
+				? a
+				: null;
+		if (atributos != null) {
+			HttpServletRequest request = atributos.getRequest();
+			String ip = request.getRemoteAddr();
+			String reenviada = request.getHeader("X-Forwarded-For");
+			if (reenviada != null && !reenviada.isBlank()) {
+				ip = reenviada.split(",")[0].trim();
+			}
+			evento.setIpCliente(truncarTexto(ip, 120));
+			evento.setUserAgent(truncarTexto(request.getHeader("User-Agent"), 400));
+		}
+		enriquecerContextoUsuario(evento);
+		evento.setResumen(truncarTexto(resumen, 500));
+		auditoriaEventoRepository.saveAndFlush(evento);
+	}
+
+	private static String metodoDe(AuditoriaAccion accion) {
+		return switch (accion) {
+		case READ -> "GET";
+		case CREATE -> "POST";
+		case UPDATE -> "PUT";
+		case DELETE -> "DELETE";
+		};
+	}
+
+	private static String truncarTexto(String valor, int maximo) {
+		return valor == null || valor.length() <= maximo ? valor : valor.substring(0, maximo);
 	}
 
 	@Override

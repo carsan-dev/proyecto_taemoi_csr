@@ -124,7 +124,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		alumno.setNombre("Ana");
 		alumno.setApellidos("Prueba");
 		alumno.setFechaNacimiento(Date.valueOf(LocalDate.of(2010, 1, 1)));
-		alumno.setTelefono(600000000);
+		alumno.setTelefono("600000000");
 		return alumno;
 	}
 

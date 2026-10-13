@@ -194,7 +194,7 @@ public class AlumnoServiceImplTest {
 		alumnoDTO.setNif("12345678A");
 		alumnoDTO.setDireccion("Calle Principal");
 		alumnoDTO.setEmail("juan@example.com");
-		alumnoDTO.setTelefono(123456789);
+		alumnoDTO.setTelefono("123456789");
 		alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
 		alumnoDTO.setFechaAlta(new Date());
 

@@ -70,7 +70,7 @@ class DespachoDeErrorIntegrationTest extends MySqlIntegrationTest {
 			alumno.setNumeroExpediente(contadores.siguienteNumeroExpediente());
 			alumno.setFechaNacimiento(Date.valueOf(LocalDate.of(2010, 5, 5)));
 			alumno.setDireccion("Calle 1");
-			alumno.setTelefono(600000000);
+			alumno.setTelefono("600000000");
 			alumno.setActivo(true);
 			alumno.setAutorizacionWeb(true);
 			alumno.setEmail(email);

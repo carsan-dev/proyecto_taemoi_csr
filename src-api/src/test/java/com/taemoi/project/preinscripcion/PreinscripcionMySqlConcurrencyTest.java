@@ -57,11 +57,13 @@ import com.taemoi.project.organizacion.OrganizacionHibernateConfig;
 import com.taemoi.project.organizacion.OrganizacionRequestFilter;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.services.ConfiguracionSistemaService;
+import com.taemoi.project.services.ConsentimientoService;
 import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.services.PreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
+import com.taemoi.project.services.TutorService;
 
 @DataJpaTest(properties = {
 		"spring.flyway.enabled=true",
@@ -71,6 +73,7 @@ import com.taemoi.project.services.TemporadaService;
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ PreinscripcionService.class, AforoPreinscripcionService.class, ContadorService.class,
+		TutorService.class, ConsentimientoService.class,
 		OrganizacionHibernateConfig.class, PreinscripcionMySqlConcurrencyTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {

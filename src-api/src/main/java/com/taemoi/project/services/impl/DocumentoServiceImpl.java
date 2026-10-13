@@ -16,6 +16,8 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taemoi.project.repositories.ConsentimientoRepository;
+import com.taemoi.project.exceptions.DocumentoReferenciadoException;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.FileUtils;
 import com.taemoi.project.entities.Alumno;
@@ -40,6 +42,9 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 	@Autowired
 	private DocumentoRepository documentoRepository;
+
+	@Autowired
+	private ConsentimientoRepository consentimientoRepository;
 
 	@Override
 	public Documento guardarDocumento(Alumno alumno, MultipartFile archivo) throws IOException {
@@ -103,6 +108,12 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 	@Override
 	public void eliminarDocumento(Documento documento) {
+		// Antes de tocar el disco: la prueba de un consentimiento no se borra.
+		if (documento != null && documento.getId() != null
+				&& consentimientoRepository.existsByDocumentoId(documento.getId())) {
+			throw new DocumentoReferenciadoException("El documento es la prueba de un consentimiento registrado "
+					+ "y no se puede eliminar.");
+		}
 		if (documento != null && documento.getRuta() != null) {
 			Path rutaArchivo = resolveStoredPath(documento.getRuta());
 

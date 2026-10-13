@@ -64,6 +64,8 @@ services:
       APP_PREINSCRIPCIONES_ADMIN_EMAIL: pruebas@example.test
       STREAK_REMINDER_ENABLED: "false"
       APP_IMAGENES_PATH_DOCKER: /var/www/app/imagenes/
+      # Clave de cifrado SOLO para el entorno local de pruebas (datos sintéticos). Nunca usarla en producción.
+      APP_CIFRADO_CLAVE: EmYciegHkLOgsoHla3VcONVKF0sR1ijmdGf1a6Jspcc=
       APP_DOCUMENTOS_PATH_DOCKER: /var/www/app/documentos/
     volumes:
       - imagenes_data:/var/www/app/imagenes

@@ -37,6 +37,11 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
     editables (textos, imágenes, colores, orden), no editor libre. Horarios, tarifas, eventos,
     sedes y preinscripción se alimentan de la gestión. Escuela resuelta por dominio o subdominio.
     El primer cliente la necesita para su alta. Sustituye a la decisión anterior:
+14. **Panel de gestión en tiempo real** (tras la fase 3, petición del usuario 13/10/2026): varias
+    personas usan el panel a la vez y todas deben ver lo mismo. Avisos por SSE por escuela,
+    filtrados por sede y permisos, que refrescan las pantallas abiertas; y bloqueo optimista
+    (`@Version`) en los registros editables para que una edición simultánea dé conflicto (409) en
+    lugar de sobrescribir en silencio.
 13. ~~**La web pública de Taemoi (SEO, landings) no se generaliza en esta fase.** La escuela nueva
     empieza usando solo la aplicación de gestión.~~ (descartada)
 

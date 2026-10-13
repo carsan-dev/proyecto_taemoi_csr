@@ -8,11 +8,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.hibernate.annotations.BatchSize;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,11 +28,10 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -59,14 +63,27 @@ public class Alumno extends EntidadOrganizacion {
 	@NotBlank(message = "La dirección no puede estar en blanco")
 	private String direccion;
 
-	@NotNull(message = "El teléfono no puede ser nulo")
-	@Min(value = 100000000, message = "El teléfono debe tener 9 dígitos")
-	@Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
-	private Integer telefono;
+	// VARCHAR(20) NULL desde V25: hay fichas en papel sin teléfono. Su obligatoriedad y formato se
+	// validan en el alta (TelefonoUtils), no aquí.
+	@Column(length = 20)
+	@Size(max = 20, message = "El teléfono no puede tener más de 20 caracteres")
+	private String telefono;
 
-	@Min(value = 100000000, message = "El teléfono secundario debe tener 9 dígitos")
-	@Max(value = 999999999, message = "El teléfono secundario debe tener 9 dígitos")
-	private Integer telefono2;
+	@Column(length = 20)
+	@Size(max = 20, message = "El teléfono secundario no puede tener más de 20 caracteres")
+	private String telefono2;
+
+	@Enumerated(EnumType.STRING)
+	@Column(columnDefinition = "ENUM('FEMENINO','MASCULINO')")
+	private Genero genero;
+
+	@Column(length = 100)
+	@Size(max = 100, message = "La localidad no puede tener más de 100 caracteres")
+	private String localidad;
+
+	@Column(name = "codigo_postal", length = 10)
+	@Size(max = 10, message = "El código postal no puede tener más de 10 caracteres")
+	private String codigoPostal;
 
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
@@ -76,6 +93,13 @@ public class Alumno extends EntidadOrganizacion {
 
 	@Column(name = "responsable_legal_nif", length = 16)
 	private String responsableLegalNif;
+
+	// Tutores (V25). El primer responsable legal se refleja en responsable_legal_* (TutorService).
+	@JsonIgnore
+	@OneToMany(mappedBy = "alumno", fetch = FetchType.LAZY)
+	@OrderBy("orden ASC, id ASC")
+	@BatchSize(size = 50)
+	private List<Tutor> tutores = new ArrayList<>();
 
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
@@ -195,20 +219,48 @@ public class Alumno extends EntidadOrganizacion {
 		this.direccion = direccion;
 	}
 
-	public Integer getTelefono() {
+	public String getTelefono() {
 		return telefono;
 	}
 
-	public void setTelefono(Integer telefono) {
+	public void setTelefono(String telefono) {
 		this.telefono = telefono;
 	}
 
-	public Integer getTelefono2() {
+	public String getTelefono2() {
 		return telefono2;
 	}
 
-	public void setTelefono2(Integer telefono2) {
+	public void setTelefono2(String telefono2) {
 		this.telefono2 = telefono2;
+	}
+
+	public Genero getGenero() {
+		return genero;
+	}
+
+	public void setGenero(Genero genero) {
+		this.genero = genero;
+	}
+
+	public String getLocalidad() {
+		return localidad;
+	}
+
+	public void setLocalidad(String localidad) {
+		this.localidad = localidad;
+	}
+
+	public String getCodigoPostal() {
+		return codigoPostal;
+	}
+
+	public void setCodigoPostal(String codigoPostal) {
+		this.codigoPostal = codigoPostal;
+	}
+
+	public List<Tutor> getTutores() {
+		return tutores;
 	}
 
 	public String getEmail() {

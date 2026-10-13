@@ -67,6 +67,8 @@ class PreinscripcionServiceTest {
 	@Mock AforoPreinscripcionService aforo;
 	@Mock ApplicationEventPublisher eventos;
 	@Mock ContadorService contadores;
+	@Mock TutorService tutores;
+	@Mock ConsentimientoService consentimientos;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -77,7 +79,7 @@ class PreinscripcionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
-				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores);
+				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos);
 		lenient().when(temporadas.edadCohorte(any(LocalDate.class), anyString())).thenAnswer(inv -> {
 			LocalDate nacimiento = inv.getArgument(0);
 			String temporada = inv.getArgument(1);
@@ -157,13 +159,16 @@ class PreinscripcionServiceTest {
 		assertEquals("ANA MARÍA", creado.getNombre());
 		assertEquals("GARCÍA LÓPEZ", creado.getApellidos());
 		assertEquals(41, creado.getNumeroExpediente());
-		assertEquals(612345678, creado.getTelefono());
-		assertEquals(611222333, creado.getTelefono2());
+		assertEquals("612345678", creado.getTelefono());
+		assertEquals("611222333", creado.getTelefono2());
 		assertFalse(creado.getTieneDiscapacidad());
 		assertEquals("María García", creado.getResponsableLegalNombre());
 		assertEquals("87654321X", creado.getResponsableLegalNif());
 		assertTrue(creado.getActivo());
 		assertFalse(creado.getAutorizacionWeb());
+		// V25: el responsable legal pasa a tutor y la firma deja sus consentimientos.
+		verify(tutores).sincronizarDesdeCamposHeredados(creado);
+		verify(consentimientos).registrarDesdePreinscripcion(creado, preinscripcion);
 		assertEquals(Set.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
@@ -400,7 +405,7 @@ class PreinscripcionServiceTest {
 
 		assertEquals("Ana", existente.getNombre());
 		assertEquals("conservar@example.com", existente.getEmail());
-		assertEquals(611222333, existente.getTelefono2());
+		assertEquals("611222333", existente.getTelefono2());
 		assertTrue(existente.getAutorizacionWeb());
 		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
 		verify(alumnoDeportes).save(deporte);
@@ -569,7 +574,7 @@ class PreinscripcionServiceTest {
 	@Test
 	void conservaTelefonoSecundarioExistenteCuandoNoFueFacilitado() {
 		Alumno existente = alumnoExistente(true);
-		existente.setTelefono2(699887766);
+		existente.setTelefono2("699887766");
 		preinscripcion.setTelefono2(null);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
 		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
@@ -578,7 +583,7 @@ class PreinscripcionServiceTest {
 
 		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.TELEFONO2), null));
 
-		assertEquals(699887766, existente.getTelefono2());
+		assertEquals("699887766", existente.getTelefono2());
 	}
 
 	@Test
@@ -645,7 +650,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnoDeportes, preinscripciones, configuracion);
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
-				new ObjectMapper(), aforoReal, eventos, contadores);
+				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos);
 
 		servicioPromocion.promocionarTodas();
 
@@ -750,7 +755,7 @@ class PreinscripcionServiceTest {
 		a.setApellidos("García López");
 		a.setFechaNacimiento(java.sql.Date.valueOf(LocalDate.of(2014, 4, 12)));
 		a.setDireccion("Calle Mayor 1");
-		a.setTelefono(612345678);
+		a.setTelefono("612345678");
 		a.setEmail("ana@example.com");
 		a.setActivo(activo);
 		return a;

@@ -75,7 +75,7 @@ class PDFServiceImplTest {
         alumno.setApellidos(surnames);
         alumno.setActivo(active);
         alumno.setEmail("private@example.test");
-        alumno.setTelefono(600123456);
+        alumno.setTelefono("600123456");
         alumno.setNumeroExpediente(987654);
         AlumnoDeporte membership = new AlumnoDeporte();
         membership.setAlumno(alumno);

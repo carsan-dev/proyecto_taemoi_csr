@@ -2,15 +2,21 @@ package com.taemoi.project.config;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.util.UriUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import com.taemoi.project.controllers.AlumnoSaludController;
 import com.taemoi.project.entities.AuditoriaAccion;
 import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 import com.taemoi.project.services.AuditoriaService;
@@ -28,6 +34,13 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final int MAX_USER_AGENT_CHARS = 400;
 	private static final int MAX_PAYLOAD_CHARS = 12000;
 	private static final Set<String> AUDITABLE_METHODS = Set.of("GET", "POST", "PUT", "DELETE");
+	/**
+	 * Datos de salud: nunca se guarda el cuerpo; las lecturas correctas ya las audita AlumnoSaludService.
+	 * Se reconoce por el controlador que atendió la petición y, si no llegó a ninguno (401/403/404), por
+	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta).
+	 */
+	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/alumnos/[^/]+/salud/?$");
+	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
@@ -82,8 +95,15 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		String payloadRaw = leerPayloadRequest(request);
-		String payloadSanitizado = auditoriaPayloadSanitizer.sanitizarPayload(payloadRaw, request.getContentType());
+		boolean rutaSalud = esPeticionDeSalud(request, endpoint);
+		if (rutaSalud && accion == AuditoriaAccion.READ && status >= 200 && status < 300) {
+			return;
+		}
+
+		String payloadRaw = rutaSalud ? "" : leerPayloadRequest(request);
+		String payloadSanitizado = rutaSalud
+				? PAYLOAD_OMITIDO_SALUD
+				: auditoriaPayloadSanitizer.sanitizarPayload(payloadRaw, request.getContentType());
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
 		String queryParamsJson = auditoriaPayloadSanitizer.serializarQueryParams(request.getParameterMap());
@@ -100,6 +120,32 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 				status,
 				ipCliente,
 				userAgent);
+	}
+
+	static boolean esPeticionDeSalud(HttpServletRequest request, String endpoint) {
+		Object handler = request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE);
+		if (handler instanceof HandlerMethod metodo
+				&& AlumnoSaludController.class.isAssignableFrom(metodo.getBeanType())) {
+			return true;
+		}
+		return RUTA_SALUD.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/** Decodifica (hasta dos veces), quita parámetros de ruta ({@code ;x}), une barras y pasa a minúsculas. */
+	static String normalizarParaComparar(String ruta) {
+		if (ruta == null) {
+			return "";
+		}
+		String r = ruta;
+		for (int i = 0; i < 2; i++) {
+			try {
+				r = UriUtils.decode(r, StandardCharsets.UTF_8);
+			} catch (IllegalArgumentException e) {
+				break;
+			}
+		}
+		r = r.replace('\\', '/').replaceAll(";[^/]*", "").replaceAll("/{2,}", "/");
+		return r.toLowerCase(Locale.ROOT);
 	}
 
 	private boolean debeAuditar(String method, String endpoint) {

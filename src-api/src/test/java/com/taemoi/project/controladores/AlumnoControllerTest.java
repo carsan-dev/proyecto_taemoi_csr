@@ -78,7 +78,7 @@ class AlumnoControllerTest {
 	 * @SuppressWarnings("null")
 	 * 
 	 * @Test void crearAlumno_Test() { AlumnoDTO nuevoAlumnoDTO = new AlumnoDTO();
-	 * nuevoAlumnoDTO.setTelefono(123456789); nuevoAlumnoDTO.setFechaNacimiento(new
+	 * nuevoAlumnoDTO.setTelefono("123456789"); nuevoAlumnoDTO.setFechaNacimiento(new
 	 * Date());
 	 * 
 	 * MultipartFile file = null;

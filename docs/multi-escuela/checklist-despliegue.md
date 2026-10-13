@@ -2,9 +2,12 @@
 
 ## Antes
 - [ ] Copia de seguridad de la base de datos y de las carpetas de documentos e imágenes.
-- [ ] Contar usuarios sin rol (no podrán iniciar sesión tras V20); decidir su rol si hay alguno:
+- [x] Contar usuarios sin rol (no podrán iniciar sesión tras V20); decidir su rol si hay alguno.
+      Resultado del 13/10/2026: 0. Repetir justo antes de desplegar:
       `SELECT COUNT(*) FROM usuario u WHERE NOT EXISTS (SELECT 1 FROM usuario_rol r WHERE r.usuario_id = u.id);`
 - [ ] En el `.env` del servidor, `APP_IMAGENES_PATH_DOCKER` debe ser `/var/www/app/imagenes/` (no `…/alumnos/`).
+- [ ] Generar y guardar fuera del repositorio la clave `app.cifrado.clave` (base64, 256 bits) para los
+      datos de salud y añadirla al `.env`. Sin copia de esa clave, los datos de salud no se pueden leer.
 - [ ] Ventana de mantenimiento con la aplicación parada durante las migraciones V18–V20.
 - [ ] Cargar fuera del repositorio los datos legales de la organización 1 (`nombre_legal`, `cif`, `firmante_*`).
 - [ ] V23 (catálogo) nunca se despliega sin el cambio de código de los enums a las tablas (fase 2, tarea 5).

@@ -146,7 +146,7 @@ class AlumnoMonodeporteMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("23", jdbc.queryForObject(
+		assertEquals("25", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
 	}
@@ -185,7 +185,7 @@ class AlumnoMonodeporteMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(101, ((Number) a.get("numero_expediente")).intValue());
 		assertEquals("ana@example.test", a.get("email"));
 		assertEquals("Calle 1", a.get("direccion"));
-		assertEquals(600000000, ((Number) a.get("telefono")).intValue());
+		assertEquals("600000000", a.get("telefono"), "V25 lo pasa a VARCHAR con los mismos dígitos");
 		assertEquals(1L, ((Number) a.get("organizacion_id")).longValue());
 		assertEquals(java.sql.Date.valueOf("2010-01-01"), a.get("fecha_nacimiento"));
 		assertEquals(java.sql.Date.valueOf("2020-09-01"), a.get("fecha_alta"));

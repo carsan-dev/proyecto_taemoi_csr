@@ -95,7 +95,7 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 			previo.setNumeroExpediente(contadores.siguienteNumeroExpediente());
 			previo.setFechaNacimiento(Date.valueOf(LocalDate.of(2000, 1, 1)));
 			previo.setDireccion("Calle 1");
-			previo.setTelefono(600000000);
+			previo.setTelefono("600000000");
 			Alumno previoGuardado = alumnos.save(previo);
 			ProductoAlumno pa = new ProductoAlumno();
 			pa.setAlumno(previoGuardado);
