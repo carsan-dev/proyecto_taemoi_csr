@@ -15,7 +15,7 @@ import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
-public class AlumnoConvocatoria {
+public class AlumnoConvocatoria extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

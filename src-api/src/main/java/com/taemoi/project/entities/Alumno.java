@@ -37,7 +37,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 @Entity
-public class Alumno {
+public class Alumno extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -48,7 +48,7 @@ public class Alumno {
 	@NotBlank(message = "Los apellidos no pueden estar en blanco")
 	private String apellidos;
 
-	@Column(unique = true)
+	// Único por organización: UNIQUE (organizacion_id, numero_expediente) en V19.
 	@NotNull(message = "El número de expediente no puede ser nulo")
 	private Integer numeroExpediente;
 

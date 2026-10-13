@@ -52,7 +52,9 @@ import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.exceptions.GlobalExceptionHandler;
 import com.taemoi.project.integracion.MySqlIntegrationTest;
 import com.taemoi.project.services.AforoPreinscripcionService;
+import com.taemoi.project.organizacion.OrganizacionHibernateConfig;
 import com.taemoi.project.services.ConfiguracionSistemaService;
+import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.services.PreinscripcionService;
@@ -65,8 +67,8 @@ import com.taemoi.project.services.TemporadaService;
 		"spring.datasource.hikari.maximum-pool-size=8"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({ PreinscripcionService.class, AforoPreinscripcionService.class,
-		PreinscripcionMySqlConcurrencyTest.Config.class })
+@Import({ PreinscripcionService.class, AforoPreinscripcionService.class, ContadorService.class,
+		OrganizacionHibernateConfig.class, PreinscripcionMySqlConcurrencyTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 	private static final String TEMPORADA = "2026-2027";
@@ -184,10 +186,10 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 				"SELECT t.id FROM turno t JOIN grupo g ON g.id=t.grupo_id WHERE g.nombre=? ORDER BY t.id LIMIT 1",
 				Long.class, nombreGrupo);
 		if (!existentes.isEmpty()) return existentes.get(0);
-		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max) VALUES (?,NULL,?,0,99)",
+		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max,organizacion_id) VALUES (?,NULL,?,0,99,1)",
 				nombreGrupo, deporte.name());
 		Long grupoId = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre=?", Long.class, nombreGrupo);
-		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id) VALUES ('Lunes','18:00','19:00',NULL,?)",
+		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id,organizacion_id) VALUES ('Lunes','18:00','19:00',NULL,?,1)",
 				grupoId);
 		return jdbc.queryForObject("SELECT id FROM turno WHERE grupo_id=?", Long.class, grupoId);
 	}

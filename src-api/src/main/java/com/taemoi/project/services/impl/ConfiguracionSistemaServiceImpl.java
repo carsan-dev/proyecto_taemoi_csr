@@ -1,38 +1,52 @@
 package com.taemoi.project.services.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.taemoi.project.entities.ConfiguracionSistema;
-import com.taemoi.project.repositories.ConfiguracionSistemaRepository;
+import com.taemoi.project.entities.ConfiguracionOrganizacion;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.ConfiguracionOrganizacionRepository;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 
+import java.util.Set;
+
 import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
+import jakarta.validation.ConstraintViolationException;
 
 /**
- * Implementación del servicio para operaciones relacionadas con la configuración del sistema.
+ * Configuración de la organización activa (tabla configuracion_organizacion, filtrada por
+ * {@code @TenantId}). Sustituye a configuracion_sistema, que queda sin uso hasta la contracción.
  */
 @Service
 public class ConfiguracionSistemaServiceImpl implements ConfiguracionSistemaService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConfiguracionSistemaServiceImpl.class);
     private static final String CLAVE_LIMITE_TURNO = "limite_turno";
     private static final Integer LIMITE_TURNO_DEFAULT = 36;
 
     @Autowired
-    private ConfiguracionSistemaRepository configuracionSistemaRepository;
+    private ConfiguracionOrganizacionRepository configuracionOrganizacionRepository;
+
+    @Autowired
+    private ResolutorOrganizacion resolutorOrganizacion;
 
     /**
-     * Inicializa la configuración del sistema con valores por defecto si no existen.
+     * Al arrancar, crea el límite por defecto de la organización por defecto si no existe
+     * (mismo comportamiento que antes con configuracion_sistema).
      */
     @PostConstruct
-    @Transactional
     public void inicializarConfiguracion() {
-        if (configuracionSistemaRepository.findByClave(CLAVE_LIMITE_TURNO).isEmpty()) {
-            ConfiguracionSistema config = new ConfiguracionSistema(CLAVE_LIMITE_TURNO, LIMITE_TURNO_DEFAULT);
-            configuracionSistemaRepository.save(config);
-        }
+        TenantContext.ejecutarCon(resolutorOrganizacion.getOrganizacionPorDefecto(), () -> {
+            if (configuracionOrganizacionRepository.findByClave(CLAVE_LIMITE_TURNO).isEmpty()) {
+                configuracionOrganizacionRepository.save(
+                        new ConfiguracionOrganizacion(CLAVE_LIMITE_TURNO, String.valueOf(LIMITE_TURNO_DEFAULT)));
+            }
+        });
     }
 
     /**
@@ -42,8 +56,8 @@ public class ConfiguracionSistemaServiceImpl implements ConfiguracionSistemaServ
      */
     @Override
     public Integer obtenerLimiteTurno() {
-        return configuracionSistemaRepository.findByClave(CLAVE_LIMITE_TURNO)
-                .map(ConfiguracionSistema::getValor)
+        return configuracionOrganizacionRepository.findByClave(CLAVE_LIMITE_TURNO)
+                .map(config -> aEntero(config.getValor()))
                 .orElse(LIMITE_TURNO_DEFAULT);
     }
 
@@ -55,9 +69,22 @@ public class ConfiguracionSistemaServiceImpl implements ConfiguracionSistemaServ
     @Override
     @Transactional
     public void actualizarLimiteTurno(@NonNull Integer nuevoLimite) {
-        ConfiguracionSistema config = configuracionSistemaRepository.findByClave(CLAVE_LIMITE_TURNO)
-                .orElse(new ConfiguracionSistema(CLAVE_LIMITE_TURNO, nuevoLimite));
-        config.setValor(nuevoLimite);
-        configuracionSistemaRepository.save(config);
+        if (nuevoLimite < 1) {
+            // Misma validación que tenía ConfiguracionSistema.valor (@Min(1)).
+            throw new ConstraintViolationException("El límite debe ser al menos 1", Set.of());
+        }
+        ConfiguracionOrganizacion config = configuracionOrganizacionRepository.findByClave(CLAVE_LIMITE_TURNO)
+                .orElseGet(() -> new ConfiguracionOrganizacion(CLAVE_LIMITE_TURNO, String.valueOf(nuevoLimite)));
+        config.setValor(String.valueOf(nuevoLimite));
+        configuracionOrganizacionRepository.save(config);
+    }
+
+    private Integer aEntero(String valor) {
+        try {
+            return Integer.valueOf(valor.trim());
+        } catch (RuntimeException e) {
+            logger.warn("Valor no numérico para {}: '{}'. Se usa {}", CLAVE_LIMITE_TURNO, valor, LIMITE_TURNO_DEFAULT);
+            return LIMITE_TURNO_DEFAULT;
+        }
     }
 }

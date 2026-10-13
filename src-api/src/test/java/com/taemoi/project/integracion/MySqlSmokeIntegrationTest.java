@@ -16,7 +16,7 @@ import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.repositories.GrupoRepository;
 
 /**
- * Smoke test: el contexto completo arranca contra MySQL real, Flyway aplica V1..V17
+ * Smoke test: el contexto completo arranca contra MySQL real, Flyway aplica V1..V19
  * sobre una base vacía, Hibernate valida el esquema y un repositorio hace ida y vuelta.
  */
 @SpringBootTest
@@ -27,11 +27,11 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JdbcTemplate jdbc;
 
 	@Test
-	void flywayDejaLaBaseEnV17SinMigracionesPendientes() {
+	void flywayDejaLaBaseEnV19SinMigracionesPendientes() {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("17", actual.getVersion().getVersion());
+		assertEquals("19", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 

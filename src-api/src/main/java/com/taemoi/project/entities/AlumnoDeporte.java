@@ -34,7 +34,7 @@ import jakarta.validation.constraints.NotNull;
 		@Index(name = "idx_alumno_deporte_deporte", columnList = "deporte"),
 		@Index(name = "idx_alumno_deporte_apto", columnList = "deporte, apto_para_examen")
 	})
-public class AlumnoDeporte {
+public class AlumnoDeporte extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

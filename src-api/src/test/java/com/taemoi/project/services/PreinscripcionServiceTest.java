@@ -66,6 +66,7 @@ class PreinscripcionServiceTest {
 	@Mock ConfiguracionSistemaService configuracion;
 	@Mock AforoPreinscripcionService aforo;
 	@Mock ApplicationEventPublisher eventos;
+	@Mock ContadorService contadores;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -76,7 +77,7 @@ class PreinscripcionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
-				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos);
+				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores);
 		lenient().when(temporadas.edadCohorte(any(LocalDate.class), anyString())).thenAnswer(inv -> {
 			LocalDate nacimiento = inv.getArgument(0);
 			String temporada = inv.getArgument(1);
@@ -143,7 +144,7 @@ class PreinscripcionServiceTest {
 	void creaAlumnoDeporteGrupoYTodosLosTurnosEnUnaFinalizacion() {
 		preinscripcion.setNombre("Ana María");
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		Grado blanco = new Grado();
@@ -185,7 +186,7 @@ class PreinscripcionServiceTest {
 		mismoGrupo.setDeporte(grupo.getDeporte());
 		miercoles.setGrupo(mismoGrupo);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
@@ -212,7 +213,7 @@ class PreinscripcionServiceTest {
 		preinscripcion.setTurnos(new java.util.LinkedHashSet<>(List.of(lunes, jueves)));
 		when(aforo.bloquearTurnos(List.of(11L, 21L))).thenReturn(List.of(lunes, jueves));
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
@@ -228,7 +229,7 @@ class PreinscripcionServiceTest {
 	void finalizaTurnosAsignadosAdministrativamenteAunqueEstanFueraDeEdad() {
 		grupo.setRangoEdadMax(10);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
@@ -540,7 +541,7 @@ class PreinscripcionServiceTest {
 	void creaMenorSinDniSinGenerarUnNifArtificial() {
 		preinscripcion.setDni(null);
 		preinscripcion.setTieneDiscapacidad(true);
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
@@ -597,7 +598,7 @@ class PreinscripcionServiceTest {
 		preinscripcion.setTurno(lunes);
 		preinscripcion.setTieneDiscapacidad(null);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
@@ -644,7 +645,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnoDeportes, preinscripciones, configuracion);
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
-				new ObjectMapper(), aforoReal, eventos);
+				new ObjectMapper(), aforoReal, eventos, contadores);
 
 		servicioPromocion.promocionarTodas();
 

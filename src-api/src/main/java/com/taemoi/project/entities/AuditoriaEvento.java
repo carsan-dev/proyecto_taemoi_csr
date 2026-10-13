@@ -22,7 +22,7 @@ import jakarta.persistence.TemporalType;
 		@Index(name = "idx_auditoria_evento_modulo", columnList = "modulo"),
 		@Index(name = "idx_auditoria_evento_usuario_email", columnList = "usuarioEmail")
 })
-public class AuditoriaEvento {
+public class AuditoriaEvento extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

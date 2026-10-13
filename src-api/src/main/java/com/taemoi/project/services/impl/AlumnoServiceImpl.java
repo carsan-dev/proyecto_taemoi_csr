@@ -178,6 +178,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
 
+	@Autowired
+	private com.taemoi.project.services.ContadorService contadorService;
+
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
 	 *
@@ -284,6 +287,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @return El alumno creado.
 	 */
 	@Override
+	@Transactional
 	public Alumno crearAlumno(@NonNull Alumno alumno) {
 		// Save the alumno image first, if exists
 		Imagen imagen = alumno.getFotoAlumno();
@@ -292,9 +296,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumno.setFotoAlumno(imagen); // Set the saved image to the alumno
 		}
 
-		// Generate and assign a unique student number (numeroExpediente)
-		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
-		alumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
+		// Número de expediente de la organización activa (contador con bloqueo, misma transacción)
+		alumno.setNumeroExpediente(contadorService.siguienteNumeroExpediente());
 
 		boolean usaLegacy = alumno.getDeportes() == null || alumno.getDeportes().isEmpty();
 		if (usaLegacy) {
@@ -444,10 +447,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Note: License handling already done above (lines 394-399), duplicate code removed
 
-		// Generar y asignar el número de expediente
-		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente(); // Asegúrate de tener este método en
-																					// tu repositorio
-		nuevoAlumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
+		// Número de expediente de la organización activa (contador con bloqueo, misma transacción)
+		nuevoAlumno.setNumeroExpediente(contadorService.siguienteNumeroExpediente());
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);

@@ -67,6 +67,9 @@ public class AlumnoServiceImplTest {
 	@Mock
 	private com.taemoi.project.config.TarifaConfig tarifaConfig;
 
+	@Mock
+	private com.taemoi.project.services.ContadorService contadorService;
+
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
 

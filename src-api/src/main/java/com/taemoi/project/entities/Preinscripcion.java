@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name="preinscripcion")
-public class Preinscripcion {
+public class Preinscripcion extends EntidadOrganizacion {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Column(nullable=false,unique=true,length=32) private String referencia;
  @Column(nullable=false,length=9) private String temporada;

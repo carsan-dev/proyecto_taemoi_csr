@@ -22,7 +22,7 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Evento {
+public class Evento extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

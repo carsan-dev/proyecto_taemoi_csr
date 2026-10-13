@@ -20,6 +20,8 @@ import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
@@ -65,6 +67,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private ResolutorOrganizacion resolutorOrganizacion;
+
 	@Value("${app.bootstrap.admin.email:}")
 	private String bootstrapAdminEmail;
 
@@ -86,6 +91,11 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Override
 	public void run(String... args) throws Exception {
+		// Fuera de una petición no hay organización activa: las semillas son de la organización por defecto.
+		TenantContext.ejecutarCon(resolutorOrganizacion.getOrganizacionPorDefecto(), this::inicializarDatos);
+	}
+
+	private void inicializarDatos() {
 		// Initialize essential data only (no test/fake data)
 
 		// 1. Initialize grados (grades) if they don't exist

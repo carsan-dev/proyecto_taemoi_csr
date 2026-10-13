@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "plantilla_preinscripcion")
-public class PlantillaPreinscripcion {
+public class PlantillaPreinscripcion extends EntidadOrganizacion {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private Deporte deporte;
  @Column(nullable=false) private Integer version;

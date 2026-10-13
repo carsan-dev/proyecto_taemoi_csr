@@ -98,8 +98,6 @@ import com.taemoi.project.services.MaterialExamenService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.utils.DocumentoSecurityUtils;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.validation.Valid;
 
 /**
@@ -161,9 +159,6 @@ public class AlumnoController {
 	@Autowired
 	private AlumnoAccessControlService alumnoAccessControlService;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
-
-	@PersistenceContext
-	private EntityManager entityManager;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -1940,62 +1935,6 @@ public class AlumnoController {
 		} catch (Exception e) {
 			logger.error("Error al obtener alumnos con deportes", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
-	}
-
-	/**
-	 * MIGRATION ENDPOINT: Migrates categoria_id from alumno table to alumno_deporte table
-	 * This is a ONE-TIME migration to copy categoria data from the old location to the new per-sport location.
-	 *
-	 * POST /api/alumnos/migrate-categorias
-	 *
-	 * This endpoint:
-	 * 1. Finds all alumno_deporte records where categoria_id is NULL
-	 * 2. Copies the categoria_id from the alumno table to the alumno_deporte table
-	 * 3. Only updates records where categoria_id exists in alumno table
-	 *
-	 * @return ResponseEntity with migration results
-	 */
-	@PostMapping("/migrate-categorias")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
-	@Transactional
-	public ResponseEntity<?> migrateCategorias() {
-		try {
-			logger.info("## AlumnoController :: migrateCategorias :: Starting categoria migration");
-
-			// IMPROVED: Assign categoria based on student's age instead of copying old IDs
-			// This handles the case where categoria IDs changed after schema updates
-			String sql = "UPDATE alumno_deporte ad " +
-						 "INNER JOIN alumno a ON ad.alumno_id = a.id " +
-						 "SET ad.categoria_id = CASE " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 9 THEN " +
-						 "    (SELECT id FROM categoria WHERE nombre = 'Infantil') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 11 THEN " +
-						 "    (SELECT id FROM categoria WHERE nombre = 'Precadete') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 13 THEN " +
-						 "    (SELECT id FROM categoria WHERE nombre = 'Cadete') " +
-						 "  WHEN TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) <= 16 THEN " +
-						 "    (SELECT id FROM categoria WHERE nombre = 'Junior') " +
-						 "  ELSE " +
-						 "    (SELECT id FROM categoria WHERE nombre = 'Senior') " +
-						 "END " +
-						 "WHERE ad.competidor = 1 AND ad.deporte = 'TAEKWONDO'";
-
-			int rowsUpdated = entityManager.createNativeQuery(sql).executeUpdate();
-
-			logger.info("## AlumnoController :: migrateCategorias :: Migration completed. Rows updated: {}", rowsUpdated);
-
-			return ResponseEntity.ok(Map.of(
-				"success", true,
-				"message", "Categoria migration completed successfully (assigned by age)",
-				"rowsUpdated", rowsUpdated
-			));
-		} catch (Exception e) {
-			logger.error("Error during categoria migration", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-				"success", false,
-				"message", "Error during categoria migration: " + e.getMessage()
-			));
 		}
 	}
 
