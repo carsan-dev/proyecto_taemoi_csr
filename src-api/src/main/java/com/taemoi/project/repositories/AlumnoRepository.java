@@ -212,6 +212,10 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT a FROM Alumno a WHERE a.id = :id")
 	Optional<Alumno> buscarPorIdEnOrganizacionActiva(@Param("id") Long id);
 
+	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
+	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
+	List<Alumno> buscarConNifEnOrganizacionActiva();
+
 	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
 
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
