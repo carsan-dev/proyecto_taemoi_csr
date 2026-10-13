@@ -182,11 +182,11 @@ Las tablas de unión (`alumno_grupo`, `alumno_turno`, `preinscripcion_turno`) no
 |---|---|---|
 | V18 | `organizacion` (Taemoi = 1, solo nombre y slug), `configuracion_organizacion` desde `configuracion_sistema`, `contador` desde `MAX(numero_expediente)` | 1 |
 | V19 | `organizacion_id` en todas las tablas de negocio: añadir NULL, rellenar con 1, pasar a NOT NULL, FK e índice. Únicos compuestos | 1 |
-| V20 | `disciplina` (4 filas desde el enum), `sistema_grados` (taekwondo y kickboxing), columnas nuevas de `grado`: las 19 filas pasan al sistema de taekwondo; se copian para kickboxing (con «Marrón» en lugar de «Rojo», como hace hoy `GradoUtils`) y se reasignan los `grado_id` de las inscripciones de kickboxing. Columnas `disciplina_id` junto a las de `deporte`, rellenadas por `codigo` | 2 |
-| V21 | `tarifa` desde `TarifaConfig`; `producto.tipo`/`codigo` desde los conceptos conocidos; `alumno_deporte.tarifa_id` | 2 |
-| V22 | `tutor` desde `responsable_legal_*`; `alumno_salud` y `consentimiento` vacías; `genero`, `localidad`, `codigo_postal`; teléfonos a VARCHAR | 2 |
-| V23 | `sede` (sede principal de Taemoi); `grupo.sede_id` y `alumno.sede_principal_id` | 3 |
-| V24 | `membresia` desde `usuario_rol`; `usuario_alumno` desde `usuario.alumno_id` y las coincidencias de email actuales | 3 |
+| V20 | `membresia` desde `usuario_rol` (adelantada a la fase 1: sin ella, `ROLE_ADMIN` seguiría siendo global entre escuelas) | 1 |
+| V21 | `disciplina` (4 filas desde el enum), `sistema_grados` (taekwondo y kickboxing), columnas nuevas de `grado`: las 19 filas pasan al sistema de taekwondo; se copian para kickboxing (con «Marrón» en lugar de «Rojo», como hace hoy `GradoUtils`) y se reasignan los `grado_id` de las inscripciones de kickboxing. Columnas `disciplina_id` junto a las de `deporte`, rellenadas por `codigo` | 2 |
+| V22 | `tarifa` desde `TarifaConfig`; `producto.tipo`/`codigo` desde los conceptos conocidos; `alumno_deporte.tarifa_id` | 2 |
+| V23 | `tutor` desde `responsable_legal_*`; `alumno_salud` y `consentimiento` vacías; `genero`, `localidad`, `codigo_postal`; teléfonos a VARCHAR | 2 |
+| V24 | `sede` (sede principal de Taemoi); `grupo.sede_id` y `alumno.sede_principal_id`; `usuario_alumno` desde `usuario.alumno_id` y las coincidencias de email actuales | 3 |
 | V25+ | Contracción: borrar columnas `deporte`, `tipo_grado`, `tipo_categoria`, `tipo_tarifa`, `usuario_rol`, `usuario.alumno_id`, columnas heredadas de `alumno` y `responsable_legal_*` | Tras cada fase |
 
 Los valores de progresión, meses mínimos y edades se copian a mano desde las clases de configuración

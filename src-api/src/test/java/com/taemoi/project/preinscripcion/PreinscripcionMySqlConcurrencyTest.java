@@ -31,7 +31,6 @@ import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -51,6 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.controllers.PreinscripcionController;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.exceptions.GlobalExceptionHandler;
+import com.taemoi.project.integracion.MySqlIntegrationTest;
 import com.taemoi.project.services.AforoPreinscripcionService;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.EmailService;
@@ -67,9 +67,8 @@ import com.taemoi.project.services.TemporadaService;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ PreinscripcionService.class, AforoPreinscripcionService.class,
 		PreinscripcionMySqlConcurrencyTest.Config.class })
-@EnabledIfSystemProperty(named = "preinscripcion.mysql-it", matches = "true")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class PreinscripcionMySqlConcurrencyTest {
+class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 	private static final String TEMPORADA = "2026-2027";
 
 	@Autowired PreinscripcionService service;
