@@ -232,6 +232,10 @@ Valores exactos en `valores-actuales.md`; tests en `src-api/src/test/.../caracte
   hacer que todo alta cree siempre su `alumno_deporte`.
 - **Roles:** `ROLE_ADMIN` ya es superconjunto de `ROLE_MANAGER`; basta `PROPIETARIO` → `ROLE_ADMIN`.
 - **Categorías:** solo para competidores de taekwondo, por edad. Van a esa disciplina.
+- **DNI repetidos** (producción, 13/10/2026): 40 DNI compartidos por 81 alumnos, todos personas
+  distintas (0 altas duplicadas), 33 grupos con menores. Son DNI familiares. `alumno.nif` pasa a
+  ser solo el DNI propio; el del tutor va a `tutor`. Fase 2: informe de DNI compartidos con
+  propuesta por grupo y revisión humana. UNIQUE (`organizacion_id`, `nif`) solo después.
 - **Error encontrado:** `TipoGrado.fromProductoExamen` asigna el grado equivocado en exámenes
   intermedios. Se corrige aparte, en `develop`.
 
