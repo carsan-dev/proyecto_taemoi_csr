@@ -33,8 +33,7 @@
       prueba que migran de cero en un arranque (tests, `docker-compose.pruebas.yml`, `docker-compose.e2e.yml`)
       la desactivan con `TAEMOI_V28_PERMITIR_MISMO_DESPLIEGUE_QUE_V27=true` (placeholder de Flyway
       `v28_permitir_mismo_despliegue_que_v27`, `false` por defecto). **En producción no se define nunca.**
-      Desarrollo local desde una base vacía (`docker-compose.yml`, perfil local) también se detiene en V28
-      salvo que se defina la variable. Las bases de desarrollo o pruebas que ya aplicaron la versión anterior
+      Desarrollo (`docker-compose.yml` y el perfil local) también la desactiva. Las bases de desarrollo o pruebas que ya aplicaron la versión anterior
       de V27/V28 dan error de checksum: `flyway repair` o un volumen nuevo.
       Antes del despliegue de V27, comprobar con `SHOW GRANTS` que el usuario de la aplicación tiene
       `CREATE TEMPORARY TABLES` (sin él, V27 falla antes de cambiar nada).
