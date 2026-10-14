@@ -19,8 +19,11 @@ test('perfil compacto con deportes, nombre largo y foto accesible', async ({ pag
       fechaNacimiento: '2000-01-01', direccion: 'Calle E2E 1', telefono: 612345678,
       email: `card-${Date.now()}@e2e.taemoi.test`, autorizacionWeb: true,
       tieneDiscapacidad: false, aptoParaExamen: false,
+      // Como el formulario de alta: Pilates y DPF no tienen grados y el backend rechaza uno indicado.
       deportesInicial: ['TAEKWONDO', 'PILATES', 'KICKBOXING', 'DEFENSA_PERSONAL_FEMENINA'].map(deporte => ({
-        deporte, grado: 'BLANCO', fechaGrado: today, fechaAlta: today, fechaAltaInicial: today,
+        deporte,
+        ...(deporte === 'TAEKWONDO' || deporte === 'KICKBOXING' ? { grado: 'BLANCO', fechaGrado: today } : {}),
+        fechaAlta: today, fechaAltaInicial: today,
         tipoTarifa: 'ADULTO', cuantiaTarifa: 35, competidor: false, tieneLicencia: false,
       })),
     }) },
