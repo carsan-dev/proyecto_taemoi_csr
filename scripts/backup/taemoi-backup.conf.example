@@ -1,0 +1,83 @@
+# /etc/taemoi-backup.conf - Configuración de backup_taemoi.sh y restaurar_taemoi.sh
+#
+# Instalación:
+#   sudo install -o root -g root -m 600 taemoi-backup.conf.example /etc/taemoi-backup.conf
+# Los scripts se niegan a funcionar si este fichero no pertenece a root o tiene permisos
+# para grupo/otros. Es un fragmento de bash que se carga con 'source': solo asignaciones.
+#
+# NO ponga aquí la contraseña de restic (RESTIC_PASSWORD): va en RESTIC_PASSWORD_FILE.
+# Las líneas comentadas muestran el valor por defecto.
+
+# --- Repositorio restic --------------------------------------------------------
+# Punto de montaje del disco USB. Si no está montado, la copia FALLA (no hay copia
+# alternativa en el disco interno).
+#USB_MOUNTPOINT="/mnt/backups_usb"
+# Debe estar dentro de USB_MOUNTPOINT si es una ruta local.
+#RESTIC_REPOSITORY="/mnt/backups_usb/restic-taemoi"
+# Fichero con la contraseña del repositorio (root:root, 600). Guarde también una copia de
+# la contraseña en el gestor de contraseñas: sin ella las copias son irrecuperables.
+#RESTIC_PASSWORD_FILE="/root/.config/taemoi-backup/restic-password"
+
+# --- Qué se copia ----------------------------------------------------------------
+#TAEMOI_DIR="/opt/taemoi"
+# Por defecto ${TAEMOI_DIR}/.env
+#ENV_FILE=""
+# Vacío = se leen APP_IMAGENES_HOST_PATH y APP_DOCUMENTOS_HOST_PATH del .env
+# (y, si no están, ${TAEMOI_DIR}/static_resources/imagenes y .../documentos).
+#IMAGENES_DIR=""
+#DOCUMENTOS_DIR=""
+# Por defecto ${TAEMOI_DIR}/certbot/conf
+#CERTBOT_CONF_DIR=""
+# Rutas adicionales (array de bash), por ejemplo:
+#EXTRA_PATHS=("/opt/taemoi/docker-compose.production.yml" "/opt/taemoi/nginx")
+#EXTRA_PATHS=()
+
+# --- Base de datos -----------------------------------------------------------
+#MYSQL_CONTAINER="taemoi-mysql-prod"
+# Nombre del fichero del volcado dentro del snapshot (mantenerlo fijo mejora la deduplicación).
+#DB_DUMP_FILENAME="taemoi-db.sql"
+# Un volcado por debajo de este tamaño se considera incompleto y la ejecución falla.
+#MIN_DUMP_BYTES=20480
+
+# --- Restauración ------------------------------------------------------------
+#BACKEND_CONTAINER="taemoi-backend-prod"
+# Imagen del MySQL temporal de db-verify. Vacío = la misma imagen que MYSQL_CONTAINER.
+#MYSQL_IMAGE=""
+#SCRATCH_READY_TIMEOUT=240
+
+# --- Retención (restic forget --prune) ----------------------------------------
+# Con una copia cada 4 horas: 42 "horarias" = 7 días completos.
+# Vacío o 0 desactiva una regla. Se aplica por separado a los snapshots db y files.
+#KEEP_LAST=""
+#KEEP_HOURLY=42
+#KEEP_DAILY=30
+#KEEP_WEEKLY=12
+#KEEP_MONTHLY=12
+#KEEP_YEARLY=""
+#PRUNE_MAX_UNUSED="5%"
+
+# --- Comprobación de integridad (--check) -------------------------------------
+# Porcentaje de datos que se leen y verifican en cada comprobación semanal.
+#CHECK_READ_DATA_SUBSET="10%"
+
+# --- Ejecución ---------------------------------------------------------------
+# Nombre de equipo grabado en los snapshots (fíjelo si cambia el hostname).
+#BACKUP_HOST="$(hostname -s)"
+# En /run (solo root), no en /run/lock (escribible por todos).
+#LOCK_FILE="/run/taemoi-backup.lock"
+# Tiempo máximo esperando a otra ejecución antes de fallar.
+#LOCK_WAIT_SECONDS=7200
+# Por encima de este % de uso del disco USB la ejecución termina en FALLO (aviso).
+#DISK_USAGE_ALERT_PERCENT=85
+
+# --- Avisos (todos opcionales; configure al menos uno) ------------------------
+# URL de ping estilo healthchecks.io: se llama a URL/start, URL (éxito) y URL/fail.
+# Si no llega el ping de éxito a tiempo, healthchecks avisa (también detecta que cron no corre).
+#HEALTHCHECK_URL="https://hc-ping.com/<uuid-de-la-copia>"
+# Ping independiente para la comprobación semanal --check.
+#HEALTHCHECK_CHECK_URL="https://hc-ping.com/<uuid-de-la-comprobacion>"
+# Tema de ntfy al que se publica un mensaje solo cuando hay fallo.
+#NTFY_URL="https://ntfy.sh/<tema-secreto>"
+# Correo de aviso en caso de fallo (requiere 'mail' de mailutils y un MTA configurado).
+#ALERT_EMAIL="admin@example.com"
+#HTTP_TIMEOUT_SECONDS=15
