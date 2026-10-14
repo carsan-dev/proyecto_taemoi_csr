@@ -25,6 +25,19 @@
       limpias: `postcheck-v26.sql` (primera consulta a 0 en las cinco tablas) y `postcheck-v27.sql`
       (`inscripciones_tarifa_distinta` = 0). Nunca en el mismo despliegue que V26/V27: ampliar y contraer en
       un solo paso deja sin vuelta atrás si el cambio de llamadores falla.
+      **Guarda:** V28 se niega a ejecutarse en la misma ejecución de Flyway que V27 (V27 deja una tabla
+      temporal que solo existe en esa conexión). Si ocurre, V28 se detiene antes de cambiar nada con
+      `Table '…v28_no_puede_aplicarse_en_el_mismo_despliegue_que_v27' doesn't exist` y la aplicación no
+      arranca: `flyway repair`, desplegar la versión sin V28 y dejar V28 para el despliegue posterior. Con V27
+      aplicada en un despliegue anterior (minutos o meses antes), la guarda no actúa. Solo los entornos de
+      prueba que migran de cero en un arranque (tests, `docker-compose.pruebas.yml`, `docker-compose.e2e.yml`)
+      la desactivan con `TAEMOI_V28_PERMITIR_MISMO_DESPLIEGUE_QUE_V27=true` (placeholder de Flyway
+      `v28_permitir_mismo_despliegue_que_v27`, `false` por defecto). **En producción no se define nunca.**
+      Desarrollo local desde una base vacía (`docker-compose.yml`, perfil local) también se detiene en V28
+      salvo que se defina la variable. Las bases de desarrollo o pruebas que ya aplicaron la versión anterior
+      de V27/V28 dan error de checksum: `flyway repair` o un volumen nuevo.
+      Antes del despliegue de V27, comprobar con `SHOW GRANTS` que el usuario de la aplicación tiene
+      `CREATE TEMPORARY TABLES` (sin él, V27 falla antes de cambiar nada).
 - [ ] Antes de V28, ejecutar `docs/multi-escuela/precheck-v28.sql` (solo lectura, solo recuentos) y guardar el
       resultado. Las siete primeras columnas, `alumno_deporte_disciplina_repetida` y `plantilla_version_repetida`
       deben ser 0. Si V28 se detiene (`Table '…v28_<tabla>_<columna>_no_coincide_con_el_catalogo' doesn't exist`),

@@ -39,6 +39,11 @@ class ContraccionCatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String ESQUEMA = "taemoi_v28_it";
 	private static final String ESQUEMA_GUARDA = "taemoi_v28_guarda_it";
+	private static final String ESQUEMA_MISMO_DESPLIEGUE = "taemoi_v28_mismo_despliegue_it";
+	private static final String ESQUEMA_REPETICION = "taemoi_v28_repeticion_it";
+
+	/** Placeholder de Flyway que desactiva la guarda «V28 no va en el mismo despliegue que V27». */
+	static final String PERMITIR_CON_V27 = "v28_permitir_mismo_despliegue_que_v27";
 
 	/** Columnas que borra V28: tabla -> columna. */
 	private static final List<String[]> HEREDADAS = List.of(
@@ -278,7 +283,92 @@ class ContraccionCatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(kbG, g.queryForObject("SELECT disciplina_id FROM grupo WHERE nombre = 'Mal'", Long.class));
 	}
 
+	/**
+	 * Guarda de despliegue: V27 y V28 en la MISMA ejecución de Flyway (sin el placeholder de pruebas)
+	 * hace que V28 se detenga antes de cambiar nada, con un error que lo explica. El despliegue
+	 * siguiente (otra conexión, V27 ya aplicada) hace {@code repair} + {@code migrate} y V28 se aplica.
+	 */
+	@Test
+	void v27YV28EnLaMismaEjecucion_v28SeNiegaSinCambiarNada_yElDespliegueSiguienteLaAplica() {
+		DataSource fuenteM = recrear(ESQUEMA_MISMO_DESPLIEGUE);
+		JdbcTemplate m = new JdbcTemplate(fuenteM);
+
+		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuenteM, null).migrate());
+		assertTrue(mensajeCompleto(error).contains("v28_no_puede_aplicarse_en_el_mismo_despliegue_que_v27"),
+				mensajeCompleto(error));
+		assertEquals(1, versionAplicada(m, "27"));
+		assertEquals(0, versionAplicada(m, "28"));
+		assertNadaCambiado(m);
+
+		Flyway siguiente = flyway(fuenteM, null);
+		siguiente.repair();
+		siguiente.migrate();
+		assertEquals(1, versionAplicada(m, "28"));
+		assertEquals(Boolean.TRUE, m.queryForObject(
+				"SELECT comportamiento_legado_taemoi FROM organizacion WHERE id = 1", Boolean.class));
+	}
+
+	/** Con el placeholder de pruebas a true, V27 y V28 sí se aplican en una sola ejecución. */
+	@Test
+	void conElPlaceholderDePruebas_v27YV28EnUnaSolaEjecucion() {
+		DataSource fuenteM = recrear(ESQUEMA_MISMO_DESPLIEGUE);
+		JdbcTemplate m = new JdbcTemplate(fuenteM);
+		flyway(fuenteM, null, true).migrate();
+		assertEquals(1, versionAplicada(m, "28"));
+		assertEquals(Boolean.TRUE, m.queryForObject(
+				"SELECT comportamiento_legado_taemoi FROM organizacion WHERE id = 1", Boolean.class));
+	}
+
+	/**
+	 * Fallo parcial: V28 falla justo después de crear organizacion.comportamiento_legado_taemoi (la
+	 * actualización de la organización 1 falla). Tras {@code repair} + {@code migrate} la columna ya
+	 * existe y, aun así, la organización 1 termina en TRUE y las demás en FALSE.
+	 */
+	@Test
+	void falloParcialTrasCrearLaMarca_alRepetirV28_laOrganizacionUnoQuedaEnTrue() {
+		DataSource fuenteR = recrear(ESQUEMA_REPETICION);
+		JdbcTemplate r = new JdbcTemplate(fuenteR);
+		flyway(fuenteR, "27").migrate();
+		r.update("INSERT INTO organizacion (slug, nombre) VALUES ('it-v28-repeticion', 'Otra')");
+		Long otra = r.queryForObject("SELECT id FROM organizacion WHERE slug = 'it-v28-repeticion'", Long.class);
+
+		r.execute("""
+				CREATE TRIGGER it_v28_fallo_simulado BEFORE UPDATE ON organizacion FOR EACH ROW
+				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado de V28'""");
+		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuenteR, null).migrate());
+		assertTrue(mensajeCompleto(error).contains("fallo simulado de V28"), mensajeCompleto(error));
+		assertTrue(existeColumna(r, "organizacion", "comportamiento_legado_taemoi"));
+		assertEquals(Boolean.FALSE, r.queryForObject(
+				"SELECT comportamiento_legado_taemoi FROM organizacion WHERE id = 1", Boolean.class));
+
+		r.execute("DROP TRIGGER it_v28_fallo_simulado");
+		Flyway reintento = flyway(fuenteR, null);
+		reintento.repair();
+		reintento.migrate();
+
+		assertEquals(1, versionAplicada(r, "28"));
+		assertEquals(Boolean.TRUE, r.queryForObject(
+				"SELECT comportamiento_legado_taemoi FROM organizacion WHERE id = 1", Boolean.class));
+		assertEquals(Boolean.FALSE, r.queryForObject(
+				"SELECT comportamiento_legado_taemoi FROM organizacion WHERE id = ?", Boolean.class, otra));
+		for (String[] heredada : HEREDADAS) {
+			assertFalse(existeColumna(r, heredada[0], heredada[1]), heredada[0] + "." + heredada[1]);
+		}
+	}
+
 	// ---------------------------------------------------------------------------------
+
+	private static DataSource recrear(String esquema) {
+		JdbcTemplate root = new JdbcTemplate(fuente(""));
+		root.execute("DROP DATABASE IF EXISTS " + esquema);
+		root.execute("CREATE DATABASE " + esquema + " CHARACTER SET utf8mb4");
+		return fuente(esquema);
+	}
+
+	private static int versionAplicada(JdbcTemplate j, String version) {
+		return j.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version = ? AND success = 1",
+				Integer.class, version);
+	}
 
 	private void assertFallaNombrando(DataSource fuente, String tabla) {
 		Flyway f = flyway(fuente, null);
@@ -454,8 +544,14 @@ class ContraccionCatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 				WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?""", String.class, tabla, indice);
 	}
 
+	/** Como en producción: la guarda de V28 activa (V27 debe venir de una ejecución anterior). */
 	private static Flyway flyway(DataSource fuente, String objetivo) {
-		var config = Flyway.configure().dataSource(fuente).locations("classpath:db/migration");
+		return flyway(fuente, objetivo, false);
+	}
+
+	private static Flyway flyway(DataSource fuente, String objetivo, boolean permitirV28ConV27) {
+		var config = Flyway.configure().dataSource(fuente).locations("classpath:db/migration")
+				.placeholders(Map.of(PERMITIR_CON_V27, Boolean.toString(permitirV28ConV27)));
 		if (objetivo != null) {
 			config.target(objetivo);
 		}

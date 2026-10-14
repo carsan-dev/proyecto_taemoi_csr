@@ -15,6 +15,15 @@
 --   categoria.tipo_categoria                                   -> categoria.codigo
 --
 -- Pasos (cada uno repetible: se consulta information_schema antes de cada cambio):
+--   0. Guarda de despliegue: V28 se niega a ejecutarse en la misma ejecución de Flyway que V27. V27
+--      crea la tabla TEMPORAL v27_aplicada_en_esta_conexion, que solo existe en la conexión de esa
+--      ejecución y desaparece al cerrarse. Si V28 la encuentra, se detiene ANTES de cambiar nada:
+--        Table '<esquema>.v28_no_puede_aplicarse_en_el_mismo_despliegue_que_v27' doesn't exist
+--      En producción: se ejecuta `flyway repair` y V28 se despliega más tarde, cuando las
+--      comprobaciones de V26/V27 estén limpias. Los entornos de prueba que migran de cero en una sola
+--      ejecución (tests, docker-compose.pruebas.yml, docker-compose.e2e.yml) la desactivan con el
+--      placeholder de Flyway v28_permitir_mismo_despliegue_que_v27 = true; su valor por defecto
+--      (application.properties) es false.
 --   1. Comprobación previa: cada columna heredada se compara con su equivalente del catálogo en las
 --      filas que todavía tienen las dos. Si alguna fila no coincide, la migración se detiene ANTES de
 --      cambiar nada, con un error que nombra la tabla y la columna:
@@ -39,6 +48,28 @@
 --   7. grado.codigo NOT NULL.
 
 SET @schema_name = DATABASE();
+
+-- ============================================================================
+-- 0. Guarda de despliegue: V27 no puede haberse aplicado en esta misma ejecución
+-- ============================================================================
+-- Si V27 se aplicó en esta conexión, la tabla ya existe (con su fila) y no se crea; si no, se crea
+-- vacía. No es una tabla del esquema: es temporal y solo la ve esta conexión.
+CREATE TEMPORARY TABLE IF NOT EXISTS v27_aplicada_en_esta_conexion (
+    marca TINYINT NOT NULL PRIMARY KEY
+);
+SELECT COUNT(*) INTO @v28_v27_en_esta_ejecucion FROM v27_aplicada_en_esta_conexion;
+SET @v28_permitir_con_v27 = '${v28_permitir_mismo_despliegue_que_v27}';
+
+SET @sql = IF(
+    @v28_v27_en_esta_ejecucion > 0 AND @v28_permitir_con_v27 <> 'true',
+    'SELECT 1 FROM v28_no_puede_aplicarse_en_el_mismo_despliegue_que_v27',
+    'SELECT ''v28: V27 se aplicó en un despliegue anterior (o guarda desactivada en pruebas)'''
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+DROP TEMPORARY TABLE IF EXISTS v27_aplicada_en_esta_conexion;
 
 -- ============================================================================
 -- 1. Comprobación previa (antes de cualquier cambio)
@@ -191,28 +222,22 @@ DEALLOCATE PREPARE stmt;
 -- ============================================================================
 -- 2. organizacion.comportamiento_legado_taemoi
 -- ============================================================================
-SET @v28_flag_nueva = NOT EXISTS (
-    SELECT 1 FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'organizacion' AND COLUMN_NAME = 'comportamiento_legado_taemoi'
-);
-SET @sql = IF(
-    @v28_flag_nueva,
-    'ALTER TABLE organizacion ADD COLUMN comportamiento_legado_taemoi BOOLEAN NOT NULL DEFAULT FALSE',
-    'SELECT ''organizacion.comportamiento_legado_taemoi already exists'''
+SET @sql = (
+    SELECT IF(
+        EXISTS (SELECT 1 FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'organizacion' AND COLUMN_NAME = 'comportamiento_legado_taemoi'),
+        'SELECT ''organizacion.comportamiento_legado_taemoi already exists''',
+        'ALTER TABLE organizacion ADD COLUMN comportamiento_legado_taemoi BOOLEAN NOT NULL DEFAULT FALSE'
+    )
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Solo al crear la columna: una repetición no deshace un cambio posterior hecho a mano.
-SET @sql = IF(
-    @v28_flag_nueva,
-    'UPDATE organizacion SET comportamiento_legado_taemoi = TRUE WHERE id = 1',
-    'SELECT ''organizacion 1 already configured'''
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- Siempre, también al repetir V28 tras un fallo parcial (la columna ya existe): la organización 1
+-- conserva el comportamiento heredado. Las demás no se tocan (FALSE por defecto). V28 solo se
+-- repite tras un fallo, antes de que el código nuevo arranque, así que no pisa ningún cambio de uso.
+UPDATE organizacion SET comportamiento_legado_taemoi = TRUE WHERE id = 1;
 
 -- ============================================================================
 -- 3. Catálogo de categorías
