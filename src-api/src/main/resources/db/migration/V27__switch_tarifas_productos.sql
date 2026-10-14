@@ -23,6 +23,14 @@
 --
 -- Todas las sentencias son repetibles sin efectos duplicados.
 
+-- Marca para la guarda de V28 (V28 no puede ir en el mismo despliegue que V27): tabla TEMPORAL, solo
+-- visible en la conexión de esta ejecución de Flyway, que desaparece al cerrarse. No cambia el
+-- esquema. Va primero para que, sin el permiso CREATE TEMPORARY TABLES, V27 falle sin cambiar nada.
+CREATE TEMPORARY TABLE IF NOT EXISTS v27_aplicada_en_esta_conexion (
+    marca TINYINT NOT NULL PRIMARY KEY
+);
+INSERT IGNORE INTO v27_aplicada_en_esta_conexion (marca) VALUES (1);
+
 -- Resincronización del catálogo de tarifas y productos (datos de V24). NO es una migración de
 -- Flyway: V24 incluye este mismo texto (un test lo comprueba) y la migración del cambio de
 -- llamadores debe volver a incluirlo, porque hasta entonces el código actual escribe
