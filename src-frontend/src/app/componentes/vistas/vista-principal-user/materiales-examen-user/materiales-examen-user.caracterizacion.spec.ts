@@ -1,12 +1,22 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
+import { TestBed } from '@angular/core/testing';
 import { MaterialesExamenUserComponent } from './materiales-examen-user.component';
+import { proveerCatalogoTesting } from '../../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('materiales-examen-user etiquetasSiguienteGrado (caracterización)', () => {
-  // Se instancia sin TestBed: solo se ejecutan los inicializadores de campos.
-  const componente = new MaterialesExamenUserComponent({} as never) as unknown as {
+  // Se instancia sin render: solo se ejecutan los inicializadores de campos (en un contexto de inyección).
+  let componente: {
     etiquetasSiguienteGrado: Record<string, string>;
     obtenerEtiquetaCinturonObjetivo(g: string | null | undefined): string | null;
   };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [proveerCatalogoTesting(CATALOGO_TAEMOI)] });
+    componente = TestBed.runInInjectionContext(
+      () => new MaterialesExamenUserComponent({} as never)
+    ) as unknown as typeof componente;
+  });
 
   it('tabla exacta (claves en orden y valores)', () => {
     expect(Object.entries(componente.etiquetasSiguienteGrado)).toEqual([

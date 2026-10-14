@@ -132,3 +132,26 @@ export function emojiDisciplina(legado: boolean, codigoDisciplina: string | null
 export function colorDisciplina(legado: boolean, codigoDisciplina: string | null | undefined): string {
   return (legado && codigoDisciplina && Object.hasOwn(COLOR_LEGADO, codigoDisciplina) ? COLOR_LEGADO[codigoDisciplina] : undefined) ?? COLOR_DISCIPLINA_NEUTRO;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Horarios (página pública): etiqueta de color del turno -> disciplina
+// ---------------------------------------------------------------------------------------------
+
+const DISCIPLINA_POR_ETIQUETA_HORARIO: Readonly<Record<string, string>> = {
+  taekwondo: 'TAEKWONDO',
+  kickboxing: 'KICKBOXING',
+  pilates: 'PILATES',
+  defensa: 'DEFENSA_PERSONAL_FEMENINA',
+};
+
+/**
+ * Disciplina de una etiqueta de color de la página pública de horarios (`taekwondo`, `kickboxing`, `pilates`,
+ * `defensa`). Sin campo en el catálogo. No depende del flag: la página es pública (sin catálogo autenticado) y
+ * la propia página decide la etiqueta buscando esas palabras en la categoría del turno. `null` si no hay
+ * correspondencia (p. ej. `competicion`): el llamador usa la primera disciplina.
+ */
+export function disciplinaDeEtiquetaHorario(etiqueta: string | null | undefined): string | null {
+  return etiqueta && Object.hasOwn(DISCIPLINA_POR_ETIQUETA_HORARIO, etiqueta)
+    ? DISCIPLINA_POR_ETIQUETA_HORARIO[etiqueta]
+    : null;
+}

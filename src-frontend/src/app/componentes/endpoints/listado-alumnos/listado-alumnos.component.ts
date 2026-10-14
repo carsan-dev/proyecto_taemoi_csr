@@ -20,6 +20,7 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
@@ -51,6 +52,7 @@ type ResumenAlumno = {
 })
 export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   readonly informes = inject(InformePdfService);
+  readonly catalogo = inject(CatalogoService);
   alumnos: any[] = [];
   alumnosCompletos: any[] = []; // Full dataset for client-side filtering
   alumnosSeleccionables: any[] = [];
@@ -617,7 +619,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     let licenciaTexto = 'Sin deportes';
     let licenciaClase = 'licencia-none';
     if (deportePrincipal) {
-      const requiereLicencia = deportePrincipal.deporte === 'TAEKWONDO' || deportePrincipal.deporte === 'KICKBOXING';
+      const requiereLicencia = this.catalogo.requiereLicencia(deportePrincipal.deporte);
       if (!requiereLicencia) {
         licenciaTexto = 'N/A';
         licenciaClase = 'licencia-none';
@@ -833,14 +835,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if a sport requires showing grade (not for Pilates or Defensa Personal)
+   * Check if a sport requires showing grade (not for disciplines without a grading system)
    */
   deporteRequiereGrado(deporte: string): boolean {
-    return deporte !== 'PILATES' && deporte !== 'DEFENSA_PERSONAL_FEMENINA';
+    return !this.catalogo.sinGrados(deporte);
   }
 
   /**
-   * Check if alumno needs to show license (has at least one sport that requires license)
+   * Check if alumno needs to show license (their main sport requires a license)
    */
   alumnoRequiereLicencia(alumnoId: number): boolean {
     const deportes = this.getDeportesDeAlumno(alumnoId);
@@ -848,7 +850,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     if (!principal) {
       return false;
     }
-    return principal.deporte === 'TAEKWONDO' || principal.deporte === 'KICKBOXING';
+    return this.catalogo.requiereLicencia(principal.deporte);
   }
 
   /**

@@ -73,8 +73,7 @@
 
             <div class="convocatoria-header-content">
               <!-- Sport Badge -->
-              <div class="sport-badge" [class.taekwondo]="convocatoria.deporte === 'TAEKWONDO'"
-                   [class.kickboxing]="convocatoria.deporte === 'KICKBOXING'">
+              <div class="sport-badge" [ngClass]="claseCssDisciplina(convocatoria.deporte)">
                 <i class="bi bi-trophy-fill"></i>
                 <span>{{ convocatoria.deporte }}</span>
               </div>

@@ -21,7 +21,7 @@ import {
   gradosSeleccionables,
   tarifasDeDisciplina,
 } from './catalogo-reglas';
-import { catalogoEsLegadoTaemoi } from './legado-taemoi';
+import { catalogoEsLegadoTaemoi, colorDisciplina, emojiDisciplina } from './legado-taemoi';
 import { showWarningToast } from '../../utils/toast.util';
 import { registrarLectorCatalogo, retirarLectorCatalogo } from './catalogo-actual';
 
@@ -173,6 +173,49 @@ export class CatalogoService implements OnDestroy {
   /** Nombre de la disciplina; el propio código si no está en el catálogo (inscripciones antiguas). */
   etiquetaDisciplina(codigo: string | null | undefined): string {
     return this.disciplina(codigo)?.nombre ?? codigo ?? '';
+  }
+
+  /** Código de la primera disciplina activa por `orden` (sustituye al antiguo valor por defecto 'TAEKWONDO'); `''` sin catálogo. */
+  primeraDisciplinaActiva(): string {
+    return this.disciplinasActivas()[0]?.codigo ?? '';
+  }
+
+  /** Disciplinas con sistema de grados (las únicas que tienen grado, examen y convocatorias). */
+  disciplinasConGrados(): CatalogoDisciplina[] {
+    return this.disciplinasActivas().filter((d) => d.sistemaGradosId !== null);
+  }
+
+  /** Con grados: la disciplina existe y tiene sistema de grados. Código desconocido: no. */
+  tieneGrados(codigo: string | null | undefined): boolean {
+    const sistema = this.disciplina(codigo)?.sistemaGradosId;
+    return sistema !== null && sistema !== undefined;
+  }
+
+  /** Sin grados: la disciplina existe y no tiene sistema de grados (Pilates, defensa personal). Código desconocido: no. */
+  sinGrados(codigo: string | null | undefined): boolean {
+    return this.disciplina(codigo)?.sistemaGradosId === null;
+  }
+
+  requiereLicencia(codigo: string | null | undefined): boolean {
+    return this.disciplina(codigo)?.requiereLicencia === true;
+  }
+
+  permiteCompeticion(codigo: string | null | undefined): boolean {
+    return this.disciplina(codigo)?.permiteCompeticion === true;
+  }
+
+  tieneMaterialExamen(codigo: string | null | undefined): boolean {
+    return this.disciplina(codigo)?.tieneMaterialExamen === true;
+  }
+
+  /** D12: emoji de la disciplina en el panel de administración (legado de Taemoi por código; neutro para el resto). */
+  emojiDisciplina(codigo: string | null | undefined): string {
+    return emojiDisciplina(this.esLegadoTaemoi(), codigo);
+  }
+
+  /** D12: color de la disciplina en el panel de administración (legado de Taemoi por código; neutro para el resto). */
+  colorDisciplina(codigo: string | null | undefined): string {
+    return colorDisciplina(this.esLegadoTaemoi(), codigo);
   }
 
   /** Grados del sistema de la disciplina, por `orden`. */

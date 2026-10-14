@@ -11,7 +11,7 @@
 
   <div class="filters">
     <input [(ngModel)]="filtros.temporada" placeholder="Temporada">
-    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select>
+    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option>@for (d of deportes; track d) { <option [value]="d">{{d}}</option> }</select>
     <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_LISTA_ESPERA</option><option>FINALIZADA</option><option>CANCELADA</option></select>
     <input [(ngModel)]="filtros.q" placeholder="DNI, referencia o nombre">
     <button (click)="buscar(true)">Filtrar</button>

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
@@ -8,9 +8,11 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 
 @Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent,SkeletonCardComponent],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
 export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
+  readonly catalogo=inject(CatalogoService);
   items:any[]=[]; cargando=true; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
   mostrandoFinalizacion=false; procesandoFinalizacion=false; camposActualizar=new Set<string>();
   editandoTurnos=false; cargandoTurnos=false; procesandoTurnos=false; turnosDisponibles:any[]=[]; turnoIdsEdicion:number[]=[];
@@ -31,8 +33,8 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
     {clave:'EMAIL',etiqueta:'Correo electrónico',pre:'email',alumno:'email'},
   ];
   pagina=0; readonly tamanoPagina=25; totalElementos=0; totalPaginas=0;
-  tab:'solicitudes'|'plantillas'='solicitudes'; deportePlantilla='TAEKWONDO'; plantilla:any=this.vacia(); historial:any[]=[]; cargandoPlantilla=false; procesandoPlantilla=false; dirty=false;
-  readonly deportes=['TAEKWONDO','KICKBOXING','PILATES','DEFENSA_PERSONAL_FEMENINA'];
+  tab:'solicitudes'|'plantillas'='solicitudes'; deportePlantilla=this.catalogo.primeraDisciplinaActiva(); plantilla:any=this.vacia(); historial:any[]=[]; cargandoPlantilla=false; procesandoPlantilla=false; dirty=false;
+  get deportes():string[]{return this.catalogo.disciplinasActivas().map(d=>d.codigo);}
   constructor(private readonly api:PreinscripcionService,public readonly auth:AuthenticationService,private readonly route:ActivatedRoute,private readonly router:Router){}
   ngOnInit(){this.tab=this.route.snapshot.queryParamMap.get('tab')==='plantillas'?'plantillas':'solicitudes';this.buscar();if(this.tab==='plantillas')this.cargarPlantilla();}
   ngOnDestroy(){this.liberarFirma();}
@@ -97,7 +99,7 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   private valorComparable(v:any,campo:string){if(v==null)return '';if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='boolean')return v?'true':'false';const texto=String(v).trim().toLowerCase();if(['TELEFONO','TELEFONO2'].includes(campo)){const digitos=texto.replace(/\D/g,'');if(digitos.length===13&&digitos.startsWith('0034'))return digitos.slice(4);return digitos.length===11&&digitos.startsWith('34')?digitos.slice(2):digitos;}return /^\d{4}-\d{2}-\d{2}/.test(texto)?texto.slice(0,10):texto.replace(/\s+/g,' ');}
   get requiereDatosDeporte(){return this.accionAlumno==='CREAR_NUEVO'||(this.accionAlumno==='VINCULAR_EXISTENTE'&&this.alumnoSeleccionado?.requiereDatosDeporte);}
   get esMenorSeleccionado(){const nacimiento=new Date(this.seleccion?.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return false;const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18;}
-  get requiereGrado(){return ['TAEKWONDO','KICKBOXING'].includes(this.seleccion?.deporte);}
+  get requiereGrado(){return this.catalogo.tieneGrados(this.seleccion?.deporte);}
   get tarifasDisponibles():string[]{switch(this.seleccion?.deporte){case 'KICKBOXING':return ['KICKBOXING'];case 'PILATES':return ['PILATES'];case 'DEFENSA_PERSONAL_FEMENINA':return ['DEFENSA_PERSONAL_FEMENINA'];default:return ['INFANTIL','ADULTO','INFANTIL_GRUPO','ADULTO_GRUPO','FAMILIAR','HERMANOS','PADRES_HIJOS'];}}
   private tarifaInicial(){if(this.seleccion?.deporte!=='TAEKWONDO')return this.tarifasDisponibles[0]||'';const nacimiento=new Date(this.seleccion.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return 'INFANTIL';const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18?'INFANTIL':'ADULTO';}
   private prepararTarifa(alumno?:any){const hoy=new Date().toISOString().slice(0,10),tipo=alumno?.tipoTarifa||this.tarifaInicial();this.datosAlta={tipoTarifa:tipo,cuantiaTarifa:alumno?.cuantiaTarifa??this.cuantiaEstandar(tipo),rolFamiliar:alumno?.rolFamiliar||'NINGUNO',grupoFamiliar:alumno?.grupoFamiliar||'',grado:'BLANCO',fechaGrado:hoy};}

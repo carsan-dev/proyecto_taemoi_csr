@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription, concat, forkJoin, of } from 'rxjs';
 import { finalize, catchError, tap } from 'rxjs/operators';
@@ -18,7 +18,10 @@ import { RolFamiliar } from '../../../enums/rol-familiar';
 import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
-import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
+import { getDeporteLabel } from '../../../enums/deporte';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { claseCssDisciplina } from '../../../features/catalogo/catalogo-reglas';
+import { ofreceDerechoExamenManual, ofreceRecompensa } from '../../../features/catalogo/legado-taemoi';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
@@ -61,6 +64,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   // Control de formulario
   mostrarFormulario: boolean = false;
   alumnoForm: FormGroup;
+  readonly catalogo = inject(CatalogoService);
   imagenPreview: string | null = null;
 
   // Otras propiedades
@@ -74,10 +78,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   tiposTarifa = Object.values(TipoTarifa);
   rolesFamiliares = Object.values(RolFamiliar);
   tiposGrado = Object.values(TipoGrado);
-  deportes = [
-    'TAEKWONDO',
-    'KICKBOXING',
-  ];
+  /** Disciplinas con sistema de grados (las que admiten grado, examen y convocatorias). */
+  get deportes(): string[] {
+    return this.catalogo.disciplinasConGrados().map((disciplina) => disciplina.codigo);
+  }
   todosLosGrados: any[] = [];
   grados: any[] = [];
 
@@ -108,7 +112,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   // Multi-sport properties
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
-  deporteActivo: string = Deporte.TAEKWONDO;
+  deporteActivo: string = '';
   mostrarModalAgregarDeporte = false;
   mostrarModalActualizarGrado = false;
   nuevoDeporte: string = '';
@@ -119,7 +123,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
   fechaGradoActualizar: string = '';
-  private readonly deportesSinGrado = new Set(['PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
   deporteParaConvocatoria: string = '';
   convocatoriasFiltradasPorDeporte: any[] = [];
 
@@ -156,7 +159,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     fechaAltaInicial?: string;
   }> = new Map();
 
-  deportesDisponibles: Deporte[] = [];
+  deportesDisponibles: string[] = [];
 
   // Pending changes for basic info (inline editing)
   pendingBasicInfoChanges: {
@@ -209,8 +212,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     'Junior',
     'Senior'
   ];
-  DeporteEnum = Deporte;
-  DeporteLabels = DeporteLabels;
+  readonly claseCssDisciplina = claseCssDisciplina;
 
   // Grupos y Turnos
   gruposDelAlumno: any[] = [];
@@ -1425,24 +1427,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
     let gradosFiltrados = this.todosLosGrados;
 
-    // First, filter by sport
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string> ([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
+    // First, filter by sport: the grades its grading system offers
+    if (deporteSeleccionado) {
+      const gradosDeLaDisciplina = new Set<string>(
+        this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
       );
+      gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
     }
 
     // Then, filter by age if tiposGrado has values
@@ -2266,9 +2256,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Get list of sports available to add (not already assigned)
    */
-  getDeportesDisponiblesParaAgregar(): Deporte[] {
+  getDeportesDisponiblesParaAgregar(): string[] {
     const deportesAsignados = new Set(this.deportesDelAlumno.map(d => d.deporte));
-    return Object.values(Deporte).filter(d => !deportesAsignados.has(d));
+    return this.catalogo.disciplinasActivas().map(d => d.codigo).filter(d => !deportesAsignados.has(d));
   }
 
   private ordenarDeportesPorPrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO[] {
@@ -2399,7 +2389,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (!deporte) {
       return false;
     }
-    return this.deportesSinGrado.has(deporte);
+    return this.catalogo.sinGrados(deporte);
   }
 
   requiereGradoNuevoDeporte(): boolean {
@@ -3021,6 +3011,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   getDeporteLabel(deporte: string): string {
     return getDeporteLabel(deporte);
+  }
+
+  /** D10: botón «Añadir derecho de examen» (solo Kickboxing de Taemoi). */
+  ofreceDerechoExamen(deporte: string): boolean {
+    return ofreceDerechoExamenManual(this.catalogo.esLegadoTaemoi(), deporte);
+  }
+
+  /** D10: botón «Pasar de grado por recompensa» (el resto de casos). */
+  ofreceRecompensaGrado(deporte: string): boolean {
+    return ofreceRecompensa(this.catalogo.esLegadoTaemoi(), deporte);
   }
 
   /**
@@ -3931,7 +3931,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return categoriaActual;
   }
 
-  private obtenerCategoriaPorEdad(deporte: string = 'TAEKWONDO'): string {
+  private obtenerCategoriaPorEdad(deporte?: string | null): string {
     return calcularCategoriaPorEdad(this.alumno?.fechaNacimiento ?? null, deporte);
   }
 

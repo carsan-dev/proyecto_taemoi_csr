@@ -134,12 +134,7 @@
               <div class="deportes-banner-container">
                 @for (deporteItem of deportesDelAlumno; track deporteItem.id) {
                 @if (deporteItem.activo !== false) {
-                <div class="deporte-banner-badge" [ngClass]="{
-                    'taekwondo': deporteItem.deporte === 'TAEKWONDO',
-                    'pilates': deporteItem.deporte === 'PILATES',
-                    'kickboxing': deporteItem.deporte === 'KICKBOXING',
-                    'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
-                  }">
+                <div class="deporte-banner-badge" [ngClass]="claseCssDisciplina(deporteItem.deporte)">
                   <i class="bi bi-trophy-fill"></i>
                   <span class="deporte-badge-text">{{ deporteItem.deporte }}</span>
                 </div>
@@ -576,8 +571,7 @@
                       </div>
 
                       <!-- Convocatorias Section (Only for sports with grades and if apto) -->
-                      @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA' &&
-                      deporteItem.aptoParaExamen) {
+                      @if (!esDeporteSinGrado(deporteItem.deporte) && deporteItem.aptoParaExamen) {
                       <div class="convocatorias-section mt-4">
                         <h6 class="section-mini-title">
                           <i class="bi bi-calendar-event"></i>
@@ -612,14 +606,14 @@
                             <i class="bi bi-plus-circle"></i>
                             <span>Agregar a Convocatoria</span>
                           </button>
-                          @if (deporteItem.deporte !== 'KICKBOXING') {
+                          @if (ofreceRecompensaGrado(deporteItem.deporte)) {
                           <button class="admin-btn admin-btn-warning admin-btn-sm"
                             (click)="pasarGradoPorRecompensa(deporteItem.deporte)">
                             <i class="bi bi-award"></i>
                             <span>Pasar de Grado por Recompensa</span>
                           </button>
                           }
-                          @if (deporteItem.deporte === 'KICKBOXING') {
+                          @if (ofreceDerechoExamen(deporteItem.deporte)) {
                           <button class="admin-btn admin-btn-warning admin-btn-sm"
                             (click)="pasarGradoConDerechoExamen(deporteItem.deporte)">
                             <i class="bi bi-journal-check"></i>
@@ -890,8 +884,8 @@
                   </div>
                 </div>
                 }
-                <!-- Competitor Section (Only for Taekwondo and Kickboxing) -->
-                @if (deporteItem.deporte === 'TAEKWONDO' || deporteItem.deporte === 'KICKBOXING') {
+                <!-- Competitor Section (only for disciplines that allow competition) -->
+                @if (catalogo.permiteCompeticion(deporteItem.deporte)) {
                 <div class="row g-4 mt-3">
                   <div class="col-12">
                     <div class="sport-info-section">
@@ -1521,12 +1515,7 @@
                   <div class="deportes-badges-container">
                     @for (deporteItem of deportesDelAlumno; track deporteItem.deporte) {
                       @if (deporteItem.activo !== false) {
-                        <span class="deporte-badge-inline" [ngClass]="{
-                          'taekwondo': deporteItem.deporte === 'TAEKWONDO',
-                          'pilates': deporteItem.deporte === 'PILATES',
-                          'kickboxing': deporteItem.deporte === 'KICKBOXING',
-                          'defensa-personal-femenina': deporteItem.deporte === 'DEFENSA_PERSONAL_FEMENINA'
-                        }">
+                        <span class="deporte-badge-inline" [ngClass]="claseCssDisciplina(deporteItem.deporte)">
                           <i class="bi bi-trophy-fill"></i>
                           {{ getDeporteLabel(deporteItem.deporte) }}
                         </span>

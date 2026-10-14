@@ -40,7 +40,10 @@
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.caracterizacion.spec.ts",
     "src/app/features/catalogo/catalogo-reglas.spec.ts",
     "src/app/features/catalogo/legado-taemoi.spec.ts",
-    "src/app/features/catalogo/catalogo.service.spec.ts"
+    "src/app/features/catalogo/catalogo.service.spec.ts",
+    "src/app/componentes/disciplinas-por-catalogo.spec.ts",
+    "src/app/features/catalogo/catalogo.service.disciplinas.spec.ts",
+    "src/app/componentes/endpoints/crear-alumno/crear-alumno.disciplinas.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

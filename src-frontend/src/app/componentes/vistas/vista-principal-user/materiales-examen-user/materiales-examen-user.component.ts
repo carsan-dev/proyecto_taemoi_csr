@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -12,6 +12,7 @@ import {
   MaterialExamenVideoDTO,
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
+import { CatalogoService } from '../../../../features/catalogo/catalogo.service';
 
 @Component({
   selector: 'app-materiales-examen-user',
@@ -84,6 +85,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     NEGRO_4_DAN: 'NEGRO 4\u00BA DAN',
     NEGRO_5_DAN: 'NEGRO 5\u00BA DAN',
   };
+
+  private readonly catalogo = inject(CatalogoService);
 
   constructor(
     private readonly endpointsService: EndpointsService
@@ -709,7 +712,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       !!item?.deporte &&
       !!item?.grado &&
       item.activo !== false &&
-      (item.deporte === 'TAEKWONDO' || item.deporte === 'KICKBOXING')
+      this.catalogo.tieneMaterialExamen(item.deporte)
     );
 
     return deportesConMaterial

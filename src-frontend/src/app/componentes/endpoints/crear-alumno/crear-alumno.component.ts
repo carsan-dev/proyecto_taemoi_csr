@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import {
@@ -20,6 +20,7 @@ import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { showSuccessToast } from '../../../utils/toast.util';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 
 /**
  * Interface for sport entry in the form
@@ -62,6 +63,7 @@ export class CrearAlumnoComponent implements OnInit {
   grados: any[] = [];
   todosLosGrados: any[] = [];
   categorias = ['Infantil', 'Precadete', 'Cadete', 'Junior', 'Senior'];
+  readonly catalogo = inject(CatalogoService);
 
   constructor(
     private readonly fb: FormBuilder,
@@ -189,27 +191,14 @@ export class CrearAlumnoComponent implements OnInit {
 
     let gradosFiltrados = this.todosLosGrados;
 
-    // Filter by sport (Kickboxing has limited grades, Pilates has none)
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string>([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
-      );
-    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
-      return []; // Pilates and Defensa Personal don't have grades
+    // Filter by sport: the grades the discipline's grading system offers (none if it has no system)
+    if (!this.catalogo.tieneGrados(deporteSeleccionado)) {
+      return [];
     }
+    const gradosDeLaDisciplina = new Set<string>(
+      this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
+    );
+    gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
 
     // Filter by age if fechaNacimiento is set
     const fechaNacimiento = this.alumnoData.get('fechaNacimiento')?.value;
@@ -272,19 +261,55 @@ export class CrearAlumnoComponent implements OnInit {
       tipoTarifaControl?.setValue('');
     }
 
-    if (deporteControl?.value === 'PILATES' || deporteControl?.value === 'DEFENSA_PERSONAL_FEMENINA') {
-      // Clear validators and values for Pilates and Defensa Personal Femenina
+    const deporte = deporteControl?.value;
+    if (this.catalogo.tieneGrados(deporte)) {
+      // The discipline has a grading system: grade and grade date are required
+      gradoControl?.setValidators(Validators.required);
+      fechaGradoControl?.setValidators(Validators.required);
+    } else {
+      // No grading system (e.g. Pilates): clear validators and values
       gradoControl?.clearValidators();
       gradoControl?.setValue('');
       fechaGradoControl?.clearValidators();
       fechaGradoControl?.setValue('');
-    } else {
-      // Set validators for Taekwondo and Kickboxing
-      gradoControl?.setValidators(Validators.required);
-      fechaGradoControl?.setValidators(Validators.required);
     }
     gradoControl?.updateValueAndValidity();
     fechaGradoControl?.updateValueAndValidity();
+
+    this.reiniciarLicenciaYCompeticionSiNoAplican(index);
+  }
+
+  /**
+   * Al cambiar de disciplina, los datos de licencia y de competición que la nueva disciplina no admite
+   * se reinician: los controles quedan ocultos y, si no, el valor anterior se enviaría al guardar.
+   */
+  private reiniciarLicenciaYCompeticionSiNoAplican(index: number): void {
+    const deporteForm = this.deportesFormArray.at(index);
+    const deporte = deporteForm.get('deporte')?.value;
+
+    if (!this.catalogo.requiereLicencia(deporte)) {
+      deporteForm.patchValue(
+        {
+          tieneLicencia: false,
+          numeroLicencia: null,
+          fechaLicencia: this.obtenerFechaHoy(),
+        },
+        { emitEvent: false }
+      );
+    }
+
+    if (!this.catalogo.permiteCompeticion(deporte)) {
+      deporteForm.patchValue(
+        {
+          competidor: false,
+          categoria: '',
+          fechaAltaCompeticion: '',
+          fechaAltaCompetidorInicial: '',
+          peso: null,
+        },
+        { emitEvent: false }
+      );
+    }
   }
 
   onTipoTarifaChangeEnLista(index: number): void {
@@ -379,24 +404,12 @@ export class CrearAlumnoComponent implements OnInit {
     const deporteSeleccionado = this.alumnoData.get('deporte')?.value;
     let gradosFiltrados = this.todosLosGrados;
 
-    // First, filter by sport
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string>([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
+    // First, filter by sport: the grades its grading system offers
+    if (deporteSeleccionado) {
+      const gradosDeLaDisciplina = new Set<string>(
+        this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
       );
+      gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
     }
 
     // Then, filter by age if tiposGrado has values
@@ -409,7 +422,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.grados = gradosFiltrados;
   }
 
-  private obtenerCategoriaPorEdadActual(deporte: string = 'TAEKWONDO'): string {
+  private obtenerCategoriaPorEdadActual(deporte?: string | null): string {
     return calcularCategoriaPorEdad(this.alumnoData.get('fechaNacimiento')?.value || null, deporte);
   }
 
@@ -417,7 +430,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.deportesFormArray.controls.forEach((control) => {
       const competidor = control.get('competidor')?.value;
       const categoriaControl = control.get('categoria');
-      const deporteSeleccionado = control.get('deporte')?.value || 'TAEKWONDO';
+      const deporteSeleccionado = control.get('deporte')?.value || this.catalogo.primeraDisciplinaActiva();
       if (!categoriaControl) {
         return;
       }
@@ -439,7 +452,7 @@ export class CrearAlumnoComponent implements OnInit {
     const categoriaControl = deporteForm.get('categoria');
     const fechaAltaCompeticionControl = deporteForm.get('fechaAltaCompeticion');
     const fechaAltaCompetidorInicialControl = deporteForm.get('fechaAltaCompetidorInicial');
-    const deporteSeleccionado = deporteForm.get('deporte')?.value || 'TAEKWONDO';
+    const deporteSeleccionado = deporteForm.get('deporte')?.value || this.catalogo.primeraDisciplinaActiva();
     if (!categoriaControl) {
       return;
     }
@@ -535,7 +548,10 @@ export class CrearAlumnoComponent implements OnInit {
         if (!deporteData.fechaAltaInicial) {
           deporteData.fechaAltaInicial = deporteData.fechaAlta;
         }
-        if (!deporteData.tieneLicencia) {
+        if (
+          !this.catalogo.permiteCompeticion(deporteData.deporte) ||
+          (this.catalogo.requiereLicencia(deporteData.deporte) && !deporteData.tieneLicencia)
+        ) {
           deporteData.competidor = false;
         }
         if (deporteData.competidor) {
@@ -548,7 +564,7 @@ export class CrearAlumnoComponent implements OnInit {
           }
           if (!deporteData.categoria) {
             // Calcular categoría según el deporte específico
-            deporteData.categoria = this.obtenerCategoriaPorEdadActual(deporteData.deporte || 'TAEKWONDO');
+            deporteData.categoria = this.obtenerCategoriaPorEdadActual(deporteData.deporte || this.catalogo.primeraDisciplinaActiva());
           }
           if (deporteData.peso === '' || deporteData.peso === null || deporteData.peso === undefined) {
             deporteData.peso = null;

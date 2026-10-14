@@ -1,9 +1,9 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
-import { Deporte, DeporteLabels, DeportesArray, getDeporteLabel, isValidDeporte } from './deporte';
+import { getDeporteLabel } from './deporte';
 import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
-describe('Deporte (caracterización)', () => {
+describe('getDeporteLabel (caracterización)', () => {
   // getDeporteLabel lee el catálogo cargado: equivalencia con el fixture de Taemoi (rebanada 3).
   beforeEach(() => fijarCatalogoActual(CATALOGO_TAEMOI));
   afterEach(() => restablecerCatalogoActual());
@@ -14,23 +14,6 @@ describe('Deporte (caracterización)', () => {
     expect(getDeporteLabel('TAEKWONDO')).toBe('TAEKWONDO');
     restablecerCatalogoActual();
     expect(getDeporteLabel('TAEKWONDO')).toBe('TAEKWONDO');
-  });
-
-  it('valores del enum', () => {
-    expect(Object.values(Deporte) as string[]).toEqual(['TAEKWONDO', 'KICKBOXING', 'PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
-  });
-
-  it('DeporteLabels exactos', () => {
-    expect({ ...DeporteLabels }).toEqual({
-      TAEKWONDO: 'Taekwondo',
-      KICKBOXING: 'Kickboxing',
-      PILATES: 'Pilates',
-      DEFENSA_PERSONAL_FEMENINA: 'Defensa Personal Femenina',
-    });
-  });
-
-  it('DeportesArray con orden exacto', () => {
-    expect(DeportesArray).toEqual([Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES, Deporte.DEFENSA_PERSONAL_FEMENINA]);
   });
 
   const etiquetas: [string, string][] = [
@@ -45,21 +28,6 @@ describe('Deporte (caracterización)', () => {
   etiquetas.forEach(([codigo, etiqueta]) => {
     it(`getDeporteLabel(${JSON.stringify(codigo)}) -> ${JSON.stringify(etiqueta)}`, () => {
       expect(getDeporteLabel(codigo)).toBe(etiqueta);
-    });
-  });
-
-  const validos: [string, boolean][] = [
-    ['TAEKWONDO', true],
-    ['KICKBOXING', true],
-    ['PILATES', true],
-    ['DEFENSA_PERSONAL_FEMENINA', true],
-    ['taekwondo', false],
-    ['OTRO', false],
-    ['', false],
-  ];
-  validos.forEach(([valor, esperado]) => {
-    it(`isValidDeporte(${JSON.stringify(valor)}) -> ${esperado}`, () => {
-      expect(isValidDeporte(valor)).toBe(esperado);
     });
   });
 });
