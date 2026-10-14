@@ -187,6 +187,23 @@ En las tablas, «Dn» es la decisión n de esta lista.
 14. **Tarifas para `ROLE_USER`**: recomendación: no enviarlas (no las usa ninguna vista de usuario).
 15. **Fallo al cargar el catálogo**: recomendación: aviso y desplegables vacíos, nunca constantes de Taemoi.
 
+### Decisiones tomadas (14/10/2026)
+
+- D2: «Defensa Personal Femenina» en todas las pantallas, el PDF y `disciplina.nombre` de Taemoi.
+- D3: todas las pantallas usan `grado.nombre`; los de Taemoi pasan al formato «BLANCO-AMARILLO»,
+  «ROJO-NEGRO 1º PUM», «NEGRO 1º DAN». Sustituye la decisión 5 del informe (listados cortos).
+- D4: KB ROJO = marrón `#8B4513` y «MARRÓN» en todas las pantallas.
+- D5: los colores de Taemoi se guardan en `color_1/color_2` (paleta actual, KB ROJO marrón).
+- D6: cada disciplina tiene sus propias categorías. Las de KB (y de otros deportes) aún no se conocen:
+  Taemoi conserva el relleno con las de TKD como legado; las escuelas nuevas solo asignan categoría si
+  la disciplina tiene categorías propias.
+- D7: tarifas que admite la disciplina, en orden del catálogo, en todas las pantallas.
+- D8: nombre de la tarifa en todas las pantallas.
+- Orden de tarifas: nueva columna `tarifa.orden`; Taemoi con el orden de crear-alumno.
+- D1, D9–D15: según la recomendación.
+- Consecuencia: hace falta una migración de datos (V30: nombres y colores de grado, nombre de DPF,
+  `tarifa.orden`). Las sedes pasan a V31.
+
 ## 6. Migraciones
 
 No hace falta ninguna. Todo lo que el FE necesita ya existe (V23, V24, V28). El orden de tarifas
