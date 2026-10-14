@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,6 @@ import com.taemoi.project.config.SecurityConfiguration;
 import com.taemoi.project.controllers.AuthenticationController;
 import com.taemoi.project.controllers.EventoController;
 import com.taemoi.project.entities.Evento;
-import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -118,7 +116,6 @@ class SecurityAuthorizationWebMvcTest {
 	void authenticatedUserCanReadAuthRoles() throws Exception {
 		Usuario usuario = new Usuario();
 		usuario.setEmail("user@example.com");
-		usuario.setRoles(Set.of(Roles.ROLE_USER));
 		when(usuarioService.encontrarPorEmail("user@example.com")).thenReturn(Optional.of(usuario));
 
 		mockMvc.perform(get("/api/auth/roles")
@@ -132,7 +129,6 @@ class SecurityAuthorizationWebMvcTest {
 		Usuario usuario = new Usuario();
 		usuario.setId(12L);
 		usuario.setEmail("user@example.com");
-		usuario.setRoles(Set.of(Roles.ROLE_USER));
 		when(usuarioService.encontrarPorEmail("user@example.com")).thenReturn(Optional.of(usuario));
 
 		mockMvc.perform(get("/api/auth/user")

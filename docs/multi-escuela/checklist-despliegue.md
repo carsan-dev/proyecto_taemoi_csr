@@ -63,6 +63,23 @@
       (usa `grado.codigo`, `sistema_grados` y `tarifa`, de V23/V24). Si falla a medias, `flyway repair` y volver
       a desplegar: cada paso vuelve a comprobar el esquema y los datos. No exige copia propia: la de V28 sirve;
       el código anterior funciona con la columna nueva (la ignora), pero mostraría los nombres nuevos.
+- [ ] **Despliegue 3: V31 (sedes y vínculos, fase 3) con la aplicación parada**, en el mismo despliegue que el
+      código que ya no mapea `Usuario.roles` (el código anterior también funciona sobre V31: solo añade columnas
+      NULL o con valor por defecto, tablas que no lee y la FK de `usuario_rol` en cascada). Antes: copia de
+      seguridad y ejecutar `docs/multi-escuela/precheck-v31.sql` (solo lectura, solo recuentos) y guardar el
+      resultado. V31 no se detiene por ningún recuento, pero revisar a mano: `alumno_id_email_distinto_familia`
+      (cuentas solo familia cuyo `alumno_id` no comparte email: no reciben vínculo), `alumnos_email_solo_espacios`
+      (email del alumno con espacios sobrantes: hoy no visible, no recibe vínculo; corregir el email),
+      `tutor_email_candidatos` (vínculos manuales posibles, R4) y `membresias_responsable_o_profesor` (debe ser 0).
+      D1 («Umbrete») y D6 ya están decididas (14/10/2026). Antes del despliegue, comprobar con `SHOW GRANTS` que
+      el usuario de la aplicación sigue teniendo `CREATE TEMPORARY TABLES` (V31 deja la marca de la guarda de V32).
+      Si V31 falla a medias, `flyway repair` y volver a desplegar: cada paso vuelve a comprobar el esquema y los datos.
+- [ ] Tras V31: ejecutar `docs/multi-escuela/postcheck-v31.sql` y guardar el resultado: `familia_alumnos_email_sin_vinculo`,
+      `familia_alumnos_vinculo_sin_email`, `grupos_sin_sede` y `organizaciones_sin_sede` deben ser 0. Después,
+      marcar el administrador de plataforma con SQL fuera del repositorio
+      (`UPDATE usuario SET es_admin_plataforma = TRUE WHERE …`); la aplicación nunca escribe esa columna.
+- [ ] **V32 (contracción de permisos) nunca en el mismo despliegue que V31**; antes, copia de seguridad (única
+      vuelta atrás) y `postcheck-v31.sql` limpio.
 - [ ] Desde V27, NUNCA ejecutar a mano `db/resync/resync_catalogo_v24.sql`: su UPDATE que pone
       `tarifa_id = NULL` donde `tipo_tarifa` es NULL no se limita a una organización y borraría las tarifas
       con código propio de otras escuelas (que no escriben `tipo_tarifa`). Ninguna migración posterior a V27
