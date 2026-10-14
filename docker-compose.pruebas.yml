@@ -47,7 +47,7 @@ services:
       SPRING_DATASOURCE_USERNAME: taemoi
       SPRING_DATASOURCE_PASSWORD: taemoi-pruebas-local
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
-      # Este entorno aplica V18..V28 en un solo arranque: desactiva la guarda de V28 (en producción
+      # Este entorno aplica V18..V29 en un solo arranque: desactiva la guarda de V28 (en producción
       # V28 va en un despliegue posterior a V27 y esta variable no existe).
       TAEMOI_V28_PERMITIR_MISMO_DESPLIEGUE_QUE_V27: "true"
       JWT_SECRET: dGFlbW9pLXBydWViYXMtbG9jYWwtand0LXNlY3JldC1zb2xvLXBhcmEtc3RhZ2luZy1uby1wcm9kdWNjaW9uLTIwMjY=

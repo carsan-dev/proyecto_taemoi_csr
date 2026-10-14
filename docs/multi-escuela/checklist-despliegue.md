@@ -25,6 +25,10 @@
       limpias: `postcheck-v26.sql` (primera consulta a 0 en las cinco tablas) y `postcheck-v27.sql`
       (`inscripciones_tarifa_distinta` = 0). Nunca en el mismo despliegue que V26/V27: ampliar y contraer en
       un solo paso deja sin vuelta atrás si el cambio de llamadores falla.
+- [ ] **El despliegue de V18–V27 NO se construye desde la punta de la rama** (contiene V28/V29 y código que
+      los necesita). Se construye desde `34f02484` más el cambio de V27 de `eff5ae14` (solo la tabla temporal
+      de la guarda). Ese V27 tiene que ser idéntico al de la rama: si se despliega el V27 de `34f02484`, en el
+      despliegue siguiente Flyway se detiene por checksum distinto de V27.
       **Guarda:** V28 se niega a ejecutarse en la misma ejecución de Flyway que V27 (V27 deja una tabla
       temporal que solo existe en esa conexión). Si ocurre, V28 se detiene antes de cambiar nada con
       `Table '…v28_no_puede_aplicarse_en_el_mismo_despliegue_que_v27' doesn't exist` y la aplicación no
