@@ -1956,7 +1956,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				.orElse(null);
 	}
 
-	private String resolverConceptoProducto(String gradoSiguiente, boolean porRecompensa, boolean rojoBordado) {
+	private String resolverConceptoProducto(String deporte, String gradoSiguiente, boolean porRecompensa,
+			boolean rojoBordado) {
 		if (CatalogoLegadoTaemoi.GRADO_ROJO.equals(gradoSiguiente)) {
 			if (porRecompensa) {
 				return rojoBordado ? DERECHO_RECOMPENSA_ROJO_BORDADO : DERECHO_RECOMPENSA_ROJO;
@@ -1966,8 +1967,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		String legado = CatalogoLegadoTaemoi.productoGradoLegado(gradoSiguiente, porRecompensa);
 		if (legado == null && comportamientoLegado.activo()
 				&& CatalogoLegadoTaemoi.nombreGradoLegado(gradoSiguiente) != null) {
-			// Lo que lanzaba TipoGrado.obtenerNombreProducto para un grado de Taemoi sin ese producto.
-			throw new IllegalArgumentException("El grado " + CatalogoLegadoTaemoi.nombreGradoLegado(gradoSiguiente)
+			// Lo que lanzaba TipoGrado.obtenerNombreProducto para un grado de Taemoi sin ese producto, con el
+			// nombre del grado en el catálogo (D3).
+			String nombre = progresionGrados.buscarGrado(deporte, gradoSiguiente).map(Grado::getNombre)
+					.orElse(gradoSiguiente);
+			throw new IllegalArgumentException("El grado " + nombre
 					+ " no tiene producto de " + (porRecompensa ? "recompensa" : "examen") + " asociado");
 		}
 		return legado;
@@ -1980,7 +1984,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	private Producto buscarProductoDeGrado(String deporte, String gradoSiguiente, boolean porRecompensa,
 			boolean rojoBordado) {
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
+		String conceptoProducto = resolverConceptoProducto(deporte, gradoSiguiente, porRecompensa, rojoBordado);
 		boolean bordado = rojoBordado && CatalogoLegadoTaemoi.GRADO_ROJO.equals(gradoSiguiente);
 		return productosCatalogo
 				.resolverProductoGrado(deporte == null ? null : deporte, gradoSiguiente, porRecompensa,

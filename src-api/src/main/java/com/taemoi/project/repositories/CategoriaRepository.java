@@ -25,4 +25,7 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
 	/** Categorías de la disciplina (catálogo V28), por {@code orden}. */
 	java.util.List<Categoria> findByDisciplinaIdOrderByOrdenAscIdAsc(Long disciplinaId);
+
+	/** Todas las categorías de la organización activa, por {@code orden}, id. */
+	java.util.List<Categoria> findAllByOrderByOrdenAscIdAsc();
 }

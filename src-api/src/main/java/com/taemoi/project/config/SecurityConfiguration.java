@@ -114,6 +114,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión
+						// (las tarifas solo para gestión, en CatalogoController).
+						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
+						.requestMatchers("/api/catalogo", "/api/catalogo/**").authenticated()
 						.requestMatchers(HttpMethod.POST, "/api/preinscripciones").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/*/documento").permitAll()

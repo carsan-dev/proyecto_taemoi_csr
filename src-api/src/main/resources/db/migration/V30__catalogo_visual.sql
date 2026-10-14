@@ -44,8 +44,9 @@
 --      organizaciones: 1, 2, 3… por id dentro de cada organización (el orden que tenían). Las tarifas
 --      creadas después sin orden reciben 0 y se listan primero (orden, id).
 --
--- Los grados se identifican por (sistema de la organización 1, codigo) y el ROJO de kickboxing por el
--- sistema de la disciplina KICKBOXING de la organización 1, nunca por id. Grados con códigos propios de
+-- Los grados se identifican por (sistema de la organización 1 con plantilla_origen TAEKWONDO o KICKBOXING
+-- — los dos de V23 —, codigo) y el ROJO de kickboxing por el sistema de la disciplina KICKBOXING de la
+-- organización 1, nunca por id. Otros sistemas de Taemoi (creados después), grados con códigos propios de
 -- Taemoi (no listados) y grados y disciplinas de otras organizaciones no se tocan.
 --
 -- Repetible tras un fallo a medias (MySQL confirma cada DDL): los UPDATE de nombres y colores fijan
@@ -62,6 +63,9 @@ UPDATE grado g
 JOIN sistema_grados sg
   ON sg.id = g.sistema_grados_id
  AND sg.organizacion_id = 1
+ AND CONVERT(sg.plantilla_origen USING utf8mb4) COLLATE utf8mb4_bin IN (
+       CONVERT('TAEKWONDO' USING utf8mb4) COLLATE utf8mb4_bin,
+       CONVERT('KICKBOXING' USING utf8mb4) COLLATE utf8mb4_bin)
 JOIN (
   SELECT 'BLANCO' AS codigo, 'BLANCO' AS nombre, '#FFFFFF' AS color_1, NULL AS color_2
   UNION ALL SELECT 'BLANCO_AMARILLO', 'BLANCO-AMARILLO', '#FFFFFF', '#FFFF00'

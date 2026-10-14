@@ -35,29 +35,38 @@ antiguas; el frontend filtra `activa` en los desplegables):
   "sistemasGrados": [{
     "id": 2, "nombre": "Kickboxing",
     "grados": [{ "codigo": "ROJO", "nombre": "MARRÓN", "orden": 11, "aplicaA": "TODOS",
-                 "color1": null, "color2": null, "requiereExamen": true }]
+                 "color1": "#8B4513", "color2": null, "requiereExamen": true }]
   }],
   "categorias": [{ "codigo": "...", "nombre": "Infantil", "disciplina": "TAEKWONDO",
                    "edadMin": null, "edadMax": 9, "orden": 1 }],
   "tarifas": [{ "codigo": "PADRES_HIJOS", "nombre": "Padres e Hijos", "disciplina": "TAEKWONDO",
-                "importe": 0.00, "importeAdulto": 28.00, "importeMenor": 26.00, "activa": true,
+                "importe": 0.00, "importeAdulto": 28.00, "importeMenor": 26.00, "orden": 7, "activa": true,
                 "requiereRolFamiliar": true, "requiereGrupoFamiliar": false }]
 }
 ```
 
-- Orden: disciplinas por `orden, id`; grados por `orden, id` (sin los de `orden` nulo, como
-  `ProgresionGradosService`); categorías por `orden, id`; tarifas por `id` (no hay columna `orden`).
+- Orden: disciplinas por `orden, id`; sistemas por `id`; grados por `orden, id` (sin los de `orden` nulo,
+  como `ProgresionGradosService`); categorías por `orden, id`; tarifas por `orden, id` (`tarifa.orden`, V30).
+- Disciplinas y tarifas: todas, también las inactivas (`activa`). `disciplina` de una tarifa o categoría:
+  código de la única disciplina que admite, o `null` (cualquiera / general).
+- Grados: `color1` = mitad inferior (primer color del código), `color2` = mitad superior, `null` = un color
+  (V30); las franjas de PUM/DAN se derivan del código.
 - `tieneMaterialExamen` = la disciplina tiene sistema de grados y algún grado con `bloque_temario`.
 - `requiereRolFamiliar` / `requiereGrupoFamiliar`: de `TarifasService` (no se replica la regla en el FE).
 - `tarifas` solo para `ROLE_MANAGER`/`ROLE_ADMIN`; `ROLE_USER` recibe `[]` (decisión 14).
 - No se exponen `meses_minimos_*`, `bloque_temario`, productos ni `equivalente_adulto_id`.
 
-`GET /api/catalogo/publico`: `{ "disciplinas": [{ "codigo", "nombre", "orden" }] }`, solo activas.
+`GET /api/catalogo/publico`: `{ "disciplinas": [{ "codigo", "nombre", "orden" }] }`, solo activas, de la
+organización de la petición (anónimo → la organización por defecto; con sesión, la de la sesión).
 
 Cabeceras: `Cache-Control: private, no-cache` y `Vary: Cookie` en los dos (la respuesta depende de la
 sesión, y la pública dependerá del dominio cuando la escuela se resuelva por dominio), con ETag
-(`ShallowEtagHeaderFilter` limitado a `/api/catalogo/**`) para respuestas 304. La caché real es la
-memoria del frontend.
+(`ShallowEtagHeaderFilter` limitado a `/api/catalogo` y `/api/catalogo/*`, `CatalogoWebConfig`) para
+respuestas 304. La caché real es la memoria del frontend.
+
+Implementado: `CatalogoController`, `CatalogoService(Impl)`, DTO `CatalogoDTO` y `CatalogoPublicoDTO`
+(records). `SecurityConfiguration`: `GET /api/catalogo/publico` → `permitAll`; `/api/catalogo` y
+`/api/catalogo/**` → `authenticated` (anónimo: 401). Pruebas: `CatalogoControllerIntegrationTest`.
 
 ## 2. Diseño del frontend
 
@@ -206,12 +215,10 @@ En las tablas, «Dn» es la decisión n de esta lista.
 
 ## 6. Migraciones
 
-No hace falta ninguna. Todo lo que el FE necesita ya existe (V23, V24, V28). El orden de tarifas
-(sin columna) se resuelve con el orden por `id` y, para Taemoi, con los órdenes de pantalla del legado;
-emoji/color de disciplina y la regla de «derecho a examen» quedan en el legado. V30 sigue reservada
-para sedes. Si el propietario decide más adelante columnas nuevas (`tarifa.orden`,
-`disciplina.icono/color`, una bandera de examen), irían en una migración posterior a V30, sin
-desplazar sedes. Las decisiones 2-6 son cambios de datos de Taemoi, no de esquema.
+V30 (catálogo visual, decisiones del 14/10/2026): nombres y colores de grado de Taemoi, nombre de DPF y
+`tarifa.orden` (ver `modelo-datos.md`). Las sedes pasan a V31. Emoji/color de disciplina y la regla de
+«derecho a examen» siguen en el legado; si el propietario decide columnas nuevas
+(`disciplina.icono/color`, una bandera de examen), irán en una migración posterior.
 
 ## 7. Rebanadas de implementación
 

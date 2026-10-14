@@ -37,6 +37,9 @@ public interface TarifasService {
 	/** Tarifas activas, en el orden del catálogo ({@code tarifa.orden}, después {@code id}). */
 	List<Tarifa> listarActivas();
 
+	/** Todas las tarifas (también inactivas), en el orden del catálogo ({@code tarifa.orden}, después {@code id}). */
+	List<Tarifa> listarTodas();
+
 	/**
 	 * Importe general de la tarifa (como {@code TarifaConfig.obtenerCuantia}).
 	 *

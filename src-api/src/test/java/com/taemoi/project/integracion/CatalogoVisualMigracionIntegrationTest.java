@@ -75,6 +75,7 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 	List<Map<String, Object>> otrasEscuelasAntes;
 	List<Map<String, Object>> tarifasOrg2Antes;
 	Map<String, Object> gradoPropioTaemoiAntes;
+	List<Map<String, Object>> otroSistemaTaemoiAntes;
 
 	@BeforeAll
 	void migrarConSegundaEscuela() {
@@ -89,6 +90,14 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 				INSERT INTO grado (organizacion_id, sistema_grados_id, codigo, nombre, orden)
 				VALUES (1, ?, 'CINTO_ESPECIAL', 'Especial', 50)""", tkd);
 		gradoPropioTaemoiAntes = jdbc.queryForMap("SELECT * FROM grado WHERE codigo = 'CINTO_ESPECIAL'");
+		// Taemoi: otro sistema creado después de V23 (plantilla propia) con códigos iguales a los de V23.
+		jdbc.update("INSERT INTO sistema_grados (organizacion_id, nombre, plantilla_origen) VALUES (1, 'Hapkido', 'HAPKIDO')");
+		long hapkido = sistemaDe(jdbc, 1, "HAPKIDO");
+		jdbc.update("""
+				INSERT INTO grado (organizacion_id, sistema_grados_id, codigo, nombre, orden, color_1, color_2)
+				VALUES (1, ?, 'ROJO', 'Rojo hapkido', 1, NULL, NULL),
+				       (1, ?, 'NEGRO_1_DAN', 'Primer dan hapkido', 2, '#111111', NULL)""", hapkido, hapkido);
+		otroSistemaTaemoiAntes = jdbc.queryForList("SELECT * FROM grado WHERE sistema_grados_id = ? ORDER BY id", hapkido);
 		otrasEscuelasAntes = otrasEscuelas(jdbc);
 		tarifasOrg2Antes = tarifasSinOrden(jdbc, org2);
 		flyway(dataSource, null).migrate();
@@ -125,6 +134,13 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void gradoPropioDeTaemoi_noSeToca() {
 		assertEquals(gradoPropioTaemoiAntes, jdbc.queryForMap("SELECT * FROM grado WHERE codigo = 'CINTO_ESPECIAL'"));
+	}
+
+	/** Solo los sistemas de V23 (plantilla TAEKWONDO o KICKBOXING): otro sistema de Taemoi no se toca. */
+	@Test
+	void otroSistemaDeTaemoi_noSeToca() {
+		assertEquals(otroSistemaTaemoiAntes, jdbc.queryForList("SELECT * FROM grado WHERE sistema_grados_id = ? ORDER BY id",
+				sistemaDe(jdbc, 1, "HAPKIDO")));
 	}
 
 	@Test
@@ -269,7 +285,7 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 		}
 		assertEquals(38, j.queryForObject("""
 				SELECT COUNT(*) FROM grado g JOIN sistema_grados s ON s.id = g.sistema_grados_id
-				WHERE s.organizacion_id = 1 AND g.color_1 IS NOT NULL""", Integer.class));
+				WHERE s.organizacion_id = 1 AND s.plantilla_origen IN ('TAEKWONDO', 'KICKBOXING') AND g.color_1 IS NOT NULL""", Integer.class));
 	}
 
 	private static void assertGrado(JdbcTemplate j, long sistema, String codigo, String[] esperado) {

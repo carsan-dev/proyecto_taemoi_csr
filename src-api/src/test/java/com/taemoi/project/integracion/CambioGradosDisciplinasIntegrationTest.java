@@ -383,6 +383,22 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 	// Convocatoria
 	// =============================================================================
 
+	/** Grado de Taemoi sin producto de examen (NEGRO_4_DAN): el error nombra el grado como el catálogo (V30). */
+	@Test
+	void convocatoria_gradoSinProductoDeExamen_errorConElNombreDelCatalogo() {
+		long adulto = altaCon("SIN-PRODUCTO", ANIO - 40, "TAEKWONDO", "NEGRO_3_DAN", "ADULTO");
+		ConvocatoriaDTO dto = new ConvocatoriaDTO();
+		dto.setFechaConvocatoria(java.sql.Date.valueOf(LocalDate.now().plusDays(12)));
+		dto.setDeporte(Deporte.TAEKWONDO.name());
+		long convocatoria = TenantContext.calcularCon(ORG_TAEMOI, () -> convocatoriaService.crearConvocatoria(dto).getId());
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> TenantContext.ejecutarCon(ORG_TAEMOI, () -> tx.executeWithoutResult(s -> {
+					alumnoDeporteService.actualizarAptoParaExamen(adulto, Deporte.TAEKWONDO.name(), true);
+					alumnoService.agregarAlumnoAConvocatoria(adulto, convocatoria, false, false);
+				})));
+		assertEquals("El grado NEGRO 4º DAN no tiene producto de examen asociado", error.getMessage());
+	}
+
 	@Test
 	void convocatoriaDeKickboxing_creaConDisciplina_promueveEnElSistemaDeKickboxing() {
 		long kb = altaCon("CONVOCATORIA", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");

@@ -58,6 +58,11 @@ public class TarifasServiceImpl implements TarifasService {
 	}
 
 	@Override
+	public List<Tarifa> listarTodas() {
+		return tarifas.findAllByOrderByOrdenAscIdAsc();
+	}
+
+	@Override
 	public BigDecimal obtenerImporte(String codigoTarifa) {
 		return obtenerPorCodigo(codigoTarifa).getImporte();
 	}
