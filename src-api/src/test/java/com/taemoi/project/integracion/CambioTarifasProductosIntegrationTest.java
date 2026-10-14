@@ -146,7 +146,7 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 	/**
 	 * Alta con los campos de deporte único (sin cuantía: la calcula el servidor desde la tarifa) y
 	 * mensualidad del deporte: el cargo cobra la cuantía de valores-actuales.md §6 y la inscripción
-	 * guarda tarifa_id y, en paralelo, tipo_tarifa.
+	 * guarda tarifa_id.
 	 */
 	@Test
 	void mensualidad_cobraLaCuantiaDeCadaTarifaHeredada() {
@@ -176,9 +176,8 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 					.cargarMensualidadIndividualPorDeporte(alumno, deporte, "2041-03", false, LocalDate.of(2041, 3, 1))));
 
 			Map<String, Object> inscripcion = jdbc.queryForMap("""
-					SELECT t.codigo AS tipo_tarifa, t.codigo AS tarifa FROM alumno_deporte ad
+					SELECT t.codigo AS tarifa FROM alumno_deporte ad
 					LEFT JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.alumno_id = ?""", alumno);
-			assertEquals(tarifa, inscripcion.get("tipo_tarifa"), tarifa);
 			assertEquals(tarifa, inscripcion.get("tarifa"), tarifa + ": tarifa_id escrita en el alta");
 
 			Map<String, Object> cargo = jdbc.queryForMap(

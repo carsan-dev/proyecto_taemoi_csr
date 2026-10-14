@@ -2,7 +2,9 @@ package com.taemoi.project.services.impl;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.organizacion.TenantContext;
@@ -25,8 +27,17 @@ public class ComportamientoLegadoServiceImpl implements ComportamientoLegadoServ
 	private final OrganizacionRepository organizaciones;
 	private final Map<Long, Lectura> lecturas = new ConcurrentHashMap<>();
 
+	private final LongSupplier reloj;
+
+	@Autowired
 	public ComportamientoLegadoServiceImpl(OrganizacionRepository organizaciones) {
+		this(organizaciones, System::currentTimeMillis);
+	}
+
+	/** Para los tests: reloj controlable (milisegundos) en vez de {@link System#currentTimeMillis()}. */
+	ComportamientoLegadoServiceImpl(OrganizacionRepository organizaciones, LongSupplier reloj) {
 		this.organizaciones = organizaciones;
+		this.reloj = reloj;
 	}
 
 	@Override
@@ -36,7 +47,7 @@ public class ComportamientoLegadoServiceImpl implements ComportamientoLegadoServ
 			throw new IllegalStateException(
 					"No hay organización activa en este hilo: fíjala con TenantContext antes de acceder a datos");
 		}
-		long ahora = System.currentTimeMillis();
+		long ahora = reloj.getAsLong();
 		Lectura lectura = lecturas.get(organizacion);
 		if (lectura == null || ahora - lectura.leidaEn() > VIGENCIA_MS) {
 			boolean valor = organizaciones.findById(organizacion)
