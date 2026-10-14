@@ -209,11 +209,11 @@
                           @if (getGradoNombrePartes(deporteItem.grado, deporteItem.deporte); as gradoPartes) {
                           <span class="deporte-detalle-grado">
                             <span class="grado-line">
-                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '')">
+                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '', deporteItem.deporte)">
                                 {{ gradoPartes.texto }}
                               </span>
                               @if (gradoPartes.sufijo) {
-                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '')">
+                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '', deporteItem.deporte)">
                                 {{ gradoPartes.sufijo }}
                               </span>
                               }

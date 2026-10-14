@@ -29,7 +29,6 @@
     "src/app/core/interceptors/error.interceptor.spec.ts",
     "src/app/enums/deporte.caracterizacion.spec.ts",
     "src/app/enums/tipo-tarifa.caracterizacion.spec.ts",
-    "src/app/enums/tipo-grado.caracterizacion.spec.ts",
     "src/app/constants/tarifa.constants.caracterizacion.spec.ts",
     "src/app/utilities/categoria-por-edad.caracterizacion.spec.ts",
     "src/app/utilities/grado-progresion.caracterizacion.spec.ts",
@@ -43,7 +42,8 @@
     "src/app/features/catalogo/catalogo.service.spec.ts",
     "src/app/componentes/disciplinas-por-catalogo.spec.ts",
     "src/app/features/catalogo/catalogo.service.disciplinas.spec.ts",
-    "src/app/componentes/endpoints/crear-alumno/crear-alumno.disciplinas.spec.ts"
+    "src/app/componentes/endpoints/crear-alumno/crear-alumno.disciplinas.spec.ts",
+    "src/app/componentes/grados-por-catalogo.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

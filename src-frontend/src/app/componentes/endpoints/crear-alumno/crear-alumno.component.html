@@ -279,7 +279,7 @@
                             <option value="" disabled selected>Selecciona el grado</option>
                             @for (grado of obtenerGradosFiltradosParaDeporte(i); track grado.id) {
                               <option [value]="grado.tipoGrado">
-                                {{ grado.tipoGrado | titlecase }}
+                                {{ getGradoNombre(grado, deporteForm.get('deporte')?.value) }}
                               </option>
                             }
                           </select>

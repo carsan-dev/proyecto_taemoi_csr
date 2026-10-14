@@ -8,7 +8,7 @@ import { CommonModule, registerLocaleData } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { getGradoNombreParaDeporte, getGradoTextStyle } from '../../../utilities/grado-colors';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { claseCssDisciplina } from '../../../features/catalogo/catalogo-reglas';
 import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
@@ -173,8 +173,18 @@ export class ListadoConvocatoriasComponent implements OnInit {
     this.guardarEstadoPaginacion();
   }
 
+  /** Disciplina de la convocatoria abierta (o la seleccionada en el filtro): sus grados dan nombre y color. */
+  private deporteDeLaConvocatoria(): string {
+    return this.convocatoriaSeleccionada?.deporte || this.deporteSeleccionado;
+  }
+
   getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+    return getGradoTextStyle(tipoGrado, this.deporteDeLaConvocatoria());
+  }
+
+  /** D3: nombre del grado en el catálogo de la disciplina de la convocatoria. */
+  getGradoNombre(tipoGrado: string | null | undefined): string {
+    return getGradoNombreParaDeporte(tipoGrado, this.deporteDeLaConvocatoria());
   }
 
   crearConvocatoria(): void {

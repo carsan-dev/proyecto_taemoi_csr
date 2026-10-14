@@ -165,7 +165,6 @@ describe('editar-alumno: disciplinas y reglas', () => {
     const c = editar(CATALOGO_TAEMOI);
     c.deportesDelAlumno = [{ deporte: 'TAEKWONDO' } as any];
     expect(c.getDeportesDisponiblesParaAgregar()).toEqual(['KICKBOXING', 'PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
-    expect(c.deportes).toEqual(['TAEKWONDO', 'KICKBOXING']);
   });
 
   it('Taemoi: sin grado solo Pilates y defensa personal', () => {
@@ -191,7 +190,6 @@ describe('editar-alumno: disciplinas y reglas', () => {
     expect(c.getDeportesDisponiblesParaAgregar()).toEqual(['JUDO']);
     c.deportesDelAlumno = [{ deporte: 'JUDO' } as any];
     expect(c.getDeportesDisponiblesParaAgregar()).toEqual([]);
-    expect(c.deportes).toEqual(['JUDO']);
     expect(c.esDeporteSinGrado('JUDO')).toBeFalse();
     expect(c.esDeporteSinGrado('YOGA')).toBeTrue();
     expect(c.ofreceDerechoExamen('JUDO')).toBeFalse();

@@ -223,7 +223,7 @@
               <label>Grupo familiar<input maxlength="50" [(ngModel)]="datosAlta.grupoFamiliar"></label>
             }
             @if (requiereDatosDeporte && requiereGrado) {
-              <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado) { <option [value]="grado">{{grado}}</option> }</select></label>
+              <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado.codigo) { <option [value]="grado.codigo">{{grado.nombre}}</option> }</select></label>
               <label>Fecha del grado<input type="date" [(ngModel)]="datosAlta.fechaGrado"></label>
             }
           </div>

@@ -1,5 +1,10 @@
-// Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
+// Caracterización de Taemoi. Si cambia, debe ser una decisión explícita.
+// Los colores y las etiquetas salen del catálogo (D3: `grado.nombre`; D4: KB ROJO marrón y «MARRÓN»; D5: color1/color2).
 import { VistaPrincipalUserComponent } from './vista-principal-user.component';
+import { crearCatalogoServiceTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
+import { Catalogo } from '../../../features/catalogo/catalogo.models';
+import { TestBed } from '@angular/core/testing';
 
 interface Visual {
   topColor: string;
@@ -9,73 +14,52 @@ interface Visual {
   label: string;
 }
 
-/** Instancia sin constructor ni TestBed: solo se usan métodos puros que dependen de estos dos campos. */
-function crear() {
+/** Catálogo de Taemoi con los colores de los grados sin rellenar (BD sin V30): paleta de respaldo de la vista. */
+const CATALOGO_TAEMOI_SIN_COLORES: Catalogo = {
+  ...CATALOGO_TAEMOI,
+  sistemasGrados: CATALOGO_TAEMOI.sistemasGrados.map((s) => ({
+    ...s,
+    grados: s.grados.map((g) => ({ ...g, color1: null, color2: null })),
+  })),
+};
+
+/** Instancia sin constructor ni TestBed de componente: solo se usan métodos que dependen de estos campos. */
+function crear(catalogo: Catalogo = CATALOGO_TAEMOI) {
   const c = Object.create(VistaPrincipalUserComponent.prototype);
   c.beltVisualCache = new Map();
+  c.beltCacheCatalogo = null;
   c.beltWidthPx = 84;
+  TestBed.resetTestingModule();
+  c.catalogo = TestBed.runInInjectionContext(() => crearCatalogoServiceTesting(catalogo));
   return c as {
-    getBeltColorByName(n: string, kb: boolean): string;
     getBeltLabel(g: string, d: string | null | undefined): string;
     getBeltVisual(g: string | null | undefined, d: string | null | undefined): Visual;
   };
 }
 
 describe('vista-principal-user cinturones (caracterización)', () => {
-  const c = crear();
-
-  describe('getBeltColorByName', () => {
-    const tabla: [string, boolean, string][] = [
-      ['BLANCO', false, '#FFFFFF'],
-      ['AMARILLO', false, '#FFFF00'],
-      ['NARANJA', false, '#FFA500'],
-      ['VERDE', false, '#008000'],
-      ['AZUL', false, '#0000FF'],
-      ['ROJO', false, '#FF0000'],
-      ['NEGRO', false, '#000000'],
-      ['BLANCO', true, '#FFFFFF'],
-      ['AMARILLO', true, '#FFFF00'],
-      ['NARANJA', true, '#FFA500'],
-      ['VERDE', true, '#008000'],
-      ['AZUL', true, '#0000FF'],
-      ['ROJO', true, '#8B4513'],
-      ['NEGRO', true, '#000000'],
-      ['rojo', true, '#8B4513'],
-      [' rojo ', false, '#FF0000'],
-      ['MARRON', false, '#CCCCCC'],
-      ['XYZ', false, '#CCCCCC'],
-      ['', false, '#CCCCCC'],
-    ];
-    tabla.forEach(([nombre, kb, color]) => {
-      it(`${JSON.stringify(nombre)} kickboxing=${kb} -> ${color}`, () => {
-        expect(c.getBeltColorByName(nombre, kb)).toBe(color);
-      });
-    });
-  });
-
   describe('getBeltLabel', () => {
+    // Antes: «BLANCO/AMARILLO», «ROJO/NEGRO 1 PUM», «NEGRO 1 DAN», «MARRON». Ahora: grado.nombre (D3) y D4.
     const tabla: [string, string | null, string][] = [
       ['BLANCO', 'TAEKWONDO', 'BLANCO'],
-      ['BLANCO_AMARILLO', 'TAEKWONDO', 'BLANCO/AMARILLO'],
-      ['AMARILLO_NARANJA', 'TAEKWONDO', 'AMARILLO/NARANJA'],
-      ['AZUL_ROJO', 'TAEKWONDO', 'AZUL/ROJO'],
-      ['AZUL_ROJO', 'KICKBOXING', 'AZUL/MARRON'],
+      ['BLANCO_AMARILLO', 'TAEKWONDO', 'BLANCO-AMARILLO'], // D3
+      ['AMARILLO_NARANJA', 'TAEKWONDO', 'AMARILLO-NARANJA'], // D3
+      ['AZUL_ROJO', 'TAEKWONDO', 'AZUL-ROJO'], // D3
+      ['AZUL_ROJO', 'KICKBOXING', 'AZUL-ROJO'], // D3 (el nombre de KB no cambia para este grado)
       ['ROJO', 'TAEKWONDO', 'ROJO'],
-      ['ROJO', 'KICKBOXING', 'MARRON'],
-      ['ROJO_NEGRO', 'TAEKWONDO', 'ROJO/NEGRO'],
-      ['ROJO_NEGRO', 'KICKBOXING', 'MARRON/NEGRO'],
-      ['ROJO_NEGRO_1_PUM', 'TAEKWONDO', 'ROJO/NEGRO 1 PUM'],
-      ['ROJO_NEGRO_3_PUM', 'KICKBOXING', 'MARRON/NEGRO 3 PUM'],
-      ['NEGRO_1_DAN', 'TAEKWONDO', 'NEGRO 1 DAN'],
-      ['NEGRO_5_DAN', 'KICKBOXING', 'NEGRO 5 DAN'],
-      ['NEGRO', 'TAEKWONDO', 'NEGRO'],
-      ['negro_2_dan', null, 'NEGRO 2 DAN'],
+      ['ROJO', 'KICKBOXING', 'MARRÓN'], // D3, D4 (antes «MARRON»)
+      ['ROJO_NEGRO_1_PUM', 'TAEKWONDO', 'ROJO-NEGRO 1º PUM'], // D3
+      ['ROJO_NEGRO_3_PUM', 'KICKBOXING', 'ROJO-NEGRO 3º PUM'], // D3
+      ['NEGRO_1_DAN', 'TAEKWONDO', 'NEGRO 1º DAN'], // D3
+      ['NEGRO_5_DAN', 'KICKBOXING', 'NEGRO 5º DAN'], // D3
       ['', 'TAEKWONDO', ''],
       ['DESCONOCIDO', 'TAEKWONDO', 'DESCONOCIDO'],
+      // Sin disciplina no hay sistema de grados donde buscar: el propio código.
+      ['negro_2_dan', null, 'NEGRO_2_DAN'],
     ];
     tabla.forEach(([grado, deporte, etiqueta]) => {
       it(`${JSON.stringify(grado)} (${deporte}) -> ${JSON.stringify(etiqueta)}`, () => {
-        expect(c.getBeltLabel(grado, deporte)).toBe(etiqueta);
+        expect(crear().getBeltLabel(grado, deporte)).toBe(etiqueta);
       });
     });
   });
@@ -85,29 +69,46 @@ describe('vista-principal-user cinturones (caracterización)', () => {
       ({ topColor, bottomColor, isSplit, stripeOffsets, label });
 
     // Con beltWidthPx=84: ancho de franja 5 + hueco 1, margen inicial 3 -> offsets 3, 9, 15, 21, 27
-    const tabla: [string, string, string | null, string | null, Visual][] = [
-      ['vacío', '', 'TAEKWONDO', '', visual('#CCCCCC', '#CCCCCC', false, [], 'SIN GRADO')],
-      ['null', 'null', null, null, visual('#CCCCCC', '#CCCCCC', false, [], 'SIN GRADO')],
-      ['BLANCO', 'BLANCO', 'TAEKWONDO', 'BLANCO', visual('#FFFFFF', '#FFFFFF', false, [], 'BLANCO')],
-      ['AMARILLO_NARANJA', 'AMARILLO_NARANJA', 'TAEKWONDO', 'AMARILLO_NARANJA', visual('#FFA500', '#FFFF00', true, [], 'AMARILLO/NARANJA')],
-      ['AZUL_ROJO TKD', 'AZUL_ROJO', 'TAEKWONDO', 'AZUL_ROJO', visual('#FF0000', '#0000FF', true, [], 'AZUL/ROJO')],
-      ['AZUL_ROJO KB', 'AZUL_ROJO', 'KICKBOXING', 'AZUL_ROJO', visual('#8B4513', '#0000FF', true, [], 'AZUL/MARRON')],
-      ['ROJO TKD', 'ROJO', 'TAEKWONDO', 'ROJO', visual('#FF0000', '#FF0000', false, [], 'ROJO')],
-      ['ROJO KB', 'ROJO', 'KICKBOXING', 'ROJO', visual('#8B4513', '#8B4513', false, [], 'MARRON')],
-      ['ROJO_NEGRO (sin PUM)', 'ROJO_NEGRO', 'TAEKWONDO', 'ROJO_NEGRO', visual('#000000', '#FF0000', true, [], 'ROJO/NEGRO')],
-      ['ROJO_NEGRO_1_PUM', 'ROJO_NEGRO_1_PUM', 'TAEKWONDO', 'ROJO_NEGRO_1_PUM', visual('#000000', '#FF0000', true, [3], 'ROJO/NEGRO 1 PUM')],
-      ['ROJO_NEGRO_3_PUM KB', 'ROJO_NEGRO_3_PUM', 'KICKBOXING', 'ROJO_NEGRO_3_PUM', visual('#000000', '#8B4513', true, [3, 9, 15], 'MARRON/NEGRO 3 PUM')],
-      ['NEGRO', 'NEGRO', 'TAEKWONDO', 'NEGRO', visual('#000000', '#000000', false, [], 'NEGRO')],
-      ['NEGRO_1_DAN', 'NEGRO_1_DAN', 'TAEKWONDO', 'NEGRO_1_DAN', visual('#000000', '#000000', false, [3], 'NEGRO 1 DAN')],
-      ['NEGRO_5_DAN', 'NEGRO_5_DAN', 'KICKBOXING', 'NEGRO_5_DAN', visual('#000000', '#000000', false, [3, 9, 15, 21, 27], 'NEGRO 5 DAN')],
-      ['desconocido', 'DESCONOCIDO', 'TAEKWONDO', 'DESCONOCIDO', visual('#CCCCCC', '#CCCCCC', false, [], 'DESCONOCIDO')],
-      ['minúsculas', 'negro_2_dan', 'kickboxing', 'negro_2_dan', visual('#000000', '#000000', false, [3, 9], 'NEGRO 2 DAN')],
+    const tabla: [string, string | null, string | null, Visual][] = [
+      ['vacío', 'TAEKWONDO', '', visual('#CCCCCC', '#CCCCCC', false, [], 'SIN GRADO')],
+      ['null', null, null, visual('#CCCCCC', '#CCCCCC', false, [], 'SIN GRADO')],
+      ['BLANCO', 'TAEKWONDO', 'BLANCO', visual('#FFFFFF', '#FFFFFF', false, [], 'BLANCO')],
+      ['AMARILLO_NARANJA', 'TAEKWONDO', 'AMARILLO_NARANJA', visual('#FFA500', '#FFFF00', true, [], 'AMARILLO-NARANJA')],
+      ['AZUL_ROJO TKD', 'TAEKWONDO', 'AZUL_ROJO', visual('#FF0000', '#0000FF', true, [], 'AZUL-ROJO')],
+      ['ROJO TKD', 'TAEKWONDO', 'ROJO', visual('#FF0000', '#FF0000', false, [], 'ROJO')],
+      ['ROJO KB', 'KICKBOXING', 'ROJO', visual('#8B4513', '#8B4513', false, [], 'MARRÓN')],
+      ['ROJO_NEGRO_1_PUM', 'TAEKWONDO', 'ROJO_NEGRO_1_PUM', visual('#000000', '#FF0000', true, [3], 'ROJO-NEGRO 1º PUM')],
+      ['NEGRO_1_DAN', 'TAEKWONDO', 'NEGRO_1_DAN', visual('#000000', '#000000', false, [3], 'NEGRO 1º DAN')],
+      ['NEGRO_5_DAN', 'KICKBOXING', 'NEGRO_5_DAN', visual('#000000', '#000000', false, [3, 9, 15, 21, 27], 'NEGRO 5º DAN')],
+      ['minúsculas', 'kickboxing', 'negro_2_dan', visual('#000000', '#000000', false, [3, 9], 'NEGRO 2º DAN')],
     ];
-    tabla.forEach(([desc, , deporte, grado, esperado]) => {
+    tabla.forEach(([desc, deporte, grado, esperado]) => {
       it(desc, () => {
-        const fresco = crear();
-        expect(fresco.getBeltVisual(grado, deporte)).toEqual(esperado);
+        expect(crear().getBeltVisual(grado, deporte)).toEqual(esperado);
       });
+    });
+
+    it('AZUL_ROJO en KB: color2 del catálogo (rojo del propio grado; solo el grado ROJO es marrón en KB, D4)', () => {
+      expect(crear().getBeltVisual('AZUL_ROJO', 'KICKBOXING')).toEqual(
+        visual('#FF0000', '#0000FF', true, [], 'AZUL-ROJO')
+      );
+    });
+
+    // Antes el rojo de las franjas ROJO_NEGRO era marrón por código en KB; el catálogo (V30) solo hace marrón al grado ROJO.
+    it('ROJO_NEGRO_3_PUM en KB: franjas del código y colores del catálogo', () => {
+      expect(crear().getBeltVisual('ROJO_NEGRO_3_PUM', 'KICKBOXING')).toEqual(
+        visual('#000000', '#FF0000', true, [3, 9, 15], 'ROJO-NEGRO 3º PUM')
+      );
+    });
+
+    it('NEGRO sin sistema de grados que lo defina: negro por la paleta de respaldo (en el catálogo no existe «NEGRO»)', () => {
+      expect(crear().getBeltVisual('NEGRO', 'TAEKWONDO')).toEqual(visual('#000000', '#000000', false, [], 'NEGRO'));
+    });
+
+    it('desconocido: paleta de respaldo por nombre (gris sin color en el código) y el propio código como etiqueta', () => {
+      expect(crear().getBeltVisual('DESCONOCIDO', 'TAEKWONDO')).toEqual(
+        visual('#CCCCCC', '#CCCCCC', false, [], 'DESCONOCIDO')
+      );
     });
 
     it('cachea por deporte|grado y devuelve la misma referencia', () => {
@@ -115,6 +116,19 @@ describe('vista-principal-user cinturones (caracterización)', () => {
       const a = fresco.getBeltVisual('AZUL', 'TAEKWONDO');
       expect(fresco.getBeltVisual('AZUL', 'TAEKWONDO')).toBe(a);
       expect(fresco.getBeltVisual('azul', 'taekwondo')).toBe(a);
+    });
+
+    describe('catálogo sin colores (BD sin V30): paleta de respaldo de la vista', () => {
+      it('conserva la paleta por nombre de color (ROJO rojo también en KB, sin marrón por código) y los nombres', () => {
+        const c = crear(CATALOGO_TAEMOI_SIN_COLORES);
+        expect(c.getBeltVisual('AMARILLO_NARANJA', 'TAEKWONDO')).toEqual(
+          visual('#FFA500', '#FFFF00', true, [], 'AMARILLO-NARANJA')
+        );
+        expect(c.getBeltVisual('ROJO', 'KICKBOXING')).toEqual(visual('#FF0000', '#FF0000', false, [], 'MARRÓN'));
+        expect(c.getBeltVisual('ROJO_NEGRO_2_PUM', 'TAEKWONDO')).toEqual(
+          visual('#000000', '#FF0000', true, [3, 9], 'ROJO-NEGRO 2º PUM')
+        );
+      });
     });
   });
 });

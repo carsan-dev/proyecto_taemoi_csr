@@ -1072,8 +1072,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     return calcularEdad(fechaNacimiento);
   }
 
-  getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+  getGradoStyle(tipoGrado: string, deporte?: string | null): string {
+    return getGradoTextStyle(tipoGrado, deporte);
   }
 
   getGradoNombre(tipoGrado: string | null | undefined, deporte: string | null | undefined): string {

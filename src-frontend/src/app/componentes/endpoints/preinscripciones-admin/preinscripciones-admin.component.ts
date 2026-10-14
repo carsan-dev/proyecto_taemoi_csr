@@ -18,7 +18,7 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   editandoTurnos=false; cargandoTurnos=false; procesandoTurnos=false; turnosDisponibles:any[]=[]; turnoIdsEdicion:number[]=[];
   accionAlumno:''|'CREAR_NUEVO'|'VINCULAR_EXISTENTE'=''; alumnoSeleccionado:any; discapacidadHistorica:boolean|null=null;
   decisionEmail:''|'CONSERVAR_FICHA'|'USAR_PREINSCRIPCION'='';
-  datosAlta:any={tipoTarifa:'',cuantiaTarifa:null,rolFamiliar:'NINGUNO',grupoFamiliar:'',grado:'BLANCO',fechaGrado:''};
+  datosAlta:any={tipoTarifa:'',cuantiaTarifa:null,rolFamiliar:'NINGUNO',grupoFamiliar:'',grado:'',fechaGrado:''};
   readonly camposComparables=[
     {clave:'NOMBRE',etiqueta:'Nombre',pre:'nombre',alumno:'nombre'},
     {clave:'APELLIDOS',etiqueta:'Apellidos',pre:'apellidos',alumno:'apellidos'},
@@ -102,8 +102,9 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   get requiereGrado(){return this.catalogo.tieneGrados(this.seleccion?.deporte);}
   get tarifasDisponibles():string[]{switch(this.seleccion?.deporte){case 'KICKBOXING':return ['KICKBOXING'];case 'PILATES':return ['PILATES'];case 'DEFENSA_PERSONAL_FEMENINA':return ['DEFENSA_PERSONAL_FEMENINA'];default:return ['INFANTIL','ADULTO','INFANTIL_GRUPO','ADULTO_GRUPO','FAMILIAR','HERMANOS','PADRES_HIJOS'];}}
   private tarifaInicial(){if(this.seleccion?.deporte!=='TAEKWONDO')return this.tarifasDisponibles[0]||'';const nacimiento=new Date(this.seleccion.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return 'INFANTIL';const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18?'INFANTIL':'ADULTO';}
-  private prepararTarifa(alumno?:any){const hoy=new Date().toISOString().slice(0,10),tipo=alumno?.tipoTarifa||this.tarifaInicial();this.datosAlta={tipoTarifa:tipo,cuantiaTarifa:alumno?.cuantiaTarifa??this.cuantiaEstandar(tipo),rolFamiliar:alumno?.rolFamiliar||'NINGUNO',grupoFamiliar:alumno?.grupoFamiliar||'',grado:'BLANCO',fechaGrado:hoy};}
-  get gradosDisponibles():string[]{const todos=['BLANCO','BLANCO_AMARILLO','AMARILLO','AMARILLO_NARANJA','NARANJA','NARANJA_VERDE','VERDE','VERDE_AZUL','AZUL','AZUL_ROJO','ROJO','ROJO_NEGRO_1_PUM','ROJO_NEGRO_2_PUM','ROJO_NEGRO_3_PUM','NEGRO_1_DAN','NEGRO_2_DAN','NEGRO_3_DAN','NEGRO_4_DAN','NEGRO_5_DAN'];if(this.seleccion?.deporte!=='KICKBOXING')return todos;const kick=new Set(['BLANCO','AMARILLO','NARANJA','VERDE','AZUL','ROJO','NEGRO_1_DAN','NEGRO_2_DAN','NEGRO_3_DAN','NEGRO_4_DAN','NEGRO_5_DAN']);return todos.filter(g=>kick.has(g));}
+  private prepararTarifa(alumno?:any){const hoy=new Date().toISOString().slice(0,10),tipo=alumno?.tipoTarifa||this.tarifaInicial();this.datosAlta={tipoTarifa:tipo,cuantiaTarifa:alumno?.cuantiaTarifa??this.cuantiaEstandar(tipo),rolFamiliar:alumno?.rolFamiliar||'NINGUNO',grupoFamiliar:alumno?.grupoFamiliar||'',grado:this.gradosDisponibles[0]?.codigo??'',fechaGrado:hoy};}
+  /** Grados que ofrece el sistema de la disciplina de la solicitud, por `orden` (D3: se muestra `nombre`). */
+  get gradosDisponibles():{codigo:string;nombre:string}[]{return this.catalogo.gradosSeleccionables(this.seleccion?.deporte);}
   cambiarTarifa(){this.datosAlta.cuantiaTarifa=this.cuantiaEstandar(this.datosAlta.tipoTarifa);if(this.datosAlta.tipoTarifa!=='PADRES_HIJOS')this.datosAlta.rolFamiliar='NINGUNO';if(this.datosAlta.tipoTarifa!=='HERMANOS')this.datosAlta.grupoFamiliar='';}
   private cuantiaEstandar(t:string){const importes:Record<string,number>={FAMILIAR:0,PADRES_HIJOS:0,ADULTO_GRUPO:20,INFANTIL_GRUPO:20,HERMANOS:26,INFANTIL:28,ADULTO:30,KICKBOXING:30,PILATES:30,DEFENSA_PERSONAL_FEMENINA:25};return importes[t]??0;}
   get correosDiferentes(){return this.accionAlumno==='VINCULAR_EXISTENTE'&&this.alumnoSeleccionado&&this.valorComparable(this.alumnoSeleccionado.email,'EMAIL')!==this.valorComparable(this.seleccion?.email,'EMAIL');}

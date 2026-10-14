@@ -15,7 +15,6 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { RolFamiliar } from '../../../enums/rol-familiar';
-import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { getDeporteLabel } from '../../../enums/deporte';
@@ -77,11 +76,8 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   // Opciones de dropdown
   tiposTarifa = Object.values(TipoTarifa);
   rolesFamiliares = Object.values(RolFamiliar);
-  tiposGrado = Object.values(TipoGrado);
-  /** Disciplinas con sistema de grados (las que admiten grado, examen y convocatorias). */
-  get deportes(): string[] {
-    return this.catalogo.disciplinasConGrados().map((disciplina) => disciplina.codigo);
-  }
+  /** Códigos de grado que el backend ofrece para la fecha de nacimiento (filtro por edad). */
+  tiposGrado: string[] = [];
   todosLosGrados: any[] = [];
   grados: any[] = [];
 
@@ -1406,7 +1402,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.endpointsService
       .obtenerGradosPorFechaNacimiento(fechaNacimiento)
       .subscribe({
-        next: (tiposGrado: TipoGrado[]) => {
+        next: (tiposGrado: string[]) => {
           this.tiposGrado = tiposGrado;
           this.aplicarFiltrosGrado();
         },
@@ -1670,8 +1666,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return getGradoNombreParaDeporte(tipoGrado, deporteSeleccionado);
   }
 
-  getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+  /** Grados que ofrece el sistema de la disciplina (modales de alta de deporte y cambio de grado), por `orden`. */
+  gradosDeLaDisciplina(deporte: string | null | undefined): { codigo: string; nombre: string }[] {
+    return this.catalogo.gradosSeleccionables(deporte);
+  }
+
+  getGradoStyle(tipoGrado: string, deporte?: string | null): string {
+    return getGradoTextStyle(tipoGrado, deporte || this.alumnoForm.get('deporte')?.value);
   }
 
   /**
@@ -2357,7 +2358,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
     this.nuevoDeporte = this.deportesDisponibles[0];
-    this.gradoInicialDeporte = 'BLANCO';
+    this.gradoInicialDeporte = '';
 
     // Set default dates to today
     const today = new Date();
@@ -2403,8 +2404,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.gradoInicialDeporte) {
-      this.gradoInicialDeporte = 'BLANCO';
+    // Grado inicial: el primero que ofrece el sistema de grados de la disciplina (BLANCO en Taemoi).
+    const gradosDeLaDisciplina = this.catalogo.gradosSeleccionables(deporte).map((grado) => grado.codigo);
+    if (!gradosDeLaDisciplina.includes(this.gradoInicialDeporte)) {
+      this.gradoInicialDeporte = gradosDeLaDisciplina[0] ?? '';
     }
 
     if (!this.fechaGradoDeporte) {
@@ -3044,7 +3047,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   abrirModalActualizarGrado(deporte: string): void {
     this.deporteParaActualizarGrado = deporte;
     const deporteActual = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    this.nuevoGradoActualizar = deporteActual?.grado || 'BLANCO';
+    this.nuevoGradoActualizar = deporteActual?.grado || this.catalogo.gradosSeleccionables(deporte)[0]?.codigo || '';
     this.fechaGradoActualizar =
       this.formatDateForInput(deporteActual?.fechaGrado) || this.formatDateForInput(new Date());
     this.mostrarModalActualizarGrado = true;
@@ -3089,9 +3092,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     concat(...updates).subscribe({
       complete: () => {
         const deporteLabel = getDeporteLabel(this.deporteParaActualizarGrado);
+        const gradoNombre = this.getGradoNombre(this.nuevoGradoActualizar, this.deporteParaActualizarGrado);
         const mensaje = this.fechaGradoActualizar
-          ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${this.nuevoGradoActualizar}`
-          : `El grado para ${deporteLabel} ha sido actualizado a ${this.nuevoGradoActualizar}`;
+          ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${gradoNombre}`
+          : `El grado para ${deporteLabel} ha sido actualizado a ${gradoNombre}`;
 
         Swal.fire({
           title: 'Grado actualizado!',

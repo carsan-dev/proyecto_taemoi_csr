@@ -511,7 +511,7 @@
                           <i class="bi bi-award"></i>
                           Grado Actual
                         </span>
-                        <span class="info-value info-value-highlight" [style]="getGradoStyle(deporteItem.grado || '')">
+                        <span class="info-value info-value-highlight" [style]="getGradoStyle(deporteItem.grado || '', deporteItem.deporte)">
                           {{ getGradoNombre(deporteItem.grado, deporteItem.deporte) || 'Sin grado asignado' }}
                         </span>
                       </div>
@@ -1942,8 +1942,8 @@
             <span class="required">*</span>
           </label>
           <select appSearchableSelect id="gradoInicialDeporte" class="admin-form-control form-select" [(ngModel)]="gradoInicialDeporte">
-            @for (grado of todosLosGrados; track grado.tipoGrado) {
-            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            @for (grado of gradosDeLaDisciplina(nuevoDeporte); track grado.codigo) {
+            <option [value]="grado.codigo">{{ grado.nombre }}</option>
             }
           </select>
           <small class="form-text text-muted mt-2">
@@ -2044,8 +2044,8 @@
             <span class="required">*</span>
           </label>
           <select appSearchableSelect id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
-            @for (grado of todosLosGrados; track grado.tipoGrado) {
-            <option [value]="grado.tipoGrado">{{ grado.tipoGrado }}</option>
+            @for (grado of gradosDeLaDisciplina(deporteParaActualizarGrado); track grado.codigo) {
+            <option [value]="grado.codigo">{{ grado.nombre }}</option>
             }
           </select>
           <small class="form-text text-muted mt-2">

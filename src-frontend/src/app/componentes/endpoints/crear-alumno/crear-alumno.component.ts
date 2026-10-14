@@ -11,7 +11,6 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TipoTarifa } from '../../../enums/tipo-tarifa';
-import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
@@ -59,7 +58,8 @@ export class CrearAlumnoComponent implements OnInit {
   imagenPreview: string | ArrayBuffer | null = null;
   tiposTarifa: TipoTarifa[] = Object.values(TipoTarifa);
   rolesFamiliares: RolFamiliar[] = Object.values(RolFamiliar);
-  tiposGrado: TipoGrado[] = [];
+  /** Códigos de grado que el backend ofrece para la fecha de nacimiento (filtro por edad). */
+  tiposGrado: string[] = [];
   grados: any[] = [];
   todosLosGrados: any[] = [];
   categorias = ['Infantil', 'Precadete', 'Cadete', 'Junior', 'Senior'];
@@ -386,7 +386,7 @@ export class CrearAlumnoComponent implements OnInit {
 
   obtenerGradosDisponibles(fechaNacimiento: string): void {
     this.endpointsService.obtenerGradosPorFechaNacimiento(fechaNacimiento).subscribe({
-      next: (tiposGrado: TipoGrado[]) => {
+      next: (tiposGrado: string[]) => {
         this.tiposGrado = tiposGrado;
         this.aplicarFiltrosGrado();
       },

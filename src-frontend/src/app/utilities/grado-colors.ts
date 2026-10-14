@@ -1,6 +1,6 @@
 import { catalogoActual, disciplinaActual } from '../features/catalogo/catalogo-actual';
 import { CatalogoGrado } from '../features/catalogo/catalogo.models';
-import { coloresGrado, gradosDeDisciplina } from '../features/catalogo/catalogo-reglas';
+import { coloresGrado, estiloTextoGrado, gradosDeDisciplina } from '../features/catalogo/catalogo-reglas';
 
 export interface GradoColorInfo {
   colors: string[];
@@ -156,4 +156,25 @@ export function getGradoTextStyle(tipoGrado: string, deporte?: string | null): s
 
     return style;
   }
+}
+
+/**
+ * Estilo de texto de un grado identificado por su NOMBRE (`grado.nombre`, p. ej. «MARRÓN»), cuando solo se
+ * conoce el nombre y no la disciplina (listados cortos del backend, `AlumnoCortoDTO.grado`). Busca el primer
+ * grado con ese nombre y `color1` en cualquier sistema del catálogo (D5); si no hay (catálogo sin cargar,
+ * nombre desconocido, `color1` nulo): paleta por nombre de color de este archivo.
+ * Con nombres repetidos entre disciplinas con colores distintos el resultado es el del primer sistema:
+ * limitación hasta que el DTO incluya disciplina o colores.
+ */
+export function getGradoTextStylePorNombre(nombre: string | null | undefined): string {
+  const buscado = (nombre ?? '').trim().toUpperCase();
+  if (buscado) {
+    const grado = catalogoActual()
+      ?.sistemasGrados.flatMap((sistema) => sistema.grados)
+      .find((g) => g.color1 && g.nombre.trim().toUpperCase() === buscado);
+    if (grado) {
+      return estiloTextoGrado(grado);
+    }
+  }
+  return getGradoTextStyle(nombre ?? '');
 }
