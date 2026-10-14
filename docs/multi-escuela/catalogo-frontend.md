@@ -210,6 +210,8 @@ En las tablas, «Dn» es la decisión n de esta lista.
 - D8: nombre de la tarifa en todas las pantallas.
 - Orden de tarifas: nueva columna `tarifa.orden`; Taemoi con el orden de crear-alumno.
 - D1, D9–D15: según la recomendación.
+- PDF de lista de asistencia: usa los colores del catálogo (una sola paleta).
+- Mensualidades en listado-alumnos: se ofrecen todas las disciplinas activas (antes solo TKD y KB).
 - Consecuencia: hace falta una migración de datos (V30: nombres y colores de grado, nombre de DPF,
   `tarifa.orden`). Las sedes pasan a V31.
 
