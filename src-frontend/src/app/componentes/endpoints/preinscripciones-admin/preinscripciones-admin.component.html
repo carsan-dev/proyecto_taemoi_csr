@@ -212,6 +212,7 @@
           <div class="form-grid">
             <label>Tipo de tarifa
               <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
+                @if (!datosAlta.tipoTarifa) { <option value="" disabled>Selecciona una tarifa</option> }
                 @for (tarifa of tarifasDisponibles; track tarifa.codigo) { <option [value]="tarifa.codigo">{{tarifa.nombre}}</option> }
               </select>
             </label>

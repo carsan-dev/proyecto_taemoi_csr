@@ -7,6 +7,9 @@ queda en un único módulo (`legado-taemoi.ts`) y es una decisión pendiente del
 
 Rutas abreviadas: FE = `src-frontend/src/app`, API = `src-api/src/main/java/com/taemoi/project`.
 
+**Estado (14/10/2026):** rebanadas 0 a 8 implementadas en el frontend (fase C completa). Quedan fuera las páginas
+públicas por disciplina (D13) y la comprobación manual con `docker-compose.pruebas.yml`.
+
 ## 1. Contrato de los endpoints
 
 Dos lecturas nuevas en un `CatalogoController`. `/api/grados` y `/api/grados/disponibles/{fecha}` no
@@ -126,7 +129,7 @@ Carga e invalidación:
 | `esSiguienteGradoRojo` (cinturón bordado) | — | Solo con legado (D11) | Sí |
 | `materiales-examen-user.ts:68-86` etiquetas | `grado.nombre` | Legado: etiquetas actuales (D3) | Sí |
 | `grado-colors.ts` `getGradoNombreParaDeporte` (ROJO → MARRÓN) | `grado.nombre` | Legado: código y «MARRÓN» como hoy (D3) | Sí |
-| `grado-colors.ts` `getGradoColors`/`getGradoTextStyle` | `color1` (base, mitad inferior), `color2` (mitad superior; nulo = color único) | Si `color1` es nulo: paleta actual de ese archivo | Sí (en la BD son nulos) |
+| `grado-colors.ts` `getGradoColors`/`getGradoTextStyle` | `color1` (base, mitad inferior), `color2` (mitad superior; nulo = color único) | Si `color1` es nulo: paleta actual de ese archivo | Sí (V30 guarda los colores de Taemoi; la paleta solo cubre sistemas sin colores) |
 | `vista-principal-user.ts:2745-2870` cinturón, KB ROJO `#8B4513`, franjas PUM/DAN, etiquetas «MARRON» | Igual que la fila anterior; franjas por patrón de código `_<n>_(PUM\|DAN)` | Si `color1` es nulo: paleta propia de esa vista; etiquetas legado (D3, D4) | Sí |
 | `enums/tipo-tarifa.ts` | `tarifasDe(d)` = tarifas activas con `disciplina` nula o igual | — | Ver fila siguiente |
 | Listas de tarifas por pantalla: `crear-alumno.ts:225-255,:646-680`, `editar-alumno.ts:1540-1560`, `editar-alumno.html:431-439,:759-767`, `preinscripciones-admin.ts:101` | `tarifasDe(d)`, orden del catálogo, etiqueta según la pantalla (código o nombre, como hoy) | Legado: subconjunto y orden de cada pantalla (D7) | Sí |
@@ -157,7 +160,7 @@ propietario.
 | 8 | Grados seleccionables | KB: 11 códigos fijos; TKD: 19 | KB `aplica_a ≠ NINGUNO` = los 11; TKD = 19, mismo orden | U |
 | 9 | `TipoGrado` | 13 códigos (incluye `ROJO_NEGRO`, `NEGRO`, que no existen) | 19 códigos | U (se borra el enum) |
 | 10 | Nombre de grado | Código en bruto (`BLANCO_AMARILLO`), «MARRÓN» (KB ROJO, `grado-colors.ts`), «MARRON» y «MARRON/NEGRO 1 PUM» (vista usuario), «NEGRO 1º PUM» para `ROJO_NEGRO_1_PUM` (materiales) | «Blanco-Amarillo», «Rojo-Negro-1-Pum», «Negro-1-Dan»; KB ROJO «MARRÓN» (mayúsculas, el resto no) | L + P (D3) |
-| 11 | Color KB ROJO | Rojo `#FF0000` en `grado-colors.ts`; marrón `#8B4513` en vista usuario | `color_1`/`color_2` nulos («decisión visual pendiente», V23) | L + P (D4, D5) |
+| 11 | Color KB ROJO | Rojo `#FF0000` en `grado-colors.ts`; marrón `#8B4513` en vista usuario | Nulos en V23; V30 (D5) guarda la paleta de Taemoi con KB ROJO marrón | L + P (D4, D5) |
 | 12 | Tarifas por pantalla | crear-alumno: orden del enum (ADULTO, ADULTO_GRUPO, FAMILIAR, INFANTIL, INFANTIL_GRUPO, HERMANOS, PADRES_HIJOS) y otro orden en `:646`/`editar-alumno.ts:1540` (…, PADRES_HIJOS, FAMILIAR); `editar-alumno.html`: 8 tarifas sin INFANTIL_GRUPO ni FAMILIAR y sin filtrar por disciplina; preinscripciones-admin: INFANTIL, ADULTO, INFANTIL_GRUPO, ADULTO_GRUPO, FAMILIAR, HERMANOS, PADRES_HIJOS | Orden por `id`: FAMILIAR, PADRES_HIJOS, ADULTO_GRUPO, INFANTIL_GRUPO, HERMANOS, INFANTIL, ADULTO, KICKBOXING, PILATES, DPF; las 7 primeras con disciplina TAEKWONDO | L + P (D7) |
 | 13 | Tarifa inicial en preinscripciones-admin | `<18` → INFANTIL, si no ADULTO (solo TKD) | `edad_adulto` TKD = 14 | L + P (D9) |
 | 14 | `asignarCuantiaTarifa` | Sin PILATES ni DPF (lanza error) | Tiene las 10 | U (código muerto, se borra) |
@@ -237,8 +240,8 @@ de segunda escuela coherente con `scripts/pruebas/segunda-escuela.sql`.
 | 4 | Disciplinas en componentes: etiquetas, listas, valor por defecto, clases CSS, banderas (licencia, competidor, sin grado, convocatorias, material) | medium | Specs de componente con los dos fixtures; búsqueda en CI de literales de disciplina fuera de `legado-taemoi.ts` |
 | 5 | Grados: subconjuntos KB, borrado de `TipoGrado`, nombres y colores (legado frente a catálogo) | medium | Specs de `vista-principal-user` (`getBeltVisual`) y de etiquetas con los dos fixtures |
 | 6 | Tarifas: listas por pantalla, importes, `preinscripciones-admin`, borrado de `asignarCuantiaTarifa` | careful (importes) | Caracterización previa de cada lista de pantalla; importe por tarifa y rol con los dos fixtures |
-| 7 | Preinscripción pública con `/api/catalogo/publico` | light | Spec del componente: opciones, enlace `?deporte=`, estado de carga |
-| 8 | Limpieza: borrar `enums/deporte.ts`, `tipo-tarifa.ts`, `TARIFAS_ESTANDAR` cuando no tengan usos | light | Compilación, lint y suite completa |
+| 7 | Preinscripción pública con `/api/catalogo/publico` (hecha) | light | Spec del componente: opciones, enlace `?deporte=`, estado de carga |
+| 8 | Limpieza: borrar `enums/deporte.ts`, `tipo-tarifa.ts`, `TARIFAS_ESTANDAR` cuando no tengan usos (hecha: `tipo-tarifa.ts` y `TARIFAS_ESTANDAR` ya no existen; se borran también `GradoService`, `EDAD_ADULTO_*`, `aplicarFiltrosGrado` de editar-alumno (crear-alumno conserva su copia sin uso) y los métodos `@deprecated` sin uso; `getDeporteLabel` de `enums/deporte.ts` se mantiene porque cinco componentes lo usan sin inyectar el servicio) | light | Compilación, lint y suite completa |
 
 Comprobación manual al final: Taemoi y la segunda escuela con `docker-compose.pruebas.yml`, recorriendo
 alta y edición de alumno, preinscripción, tesorería, panel de administración y vista de usuario.

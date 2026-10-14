@@ -258,6 +258,30 @@ describe('editar-alumno: grados que ofrecen los modales y grado inicial por disc
     expect(c.nuevoGradoActualizar).toBe('MARRON_JUDO');
   });
 
+  it('grado actual que la disciplina ya no ofrece (intermedio antiguo de KB): se añade con su nombre del catálogo, solo como valor actual', () => {
+    const c = editar(CATALOGO_TAEMOI);
+    const codigos = c.gradosDeLaDisciplina('KICKBOXING').map((g) => g.codigo);
+    expect(codigos).not.toContain('AZUL_ROJO');
+    const conActual = c.gradosDeLaDisciplina('KICKBOXING', 'AZUL_ROJO');
+    expect(conActual.slice(0, -1).map((g) => g.codigo)).toEqual(codigos); // las ofrecidas, sin cambios
+    const extra = conActual[conActual.length - 1];
+    expect(extra.codigo).toBe('AZUL_ROJO');
+    expect(extra.nombre).toBe(c.catalogo.grado('KICKBOXING', 'AZUL_ROJO')!.nombre);
+    // un grado actual que sí se ofrece no se duplica; sin grado actual, la lista no cambia
+    expect(c.gradosDeLaDisciplina('KICKBOXING', 'VERDE').length).toBe(codigos.length);
+    expect(c.gradosDeLaDisciplina('KICKBOXING', null).length).toBe(codigos.length);
+    // código que ni el catálogo conoce: se muestra con el código
+    expect(c.gradosDeLaDisciplina('KICKBOXING', 'RARO').pop()).toEqual({ codigo: 'RARO', nombre: 'RARO' });
+  });
+
+  it('gradoGuardado lee el grado guardado del deporte del alumno', () => {
+    const c = editar(CATALOGO_TAEMOI);
+    c.deportesDelAlumno = [{ deporte: 'KICKBOXING', grado: 'AZUL_ROJO' } as any, { deporte: 'PILATES', grado: null } as any];
+    expect(c.gradoGuardado('KICKBOXING')).toBe('AZUL_ROJO');
+    expect(c.gradoGuardado('PILATES')).toBeNull();
+    expect(c.gradoGuardado('TAEKWONDO')).toBeNull();
+  });
+
   it('getGradoStyle con la disciplina del deporte (KB ROJO marrón, D4)', () => {
     const c = editar(CATALOGO_TAEMOI);
     expect(c.getGradoStyle('ROJO', 'KICKBOXING')).toBe(ESTILO_MARRON);

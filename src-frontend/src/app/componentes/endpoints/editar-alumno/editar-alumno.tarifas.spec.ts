@@ -66,6 +66,18 @@ describe('EditarAlumnoComponent: tarifas del catálogo', () => {
       ]);
     });
 
+    it('la tarifa guardada sigue seleccionable tras cambiar a otra y volver (se construye de la guardada, no de la mostrada)', () => {
+      const c = crear(CATALOGO_TAEMOI, [{ deporte: 'KICKBOXING', tipoTarifa: 'ADULTO' }]);
+      c.onTipoTarifaModelChange('KICKBOXING', 'KICKBOXING'); // se cambia a la que admite la disciplina
+      expect(c.getDisplayedTipoTarifa('KICKBOXING')).toBe('KICKBOXING');
+      expect(opciones(c, 'KICKBOXING')).toEqual([
+        { valor: 'KICKBOXING', texto: 'Kickboxing' },
+        { valor: 'ADULTO', texto: 'Adulto' },
+      ]);
+      c.onTipoTarifaModelChange('KICKBOXING', 'ADULTO'); // y se vuelve a la guardada
+      expect(opciones(c, 'KICKBOXING').map((o) => o.valor)).toEqual(['KICKBOXING', 'ADULTO']);
+    });
+
     it('sin tarifas en el catálogo (no gestor o fallo de carga): lista vacía', () => {
       const c = crear({ ...CATALOGO_TAEMOI, tarifas: [] });
       expect(opciones(c, 'TAEKWONDO')).toEqual([]);

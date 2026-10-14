@@ -1,5 +1,5 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
-import { EDAD_ADULTO_KICKBOXING, EDAD_ADULTO_TAEKWONDO, calcularCategoriaPorEdad, esMenor } from './categoria-por-edad';
+import { calcularCategoriaPorEdad, esMenor } from './categoria-por-edad';
 import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
@@ -26,11 +26,6 @@ describe('categoria-por-edad (caracterización)', () => {
   afterEach(() => {
     jasmine.clock().uninstall();
     restablecerCatalogoActual();
-  });
-
-  it('constantes de edad adulta', () => {
-    expect(EDAD_ADULTO_TAEKWONDO).toBe(14);
-    expect(EDAD_ADULTO_KICKBOXING).toBe(15);
   });
 
   describe('esMenor', () => {

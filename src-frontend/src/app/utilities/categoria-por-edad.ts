@@ -3,14 +3,6 @@ import { esMenor as esMenorSegunDisciplina, nombreCategoriaPorFecha } from '../f
 import { categoriasParaDisciplina } from '../features/catalogo/legado-taemoi';
 
 /**
- * @deprecated La edad adulta es `disciplina.edadAdulto` del catálogo. Se borra en la rebanada 4 (disciplinas)
- * cuando no queden usos.
- */
-export const EDAD_ADULTO_TAEKWONDO = 14;
-/** @deprecated Ver `EDAD_ADULTO_TAEKWONDO`. */
-export const EDAD_ADULTO_KICKBOXING = 15;
-
-/**
  * Adaptador sobre `catalogo-reglas.esMenor` con la edad adulta de la disciplina del catálogo cargado.
  * Sin `deporte` se usa la primera disciplina activa (antes TAEKWONDO); disciplina desconocida o catálogo
  * sin cargar: 14 (`EDAD_ADULTO_SIN_DISCIPLINA`). Sin fecha o inválida: menor.

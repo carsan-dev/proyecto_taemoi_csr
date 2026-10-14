@@ -74,10 +74,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   // Opciones de dropdown
   rolesFamiliares = Object.values(RolFamiliar);
-  /** Códigos de grado que el backend ofrece para la fecha de nacimiento (filtro por edad). */
-  tiposGrado: string[] = [];
-  todosLosGrados: any[] = [];
-  grados: any[] = [];
 
   // Productos del alumno
   productosAlumno: ProductoAlumnoDTO[] = [];
@@ -273,17 +269,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.cargarGrados();
     this.cargarCatalogoGruposYTurnos();
 
     // Load the list of IDs first, then handle route changes
     this.cargarTodosLosAlumnosIds();
-
-    this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
-      if (valor) {
-        this.obtenerGradosDisponibles(valor);
-      }
-    });
 
     // Per-sport fields (tipoTarifa, competidor, tieneLicencia) are now managed in sport tabs
     // No longer need valueChanges subscriptions in the general form
@@ -907,11 +896,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const fechaNacimiento = formatDate(alumno.fechaNacimiento);
     const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
 
-    // Cargar grados disponibles en base a la fecha de nacimiento
-    if (fechaNacimiento) {
-      this.obtenerGradosDisponibles(fechaNacimiento);
-    }
-
     // Only set general form fields (not per-sport fields)
     this.alumnoForm.patchValue({
       nombre: alumno.nombre,
@@ -1370,71 +1354,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Para cargar los diferentes grados disponibles (según tu lógica de backend).
-   */
-  cargarGrados(): void {
-    this.endpointsService.obtenerGrados().subscribe({
-      next: (grados) => {
-        this.todosLosGrados = grados;
-        this.grados = grados;
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los grados',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  /**
-   * Obtiene desde el backend los grados disponibles para la fecha de nacimiento dada.
-   */
-  obtenerGradosDisponibles(fechaNacimiento: string) {
-    this.endpointsService
-      .obtenerGradosPorFechaNacimiento(fechaNacimiento)
-      .subscribe({
-        next: (tiposGrado: string[]) => {
-          this.tiposGrado = tiposGrado;
-          this.aplicarFiltrosGrado();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron cargar los grados disponibles.',
-            icon: 'error',
-          });
-        },
-      });
-  }
-
-  /**
-   * Aplica filtros de deporte y edad para determinar los grados disponibles.
-   */
-  aplicarFiltrosGrado(): void {
-    const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
-    let gradosFiltrados = this.todosLosGrados;
-
-    // First, filter by sport: the grades its grading system offers
-    if (deporteSeleccionado) {
-      const gradosDeLaDisciplina = new Set<string>(
-        this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
-      );
-      gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
-    }
-
-    // Then, filter by age if tiposGrado has values
-    if (this.tiposGrado.length > 0) {
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        this.tiposGrado.includes(grado.tipoGrado)
-      );
-    }
-
-    this.grados = gradosFiltrados;
-  }
-
-  /**
    * Renueva la licencia del alumno.
    */
   renovarLicencia(alumnoId: number): void {
@@ -1595,9 +1514,22 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return getGradoNombreParaDeporte(tipoGrado, deporteSeleccionado);
   }
 
-  /** Grados que ofrece el sistema de la disciplina (modales de alta de deporte y cambio de grado), por `orden`. */
-  gradosDeLaDisciplina(deporte: string | null | undefined): { codigo: string; nombre: string }[] {
-    return this.catalogo.gradosSeleccionables(deporte);
+  /**
+   * Grados que ofrece el sistema de la disciplina (modales de alta de deporte y cambio de grado), por `orden`.
+   * Si se indica el grado actual del alumno y la disciplina ya no lo ofrece (p. ej. un intermedio antiguo de
+   * Kickboxing), se añade al final con su nombre del catálogo para que el desplegable nunca se abra vacío.
+   */
+  gradosDeLaDisciplina(deporte: string | null | undefined, gradoActual?: string | null): { codigo: string; nombre: string }[] {
+    const grados: { codigo: string; nombre: string }[] = this.catalogo.gradosSeleccionables(deporte);
+    if (!gradoActual || grados.some((g) => g.codigo === gradoActual)) {
+      return grados;
+    }
+    return [...grados, { codigo: gradoActual, nombre: this.catalogo.grado(deporte, gradoActual)?.nombre ?? gradoActual }];
+  }
+
+  /** Grado guardado del alumno en la disciplina, o `null` si no tiene. */
+  gradoGuardado(deporte: string | null | undefined): string | null {
+    return this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado || null;
   }
 
   getGradoStyle(tipoGrado: string, deporte?: string | null): string {
@@ -3290,13 +3222,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * @deprecated Use onTieneLicenciaChange instead - kept for backward compatibility
-   */
-  actualizarTieneLicencia(deporte: string, event: any): void {
-    this.onTieneLicenciaChange(deporte, event);
-  }
-
-  /**
    * Update numero de licencia for a specific sport
    */
   actualizarNumeroLicencia(deporte: string, event: any): void {
@@ -3855,12 +3780,13 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * D7/D8: tarifas que admite la disciplina, en orden del catálogo, con su nombre. Si el alumno tiene una
-   * tarifa que la disciplina no admite (datos anteriores), se añade al final para que siga viéndose.
+   * D7/D8: tarifas que admite la disciplina, en orden del catálogo, con su nombre. Si la tarifa guardada del
+   * alumno no la admite la disciplina (datos anteriores), se añade al final para que siga siendo seleccionable
+   * aunque se cambie a otra y se vuelva atrás.
    */
   tarifasParaDeporte(deporte: string): Pick<CatalogoTarifa, 'codigo' | 'nombre'>[] {
     const tarifas: Pick<CatalogoTarifa, 'codigo' | 'nombre'>[] = this.catalogo.tarifasDe(deporte);
-    const actual = this.getDisplayedTipoTarifa(deporte);
+    const actual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.tipoTarifa;
     if (!actual || tarifas.some((t) => t.codigo === actual)) {
       return tarifas;
     }

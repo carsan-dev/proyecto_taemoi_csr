@@ -8,7 +8,7 @@ export interface AlumnoDeporteDTO {
   deporte: string; // TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA
 
   // Grade data (per-sport)
-  grado: string | null; // TipoGrado name (e.g., "BLANCO", "AMARILLO")
+  grado: string | null; // código del grado en el catálogo (p. ej. "BLANCO")
   fechaGrado: Date | string | null;
   aptoParaExamen: boolean;
 
@@ -119,12 +119,12 @@ export interface AlumnoConDeportesDTO {
  */
 export interface AgregarDeporteRequest {
   deporte: string;
-  gradoInicial: string; // TipoGrado enum value
+  gradoInicial: string; // código del grado en el catálogo
 }
 
 /**
  * Request para actualizar grado de un deporte
  */
 export interface ActualizarGradoDeporteRequest {
-  nuevoGrado: string; // TipoGrado enum value
+  nuevoGrado: string; // código del grado en el catálogo
 }

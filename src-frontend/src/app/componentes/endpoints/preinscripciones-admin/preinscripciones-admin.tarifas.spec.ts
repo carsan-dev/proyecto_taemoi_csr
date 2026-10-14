@@ -162,6 +162,52 @@ describe('PreinscripcionesAdminComponent: tarifas del catálogo', () => {
     });
   });
 
+  describe('sin tarifa preseleccionada (otras escuelas, D9)', () => {
+    async function pintar(catalogo: Catalogo, deporte: string) {
+      await TestBed.configureTestingModule({
+        imports: [PreinscripcionesAdminComponent],
+        providers: [
+          proveerCatalogoTesting(catalogo),
+          { provide: PreinscripcionService, useValue: api },
+          { provide: AuthenticationService, useValue: auth },
+          { provide: ActivatedRoute, useValue: route },
+          { provide: Router, useValue: router },
+        ],
+      }).compileComponents();
+      const fixture = TestBed.createComponent(PreinscripcionesAdminComponent);
+      const c = fixture.componentInstance;
+      fixture.detectChanges();
+      c.seleccion = { ...solicitud(deporte), tieneDiscapacidad: false, turnosSolicitados: [] };
+      c.crearNuevaFicha();
+      c.mostrandoFinalizacion = true;
+      fixture.detectChanges();
+      const select = (fixture.nativeElement as HTMLElement).querySelector('section.sport-data select') as HTMLSelectElement;
+      return { c, fixture, select };
+    }
+
+    it('segunda escuela: primera opción deshabilitada «Selecciona una tarifa» y finalización inválida hasta elegir una real', async () => {
+      const { c, fixture, select } = await pintar(CATALOGO_SEGUNDA_ESCUELA, 'JUDO');
+      expect(c.datosAlta.tipoTarifa).toBe('');
+      const primera = select.querySelectorAll('option')[0];
+      expect(primera.textContent?.trim()).toBe('Selecciona una tarifa');
+      expect(primera.disabled).toBeTrue();
+      expect(c.finalizacionValida).toBeFalse();
+
+      c.datosAlta.tipoTarifa = 'BONO';
+      c.cambiarTarifa();
+      fixture.detectChanges();
+      expect(c.finalizacionValida).toBeTrue();
+      const textos = Array.from(select.querySelectorAll('option')).map((o) => o.textContent?.trim());
+      expect(textos).not.toContain('Selecciona una tarifa');
+    });
+
+    it('Taemoi: con tarifa preseleccionada no hay marcador', async () => {
+      const { select } = await pintar(CATALOGO_TAEMOI, 'TAEKWONDO');
+      const textos = Array.from(select.querySelectorAll('option')).map((o) => o.textContent?.trim());
+      expect(textos).not.toContain('Selecciona una tarifa');
+    });
+  });
+
   describe('plantilla', () => {
     it('D8: las opciones muestran el nombre y envían el código; el rol aparece solo con la bandera', async () => {
       await TestBed.configureTestingModule({

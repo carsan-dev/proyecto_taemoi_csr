@@ -2034,7 +2034,7 @@
             <span class="required">*</span>
           </label>
           <select appSearchableSelect id="nuevoGradoActualizar" class="admin-form-control form-select" [(ngModel)]="nuevoGradoActualizar">
-            @for (grado of gradosDeLaDisciplina(deporteParaActualizarGrado); track grado.codigo) {
+            @for (grado of gradosDeLaDisciplina(deporteParaActualizarGrado, gradoGuardado(deporteParaActualizarGrado)); track grado.codigo) {
             <option [value]="grado.codigo">{{ grado.nombre }}</option>
             }
           </select>
