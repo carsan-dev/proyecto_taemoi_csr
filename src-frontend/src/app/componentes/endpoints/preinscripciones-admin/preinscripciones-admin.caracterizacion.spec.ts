@@ -1,18 +1,24 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
+// Rebanada 6: importes, lista y tarifa inicial salen del catálogo (fixture de Taemoi). Cambios explícitos:
+// D7 (lista de la disciplina en orden del catálogo; sin disciplina conocida, ninguna) y D8 (etiqueta = nombre).
+import { TestBed } from '@angular/core/testing';
 import { PreinscripcionesAdminComponent } from './preinscripciones-admin.component';
+import { crearCatalogoServiceTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 
 interface Interno {
   seleccion: { deporte?: string; fechaNacimiento?: string } | null;
-  tarifasDisponibles: string[];
+  tarifasDisponibles: { codigo: string; nombre: string }[];
   esMenorSeleccionado: boolean;
   tarifaInicial(): string;
   cuantiaEstandar(t: string): number;
 }
 
-/** Instancia sin constructor ni TestBed; solo se fija la selección que leen los métodos. */
+/** Instancia sin constructor: se fijan la selección y el catálogo (de Taemoi) que leen los métodos. */
 function crear(seleccion: Interno['seleccion']): Interno {
   const c = Object.create(PreinscripcionesAdminComponent.prototype);
   c.seleccion = seleccion;
+  c.catalogo = TestBed.runInInjectionContext(() => crearCatalogoServiceTesting(CATALOGO_TAEMOI));
   return c as Interno;
 }
 
@@ -37,16 +43,19 @@ describe('preinscripciones-admin importes y regla de menor de 18 (caracterizaci�
   });
 
   describe('tarifasDisponibles', () => {
+    const codigos = (i: Interno) => i.tarifasDisponibles.map((t) => t.codigo);
     it('KICKBOXING, PILATES y DEFENSA_PERSONAL_FEMENINA solo ofrecen su tarifa', () => {
-      expect(crear({ deporte: 'KICKBOXING' }).tarifasDisponibles).toEqual(['KICKBOXING']);
-      expect(crear({ deporte: 'PILATES' }).tarifasDisponibles).toEqual(['PILATES']);
-      expect(crear({ deporte: 'DEFENSA_PERSONAL_FEMENINA' }).tarifasDisponibles).toEqual(['DEFENSA_PERSONAL_FEMENINA']);
+      expect(codigos(crear({ deporte: 'KICKBOXING' }))).toEqual(['KICKBOXING']);
+      expect(codigos(crear({ deporte: 'PILATES' }))).toEqual(['PILATES']);
+      expect(codigos(crear({ deporte: 'DEFENSA_PERSONAL_FEMENINA' }))).toEqual(['DEFENSA_PERSONAL_FEMENINA']);
     });
-    it('TAEKWONDO, otro o sin selección -> lista de Taekwondo en orden', () => {
-      const tkd = ['INFANTIL', 'ADULTO', 'INFANTIL_GRUPO', 'ADULTO_GRUPO', 'FAMILIAR', 'HERMANOS', 'PADRES_HIJOS'];
-      expect(crear({ deporte: 'TAEKWONDO' }).tarifasDisponibles).toEqual(tkd);
-      expect(crear({ deporte: 'OTRO' }).tarifasDisponibles).toEqual(tkd);
-      expect(crear(null).tarifasDisponibles).toEqual(tkd);
+    it('TAEKWONDO -> sus 7 tarifas en orden del catálogo (D7; antes INFANTIL, ADULTO, INFANTIL_GRUPO, ...)', () => {
+      const tkd = ['ADULTO', 'ADULTO_GRUPO', 'FAMILIAR', 'INFANTIL', 'INFANTIL_GRUPO', 'HERMANOS', 'PADRES_HIJOS'];
+      expect(codigos(crear({ deporte: 'TAEKWONDO' }))).toEqual(tkd);
+    });
+    it('disciplina desconocida o sin selección -> ninguna (D7; antes la lista de Taekwondo)', () => {
+      expect(codigos(crear({ deporte: 'OTRO' }))).toEqual([]);
+      expect(codigos(crear(null))).toEqual([]);
     });
   });
 

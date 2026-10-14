@@ -424,14 +424,9 @@
                           [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
                           (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
                           <option value="">Seleccionar tarifa</option>
-                          <option value="INFANTIL">Infantil</option>
-                          <option value="ADULTO">Adulto</option>
-                          <option value="ADULTO_GRUPO">Adulto Grupo</option>
-                          <option value="PADRES_HIJOS">Padres e Hijos</option>
-                          <option value="HERMANOS">Hermanos</option>
-                          <option value="PILATES">Pilates</option>
-                          <option value="KICKBOXING">Kickboxing</option>
-                          <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                          @for (tarifa of tarifasParaDeporte(deporteItem.deporte); track tarifa.codigo) {
+                          <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
+                          }
                         </select>
                       </div>
 
@@ -446,7 +441,7 @@
                           (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
                       </div>
 
-                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
+                      @if (requiereRolFamiliar(deporteItem.deporte)) {
                       <div class="admin-form-field mt-3">
                         <label [for]="'rolFamiliar-' + deporteItem.deporte">
                           <i class="bi bi-people"></i>
@@ -464,7 +459,7 @@
                       </div>
                       }
 
-                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'HERMANOS') {
+                      @if (requiereGrupoFamiliar(deporteItem.deporte)) {
                       <div class="admin-form-field mt-3">
                         <label [for]="'grupoFamiliar-' + deporteItem.deporte">
                           <i class="bi bi-people"></i>
@@ -751,14 +746,9 @@
                           [ngModel]="getDisplayedTipoTarifa(deporteItem.deporte)"
                           (ngModelChange)="onTipoTarifaModelChange(deporteItem.deporte, $event)">
                           <option value="">Seleccionar tarifa</option>
-                          <option value="INFANTIL">Infantil</option>
-                          <option value="ADULTO">Adulto</option>
-                          <option value="ADULTO_GRUPO">Adulto Grupo</option>
-                          <option value="PADRES_HIJOS">Padres e Hijos</option>
-                          <option value="HERMANOS">Hermanos</option>
-                          <option value="PILATES">Pilates</option>
-                          <option value="KICKBOXING">Kickboxing</option>
-                          <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                          @for (tarifa of tarifasParaDeporte(deporteItem.deporte); track tarifa.codigo) {
+                          <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
+                          }
                         </select>
                       </div>
 
@@ -773,7 +763,7 @@
                           (ngModelChange)="onCuantiaTarifaModelChange(deporteItem.deporte, $event)" />
                       </div>
 
-                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'PADRES_HIJOS') {
+                      @if (requiereRolFamiliar(deporteItem.deporte)) {
                       <div class="admin-form-field mt-3">
                         <label [for]="'rolFamiliar-' + deporteItem.deporte">
                           <i class="bi bi-people"></i>
@@ -791,7 +781,7 @@
                       </div>
                       }
 
-                      @if (getDisplayedTipoTarifa(deporteItem.deporte) === 'HERMANOS') {
+                      @if (requiereGrupoFamiliar(deporteItem.deporte)) {
                       <div class="admin-form-field mt-3">
                         <label [for]="'grupoFamiliar-' + deporteItem.deporte">
                           <i class="bi bi-people"></i>

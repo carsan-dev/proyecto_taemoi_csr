@@ -278,7 +278,7 @@ export function tarifasDeDisciplina(
 /**
  * Cuantía estándar de una tarifa según el rol familiar: réplica de `TarifasServiceImpl.calcularImporte`.
  * PADRE/MADRE -> `importeAdulto` y HIJO/HIJA -> `importeMenor` si están definidos; en otro caso `importe`.
- * Tarifa desconocida (nula): 0, como `obtenerCuantiaTarifaEstandar`.
+ * Tarifa desconocida (nula): 0, como la antigua `obtenerCuantiaTarifaEstandar`.
  */
 export function cuantiaEstandar(tarifa: CatalogoTarifa | null | undefined, rolFamiliar?: string | null): number {
   if (!tarifa) {

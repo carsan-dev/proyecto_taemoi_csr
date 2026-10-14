@@ -1,4 +1,3 @@
-import { obtenerCuantiaTarifaEstandar } from '../../constants/tarifa.constants';
 import { calcularCategoriaPorEdad, esMenor as esMenorActual } from '../../utilities/categoria-por-edad';
 import { getGradoColors, getGradoTextStyle } from '../../utilities/grado-colors';
 import { obtenerSiguienteGrado } from '../../utilities/grado-progresion';
@@ -210,20 +209,11 @@ describe('catalogo-reglas', () => {
     });
 
     describe('tarifas', () => {
-      const ROLES: (string | undefined | null)[] = ['PADRE', 'MADRE', 'HIJO', 'HIJA', undefined, null, '', 'NINGUNO', 'OTRO'];
-
-      it('cuantiaEstandar igual que obtenerCuantiaTarifaEstandar para cada tarifa y rol', () => {
-        for (const tarifa of T.tarifas) {
-          for (const rol of ROLES) {
-            expect(cuantiaEstandar(tarifa, rol)).toBe(obtenerCuantiaTarifaEstandar(tarifa.codigo, rol ?? undefined), `${tarifa.codigo} ${rol}`);
-          }
-        }
-      });
+      // Importe por tarifa y rol frente a los valores anteriores: tarifas-taemoi.equivalencia.spec.ts.
 
       it('tarifa desconocida -> 0', () => {
         expect(cuantiaEstandar(undefined, 'PADRE')).toBe(0);
         expect(cuantiaEstandar(null)).toBe(0);
-        expect(obtenerCuantiaTarifaEstandar('INEXISTENTE', 'PADRE')).toBe(0);
       });
 
       it('PADRES_HIJOS por rol: 28 progenitor, 26 hijo, 0 en otro caso', () => {

@@ -71,7 +71,7 @@ export class CatalogoService implements OnDestroy {
     private readonly http: HttpClient,
     private readonly authService: AuthenticationService
   ) {
-    // Puente para las utilidades sin inyección (utilities/*, constants/*, enums/deporte).
+    // Puente para las utilidades sin inyección (utilities/*, enums/deporte).
     registrarLectorCatalogo(this.lectorPuente);
     this.vigilarSesion();
   }

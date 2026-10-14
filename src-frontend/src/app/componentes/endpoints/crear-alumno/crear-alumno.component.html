@@ -341,8 +341,8 @@
                                   formControlName="tipoTarifa" required
                                   (change)="onTipoTarifaChangeEnLista(i)">
                             <option value="" disabled selected>Selecciona una tarifa</option>
-                            @for (tarifa of obtenerTarifasFiltradas(i); track $index) {
-                              <option [value]="tarifa">{{ tarifa }}</option>
+                            @for (tarifa of obtenerTarifasFiltradas(i); track tarifa.codigo) {
+                              <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
                             }
                           </select>
                         </div>
@@ -360,8 +360,8 @@
                         </div>
                       </div>
 
-                      <!-- Rol Familiar (only for PADRES_HIJOS) -->
-                      @if (deporteForm.get('tipoTarifa')?.value === 'PADRES_HIJOS') {
+                      <!-- Rol Familiar (solo si la tarifa lo pide) -->
+                      @if (requiereRolFamiliar(i)) {
                       <div class="col-12 col-md-6">
                         <div class="admin-form-field">
                           <label [for]="'rolFamiliar-' + i">
@@ -381,8 +381,8 @@
                       </div>
                       }
 
-                      <!-- Grupo Familiar (only for HERMANOS) -->
-                      @if (deporteForm.get('tipoTarifa')?.value === 'HERMANOS') {
+                      <!-- Grupo Familiar (solo si la tarifa lo pide) -->
+                      @if (requiereGrupoFamiliar(i)) {
                       <div class="col-12 col-md-6">
                         <div class="admin-form-field">
                           <label [for]="'grupoFamiliar-' + i">

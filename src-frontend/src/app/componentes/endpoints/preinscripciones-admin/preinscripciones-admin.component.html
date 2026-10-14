@@ -212,14 +212,14 @@
           <div class="form-grid">
             <label>Tipo de tarifa
               <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
-                @for (tarifa of tarifasDisponibles; track tarifa) { <option [value]="tarifa">{{tarifa}}</option> }
+                @for (tarifa of tarifasDisponibles; track tarifa.codigo) { <option [value]="tarifa.codigo">{{tarifa.nombre}}</option> }
               </select>
             </label>
             <label>Cuantía mensual (€)<input type="number" min="0" step="0.01" [(ngModel)]="datosAlta.cuantiaTarifa"></label>
-            @if (datosAlta.tipoTarifa === 'PADRES_HIJOS') {
+            @if (requiereRolFamiliar) {
               <label>Rol familiar<select [(ngModel)]="datosAlta.rolFamiliar"><option value="NINGUNO">Seleccionar</option><option>PADRE</option><option>MADRE</option><option>HIJO</option><option>HIJA</option></select></label>
             }
-            @if (datosAlta.tipoTarifa === 'HERMANOS') {
+            @if (requiereGrupoFamiliar) {
               <label>Grupo familiar<input maxlength="50" [(ngModel)]="datosAlta.grupoFamiliar"></label>
             }
             @if (requiereDatosDeporte && requiereGrado) {

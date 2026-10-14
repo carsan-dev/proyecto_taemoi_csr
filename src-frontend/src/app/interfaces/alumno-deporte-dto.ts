@@ -21,10 +21,10 @@ export interface AlumnoDeporteDTO {
   antiguedad: string | null; // e.g., "3 años, 2 meses" - calculated from fechaAltaInicial
 
   // Tarifa (per-sport)
-  tipoTarifa: string | null; // TipoTarifa enum value
+  tipoTarifa: string | null; // Código de la tarifa del catálogo
   cuantiaTarifa: number | null;
-  rolFamiliar: string | null; // For PADRES_HIJOS tarifa
-  grupoFamiliar: string | null; // For HERMANOS tarifa
+  rolFamiliar: string | null; // Para tarifas con requiereRolFamiliar
+  grupoFamiliar: string | null; // Para tarifas con requiereGrupoFamiliar
 
   // Competitor data (per-sport)
   competidor: boolean;

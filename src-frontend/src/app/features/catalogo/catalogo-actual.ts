@@ -1,6 +1,6 @@
 /**
  * Puente síncrono al catálogo cargado para las utilidades que son funciones sueltas (sin inyección):
- * `utilities/*`, `constants/tarifa.constants.ts`, `enums/deporte.ts`.
+ * `utilities/*`, `enums/deporte.ts`.
  *
  * `CatalogoService` se registra aquí al crearse. Sin catálogo (no cargado o error) todo devuelve vacío:
  * D15, nunca constantes de Taemoi. Los componentes nuevos deben inyectar `CatalogoService`, no usar esto.
