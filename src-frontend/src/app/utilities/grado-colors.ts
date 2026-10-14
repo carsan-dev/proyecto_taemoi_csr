@@ -1,15 +1,37 @@
+import { catalogoActual, disciplinaActual } from '../features/catalogo/catalogo-actual';
+import { CatalogoGrado } from '../features/catalogo/catalogo.models';
+import { coloresGrado, gradosDeDisciplina } from '../features/catalogo/catalogo-reglas';
+
 export interface GradoColorInfo {
   colors: string[];
   isSplit: boolean;
   needsBorder: boolean;
 }
 
+/** Grado del sistema de la disciplina en el catálogo cargado (código sin distinguir mayúsculas); `undefined` si no hay. */
+function gradoDelCatalogo(tipoGrado: string, deporte: string | null | undefined): CatalogoGrado | undefined {
+  const catalogo = catalogoActual();
+  const disciplina = deporte ? disciplinaActual(deporte) : undefined;
+  if (!catalogo || !disciplina) {
+    return undefined;
+  }
+  const codigo = tipoGrado.toUpperCase();
+  return gradosDeDisciplina(catalogo.sistemasGrados, disciplina).find((g) => g.codigo.toUpperCase() === codigo);
+}
+
 /**
- * Gets the color(s) for a given grade type
+ * Colores de un grado. Con `deporte` y el grado en el catálogo con `color1` (D5): sus colores
+ * (`color1` mitad inferior, `color2` superior; KB ROJO es marrón, D4). En cualquier otro caso (sin
+ * deporte, grado desconocido o `color1` nulo): la paleta por nombre de color de este archivo.
  */
-export function getGradoColors(tipoGrado: string): GradoColorInfo {
+export function getGradoColors(tipoGrado: string, deporte?: string | null): GradoColorInfo {
   if (!tipoGrado) {
     return { colors: ['#CCCCCC'], isSplit: false, needsBorder: false };
+  }
+
+  const delCatalogo = gradoDelCatalogo(tipoGrado, deporte);
+  if (delCatalogo?.color1) {
+    return coloresGrado(delCatalogo);
   }
 
   const gradoUpper = tipoGrado.toUpperCase();
@@ -88,31 +110,26 @@ function isLightColor(hexColor: string): boolean {
 }
 
 /**
- * Gets inline styles for displaying a grade with colored text
- */
-/**
- * Obtiene el nombre a mostrar para un grado según el deporte.
- * En Kickboxing, el grado ROJO se muestra como MARRÓN.
+ * Nombre a mostrar de un grado: `grado.nombre` del catálogo para la disciplina (D3; KB ROJO es «MARRÓN», D4).
+ * Grado desconocido, sin deporte o catálogo sin cargar: el propio código.
  *
- * @param tipoGrado El tipo de grado (ej: 'ROJO', 'BLANCO')
- * @param deporte El deporte (ej: 'KICKBOXING', 'TAEKWONDO')
- * @returns El nombre del grado a mostrar
+ * @param tipoGrado El código del grado (ej: 'ROJO', 'BLANCO')
+ * @param deporte El código de la disciplina (ej: 'KICKBOXING', 'TAEKWONDO')
  */
 export function getGradoNombreParaDeporte(tipoGrado: string | null | undefined, deporte: string | null | undefined): string {
   if (!tipoGrado) {
     return '';
   }
 
-  // En Kickboxing, el grado ROJO se llama MARRÓN
-  if (deporte === 'KICKBOXING' && tipoGrado.toUpperCase() === 'ROJO') {
-    return 'MARRÓN';
-  }
-
-  return tipoGrado;
+  return gradoDelCatalogo(tipoGrado, deporte)?.nombre ?? tipoGrado;
 }
 
-export function getGradoTextStyle(tipoGrado: string): string {
-  const colorInfo = getGradoColors(tipoGrado);
+/**
+ * Gets inline styles for displaying a grade with colored text. Pasar `deporte` para usar los colores del
+ * catálogo (D4/D5); sin él, la paleta por nombre (los componentes de listados lo pasarán en la rebanada 5).
+ */
+export function getGradoTextStyle(tipoGrado: string, deporte?: string | null): string {
+  const colorInfo = getGradoColors(tipoGrado, deporte);
 
   if (colorInfo.isSplit) {
     // For split colors, we'll use a gradient

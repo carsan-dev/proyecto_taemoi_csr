@@ -1,5 +1,5 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, distinctUntilChanged, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -22,6 +22,8 @@ import {
   tarifasDeDisciplina,
 } from './catalogo-reglas';
 import { catalogoEsLegadoTaemoi } from './legado-taemoi';
+import { showWarningToast } from '../../utils/toast.util';
+import { registrarLectorCatalogo, retirarLectorCatalogo } from './catalogo-actual';
 
 /**
  * Catálogo de la organización activa (disciplinas, grados, categorías, tarifas).
@@ -35,7 +37,7 @@ import { catalogoEsLegadoTaemoi } from './legado-taemoi';
 @Injectable({
   providedIn: 'root',
 })
-export class CatalogoService {
+export class CatalogoService implements OnDestroy {
   private readonly urlBase = `${environment.apiUrl}/catalogo`;
 
   private readonly estadoSignal = signal<EstadoCatalogo>({ estado: 'vacio' });
@@ -62,10 +64,15 @@ export class CatalogoService {
   readonly disciplinasActivas = computed<CatalogoDisciplina[]>(() => disciplinasActivasOrdenadas(this.disciplinas()));
   readonly tarifas = computed<CatalogoTarifa[]>(() => this.catalogo()?.tarifas ?? []);
 
+  private falloNotificado = false;
+  private readonly lectorPuente = (): Catalogo | null => this.catalogo();
+
   constructor(
     private readonly http: HttpClient,
     private readonly authService: AuthenticationService
   ) {
+    // Puente para las utilidades sin inyección (utilities/*, constants/*, enums/deporte).
+    registrarLectorCatalogo(this.lectorPuente);
     this.vigilarSesion();
   }
 
@@ -95,6 +102,7 @@ export class CatalogoService {
         tap((datos) => {
           if (generacion === this.generacion) {
             this.estadoSignal.set({ estado: 'listo', datos });
+            this.falloNotificado = false;
           }
         }),
         catchError((error) => {
@@ -113,6 +121,21 @@ export class CatalogoService {
 
     this.peticion$ = peticion$;
     return peticion$;
+  }
+
+  /**
+   * D15: avisa (toast no bloqueante) de que el catálogo no se pudo cargar. Una sola vez por fallo: no se repite
+   * en cada navegación; una carga correcta lo rearma.
+   */
+  notificarFallo(): void {
+    if (!this.falloNotificado) {
+      this.falloNotificado = true;
+      showWarningToast('No se pudo cargar la configuración de la escuela. Recarga la página.');
+    }
+  }
+
+  ngOnDestroy(): void {
+    retirarLectorCatalogo(this.lectorPuente);
   }
 
   /** Descarta lo cargado y vuelve a pedirlo. */

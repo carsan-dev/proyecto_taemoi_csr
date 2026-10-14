@@ -1,113 +1,45 @@
-import { calcularEdad } from './calcular-edad';
+import { catalogoActual, disciplinaActual, legadoTaemoiActual } from '../features/catalogo/catalogo-actual';
+import { esMenor as esMenorSegunDisciplina, nombreCategoriaPorFecha } from '../features/catalogo/catalogo-reglas';
+import { categoriasParaDisciplina } from '../features/catalogo/legado-taemoi';
 
 /**
- * Edad a partir de la cual un alumno es considerado adulto según el deporte.
- * - Taekwondo: 14 años
- * - Kickboxing: 15 años
+ * @deprecated La edad adulta es `disciplina.edadAdulto` del catálogo. Se borra en la rebanada 4 (disciplinas)
+ * cuando no queden usos.
  */
 export const EDAD_ADULTO_TAEKWONDO = 14;
+/** @deprecated Ver `EDAD_ADULTO_TAEKWONDO`. */
 export const EDAD_ADULTO_KICKBOXING = 15;
 
 /**
- * Determina si un alumno es considerado "menor" según las reglas del deporte especificado.
- *
- * Para Taekwondo: menor si edad < 13 o (edad == 13 y no cumple 14 este año)
- * Para Kickboxing: menor si edad < 14 o (edad == 14 y no cumple 15 este año)
+ * Adaptador sobre `catalogo-reglas.esMenor` con la edad adulta de la disciplina del catálogo cargado.
+ * Sin `deporte` se usa la primera disciplina activa (antes TAEKWONDO); disciplina desconocida o catálogo
+ * sin cargar: 14 (`EDAD_ADULTO_SIN_DISCIPLINA`). Sin fecha o inválida: menor.
  *
  * @param fechaNacimiento La fecha de nacimiento del alumno.
- * @param deporte El deporte para aplicar la regla correcta (opcional, por defecto TAEKWONDO).
+ * @param deporte Código de la disciplina (opcional).
  * @returns true si el alumno es considerado menor, false si es adulto.
  */
-export function esMenor(
-  fechaNacimiento: string | Date | null | undefined,
-  deporte: string = 'TAEKWONDO'
-): boolean {
-  if (!fechaNacimiento) {
-    return true; // Por defecto, si no hay fecha, consideramos menor
-  }
-
-  const fecha =
-    fechaNacimiento instanceof Date
-      ? fechaNacimiento.toISOString()
-      : fechaNacimiento;
-
-  const edad = calcularEdad(fecha);
-  if (Number.isNaN(edad)) {
-    return true;
-  }
-
-  const edadAdulto =
-    deporte === 'KICKBOXING' ? EDAD_ADULTO_KICKBOXING : EDAD_ADULTO_TAEKWONDO;
-  const edadLimiteMenor = edadAdulto - 1; // 13 para taekwondo, 14 para kickboxing
-
-  if (edad < edadLimiteMenor) {
-    return true;
-  }
-
-  if (edad === edadLimiteMenor) {
-    // Solo es adulto si cumple edadAdulto este año
-    return !cumpleEdadEsteAnio(fechaNacimiento, edadAdulto);
-  }
-
-  return false; // edad >= edadAdulto
+export function esMenor(fechaNacimiento: string | Date | null | undefined, deporte?: string | null): boolean {
+  return esMenorSegunDisciplina(fechaNacimiento, disciplinaActual(deporte));
 }
 
 /**
- * Verifica si el alumno cumple una edad específica en el año actual.
- */
-function cumpleEdadEsteAnio(
-  fechaNacimiento: string | Date,
-  edad: number
-): boolean {
-  const fechaNac =
-    fechaNacimiento instanceof Date
-      ? fechaNacimiento
-      : new Date(fechaNacimiento);
-  const fechaCumple = new Date(fechaNac);
-  fechaCumple.setFullYear(fechaNac.getFullYear() + edad);
-  return fechaCumple.getFullYear() === new Date().getFullYear();
-}
-
-/**
- * Calcula la categoría de competidor según la edad del alumno.
- * Las categorías son las mismas para todos los deportes, pero la edad límite
- * para ser considerado menor varía según el deporte.
+ * Categoría de competidor según la edad, con las categorías de la disciplina en el catálogo
+ * (D6: con legado de Taemoi, una disciplina de competición sin categorías propias usa las de TAEKWONDO).
+ * Sin `deporte` se usa la primera disciplina activa. Catálogo sin cargar, disciplina desconocida o sin
+ * categorías: `''` (D15, nunca las constantes de Taemoi).
  *
  * @param fechaNacimiento La fecha de nacimiento del alumno.
- * @param deporte El deporte (opcional, por defecto TAEKWONDO). No afecta las categorías,
- *                pero se incluye para consistencia con la API.
- * @returns La categoría correspondiente a la edad.
+ * @param deporte Código de la disciplina (opcional).
  */
 export function calcularCategoriaPorEdad(
   fechaNacimiento: string | Date | null | undefined,
-  deporte: string = 'TAEKWONDO'
+  deporte?: string | null
 ): string {
-  if (!fechaNacimiento) {
+  const catalogo = catalogoActual();
+  if (!catalogo) {
     return '';
   }
-
-  const fecha =
-    fechaNacimiento instanceof Date
-      ? fechaNacimiento.toISOString()
-      : fechaNacimiento;
-
-  const edad = calcularEdad(fecha);
-  if (Number.isNaN(edad)) {
-    return '';
-  }
-
-  // Las categorías de competición son las mismas para todos los deportes
-  if (edad <= 9) {
-    return 'Infantil';
-  }
-  if (edad <= 11) {
-    return 'Precadete';
-  }
-  if (edad <= 13) {
-    return 'Cadete';
-  }
-  if (edad <= 16) {
-    return 'Junior';
-  }
-  return 'Senior';
+  const categorias = categoriasParaDisciplina(legadoTaemoiActual(), catalogo.categorias, disciplinaActual(deporte));
+  return nombreCategoriaPorFecha(categorias, fechaNacimiento);
 }

@@ -1,11 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { Toast } from '../../utils/toast.util';
+import { getDeporteLabel } from '../../enums/deporte';
+import { catalogoActual, disciplinaActual } from './catalogo-actual';
 import { Catalogo } from './catalogo.models';
 import { catalogoResolver } from './catalogo.resolver';
 import { CatalogoService } from './catalogo.service';
@@ -45,6 +48,31 @@ describe('CatalogoService', () => {
     expect(servicio.catalogo()).toBeNull();
     expect(servicio.disciplinasActivas()).toEqual([]);
     expect(servicio.esLegadoTaemoi()).toBeFalse();
+  });
+
+  describe('puente para utilidades sin inyección (catalogo-actual)', () => {
+    beforeEach(() => crear());
+
+    it('refleja el catálogo del servicio (vacío -> cargado -> invalidado) y se retira al destruir el servicio', () => {
+      expect(catalogoActual()).toBeNull();
+      expect(getDeporteLabel('TAEKWONDO')).toBe('TAEKWONDO');
+
+      servicio.cargar().subscribe();
+      http.expectOne(URL).flush(CATALOGO_TAEMOI);
+      expect(catalogoActual()).toEqual(CATALOGO_TAEMOI);
+      expect(getDeporteLabel('DEFENSA_PERSONAL_FEMENINA')).toBe('Defensa Personal Femenina');
+      expect(disciplinaActual(null)?.codigo).toBe('TAEKWONDO'); // sin código: primera activa
+
+      servicio.invalidar();
+      expect(catalogoActual()).toBeNull();
+
+      servicio.cargar().subscribe();
+      http.expectOne(URL).flush(CATALOGO_SEGUNDA_ESCUELA);
+      expect(getDeporteLabel('JUDO')).toBe('Judo');
+
+      TestBed.resetTestingModule();
+      expect(catalogoActual()).toBeNull();
+    });
   });
 
   describe('carga', () => {
@@ -249,7 +277,82 @@ describe('CatalogoService', () => {
       ) as Observable<boolean>;
     }
 
-    beforeEach(() => crear());
+    let toast: jasmine.Spy;
+
+    beforeEach(() => {
+      toast = spyOn(Toast, 'fire');
+      crear();
+    });
+
+    describe('cambio de identidad durante la carga (recarga de página)', () => {
+      let reqs: TestRequest[];
+      const recoger = () => reqs.push(...http.match(URL));
+
+      beforeEach(() => {
+        TestBed.resetTestingModule();
+        reqs = [];
+        crear({ logueado: true, email: null }); // sesión abierta, correo aún no llegado: solo invalida
+      });
+
+      it('no resuelve true con una respuesta descartada: espera a la petición vigente y a cargado()', () => {
+        let resultado: boolean | undefined;
+        resolver().subscribe((r) => (resultado = r));
+        recoger();
+        expect(reqs.length).toBe(1);
+
+        email.next('a@b.es'); // invalida y lanza la precarga vigente
+        recoger();
+        expect(reqs.length).toBe(2);
+
+        reqs[0].flush(CATALOGO_TAEMOI); // generación descartada
+        expect(servicio.cargado()).toBeFalse();
+        expect(resultado).toBeUndefined();
+
+        reqs[1].flush(CATALOGO_TAEMOI);
+        expect(servicio.cargado()).toBeTrue();
+        expect(resultado).toBeTrue();
+        expect(toast).not.toHaveBeenCalled();
+      });
+
+      it('agotados los intentos con respuestas descartadas: false y un aviso', () => {
+        let resultado: boolean | undefined;
+        resolver().subscribe((r) => (resultado = r));
+        recoger();
+        email.next('a@b.es');
+        recoger();
+        reqs[0].flush(CATALOGO_TAEMOI);
+        email.next('b@b.es');
+        recoger();
+        reqs[1].flush(CATALOGO_TAEMOI);
+        email.next('c@b.es');
+        recoger();
+        expect(resultado).toBeUndefined();
+        reqs[2].flush(CATALOGO_TAEMOI);
+
+        expect(resultado).toBeFalse();
+        expect(toast).toHaveBeenCalledTimes(1);
+        reqs[3].flush(CATALOGO_TAEMOI); // la vigente, para http.verify
+      });
+    });
+
+    it('fallo: un solo aviso aunque se navegue varias veces; una carga correcta lo rearma', () => {
+      const fallar = () => {
+        resolver().subscribe();
+        http.expectOne(URL).flush('x', { status: 500, statusText: 'x' });
+        http.expectOne(URL).flush('x', { status: 500, statusText: 'x' });
+      };
+      fallar();
+      fallar();
+      expect(toast).toHaveBeenCalledTimes(1);
+      expect(toast.calls.mostRecent().args[0].title).toBe('No se pudo cargar la configuración de la escuela. Recarga la página.');
+      expect(toast.calls.mostRecent().args[0].icon).toBe('warning');
+
+      servicio.cargar().subscribe();
+      http.expectOne(URL).flush(CATALOGO_TAEMOI);
+      servicio.invalidar();
+      fallar();
+      expect(toast).toHaveBeenCalledTimes(2);
+    });
 
     it('espera a la carga y devuelve true', () => {
       let resultado: boolean | undefined;

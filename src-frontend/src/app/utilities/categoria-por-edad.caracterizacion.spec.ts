@@ -1,5 +1,7 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
 import { EDAD_ADULTO_KICKBOXING, EDAD_ADULTO_TAEKWONDO, calcularCategoriaPorEdad, esMenor } from './categoria-por-edad';
+import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
+import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
 // Fecha fija: 15/06/2026 12:00 (hora local)
 const HOY = new Date(2026, 5, 15, 12, 0, 0);
@@ -15,11 +17,16 @@ function conEdad(edad: number): string {
 }
 
 describe('categoria-por-edad (caracterización)', () => {
+  // Las utilidades leen el catálogo cargado: equivalencia con el fixture de Taemoi (rebanada 3).
   beforeEach(() => {
+    fijarCatalogoActual(CATALOGO_TAEMOI);
     jasmine.clock().install();
     jasmine.clock().mockDate(HOY);
   });
-  afterEach(() => jasmine.clock().uninstall());
+  afterEach(() => {
+    jasmine.clock().uninstall();
+    restablecerCatalogoActual();
+  });
 
   it('constantes de edad adulta', () => {
     expect(EDAD_ADULTO_TAEKWONDO).toBe(14);
@@ -63,6 +70,17 @@ describe('categoria-por-edad (caracterización)', () => {
       expect(esMenor(new Date(2012, 11, 31, 12))).toBe(false);
       expect(esMenor(new Date(2013, 0, 1, 12))).toBe(true);
     });
+
+    it('segunda escuela: edad adulta de su disciplina (16 en JUDO); desconocida o sin catálogo: 14', () => {
+      fijarCatalogoActual(CATALOGO_SEGUNDA_ESCUELA);
+      expect(esMenor(conEdad(15), 'JUDO')).toBe(true);
+      expect(esMenor(conEdad(16), 'JUDO')).toBe(false);
+      expect(esMenor(conEdad(15))).toBe(true); // sin deporte: primera disciplina activa (JUDO)
+      expect(esMenor(conEdad(14), 'YOGA')).toBe(false); // edadAdulto nulo -> 14
+      expect(esMenor(conEdad(14), 'OTRA')).toBe(false);
+      restablecerCatalogoActual();
+      expect(esMenor(conEdad(14), 'KICKBOXING')).toBe(false); // sin catálogo: 14 también para KB
+    });
   });
 
   describe('calcularCategoriaPorEdad', () => {
@@ -73,9 +91,28 @@ describe('categoria-por-edad (caracterización)', () => {
     tabla.forEach(([edad, cat]) => {
       it(`edad ${edad} -> ${cat}`, () => {
         expect(calcularCategoriaPorEdad(conEdad(edad))).toBe(cat);
-        ['TAEKWONDO', 'KICKBOXING', 'PILATES'].forEach(d =>
+        // KB sigue recibiendo las categorías de TKD (D6, relleno legado de Taemoi).
+        ['TAEKWONDO', 'KICKBOXING'].forEach(d =>
           expect(calcularCategoriaPorEdad(conEdad(edad), d)).toBe(cat));
+        // D6: PILATES no compite y no tiene categorías propias -> sin categoría (antes: la misma que TKD).
+        expect(calcularCategoriaPorEdad(conEdad(edad), 'PILATES')).toBe('');
       });
+    });
+
+    it('segunda escuela: solo las categorías propias de la disciplina (D6, sin legado)', () => {
+      fijarCatalogoActual(CATALOGO_SEGUNDA_ESCUELA);
+      expect(calcularCategoriaPorEdad(conEdad(10), 'JUDO')).toBe('Infantil judo');
+      expect(calcularCategoriaPorEdad(conEdad(15), 'JUDO')).toBe('');
+      expect(calcularCategoriaPorEdad(conEdad(30), 'JUDO')).toBe('Absoluta judo');
+      expect(calcularCategoriaPorEdad(conEdad(30), 'YOGA')).toBe('');
+      expect(calcularCategoriaPorEdad(conEdad(30), 'TAEKWONDO')).toBe('');
+      expect(calcularCategoriaPorEdad(conEdad(10))).toBe('Infantil judo'); // sin deporte: primera disciplina activa
+    });
+
+    it('catálogo no cargado -> cadena vacía (D15, nunca las categorías de Taemoi)', () => {
+      restablecerCatalogoActual();
+      expect(calcularCategoriaPorEdad(conEdad(10))).toBe('');
+      expect(calcularCategoriaPorEdad(conEdad(10), 'TAEKWONDO')).toBe('');
     });
 
     it('sin fecha o inválida -> cadena vacía', () => {

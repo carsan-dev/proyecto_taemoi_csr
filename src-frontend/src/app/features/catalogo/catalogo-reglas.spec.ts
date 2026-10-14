@@ -21,6 +21,7 @@ import {
   tarifasDeDisciplina,
 } from './catalogo-reglas';
 import { categoriasParaDisciplina } from './legado-taemoi';
+import { fijarCatalogoActual, restablecerCatalogoActual } from './testing/catalogo-actual.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from './testing/catalogo.fixtures';
 
 // Fecha fija: 15/06/2026 12:00 (hora local), la misma que las pruebas de caracterización.
@@ -48,10 +49,15 @@ function fechasDePrueba(): string[] {
 
 describe('catalogo-reglas', () => {
   beforeEach(() => {
+    // Las utilidades (adaptadores) leen el catálogo cargado; aquí, el de Taemoi.
+    fijarCatalogoActual(CATALOGO_TAEMOI);
     jasmine.clock().install();
     jasmine.clock().mockDate(HOY);
   });
-  afterEach(() => jasmine.clock().uninstall());
+  afterEach(() => {
+    jasmine.clock().uninstall();
+    restablecerCatalogoActual();
+  });
 
   describe('equivalencia con las utilidades actuales (fixture de Taemoi)', () => {
     describe('esMenor', () => {
@@ -122,7 +128,8 @@ describe('catalogo-reglas', () => {
       // la rebanada de migración de crear-alumno debe reiniciarlos. Se mantiene el comportamiento nuevo.
       it('las disciplinas que no compiten (Pilates) no reciben categorías', () => {
         expect(categoriasParaDisciplina(true, T.categorias, disc('PILATES'))).toEqual([]);
-        expect(calcularCategoriaPorEdad(nac(1990, 1, 1), 'PILATES')).toBe('Senior');
+        // D6 (rebanada 3): la utilidad ya delega en el catálogo; antes devolvía 'Senior' para PILATES.
+        expect(calcularCategoriaPorEdad(nac(1990, 1, 1), 'PILATES')).toBe('');
       });
     });
 

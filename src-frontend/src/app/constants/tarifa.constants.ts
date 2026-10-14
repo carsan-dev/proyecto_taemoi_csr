@@ -1,6 +1,9 @@
+import { catalogoActual } from '../features/catalogo/catalogo-actual';
+import { cuantiaEstandar } from '../features/catalogo/catalogo-reglas';
+
 /**
- * Tarifas estándar por tipo de tarifa.
- * Estos valores coinciden con los definidos en TarifaConfig.java en el backend.
+ * Tarifas estándar por tipo de tarifa (Taemoi). Ya no la lee ninguna función de este archivo.
+ * @deprecated Los importes son `tarifa.importe*` del catálogo. Se borra en la rebanada 6 (tarifas) / 8 (limpieza).
  */
 export const TARIFAS_ESTANDAR: { [key: string]: number } = {
   FAMILIAR: 0.0,
@@ -16,21 +19,10 @@ export const TARIFAS_ESTANDAR: { [key: string]: number } = {
 };
 
 /**
- * Obtiene la cuantía estándar para un tipo de tarifa.
- * Considera el rol familiar para PADRES_HIJOS.
+ * Cuantía estándar de una tarifa según el rol familiar, leída del catálogo cargado (`cuantiaEstandar`).
+ * Tarifa desconocida o catálogo sin cargar (también para quien no es gestor: el catálogo no trae tarifas): 0.
  */
-export function obtenerCuantiaTarifaEstandar(
-  tipoTarifa: string,
-  rolFamiliar?: string
-): number {
-  // Para PADRES_HIJOS, considerar el rol familiar
-  if (tipoTarifa === 'PADRES_HIJOS' && rolFamiliar) {
-    if (rolFamiliar === 'PADRE' || rolFamiliar === 'MADRE') {
-      return 28.0;
-    } else if (rolFamiliar === 'HIJO' || rolFamiliar === 'HIJA') {
-      return 26.0;
-    }
-  }
-
-  return TARIFAS_ESTANDAR[tipoTarifa] || 0.0;
+export function obtenerCuantiaTarifaEstandar(tipoTarifa: string, rolFamiliar?: string): number {
+  const tarifa = tipoTarifa ? catalogoActual()?.tarifas.find((t) => t.codigo === tipoTarifa) : undefined;
+  return cuantiaEstandar(tarifa, rolFamiliar);
 }

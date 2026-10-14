@@ -1,5 +1,7 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
 import { getGradoColors, getGradoNombreParaDeporte, getGradoTextStyle } from './grado-colors';
+import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
+import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
 const B = '#FFFFFF';
 const A = '#FFFF00';
@@ -14,6 +16,52 @@ const SOMBRA_TEXTO = ' text-shadow: 0px 1px 2px rgba(0,0,0,0.5), 0px 0px 3px rgb
 const FILTRO = ' filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.4)) drop-shadow(0px 0px 2px rgba(0,0,0,0.3));';
 
 describe('grado-colors (caracterización)', () => {
+  // Las utilidades leen el catálogo cargado: equivalencia con el fixture de Taemoi (rebanada 3).
+  beforeEach(() => fijarCatalogoActual(CATALOGO_TAEMOI));
+  afterEach(() => restablecerCatalogoActual());
+
+  describe('con el catálogo (deporte indicado)', () => {
+    it('Taemoi TKD: mismos colores y estilos que la paleta por nombre, para todos los grados', () => {
+      CATALOGO_TAEMOI.sistemasGrados[0].grados.forEach(g => {
+        expect(getGradoColors(g.codigo, 'TAEKWONDO')).toEqual(getGradoColors(g.codigo), g.codigo);
+        expect(getGradoTextStyle(g.codigo, 'TAEKWONDO')).toBe(getGradoTextStyle(g.codigo), g.codigo);
+      });
+    });
+
+    it('D4: KICKBOXING ROJO es marrón #8B4513 (antes rojo); el resto de KB igual que la paleta', () => {
+      expect(getGradoColors('ROJO', 'KICKBOXING')).toEqual({ colors: ['#8B4513'], isSplit: false, needsBorder: false });
+      expect(getGradoColors('ROJO', 'TAEKWONDO').colors).toEqual([R]);
+      expect(getGradoColors('ROJO').colors).toEqual([R]); // sin deporte: paleta por nombre
+      expect(getGradoTextStyle('ROJO', 'KICKBOXING')).toContain('color: #8B4513;');
+      CATALOGO_TAEMOI.sistemasGrados[1].grados.filter(g => g.codigo !== 'ROJO').forEach(g =>
+        expect(getGradoColors(g.codigo, 'KICKBOXING')).toEqual(getGradoColors(g.codigo), g.codigo));
+    });
+
+    it('grado desconocido, deporte desconocido o color1 nulo -> paleta por nombre', () => {
+      expect(getGradoColors('ROJO_NEGRO', 'TAEKWONDO')).toEqual({ colors: [R, K], isSplit: true, needsBorder: false });
+      expect(getGradoColors('AZUL', 'OTRO')).toEqual({ colors: [Z], isSplit: false, needsBorder: false });
+      const sinColor = {
+        ...CATALOGO_TAEMOI,
+        sistemasGrados: CATALOGO_TAEMOI.sistemasGrados.map(s => ({ ...s, grados: s.grados.map(g => ({ ...g, color1: null, color2: null })) })),
+      };
+      fijarCatalogoActual(sinColor);
+      expect(getGradoColors('ROJO', 'KICKBOXING').colors).toEqual([R]);
+    });
+
+    it('segunda escuela: colores y nombres de su catálogo', () => {
+      fijarCatalogoActual(CATALOGO_SEGUNDA_ESCUELA);
+      expect(getGradoColors('MARRON_JUDO', 'JUDO')).toEqual({ colors: ['#8B4513', '#FAFAFA'], isSplit: true, needsBorder: false });
+      expect(getGradoNombreParaDeporte('MARRON_JUDO', 'JUDO')).toBe('Marrón judo');
+      expect(getGradoNombreParaDeporte('ROJO', 'KICKBOXING')).toBe('ROJO'); // no existe en su catálogo
+    });
+
+    it('catálogo no cargado: nombre = código, colores = paleta por nombre (D15)', () => {
+      restablecerCatalogoActual();
+      expect(getGradoNombreParaDeporte('ROJO', 'KICKBOXING')).toBe('ROJO');
+      expect(getGradoColors('ROJO', 'KICKBOXING').colors).toEqual([R]);
+    });
+  });
+
   describe('getGradoColors', () => {
     // [código, colores, isSplit, needsBorder]
     const tabla: [string, string[], boolean, boolean][] = [
@@ -86,9 +134,17 @@ describe('grado-colors (caracterización)', () => {
       expect(getGradoNombreParaDeporte('ROJO', 'KICKBOXING')).toBe('MARRÓN');
       expect(getGradoNombreParaDeporte('rojo', 'KICKBOXING')).toBe('MARRÓN');
     });
-    it('KICKBOXING con otros grados no cambia', () => {
-      ['BLANCO', 'AZUL_ROJO', 'ROJO_NEGRO', 'NEGRO_1_DAN'].forEach(g =>
-        expect(getGradoNombreParaDeporte(g, 'KICKBOXING')).toBe(g));
+    it('KICKBOXING con otros grados: nombre del catálogo (D3); desconocidos, el código', () => {
+      // D3: antes devolvía el código en bruto (AZUL_ROJO, NEGRO_1_DAN); ahora `grado.nombre`.
+      expect(getGradoNombreParaDeporte('BLANCO', 'KICKBOXING')).toBe('BLANCO');
+      expect(getGradoNombreParaDeporte('AZUL_ROJO', 'KICKBOXING')).toBe('AZUL-ROJO');
+      expect(getGradoNombreParaDeporte('NEGRO_1_DAN', 'KICKBOXING')).toBe('NEGRO 1º DAN');
+      expect(getGradoNombreParaDeporte('ROJO_NEGRO', 'KICKBOXING')).toBe('ROJO_NEGRO'); // no existe en el catálogo
+    });
+    it('D3: TAEKWONDO usa el nombre del catálogo (antes el código en bruto)', () => {
+      expect(getGradoNombreParaDeporte('BLANCO_AMARILLO', 'TAEKWONDO')).toBe('BLANCO-AMARILLO');
+      expect(getGradoNombreParaDeporte('ROJO_NEGRO_1_PUM', 'TAEKWONDO')).toBe('ROJO-NEGRO 1º PUM');
+      expect(getGradoNombreParaDeporte('NEGRO_5_DAN', 'TAEKWONDO')).toBe('NEGRO 5º DAN');
     });
     it('otros deportes no cambian ROJO', () => {
       expect(getGradoNombreParaDeporte('ROJO', 'TAEKWONDO')).toBe('ROJO');

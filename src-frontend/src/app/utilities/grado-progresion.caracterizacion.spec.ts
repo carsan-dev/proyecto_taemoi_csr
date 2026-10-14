@@ -1,5 +1,7 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
 import { esSiguienteGradoRojo, obtenerSiguienteGrado } from './grado-progresion';
+import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
+import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
 const HOY = new Date(2026, 5, 15, 12, 0, 0);
 const MENOR = '2018-01-01T12:00:00'; // 8 años
@@ -47,11 +49,40 @@ const TODOS = [
 ];
 
 describe('grado-progresion (caracterización)', () => {
+  // Las utilidades leen el catálogo cargado: equivalencia con el fixture de Taemoi (rebanada 3).
   beforeEach(() => {
+    fijarCatalogoActual(CATALOGO_TAEMOI);
     jasmine.clock().install();
     jasmine.clock().mockDate(HOY);
   });
-  afterEach(() => jasmine.clock().uninstall());
+  afterEach(() => {
+    jasmine.clock().uninstall();
+    restablecerCatalogoActual();
+  });
+
+  describe('catálogo de otra escuela y sin catálogo', () => {
+    it('segunda escuela: progresión por orden del sistema de grados; sin aviso de rojo bordado (D11)', () => {
+      fijarCatalogoActual(CATALOGO_SEGUNDA_ESCUELA);
+      expect(obtenerSiguienteGrado('JUDO', 'BLANCO_JUDO', ADULTO)).toBe('MARRON_JUDO');
+      expect(obtenerSiguienteGrado('JUDO', 'MARRON_JUDO', ADULTO)).toBeNull();
+      expect(obtenerSiguienteGrado('YOGA', 'BLANCO_JUDO', ADULTO)).toBeNull();
+      expect(obtenerSiguienteGrado('TAEKWONDO', 'BLANCO', ADULTO)).toBeNull();
+      expect(esSiguienteGradoRojo('JUDO', 'BLANCO_JUDO', ADULTO)).toBeFalse();
+    });
+
+    it('D11: el aviso solo existe con legado de Taemoi', () => {
+      const sinLegado = { ...CATALOGO_TAEMOI, organizacion: { id: 3, comportamientoLegadoTaemoi: false } };
+      fijarCatalogoActual(sinLegado);
+      expect(obtenerSiguienteGrado('TAEKWONDO', 'AZUL', ADULTO)).toBe('ROJO');
+      expect(esSiguienteGradoRojo('TAEKWONDO', 'AZUL', ADULTO)).toBeFalse();
+    });
+
+    it('catálogo no cargado -> null / false (D15)', () => {
+      restablecerCatalogoActual();
+      expect(obtenerSiguienteGrado('TAEKWONDO', 'BLANCO', MENOR)).toBeNull();
+      expect(esSiguienteGradoRojo('TAEKWONDO', 'AZUL', ADULTO)).toBeFalse();
+    });
+  });
 
   describe('TAEKWONDO menores', () => {
     TODOS.forEach(g => {

@@ -1,59 +1,12 @@
-import { esMenor } from './categoria-por-edad';
+import { catalogoActual, disciplinaActual, legadoTaemoiActual } from '../features/catalogo/catalogo-actual';
+import { gradosDeDisciplina, esMenor, siguienteGrado } from '../features/catalogo/catalogo-reglas';
+import { requiereAvisoRojoBordado } from '../features/catalogo/legado-taemoi';
 
-type MapaProgresion = Record<string, string>;
-
-const MAPA_TAEKWONDO_MENORES: MapaProgresion = {
-  BLANCO: 'BLANCO_AMARILLO',
-  BLANCO_AMARILLO: 'AMARILLO',
-  AMARILLO: 'AMARILLO_NARANJA',
-  AMARILLO_NARANJA: 'NARANJA',
-  NARANJA: 'NARANJA_VERDE',
-  NARANJA_VERDE: 'VERDE',
-  VERDE: 'VERDE_AZUL',
-  VERDE_AZUL: 'AZUL',
-  AZUL: 'AZUL_ROJO',
-  AZUL_ROJO: 'ROJO',
-  ROJO: 'ROJO_NEGRO_1_PUM',
-  ROJO_NEGRO_1_PUM: 'ROJO_NEGRO_2_PUM',
-  ROJO_NEGRO_2_PUM: 'ROJO_NEGRO_3_PUM',
-};
-
-const MAPA_TAEKWONDO_MAYORES: MapaProgresion = {
-  BLANCO: 'AMARILLO',
-  BLANCO_AMARILLO: 'AMARILLO',
-  AMARILLO: 'NARANJA',
-  AMARILLO_NARANJA: 'NARANJA',
-  NARANJA: 'VERDE',
-  NARANJA_VERDE: 'VERDE',
-  VERDE: 'AZUL',
-  VERDE_AZUL: 'AZUL',
-  AZUL: 'ROJO',
-  AZUL_ROJO: 'ROJO',
-  ROJO: 'NEGRO_1_DAN',
-  NEGRO_1_DAN: 'NEGRO_2_DAN',
-  NEGRO_2_DAN: 'NEGRO_3_DAN',
-  NEGRO_3_DAN: 'NEGRO_4_DAN',
-  NEGRO_4_DAN: 'NEGRO_5_DAN',
-};
-
-const MAPA_KICKBOXING: MapaProgresion = {
-  BLANCO: 'AMARILLO',
-  BLANCO_AMARILLO: 'AMARILLO',
-  AMARILLO: 'NARANJA',
-  AMARILLO_NARANJA: 'NARANJA',
-  NARANJA: 'VERDE',
-  NARANJA_VERDE: 'VERDE',
-  VERDE: 'AZUL',
-  VERDE_AZUL: 'AZUL',
-  AZUL: 'ROJO',
-  AZUL_ROJO: 'ROJO',
-  ROJO: 'NEGRO_1_DAN',
-  NEGRO_1_DAN: 'NEGRO_2_DAN',
-  NEGRO_2_DAN: 'NEGRO_3_DAN',
-  NEGRO_3_DAN: 'NEGRO_4_DAN',
-  NEGRO_4_DAN: 'NEGRO_5_DAN',
-};
-
+/**
+ * Código del siguiente grado según la progresión (`orden` + `aplicaA`) del sistema de grados de la
+ * disciplina en el catálogo. Disciplina sin sistema de grados o desconocida, grado desconocido, último
+ * grado o catálogo sin cargar: `null`.
+ */
 export function obtenerSiguienteGrado(
   deporte: string | null | undefined,
   gradoActual: string | null | undefined,
@@ -62,26 +15,20 @@ export function obtenerSiguienteGrado(
   if (!deporte || !gradoActual) {
     return null;
   }
-
-  const deporteKey = deporte.toUpperCase();
-
-  if (deporteKey === 'KICKBOXING') {
-    return MAPA_KICKBOXING[gradoActual] ?? null;
-  }
-
-  if (deporteKey !== 'TAEKWONDO') {
+  const catalogo = catalogoActual();
+  const disciplina = disciplinaActual(deporte.toUpperCase());
+  if (!catalogo || !disciplina) {
     return null;
   }
-
-  const esMenorAlumno = esMenor(fechaNacimiento, deporteKey);
-  const mapa = esMenorAlumno ? MAPA_TAEKWONDO_MENORES : MAPA_TAEKWONDO_MAYORES;
-  return mapa[gradoActual] ?? null;
+  const grados = gradosDeDisciplina(catalogo.sistemasGrados, disciplina);
+  return siguienteGrado(grados, gradoActual, esMenor(fechaNacimiento, disciplina))?.codigo ?? null;
 }
 
+/** D11: aviso del cinturón rojo bordado, solo con legado de Taemoi y cuando el siguiente grado es ROJO. */
 export function esSiguienteGradoRojo(
   deporte: string | null | undefined,
   gradoActual: string | null | undefined,
   fechaNacimiento: string | Date | null | undefined
 ): boolean {
-  return obtenerSiguienteGrado(deporte, gradoActual, fechaNacimiento) === 'ROJO';
+  return requiereAvisoRojoBordado(legadoTaemoiActual(), obtenerSiguienteGrado(deporte, gradoActual, fechaNacimiento));
 }

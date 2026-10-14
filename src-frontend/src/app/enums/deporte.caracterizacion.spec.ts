@@ -1,7 +1,21 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
 import { Deporte, DeporteLabels, DeportesArray, getDeporteLabel, isValidDeporte } from './deporte';
+import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
+import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
 describe('Deporte (caracterización)', () => {
+  // getDeporteLabel lee el catálogo cargado: equivalencia con el fixture de Taemoi (rebanada 3).
+  beforeEach(() => fijarCatalogoActual(CATALOGO_TAEMOI));
+  afterEach(() => restablecerCatalogoActual());
+
+  it('segunda escuela: nombres de su catálogo; los de Taemoi no se inventan (D15)', () => {
+    fijarCatalogoActual(CATALOGO_SEGUNDA_ESCUELA);
+    expect(getDeporteLabel('JUDO')).toBe('Judo');
+    expect(getDeporteLabel('TAEKWONDO')).toBe('TAEKWONDO');
+    restablecerCatalogoActual();
+    expect(getDeporteLabel('TAEKWONDO')).toBe('TAEKWONDO');
+  });
+
   it('valores del enum', () => {
     expect(Object.values(Deporte) as string[]).toEqual(['TAEKWONDO', 'KICKBOXING', 'PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
   });

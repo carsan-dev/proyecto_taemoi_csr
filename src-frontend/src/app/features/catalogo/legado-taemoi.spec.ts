@@ -1,4 +1,5 @@
 import { tarifasDeDisciplina } from './catalogo-reglas';
+import { fijarCatalogoActual, restablecerCatalogoActual } from './testing/catalogo-actual.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from './testing/catalogo.fixtures';
 import {
   COLOR_DISCIPLINA_NEUTRO,
@@ -17,10 +18,14 @@ import { obtenerSiguienteGrado, esSiguienteGradoRojo } from '../../utilities/gra
 
 describe('legado-taemoi', () => {
   beforeEach(() => {
+    fijarCatalogoActual(CATALOGO_TAEMOI); // los adaptadores de utilities/ leen el catálogo cargado
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date(2026, 5, 15, 12, 0, 0));
   });
-  afterEach(() => jasmine.clock().uninstall());
+  afterEach(() => {
+    jasmine.clock().uninstall();
+    restablecerCatalogoActual();
+  });
 
   const T = CATALOGO_TAEMOI;
   const S = CATALOGO_SEGUNDA_ESCUELA;
