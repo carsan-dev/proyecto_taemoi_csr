@@ -333,6 +333,22 @@ class MaterialExamenServiceImplTest {
 				() -> service.obtenerDocumento(99L, Deporte.TAEKWONDO.name(), "../secret.pdf"));
 	}
 
+	/** El título del grupo usa el nombre del grado en el catálogo (D3, V30): «ROJO-NEGRO 1º PUM». */
+	@Test
+	void gruposAnteriores_tituloConElNombreDelCatalogo() throws Exception {
+		mockAlumnoConDeporteMenorTaekwondo(17L, TipoGrado.ROJO_NEGRO_2_PUM);
+
+		Path bloquePum = crearBloque("taekwondo", "b07_negro_1_a_negro_2");
+		Files.createDirectories(bloquePum.resolve("videos"));
+		Files.writeString(bloquePum.resolve("videos").resolve("01_pumse_koryo.mp4"), "v1");
+		crearBloque("taekwondo", "b08_negro_2_a_negro_3"); // bloque actual
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(17L, Deporte.TAEKWONDO.name());
+
+		assertEquals(List.of("Taeguks/Pumses de ROJO-NEGRO 1º PUM"),
+				material.getGruposVideosAnteriores().stream().map(g -> g.getTitulo()).toList());
+	}
+
 	private void mockAlumnoConDeporte(Long alumnoId, Deporte deporte, TipoGrado grado) {
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
 		alumnoDeporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));

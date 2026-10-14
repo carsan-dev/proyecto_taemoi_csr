@@ -49,6 +49,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
+import com.taemoi.project.utils.ColoresGrado;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
 
@@ -102,7 +103,7 @@ public class PDFServiceImpl implements PDFService {
 				esMenor(alumno, alumnoDeporte), alumnoDeporte.getGrado().getCodigo()).orElse(null);
 	}
 
-	/** Código del grado (para dibujar el cinturón); nulo si no hay grado. */
+	/** Código del grado; nulo si no hay grado. */
 	private static String tipoDe(Grado grado) {
 		return grado == null ? null : grado.getCodigo();
 	}
@@ -147,7 +148,7 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
-	/** Nombre público de la disciplina (en Taemoi, los de siempre: «Taekwondo», «Defensa personal femenina»…). */
+	/** Nombre público de la disciplina (en Taemoi: «Taekwondo», «Defensa Personal Femenina» desde V30…). */
 	private String nombreDeportePublico(String deporte){return catalogoDisciplinas.obtenerPorCodigo(deporte).getNombre();}
 	private JsonNode parsearContenidoPlantilla(String contenido) {
 		if (contenido == null || contenido.isBlank()) {
@@ -455,66 +456,11 @@ public class PDFServiceImpl implements PDFService {
 				}
 				return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
 			}));
-			String tipo = tipoDe(grado);
 
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
 			html.append("<div class='izquierda'>");
-			if (tipo.contains("ROJO_NEGRO")) {
-				String[] parts = tipo.split("_");
-				String colorInferior = obtenerColorPorNombre(parts[0]);
-				String colorSuperior = obtenerColorPorNombre(parts[1]);
-				int stripeCount = 0;
-				try {
-					stripeCount = Integer.parseInt(parts[2]);
-				} catch (Exception e) {
-				}
-				html.append("<div class='cinturon doble' style='position: relative;'>");
-				html.append(
-						"<div class='superior' style='background-color: " + colorSuperior + "; z-index: 1;'></div>");
-				html.append(
-						"<div class='inferior' style='background-color: " + colorInferior + "; z-index: 1;'></div>");
-				int stripeWidth = 6;
-				int gap = 2;
-				int initialMargin = 6;
-				for (int i = 0; i < stripeCount; i++) {
-					int rightOffset = initialMargin + i * (stripeWidth + gap);
-					html.append("<div class='raya' style='right:" + rightOffset + "px; width:" + stripeWidth
-							+ "px; z-index: 2;'></div>");
-				}
-				html.append("</div>");
-			} else if (tipo.contains("DAN")
-					|| (tipo.contains("PUM") && !tipo.contains("ROJO_NEGRO"))) {
-				html.append("<div class='cinturon' style='background-color: " + obtenerColorCinturon(tipo) + ";'>");
-				try {
-					int stripeCount = 0;
-					if (tipo.contains("DAN")) {
-						String[] parts = tipo.split("_");
-						stripeCount = Integer.parseInt(parts[1]);
-					}
-					int stripeWidth = 6;
-					int gap = 2;
-					int initialMargin = 6;
-					for (int i = 0; i < stripeCount; i++) {
-						int rightOffset = initialMargin + i * (stripeWidth + gap);
-						html.append("<div class='raya' style='right:" + rightOffset + "px; width:" + stripeWidth
-								+ "px;'></div>");
-					}
-				} catch (Exception e) {
-				}
-				html.append("</div>");
-			} else if (tipo.contains("_")) {
-				String[] parts = tipo.split("_");
-				String colorSuperior = obtenerColorPorNombre(parts[1]);
-				String colorInferior = obtenerColorPorNombre(parts[0]);
-				html.append("<div class='cinturon doble'>");
-				html.append("<div class='superior' style='background-color: " + colorSuperior + ";'></div>");
-				html.append("<div class='inferior' style='background-color: " + colorInferior + ";'></div>");
-				html.append("</div>");
-			} else {
-				String cinturonStyle = obtenerEstiloCinturon(tipo);
-				html.append("<div class='cinturon' style='" + cinturonStyle + "'></div>");
-			}
+			html.append(CinturonesPdf.encabezado(ColoresGrado.de(grado)));
 
 			html.append("<span class='grado-nombre'>").append(progresionGrados.obtenerNombreVisible(grado))
 					.append("</span>");
@@ -563,91 +509,6 @@ public class PDFServiceImpl implements PDFService {
 		return html.toString();
 	}
 
-	/**
-	 * Retorna el estilo en línea para el div del cinturón. Para grados DAN se
-	 * retorna únicamente el color base (ya que las rayas se generan en el HTML).
-	 */
-	private String obtenerEstiloCinturon(String tipo) {
-		if (tipo == null) {
-			return "background-color: #CCCCCC;";
-		}
-		return "background-color: " + obtenerColorCinturon(tipo) + ";";
-	}
-
-	/**
-	 * Devuelve un color (en formato hexadecimal) según el TipoGrado.
-	 */
-	private String obtenerColorCinturon(String tipo) {
-		if (tipo == null)
-			return "#CCCCCC";
-		switch (tipo) {
-		case "BLANCO":
-			return "#FFFFFF";
-		case "BLANCO_AMARILLO":
-			return "#FFFACD";
-		case "AMARILLO":
-			return "#FFFF00";
-		case "AMARILLO_NARANJA":
-			return "#FFD700";
-		case "NARANJA":
-			return "#FFA500";
-		case "NARANJA_VERDE":
-			return "#ADFF2F";
-		case "VERDE":
-			return "#008000";
-		case "VERDE_AZUL":
-			return "#20B2AA";
-		case "AZUL":
-			return "#0000FF";
-		case "AZUL_ROJO":
-			return "#8A2BE2";
-		case "ROJO":
-			return "#FF0000";
-		case "ROJO_NEGRO_1_PUM":
-		case "ROJO_NEGRO_2_PUM":
-		case "ROJO_NEGRO_3_PUM":
-			return "#800000";
-		case "NEGRO_1_DAN":
-		case "NEGRO_2_DAN":
-		case "NEGRO_3_DAN":
-		case "NEGRO_4_DAN":
-		case "NEGRO_5_DAN":
-			return "#000000";
-		default:
-			return "#CCCCCC";
-		}
-	}
-
-	private String obtenerColorPorNombre(String nombre) {
-		switch (nombre) {
-		case "BLANCO":
-			return "#FFFFFF";
-		case "BLANCO_AMARILLO":
-			return "#FFFACD";
-		case "AMARILLO":
-			return "#FFFF00";
-		case "AMARILLO_NARANJA":
-			return "#FFD700";
-		case "NARANJA":
-			return "#FFA500";
-		case "NARANJA_VERDE":
-			return "#ADFF2F";
-		case "VERDE":
-			return "#008000";
-		case "VERDE_AZUL":
-			return "#20B2AA";
-		case "AZUL":
-			return "#0000FF";
-		case "AZUL_ROJO":
-			return "#8A2BE2";
-		case "ROJO":
-			return "#FF0000";
-		case "NEGRO":
-			return "#000000";
-		default:
-			return "#CCCCCC";
-		}
-	}
 
 	@Override
 	public byte[] generarInformeLicencias(boolean soloActivos) {
@@ -791,8 +652,7 @@ public class PDFServiceImpl implements PDFService {
 			}
 			html.append("<td>").append(fechaLic).append("</td>");
 			// Use belt drawing for grade
-			String tipoGrado = tipoDe(alumnoDeporte.getGrado());
-			html.append(generarCeldaGrado(tipoGrado, nombreGrado(alumnoDeporte)));
+			html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 			html.append("</tr>");
 		}
 		html.append("</tbody>");
@@ -828,12 +688,12 @@ public class PDFServiceImpl implements PDFService {
 		return grado == null ? Integer.MIN_VALUE : ordenPresentacion(grado.getCodigo(), grado.getOrden());
 	}
 
-	private String generarCeldaGrado(String tipoGrado, String texto) {
+	private String generarCeldaGrado(Grado grado, String texto) {
 		String textoSeguro = (texto == null || texto.trim().isEmpty()) ? "N/A" : texto;
-		if (tipoGrado == null) {
+		if (grado == null) {
 			return "<td class='grado-cell'><div class='grado-text'>" + textoSeguro + "</div></td>";
 		}
-		String cinturon = generarCinturonInlineHTML(tipoGrado, 70, 16);
+		String cinturon = CinturonesPdf.inline(ColoresGrado.de(grado), 70, 16);
 		return "<td class='grado-cell'><div class='grado-belt'>" + cinturon + "</div><div class='grado-text'>"
 				+ textoSeguro + "</div></td>";
 	}
@@ -951,10 +811,10 @@ public class PDFServiceImpl implements PDFService {
 
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
+						html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
 						Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
-						html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+						html.append(generarCeldaGrado(gradoPromocion,
 								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
@@ -1096,11 +956,11 @@ public class PDFServiceImpl implements PDFService {
 								.append("</td>");
 						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-						html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
+						html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
 						// Grado a Promocionar with belt
 						Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
-						html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+						html.append(generarCeldaGrado(gradoPromocion,
 								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
@@ -1267,11 +1127,11 @@ public class PDFServiceImpl implements PDFService {
 							.append("</td>");
 					html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
 
-					html.append(generarCeldaGrado(tipoDe(alumnoDeporte.getGrado()), nombreGrado(alumnoDeporte)));
+					html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
 					// Grado a Promocionar with belt
 					Grado gradoPromocion = siguienteGrado(alumno, alumnoDeporte);
-					html.append(generarCeldaGrado(tipoDe(gradoPromocion),
+					html.append(generarCeldaGrado(gradoPromocion,
 							progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
@@ -1597,8 +1457,7 @@ public class PDFServiceImpl implements PDFService {
 
 						html.append("<tr>");
 						html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
-						String tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
-						html.append(generateBeltCellHtml(tipoGrado));
+						html.append(CinturonesPdf.celdaAsistencia(ad.getGrado()));
 						html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 						html.append("<td>").append(edad).append("</td>");
 						html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");
@@ -1653,78 +1512,6 @@ public class PDFServiceImpl implements PDFService {
 		return os.toByteArray();
 	}
 
-	/**
-	 * Generates HTML content for the belt color cell in the attendance list. Shows
-	 * dan numbers for black belts and split colors for half-color belts.
-	 */
-	private String generateBeltCellHtml(String tipoGrado) {
-		if (tipoGrado == null) {
-			return "<td class='cinturon-blanco'></td>";
-		}
-
-		String enumName = tipoGrado;
-
-		// Handle black belt grades (NEGRO_X_DAN) - show dan number
-		if (enumName.startsWith("NEGRO_")) {
-			String[] parts = enumName.split("_");
-			if (parts.length >= 2) {
-				String danNumber = parts[1]; // e.g., "1" from NEGRO_1_DAN
-				return "<td class='cinturon-negro'>" + danNumber + "º</td>";
-			}
-			return "<td class='cinturon-negro'></td>";
-		}
-
-		// Handle ROJO_NEGRO grades (pre-black belt) - show split colors with PUM number
-		if (enumName.startsWith("ROJO_NEGRO_")) {
-			String[] parts = enumName.split("_");
-			String pumNumber = parts.length >= 3 ? parts[2] : "";
-			return "<td><div class='cinturon-split' style='position: relative;'>"
-					+ "<div class='cinturon-half-superior' style='background-color: #212529;'></div>"
-					+ "<div class='cinturon-half-inferior' style='background-color: #f44336;'></div>"
-					+ "<div style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10;'>"
-					+ "<span style='color: #ffffff; font-weight: 700; font-size: 7pt;'>" + pumNumber + "º</span>"
-					+ "</div></div></td>";
-		}
-
-		// Check if it's a half-color belt (e.g., BLANCO_AMARILLO, AMARILLO_NARANJA)
-		String[] parts = enumName.split("_");
-		if (parts.length == 2 && !enumName.contains("DAN") && !enumName.contains("PUM")) {
-			String color1 = getBeltColorHex(parts[1]);
-			String color2 = getBeltColorHex(parts[0]);
-			// El borde viene de la celda <td>, no necesitamos añadir uno extra
-			return "<td><div class='cinturon-split'>" + "<div class='cinturon-half-superior' style='background-color: "
-					+ color1 + ";'></div>" + "<div class='cinturon-half-inferior' style='background-color: " + color2
-					+ ";'></div></div></td>";
-		}
-
-		// Single color belt
-		String color = parts[0].toLowerCase();
-		return "<td class='cinturon-" + color + "'></td>";
-	}
-
-	/**
-	 * Returns the hex color code for a belt color name.
-	 */
-	private String getBeltColorHex(String colorName) {
-		switch (colorName) {
-		case "BLANCO":
-			return "#ffffff";
-		case "AMARILLO":
-			return "#ffeb3b";
-		case "NARANJA":
-			return "#ff9800";
-		case "VERDE":
-			return "#4caf50";
-		case "AZUL":
-			return "#2196f3";
-		case "ROJO":
-			return "#f44336";
-		case "NEGRO":
-			return "#212529";
-		default:
-			return "#cccccc";
-		}
-	}
 
 	@Override
 	public byte[] generarInformeDeudas(boolean soloActivos) {
@@ -2808,10 +2595,9 @@ public class PDFServiceImpl implements PDFService {
 				// GRADO
 				html.append("<td class='grado-cell'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
 					html.append("<div class='line-item'>");
-					if (tipoGrado != null) {
-						html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
+					if (ad.getGrado() != null) {
+						html.append(CinturonesPdf.inline(ColoresGrado.de(ad.getGrado()), 60, 12));
 					} else {
 						html.append("-");
 					}
@@ -3100,7 +2886,7 @@ public class PDFServiceImpl implements PDFService {
 				// Celda GRADO con dibujo del cinturón
 				html.append("<td class='grado-celda'>");
 				if (tipoGrado != null) {
-					html.append(generarCinturonInlineHTML(tipoGrado, 55, 12));
+					html.append(CinturonesPdf.inline(ColoresGrado.de(ad.getGrado()), 55, 12));
 				} else {
 					// Cinturón gris simple
 					html.append(
@@ -3212,7 +2998,7 @@ public class PDFServiceImpl implements PDFService {
 			// Left: DE [GRADE]
 			html.append("<td class='grade-from'>");
 			html.append("<span class='belt-with-text'>");
-			html.append(generarCinturonInlineHTML(gradoActual, 50, 15));
+			html.append(CinturonesPdf.inline(cinturonDe(convocatoria.getDeporte(), gradoActual), 50, 15));
 			html.append("<span class='belt-text'>DE ")
 					.append(progresionGrados.obtenerNombreVisible(convocatoria.getDeporte(),
 							gradoActual == null ? null : gradoActual).toUpperCase())
@@ -3232,7 +3018,7 @@ public class PDFServiceImpl implements PDFService {
 					progresionGrados.obtenerNombreVisible(convocatoria.getDeporte(),
 							gradoSiguiente == null ? null : gradoSiguiente).toUpperCase())
 					.append("</span>");
-			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
+			html.append(CinturonesPdf.inline(cinturonDe(convocatoria.getDeporte(), gradoSiguiente), 50, 15));
 			html.append("</span>");
 			html.append("</td>");
 
@@ -3296,83 +3082,16 @@ public class PDFServiceImpl implements PDFService {
 		return outputStream.toByteArray();
 	}
 
-	private String generarCinturonInlineHTML(String tipo, int width, int height) {
-		if (tipo == null) {
-			return "";
+	/**
+	 * Cinturón de un código de grado de la convocatoria: colores del grado en el sistema de la disciplina (o,
+	 * si no se encuentra, derivados del código, como antes); nulo sin código.
+	 */
+	private ColoresGrado.Cinturon cinturonDe(String disciplina, String codigoGrado) {
+		if (codigoGrado == null) {
+			return null;
 		}
-
-		StringBuilder html = new StringBuilder();
-
-		if (tipo.contains("ROJO_NEGRO")) {
-			String[] parts = tipo.split("_");
-			String colorInferior = obtenerColorPorNombre(parts[0]);
-			String colorSuperior = obtenerColorPorNombre(parts[1]);
-			int stripeCount = 0;
-			try {
-				stripeCount = Integer.parseInt(parts[2]);
-			} catch (Exception e) {
-			}
-
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height)
-					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
-			html.append("<div style='background-color: ").append(colorSuperior)
-					.append("; position: absolute; top: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
-			html.append("<div style='background-color: ").append(colorInferior)
-					.append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; z-index: 1;'></div>");
-
-			int stripeWidth = Math.max(2, width / 15);
-			int gap = 1;
-			int initialMargin = 3;
-			for (int i = 0; i < stripeCount; i++) {
-				int rightOffset = initialMargin + i * (stripeWidth + gap);
-				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:")
-						.append(stripeWidth)
-						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
-			}
-			html.append("</div>");
-		} else if (tipo.contains("DAN")
-				|| (tipo.contains("PUM") && !tipo.contains("ROJO_NEGRO"))) {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ")
-					.append(width).append("px; height: ").append(height)
-					.append("px; position: relative; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
-
-			int stripeCount = 0;
-			if (tipo.contains("DAN")) {
-				String[] parts = tipo.split("_");
-				try {
-					stripeCount = Integer.parseInt(parts[1]);
-				} catch (Exception e) {
-				}
-			}
-
-			int stripeWidth = Math.max(2, width / 15);
-			int gap = 1;
-			int initialMargin = 3;
-			for (int i = 0; i < stripeCount; i++) {
-				int rightOffset = initialMargin + i * (stripeWidth + gap);
-				html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:")
-						.append(stripeWidth)
-						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
-			}
-			html.append("</div>");
-		} else if (tipo.contains("_")) {
-			String[] parts = tipo.split("_");
-			String colorSuperior = obtenerColorPorNombre(parts[1]);
-			String colorInferior = obtenerColorPorNombre(parts[0]);
-			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height)
-					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
-			html.append("<div style='background-color: ").append(colorSuperior)
-					.append("; position: absolute; top: 0; left: 0; right: 0; height: 50%;'></div>");
-			html.append("<div style='background-color: ").append(colorInferior)
-					.append("; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;'></div>");
-			html.append("</div>");
-		} else {
-			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ")
-					.append(width).append("px; height: ").append(height)
-					.append("px; display: inline-block; vertical-align: middle; border: 1px solid #495057;'></div>");
-		}
-
-		return html.toString();
+		return progresionGrados.buscarGrado(disciplina, codigoGrado).map(ColoresGrado::de)
+				.orElseGet(() -> ColoresGrado.desdeCodigo(codigoGrado));
 	}
 
 	/**

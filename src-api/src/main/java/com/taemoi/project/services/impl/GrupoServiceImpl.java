@@ -72,9 +72,6 @@ public class GrupoServiceImpl implements GrupoService {
 	@Autowired
 	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
-	@Autowired
-	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
-
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
@@ -87,8 +84,7 @@ public class GrupoServiceImpl implements GrupoService {
 	@Override
 	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
 		List<Grupo> grupos = grupoRepository.findAll();
-		boolean legado = comportamientoLegado.activo();
-		return grupos.stream().map(g -> convertirEntidadADTO(g, legado)).collect(Collectors.toList());
+		return grupos.stream().map(this::convertirEntidadADTO).collect(Collectors.toList());
 	}
 
 	/**
@@ -315,10 +311,9 @@ public class GrupoServiceImpl implements GrupoService {
 			alumnosDeporte = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte);
 		}
 
-		boolean legado = comportamientoLegado.activo();
 		return alumnosDeporte.stream()
 			.filter(ad -> ad.getAlumno() != null)
-			.map(ad -> AlumnoCortoDTO.deAlumnoDeporte(ad, legado))
+			.map(AlumnoCortoDTO::deAlumnoDeporte)
 			.collect(Collectors.toList());
 	}
 
@@ -475,10 +470,6 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo) {
-		return convertirEntidadADTO(grupo, comportamientoLegado.activo());
-	}
-
-	private GrupoConAlumnosDTO convertirEntidadADTO(Grupo grupo, boolean legado) {
 		GrupoConAlumnosDTO grupoDTO = new GrupoConAlumnosDTO();
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
@@ -496,11 +487,11 @@ public class GrupoServiceImpl implements GrupoService {
 								.findFirst()
 								.orElse(null);
 						if (alumnoDeporte != null) {
-							return AlumnoCortoDTO.deAlumnoDeporte(alumnoDeporte, legado);
+							return AlumnoCortoDTO.deAlumnoDeporte(alumnoDeporte);
 						}
 						return null;
 					}
-					return AlumnoCortoDTO.deAlumno(alumno, legado);
+					return AlumnoCortoDTO.deAlumno(alumno);
 				})
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());

@@ -199,13 +199,18 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		});
 	}
 
+	/** Mismas tarifas e importes que TarifaConfig; desde V30, en el orden de tarifa.orden (el de crear-alumno). */
 	@Test
-	void listado_igualQueObtenerTodasLasCuantias_mismoOrden() {
+	void listado_igualQueObtenerTodasLasCuantias_enElOrdenDeV30() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			Map<TipoTarifa, Double> legado = tarifaConfig.obtenerTodasLasCuantias();
 			List<Tarifa> nuevas = tarifas.listarActivas();
-			assertEquals(legado.keySet().stream().map(Enum::name).toList(),
+			assertEquals(java.util.Set.copyOf(legado.keySet().stream().map(Enum::name).toList()),
+					java.util.Set.copyOf(nuevas.stream().map(Tarifa::getCodigo).toList()));
+			assertEquals(List.of("ADULTO", "ADULTO_GRUPO", "FAMILIAR", "INFANTIL", "INFANTIL_GRUPO", "HERMANOS",
+					"PADRES_HIJOS", "KICKBOXING", "PILATES", "DEFENSA_PERSONAL_FEMENINA"),
 					nuevas.stream().map(Tarifa::getCodigo).toList());
+			assertEquals(nuevas.size(), legado.size());
 			for (Tarifa t : nuevas) {
 				igualImporte(legado.get(TipoTarifa.valueOf(t.getCodigo())), t.getImporte(), t.getCodigo());
 				assertTrue(tarifaConfig.tieneCuantiaDefinida(TipoTarifa.valueOf(t.getCodigo())));

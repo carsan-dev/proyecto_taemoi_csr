@@ -53,6 +53,10 @@ public class Tarifa extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Boolean activa = Boolean.TRUE;
 
+	/** Posición en los listados de la organización (orden, id). V30: Taemoi con el orden de crear-alumno. */
+	@Column(nullable = false)
+	private Integer orden = 0;
+
 	public Long getId() {
 		return id;
 	}
@@ -111,5 +115,13 @@ public class Tarifa extends EntidadOrganizacion {
 
 	public void setActiva(Boolean activa) {
 		this.activa = activa;
+	}
+
+	public Integer getOrden() {
+		return orden;
+	}
+
+	public void setOrden(Integer orden) {
+		this.orden = orden;
 	}
 }

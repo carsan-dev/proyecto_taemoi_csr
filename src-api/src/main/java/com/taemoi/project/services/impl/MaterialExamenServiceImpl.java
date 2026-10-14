@@ -101,7 +101,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores = contexto.gruposVideosAnteriores().stream()
 				.map(grupo -> new MaterialExamenVideoGrupoDTO(
 						grupo.grado(),
-						"Taeguks/Pumses de " + formatearGrado(grupo.grado()),
+						"Taeguks/Pumses de " + nombreGrado(grupo),
 						grupo.bloqueId(),
 						grupo.videos().stream()
 								.map(video -> crearVideoDto(alumnoId, deporte, video))
@@ -307,7 +307,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 					.toList();
 
 			if (!videos.isEmpty()) {
-				grupos.add(new VideoGroupEntry(gradoAnterior.getCodigo(), bloqueAnterior, videos));
+				grupos.add(new VideoGroupEntry(gradoAnterior.getCodigo(), gradoAnterior.getNombre(), bloqueAnterior, videos));
 			}
 		}
 
@@ -332,8 +332,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
 	}
 
-	private String formatearGrado(String grado) {
-		return grado.replace('_', '-');
+	/** Nombre del grado en el catálogo (D3); sin nombre, el código con guiones, como antes. */
+	private String nombreGrado(VideoGroupEntry grupo) {
+		return grupo.nombre() != null ? grupo.nombre() : grupo.grado().replace('_', '-');
 	}
 
 	/**
@@ -636,7 +637,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private record VideoFileEntry(String fileName, String title, Integer order, Path path, String bloqueId) {
 	}
 
-	private record VideoGroupEntry(String grado, String bloqueId, List<VideoFileEntry> videos) {
+	private record VideoGroupEntry(String grado, String nombre, String bloqueId, List<VideoFileEntry> videos) {
 	}
 
 	private record DocumentoFileEntry(

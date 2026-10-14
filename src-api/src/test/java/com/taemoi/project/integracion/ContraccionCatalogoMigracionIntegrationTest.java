@@ -83,7 +83,8 @@ class ContraccionCatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 		inscripcionesAntes = jdbc.queryForList(
 				"SELECT id, alumno_id, disciplina_id, tarifa_id, grado_id, categoria_id FROM alumno_deporte ORDER BY id");
 		gradosAntes = jdbc.queryForList("SELECT id, codigo, sistema_grados_id, nombre, orden FROM grado ORDER BY id");
-		flyway(dataSource, null).migrate();
+		// Hasta V29: V30 (catálogo visual) cambia los nombres de los grados de Taemoi a propósito.
+		flyway(dataSource, "29").migrate();
 	}
 
 	@Test

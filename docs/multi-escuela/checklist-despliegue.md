@@ -53,6 +53,16 @@
       Si V29 se detiene (`Table '…v29_<motivo>' doesn't exist`), no ha cambiado nada: corregir las filas,
       `flyway repair` y volver a desplegar. Si falla a medias, `flyway repair` y volver a desplegar: cada paso
       vuelve a comprobar el esquema y los datos.
+- [ ] **V30 (catálogo visual) va en el despliegue 2, en la misma ejecución que V28/V29 (después de ellas)**,
+      o en uno posterior, pero siempre con el código que la usa: la entidad `Tarifa` mapea `tarifa.orden` y
+      Hibernate (`ddl-auto=validate`) no arranca sin esa columna, y los listados y PDF muestran `grado.nombre`
+      y `color_1`/`color_2` (sin V30, Taemoi vería los nombres de V23, «Blanco-Amarillo»). Se recomienda el
+      despliegue 2 porque ese código está en la punta de la rama, desde la que se construye el despliegue 2:
+      llevar V28/V29 sin V30 obligaría a construir desde un commit anterior. V30 no tiene guarda ni
+      comprobación previa: solo actualiza datos de la organización 1 y añade una columna; no depende de V28/V29
+      (usa `grado.codigo`, `sistema_grados` y `tarifa`, de V23/V24). Si falla a medias, `flyway repair` y volver
+      a desplegar: cada paso vuelve a comprobar el esquema y los datos. No exige copia propia: la de V28 sirve;
+      el código anterior funciona con la columna nueva (la ignora), pero mostraría los nombres nuevos.
 - [ ] Desde V27, NUNCA ejecutar a mano `db/resync/resync_catalogo_v24.sql`: su UPDATE que pone
       `tarifa_id = NULL` donde `tipo_tarifa` es NULL no se limita a una organización y borraría las tarifas
       con código propio de otras escuelas (que no escriben `tipo_tarifa`). Ninguna migración posterior a V27

@@ -178,7 +178,7 @@ public Page<Preinscripcion> listar(String temporada,String deporteParametro,Esta
  private String parametroRequerido(String deporte){String codigo=catalogo.validarParametro(deporte);if(codigo==null)throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);return codigo;}
  private boolean visibleEnPreinscripcion(Grupo g){return !CatalogoLegadoTaemoi.TAEKWONDO.equals(g.getDeporte())||!normalizar(g.getNombre()+" "+g.getTipo()).contains("competicion");}
  private String nombrePublico(Grupo g){return nombreDeporte(g.getDeporte());}
- /* Nombre público de la disciplina (en Taemoi, los de siempre: «Taekwondo», «Defensa personal femenina»…). */
+ /* Nombre público de la disciplina (en Taemoi: «Taekwondo», «Defensa Personal Femenina» desde V30…). */
  private String nombreDeporte(String deporte){return catalogo.obtenerPorCodigo(deporte).getNombre();}
  private String normalizar(String s){return s==null?"":java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT);}
  private String normalizarIdentidad(String s){return normalizar(clean(s)).replaceAll("[^a-z0-9]","");}

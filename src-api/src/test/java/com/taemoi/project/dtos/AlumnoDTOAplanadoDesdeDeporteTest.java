@@ -70,7 +70,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertEquals(2, conDeportes.getDeportes().size());
 
 		assertEquals(TipoGrado.AMARILLO.name(), AlumnoConGruposDTO.deAlumnoConGrupos(alumno).getGrado());
-		assertEquals(TipoGrado.AMARILLO.getNombre(), AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
+		assertEquals("AMARILLO", AlumnoCortoDTO.deAlumno(alumno).getGrado(), "grado.nombre del catálogo");
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertNull(dto.getTieneLicencia());
 		assertNull(dto.getAptoParaExamen());
 		assertNull(AlumnoConDeportesDTO.deAlumno(alumno).getTipoTarifa());
-		assertNull(AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
+		assertNull(AlumnoCortoDTO.deAlumno(alumno).getGrado());
 	}
 
 	@Test
@@ -140,6 +140,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		if (tipoGrado != null) {
 			Grado grado = new Grado();
 			grado.setCodigo(tipoGrado.name());
+			grado.setNombre(tipoGrado.name()); // V30: en Taemoi el nombre de un color simple es el código
 			ad.setGrado(grado);
 			ad.setFechaGrado(Date.valueOf(fechaAlta));
 		}

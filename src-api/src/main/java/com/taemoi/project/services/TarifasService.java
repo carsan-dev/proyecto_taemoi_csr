@@ -34,7 +34,7 @@ public interface TarifasService {
 	/** @throws IllegalArgumentException si el código es nulo o no existe en la organización activa. */
 	Tarifa obtenerPorCodigo(String codigo);
 
-	/** Tarifas activas, en orden de alta. */
+	/** Tarifas activas, en el orden del catálogo ({@code tarifa.orden}, después {@code id}). */
 	List<Tarifa> listarActivas();
 
 	/**

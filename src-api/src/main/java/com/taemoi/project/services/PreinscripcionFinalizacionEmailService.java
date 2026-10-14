@@ -143,7 +143,7 @@ public class PreinscripcionFinalizacionEmailService {
 		return (p.getNombre() + " " + p.getApellidos()).trim();
 	}
 
-	/** Nombre público de la disciplina (en Taemoi, los de siempre: «Taekwondo», «Defensa personal femenina»…). */
+	/** Nombre público de la disciplina (en Taemoi: «Taekwondo», «Defensa Personal Femenina» desde V30…). */
 	private String nombreDeporte(Preinscripcion p) {
 		return p.getDisciplina().getNombre();
 	}

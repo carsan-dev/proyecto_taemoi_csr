@@ -267,13 +267,16 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 
 	// ---------------- GradoUtils ----------------
 
+	/** Desde V30 el nombre visible es el del catálogo de Taemoi (D3/D4), ya no el de GradoUtils. */
 	@Test
-	void nombreVisible_igualQueGradoUtils() {
+	void nombreVisible_elDeV30() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			for (Deporte deporte : CON_GRADOS) {
 				for (TipoGrado tipo : TipoGrado.values()) {
-					assertEquals(GradoUtils.getNombreGradoParaDeporte(tipo, deporte),
-							progresion.obtenerNombreVisible(codigo(deporte), tipo.name()), deporte + "/" + tipo);
+					String esperado = deporte == Deporte.KICKBOXING && tipo == TipoGrado.ROJO ? "MARRÓN"
+							: CatalogoVisualMigracionIntegrationTest.ESPERADO.get(tipo.name())[0];
+					assertEquals(esperado, progresion.obtenerNombreVisible(codigo(deporte), tipo.name()),
+							deporte + "/" + tipo);
 				}
 				assertEquals(GradoUtils.getNombreGradoParaDeporte((TipoGrado) null, deporte),
 						progresion.obtenerNombreVisible(codigo(deporte), null), String.valueOf(deporte));
@@ -286,7 +289,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			assertEquals("MARRÓN", progresion.obtenerNombreVisible(
 					progresion.buscarGrado("KICKBOXING", "ROJO").orElseThrow()));
-			assertEquals("Rojo", progresion.obtenerNombreVisible(progresion.buscarGrado("TAEKWONDO", "ROJO").orElseThrow()));
+			assertEquals("ROJO", progresion.obtenerNombreVisible(progresion.buscarGrado("TAEKWONDO", "ROJO").orElseThrow()));
 			assertEquals("N/A", progresion.obtenerNombreVisible((Grado) null));
 		});
 	}
@@ -400,7 +403,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 			assertNull(codigoDe(progresion.obtenerSiguienteGrado("KICKBOXING", false, "NEGRO_5_DAN")));
 
 			assertEquals("MARRÓN", progresion.obtenerNombreVisible("KICKBOXING", "ROJO"));
-			assertEquals("Rojo", progresion.obtenerNombreVisible("TAEKWONDO", "ROJO"));
+			assertEquals("ROJO", progresion.obtenerNombreVisible("TAEKWONDO", "ROJO"));
 			assertEquals(24L, progresion.obtenerMesesRequeridos("TAEKWONDO", "ROJO_NEGRO_1_PUM", true));
 			assertEquals(Long.MAX_VALUE, progresion.obtenerMesesRequeridos("TAEKWONDO", "ROJO_NEGRO_1_PUM", false));
 			assertEquals(Long.MAX_VALUE, progresion.obtenerMesesRequeridos("PILATES", "BLANCO", true));
@@ -424,7 +427,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 				assertEquals(conGrados, d.getPermiteCompeticion(), d.getCodigo());
 				assertEquals(conGrados, d.getRequiereLicencia(), d.getCodigo());
 			}
-			assertEquals("Defensa personal femenina", catalogo.obtenerPorCodigo("DEFENSA_PERSONAL_FEMENINA").getNombre());
+			assertEquals("Defensa Personal Femenina", catalogo.obtenerPorCodigo("DEFENSA_PERSONAL_FEMENINA").getNombre());
 			assertEquals(2, sistemas.count());
 		});
 	}

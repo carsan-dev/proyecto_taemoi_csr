@@ -258,8 +258,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		long adulto = altaCon("TKD-ADULTO", ANIO - 30, "TAEKWONDO", "NEGRO_1_DAN", "ADULTO");
 		long kb = altaCon("KB", ANIO - 30, "KICKBOXING", "ROJO", "KICKBOXING");
 
-		assertInscripcion(menor, "TAEKWONDO", "AMARILLO_NARANJA", "Amarillo-Naranja");
-		assertInscripcion(adulto, "TAEKWONDO", "NEGRO_1_DAN", "Negro-1-Dan");
+		assertInscripcion(menor, "TAEKWONDO", "AMARILLO_NARANJA", "AMARILLO-NARANJA");
+		assertInscripcion(adulto, "TAEKWONDO", "NEGRO_1_DAN", "NEGRO 1º DAN");
 		assertInscripcion(kb, "KICKBOXING", "ROJO", "MARRÓN");
 		// La respuesta mantiene el código de grado de siempre.
 		assertEquals("ROJO", alumnoDto(kb).getGrado());
@@ -272,7 +272,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 				 "telefono":600000002,"email":"unico-%s@example.test","deporte":"KICKBOXING","tipoTarifa":"KICKBOXING"}
 				""".formatted(sufijo(), sufijo());
 		long id = crear(json).getId();
-		assertInscripcion(id, "KICKBOXING", "BLANCO", "Blanco");
+		assertInscripcion(id, "KICKBOXING", "BLANCO", "BLANCO");
 	}
 
 	@Test
@@ -372,11 +372,11 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 	void pagarUnCargoHistoricoDeProductoBorrado_resuelvePorElConceptoExacto() {
 		long tkd = altaCon("HISTORICO", ANIO - 10, "TAEKWONDO", "BLANCO", "INFANTIL");
 		pagar(cargo(tkd, "TAEKWONDO", null, "DERECHO A EXAMEN VERDE/AZUL - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "VERDE_AZUL", "Verde-Azul");
+		assertInscripcion(tkd, "TAEKWONDO", "VERDE_AZUL", "VERDE-AZUL");
 
 		// Un cargo que no concede grado no cambia nada.
 		pagar(cargo(tkd, "TAEKWONDO", null, "CAMISETA TAEMOI - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "VERDE_AZUL", "Verde-Azul");
+		assertInscripcion(tkd, "TAEKWONDO", "VERDE_AZUL", "VERDE-AZUL");
 	}
 
 	// =============================================================================
@@ -423,11 +423,11 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 
 		String kb = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeKickboxingPorGrado(true)));
 		assertEquals(1, apariciones(kb, "MARRÓN"), kb);
-		assertFalse(java.util.regex.Pattern.compile("(?m)^\\s*Rojo(\\s|$)").matcher(kb).find(),
+		assertFalse(java.util.regex.Pattern.compile("(?m)^\\s*ROJO(\\s|$)").matcher(kb).find(),
 				"en kickboxing el rojo se llama MARRÓN: " + kb);
 		String tkd = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeTaekwondoPorGrado(true)));
 		assertEquals(0, apariciones(tkd, "MARRÓN"), tkd);
-		assertTrue(apariciones(tkd, "Rojo") >= 1, tkd);
+		assertTrue(apariciones(tkd, "ROJO") >= 1, tkd);
 		String ambos = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeAlumnosPorGrado(true)));
 		assertEquals(1, apariciones(ambos, "MARRÓN"), ambos);
 	}
@@ -438,7 +438,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 	 */
 	@Test
 	void informesPorGradoYConvocatoria_mantienenElOrdenDeSiempre_DanAntesQuePumAntesQueRojo() {
-		Object[][] disciplinas = { { "TAEKWONDO", "ADULTO", "Rojo", "ROJO" }, { "KICKBOXING", "KICKBOXING", "MARRÓN", "MARRÓN" } };
+		Object[][] disciplinas = { { "TAEKWONDO", "ADULTO", "ROJO", "ROJO" }, { "KICKBOXING", "KICKBOXING", "MARRÓN", "MARRÓN" } };
 		for (Object[] d : disciplinas) {
 			String disciplina = (String) d[0];
 			String tarifa = (String) d[1];
@@ -449,8 +449,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 			String porGrado = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> disciplina.equals("TAEKWONDO")
 					? pdfService.generarInformeTaekwondoPorGrado(true)
 					: pdfService.generarInformeKickboxingPorGrado(true)));
-			int iDan = porGrado.indexOf("Negro-1-Dan");
-			int iPum = porGrado.indexOf("Rojo-Negro-1-Pum");
+			int iDan = porGrado.indexOf("NEGRO 1º DAN");
+			int iPum = porGrado.indexOf("ROJO-NEGRO 1º PUM");
 			int iRojo = java.util.regex.Pattern.compile("(?m)^\\s*" + d[2] + "(\\s|$)").matcher(porGrado).results()
 					.mapToInt(java.util.regex.MatchResult::start).findFirst().orElse(-1);
 			assertTrue(iDan >= 0 && iPum > iDan && iRojo > iPum, disciplina + " por grado: " + porGrado);
@@ -468,8 +468,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 			}));
 			String pdf = texto(TenantContext.calcularCon(ORG_TAEMOI,
 					() -> tx.execute(s -> pdfService.generarInformeConvocatoria(convocatoria))));
-			int cDan = pdf.indexOf("DE NEGRO-1-DAN");
-			int cPum = pdf.indexOf("DE ROJO-NEGRO-1-PUM");
+			int cDan = pdf.indexOf("DE NEGRO 1º DAN");
+			int cPum = pdf.indexOf("DE ROJO-NEGRO 1º PUM");
 			int cRojo = pdf.indexOf("DE " + d[3] + "\n") >= 0 ? pdf.indexOf("DE " + d[3] + "\n")
 					: java.util.regex.Pattern.compile("DE " + d[3] + "(?!-)").matcher(pdf).results()
 							.mapToInt(java.util.regex.MatchResult::start).findFirst().orElse(-1);
@@ -557,7 +557,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 
 		Long alumnoId = jdbc.queryForObject("SELECT alumno_id FROM preinscripcion WHERE referencia = ?", Long.class,
 				referencia);
-		assertInscripcion(alumnoId, "KICKBOXING", "AMARILLO", "Amarillo");
+		assertInscripcion(alumnoId, "KICKBOXING", "AMARILLO", "AMARILLO");
 
 		// Un grado intermedio no es válido en kickboxing (mismo mensaje que antes).
 		String otra = preinscripcionPendiente("KICKBOXING", "Kickboxing preinscripcion 2");
@@ -615,20 +615,20 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		long tkd = altaCon("NOMBRE-LIBRE", ANIO - 10, "TAEKWONDO", "BLANCO", "INFANTIL");
 		long verde = productoSinClasificar("DERECHO A EXAMEN VERDE MARZO 2026");
 		pagar(cargo(tkd, "TAEKWONDO", verde, "DERECHO A EXAMEN VERDE MARZO 2026 - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "VERDE", "Verde");
+		assertInscripcion(tkd, "TAEKWONDO", "VERDE", "VERDE");
 
 		long intermedio = productoSinClasificar("DERECHO A EXAMEN AMARILLO/NARANJA ESPECIAL");
 		pagar(cargo(tkd, "TAEKWONDO", intermedio, "DERECHO A EXAMEN AMARILLO/NARANJA ESPECIAL - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "AMARILLO_NARANJA", "Amarillo-Naranja");
+		assertInscripcion(tkd, "TAEKWONDO", "AMARILLO_NARANJA", "AMARILLO-NARANJA");
 
 		long bordado = productoSinClasificar("Derecho de cambio a rojo bordado por recompensa (especial)");
 		pagar(cargo(tkd, "TAEKWONDO", bordado, "Derecho de cambio a rojo bordado por recompensa (especial) - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "ROJO", "Rojo");
+		assertInscripcion(tkd, "TAEKWONDO", "ROJO", "ROJO");
 
 		// En kickboxing, el mismo nombre se resuelve en su propio sistema.
 		long kb = altaCon("NOMBRE-LIBRE-KB", ANIO - 30, "KICKBOXING", "BLANCO", "KICKBOXING");
 		pagar(cargo(kb, "KICKBOXING", verde, "DERECHO A EXAMEN VERDE MARZO 2026 - KICKBOXING"));
-		assertInscripcion(kb, "KICKBOXING", "VERDE", "Verde");
+		assertInscripcion(kb, "KICKBOXING", "VERDE", "VERDE");
 	}
 
 	@Test
@@ -638,7 +638,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		Long azulTkd = TenantContext.calcularCon(ORG_TAEMOI, () -> progresion.buscarGrado("TAEKWONDO", "AZUL").orElseThrow().getId());
 		jdbc.update("UPDATE producto SET tipo = 'EXAMEN', grado_id = ? WHERE id = ?", azulTkd, producto);
 		pagar(cargo(tkd, "TAEKWONDO", producto, "DERECHO A EXAMEN VERDE (CURSO ESPECIAL) - TAEKWONDO"));
-		assertInscripcion(tkd, "TAEKWONDO", "AZUL", "Azul");
+		assertInscripcion(tkd, "TAEKWONDO", "AZUL", "AZUL");
 	}
 
 	/**

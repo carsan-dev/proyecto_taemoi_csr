@@ -54,7 +54,7 @@ public class TarifasServiceImpl implements TarifasService {
 
 	@Override
 	public List<Tarifa> listarActivas() {
-		return tarifas.findByActivaTrueOrderByIdAsc();
+		return tarifas.findByActivaTrueOrderByOrdenAscIdAsc();
 	}
 
 	@Override

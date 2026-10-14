@@ -13,37 +13,45 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 
 /**
- * El nombre del grado en los listados cortos solo es el heredado de Taemoi cuando la organización conserva
- * ese comportamiento; las demás escuelas muestran el nombre de su catálogo (en kickboxing, ROJO = «MARRÓN»).
+ * El nombre del grado en los listados cortos es siempre el del catálogo ({@code grado.nombre}), también en
+ * Taemoi (decisión D3; V30 escribe los nombres «BLANCO-AMARILLO», «ROJO-NEGRO 1º PUM», «MARRÓN» en kickboxing).
  */
 class AlumnoCortoDTONombreGradoTest {
 
 	private final CatalogoTaemoiEnMemoria catalogo = new CatalogoTaemoiEnMemoria();
 
 	@Test
-	void organizacionLegadaMuestraElNombreHeredadoTambienEnKickboxing() {
+	void kickboxingRojoMuestraMarron() {
 		Alumno alumno = alumnoCon("KICKBOXING", "ROJO");
 
-		assertEquals("Rojo", AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
-		assertEquals("Rojo", AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0), true).getGrado());
+		assertEquals("MARRÓN", AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertEquals("MARRÓN", AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0)).getGrado());
 	}
 
 	@Test
-	void organizacionSinMarcaLegadaMuestraElNombreDelCatalogo() {
-		Alumno alumno = alumnoCon("KICKBOXING", "ROJO");
-
-		assertEquals("MARRÓN", AlumnoCortoDTO.deAlumno(alumno, false).getGrado());
-		assertEquals("MARRÓN", AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0), false).getGrado());
+	void taekwondoMuestraElNombreDelCatalogo() {
+		assertEquals("ROJO", AlumnoCortoDTO.deAlumno(alumnoCon("TAEKWONDO", "ROJO")).getGrado());
+		assertEquals("AZUL-ROJO", AlumnoCortoDTO.deAlumno(alumnoCon("TAEKWONDO", "AZUL_ROJO")).getGrado());
+		Alumno pum = alumnoCon("TAEKWONDO", "ROJO_NEGRO_1_PUM");
+		assertEquals("ROJO-NEGRO 1º PUM", AlumnoCortoDTO.deAlumnoDeporte(pum.getDeportes().get(0)).getGrado());
+		assertEquals("NEGRO 2º DAN", AlumnoCortoDTO.deAlumno(alumnoCon("TAEKWONDO", "NEGRO_2_DAN")).getGrado());
 	}
 
 	@Test
-	void sinGradoNoHayNombreEnNingunModo() {
+	void otraEscuelaMuestraSuNombreTalCual() {
+		Alumno alumno = alumnoCon("TAEKWONDO", "ROJO");
+		alumno.getDeportes().get(0).getGrado().setNombre("Cinturón rojo");
+
+		assertEquals("Cinturón rojo", AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertEquals("Cinturón rojo", AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0)).getGrado());
+	}
+
+	@Test
+	void sinGradoNoHayNombre() {
 		Alumno alumno = alumnoCon("TAEKWONDO", null);
 
-		assertNull(AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
-		assertNull(AlumnoCortoDTO.deAlumno(alumno, false).getGrado());
-		assertNull(AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0), true).getGrado());
-		assertNull(AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0), false).getGrado());
+		assertNull(AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertNull(AlumnoCortoDTO.deAlumnoDeporte(alumno.getDeportes().get(0)).getGrado());
 	}
 
 	private Alumno alumnoCon(String disciplina, String codigoGrado) {
