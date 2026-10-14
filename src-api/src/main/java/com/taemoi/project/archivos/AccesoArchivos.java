@@ -178,20 +178,39 @@ public class AccesoArchivos {
 	}
 
 	private List<Path> rutasDeImagen(Path base, Imagen imagen) {
-		List<Path> rutas = new ArrayList<>(2);
+		List<Path> rutas = new ArrayList<>(3);
 		Path guardada = imagenService.resolverRutaArchivo(imagen);
 		if (guardada != null) {
 			rutas.add(guardada);
 		}
-		// Fila heredada con ruta absoluta de otro entorno: el fichero se movió a <raiz>/alumnos/<nombre>.
-		if (RutasArchivos.esRutaAbsoluta(imagen.getRuta()) && imagen.getNombre() != null) {
-			try {
-				rutas.add(RutasArchivos.resolverDentroDe(base, RutasArchivos.CARPETA_ALUMNOS + "/" + imagen.getNombre()));
-			} catch (IllegalArgumentException e) {
-				// Nombre no válido: no aporta candidata.
-			}
+		// Fila heredada con ruta absoluta de otro entorno (p. ej. la del host anterior a Docker): el fichero
+		// está en <raiz>/alumnos/<fichero>, donde <fichero> es el último segmento de la ruta guardada (el
+		// nombre real en disco) o, en filas antiguas, el nombre de la imagen.
+		if (RutasArchivos.esRutaAbsoluta(imagen.getRuta())) {
+			agregarCandidataEnAlumnos(rutas, base, ultimoSegmento(imagen.getRuta()));
+			agregarCandidataEnAlumnos(rutas, base, imagen.getNombre());
 		}
 		return rutas;
+	}
+
+	private static void agregarCandidataEnAlumnos(List<Path> rutas, Path base, String fichero) {
+		if (fichero == null || fichero.isBlank()) {
+			return;
+		}
+		try {
+			Path candidata = RutasArchivos.resolverDentroDe(base, RutasArchivos.CARPETA_ALUMNOS + "/" + fichero);
+			if (!rutas.contains(candidata)) {
+				rutas.add(candidata);
+			}
+		} catch (IllegalArgumentException e) {
+			// Nombre no válido: no aporta candidata.
+		}
+	}
+
+	/** Último segmento de una ruta guardada, aceptando {@code /} y {@code \} como separadores. */
+	private static String ultimoSegmento(String ruta) {
+		String normalizada = ruta.trim().replace('\\', '/');
+		return normalizada.substring(normalizada.lastIndexOf('/') + 1);
 	}
 
 	/** Hay un {@code Documento} de la escuela activa cuyo fichero es {@code real}. */
