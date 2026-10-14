@@ -257,6 +257,19 @@ Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en 
 9. **Alumno visible para un responsable de sede.** Recomendación: sede principal o cualquier grupo en sus sedes.
 10. **Tarjetas del panel que hoy redirigen al gestor.** Recomendación: ocultarlas.
 
+### Decisiones tomadas (14/10/2026)
+
+- Nombres en pantalla: «Superadmin» (plataforma), «Propietario», «Gestor» (rol ADMINISTRADOR, hoy
+  ROLE_MANAGER), «Responsable de sede», «Profesor», «Familia». Los códigos internos no cambian.
+- D1: sede de Taemoi «Umbrete». D2: según la recomendación. D6, D7, D8, D9, D10: según la recomendación.
+- D3 (cambia la recomendación): el superadmin tiene **acceso de soporte de solo lectura a todas las
+  escuelas**, sin membresía. Cada acceso queda registrado (quién, cuándo, escuela) y lo ve el propietario
+  en su registro de acciones; el contrato de encargo con cada escuela lo recoge.
+- D4 (cambia): el responsable de sede gestiona sus sedes **sin tesorería ni cobros**.
+- D5 (cambia): el profesor, además de consulta, asistencia, salud y aptos, **gestiona los grados de sus
+  alumnos** (exámenes); sigue sin cobros ni edición de fichas. Comprobar qué genera hoy un cambio de grado
+  (productos, convocatorias) antes de abrirlo.
+
 ## 8. Entregas en orden
 
 Despliegue 3 = V31 + entregas 1–9 (pueden ir en varias versiones; V31 va con la 1). Despliegue 4 = entrega 10.
