@@ -26,7 +26,18 @@
     "src/app/componentes/generales/informe-pdf-modal/informe-pdf-modal.component.spec.ts",
     "src/app/componentes/generales/pdf-viewer/pdf-viewer.component.spec.ts",
     "src/app/componentes/endpoints/listado-alumnos/informes-preview.spec.ts",
-    "src/app/core/interceptors/error.interceptor.spec.ts"
+    "src/app/core/interceptors/error.interceptor.spec.ts",
+    "src/app/enums/deporte.caracterizacion.spec.ts",
+    "src/app/enums/tipo-tarifa.caracterizacion.spec.ts",
+    "src/app/enums/tipo-grado.caracterizacion.spec.ts",
+    "src/app/constants/tarifa.constants.caracterizacion.spec.ts",
+    "src/app/utilities/categoria-por-edad.caracterizacion.spec.ts",
+    "src/app/utilities/grado-progresion.caracterizacion.spec.ts",
+    "src/app/utilities/grado-colors.caracterizacion.spec.ts",
+    "src/app/componentes/vistas/vista-principal-user/vista-principal-user.caracterizacion.spec.ts",
+    "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.caracterizacion.spec.ts",
+    "src/app/componentes/endpoints/editar-alumno/editar-alumno.caracterizacion.spec.ts",
+    "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.caracterizacion.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"
