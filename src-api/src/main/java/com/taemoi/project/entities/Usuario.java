@@ -56,6 +56,7 @@ public class Usuario implements UserDetails {
 
 	@NotBlank(message = "La contraseña no puede estar en blanco")
 	@Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+	@JsonIgnore
 private String contrasena;
 
 	@Enumerated(EnumType.STRING)
@@ -63,9 +64,11 @@ private String contrasena;
 	private AuthProvider authProvider = AuthProvider.LOCAL;
 
 	@Column(name = "reset_token_hash", length = 64)
+	@JsonIgnore
 	private String resetTokenHash;
 
 	@Column(name = "reset_token_expires_at")
+	@JsonIgnore
 	private LocalDateTime resetTokenExpiresAt;
 
 	@Column(name = "recordatorio_racha_email_habilitado", nullable = false)
@@ -136,6 +139,7 @@ private String contrasena;
 	}
 
 	@Override
+	@JsonIgnore
 	public String getPassword() {
 		return contrasena;
 	}
